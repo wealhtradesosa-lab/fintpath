@@ -74,7 +74,7 @@ function recomendacionesNatural(user, ow, det) {
   // ═════════════ PALANCA 1: Pensión Voluntaria (Art. 126-1 ET) ═════════════
   //
   // El motor expone `espacioParaPVyAFC`, que ya descuenta lo que el owner
-  // aporta hoy y respeta el cap 40% neto laboral / 2500 UVT. Si es > 0,
+  // aporta hoy y respeta el tope conjunto 30% / 3.800 UVT. Si es > 0,
   // hay margen legal para aportar más.
   const espacio = Number(det.espacioParaPVyAFC) || 0;
   const pvAportaHoy = pvAportadaHoyAnual(user, ow.id);
@@ -99,7 +99,7 @@ function recomendacionesNatural(user, ow, det) {
           : "Empezar a aportar a Pensión Voluntaria o AFC",
         descripcion: pvAportaHoy > 0
           ? `Ya aportas ${fm(pvAportaHoy)}/año a PV/AFC. Tienes margen legal para aportar ${fm(aporteSugeridoMensual)}/mes adicionales sin pasarte del cap.`
-          : `No tienes aportes a PV/AFC registrados. Son 100% deducibles de la base gravable bajo el cap 25%/2500 UVT.`,
+          : `No tienes aportes a PV/AFC registrados. Son 100% deducibles de la base gravable (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC).`,
         aporteSugeridoMensual,
         ahorroAnualEstimado: ahorro,
         ahorroBrutoTeorico: ahorroBruto,

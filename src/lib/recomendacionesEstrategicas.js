@@ -1,4 +1,6 @@
 import { fmtPctEs } from "./formato.js";
+import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
+import { sugerenciaPvAfc, textoSugerenciaPvAfc, textoTopePvAfc } from "./sugerenciaPvAfc.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -39,7 +41,13 @@ import { fmtPctEs } from "./formato.js";
 //   }
 // ═══════════════════════════════════════════════════════════════════════════
 
-const UVT = 49799; // AG 2025 default ($49.799) — ver UVT_BY_AG / uvtForYear en taxCO.js
+// UVT del mismo año gravable que se le pasa a taxCO (regla Tributario: nunca un
+// valor único para toda la app). Recomendaciones = AG por defecto (2026).
+export const AG_RECOS = DEFAULT_AG;
+export const UVT_RECOS = uvtForYear(AG_RECOS);
+const UVT = UVT_RECOS;
+export const ETIQUETA_AG_RECOS = `AG ${AG_RECOS} · UVT $${UVT_RECOS.toLocaleString("es-CO")}`;
+export const NOTA_FIJA_PV_AFC = "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.";
 
 // ─────────────────────────────────────────────────────────────────────────
 // ANÁLISIS DEL PERFIL DEL OWNER
@@ -50,7 +58,10 @@ function analizarPerfil(owner, det, user) {
 
   const isJuridica = owner.type === "juridica";
   const ingresoAnual = Number(det.ingreso) || 0;
-  const saldoACargo = Number(det.impuesto) || 0;
+  // Impuesto a cargo (antes de retenciones). NO usar det.impuesto: es el saldo
+  // tras retenciones cortado en 0, y esconde las recomendaciones a quien tiene
+  // saldo a favor aunque el aporte sí le baje el impuesto (#60, regla Finanzas).
+  const impuestoACargo = Number(det.impuestoACargo ?? det.impBruto ?? det.impuesto) || 0;
   const ingLaboral = Number(det.ingLaboral) || 0;
   const ingNoLaboral = Number(det.ingNoLaboral) || 0;
   const divAnual = Number(det.divAnual) || 0;
@@ -79,11 +90,12 @@ function analizarPerfil(owner, det, user) {
   }
 
   return {
+    _user: user, _owner: owner,
     owner,
     isJuridica,
     tipoPerfil,
     ingresoAnual,
-    saldoACargo,
+    impuestoACargo,
     ingLaboral,
     ingNoLaboral,
     divAnual,
@@ -100,9 +112,9 @@ function analizarPerfil(owner, det, user) {
 
 function recomendacionesNaturalNoLaboral(perfil) {
   const recs = [];
-  const { saldoACargo, ingNoLaboral, divAnual, patrimonioAprox, capacidadInversion } = perfil;
+  const { impuestoACargo, ingNoLaboral, divAnual, patrimonioAprox, capacidadInversion } = perfil;
 
-  if (saldoACargo < 1_000_000) return recs; // si no debe nada, no recomendar
+  if (impuestoACargo < 1_000_000) return recs; // si no debe nada, no recomendar
 
   // Tasa marginal aproximada en cédula general
   const tasaMarg = ingNoLaboral > 1_000_000_000 ? 0.39 :
@@ -128,9 +140,9 @@ function recomendacionesNaturalNoLaboral(perfil) {
     d.sim !== false
   );
   const yaTieneCreditoVivienda = deudasReales.length > 0;
-  if (saldoACargo > 5_000_000 && !yaTieneCreditoVivienda) {
+  if (impuestoACargo > 5_000_000 && !yaTieneCreditoVivienda) {
     const interesesAnualesEstimados = 60_000_000; // típico crédito $500M al 12%
-    const ahorroAnual = Math.min(interesesAnualesEstimados * tasaMarg, saldoACargo);
+    const ahorroAnual = Math.min(interesesAnualesEstimados * tasaMarg, impuestoACargo);
     recs.push({
       id: "credito_hipotecario_vivienda",
       ejecutaEn: "personal",
@@ -158,10 +170,11 @@ function recomendacionesNaturalNoLaboral(perfil) {
 
   // ── REC 2: Generar renta laboral vía consultoría a propias sociedades ──
   // Para acceder a beneficios laborales (PV/AFC, dependientes, salud)
-  if (perfil.ingLaboral === 0 && saldoACargo > 10_000_000) {
+  if (perfil.ingLaboral === 0 && impuestoACargo > 10_000_000) {
     const consultoria_anual = 120_000_000; // ~$10M/mes consultoría profesional
-    const aporteAFCmax = Math.min(consultoria_anual * 0.25, 2500 * UVT); // cap 25%
-    const ahorroAFC = Math.round(aporteAFCmax * tasaMarg);
+    // Tope conjunto PV + AFC: 30 % del ingreso laboral, hasta 3.800 UVT/año.
+    const aporteAFCmax = Math.min(consultoria_anual * 0.30, 3800 * UVT);
+    const ahorroAFC = Math.round(ahorroAporteConTaxCO(perfil, consultoria_anual, aporteAFCmax));
     recs.push({
       id: "consultoria_laboral",
       ejecutaEn: "personal",
@@ -174,8 +187,8 @@ function recomendacionesNaturalNoLaboral(perfil) {
         descripcion: "Cero costo financiero. Requiere documentar el servicio (contrato + facturación).",
       },
       ahorroAnual: {
-        monto: Math.min(ahorroAFC, saldoACargo),
-        calculoDetallado: `Aportar el 25% (cap legal) = $${aporteAFCmax.toLocaleString("es-CO")}/año a AFC, deducible al 100%. Ahorro: × ${fmtPctEs((tasaMarg * 100), 0)} tasa marginal.`,
+        monto: Math.min(ahorroAFC, impuestoACargo),
+        calculoDetallado: `Con la consultoría, hasta $${aporteAFCmax.toLocaleString("es-CO")}/año en pensión voluntaria o AFC podría ser exento (30% del ingreso, hasta 3.800 UVT al año, compartido entre pensión voluntaria y AFC). Diferencia de impuesto calculada con y sin el aporte.`,
       },
       roi: {
         porcentaje: 30,
@@ -188,8 +201,8 @@ function recomendacionesNaturalNoLaboral(perfil) {
   }
 
   // ── REC 3: Donaciones a ESAL ──────────────────────────────────────────
-  if (saldoACargo > 5_000_000) {
-    const donacionSugerida = Math.min(saldoACargo * 0.5, 50_000_000); // sugerir donar hasta 50M o 50% del saldo
+  if (impuestoACargo > 5_000_000) {
+    const donacionSugerida = Math.min(impuestoACargo * 0.5, 50_000_000); // sugerir donar hasta 50M o 50% del saldo
     const descuento = donacionSugerida * 0.25; // 25% del Art. 257
     recs.push({
       id: "donacion_esal",
@@ -203,7 +216,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
         descripcion: "Sale de tu bolsillo, pero el 25% vuelve como descuento de impuesto. Costo neto efectivo: 75% del monto.",
       },
       ahorroAnual: {
-        monto: Math.min(descuento, saldoACargo),
+        monto: Math.min(descuento, impuestoACargo),
         calculoDetallado: `$${donacionSugerida.toLocaleString("es-CO")} × 25% (Art. 257 ET) = $${descuento.toLocaleString("es-CO")} de descuento.`,
       },
       roi: {
@@ -230,10 +243,9 @@ function recomendacionesNaturalNoLaboral(perfil) {
 
 function recomendacionesNaturalLaboral(perfil) {
   const recs = [];
-  const { saldoACargo, ingLaboral } = perfil;
-  if (saldoACargo < 500_000) return recs;
+  const { impuestoACargo, ingLaboral } = perfil;
+  if (impuestoACargo < 500_000) return recs;
 
-  const tasaMarg = ingLaboral > 600_000_000 ? 0.37 : ingLaboral > 300_000_000 ? 0.35 : 0.33;
 
   // REC 1: Aporte a Pensión Voluntaria — solo si NO está aportando ya.
   // Buscamos en gas REAL (no en proyecciones del wizard) para evitar
@@ -244,38 +256,48 @@ function recomendacionesNaturalLaboral(perfil) {
     (g.fiscalCode === "AP_TRIB_PV" || g.fiscalCode === "AP_TRIB_AFC")
   );
   if (!yaAportaPV) {
-    const aporteSugerido = Math.min(ingLaboral * 0.20, 2500 * UVT);
-    const ahorroPV = Math.min(Math.round(aporteSugerido * tasaMarg), saldoACargo);
+    // Tope conjunto PV+AFC: 30% del ingreso laboral, máx 3.800 UVT/año (UVT del AG_RECOS).
+    // Mismo aporte y ahorro que la tarjeta del simulador (helper compartido, regla Finanzas).
+    const sug = sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS });
+    const aporteSugerido = sug.aporte;
+    const ahorroPV = sug.ahorro || 0;
+    const topeAnual = sug.topeAnual;
     recs.push({
       id: "aporte_pv_estrategico",
       ejecutaEn: "personal",
       icono: "💼",
-      titulo: "Aportar a Pensión Voluntaria",
-      descripcion: "Aporte deducible al 100% (cap 25% del ingreso). La palanca más potente para empleados con salario alto.",
-      accion: `Aportar ~$${aporteSugerido.toLocaleString("es-CO")}/año a un fondo de Pensión Voluntaria (Protección, Porvenir, Old Mutual, etc).`,
+      titulo: "Pensión voluntaria o AFC",
+      tope: textoTopePvAfc(sug),
+      descripcion: `${textoSugerenciaPvAfc(sug)} Hasta $${Math.round(topeAnual / 12).toLocaleString("es-CO")}/mes en pensión voluntaria o AFC podría ser exento (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      accion: sug.sinFlujo ? textoSugerenciaPvAfc(sug) : `Si decides aportar, puedes hacerlo por nómina o directo al fondo: $${aporteSugerido.toLocaleString("es-CO")} al año.`,
       inversion: {
         monto: aporteSugerido,
-        descripcion: "Sale de tu liquidez pero queda invertido a tu nombre, generando rendimientos.",
+        descripcion: "Sale de tu liquidez pero queda ahorrado a tu nombre.",
       },
-      ahorroAnual: { monto: ahorroPV, calculoDetallado: `${aporteSugerido.toLocaleString("es-CO")} × ${fmtPctEs((tasaMarg * 100), 0)}` },
-      roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + capital crece a tu nombre." },
-      baseLegal: "Art. 126-1 ET",
-      caveat: "Si retiras antes de 10 años o sin cumplir requisitos de pensión, pierdes el beneficio fiscal y pagas retención.",
+      ahorroAnual: { monto: ahorroPV, calculoDetallado: sug.sinFlujo ? textoSugerenciaPvAfc(sug) : `menos de impuesto si aportas $${aporteSugerido.toLocaleString("es-CO")} al año. Diferencia de impuesto calculada con y sin el aporte.` },
+      roi: { porcentaje: aporteSugerido > 0 ? (ahorroPV / aporteSugerido) * 100 : 0, descripcion: "Ahorro en impuesto sobre lo aportado." },
+      baseLegal: "Arts. 126-1 y 126-4 ET",
+      caveat: "Si lo retiras antes y para otro fin, pierdes el beneficio.",
+      nota: NOTA_FIJA_PV_AFC,
+      etiqueta: ETIQUETA_AG_RECOS,
       prioridad: "alta",
     });
   }
 
-  // REC 2: Cuenta AFC para vivienda
+  // REC 2: Cuenta AFC — mismo aporte/ahorro compartido (tope conjunto con PV).
+  const sugAFC = sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS });
   recs.push({
     id: "cuenta_afc",
       ejecutaEn: "personal",
     icono: "🏠",
     titulo: "Cuenta AFC (Ahorro para Fomento de la Construcción)",
-    descripcion: "Aporte deducible al 100% (cap conjunto con PV: 25% del ingreso). Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
+    descripcion: "Hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC. Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
     accion: "Abre una cuenta AFC en cualquier banco (Bancolombia, Davivienda, etc.) y aporta hasta el cap legal.",
-    inversion: { monto: 0, descripcion: "Cero costo de apertura. El monto aportado queda en tu cuenta." },
-    ahorroAnual: { monto: Math.min(Math.round(60_000_000 * tasaMarg), saldoACargo), calculoDetallado: "Si aportas $5M/mes ($60M/año) a AFC: deducible 100%" },
-    roi: { porcentaje: tasaMarg * 100, descripcion: "ROI inmediato + el saldo se puede usar para vivienda." },
+    ahorroAnual: { monto: Math.round(sugAFC.ahorro || 0), calculoDetallado: sugAFC.sinFlujo ? textoSugerenciaPvAfc(sugAFC) : `menos de impuesto si aportas $${sugAFC.aporte.toLocaleString("es-CO")} al año (tope compartido con pensión voluntaria). Diferencia de impuesto calculada con y sin el aporte.` },
+    inversion: { monto: sugAFC.aporte, descripcion: "El monto aportado queda en tu cuenta AFC." },
+    roi: { porcentaje: sugAFC.aporte > 0 ? Math.round(sugAFC.ahorro / sugAFC.aporte * 1000) / 10 : 0, descripcion: "Ahorro en impuesto sobre lo aportado; el saldo se puede usar para vivienda." },
+    nota: NOTA_FIJA_PV_AFC,
+    etiqueta: ETIQUETA_AG_RECOS,
     baseLegal: "Art. 126-4 ET",
     caveat: "Solo retirable para vivienda. Si retiras para otra cosa, pagas retención del 7-15%.",
     prioridad: "alta",
@@ -290,12 +312,12 @@ function recomendacionesNaturalLaboral(perfil) {
 
 function recomendacionesJuridica(perfil) {
   const recs = [];
-  const { saldoACargo, ingresoAnual } = perfil;
-  if (saldoACargo < 5_000_000) return recs;
+  const { impuestoACargo, ingresoAnual } = perfil;
+  if (impuestoACargo < 5_000_000) return recs;
 
   // REC 1: Comprar bodega / inmueble productivo
-  if (saldoACargo > 50_000_000) {
-    const inversion = Math.min(saldoACargo * 5, 1_000_000_000); // dimensionar a la capacidad
+  if (impuestoACargo > 50_000_000) {
+    const inversion = Math.min(impuestoACargo * 5, 1_000_000_000); // dimensionar a la capacidad
     const depreciacionAnual = inversion / 20;
     const ivaDescontable = inversion * 0.19;
     const ahorroAno1 = Math.round(depreciacionAnual * 0.35 + ivaDescontable);
@@ -311,7 +333,7 @@ function recomendacionesJuridica(perfil) {
         descripcion: `$${inversion.toLocaleString("es-CO")} en activo fijo. Puede financiarse, lo que genera además intereses deducibles.`,
       },
       ahorroAnual: {
-        monto: Math.min(ahorroAno1, saldoACargo),
+        monto: Math.min(ahorroAno1, impuestoACargo),
         calculoDetallado: `Año 1: depreciación $${depreciacionAnual.toLocaleString("es-CO")} × 35% = $${Math.round(depreciacionAnual * 0.35).toLocaleString("es-CO")} + IVA descontable $${ivaDescontable.toLocaleString("es-CO")} (Art. 258-1) = $${ahorroAno1.toLocaleString("es-CO")}. Recurrente $${Math.round(depreciacionAnual * 0.35).toLocaleString("es-CO")}/año por 19 años más.`,
       },
       roi: {
@@ -327,7 +349,7 @@ function recomendacionesJuridica(perfil) {
   // REC 1b: Adquirir vehículo / equipo productivo (movida desde el flow de
   // persona natural — 18-jul-2026 noche, Santiago: "una cosa son las
   // optimizaciones a Sosa, otras a Lagoon, no tienen por qué mezclarse").
-  if (saldoACargo > 8_000_000) {
+  if (impuestoACargo > 8_000_000) {
     recs.push({
       id: "vehiculo_productivo_sociedad",
       ejecutaEn: "sociedad",
@@ -354,8 +376,8 @@ function recomendacionesJuridica(perfil) {
   }
 
   // REC 2: Inversión en CT&I (deducción 175%)
-  if (saldoACargo > 20_000_000) {
-    const inversion = Math.min(saldoACargo * 0.5, 200_000_000);
+  if (impuestoACargo > 20_000_000) {
+    const inversion = Math.min(impuestoACargo * 0.5, 200_000_000);
     const deduccion = inversion * 1.75;
     const ahorroFiscal = Math.round(deduccion * 0.35) + (inversion * 0.25);
     recs.push({
@@ -370,7 +392,7 @@ function recomendacionesJuridica(perfil) {
         descripcion: "Inversión real en el proyecto (personal, equipos, materiales). Debe ser certificable.",
       },
       ahorroAnual: {
-        monto: Math.min(ahorroFiscal, saldoACargo),
+        monto: Math.min(ahorroFiscal, impuestoACargo),
         calculoDetallado: `Deducción 175% de $${inversion.toLocaleString("es-CO")} = $${deduccion.toLocaleString("es-CO")}, beneficio: $${Math.round(deduccion * 0.35).toLocaleString("es-CO")}. + Descuento directo 25% = $${(inversion * 0.25).toLocaleString("es-CO")}. Total: $${ahorroFiscal.toLocaleString("es-CO")}.`,
       },
       roi: {
@@ -393,7 +415,7 @@ function recomendacionesJuridica(perfil) {
     accion: "Invertir en capacitación certificada para equipo (Coursera Business, EAFIT, Andes, Universidad de los Andes).",
     inversion: { monto: 30_000_000, descripcion: "$30M anuales en capacitación del equipo." },
     ahorroAnual: {
-      monto: Math.min(Math.round(30_000_000 * 1.75 * 0.35), saldoACargo),
+      monto: Math.min(Math.round(30_000_000 * 1.75 * 0.35), impuestoACargo),
       calculoDetallado: "$30M × 175% = $52.5M deducción × 35% tarifa = $18.4M ahorro fiscal."
     },
     roi: { porcentaje: 61, descripcion: "Doble retorno: ahorro fiscal + equipo más productivo." },
@@ -403,8 +425,8 @@ function recomendacionesJuridica(perfil) {
   });
 
   // REC 4: Donación ESAL
-  if (saldoACargo > 10_000_000) {
-    const donacion = Math.min(saldoACargo * 0.3, 100_000_000);
+  if (impuestoACargo > 10_000_000) {
+    const donacion = Math.min(impuestoACargo * 0.3, 100_000_000);
     recs.push({
       id: "donacion_esal_juridica",
       ejecutaEn: "sociedad",
@@ -413,7 +435,7 @@ function recomendacionesJuridica(perfil) {
       descripcion: "Las donaciones de la sociedad a entidades del Régimen Tributario Especial generan DESCUENTO directo del 25% sobre el impuesto. Es la forma más eficiente de transformar parte del impuesto en impacto social.",
       accion: `Donar $${donacion.toLocaleString("es-CO")} a una ESAL certificada (universidades, fundaciones de salud o cultura).`,
       inversion: { monto: donacion, descripcion: "Costo neto: 75% del valor donado." },
-      ahorroAnual: { monto: Math.min(Math.round(donacion * 0.25), saldoACargo), calculoDetallado: `$${donacion.toLocaleString("es-CO")} × 25%` },
+      ahorroAnual: { monto: Math.min(Math.round(donacion * 0.25), impuestoACargo), calculoDetallado: `$${donacion.toLocaleString("es-CO")} × 25%` },
       roi: { porcentaje: 25, descripcion: "ROI inmediato 25% + reputación + impacto social." },
       baseLegal: "Art. 257 ET",
       caveat: "Requiere certificado de donación de la ESAL + verificación que esté en RTE.",
@@ -478,4 +500,20 @@ export function generarRecomendacionesEstrategicas(user, owner, det) {
   });
 
   return recs;
+}
+// Diferencia de impuesto a cargo (antes de retenciones) corriendo taxCO con la
+// consultoría y con vs sin el aporte. Sin datos del usuario → 0 (no se inventa).
+export function ahorroAporteTaxCO(perfil, aporteAnual, { consultoriaAnual = 0, fiscalCode = "AP_TRIB_AFC" } = {}) {
+  const user = perfil?._user, owner = perfil?._owner;
+  if (!user || !owner || aporteAnual <= 0) return 0;
+  const extra = consultoriaAnual > 0 ? [{ id: "__consultoria", owner: owner.id, nombre: "Consultoría", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS", mensual: consultoriaAnual / 12, tipo: "fijo" }] : [];
+  const base = { ...user, owners: [owner], ingresos: [...(user.ingresos || []), ...extra] };
+  const gas = { ...(base.gas || {}) };
+  gas["Aporte tributario"] = [...(gas["Aporte tributario"] || []), { owner: owner.id, fiscalCode, m: aporteAnual / 12 }];
+  const imp = (u) => (estimarImpuesto(u, { ag: AG_RECOS }).detalle.find((d) => d.name === owner.name)?.impBruto) || 0;
+  return Math.max(0, imp(base) - imp({ ...base, gas }));
+}
+
+export function ahorroAporteConTaxCO(perfil, consultoriaAnual, aporteAnual) {
+  return ahorroAporteTaxCO(perfil, aporteAnual, { consultoriaAnual, fiscalCode: "AP_TRIB_AFC" });
 }

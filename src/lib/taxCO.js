@@ -747,32 +747,28 @@ export const estimarImpuesto = (u, options = {}) => {
 
       const totalDeducciones = deducDep + deducMedicina + deducVivienda + gmfDeducible;
 
-      // Art. 206 #10 ET: 25% de la base laboral (neto − deducciones Art.387/etc.),
-      // tope 790 UVT **por año gravable** (NO por mes). UVT vía uvtForYear(ag).
+      // Orden (spec Tributario 24-oct-2026, Art. 206-10 ET):
+      //  1) ingreso laboral − INCRNGO − deducciones
+      //  2) − pensión voluntaria / AFC exentas (Arts. 126-1 y 126-4: 30 %, 3.800 UVT)
+      //  3) − cesantías e intereses exentos (Art. 206-4)
+      //  4) = base del 25 %, tope 790 UVT por año gravable
+      //  5) todo (deducciones + exentas + 25 %) ≤ min(40 %, 1.340 UVT) (Art. 336)
+      const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + totalAnualItem(g), 0);
+      const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + totalAnualItem(g), 0);
+      const pvManualBruto  = pvEgresoAnual + afcEgresoAnual;
+      const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.30, 3800 * uvt) : 0;
+      const salarioMensualProxy = salAnual > 0 ? salAnual / 12 : 0;
+      const cesantiasExentas = cesantiasExentasArt206_4(cesantiasAnual, salarioMensualProxy, uvt);
       // options.omitirExenta25: solo para tests de regresión (F3).
-      const baseExenta = Math.max(0, netoLaboral - totalDeducciones);
-      const exenta25Bruta = Math.min(baseExenta * 0.25, TOPE_EXENTA25_UVT * uvt);
-      const exenta25 = options.omitirExenta25 ? 0 : exenta25Bruta;
+      const exenta25De = (pvAfc) => options.omitirExenta25 ? 0 : Math.min(
+        Math.max(0, netoLaboral - totalDeducciones - pvAfc - cesantiasExentas) * 0.25,
+        TOPE_EXENTA25_UVT * uvt);
+      const exenta25 = exenta25De(pvManualAnual);
 
       // Art. 336 ET: rentas exentas + deducciones ≤ min(40% del neto de la cédula, 1340 UVT).
       const lim40Pct = netoLaboral * 0.40;
       const lim1340 = TOPE_ART336_UVT * uvt;
       const lim40 = Math.min(lim40Pct, lim1340);
-      // Pensión voluntaria + AFC (Art. 126-1 y 126-4 ET): renta exenta bajo el cap
-      // compartido de 2500 uvt / 25% neto laboral.
-      //
-      // Commit 1.7: después de la migración silenciosa, PV y AFC viven sólo en
-      // Egresos (fiscalCode AP_TRIB_PV y AP_TRIB_AFC). El lector viejo
-      // ow.aportes.pensionVoluntariaMensual ya no se usa acá.
-      const pvEgresoAnual  = oGas.filter(g => g.fiscalCode === AP_TRIB_PV).reduce((s, g) => s + totalAnualItem(g), 0);
-      const afcEgresoAnual = oGas.filter(g => g.fiscalCode === AP_TRIB_AFC).reduce((s, g) => s + totalAnualItem(g), 0);
-      const pvManualBruto  = pvEgresoAnual + afcEgresoAnual;
-      const pvManualAnual  = pvManualBruto > 0 ? Math.min(pvManualBruto, netoLaboral * 0.25, 2500 * uvt) : 0;
-      // Commit 3 Tarea 3: cesantías exentas Art. 206 #4. Calcular la porción exenta
-      // en función del salario mensual promedio (proxy: salAnual/12 si hay salario,
-      // si solo hay cesantías sueltas, asumir 100% exento como caso de liquidación).
-      const salarioMensualProxy = salAnual > 0 ? salAnual / 12 : 0;
-      const cesantiasExentas = cesantiasExentasArt206_4(cesantiasAnual, salarioMensualProxy, uvt);
       // Art. 336: el bag (exenta 25% + deducciones + PV/AFC + cesantías Art.206 #4)
       // no puede superar lim40 = min(40% neto, 1340 UVT). Nunca sumar sin tope.
       const benefLaboralSinTope = exenta25 + totalDeducciones + pvManualAnual + cesantiasExentas;
@@ -848,14 +844,17 @@ export const estimarImpuesto = (u, options = {}) => {
 
       // ── CON OPTIMIZACIÓN: PV + AFC llenan tope 40% ──
       // El espacio disponible se mide sin contar la PV manual (la sugerencia podría reemplazarla o subirla).
-      const baseBenefSinPV = Math.min(exenta25 + totalDeducciones, lim40);
+      // PV + AFC comparten el tope 30 % / 3.800 UVT y, como bajan la base del 25 %,
+      // el escenario optimizado recalcula la exenta con el aporte sugerido.
+      const topePvAfc = Math.min(netoLaboral * 0.30, 3800 * uvt);
+      const baseBenefSinPV = Math.min(exenta25De(0) + totalDeducciones + cesantiasExentas, lim40);
       const espacioPV = Math.max(0, lim40 - baseBenefSinPV);
-      const pensionVolSugerido = Math.min(espacioPV, netoLaboral * 0.25, 2500 * uvt);
+      const pensionVolSugerido = Math.min(espacioPV, topePvAfc);
       // Tomar el máximo entre lo que el usuario ya aporta y lo que sugiere la optimización (nunca bajar su aporte actual).
-      const pensionVol = Math.min(Math.max(pvManualAnual, pensionVolSugerido), netoLaboral * 0.25, 2500 * uvt);
-      const espacioAFC = Math.max(0, lim40 - baseBenefSinPV - pensionVol);
-      const afc = Math.min(espacioAFC, netoLaboral * 0.30, 3800 * uvt);
-      const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25 + totalDeducciones + pensionVol + afc, lim40));
+      const pensionVol = Math.min(Math.max(pvManualAnual, pensionVolSugerido), topePvAfc);
+      const afc = 0; // el tope 30 % / 3.800 UVT es compartido: la sugerencia va completa en pensionVol
+      const exenta25Opt = exenta25De(pensionVol + afc);
+      const rentaOptTrabajo = Math.max(0, netoLaboral - Math.min(exenta25Opt + totalDeducciones + pensionVol + afc + cesantiasExentas, lim40));
       const rentaOptGeneral = rentaOptTrabajo + rentaLiqCapital + rentaLiqNoLaboral;
       const impOpt = calcImpRentaAg(rentaOptGeneral / uvt) + impDiv + impPension;
 
@@ -1033,7 +1032,7 @@ export const estimarImpuesto = (u, options = {}) => {
         pensionVol, afc, totalDeducciones,
         // Topes legales y espacio disponible (Sprint 4B1 — para consumo por OwnerPlan):
         afcMax: Math.min(netoLaboral * 0.30, 3800 * uvt),
-        pvMax: Math.min(netoLaboral * 0.25, 2500 * uvt),
+        pvMax: Math.min(netoLaboral * 0.30, 3800 * uvt),
         pctUsado: lim40 > 0 ? (benefLaboral / lim40 * 100) : 0,
         rentaSin: rentaLiqGeneral, rentaCon: rentaOptGeneral,
         retefuenteNat: reteN,
@@ -1054,6 +1053,10 @@ export const estimarImpuesto = (u, options = {}) => {
         // impuesto/impOptimizado = SALDO a pagar (después de retenciones/anticipos).
         impuesto: impActualNat,
         saldoAPagar: impActualNat,
+        // Saldo a favor: retenciones/anticipos por encima del impuesto a cargo.
+        // saldoAPagar sigue en 0 en ese caso (no cambia la cuenta del a cargo).
+        saldoAFavor: regimenN === "simple" ? 0 : Math.max(0, pagosPrevios - imp - (impGO || 0)),
+        saldoAFavorOpt: regimenN === "simple" ? 0 : Math.max(0, pagosPrevios - impOpt - (impGO || 0)),
         saldoACargo: impActualNat, // alias legacy DeclaracionFlow (= post-rete)
         impSinOpt: impActualNat, impOptimizado: impOptNat,
         // impBruto = IMPUESTO A CARGO (tabla Art.241 / régimen) ANTES de retenciones.
