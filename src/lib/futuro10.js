@@ -1049,7 +1049,10 @@ const sinVigencia = (x) => {
   // repartirlo en 12 meses lo partía a la mitad).
   if (f === "variable" && Array.isArray(x.montosMensuales)) {
     const reales = x.montosMensuales.map((v) => Number(v) || 0).filter((v) => v > 0);
-    if (reales.length && reales.length < 12) { out._vigencia = { variable: true, meses: reales.length }; out.frecuencia = "mensual"; out.mensual = reales.reduce((s2, v) => s2 + v, 0) / reales.length; out.desdeMes = 1; out.hastaMes = 12; delete out.montosMensuales; }
+    // 26-oct-2026: la renta de una inversión que cambió de saldo durante el año (tramos en Patrimonio)
+    // se proyecta con lo que paga HOY (último mes con monto), no con el promedio del año.
+    if (reales.length && x.desdePatrimonio) { const ult = [...x.montosMensuales].reverse().map((v) => Number(v) || 0).find((v) => v > 0); out._vigencia = { variable: true, meses: reales.length, ultimo: true }; out.frecuencia = "mensual"; out.mensual = ult; out.desdeMes = 1; out.hastaMes = 12; delete out.montosMensuales; }
+    else if (reales.length && reales.length < 12) { out._vigencia = { variable: true, meses: reales.length }; out.frecuencia = "mensual"; out.mensual = reales.reduce((s2, v) => s2 + v, 0) / reales.length; out.desdeMes = 1; out.hastaMes = 12; delete out.montosMensuales; }
   }
   if (x.pagos) delete out.pagos;
   return out;
@@ -1069,7 +1072,7 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
   const trm = b.trm, fx = (x) => (String(x?.moneda || x?.currency || "").toUpperCase() === "USD" ? trm : 1);
   const MES = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  const nota = (x) => x._vigencia?.variable ? `variable: promedio de los ${x._vigencia.meses} meses cargados` : x._vigencia ? `en Ingresos/Egresos va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo` : (x.frecuencia && x.frecuencia !== "mensual" ? `pago ${x.frecuencia}, repartido por mes` : "");
+  const nota = (x) => x._vigencia?.ultimo ? "cambió en el año: se toma lo que paga hoy" : x._vigencia?.variable ? `variable: promedio de los ${x._vigencia.meses} meses cargados` : x._vigencia ? `en Ingresos/Egresos va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo` : (x.frecuencia && x.frecuencia !== "mensual" ? `pago ${x.frecuencia}, repartido por mes` : "");
   return (user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
     const ingresos = (user.ingresos || []).filter((i) => i && i.sim !== false && i.activoId === a.id).map((i) => ({ nombre: i.nombre || i.categoria || "Ingreso", mensual: montoPromedioMensual(i) * fx(i), nota: nota(i) }));
     const gastos = []; Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g) => { if (g && g.sim !== false && g.activoId === a.id) gastos.push({ nombre: g.c || g.n || g.nombre || cat, mensual: montoPromedioMensual(g) * fx(g), nota: nota(g) }); }));
@@ -1112,7 +1115,7 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
     if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
     const o = base.ingresos[k];
     const enIngresos = montoPromedioMensual(o) * fx(o);
-    const nota = o._vigencia?.variable ? `variable: promedio de los ${o._vigencia.meses} meses cargados` : o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
+    const nota = o._vigencia?.ultimo ? "cambió en el año: se toma lo que paga hoy" : o._vigencia?.variable ? `variable: promedio de los ${o._vigencia.meses} meses cargados` : o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
     const key = claveIngreso(user.ingresos, k);
     const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : term[key] ? "acaba" : null;
     return { key, seVa, acabaAnio: term[key] || null, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };

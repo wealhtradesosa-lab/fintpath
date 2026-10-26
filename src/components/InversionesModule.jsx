@@ -244,6 +244,30 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // desdePatrimonio, que este formulario crea y mantiene; otros ingresos
   // vinculados (p. ej. dos arriendos del mismo inmueble) siguen en Ingresos.
   const ingresoPrincipalDe = (id) => (user?.ingresos || []).find((x) => x && x.activoId === id && x.desdePatrimonio) || null;
+  // 26-oct-2026 (Santiago: "esta inversión no la tuve todo el año… arrancó en febrero y no con ese monto;
+  // ¿cómo le digo al sistema que de tal mes a tal mes fue tanto?"). Tramos → 12 montos (frecuencia variable).
+  const factorTasa = (f) => (parseFloat(f.tasa) || 0) / 100 / 12 * (Math.max(0, Math.min(100, parseFloat(f.recibePct) || 100)) / 100);
+  const montosDeTramos = (f) => {
+    const out = new Array(12).fill(0);
+    (f.tramos || []).forEach((t) => {
+      const d = Math.max(1, Math.min(12, parseInt(t.desde) || 1)), h = Math.max(d, Math.min(12, parseInt(t.hasta) || 12));
+      const v = parseFloat(t.valor) || 0;
+      const m = (f.modo || "fijo") === "tasa" ? Math.round(v * factorTasa(f)) : Math.round(v);
+      for (let i = d; i <= h; i++) out[i - 1] = m;
+    });
+    return out;
+  };
+  const tramosDeMontos = (montos, f) => {
+    const fac = (f.modo || "fijo") === "tasa" ? factorTasa(f) : 0;
+    const res = [];
+    (montos || []).forEach((m, i) => {
+      const v = Number(m) || 0; if (v <= 0) return;
+      const ult = res[res.length - 1];
+      if (ult && ult.m === v && ult.hasta === i) ult.hasta = i + 1;
+      else res.push({ desde: i + 1, hasta: i + 1, m: v });
+    });
+    return res.map((t) => ({ desde: String(t.desde), hasta: String(t.hasta), valor: String(fac > 0 ? Math.round(t.m / fac) : t.m) }));
+  };
   const openEdit = (inv) => {
     const ing = ingresoPrincipalDe(inv.id);
     const rentaLegacy = Number(inv.renta) || 0, tasaLegacy = Number(inv.tasa) || 0;
@@ -266,12 +290,13 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       modo: ing ? (Number(ing.capital) > 0 && Number(ing.tasa) > 0 ? "tasa" : "fijo") : (rentaLegacy > 0 ? "fijo" : "tasa"),
       renta: ing ? String(ing.mensual || "") : (rentaLegacy > 0 ? String(rentaLegacy) : ""),
       recibePct: ing && ing.recibePct != null ? String(ing.recibePct) : "100",
-      vigencia: ing ? (ing.frecuencia === "anual" ? "anual" : (ing.vigenciaModo === "limitada" || (ing.desdeMes && ing.hastaMes && !(Number(ing.desdeMes) === 1 && Number(ing.hastaMes) === 12)) ? "meses" : "todo")) : "todo",
+      vigencia: ing ? (ing.frecuencia === "variable" ? "tramos" : ing.frecuencia === "anual" ? "anual" : (ing.vigenciaModo === "limitada" || (ing.desdeMes && ing.hastaMes && !(Number(ing.desdeMes) === 1 && Number(ing.hastaMes) === 12)) ? "meses" : "todo")) : "todo",
       desdeMes: ing && ing.desdeMes ? String(ing.desdeMes) : "1",
       hastaMes: ing && ing.hastaMes ? String(ing.hastaMes) : "12",
       mesPago: ing && ing.mesPago ? String(ing.mesPago) : "12",
       ingresoNombre: ing ? (ing.nombre || "") : "",
     });
+    if (ing && ing.frecuencia === "variable") setForm((p) => ({ ...p, tramos: tramosDeMontos(ing.montosMensuales, p) }));
     setEditId(inv.id);
     setShowForm(true);
   };
@@ -340,8 +365,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         const esInmueble = ["Real Estate", "Local Comercial", "Bodega"].includes(form.tipo);
         const esParticipacion = form.tipo === "Acciones" || form.tipo === "Fondo de Inversión";
         const recibe = form.modo === "tasa" ? Math.max(0, Math.min(100, parseFloat(form.recibePct) || 100)) : 100;
-        const mensual = form.modo === "tasa" ? Math.round(va * tasa / 100 / 12 * recibe / 100) : Math.round(parseFloat(form.renta) || 0);
         const vigencia = form.vigencia || "todo";
+        const montosT = vigencia === "tramos" ? montosDeTramos(form) : null;
+        const ultimoMes = montosT ? [...montosT].reverse().find((x) => x > 0) || 0 : 0;
+        const mensual = montosT ? ultimoMes : form.modo === "tasa" ? Math.round(va * tasa / 100 / 12 * recibe / 100) : Math.round(parseFloat(form.renta) || 0);
         const desde = vigencia === "meses" ? Math.max(1, Math.min(12, parseInt(form.desdeMes) || 1)) : 1;
         const hasta = vigencia === "meses" ? Math.max(desde, Math.min(12, parseInt(form.hastaMes) || 12)) : 12;
         const nombre = form.ingresoNombre || `${esInmueble ? "Renta" : esParticipacion ? "Dividendos" : "Rendimiento"} — ${updated.n || "activo"}`;
@@ -350,8 +377,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           categoria: esInmueble ? "Arriendo" : esParticipacion ? "Dividendos" : "Rentas de capital",
           fiscalCode: esInmueble ? "NOL_ARRIENDO_INMUEBLE" : esParticipacion ? "DIV_ART49_GRAVADOS" : "CAP_RENDIMIENTO_GENERICO",
           mensual, capital: form.modo === "tasa" ? va : undefined, tasa: form.modo === "tasa" ? tasa : undefined, tasaModo: form.modo === "tasa" ? "anual" : undefined, recibePct: form.modo === "tasa" ? recibe : undefined,
-          frecuencia: vigencia === "anual" ? "anual" : "mensual", mesPago: vigencia === "anual" ? Math.max(1, Math.min(12, parseInt(form.mesPago) || 12)) : 1,
-          desdeMes: desde, hastaMes: hasta, vigenciaModo: vigencia === "meses" ? "limitada" : undefined, montosMensuales: undefined,
+          frecuencia: montosT ? "variable" : vigencia === "anual" ? "anual" : "mensual", mesPago: vigencia === "anual" ? Math.max(1, Math.min(12, parseInt(form.mesPago) || 12)) : 1,
+          desdeMes: montosT ? (montosT.findIndex((x) => x > 0) + 1 || 1) : desde, hastaMes: montosT ? (montosT.some((x) => x > 0) ? 12 - [...montosT].reverse().findIndex((x) => x > 0) : 12) : hasta,
+          vigenciaModo: vigencia === "meses" ? "limitada" : undefined, montosMensuales: montosT || undefined,
         });
         else onSyncIngreso(idActivo, null);
       } else {
@@ -693,9 +721,31 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   )}
                   <div style={{fontSize:11,fontWeight:600,color:T.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>¿Cuándo?</div>
                   <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
-                    {[["todo","Todo el año"],["meses","Solo unos meses"],["anual","Un pago al año"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, vigencia: v }))} style={{flex:1,minWidth:120,padding:"8px 10px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,border:`1px solid ${(form.vigencia||"todo")===v?T.blue:T.border}`,background:(form.vigencia||"todo")===v?"rgba(59,130,246,0.12)":"transparent",color:(form.vigencia||"todo")===v?T.blue:T.txt2}}>{l}</button>)}
+                    {[["todo","Todo el año"],["meses","Solo unos meses"],["tramos","Cambió durante el año"],["anual","Un pago al año"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, vigencia: v, tramos: v === "tramos" && !(p.tramos && p.tramos.length) ? [{ desde: "1", hasta: "12", valor: (p.modo || "fijo") === "tasa" ? (p.va || "") : (p.renta || "") }] : p.tramos }))} style={{flex:1,minWidth:120,padding:"8px 10px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,border:`1px solid ${(form.vigencia||"todo")===v?T.blue:T.border}`,background:(form.vigencia||"todo")===v?"rgba(59,130,246,0.12)":"transparent",color:(form.vigencia||"todo")===v?T.blue:T.txt2}}>{l}</button>)}
                   </div>
                   {(form.vigencia||"todo") === "meses" && <div style={{display:"flex",gap:8}}><div style={{flex:1}}><In l="Desde" value={form.desdeMes||"1"} onChange={(v) => setForm((p) => ({ ...p, desdeMes: v }))} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} /></div><div style={{flex:1}}><In l="Hasta" value={form.hastaMes||"12"} onChange={(v) => setForm((p) => ({ ...p, hastaMes: v }))} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} /></div></div>}
+                  {(form.vigencia||"todo") === "tramos" && (() => {
+                    const esTasa = (form.modo || "fijo") === "tasa";
+                    const tr = form.tramos || [];
+                    const setT = (i, k, v) => setForm((p) => ({ ...p, tramos: (p.tramos || []).map((t, j) => j === i ? { ...t, [k]: v } : t) }));
+                    const montos = montosDeTramos(form);
+                    const total = montos.reduce((a, b) => a + b, 0);
+                    return <div style={{marginBottom:10}}>
+                      <div style={{fontSize:12,color:T.txt2,lineHeight:1.5,marginBottom:8}}>Escribe cada periodo: de qué mes a qué mes y {esTasa ? "cuánto tenías invertido" : "cuánto te pagó al mes"}. Los meses que no pongas cuentan en cero.</div>
+                      {tr.map((t, i) => <div key={i} style={{display:"flex",gap:6,alignItems:"flex-end",marginBottom:6,flexWrap:"wrap"}}>
+                        <div style={{flex:"1 1 100px"}}><In l="Desde" value={t.desde} onChange={(v) => setT(i, "desde", v)} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} /></div>
+                        <div style={{flex:"1 1 100px"}}><In l="Hasta" value={t.hasta} onChange={(v) => setT(i, "hasta", v)} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} /></div>
+                        <div style={{flex:"2 1 150px"}}><In l={esTasa ? "Invertido ($)" : "Pago al mes ($)"} value={t.valor} onChange={(v) => setT(i, "valor", v)} type="number" placeholder={esTasa ? "Ej: 1.500.000.000" : "Ej: 20.000.000"} /></div>
+                        {tr.length > 1 && <button type="button" onClick={() => setForm((p) => ({ ...p, tramos: (p.tramos || []).filter((_, j) => j !== i) }))} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.txt3,borderRadius:8,padding:"8px 10px",cursor:"pointer",marginBottom:12}}>✕</button>}
+                      </div>)}
+                      <button type="button" onClick={() => setForm((p) => { const ult = (p.tramos || [])[(p.tramos || []).length - 1]; const d = ult ? Math.min(12, (parseInt(ult.hasta) || 12) + 1) : 1; return { ...p, tramos: [...(p.tramos || []), { desde: String(d), hasta: "12", valor: "" }] }; })} style={{background:"transparent",border:`1px dashed ${T.blue}`,color:T.blue,borderRadius:10,padding:"8px 12px",cursor:"pointer",fontSize:12,fontWeight:600,marginBottom:8}}>+ Agregar otro periodo</button>
+                      {esTasa && !(parseFloat(form.tasa) > 0) && <div style={{fontSize:11,color:T.txt2}}>Escribe arriba la tasa anual para calcular la renta de cada periodo.</div>}
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:4,fontSize:10,color:T.txt3,marginTop:4}}>
+                        {["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"].map((m, i) => <div key={m} style={{background:T.bg2,borderRadius:6,padding:"4px 6px",textAlign:"center"}}>{m}<br/><span style={{color:montos[i]>0?T.green:T.txt3,fontWeight:700}}>{montos[i] > 0 ? "$" + (montos[i] >= 1e6 ? (montos[i] / 1e6).toLocaleString("es-CO", { maximumFractionDigits: 1 }) + " M" : montos[i].toLocaleString("es-CO")) : "—"}</span></div>)}
+                      </div>
+                      <div style={{fontSize:12,color:T.green,marginTop:6,fontWeight:600}}>Total del año: ${total.toLocaleString("es-CO")}</div>
+                    </div>;
+                  })()}
                   {(form.vigencia||"todo") === "anual" && <In l="En qué mes" value={form.mesPago||"12"} onChange={(v) => setForm((p) => ({ ...p, mesPago: v }))} options={[{v:1,l:"Enero"},{v:2,l:"Febrero"},{v:3,l:"Marzo"},{v:4,l:"Abril"},{v:5,l:"Mayo"},{v:6,l:"Junio"},{v:7,l:"Julio"},{v:8,l:"Agosto"},{v:9,l:"Septiembre"},{v:10,l:"Octubre"},{v:11,l:"Noviembre"},{v:12,l:"Diciembre"}].map((m) => ({ v: String(m.v), l: m.l }))} />}
                   <In l="Nombre del ingreso (opcional)" value={form.ingresoNombre||""} onChange={(v) => setForm((p) => ({ ...p, ingresoNombre: v }))} placeholder={`Renta — ${form.nombre || "activo"}`} />
                   <div style={{fontSize:10,color:T.txt3,marginTop:-6,marginBottom:8,lineHeight:1.5}}>Al guardar, este ingreso queda creado y vinculado al activo; en Ingresos aparece como "viene de Patrimonio" y se edita aquí.</div>
