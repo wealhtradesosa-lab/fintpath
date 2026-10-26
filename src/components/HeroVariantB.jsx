@@ -158,7 +158,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
             fontWeight: 700,
             letterSpacing: 0.3,
           }}>NUEVO</span>
-          Estrategias del contador con IA · ahorra hasta $113M/año
+          Ordena tu patrimonio, pensión, inversiones e impuestos en un solo lugar
         </div>
 
         {/* H1 con tamaño masivo y gradient */}
