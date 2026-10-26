@@ -22,10 +22,14 @@ describe("smoke 2026-10-19: decimales es-CO", () => {
   });
   it("send-email no loguea el objeto de Resend completo", () => {
     const src = readFileSync("netlify/functions/send-email.cjs", "utf8");
+    // Lo que importa es que no se loguee el objeto crudo:
     expect(src).not.toMatch(/console\.(log|error)\([^\n]*,\s*data\);/);
-    expect(src).toContain("message: data && enmascararTexto(data.message)");
     expect(src).not.toMatch(/console\.error\([^\n]*,\s*e\);/);
-    expect(src).toContain("message: e && enmascararTexto(e.message)");
+    // 26-oct-2026 (#37): el enmascarado pasó del `enmascararTexto` local al
+    // helper compartido errorParaLog de netlify/lib/logSeguro.cjs, que además
+    // corta el mensaje y extrae el code. Antes esto fijaba el nombre viejo.
+    expect(src).toContain("errorParaLog(data)");
+    expect(src).toContain("errorParaLog(e)");
   });
   it("volatilidad: texto de la card", () => {
     expect(fmtVolatilidadTextoEs(12.47)).toBe("más de ±100 % del promedio");

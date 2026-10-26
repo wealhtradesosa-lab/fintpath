@@ -18,6 +18,7 @@
 //   STRIPE_SECRET_KEY              (requerida — sin ella nada funciona)
 // ═══════════════════════════════════════════════════════════════════════════
 
+const { uidCorto } = require("../lib/logSeguro.cjs");
 const Stripe = require("stripe");
 
 // 11-oct-2026 — Sin segunda prueba en Checkout.
@@ -156,7 +157,7 @@ exports.handler = async (event) => {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    console.log(`[stripe-checkout] session creada · priceId=${priceId} userId=${userId} session=${session.id}`);
+    console.log(`[stripe-checkout] session creada · priceId=${priceId} userId=${uidCorto(userId)} session=${session.id}`);
 
     return { statusCode: 200, headers, body: JSON.stringify({ url: session.url }) };
 

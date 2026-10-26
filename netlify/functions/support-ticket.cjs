@@ -23,7 +23,8 @@ exports.handler = async (event) => {
       page: page || "N/A",
     };
 
-    console.log("🎫 TICKET:", JSON.stringify(ticket));
+    // Sin nombre, email ni mensaje: solo lo que no identifica.
+    console.log("🎫 TICKET:", JSON.stringify({ id: ticket.id, category: ticket.category, plan: ticket.plan, page: ticket.page }));
 
     // Try to save to Supabase if configured
     const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
