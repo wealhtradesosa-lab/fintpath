@@ -12,6 +12,7 @@
  * vencido devuelve null. Lo que viene en el cuerpo (userId, email) ya no
  * decide nada.
  */
+const { errorParaLog } = require("../lib/logSeguro.cjs");
 async function usuarioDesdeToken(event) {
   const raw = event.headers?.authorization || event.headers?.Authorization || "";
   const token = raw.startsWith("Bearer ") ? raw.slice(7).trim() : "";
@@ -32,7 +33,7 @@ async function usuarioDesdeToken(event) {
     if (!u?.id) return null;
     return { id: u.id, email: String(u.email || "").toLowerCase() };
   } catch (e) {
-    console.error("[_auth] error verificando token:", e?.message || e);
+    console.error("[_auth] error verificando token:", errorParaLog(e));
     return null;
   }
 }

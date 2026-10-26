@@ -168,7 +168,7 @@ exports.handler = async (event) => {
       process.env.STRIPE_WEBHOOK_SECRET
     );
   } catch (err) {
-    console.error("[stripe-webhook] signature inválida:", err.message);
+    console.error("[stripe-webhook] signature inválida:", errorParaLog(err));
     return { statusCode: 400, headers: cors, body: JSON.stringify({ error: `Webhook signature: ${err.message}` }) };
   }
 

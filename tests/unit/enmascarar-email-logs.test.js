@@ -1,7 +1,8 @@
 // Los logs de Netlify no deben llevar correos completos, uids completos,
 // datos de contacto ni objetos de error enteros.
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const { enmascararEmail, uidCorto, errorParaLog } = require("../../netlify/lib/logSeguro.cjs");
@@ -52,6 +53,15 @@ describe("errorParaLog", () => {
 
 // Chequeo estático de los console.* de las funciones tocadas.
 const leer = (f) => readFileSync(new URL(`../../netlify/functions/${f}`, import.meta.url), "utf8");
+// Todos los .cjs/.mjs/.js bajo netlify/, para el barrido general de abajo.
+function fuentesNetlify(dir = "netlify", out = []) {
+  for (const n of readdirSync(dir)) {
+    const p = join(dir, n);
+    if (statSync(p).isDirectory()) fuentesNetlify(p, out);
+    else if (/\.(cjs|mjs|jsx?)$/.test(n)) out.push(p);
+  }
+  return out;
+}
 const logs = (src) => src.split("\n").filter((l) => /console\.(log|info|warn|error)\(/.test(l));
 
 describe("logs de las funciones", () => {
@@ -92,6 +102,27 @@ describe("logs de las funciones", () => {
         expect(l, `${f} ${m}`).toContain("errorParaLog(");
       }
     }
+  });
+
+  // 26-oct-2026 — Barrido general. Reemplaza al mapa enumerado de arriba como
+  // garantía de fondo: un archivo nuevo en netlify/ también queda cubierto, sin
+  // que nadie tenga que acordarse de agregarlo a una lista.
+  it("ningún console.* de netlify/ loguea un .message crudo", () => {
+    const RAW = /console\.(log|info|warn|error)\([^)]*\b[A-Za-z_$][\w$]*\??\.message/;
+    const malos = [];
+    for (const f of fuentesNetlify()) {
+      readFileSync(f, "utf8").split("\n").forEach((l, i) => {
+        if (RAW.test(l) && !l.includes("errorParaLog")) malos.push(`${f}:${i + 1}: ${l.trim()}`);
+      });
+    }
+    expect(malos).toEqual([]);
+  });
+
+  it("el barrido sí atrapa el patrón crudo", () => {
+    const RAW = /console\.(log|info|warn|error)\([^)]*\b[A-Za-z_$][\w$]*\??\.message/;
+    expect(RAW.test('console.error("x:", e.message);')).toBe(true);
+    expect(RAW.test('console.error("x:", e?.message || e);')).toBe(true);
+    expect(RAW.test('console.error("x:", errorParaLog(e));')).toBe(false);
   });
 
   it("los uids se recortan a 8 caracteres en los sitios señalados", () => {

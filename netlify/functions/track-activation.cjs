@@ -33,6 +33,7 @@
 // ENV: SUPABASE_URL / VITE_SUPABASE_URL · SUPABASE_SERVICE_KEY · GA4_API_SECRET (opcional)
 // ═══════════════════════════════════════════════════════════════════════════
 const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+const { errorParaLog } = require("../lib/logSeguro.cjs");
 const { emitirEvento, clientIdDesdeCookie, limpiarUtm, limpiarAngulo } = require("../lib/ga4.cjs");
 const { resolverEvento } = require("../lib/eventosEmbudo.cjs");
 const { activoCargado } = require("../lib/activoCargado.cjs");
@@ -93,7 +94,7 @@ exports.handler = async (event) => {
     }
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true, evento: ev.evento, primera }) };
   } catch (e) {
-    console.error("[track-activation] error:", e?.message || e);
+    console.error("[track-activation] error:", errorParaLog(e));
     return { statusCode: 200, headers, body: JSON.stringify({ ok: false }) };
   }
 };

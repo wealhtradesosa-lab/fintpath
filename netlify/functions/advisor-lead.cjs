@@ -86,7 +86,7 @@ exports.handler = async (event) => {
           console.error("Supabase insert failed:", res.status, txt);
         }
       } catch (e) {
-        console.error("Supabase error:", e.message);
+        console.error("Supabase error:", errorParaLog(e));
       }
     }
 

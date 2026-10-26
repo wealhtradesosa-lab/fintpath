@@ -18,7 +18,7 @@
 //   STRIPE_SECRET_KEY              (requerida — sin ella nada funciona)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const { uidCorto } = require("../lib/logSeguro.cjs");
+const { uidCorto, errorParaLog } = require("../lib/logSeguro.cjs");
 const Stripe = require("stripe");
 
 // 11-oct-2026 — Sin segunda prueba en Checkout.
@@ -151,7 +151,7 @@ exports.handler = async (event) => {
         }
       } catch (promoErr) {
         // Si falla la búsqueda, no bloqueamos el checkout
-        console.error(`[stripe-checkout] error buscando promo ${promotionCode}:`, promoErr.message);
+        console.error(`[stripe-checkout] error buscando promo ${promotionCode}:`, errorParaLog(promoErr));
       }
     }
 
