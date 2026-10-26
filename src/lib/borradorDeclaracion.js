@@ -42,6 +42,7 @@
 // pero este borrador lo multiplicaba por 12. Un gasto variable de $35M al año
 // entraba al F-110 como $589M. `totalAnualItem` respeta frecuencia y vigencia.
 import { totalAnualItem } from "./flowHelpers.js";
+import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
 
 export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   if (!owner || owner.type !== "juridica") return null;
@@ -49,7 +50,7 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   const det = estimacion?.detalle?.find(d => d.name === owner.name);
   if (!det) return null;
 
-  const trm = user.trm || 4200;
+  const trm = trmUsable(user.trm) ?? TRM_PROVISIONAL;
 
   // ── Lectura de overrides persistidos ─────────────────────────────────────
   const overrides = user?.borradorDeclaracion?.[owner.id]?.[ano] || {};

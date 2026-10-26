@@ -22,6 +22,7 @@ import { totalAnualItem } from "./flowHelpers.js";
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { uvtForYear } from "./taxCO.js";
+import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
 
 /**
  * Genera el borrador F-210 para un owner persona natural.
@@ -38,7 +39,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const det = estimacion?.detalle?.find(d => d.name === owner.name);
   if (!det) return null;
 
-  const trm = user.trm || 4200;
+  const trm = trmUsable(user.trm) ?? TRM_PROVISIONAL;
   const uvt = uvtForYear(ano);
 
   // Lectura de overrides persistidos

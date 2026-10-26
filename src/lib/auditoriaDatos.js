@@ -1,3 +1,4 @@
+import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · auditoriaDatos.js
 //
@@ -47,7 +48,7 @@ export function auditarDatos(user, options = {}) {
   // de retención. Un falso negativo silencioso en la parte fiscal, que es
   // justo donde menos se puede fallar.
   const aCOP = (item) =>
-    (Number(item?.mensual) || 0) * (item?.moneda === "USD" ? (Number(user?.trm) || 4200) : 1);
+    (Number(item?.mensual) || 0) * (item?.moneda === "USD" ? (trmUsable(user?.trm) ?? TRM_PROVISIONAL) : 1);
   if (!user) return vacio();
 
   const dismissed = new Set(options.dismissed || user.auditDismissed || []);
