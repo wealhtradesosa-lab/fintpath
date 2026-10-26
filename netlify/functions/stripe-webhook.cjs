@@ -36,7 +36,7 @@
 // evento, el resultado es el mismo (no duplica accounts ni members).
 // ═══════════════════════════════════════════════════════════════════════════
 
-const { enmascararEmail, uidCorto } = require("../lib/logSeguro.cjs");
+const { enmascararEmail, uidCorto, errorParaLog } = require("../lib/logSeguro.cjs");
 const Stripe = require("stripe");
 const { sendTemplate } = require("./send-email.cjs");
 
@@ -299,7 +299,7 @@ exports.handler = async (event) => {
           }
         } catch (mailErr) {
           // Email no es crítico — loggeamos y seguimos
-          console.warn(`[stripe-webhook] cancellation email failed:`, mailErr.message);
+          console.warn(`[stripe-webhook] cancellation email failed:`, errorParaLog(mailErr));
         }
         break;
       }
