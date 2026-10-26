@@ -26,6 +26,7 @@
 //   etc.). Si NO está configurado, Stripe retorna error 500 con mensaje claro.
 // ═══════════════════════════════════════════════════════════════════════════
 
+const { uidCorto, errorParaLog } = require("../lib/logSeguro.cjs");
 const Stripe = require("stripe");
 
 exports.handler = async (event) => {
@@ -99,14 +100,14 @@ exports.handler = async (event) => {
       return_url: returnUrl || "https://finpathia.com/?portal_return=1",
     });
 
-    console.log(`[stripe-customer-portal] ✅ portal session creada para user=${userId} customer=${stripeCustomerId}`);
+    console.log(`[stripe-customer-portal] ✅ portal session creada para user=${uidCorto(userId)} customer=${stripeCustomerId}`);
 
     return {
       statusCode: 200,
       body: JSON.stringify({ url: session.url }),
     };
   } catch (err) {
-    console.error("[stripe-customer-portal] error:", err);
+    console.error("[stripe-customer-portal] error:", errorParaLog(err));
 
     // Mensaje específico si el portal no está configurado en Stripe
     const isConfigError = err.message && err.message.toLowerCase().includes("configuration");

@@ -34,6 +34,9 @@
 //   (no corre en deploy previews ni branch deploys, solo en producción)
 // ═══════════════════════════════════════════════════════════════════════════
 
+import logSeguro from "../lib/logSeguro.cjs";
+const { uidCorto } = logSeguro;
+
 export default async (req) => {
   const startedAt = new Date();
   let nextRun = "unknown";
@@ -82,7 +85,7 @@ export default async (req) => {
     } else {
       console.log(`[expire-canceled-cron] ✓ ${expired.length} cuenta(s) downgradeadas a free:`);
       for (const row of expired) {
-        console.log(`  · account_id=${row.account_id} owner=${row.owner_user_id} action=${row.action}`);
+        console.log(`  · account_id=${uidCorto(row.account_id)} owner=${uidCorto(row.owner_user_id)} action=${row.action}`);
       }
     }
 
