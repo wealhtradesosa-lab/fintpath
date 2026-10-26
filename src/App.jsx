@@ -584,7 +584,36 @@ export default function FinPath(){
     try{localStorage.setItem("fp3_hallazgos_descartados",JSON.stringify(n))}catch{}
     return n;
   });
-  const[u,_setU]=useState(null);const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};const[ld,setLd]=useState(true);const[pg,setPg]=useState("dash");const[md,setMd]=useState(null);const[f,sF]=useState({});const[aM,sAM]=useState("login");const[aF,sAF]=useState({n:"",e:"",p:""});const[adv,sAdv]=useState(null);const[sb,sSb]=useState(true);const[mb,sMb]=useState(false);const[simS,sSimS]=useState("actual");const[showImport,setShowImport]=useState(false);const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");const[showAuth,setShowAuth]=useState(false);const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});const[billingCycle,setBillingCycle]=useState("mensual");const[monedaPago,setMonedaPago]=useState(null);const[toast,setToast]=useState("");const[authUser,setAuthUser]=useState(null);const[authLoading,setAuthLoading]=useState(false);const[authError,setAuthError]=useState("");const[locked,setLocked]=useState(false);const[pinInput,setPinInput]=useState("");const[masked,setMasked]=useState(false);const[taxTab,setTaxTab]=useState("estrategia");const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);const[aportesOwnerId,setAportesOwnerId]=useState(null);const[showAyuda,setShowAyuda]=useState(false);const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
+  const[u,_setU]=useState(null);
+  const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};
+  const[ld,setLd]=useState(true);
+  const[pg,setPg]=useState("dash");
+  const[md,setMd]=useState(null);
+  const[f,sF]=useState({});
+  const[aM,sAM]=useState("login");
+  const[aF,sAF]=useState({n:"",e:"",p:""});
+  const[adv,sAdv]=useState(null);
+  const[sb,sSb]=useState(true);
+  const[mb,sMb]=useState(false);
+  const[simS,sSimS]=useState("actual");
+  const[showImport,setShowImport]=useState(false);
+  const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");
+  const[showAuth,setShowAuth]=useState(false);
+  const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});
+  const[billingCycle,setBillingCycle]=useState("mensual");
+  const[monedaPago,setMonedaPago]=useState(null);
+  const[toast,setToast]=useState("");
+  const[authUser,setAuthUser]=useState(null);
+  const[authLoading,setAuthLoading]=useState(false);
+  const[authError,setAuthError]=useState("");
+  const[locked,setLocked]=useState(false);
+  const[pinInput,setPinInput]=useState("");
+  const[masked,setMasked]=useState(false);
+  const[taxTab,setTaxTab]=useState("estrategia");
+  const[descuentosOwnerId,setDescuentosOwnerId]=useState(null);
+  const[aportesOwnerId,setAportesOwnerId]=useState(null);
+  const[showAyuda,setShowAyuda]=useState(false);
+  const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   const trmPendiente = useRef(null);
   const[trmViva,setTrmViva]=useState(false);
   // Aplica la TRM que llegó antes de que existiera `u`. Sin esto, en la carga
