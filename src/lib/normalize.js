@@ -33,6 +33,7 @@ import {
   INV_INMUEBLE_HABITACIONAL, INV_INMUEBLE_ARRENDADO, INV_INMUEBLE_COMERCIAL_PROPIO,
   INV_CDT, INV_FIC, INV_ACCIONES, INV_BONOS, INV_CRYPTO,
   INV_VEHICULO_PRODUCTIVO, INV_VEHICULO_PERSONAL, INV_EQUIPO_PRODUCTIVO,
+  INV_EFECTIVO, INV_OTROS_ACTIVOS,
   // Owners
   OWN_NAT_RESIDENTE_ORDINARIO, OWN_NAT_RESIDENTE_SIMPLE,
   OWN_JUR_ORDINARIO, OWN_JUR_SIMPLE, OWN_JUR_ZONA_FRANCA, OWN_JUR_CHC, OWN_JUR_EXENTA,
@@ -151,7 +152,10 @@ export function inferInversionFiscalCode(inv, owner, allIngresos) {
     return isJ ? INV_VEHICULO_PRODUCTIVO : INV_VEHICULO_PERSONAL;
   }
   if (/equipo|maquinaria/i.test(tp)) return INV_EQUIPO_PRODUCTIVO;
-  return INV_INMUEBLE_HABITACIONAL; // fallback más conservador (no deprecia)
+  if (/^(cash|efectivo)$/i.test(tp.trim())) return INV_EFECTIVO;
+  // Sin código o tipo desconocido: nunca habitacional (daría beneficios como
+  // la exención del art. 311-1 sin que el usuario lo marque). Neutro.
+  return INV_OTROS_ACTIVOS;
 }
 
 export function inferOwnerFiscalCode(ow) {
