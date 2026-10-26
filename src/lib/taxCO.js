@@ -775,7 +775,12 @@ export const estimarImpuesto = (u, options = {}) => {
       const pctInflacBase336 = ((u.componenteInflacionarioPct != null ? u.componenteInflacionarioPct : 50.88) / 100);
       const rendBase336 = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual;
       const incrngoCapital336 = ow.fiscalProfile?.obligadoContabilidad ? 0 : rendBase336 * pctInflacBase336;
-      const baseCapital336 = Math.max(0, rendBase336 - incrngoCapital336 + inversionAnual + arrendamientoAnual);
+      // 26-oct-2026 — El original sumaba aquí `arrendamientoAnual`, que venía del
+      // #44 (arriendo como renta de capital). Ese PR se cerró: el arriendo de
+      // inmueble sigue siendo NOL_ARRIENDO_INMUEBLE, así que ya entra por
+      // `ingNoLaboral` (= rentasAnual + otrosAnual) vía baseNoLaboral336.
+      // Sumarlo también acá lo contaría dos veces e inflaría el tope del 336.
+      const baseCapital336 = Math.max(0, rendBase336 - incrngoCapital336 + inversionAnual);
       const baseNoLaboral336 = Math.max(0, ingNoLaboral);
       const baseArt336 = Math.max(0, netoLaboral) + baseCapital336 + baseNoLaboral336;
       const lim40Pct = baseArt336 * 0.40;
