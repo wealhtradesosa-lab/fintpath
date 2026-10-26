@@ -37,9 +37,19 @@ const fm = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-$" :
 // (cuotaDeudaEnMes, abajo) solo miraba el rango de meses, así que una deuda con
 // frecuencia no mensual se cobraba los 12. El override del slider entra como
 // monto base, así que se conserva.
-export const cuotaDeudaDelMes = (d, cuotaBase, año, mes, trm) =>
-  montoDelMes({ ...d, mensual: cuotaBase, m: undefined }, año, mes)
-  * (d?.moneda === "USD" ? (trm || 4200) : 1);
+// 26-oct-2026 (Santiago: "si bajo el crédito de Sufi a cero no se mueve el cash flow; la otra sí").
+// Una deuda con cuotas distintas por mes (frecuencia variable / montosMensuales) ignoraba el `mensual`
+// que trae el slider: montoDelMes lee el mes cargado. Ahora el slider escala la cuota del mes en la
+// misma proporción (0 % → 0, 50 % → la mitad), para cualquier frecuencia.
+export const cuotaDeudaDelMes = (d, cuotaBase, año, mes, trm) => {
+  const original = Number(d?.pago || d?.pg || 0) || 0;
+  const fx = d?.moneda === "USD" ? (trm || 4200) : 1;
+  if (original > 0 && Number(cuotaBase) !== original) {
+    const delMes = montoDelMes({ ...d, mensual: original, m: undefined }, año, mes);
+    return delMes * ((Number(cuotaBase) || 0) / original) * fx;
+  }
+  return montoDelMes({ ...d, mensual: cuotaBase, m: undefined }, año, mes) * fx;
+};
 
 // RETENCIÓN — sigue al ingreso del mes: si un mes entra menos, retienen menos.
 // Aplicarla plana en los 12 meses desplaza el cash flow mes a mes aunque el
