@@ -72,12 +72,14 @@ async function consumirCuota({ url, serviceKey, userId }) {
   }
 }
 
-/** Mensaje para el usuario cuando se agotó la cuota. */
-function mensajeCuota({ usos, tope, plan }) {
+/** Mensaje para el usuario cuando se agotó la cuota.
+ *  `concepto` nombra lo que se consumió: por defecto "lecturas con IA" (lectura
+ *  de documentos e imágenes), y el chat del asesor pasa el suyo. 26-oct-2026. */
+function mensajeCuota({ usos, tope, plan }, concepto = "lecturas con IA") {
   const enPago = plan !== "free";
   return {
     error: "cuota_ia_agotada",
-    mensaje: `Llegaste al tope de ${tope} lecturas con IA de este mes (llevas ${usos}).` +
+    mensaje: `Llegaste al tope de ${tope} ${concepto} de este mes (llevas ${usos}).` +
       (enPago
         ? " Se renueva el primer día del mes. Si necesitas más, escríbenos a soporte@finpathia.com."
         : " Se renueva el primer día del mes, o puedes mejorar tu plan para tener más."),

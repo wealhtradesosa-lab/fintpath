@@ -387,21 +387,43 @@ exports.handler = async (event) => {
       return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada. Contacta al administrador." }) };
     }
 
-    // Rate limit
-    const key = userId;
-    const now = Date.now();
-    if (!rateLimits[key] || now - rateLimits[key].start > WINDOW) {
-      rateLimits[key] = { start: now, count: 0 };
-    }
-    rateLimits[key].count++;
-    const remaining = LIMIT - rateLimits[key].count;
+    // ── 26-oct-2026 — EL TOPE NO SE APLICABA ───────────────────────────────
+    // `rateLimits` es un objeto en memoria del módulo: en funciones serverless
+    // se reinicia en cada arranque en frío y cada instancia concurrente lleva su
+    // propio contador. O sea que el "límite de 15 diarias" no limitaba nada, y
+    // el chat es la función de IA más cara. Las otras tres (analyze-image,
+    // parse-declaration, analyze-excel) ya descontaban de la cuota real del plan
+    // contra la base; el chat era la única que no.
+    // Ahora usa la misma cuota: free 10, básico 30, pro 150, pro familiar 400.
+    // El contador en memoria queda SOLO como respaldo para cuando Supabase no
+    // está configurado, para no quedarse sin ningún tope.
+    const { consumirCuota, mensajeCuota } = require("./_cuotaIA.cjs");
+    const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+    let remaining;
 
-    if (remaining < 0) {
-      const isUS = jurisdiction === "US";
-      const errMsg = isUS
-        ? "Daily limit of 15 messages reached. Resets in " + Math.round((rateLimits[key].start + WINDOW - now) / 3600000) + " hours."
-        : "Límite de 15 consultas diarias alcanzado. Se renueva en " + Math.round((rateLimits[key].start + WINDOW - now) / 3600000) + " horas.";
-      return { statusCode: 429, headers, body: JSON.stringify({ error: errMsg, remaining: 0 }) };
+    if (SUPA_URL && SERVICE_KEY) {
+      const cuota = await consumirCuota({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+      if (!cuota.permitido) {
+        return { statusCode: 429, headers, body: JSON.stringify({ ...mensajeCuota(cuota, "consultas al asesor"), remaining: 0 }) };
+      }
+      remaining = Math.max(0, cuota.tope - cuota.usos);
+    } else {
+      const key = userId;
+      const now = Date.now();
+      if (!rateLimits[key] || now - rateLimits[key].start > WINDOW) {
+        rateLimits[key] = { start: now, count: 0 };
+      }
+      rateLimits[key].count++;
+      remaining = LIMIT - rateLimits[key].count;
+      if (remaining < 0) {
+        const isUS = jurisdiction === "US";
+        const horas = Math.round((rateLimits[key].start + WINDOW - now) / 3600000);
+        const errMsg = isUS
+          ? `Daily limit of ${LIMIT} messages reached. Resets in ${horas} hours.`
+          : `Límite de ${LIMIT} consultas diarias alcanzado. Se renueva en ${horas} horas.`;
+        return { statusCode: 429, headers, body: JSON.stringify({ error: errMsg, remaining: 0 }) };
+      }
     }
 
     // advisor_used: arranca en paralelo, sin await (ver marcarAsesorUsado).
