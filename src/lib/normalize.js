@@ -56,6 +56,7 @@ export function inferIngresoFiscalCode(ing, owner) {
   const isJ = owner && owner.type === "juridica";
 
   if (cat === "Salario") return LAB_SALARIO;
+  if (/^(Prima|Bono)/i.test(cat)) return LAB_PRESTACIONES_PRIMA;
   if (/Honorarios|Freelance/i.test(cat)) {
     // Conservador: sin data del régimen del honorario, NO asumimos exenta 25%.
     // El usuario puede configurar regimenHonorarios en el owner (Sprint 2).

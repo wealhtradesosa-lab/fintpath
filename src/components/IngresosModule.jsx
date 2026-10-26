@@ -14,6 +14,7 @@ import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
+import { textoRevisarPrima, MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { getFiscalWarnings } from "../lib/normalize.js";
@@ -66,7 +67,7 @@ const T = {
   ch: [C.ok, C.accent, C.warn, C.purple, "#ec4899", "#22d3ee", "#eab308"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
-const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
+export const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Prima/Bono",l:"🎁 Prima o bonificación laboral"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
 
 // Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
 // aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
@@ -192,9 +193,11 @@ const aplicarTasaSiVariable = (nf, form, cap, tas, tasaModo) => {
   return nf;
 };
 
-const DEFAULT_FISCAL_CODE = {
+export const DEFAULT_FISCAL_CODE = {
   "Salario": "LAB_SALARIO",
   "Cesantías": "LAB_PRESTACIONES_CESANTIAS",
+  // Laboral siempre: renta de trabajo en taxCO (Art. 206-10) y nunca pasivo.
+  "Prima/Bono": "LAB_PRESTACIONES_PRIMA",
   "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS",
   "Arriendo": "NOL_ARRIENDO_INMUEBLE",
   "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
@@ -263,7 +266,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, plan, onUpgrade, onIrAPatrimonio}) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, authUser, plan, onUpgrade, onIrAPatrimonio}) {
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
   // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
@@ -290,7 +293,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           const res = await fetchAuth("/.netlify/functions/analyze-image", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64, type: "ingreso", mediaType, userId: user?.id })
+            body: JSON.stringify({ image: base64, type: "ingreso", mediaType, userId: authUser?.id ?? user?.id })
           });
           const data = await res.json();
           if (data.success && data.data) {
@@ -368,7 +371,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   const conEncabezados = (lista) => {
     const porCat = {};
     lista.forEach(it => {
-      const k = it.categoria || it.tipo || "Sin categoría";
+      const k = labelCategoria(it.categoria) || it.tipo || "Sin categoría";
       (porCat[k] = porCat[k] || []).push(it);
     });
     const grupos = Object.entries(porCat)
@@ -407,8 +410,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
   const añoActual = new Date().getFullYear();
+  const descartarSugerenciaPrima = (item) => {
+    if (!guardEdit(role)) return;
+    onUpdate(descartarSugerenciaPrimaBono(items, item.id));
+  };
   const togglePagoItem = (item) => {
     if (!guardEdit(role)) return;
+    if (esPrimaBono(item)) return; // ya viene cobrado: marcarlo "pagado" lo dejaría en $0
     onUpdate(items.map(i => i.id === item.id ? togglePagado(i, añoActual) : i));
   };
 
@@ -448,7 +456,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       const total = montosFinales.reduce((s, m) => s + (Number(m) || 0), 0);
       mensualFinal = Math.round(total / 12);
     }
-    if (!isSalario && modoIngreso === "anual") {
+    if (!isSalario && modoIngreso === "anual" && form.categoria !== "Prima/Bono") {
       if (frecuenciaFinal !== "mensual") {
         const factor = factorDeFrecuencia(frecuenciaFinal);
         mensualFinal = Math.round(mensualFinal / factor);
@@ -469,6 +477,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // respétalos", creyendo que el arreglo es un dato bueno.
     // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
     const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
+    // Prima/Bono: siempre total anual (taxCO lo toma una sola vez; el flujo ÷ 12).
+    if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; item.migPrimaBonoAnual = true; item.revisarFrecuencia = false; item.mesSupuesto = false; }
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
     if (isSalario) {
       item.aportes = {
@@ -810,7 +820,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             {(() => {
               const grupos = {};
               activos.forEach(i => {
-                const k = i.categoria || i.tipo || "Sin categoría";
+                const k = labelCategoria(i.categoria) || i.tipo || "Sin categoría";
                 grupos[k] = (grupos[k] || 0) + montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1);
               });
               const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
@@ -900,7 +910,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           if (!badge) return null;
                           return (
                             <span
-                              title={`${badge.label} — ${badge.sub}`}
+                              title={badge.sub ? `${badge.label} — ${badge.sub}` : badge.label}
                               style={{
                                 fontSize: 9,
                                 fontWeight: 700,
@@ -915,7 +925,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                               }}
                             >
                               {badge.emoji} {badge.label}
-                              <span style={{ opacity: 0.7, fontWeight: 500 }}>· {badge.sub}</span>
+                              {badge.sub && <span style={{ opacity: 0.7, fontWeight: 500 }}>· {badge.sub}</span>}
                             </span>
                           );
                         })()}
@@ -959,7 +969,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         {/* 25-jul-2026: en variables usamos el promedio de meses
                             ACTIVOS, no item.mensual (que el motor ignora para
                             esa frecuencia y confundía la lectura). */}
-                        {fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
+                        {esPrimaBono(item) ? fm(item.moneda==="USD" ? mensualPrimaBono(item)*(trm||4200) : mensualPrimaBono(item)) : fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
+                        {esPrimaBono(item) && <div data-testid="nota-prima-bono" style={{ fontSize: 9, color: T.txt3, fontWeight: 500 }}>{notaPrimaBono(item)}</div>}
+                        {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600 }}>⚠️ {textoRevisarPrima(item)}</div>}
+                        {debeSugerirPrimaBono(item) && <div data-testid="sugerir-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                          <span>⚠️ {MARCA_SUGERIR_PRIMA}</span>
+                          <button type="button" data-testid="sugerir-prima-editar" onClick={(e) => { e.stopPropagation(); handleEdit(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid #f97316", background: "transparent", color: "#f97316", cursor: "pointer" }}>Revisar</button>
+                          <button type="button" data-testid="sugerir-prima-descartar" onClick={(e) => { e.stopPropagation(); descartarSugerenciaPrima(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#a1a1aa", cursor: "pointer" }}>Es mensual, dejarlo así</button>
+                        </div>}
                         {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
                       </div>
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}
@@ -1055,6 +1072,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   setForm((p) => {
                     const nf = { ...p, categoria: catValue,
                       fiscalCode: DEFAULT_FISCAL_CODE[catValue] || "NOL_OTROS" };
+                    if (catValue === "Prima/Bono") { nf.frecuencia = "anual"; nf.mesPago = new Date().getMonth() + 1; }
                     // Mismo prefill de aportes que ya hacia el selector de
                     // Categoria DIAN del formulario, para no perder la ayuda.
                     const m = Number(p.mensual) || 0;
@@ -1149,6 +1167,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
               <div style={{ gridColumn: "1/-1" }}><In l="Categoría DIAN" value={form.categoria} onChange={(v) => setForm((p) => {
                 const nf = { ...p, categoria: v, fiscalCode: DEFAULT_FISCAL_CODE[v] || "NOL_OTROS" };
+                if (v === "Prima/Bono") { nf.frecuencia = "anual"; nf.mesPago = new Date().getMonth() + 1; }
                 // Commit 1.5: si cambia a Salario y ya hay bruto pero no aportes, prefill 4%+4%
                 const m = Number(p.mensual) || 0;
                 if (v === "Salario" && m > 0) {
@@ -1194,7 +1213,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   para templates mensuales. Reformulación clara del modoIngreso:
                   "Mensual" = lo que llega cada mes / "Total del año" = suma anual.
                   Solo aparece si el template pide 'modoIngresoSimple' Y no es Salario. */}
-              {mostrarCampo("modoIngresoSimple") && !["Salario","Honorarios"].includes(form.categoria) && (
+              {mostrarCampo("modoIngresoSimple") && !["Salario","Honorarios","Prima/Bono"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                     💵 ¿El monto que vas a poner es...?
@@ -1233,7 +1252,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
               {/* Toggle avanzado (por pago vs anual) — solo cuando el template es "avanzado" con frecuencia distinta a mensual */}
-              {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios"].includes(form.categoria) && (
+              {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios","Prima/Bono"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                     💵 ¿Cómo conoces el monto?
@@ -1280,6 +1299,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 //  - Modo avanzado con freq no-mensual: mantiene labelMontoSegunFrecuencia
                 const isSalarioLike = ["Salario","Honorarios"].includes(form.categoria);
                 if (isSalarioLike) return "💵 Monto BRUTO mensual (antes de descuentos)";
+                if (form.categoria === "Prima/Bono") return "Total que recibes en el año";
                 const freq = form.frecuencia || "mensual";
                 // Modo avanzado con freq no-mensual: mostrar label específico
                 const esAvanzado = templateElegido?.id === "avanzado";
@@ -1318,6 +1338,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 if (freq === "anual") return "¿Cuánto en total al año?";
                 return "¿Monto del pago único?";
               })()} />
+              )}
+              {form.categoria === "Prima/Bono" && (
+                <div data-testid="ayuda-prima-bono" style={{ gridColumn: "1/-1", width: "100%", display: "block", fontSize: 11, color: "#a1a1aa", marginTop: 4, lineHeight: 1.4 }}>{ayudaPrimaBono(form.mensual, fm)}</div>
               )}
               {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
                   Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses

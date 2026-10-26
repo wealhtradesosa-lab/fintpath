@@ -178,7 +178,7 @@ export const FISCAL_CODE_META = {
   [LAB_HONORARIOS_CON_EMPLEADOS]: { kind: "ingreso", cedula: "trabajo",  label: "Honorarios con 2+ empleados",        et: "Art. 206 #10 (aplica exenta 25%)" },
   [LAB_HONORARIOS_SIN_EMPLEADOS]: { kind: "ingreso", cedula: "trabajo",  label: "Honorarios sin 2+ empleados",        et: "Art. 206 #10 (NO aplica exenta 25%)" },
   [LAB_PRESTACIONES_CESANTIAS]:   { kind: "ingreso", cedula: "trabajo",  label: "Cesantías + intereses",              et: "Art. 206 #4" },
-  [LAB_PRESTACIONES_PRIMA]:       { kind: "ingreso", cedula: "trabajo",  label: "Prima legal",                        et: "Art. 206" },
+  [LAB_PRESTACIONES_PRIMA]:       { kind: "ingreso", cedula: "trabajo",  label: "Prima o bonificación laboral",       et: "Art. 206" },
   // Capital
   [CAP_INTERESES_BANCARIOS]:      { kind: "ingreso", cedula: "capital",  label: "Intereses bancarios / CDT",          et: "Art. 38 (componente inflacionario)" },
   [CAP_FIC]:                      { kind: "ingreso", cedula: "capital",  label: "Utilidad FIC",                       et: "Art. 39 (componente inflacionario)" },
