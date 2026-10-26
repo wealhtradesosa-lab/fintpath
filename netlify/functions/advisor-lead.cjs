@@ -18,6 +18,8 @@
 // }
 // ═══════════════════════════════════════════════════════════════════
 
+const { errorParaLog } = require("../lib/logSeguro.cjs");
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -117,7 +119,7 @@ exports.handler = async (event) => {
           }),
         });
       } catch (e) {
-        console.error("Email notification failed:", e.message);
+        console.error("Email notification failed:", errorParaLog(e));
       }
     }
 

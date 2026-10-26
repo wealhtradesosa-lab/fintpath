@@ -78,6 +78,11 @@ describe("logs de las funciones", () => {
       "family-invite-email.cjs": ["Resend error", "Exception"],
       "stripe-customer-portal.cjs": ["portal] error:"],
       "send-email.cjs": ["exception:", "Resend error"],
+      // 26-oct-2026 — Los tres que el #37 no alcanzó. Son rutas de envío de
+      // correo: el `message` de Resend puede traer el destinatario.
+      "email-unsubscribe.mjs": ["unsubscribe] error:"],
+      "advisor-lead.cjs": ["Email notification failed"],
+      "stripe-webhook.cjs": ["cancellation email failed"],
     };
     for (const [f, marcas] of Object.entries(casos)) {
       const ls = logs(leer(f));

@@ -13,6 +13,8 @@
 // Sin EMAIL_UNSUB_SECRET no verifica nada (falla cerrado).
 // ═══════════════════════════════════════════════════════════════════════════
 import { verificarTokenBaja } from "../lib/lifecycle/tokenBaja.mjs";
+import logSeguro from "../lib/logSeguro.cjs";
+const { errorParaLog } = logSeguro;
 
 const pagina = (titulo, mensaje, extra = "") => `<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -59,7 +61,7 @@ export default async (req) => {
     });
     if (!r.ok) throw new Error(`status ${r.status}`);
   } catch (e) {
-    console.error("[email-unsubscribe] error:", e?.message || e);
+    console.error("[email-unsubscribe] error:", errorParaLog(e));
     return html(500, pagina("No pudimos procesar tu baja", "Intenta de nuevo en un rato o escríbenos a soporte@finpathia.com."));
   }
   console.log(`[email-unsubscribe] baja cuenta=${accountId}`);
