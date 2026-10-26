@@ -47,17 +47,33 @@ export function bloqueInversionesYRentas(user) {
 }
 
 /** Gastos: los ítems más grandes con su categoría (no solo el total por categoría). */
-export function bloqueGastosDetalle(gas = {}, max = 25) {
+export function bloqueGastosDetalle(gas = {}, max = 25, trm = null) {
+  // 26-oct-2026 — Acá había un `4200` fijo, y a diferencia de los otros sitios
+  // ni siquiera miraba `user.trm`: todo gasto en dólares se le pasaba a la IA
+  // convertido a una tasa inventada, así que opinaba sobre cifras que no eran
+  // las del usuario. Ahora se usa la tasa real; si no hay, el gasto se informa
+  // EN DÓLARES y se avisa, en vez de inventar la conversión.
+  const tasa = Number(trm) > 0 ? Number(trm) : null;
   const items = [];
+  let sinTasa = 0;
   Object.entries(gas || {}).forEach(([cat, xs]) => (xs || []).forEach((g) => {
     if (!g || g.sim === false) return;
-    const m = montoPromedioMensual(g) * (String(g.moneda).toUpperCase() === "USD" ? 4200 : 1);
-    if (m > 0.5) items.push({ cat, nombre: g.c || g.n || g.nombre || cat, m, frec: g.frecuencia || "mensual" });
+    const esUSD = String(g.moneda).toUpperCase() === "USD";
+    const bruto = montoPromedioMensual(g);
+    if (!(bruto > 0.5)) return;
+    if (esUSD && !tasa) sinTasa++;
+    items.push({
+      cat, nombre: g.c || g.n || g.nombre || cat,
+      m: esUSD && tasa ? bruto * tasa : bruto,
+      usd: esUSD && !tasa,
+      frec: g.frecuencia || "mensual",
+    });
   }));
   if (!items.length) return "";
   items.sort((a, b) => b.m - a.m);
   let ctx = `\nGASTOS MÁS GRANDES (promedio mensual; ${items.length} en total):\n`;
-  items.slice(0, max).forEach((x) => { ctx = ctx.concat(`• ${x.nombre} (${x.cat}${x.frec !== "mensual" ? ", " + x.frec : ""}): ${fmC(x.m)}/mes\n`); });
+  if (sinTasa > 0) ctx = ctx.concat(`(${sinTasa} en dólares sin tasa del día: van marcados US$ y NO están convertidos a pesos)\n`);
+  items.slice(0, max).forEach((x) => { ctx = ctx.concat(`• ${x.nombre} (${x.cat}${x.frec !== "mensual" ? ", " + x.frec : ""}): ${x.usd ? "US$" + Math.round(x.m).toLocaleString("es-CO") : fmC(x.m)}/mes\n`); });
   return ctx;
 }
 
@@ -144,7 +160,7 @@ export function bloquePlanes(user, futuro10 = {}) {
 
 /** Todo lo adicional al resumen base del asesor. */
 export function contextoCompleto(user = {}) {
-  return bloqueInversionesYRentas(user) + bloqueGastosDetalle(user.gas) + bloqueMetas(user.metas) + bloqueRetiro(user.pen) + bloqueTrading(user.ibk) + bloquePlanes(user, user.futuro10) + bloqueOtros(user);
+  return bloqueInversionesYRentas(user) + bloqueGastosDetalle(user.gas, 25, user.trm) + bloqueMetas(user.metas) + bloqueRetiro(user.pen) + bloqueTrading(user.ibk) + bloquePlanes(user, user.futuro10) + bloqueOtros(user);
 }
 
 // 24-oct-2026 (Santiago: "la IA debe poder opinar de todo lo que hay armado o
