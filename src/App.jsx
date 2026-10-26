@@ -134,6 +134,19 @@ const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(25
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>fmtPctEs(n);
 const SK="fp3";
+// 26-oct-2026 — La contraseña NO se guarda en el navegador (antes iba en claro
+// a localStorage "fp3_enc_key"). Vive solo en memoria y muere al recargar o
+// cerrar la pestaña. Solo la usa el lector de abajo para descifrar payloads
+// legacy: `E2E.encrypt` ya no se llama en ninguna parte y el producto declara
+// que NO hay cifrado de extremo a extremo (LandingPrivacidad, LandingSeguridad).
+// Una fila legacy se migra sola a texto plano en el primer guardado tras
+// descifrarla, porque sS siempre escribe plano.
+let _encKey=null;
+// Barrido al cargar el módulo: las versiones anteriores dejaron la contraseña
+// en claro en el navegador de cada usuario que ya entró. Dejar de escribirla no
+// la borra, así que la sacamos en el primer render de cualquier pestaña.
+const CLAVES_PROHIBIDAS=["fp3_enc_key"];
+try{for(const k of CLAVES_PROHIBIDAS){localStorage.removeItem(k);sessionStorage.removeItem(k)}}catch{/* storage bloqueado */}
 const sL=async(uid,accountId)=>{
   try{
     if(isSupabaseConfigured&&uid){
@@ -147,7 +160,7 @@ const sL=async(uid,accountId)=>{
       if(!error&&data?.data){
         let sd=data.data;
         if(sd._encrypted&&sd.payload){
-          const encKey=localStorage.getItem("fp3_enc_key");
+          const encKey=_encKey;
           if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
           else{return null}
         }
@@ -932,6 +945,10 @@ export default function FinPath(){
   // servidor), limpiamos igual lo local para que el usuario nunca quede
   // atrapado en un estado "medio-logueado".
   const logout=async()=>{
+    // 0) La llave de descifrado vive en memoria: antes se iba con el barrido de
+    // claves "fp3*" del localStorage, ahora hay que soltarla a mano. Si no, al
+    // entrar otra cuenta en la misma pestaña quedaría la llave de la anterior.
+    _encKey=null;
     // 1) Supabase signOut en BACKGROUND (no esperamos respuesta del servidor).
     // signOut({scope:"local"}) limpia el storage localmente sin hacer request
     // al servidor, y lo que demora a veces es el request de logout global.
@@ -1060,7 +1077,7 @@ export default function FinPath(){
           setAuthLoading(false);
           return;
         }
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);
+        setAuthUser(data.user);_encKey=aF.p;
         try{
           const d=await Promise.race([
             // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
@@ -1084,7 +1101,7 @@ export default function FinPath(){
           // causaría loader infinito). Mostramos error accionable.
           setAuthUser(null);
           try{await supabase.auth.signOut({scope:"local"})}catch{}
-          localStorage.removeItem("fp3_enc_key");
+          _encKey=null;
           setAuthError("No se pudo cargar tus datos: "+loadErr.message+". Vuelve a intentar.");
           setAuthLoading(false);
           return;
@@ -1143,7 +1160,7 @@ export default function FinPath(){
         let friendly=errMsg;if(errMsg.includes("already been registered")||errMsg.includes("already registered")||errMsg.includes("already exists"))friendly="Este email ya tiene cuenta. Prueba iniciar sesión.";else if(errMsg.includes("Cuenta llena")||errMsg.includes("límite del plan"))friendly="Estamos teniendo un problema técnico al crear tu cuenta. Por favor intenta de nuevo o escríbenos a soporte@finpathia.com.";else if(errMsg.includes("Invalid email")||errMsg.includes("invalid email"))friendly="El email no es válido. Verifica que esté bien escrito.";else if(errMsg.includes("Password should be"))friendly="La contraseña no cumple con los requisitos de seguridad.";setAuthError(friendly);setAuthLoading(false);return}
         const{data,error}=await supabase.auth.signInWithPassword({email:aF.e,password:aF.p});
         if(error){setAuthError(error.message);setAuthLoading(false);return}
-        setAuthUser(data.user);localStorage.setItem("fp3_enc_key",aF.p);const nd=mkU(aF.n||(()=>{const x=(aF.e||"").split("@")[0].split(/[._\-+0-9]/)[0];return x?x.charAt(0).toUpperCase()+x.slice(1):"Usuario"})(),aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||__paisDetectado;setU(nd);await sS(nd,data.user.id);
+        setAuthUser(data.user);_encKey=aF.p;const nd=mkU(aF.n||(()=>{const x=(aF.e||"").split("@")[0].split(/[._\-+0-9]/)[0];return x?x.charAt(0).toUpperCase()+x.slice(1):"Usuario"})(),aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||__paisDetectado;setU(nd);await sS(nd,data.user.id);
         // Sesión 4-may-2026: tracking GA4 — signup completed con metadata
         // de promo (Pioneros) y user_id para atribución cross-device.
         // 11-oct-2026: guardar UTM + ángulo ANTES de trackSignup (que borra
@@ -1766,7 +1783,7 @@ export default function FinPath(){
               // con el token del recovery. Cerramos sesión para forzar login limpio con la
               // contraseña nueva. Esto evita que queden sesiones raras por el reset.
               await supabase.auth.signOut({scope:"local"});
-              localStorage.removeItem("fp3_enc_key");
+              _encKey=null;
               setShowResetPassword(false);
               setResetNewPassword("");
               setAuthError("✅ Contraseña actualizada. Inicia sesión con la nueva.");
