@@ -3,6 +3,7 @@ import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
+import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { estimarImpuesto } from "../lib/taxCO";
 import SankeyFlujo from "./SankeyFlujo";
@@ -159,7 +160,9 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 }
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null }) {
+  const [verOcultos, setVerOcultos] = useState(false);
+  const [confirmados, setConfirmados] = useState(() => leerConfirmados());
   const [expandedLvl, setExpandedLvl] = useState(null);
   const te = ob, ni = ip;
   const obEsencial = nivel?.obEsencial || ob;
@@ -167,13 +170,15 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
   const umbral = (l) => umbralNivel(l.def, ctx);
   const ratio = ob > 0 ? ip / ob : 0;
   const currentLevel = nivel?.nivel || 0;
-  // La barra llega hasta Abundancia (el factor del último escalón), no hasta
-  // Independencia: si topara en 100% el último escalón no tendría dónde dibujarse.
-  const TOPE = NIVELES[NIVELES.length - 1].factor || 2;
+  // La barra llega hasta Abundancia (1,3x), no hasta Independencia: si topara en
+  // 100% el último escalón no tendría dónde dibujarse.
+  // 24-oct-2026 — Escala 0–150%: Abundancia (130%) queda adentro con margen.
+  const TOPE = TOPE_BARRA;
   const overallProg = Math.min((ratio / TOPE) * 100, 100);
   const pos = (l) => Math.min((umbral(l) / (ob * TOPE)) * 100, 100);
   const currentData = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
   const nextData = currentLevel < 5 ? LEVELS[currentLevel] : null;
+  const vista = vistaNivel({ ip, ob, nivel });
   const monthlyGap = nextData
     ? (currentLevel === 1 ? Math.max(0, -(fl || 0)) : Math.max(0, (umbral(nextData) || 0) - ni))
     : 0;
@@ -206,6 +211,24 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           </div>
         )}
       </div>
+
+      {/* 24-oct-2026 — Un solo titular con el nivel. Antes el badge decía
+          Abundancia y el cuadro de abajo «¡Independencia!». */}
+      {vista && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>Tu nivel real, con tus datos guardados (los sliders y escenarios no lo cambian).</div>
+          {trmPendiente && <div style={{ fontSize: 10, color: T.gd, marginBottom: 4 }}>Tus montos en dólares quedan fuera de este nivel: pendiente de tasa. Se suman cuando cargue la TRM.</div>}
+          <div style={{ fontSize: 15, fontWeight: 800, color: currentData?.color || T.txt, lineHeight: 1.4 }}>{vista.titular}</div>
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, overflowWrap: "anywhere" }}>
+            Tu ingreso pasivo (bruto): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
+          </div>
+          <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
+          {escenarioTxt && (
+            <div data-testid="nivel-escenario" style={{ marginTop: 8, fontSize: 11, color: T.txt2, border: "1px dashed " + T.border, borderRadius: 8, padding: "6px 8px" }}>🧪 {escenarioTxt}</div>
+          )}
+          {/* «Te faltan $X/mes» va solo en el cuadro «Siguiente» (QA #58). */}
+        </div>
+      )}
 
       {/* 21-oct-2026 — El flujo negativo ya no borra el escalón que los activos
           se ganaron (metrics.js → nivelLibertad). Pero tampoco se puede callar:
@@ -240,31 +263,37 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
             minWidth: overallProg > 3 ? 50 : 0,
           }}>
             {overallProg > 8 && (
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{Math.round(ratio * 100)}%</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{pctPiso(ip, ob)}%</span>
             )}
           </div>
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.txt3, marginTop: 4 }}>
-          <span>0% de tus gastos cubierto</span>
-          <span>{ratio > 1 ? `la barra topa en 100% — vas en ${fmtPctEs(ratio * 100, 0)}` : "100% = tus gastos cubiertos"}</span>
+          <span>0%</span>
+          {vista?.desborde
+            ? <span style={{ fontSize: 11, fontWeight: 800, color: currentData?.color || T.gd }}>{vista.desborde}</span>
+            : <span>100% = tus gastos cubiertos</span>}
         </div>
 
         {/* Level labels */}
-        <div style={{ display: "flex", position: "relative", height: 20, marginTop: 6 }}>
+        <div style={{ display: "flex", position: "relative", height: 32, marginTop: 6 }}>
           {/* 0-25% no es un punto: es la franja donde estas en Deficit o en
               Estabilidad segun tu flujo del mes. Antes se dibujaban como dos
               marcas (0% y un 10% inventado) y la escala no cuadraba. */}
-          <div style={{ position: "absolute", left: "12.5%", transform: "translateX(-50%)", textAlign: "center" }}>
+          <div style={{ position: "absolute", left: (LEVELS[2] ? pos(LEVELS[2]) / 2 : 12.5) + "%", transform: "translateX(-50%)", textAlign: "center" }}>
             <div style={{ fontSize: 9, fontWeight: currentLevel <= 2 ? 700 : 500, color: currentLevel === 1 ? LEVELS[0].color : currentLevel === 2 ? LEVELS[1].color : T.txt3 }}>
               {currentLevel === 1 ? "Déficit" : currentLevel === 2 ? "Estabilidad" : "Déficit · Estabilidad"}
             </div>
           </div>
-          {LEVELS.filter((l) => l.porCobertura).map((l) => {
-            const reached = currentLevel >= l.id;
+          {LEVELS.filter((l) => l.porCobertura).map((l, idx, arr) => {
+            const est = estadoNivel(l.id, currentLevel);
+            // Si dos marcas caen casi en el mismo punto (p. ej. Seguridad e
+            // Independencia en 100% cuando no hay gastos esenciales aparte),
+            // la segunda baja una línea para no montarse (QA #58).
+            const choca = idx > 0 && Math.abs(pos(l) - pos(arr[idx - 1])) < 12;
             return (
-              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center" }}>
-                <div style={{ fontSize: 9, fontWeight: reached ? 700 : 500, color: reached ? l.color : T.txt3 }}>{l.name}</div>
+              <div key={l.id} style={{ position: "absolute", top: choca ? 12 : 0, left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: 9, fontWeight: est === "actual" ? 800 : 500, color: est === "actual" ? l.color : T.txt3 }}>{llevaCheck(l.id, currentLevel) ? "✓ " : ""}{l.name}</div>
               </div>
             );
           })}
@@ -279,35 +308,61 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           👁️ Esta cuenta <b>no incluye</b> lo que tienes oculto:
           {ocultos.nGastos > 0 && <> {ocultos.nGastos} gasto{ocultos.nGastos > 1 ? "s" : ""} por <b>{fm(ocultos.gastos)}/mes</b></>}
           {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
-          {ocultos.nIngresos > 0 && <> {ocultos.nIngresos} ingreso{ocultos.nIngresos > 1 ? "s" : ""} por <b>{fm(ocultos.ingresos)}/mes</b></>}
+          {ocultos.nIngresos > 0 && <> {ocultos.nIngresos} ingreso{ocultos.nIngresos > 1 ? "s" : ""} por <b>{fm(nombresIngresosOcultos.length ? sumaOcultos(nombresIngresosOcultos) : ocultos.ingresos)}/mes</b>{nombresIngresosOcultos.length > 0 && " en promedio"}</>}
           . Si eso lo sigues pagando o cobrando, vuelve a mostrarlo en su sección para que el nivel sea real.
+          {nombresIngresosOcultos.length > 0 && (
+            <div style={{ marginTop: 6 }}>
+              <button onClick={() => setVerOcultos(!verOcultos)} style={{ background: "none", border: "none", padding: 0, color: T.gd, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                {verOcultos ? "Ocultar la lista ▴" : `Ver cuáles son los ${nombresIngresosOcultos.length} ingresos ▾`}
+              </button>
+              {verOcultos && (
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                  {nombresIngresosOcultos.map((n, i) => <li key={i}>{n.nombre}: {n.pendienteTasa ? <b>pendiente de tasa</b> : <b>{fm(n.mensual)}/mes</b>}{n.nota && <span style={{ color: T.txt3 }}> ({n.nota})</span>}
+                    {n.revisar && !confirmados.has(n.nombre) && (
+                      <div style={{ marginTop: 3, color: T.gd }}>
+                        Revisa: ¿es renta de una inversión?{" "}
+                        <button onClick={() => setConfirmados(new Set(confirmarRenta(n.nombre)))} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}>Sí, es renta</button>{" "}
+                        <button onClick={() => onNavigate && onNavigate("flujo")} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}>No, cambiar categoría</button>
+                      </div>
+                    )}
+                    {n.revisar && confirmados.has(n.nombre) && <span style={{ color: T.txt3 }}> · confirmado como renta</span>}
+                  </li>)}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* 5 Level mini-cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6, marginBottom: 16 }}>
         {LEVELS.map((l) => {
-          const reached = currentLevel >= l.id;
-          const current = currentLevel === l.id;
+          const est = estadoNivel(l.id, currentLevel);
+          const current = est === "actual";
+          const pasado = est === "pasado";
+          const reached = current; // solo la tarjeta actual va a color
           const needed = umbral(l);
           return (
             <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
               background: current ? l.color + "12" : reached ? "rgba(255,255,255,0.02)" : T.bg3,
               border: "1px solid " + (current ? l.color + "40" : reached ? l.color + "20" : T.border),
-              borderRadius: 12, padding: "10px 8px", textAlign: "center", position: "relative",
-              opacity: reached || current ? 1 : 0.5, cursor: "pointer", transition: "all 0.2s",
+              borderRadius: 12, padding: "10px 10px", textAlign: "center", position: "relative", minWidth: 0, overflowWrap: "anywhere",
+              opacity: current ? 1 : pasado ? 0.6 : 0.5, cursor: "pointer", transition: "all 0.2s",
             }}>
-              {reached && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
+              {current && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
               <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{l.name}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{llevaCheck(l.id, currentLevel) ? `✓ ${l.name} alcanzado` : l.name}</div>
               {l.porCobertura ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    {fm(needed)}<span style={{ fontSize: 9 }}>/m</span>
+                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(needed)}<span style={{ fontSize: 9 }}>/mes</span></span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     de ingreso pasivo<br />{l.def.umbral === "esencial" ? "paga lo esencial" : l.def.factor > 1 ? "paga todo, con margen" : "paga todo"}
                   </div>
+                  {l.def.umbral === "esencial" && pistaSeguridad && (
+                    <div style={{ fontSize: 9, color: T.gd, marginTop: 3, lineHeight: 1.3 }}>{pistaSeguridad}</div>
+                  )}
                 </>
               ) : (
                 // 21-oct-2026 (Santiago: "¿aquí no debería aparecer un valor
@@ -316,14 +371,28 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
                 // las otras tres mostraban un monto. No se ganan con ingreso
                 // pasivo, así que no tienen umbral — pero sí tienen una cifra, y
                 // es el flujo del mes, que es justo lo que las separa.
+                // 24-oct-2026 — Estabilidad también muestra su meta: flujo del
+                // mes ≥ $0 (regla de nivelLibertad). Déficit es el punto de
+                // partida y no tiene meta.
+                metaNivel(l.def) ? (
                 <>
                   <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    {fm(fl)}<span style={{ fontSize: 9 }}>/m</span>
+                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(0)}<span style={{ fontSize: 9 }}>/mes</span></span>
                   </div>
                   <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
-                    tu flujo del mes<br />{l.def.clave === "deficit" ? "en rojo = estás aquí" : "en verde = estás aquí"}
+                    de flujo o más<br />hoy: {fm(fl)}/mes
                   </div>
                 </>
+                ) : (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
+                    {fm(fl)}<span style={{ fontSize: 9 }}>/mes</span>
+                  </div>
+                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                    tu flujo del mes<br />en rojo = estás aquí
+                  </div>
+                </>
+                )
               )}
               <div style={{ fontSize: 9, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
@@ -380,7 +449,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: 9, color: T.txt3 }}>Te faltan</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: nextData.color }}>{fm(monthlyGap)}<span style={{ fontSize: 10 }}>/mes</span></div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: nextData.color, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(monthlyGap)}<span style={{ fontSize: 10 }}>/mes</span></div>
             </div>
           </div>
         </div>
@@ -390,9 +459,12 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
           <div style={{ fontSize: 32 }}>👑</div>
           {/* 24-oct-2026 (Santiago: "arriba muestra Abundancia y abajo
               Independencia: ¿en cuál estoy?"). El cartel decía siempre
-              "¡Independencia!"; ahora dice el nombre del nivel en que está. */}
+              "¡Independencia!"; ahora dice el nombre del nivel en que está.
+              26-oct-2026 — Se conserva ese nombre dinámico: el #58 lo volvía a
+              fijar en "¡Abundancia!". De ahí se toma la segunda línea, que es
+              la que evita repetir el porcentaje del titular de arriba. */}
           <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡{currentData?.name || "Abundancia"}!</div>
-          <div style={{ fontSize: 13, color: T.txt2 }}>Ingreso pasivo = {Math.round(ratio * 100)}% de gastos y cuotas · nivel {currentLevel} de 5</div>
+          <div style={{ fontSize: 13, color: T.txt2 }}>Estás en el último nivel{vista?.desborde ? `: ${vista.desborde} de tus gastos y cuotas` : ""}.</div>
         </div>
       )}
     </div>
@@ -402,7 +474,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido }) {
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange}) {
+export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange, trmReal}) {
 
   // 30-ago-2026 — CAUSA RAIZ de "algo salió mal" al abrir el simulador:
   // ReferenceError: trm is not defined.
@@ -514,12 +586,21 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // ═══════════════════════════════════════════════════════════════════════════
   const simT = useMemo(() => {
     const trm = user?.trm || 4200;
+    // 24-oct-2026 (QA #58) — ¿El escenario cambia algo de verdad? Tocar un
+    // slider y dejarlo en su valor no es un escenario: en ese caso el nivel del
+    // escenario es EXACTAMENTE el real (mismo impuesto, misma TRM).
+    let cambio = false;
+    const gv = (k, def) => {
+      const v = getVal(k, def);
+      if (Math.abs((Number(v) || 0) - (Number(def) || 0)) > 0.5) cambio = true;
+      return v;
+    };
 
     // ─── PASO 1: Ingresos con overrides de sliders + moneda ──────────────
     const ingSim = (user.ingresos || []).map((ing, ii) => {
       if (ing.sim === false) return ing;
       const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-      const overrideCop = getVal(`ing_${ii}`, baseCop);
+      const overrideCop = gv(`ing_${ii}`, baseCop);
       const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
       return { ...ing, mensual: newMensual };
     });
@@ -543,7 +624,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       gasSim[cat] = (items || []).map((g, gi) => {
         if (g.sim === false) return g;
-        const newM = getVal(`gf_${cat}_${gi}`, g.m || 0);
+        const newM = gv(`gf_${cat}_${gi}`, g.m || 0);
         return { ...g, m: newM };
       });
       gasSim[cat].forEach(g => {
@@ -561,7 +642,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     const deuSim = (user.deudas || []).map((d, di) => {
       if (d.sim === false) return d;
       if ((d.mt || 0) > 0) {
-        const newPago = getVal(`debt_${di}`, (d.pago || d.pg || 0));
+        const newPago = gv(`debt_${di}`, (d.pago || d.pg || 0));
         return { ...d, pago: newPago, pg: newPago };
       }
       return d;
@@ -594,7 +675,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
         ? (td.impOptBruto != null ? td.impOptBruto : (td.impBruto || 0))
         : (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       const mesBase = Math.round(anualBase / 12);
-      const simImpBrutoMes = getVal(`tax_${td.name}`, mesBase);
+      const simImpBrutoMes = gv(`tax_${td.name}`, mesBase);
       impuestoBrutoAnual += simImpBrutoMes * 12;
       retencionAnual += (td.reteN || 0);
     });
@@ -622,7 +703,13 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // tarjeta medía octubre mientras la pantalla mostraba otro mes. Es el mismo
     // reclamo del 10-oct sobre el PDF ("si estoy analizando dic por qué me sale
     // arriendo hasta sept"), en la tarjeta.
-    const metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
+    const sinCambios = !cambio && !Object.values(taxOptimizado || {}).some(Boolean);
+    let metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
+    if (sinCambios) {
+      // Mismo cálculo que el nivel real (metricasReales + impuesto de los datos
+      // guardados, igual que baseT): mismo % sí o sí.
+      metMes = metricasReales(user, { ...impuestoBase(impuestoData), mes: mesVisualizado, trm: trmReal });
+    }
     // La cobertura sale de la MISMA base que el nivel. Quedaba en el promedio
     // del año mientras el nivel ya era del mes, así que el KPI "Independencia"
     // de esta misma pantalla contradecía a la tarjeta de abajo.
@@ -632,7 +719,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       // ip/ob/fl son las cifras de la cuenta de libertad: van en la base del
       // nivel (el mes). El flujo del AÑO tiene sus propios campos más abajo
       // (brutoTotal, egresosTotales, cashFlow, ni, te, cf) y sigue en promedio.
-      met, metMes, nivel: metMes.nivel, ip: metMes.ip, ob: metMes.ob, fl: metMes.fl,
+      met, metMes, sinCambios, nivel: metMes.nivel, ip: metMes.ip, ob: metMes.ob, fl: metMes.fl,
       // ═══ NUEVO MODELO EXPLÍCITO ═══
       brutoTotal,
       retencionMensual,
@@ -660,7 +747,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       tTax: impuestoNeto,
       dynTax,
     };
-  }, [user, simVals, getVal, taxOptimizado, mesVisualizado]);
+  }, [user, simVals, getVal, taxOptimizado, mesVisualizado, impuestoData, trmReal]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // FASE 5 (18-jul-2026): simTMes — motor del cash flow DEL MES visualizado.
@@ -1008,6 +1095,11 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       tTax: impuestoNeto, tGF,
     };
   }, [user, impuestoData]);
+
+  // 24-oct-2026 (QA #58) — Nivel real: solo datos guardados, sin simVals.
+  const metReal = useMemo(() => metricasReales(user, {
+    retencionMensual: baseT.retencionMensual, impuestoNeto: baseT.impuestoNeto, mes: mesVisualizado, trm: trmReal,
+  }), [user, baseT, mesVisualizado, trmReal]);
 
   // ── 14-sep-2026 · Gráfica del año: lo real + el escenario ────────────────
   // Santiago: "es una sola gráfica, se puede mostrar el actual de lo que va del
@@ -1430,9 +1522,16 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       {/* ═══ FREEDOM BAR — reacts to simulated values ═══ */}
       {/* 21-oct-2026 — La barra mide contra la obligación del MES (met.mes),
           no contra el promedio del año (simT.ob). Ver metrics.js. */}
-      <FreedomBarLive ip={simT.metMes?.ip ?? simT.ip} ob={simT.metMes?.ob ?? simT.ob}
-        fl={simT.metMes?.fl ?? simT.fl} nivel={simT.metMes?.nivel ?? simT.nivel}
-        ocultos={simT.metMes?.ocultos} mesMedido={simT.metMes?.mesMedido} />
+      {/* 24-oct-2026 (QA #58) — La barra muestra el nivel REAL (metReal, datos
+          guardados). Sliders y escenarios solo aparecen como «Nivel en este
+          escenario», nunca reemplazan el real. */}
+      <FreedomBarLive ip={metReal.ip} ob={metReal.ob}
+        fl={metReal.fl} nivel={metReal.nivel}
+        ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
+        escenarioTxt={etiquetaEscenario(metReal, simT.metMes, !simT.sinCambios)}
+        trmPendiente={metReal.trmPendiente}
+        pistaSeguridad={pistaEsenciales(metReal)}
+        nombresIngresosOcultos={ingresosOcultos(user.ingresos, trmReal)} onNavigate={onNavigate} />
 
       {/* Scenario presets */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, marginBottom: 20 }}>
