@@ -24,12 +24,14 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { createRequire } from "module";
 import { correrSecuencia } from "../lib/lifecycle/secuencia.mjs";
+import logSeguro from "../lib/logSeguro.cjs";
+const { errorParaLog } = logSeguro;
 const require = createRequire(import.meta.url);
 const { sendRendered } = require("./send-email.cjs");
 
 export default async () => {
   try { await correrSecuencia({ enviar: sendRendered }); }
-  catch (e) { console.error("[lifecycle] ❌ error inesperado:", e?.message || e); }
+  catch (e) { console.error("[lifecycle] ❌ error inesperado:", errorParaLog(e)); }
 };
 
 export const config = { schedule: "0 14 * * *" };

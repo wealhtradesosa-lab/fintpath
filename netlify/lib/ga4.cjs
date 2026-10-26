@@ -9,6 +9,7 @@
 // El client_id es el de la cookie _ga del navegador (el mismo visitante que
 // GA ya conoce), NUNCA el id de Supabase.
 // ═══════════════════════════════════════════════════════════════════════════
+const { errorParaLog } = require("./logSeguro.cjs");
 const MEASUREMENT_ID_DEFECTO = "G-51CV6PWRLT";
 const CLAVES_UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
 
@@ -73,7 +74,7 @@ async function emitirEvento({ nombre, clientId, utm, angulo }) {
     console.log(`[evento] ${nombre} → GA4 status=${r.status}`, params);
     return { enviado: r.ok, motivo: r.ok ? "ok" : `status_${r.status}` };
   } catch (e) {
-    console.warn(`[evento] ${nombre} falló:`, e?.message || e);
+    console.warn(`[evento] ${nombre} falló:`, errorParaLog(e));
     return { enviado: false, motivo: "excepcion" };
   }
 }

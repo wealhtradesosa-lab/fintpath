@@ -37,6 +37,8 @@ async function mp(path) {
   return r.json();
 }
 
+const { errorParaLog } = require("../lib/logSeguro.cjs");
+
 exports.handler = async (event) => {
   const ok = { statusCode: 200, body: JSON.stringify({ received: true }) };
   if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method not allowed" };
@@ -69,7 +71,7 @@ exports.handler = async (event) => {
     }
     return ok;
   } catch (e) {
-    console.error("[mp-webhook] error", e?.message || e);
+    console.error("[mp-webhook] error", errorParaLog(e));
     // 500 para que Mercado Pago reintente.
     return { statusCode: 500, body: "error" };
   }

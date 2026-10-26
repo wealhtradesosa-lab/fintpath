@@ -1,3 +1,5 @@
+const { errorParaLog } = require("../lib/logSeguro.cjs");
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -42,7 +44,7 @@ exports.handler = async (event) => {
           body: JSON.stringify(ticket),
         });
       } catch (e) {
-        console.log("Could not save to Supabase:", e.message);
+        console.log("Could not save to Supabase:", errorParaLog(e));
       }
     }
 

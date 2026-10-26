@@ -35,7 +35,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import logSeguro from "../lib/logSeguro.cjs";
-const { uidCorto } = logSeguro;
+const { uidCorto, errorParaLog } = logSeguro;
 
 export default async (req) => {
   const startedAt = new Date();
@@ -92,7 +92,7 @@ export default async (req) => {
     const elapsed = Date.now() - startedAt.getTime();
     console.log(`[expire-canceled-cron] completado en ${elapsed}ms`);
   } catch (err) {
-    console.error("[expire-canceled-cron] ❌ error inesperado:", err.message || err);
+    console.error("[expire-canceled-cron] ❌ error inesperado:", errorParaLog(err));
     // NO re-throw: scheduled functions no tienen retry automático y queremos
     // que la siguiente ejecución (24h después) intente de nuevo limpiamente.
   }

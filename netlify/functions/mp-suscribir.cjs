@@ -15,6 +15,7 @@
 //   Body: { plan: "basico"|"pro"|"pro_familiar", ciclo: "mensual"|"anual" }
 // ═══════════════════════════════════════════════════════════════════════════
 const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
+const { errorParaLog } = require("../lib/logSeguro.cjs");
 
 exports.handler = async (event) => {
   const headers = { "Content-Type": "application/json" };
@@ -63,7 +64,7 @@ exports.handler = async (event) => {
     console.log(`[mp-suscribir] preapproval ${d.id} para ${quien.id}`);
     return { statusCode: 200, headers, body: JSON.stringify({ url: d.init_point, id: d.id }) };
   } catch (e) {
-    console.error("[mp-suscribir] excepción", e?.message || e);
+    console.error("[mp-suscribir] excepción", errorParaLog(e));
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Error creando la suscripción" }) };
   }
 };
