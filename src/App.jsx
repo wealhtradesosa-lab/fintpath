@@ -90,6 +90,7 @@ import GoalsModuleUS from "./components/GoalsModuleUS";
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { esDemo, leerCache, guardarReal, datosAlSalir } from "./lib/modoDemo";
+import { AVISO_NO_SINCRONIZADO, datosNoSincronizados, marcarNoSincronizados, alCambiarSincronizacion, leerUserData } from "./lib/sincronizacion";
 import { useAccount } from "./lib/useAccount";
 import { RoleProvider } from "./lib/RoleContext.jsx";
 import RoleBanner from "./components/RoleBanner";
@@ -147,30 +148,38 @@ let _encKey=null;
 // la borra, así que la sacamos en el primer render de cualquier pestaña.
 const CLAVES_PROHIBIDAS=["fp3_enc_key"];
 try{for(const k of CLAVES_PROHIBIDAS){localStorage.removeItem(k);sessionStorage.removeItem(k)}}catch{/* storage bloqueado */}
-const sL=async(uid,accountId)=>{
-  try{
-    if(isSupabaseConfigured&&uid){
-      // Multi-cuenta (Fase 2): si tenemos accountId, leer por account_id.
-      // Sino, fallback legacy a leer por uid (período transitorio donde
-      // useAccount aun no resolvió, o usuario sin membresía multi-usuario).
-      const q=supabase.from("user_data").select("data,jurisdiction");
-      const{data,error}=accountId
-        ?await q.eq("account_id",accountId).maybeSingle()
-        :await q.eq("id",uid).maybeSingle();
-      if(!error&&data?.data){
-        let sd=data.data;
-        if(sd._encrypted&&sd.payload){
-          const encKey=_encKey;
-          if(encKey){try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}}
-          else{return null}
-        }
-        sd=sanitize(sd);
-        if(data.jurisdiction)sd.jurisdiction=data.jurisdiction;
-        localStorage.setItem(SK,JSON.stringify(sd));return sd}
-    }
-    const r=leerCache(localStorage.getItem(SK));return r?sanitize(r):null;
-  }catch{return null}
+// sLR: lectura con estado. "error" (fallo, timeout o cifrado sin llave) nunca
+// se confunde con "nuevo" (el servidor respondió y no hay fila). En "error" la
+// copia local (fp3) solo se muestra para leer y se bloquean los guardados.
+const sLR=async(uid,accountId)=>{
+  const cache=()=>{try{const r=leerCache(localStorage.getItem(SK));return r?sanitize(r):null}catch{return null}};
+  if(!(isSupabaseConfigured&&uid))return{estado:"local",datos:cache()};
+  // Multi-cuenta (Fase 2): si tenemos accountId, leer por account_id.
+  // Sino, fallback legacy a leer por uid.
+  const r=await leerUserData({
+    leer:()=>{const q=supabase.from("user_data").select("data,jurisdiction");return accountId?q.eq("account_id",accountId).maybeSingle():q.eq("id",uid).maybeSingle()},
+    procesar:async(row)=>{
+      let sd=row.data;
+      if(sd._encrypted&&sd.payload){
+        // La llave vive en memoria desde el #66; nunca en storage.
+        const encKey=_encKey;
+        if(!encKey)return null;
+        try{sd=await E2E.decrypt(sd.payload,encKey,uid)}catch{return null}
+      }
+      sd=sanitize(sd);
+      if(row.jurisdiction)sd.jurisdiction=row.jurisdiction;
+      return sd;
+    },
+  });
+  if(r.estado==="ok"){marcarNoSincronizados(false);try{localStorage.setItem(SK,JSON.stringify(r.datos))}catch{}return r}
+  if(r.estado==="nuevo"){marcarNoSincronizados(false);return r}
+  console.warn("[fp3] user_data no se pudo leer; solo lectura hasta reconectar:",r.error);
+  marcarNoSincronizados(true);
+  return{estado:"error",datos:cache(),error:r.error};
 };
+const sL=async(uid,accountId)=>{try{return(await sLR(uid,accountId)).datos}catch{return null}};
+export { sLR as _sLR };
+export const AvisoNoSincronizado=({onReintentar,cargando})=><div role="alert" style={{background:"rgba(239,68,68,0.1)",borderBottom:"1px solid rgba(239,68,68,0.3)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",fontSize:12,color:"#fca5a5"}}><span>⚠️ {AVISO_NO_SINCRONIZADO}</span><button onClick={onReintentar} disabled={cargando} style={{background:"#ef4444",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:11}}>{cargando?"Reintentando…":"Reintentar"}</button></div>;
 
 // LoadingScreen: splash minimalista mientras el useEffect inicial resuelve.
 // El timeout defensivo (Promise.race 8s) en el useEffect garantiza que
@@ -321,6 +330,8 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
     localStorage.setItem(SK,JSON.stringify(d));
     takeSnapshot(d);
     if(isSupabaseConfigured&&uid){
+      // Copia vieja en pantalla (lectura falló): ningún PATCH/upsert a user_data.
+      if(datosNoSincronizados())return;
       // Fase 3 commit 5 — gating reader: si el usuario es READER en una
       // cuenta multi-usuario (no legacy), abortar el upsert antes del
       // setTimeout. RLS en BD ya bloquearía el UPDATE (policy account_admins
@@ -333,6 +344,7 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
       }
       clearTimeout(_svT);
       _svT=setTimeout(async()=>{
+        if(datosNoSincronizados())return;
         // Commit 12 Tarea 3 (BUG REPORTADO: 'no quedan guardados'): el catch
         // silencioso original ocultaba errores del upsert. Si Supabase rechazaba
         // el guardado (RLS, schema mismatch, tamaño), el usuario veia "✅ Guardado"
@@ -677,10 +689,20 @@ export default function FinPath(){
     // Switch real: recargar user_data con el nuevo accountId
     const uid=authUser.id;
     (async()=>{
-      try{const d=await sL(uid,accountId);if(d)setU(sanitize(d))}
+      try{const r=await sLR(uid,accountId);if(r.datos)setU(sanitize(r.datos))}
       catch(e){console.warn("[fp3] reload tras switch falló:",e)}
     })();
   },[accountId,accountLoading]);
+  // Copia vieja en pantalla: banner + solo lectura + [Reintentar].
+  const[noSinc,setNoSinc]=useState(datosNoSincronizados);
+  const[reintentando,setReintentando]=useState(false);
+  useEffect(()=>alCambiarSincronizacion(setNoSinc),[]);
+  const reintentarCarga=async()=>{
+    if(!authUser?.id||reintentando)return;
+    setReintentando(true);
+    try{const r=await sLR(authUser.id,accountIdRef.current);if(r.estado==="ok"&&r.datos)setU(sanitize(r.datos))}
+    finally{setReintentando(false)}
+  };
   // ═══ ADVISOR MODE STATE ═══
   // isAdvisor: true si el usuario loggeado existe en la tabla `advisors`
   // advisorProfile: datos del asesor (plan, max_clients, firm_name, etc.)
@@ -764,10 +786,13 @@ export default function FinPath(){
             // Multi-cuenta (Fase 2): pasar accountIdRef.current. En el primer
             // mount es null (useAccount aún no resolvió) → sL cae a path legacy.
             // Subsecuentemente, los saves usan los refs actualizados.
-            const d=await Promise.race([sL(session.user.id,accountIdRef.current),timeout]);
-            if(d)setU(sanitize(d));
-            else if(session.user.app_metadata?.provider==="google"||sessionStorage.getItem("fp3_oauth")){
-              // 25-oct-2026: regreso de "Entrar con Google" sin datos todavía → cuenta nueva.
+            const r=await sLR(session.user.id,accountIdRef.current);
+            if(r.datos)setU(sanitize(r.datos));
+            // 26-oct-2026 — El alta por Google solo si el servidor CONFIRMÓ que
+            // no hay fila. Con estado "error" (fallo, timeout o cifrado sin
+            // llave) no se crea nada: crear encima de una fila real que no se
+            // pudo leer es exactamente lo que este PR viene a evitar.
+            else if(r.estado==="nuevo"&&(session.user.app_metadata?.provider==="google"||sessionStorage.getItem("fp3_oauth"))){
               const{data:fila}=await supabase.from("user_data").select("id").eq("id",session.user.id).maybeSingle();
               if(!fila)await crearCuentaOAuth(session.user);
             }
@@ -1114,13 +1139,13 @@ export default function FinPath(){
         }
         setAuthUser(data.user);_encKey=aF.p;
         try{
-          const d=await Promise.race([
-            // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
-            // null porque useAccount no resolvió tras setAuthUser; sL cae a
-            // path legacy y trae los datos correctamente.
-            sL(data.user.id,accountIdRef.current),
-            new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout cargando datos")),10000))
-          ]);
+          // Multi-cuenta (Fase 2): paso accountIdRef.current. Inicialmente
+          // null porque useAccount no resolvió tras setAuthUser; sLR cae a
+          // path legacy. sLR ya trae timeout y distingue error de usuario nuevo.
+          const __r=await sLR(data.user.id,accountIdRef.current);
+          const d=__r.datos;
+          // Lectura fallida: nunca crear una cuenta en blanco encima de la real.
+          if(__r.estado==="error"&&!d)throw new Error("no pudimos leer tus datos");
           if(d){const __sd=sanitize(d);setU(__sd);setPg("dash");if(cuentaVacia(__sd))setShowOnboarding(true);}
           else{const nd=mkU(aF.n||(()=>{const x=(aF.e||"").split("@")[0].split(/[._\-+0-9]/)[0];return x?x.charAt(0).toUpperCase()+x.slice(1):"Usuario"})(),aF.e);nd.p.plan="free";nd.p.trialEnd=new Date(Date.now()+getTrialDays(aF.e)*86400000).toISOString().split("T")[0];nd.jurisdiction=aF.country||__paisDetectado;
             // 20-oct-2026: si viene de /libertad con el norte calculado, las tres
@@ -4171,8 +4196,9 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
           El respaldo es sobrio a propósito — aparece por fracciones de segundo
           al entrar a una sección por primera vez, y un spinner llamativo se
           vería peor que un texto quieto. */}
+      {noSinc&&authUser&&<AvisoNoSincronizado onReintentar={reintentarCarga} cargando={reintentando}/>}
       <Suspense fallback={<div style={{padding:40,textAlign:"center",color:T.tx3,fontSize:13}}>Cargando…</div>}>
-        {rp()}
+        {noSinc&&authUser?<fieldset disabled style={{border:0,margin:0,padding:0,minWidth:0}}>{rp()}</fieldset>:rp()}
       </Suspense>
       </div>{paywall&&<div onClick={()=>setPaywall(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:16,padding:"22px 22px",maxWidth:420,width:"100%"}}>
         <div style={{fontSize:18,fontWeight:800,marginBottom:6}}>Estás en modo consulta</div>
