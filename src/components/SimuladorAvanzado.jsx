@@ -12,6 +12,12 @@ import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
+
+// 27-10-2026 — El 4200 estaba escrito 14 veces en este archivo. Es el respaldo
+// histórico, no una tasa (ver src/lib/trm.js). Mismo valor que antes: esto solo
+// le pone nombre y lo deja en un solo lugar.
+const tasa = (u) => trmUsable(u?.trm) ?? TRM_PROVISIONAL;
 
 const T = {
   bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
@@ -44,7 +50,7 @@ const fm = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-$" :
 // misma proporción (0 % → 0, 50 % → la mitad), para cualquier frecuencia.
 export const cuotaDeudaDelMes = (d, cuotaBase, año, mes, trm) => {
   const original = Number(d?.pago || d?.pg || 0) || 0;
-  const fx = d?.moneda === "USD" ? (trm || 4200) : 1;
+  const fx = d?.moneda === "USD" ? (trmUsable(trm) ?? TRM_PROVISIONAL) : 1;
   if (original > 0 && Number(cuotaBase) !== original) {
     const delMes = montoDelMes({ ...d, mensual: original, m: undefined }, año, mes);
     return delMes * ((Number(cuotaBase) || 0) / original) * fx;
@@ -480,13 +486,13 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // ReferenceError: trm is not defined.
   // El Sankey (línea ~1878) convertía ingresos en USD usando `trm`, pero esa
   // variable solo existía DENTRO de cuatro useMemo distintos (líneas 370, 511,
-  // 593 y 648), cada uno con su propio `const trm = user?.trm || 4200`. En el
+  // 593 y 648), cada uno con su propio `const trm = tasa(user)`. En el
   // JSX, fuera de esos bloques, `trm` no existe y el render entero reventaba.
   // El bug es preexistente y no tenía relación con el cambio de expT que se
   // revirtió el 25-ago buscando esta misma falla.
   // Se declara una sola vez acá: los useMemo pueden seguir usando su copia
   // local sin conflicto, y el JSX ya tiene de dónde leerla.
-  const trm = user?.trm || 4200;
+  const trm = tasa(user);
 
   const [simVals, setSimVals] = useState({});
   // Per-owner toggle: { "<ti>": true/false } keyed by tax detail index.
@@ -529,7 +535,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
 
     (user.ingresos || []).forEach((ing, ii) => {
-      const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
+      const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? (tasa(user)) : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     // Conservador "gas +10%": el factor de gastos (f.g) se calculaba y nunca se
@@ -585,7 +591,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // de "Bruto" a "Disponible" — intencional, es lo que el user pidió ver.
   // ═══════════════════════════════════════════════════════════════════════════
   const simT = useMemo(() => {
-    const trm = user?.trm || 4200;
+    const trm = tasa(user);
     // 24-oct-2026 (QA #58) — ¿El escenario cambia algo de verdad? Tocar un
     // slider y dejarlo en su valor no es un escenario: en ese caso el nivel del
     // escenario es EXACTAMENTE el real (mismo impuesto, misma TRM).
@@ -764,7 +770,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // Reutiliza los overrides de sliders y toggles del simT (mismo estado).
   // ═══════════════════════════════════════════════════════════════════════
   const simTMes = useMemo(() => {
-    const trm = user?.trm || 4200;
+    const trm = tasa(user);
     const { año: añoActual } = getMesActual();
     const mes = mesVisualizado;
 
@@ -888,7 +894,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   //   · Variable con pico/valle → efecto según se aleje de su promedio
   // ═══════════════════════════════════════════════════════════════════════
   const driversDelMes = useMemo(() => {
-    const trm = user?.trm || 4200;
+    const trm = tasa(user);
     const { año: añoD } = getMesActual();
     const mes = mesVisualizado;
     const drivers = [];
@@ -972,7 +978,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // resumen visual — el módulo /flujo tiene el detalle completo.
   // ═══════════════════════════════════════════════════════════════════════
   const cashFlowPorMes = useMemo(() => {
-    const trm = user?.trm || 4200;
+    const trm = tasa(user);
     const { año, mes: mesHoy } = getMesActual();
     return Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1;
@@ -1048,7 +1054,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let brutoTotal = 0;
     (user.ingresos || []).forEach((ing) => {
       if (ing.sim === false) return;
-      brutoTotal += montoPromedioMensual(ing) * (ing.moneda === "USD" ? (user?.trm || 4200) : 1);
+      brutoTotal += montoPromedioMensual(ing) * (ing.moneda === "USD" ? (tasa(user)) : 1);
     });
 
     // Gastos: aportes obligatorios vs familiares
@@ -1057,7 +1063,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       items.forEach((g) => {
         if (g.sim === false) return;
-        const monto = montoPromedioMensual(g) * (g.moneda === "USD" ? (user?.trm || 4200) : 1);
+        const monto = montoPromedioMensual(g) * (g.moneda === "USD" ? (tasa(user)) : 1);
         if (cat === "Seguridad Social") aportesObligatorios += monto;
         else gastosFamiliares += monto;
       });
@@ -1067,7 +1073,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // Cuotas de deudas
     let cuotasDeudas = 0;
     (user.deudas || []).forEach((d) => {
-      if ((d.mt || 0) > 0 && d.sim !== false) cuotasDeudas += montoPromedioMensual({ ...d, mensual: (d.pago || d.pg || 0) }) * (d.moneda === "USD" ? (user?.trm || 4200) : 1);
+      if ((d.mt || 0) > 0 && d.sim !== false) cuotasDeudas += montoPromedioMensual({ ...d, mensual: (d.pago || d.pg || 0) }) * (d.moneda === "USD" ? (tasa(user)) : 1);
     });
 
     // Impuesto y retención
@@ -1116,7 +1122,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
   // REALES mes a mes, y del mes actual a diciembre con el escenario simulado.
   // El quiebre entre las dos series es "hoy".
   const cfDelMes = useCallback((mes, conOverrides) => {
-    const trm = user?.trm || 4200;
+    const trm = tasa(user);
     const { año: añoActual } = getMesActual();
     const vg = (clave, base) => (conOverrides ? getVal(clave, base) : base);
 
@@ -1225,7 +1231,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
                 // no aplican quedan marcados en vez de mostrar un monto falso.
                 const { año: añoPdf } = getMesActual();
                 const mesPdfL = (MESES.find(m => m.v === mesVisualizado) || {}).l || "";
-                const trmPdf = user?.trm || 4200;
+                const trmPdf = tasa(user);
                 const ingMes = (user.ingresos||[]).map((i, idx) => {
                   if (i.sim === false) return null;
                   const base = montoDelMes(i, añoPdf, mesVisualizado) * (i.moneda === "USD" ? trmPdf : 1);
@@ -2054,7 +2060,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
       // mostraba los $55.816.667 correctos de diciembre, así que la app se
       // contradecía a sí misma en la misma pantalla.
       // montoDelMes respeta frecuencia, vigencia y tabla mensual.
-      const baseRenta = montoDelMes(ing, new Date().getFullYear(), mesVisualizado) * (ing.moneda==="USD"?(user?.trm||4200):1);
+      const baseRenta = montoDelMes(ing, new Date().getFullYear(), mesVisualizado) * (ing.moneda==="USD"?tasa(user):1);
                         const baseCap = Number(ing.capital) || 0;
                         // FIX conceptual 25-may-2026 (reportado por Santiago):
                         // El capital invertido es un HECHO — ya está invertido y

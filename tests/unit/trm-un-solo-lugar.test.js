@@ -13,6 +13,7 @@ const MIGRADOS = [
   "lib/borradorDeclaracion.js",
   "lib/auditoriaDatos.js",
   "lib/contextoAsesor.js",
+  "components/SimuladorAvanzado.jsx",
 ];
 
 describe("la tasa de respaldo vive en un solo lugar", () => {
@@ -37,7 +38,7 @@ describe("la tasa de respaldo vive en un solo lugar", () => {
   it("los módulos migrados toman la constante del módulo", () => {
     for (const f of MIGRADOS) {
       if (f === "lib/contextoAsesor.js") continue; // ese no inventa tasa: informa en US$
-      expect(leer(f), f).toContain('from "./trm.js"');
+      expect(leer(f), f).toMatch(/from "\.{1,2}\/(lib\/)?trm\.js"/);
     }
   });
 });
