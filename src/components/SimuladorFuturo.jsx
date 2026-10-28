@@ -71,13 +71,17 @@ export function construirBase(user) {
   const vig = (item) => {
     const r = rangoEfectivo(item);
     const esVariable = getFrecuencia(item) === "variable";
-    const termina = esVariable ? (r.hasta < Math.min(mesHoy, 12)) : (r.hasta < 12);
+    // 28-oct-2026 (Santiago: "no veo los salarios de los mayordomos ni la administración de Óscar").
+    // Un variable con monto hasta el mes pasado sigue vivo: el mes en curso aún no se ha cargado.
+    const termina = esVariable ? (r.hasta < Math.min(mesHoy, 12) - 1) : (r.hasta < 12);
     return { ...r, termina };
   };
+  // 28-oct-2026 (Santiago: "deberían aparecer así sea apagados y uno los activa"). Lo apagado en el
+  // simulador también aparece, sin contar, para poder llevarlo al año entrante con un toque.
+  const vigA = (item) => item.sim === false ? { ...vig(item), termina: true, apagado: true } : vig(item);
   (user.ingresos || []).forEach((i, idx) => {
-    if (i.sim === false) return;
     const fx = i.moneda === "USD" ? trm : 1;
-    const v = vig(i);
+    const v = vigA(i);
     out.push({
       key: `ing_${idx}`, kind: "ing", ref: i, vig: v,
       nombre: i.nombre || i.fuente || "Ingreso", cat: i.categoria || "",
@@ -90,9 +94,8 @@ export function construirBase(user) {
   });
   Object.entries(user.gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g, idx) => {
-      if (g.sim === false) return;
       const fx = g.moneda === "USD" ? trm : 1;
-      const v = vig(g);
+      const v = vigA(g);
       out.push({
         key: `gas_${cat}_${idx}`, kind: "gas", ref: g, vig: v,
         nombre: g.c || "Gasto", cat,
@@ -295,7 +298,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   // 11-oct-2026 (Santiago: "de dónde me gasto yo hoy 115M, no me da"). "Hoy"
   // usaba la proyección a 12 meses completos: las pensiones que en 2026 corren
   // oct–dic contaban como todo el año. Ahora es 2026 tal como fue.
-  const filasHoy = useMemo(() => base.map((b) => ({ ...b, meses: b.porMesReal(añoHoy), origen: "hoy" })), [base, añoHoy]);
+  const filasHoy = useMemo(() => base.filter((b) => !b.vig?.apagado).map((b) => ({ ...b, meses: b.porMesReal(añoHoy), origen: "hoy" })), [base, añoHoy]);
   const impHoy = useMemo(() => impuestoAnual(usuarioFuturo(user, filasHoy)), [user, filasHoy]);
   const hoy = useMemo(() => cuadro(filasHoy, MESES.map((_, i) => i), impHoy), [filasHoy, impHoy]);
 
@@ -924,7 +927,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           {cambios.filter((c) => c.tipo === "nuevo" || c.tipo === "continua").map((c) => {
             const fila = filas.find((f) => f.key === c.ref) || filas.find((f) => f.key === c.id);
             const nombre = c.tipo === "nuevo" ? c.nombre : (fila?.nombre || "—");
-            const texto = c.tipo === "continua" ? `sigue en ${año} aunque en ${añoHoy} terminó en ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12).toLowerCase()}`
+            const texto = c.tipo === "continua" ? (base.find((b) => b.key === c.ref)?.vig?.apagado ? `estaba apagado; cuenta en ${año}` : `sigue en ${año} aunque en ${añoHoy} terminó en ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12).toLowerCase()}`)
               : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
               : c.tipo === "cambia" ? `pasa a ${fm(c.monto)} desde ${mesL(c.desdeMes).toLowerCase()}`
               : `entra ${fm(c.monto)}/mes de ${mesL(c.desdeMes).toLowerCase()} a ${mesL(c.hastaMes || 12).toLowerCase()}${Number(c.capital) > 0 && Number(c.tasa) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`;
@@ -1010,6 +1013,29 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
         {/* ── Base: la vida de hoy ── */}
         <div style={card}>
           <div style={F.h2}>Tu vida de hoy, llevada a {año}</div>
+          {(() => {
+            const terminan = base.filter((b) => b.vig?.termina && !cambios.some((c) => c.tipo === "continua" && c.ref === b.key));
+            if (!terminan.length) return null;
+            return (
+              <div style={{ margin: "4px 0 14px", padding: "10px 12px", borderRadius: R.md, border: `1px solid ${Cα.warn15}`, background: Cα.warn15 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ ...F.h3, color: C.warn }}>⚠️ {terminan.length} {terminan.length === 1 ? "cosa no cuenta" : "cosas no cuentan"} en {año}: terminaron en {añoHoy} o están apagadas</div>
+                  <button style={{ ...btn(true), padding: "5px 12px", fontSize: 12 }} onClick={() => actualizar({ cambios: [...cambios, ...terminan.map((f) => ({ id: uid(), tipo: "continua", kind: f.kind, ref: f.key, desdeMes: 1 }))] })}>Traer todas a {año}</button>
+                </div>
+                <div style={{ ...F.caption, margin: "4px 0 6px" }}>Si alguna sigue (salarios, administración, arriendos), tócala en «Sí continúa en {año}» y entra con su valor de hoy los 12 meses.</div>
+                {terminan.map((f) => (
+                  <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, opacity: 0.75 }}>
+                    <span style={{ ...F.label, color: colorK[f.kind], minWidth: 56 }}>{kindL[f.kind]}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                      <div style={F.caption}>{fm(f.montoTipico)}/mes · {f.vig.apagado ? "apagado en el simulador" : `hasta ${mesL(f.vig.hasta).toLowerCase()} de ${añoHoy}`}</div>
+                    </div>
+                    <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => agregarCambio({ tipo: "continua", kind: f.kind, ref: f.key, desdeMes: 1 })}>Sí continúa en {año}</button>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <div style={{ ...F.caption, marginBottom: 8 }}>Lo que tienes encendido para simular, proyectado a todo el año. Los pagos únicos de este año no se repiten. Toca Termina o Cambia en una fila: el ajuste se hace ahí mismo y el resultado se actualiza en la tira de arriba.</div>
           {["ing", "gas", "deu"].map((k) => {
             const grupo = filas.filter((f) => f.kind === k && f.origen === "hoy" || (f.kind === k && f.cambio && f.origen !== "nuevo"));
@@ -1047,26 +1073,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
             );
           })}
-          {(() => {
-            const terminan = base.filter((b) => b.vig?.termina && !cambios.some((c) => c.tipo === "continua" && c.ref === b.key));
-            if (!terminan.length) return null;
-            return (
-              <div style={{ marginTop: 16, paddingTop: 10, borderTop: `1px dashed ${C.borderStrong}` }}>
-                <div style={F.h3}>Terminan en {añoHoy} · no se llevan a {año}</div>
-                <div style={{ ...F.caption, marginBottom: 6 }}>Su vigencia acaba antes de diciembre. Si en realidad siguen, márcalo.</div>
-                {terminan.map((f) => (
-                  <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, opacity: 0.75 }}>
-                    <span style={{ ...F.label, color: colorK[f.kind], minWidth: 56 }}>{kindL[f.kind]}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
-                      <div style={F.caption}>{fm(f.montoTipico)}/mes · hasta {mesL(f.vig.hasta).toLowerCase()} de {añoHoy}</div>
-                    </div>
-                    <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => agregarCambio({ tipo: "continua", kind: f.kind, ref: f.key, desdeMes: 1 })}>Sí continúa en {año}</button>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
+
           {filas.filter((f) => f.origen === "hoy").length === 0 && (
             <div style={F.body}>No hay nada encendido para simular. Revisa los interruptores "simular" en Ingresos, Egresos y Deudas{onNavigate ? "" : "."}</div>
           )}
