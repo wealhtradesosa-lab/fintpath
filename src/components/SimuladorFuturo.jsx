@@ -293,7 +293,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const guardar = (lista) => onUpdate && onUpdate(lista);
   const actualizar = (patch) => guardar(escenarios.map((e) => (e.id === selId ? { ...e, ...patch } : e)));
   const nuevoEscenario = () => {
-    const e = { id: uid(), nombre: `Mi ${añoHoy + 1}`, año: añoHoy + 1, cambios: [], activos: {}, conocidos: construirBase(user).map((b) => b.key), creado: new Date().toISOString() };
+    const b0 = construirBase(user);
+    const e = { id: uid(), nombre: `Mi ${añoHoy + 1}`, año: añoHoy + 1, cambios: [], activos: Object.fromEntries(b0.map((b) => [b.key, !b.vig?.termina])), conocidos: b0.map((b) => b.key), creado: new Date().toISOString() };
     guardar([...escenarios, e]); setSelId(e.id); setMesFoco(null);
   };
   const borrarEscenario = () => {
@@ -324,7 +325,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const filas = useMemo(() => aplicarCambios(base, cambios, año, incluidosSet), [base, cambios, año, incluidosSet]);
   const nuevosHoy = base.filter(esNuevoHoy);
   const excluidos = base.filter((b) => !incluidosSet.has(b.key) && !esNuevoHoy(b));
-  const setActivo = (keys, val) => actualizar({ activos: { ...activos, ...Object.fromEntries(keys.map((k) => [k, val])) }, conocidos: [...new Set([...(esc?.conocidos || base.map((b) => b.key)), ...keys])] });
+  // Al primer toque se guarda la foto completa (qué cuenta y qué no): desde ahí, apagar algo en el
+  // simulador o en Egresos ya no mueve este escenario.
+  const setActivo = (keys, val) => {
+    const foto = Object.fromEntries(base.filter((b) => !esNuevoHoy(b)).map((b) => [b.key, incluido(b)]));
+    actualizar({ activos: { ...foto, ...activos, ...Object.fromEntries(keys.map((k) => [k, val])) }, conocidos: [...new Set([...(esc?.conocidos || base.map((b) => b.key)), ...keys])], cambios });
+  };
   // Escenario viejo sin «conocidos»: no se escribe nada al abrirlo; la foto de hoy se guarda con el
   // primer interruptor que toques (setActivo), y los ajustes migrados se guardan con el siguiente cambio.
   const impFut = useMemo(() => impuestoAnual(usuarioFuturo(user, filas)), [user, filas]);
