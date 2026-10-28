@@ -636,6 +636,53 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
           </div>
 
+          {/* 28-oct-2026 (Santiago: "no sé de dónde sale que en 2027 tengo ingresos superiores a 150 M").
+              Lo que más mueve los ingresos y los gastos frente a hoy, ítem por ítem. */}
+          {(() => {
+            const idxF = foco ? [foco.mes - 1] : idxRegimen;
+            const nF = idxF.length || 1;
+            const fut = (f) => idxF.reduce((a, i) => a + (f.meses[i] || 0), 0) / nF;
+            const hoyDe = (key) => { const h = filasHoy.find((x) => x.key === key); return h ? h.meses.reduce((a, v) => a + v, 0) / 12 : 0; };
+            const difs = filas.filter((f) => f.kind === "ing" || f.kind === "gas").map((f) => {
+              const a = hoyDe(f.key), b = fut(f);
+              const h = filasHoy.find((x) => x.key === f.key);
+              const mesesHoy = h ? h.meses.filter((v) => v > 0).length : 0;
+              const motivo = f.origen === "nuevo" ? "nuevo en tu escenario"
+                : f.cambio ? (f.cambio.tipo === "cambia" ? "lo cambiaste" : f.cambio.tipo === "meses" ? "solo unos meses" : f.cambio.tipo === "termina" ? "termina" : "")
+                : (mesesHoy > 0 && mesesHoy < 12 && b > a ? `en ${añoHoy} solo contó ${mesesHoy} ${mesesHoy === 1 ? "mes" : "meses"}; en ${año} cuenta todo el año` : "");
+              return { nombre: f.nombre, kind: f.kind, a, b, d: b - a, motivo };
+            }).filter((x) => Math.abs(x.d) >= 1000).sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
+            const top = (k) => difs.filter((x) => x.kind === k).slice(0, 5);
+            const bloqueK = (k, titulo, total) => {
+              const lst = top(k);
+              if (!lst.length) return null;
+              return (
+                <div style={{ flex: "1 1 320px", minWidth: 0 }}>
+                  <div style={{ ...F.label, marginBottom: 6 }}>{titulo} {total >= 0 ? "suben" : "bajan"} {fm(Math.abs(total))}/mes — lo que más pesa</div>
+                  {lst.map((x, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "5px 0", borderTop: i ? `1px solid ${C.border}` : "none" }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</div>
+                        <div style={F.caption}>{fm(x.a)} hoy → {fm(x.b)} en {año}{x.motivo ? ` · ${x.motivo}` : ""}</div>
+                      </div>
+                      <div style={{ ...F.mono, fontWeight: 800, color: (k === "ing") === (x.d > 0) ? C.ok : C.danger, whiteSpace: "nowrap" }}>{x.d > 0 ? "+" : "−"}{fm(Math.abs(x.d))}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            };
+            if (!difs.length) return null;
+            return (
+              <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.surface }}>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 }}>🔎 ¿Por qué cambia frente a hoy?</div>
+                <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+                  {bloqueK("ing", "Ingresos", vista.ingresos - hoy.ingresos)}
+                  {bloqueK("gas", "Gastos", vista.gastos - hoy.gastos)}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* 11-oct-2026 (Santiago: "ese gráfico se ve enorme… mire esos espacios
               vacíos"). Orden: barras a todo el ancho (son bajitas), y debajo el
               Sankey y el desglose ítem por ítem lado a lado, que tienen alturas
