@@ -60,9 +60,20 @@ const FISCAL_ING = {
 // no cosas que se repiten cada año. Quedan listadas aparte con un botón "sí
 // continúa" por si el usuario sabe que siguen. Lo que empieza a mitad de año,
 // el año entrante va completo.
+// 28-oct-2026 — Claves estables por ítem (id, o nombre normalizado + número si se repite). Antes era la
+// posición en la lista (`gas_Vivienda_3`): al borrar o reordenar un gasto, los ajustes de un escenario
+// caían en OTRO ítem. `oldKey` guarda la clave vieja para migrar escenarios guardados.
+const normK = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 export function construirBase(user) {
   const trm = user?.trm || 4200;
   const out = [];
+  const vistos = {};
+  const claveEstable = (pref, item, nombre) => {
+    if (item && item.id) return `${pref}:id:${item.id}`;
+    const b = `${pref}:${normK(nombre)}`;
+    vistos[b] = (vistos[b] || 0) + 1;
+    return vistos[b] > 1 ? `${b}#${vistos[b]}` : b;
+  };
   // 10-oct-2026: un variable sin montos en los meses que FALTAN del año no
   // "terminó" (district: montos hasta octubre porque nov y dic no han
   // pasado). Solo cuenta como terminado si su último monto es anterior al
@@ -83,7 +94,7 @@ export function construirBase(user) {
     const fx = i.moneda === "USD" ? trm : 1;
     const v = vigA(i);
     out.push({
-      key: `ing_${idx}`, kind: "ing", ref: i, vig: v,
+      key: claveEstable("ing", i, i.nombre || i.fuente), oldKey: `ing_${idx}`, kind: "ing", ref: i, vig: v,
       nombre: i.nombre || i.fuente || "Ingreso", cat: i.categoria || "",
       capital: Number(i.capital) || 0, tasa: Number(i.tasa) || 0, tasaModo: i.tasaModo || "anual",
       montoTipico: (getFrecuencia(i) === "variable" ? supuestoVariable(i).monto : promedioMesActivo(i)) * fx,
@@ -97,7 +108,7 @@ export function construirBase(user) {
       const fx = g.moneda === "USD" ? trm : 1;
       const v = vigA(g);
       out.push({
-        key: `gas_${cat}_${idx}`, kind: "gas", ref: g, vig: v,
+        key: claveEstable(`gas:${cat}`, g, g.c), oldKey: `gas_${cat}_${idx}`, kind: "gas", ref: g, vig: v,
         nombre: g.c || "Gasto", cat,
         montoTipico: (getFrecuencia(g) === "variable" ? supuestoVariable(g).monto : promedioMesActivo(g)) * fx,
         supuesto: getFrecuencia(g) === "variable" ? supuestoVariable(g).texto : (getFrecuencia(g) === "mensual" ? "" : `${getFrecuencia(g)} · cae en su mes`),
@@ -107,13 +118,13 @@ export function construirBase(user) {
     });
   });
   (user.deudas || []).forEach((d, idx) => {
-    if (d.sim === false || (d.mt || 0) <= 0) return;
+    if ((d.mt || 0) <= 0) return;
     const cuota = d.pago || d.pg || 0;
     const hasta = Number(d.hastaMes) || 12;
-    const v = { desde: Number(d.desdeMes) || 1, hasta, termina: hasta < 12 };
+    const v = d.sim === false ? { desde: Number(d.desdeMes) || 1, hasta, termina: true, apagado: true } : { desde: Number(d.desdeMes) || 1, hasta, termina: hasta < 12 };
     const dFull = { ...d, desdeMes: 1, hastaMes: 12 };
     out.push({
-      key: `deu_${idx}`, kind: "deu", ref: d, vig: v,
+      key: claveEstable("deu", d, d.n || d.nombre), oldKey: `deu_${idx}`, kind: "deu", ref: d, vig: v,
       nombre: d.n || d.nombre || "Deuda", cat: d.tipo || "",
       montoTipico: cuotaDeudaDelMes(dFull, cuota, getMesActual().año, 1, trm) || cuota * (d.moneda === "USD" ? trm : 1),
       porMes: (año) => MESES.map((m) => cuotaDeudaDelMes(dFull, cuota, año, m.v, trm)),
@@ -163,10 +174,11 @@ export function proyectarPorMes(item, año, fx) {
 }
 
 // ─── Aplicar cambios → 12 meses por ítem (base + nuevos) ───────────────────
-export function aplicarCambios(base, cambios, año) {
+export function aplicarCambios(base, cambios, año, incluidos) {
   const continuan = new Set(cambios.filter((c) => c.tipo === "continua").map((c) => c.ref));
+  // 28-oct-2026: cada escenario tiene sus propios interruptores (`incluidos`); sin ellos, regla de antes.
   const filas = base
-    .filter((b) => !b.vig?.termina || continuan.has(b.key))
+    .filter((b) => (incluidos ? incluidos.has(b.key) : (!b.vig?.termina || continuan.has(b.key))))
     .map((b) => ({ ...b, meses: b.porMes(año), origen: "hoy", continua: b.vig?.termina ? cambios.find((c) => c.tipo === "continua" && c.ref === b.key) : null }));
   cambios.forEach((c) => {
     if (c.tipo === "nuevo") {
@@ -265,7 +277,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
   const esc = escenarios.find((e) => e.id === selId) || null;
   const año = esc?.año || añoHoy + 1;
-  const cambios = esc?.cambios || [];
+  const cambiosRaw = esc?.cambios || [];
 
   // La tira fija solo aparece cuando el veredicto salió de la vista (al editar abajo).
   const veredictoRef = useRef(null);
@@ -281,7 +293,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const guardar = (lista) => onUpdate && onUpdate(lista);
   const actualizar = (patch) => guardar(escenarios.map((e) => (e.id === selId ? { ...e, ...patch } : e)));
   const nuevoEscenario = () => {
-    const e = { id: uid(), nombre: `Mi ${añoHoy + 1}`, año: añoHoy + 1, cambios: [], creado: new Date().toISOString() };
+    const e = { id: uid(), nombre: `Mi ${añoHoy + 1}`, año: añoHoy + 1, cambios: [], activos: {}, conocidos: construirBase(user).map((b) => b.key), creado: new Date().toISOString() };
     guardar([...escenarios, e]); setSelId(e.id); setMesFoco(null);
   };
   const borrarEscenario = () => {
@@ -291,7 +303,30 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   };
 
   const base = useMemo(() => construirBase(user), [user]);
-  const filas = useMemo(() => aplicarCambios(base, cambios, año), [base, cambios, año]);
+  // Escenarios guardados con claves viejas (posición) → claves estables.
+  const mapaViejo = useMemo(() => { const m = {}; base.forEach((b) => { if (b.oldKey) m[b.oldKey] = b.key; }); return m; }, [base]);
+  const cambios = useMemo(() => cambiosRaw.map((c) => (c.ref && mapaViejo[c.ref] && !base.some((b) => b.key === c.ref) ? { ...c, ref: mapaViejo[c.ref] } : c)), [cambiosRaw, mapaViejo, base]);
+  // ═══ 28-oct-2026 (Santiago: "si apago y prendo un gasto en las secciones también desaparece del año
+  // futuro… ¿qué pasa si quiero proyectar un futuro diferente?"). Cada escenario tiene sus interruptores:
+  //   esc.activos[key] = true/false → decisión del usuario en ESTE escenario (manda sobre todo)
+  //   esc.conocidos = claves que existían al crear el escenario → lo que aparezca después en tus datos
+  //   no se cuela solo: queda en «Nuevos en tus datos de hoy» hasta que decidas.
+  const activos = esc?.activos || {};
+  const conocidos = esc?.conocidos ? new Set(esc.conocidos) : null;
+  const esNuevoHoy = (b) => !!conocidos && !conocidos.has(b.key) && !(b.oldKey && conocidos.has(b.oldKey)) && activos[b.key] === undefined;
+  const incluido = (b) => {
+    if (activos[b.key] !== undefined) return !!activos[b.key];
+    if (cambios.some((c) => c.tipo === "continua" && c.ref === b.key)) return true;
+    if (esNuevoHoy(b)) return false;
+    return !b.vig?.termina;
+  };
+  const incluidosSet = useMemo(() => new Set(base.filter(incluido).map((b) => b.key)), [base, esc]);
+  const filas = useMemo(() => aplicarCambios(base, cambios, año, incluidosSet), [base, cambios, año, incluidosSet]);
+  const nuevosHoy = base.filter(esNuevoHoy);
+  const excluidos = base.filter((b) => !incluidosSet.has(b.key) && !esNuevoHoy(b));
+  const setActivo = (keys, val) => actualizar({ activos: { ...activos, ...Object.fromEntries(keys.map((k) => [k, val])) }, conocidos: [...new Set([...(esc?.conocidos || base.map((b) => b.key)), ...keys])] });
+  // Escenario viejo sin «conocidos»: no se escribe nada al abrirlo; la foto de hoy se guarda con el
+  // primer interruptor que toques (setActivo), y los ajustes migrados se guardan con el siguiente cambio.
   const impFut = useMemo(() => impuestoAnual(usuarioFuturo(user, filas)), [user, filas]);
 
   // Hoy: la misma base, en el año en curso, con el impuesto de hoy.
@@ -396,7 +431,26 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   );
 
   // Fila individual de la base (ingreso, gasto o deuda), reutilizada por categoría.
+  const Interruptor = ({ on, onClick, titulo }) => (
+    <button type="button" onClick={onClick} title={titulo} aria-pressed={on}
+      style={{ width: 34, height: 20, borderRadius: 999, border: "none", cursor: "pointer", padding: 2, flexShrink: 0, background: on ? C.ok : C.border, display: "flex", justifyContent: on ? "flex-end" : "flex-start", transition: "all .15s" }}>
+      <span style={{ width: 16, height: 16, borderRadius: 999, background: C.text, display: "block" }} />
+    </button>
+  );
+  const motivoExcluido = (f) => activos[f.key] === false ? `apagado en este escenario`
+    : f.vig?.apagado ? "apagado en el simulador de hoy · tócalo para contarlo en " + año
+    : f.vig?.termina ? `terminó en ${mesL(f.vig.hasta).toLowerCase()} de ${añoHoy} · tócalo si sigue en ${año}` : "no cuenta";
   const renderFila = (f) => { const k = f.kind;
+                  if (f.excluido) return (
+                    <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.border}`, opacity: 0.55, flexWrap: "wrap" }}>
+                      <Interruptor on={false} onClick={() => setActivo([f.key], true)} titulo={`Contar en ${año}`} />
+                      <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+                        <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "line-through" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                        <div style={F.caption}>{motivoExcluido(f)}</div>
+                      </div>
+                      <div style={{ ...F.mono, color: C.muted, whiteSpace: "nowrap" }}>{fm(f.montoTipico)}/mes</div>
+                    </div>
+                  );
                   const anual = f.meses.reduce((s, v) => s + v, 0);
                   const c = f.cambio;
                   const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
@@ -408,6 +462,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   return (
                     <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        {f.origen !== "nuevo" && <Interruptor on onClick={() => setActivo([f.key], false)} titulo={`No contar en ${año}`} />}
                         <div style={{ flex: "1 1 220px", minWidth: 0 }}>
                           <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
                           {/* 11-oct-2026 (Santiago: "¿cuánto es entonces mi arriendo?").
@@ -1013,32 +1068,34 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
         {/* ── Base: la vida de hoy ── */}
         <div style={card}>
           <div style={F.h2}>Tu vida de hoy, llevada a {año}</div>
-          {(() => {
-            const terminan = base.filter((b) => b.vig?.termina && !cambios.some((c) => c.tipo === "continua" && c.ref === b.key));
-            if (!terminan.length) return null;
-            return (
-              <div style={{ margin: "4px 0 14px", padding: "10px 12px", borderRadius: R.md, border: `1px solid ${Cα.warn15}`, background: Cα.warn15 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ ...F.h3, color: C.warn }}>⚠️ {terminan.length} {terminan.length === 1 ? "cosa no cuenta" : "cosas no cuentan"} en {año}: terminaron en {añoHoy} o están apagadas</div>
-                  <button style={{ ...btn(true), padding: "5px 12px", fontSize: 12 }} onClick={() => actualizar({ cambios: [...cambios, ...terminan.map((f) => ({ id: uid(), tipo: "continua", kind: f.kind, ref: f.key, desdeMes: 1 }))] })}>Traer todas a {año}</button>
+          {nuevosHoy.length > 0 && (
+            <div style={{ margin: "4px 0 14px", padding: "10px 12px", borderRadius: R.md, background: Cα.accent08, border: `1px solid ${C.border}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <div style={F.h3}>🆕 {nuevosHoy.length} {nuevosHoy.length === 1 ? "cosa nueva" : "cosas nuevas"} en tus datos de hoy · ¿{nuevosHoy.length === 1 ? "cuenta" : "cuentan"} en {año}?</div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button style={{ ...btn(true), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), true)}>Contar todas</button>
+                  <button style={{ ...btn(false), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), false)}>Ninguna</button>
                 </div>
-                <div style={{ ...F.caption, margin: "4px 0 6px" }}>Si alguna sigue (salarios, administración, arriendos), tócala en «Sí continúa en {año}» y entra con su valor de hoy los 12 meses.</div>
-                {terminan.map((f) => (
-                  <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, opacity: 0.75 }}>
-                    <span style={{ ...F.label, color: colorK[f.kind], minWidth: 56 }}>{kindL[f.kind]}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
-                      <div style={F.caption}>{fm(f.montoTipico)}/mes · {f.vig.apagado ? "apagado en el simulador" : `hasta ${mesL(f.vig.hasta).toLowerCase()} de ${añoHoy}`}</div>
-                    </div>
-                    <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => agregarCambio({ tipo: "continua", kind: f.kind, ref: f.key, desdeMes: 1 })}>Sí continúa en {año}</button>
-                  </div>
-                ))}
               </div>
-            );
-          })()}
-          <div style={{ ...F.caption, marginBottom: 8 }}>Lo que tienes encendido para simular, proyectado a todo el año. Los pagos únicos de este año no se repiten. Toca Termina o Cambia en una fila: el ajuste se hace ahí mismo y el resultado se actualiza en la tira de arriba.</div>
+              <div style={{ ...F.caption, margin: "4px 0 6px" }}>Las registraste después de crear este escenario. No se suman solas: tú decides.</div>
+              {nuevosHoy.map((f) => (
+                <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+                  <span style={{ ...F.label, color: colorK[f.kind], minWidth: 56 }}>{kindL[f.kind]}</span>
+                  <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+                    <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                    <div style={F.caption}>{fm(f.montoTipico)}/mes</div>
+                  </div>
+                  <button style={{ ...btn(true), padding: "3px 10px", fontSize: 11 }} onClick={() => setActivo([f.key], true)}>Contar</button>
+                  <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => setActivo([f.key], false)}>No</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ ...F.caption, marginBottom: 8 }}>Todo lo que tienes hoy, llevado a {año}. <b style={{ color: C.text }}>Este escenario tiene sus propios interruptores</b>: prender o apagar aquí no cambia tus datos ni el simulador, y apagar algo allá no lo saca de aquí. Usa Cambia, Unos meses o Termina para ajustar una fila.</div>
           {["ing", "gas", "deu"].map((k) => {
-            const grupo = filas.filter((f) => f.kind === k && f.origen === "hoy" || (f.kind === k && f.cambio && f.origen !== "nuevo"));
+            const grupoIn = filas.filter((f) => f.kind === k && f.origen === "hoy" || (f.kind === k && f.cambio && f.origen !== "nuevo"));
+            const grupoEx = excluidos.filter((b) => b.kind === k).map((b) => ({ ...b, excluido: true, meses: MESES.map(() => 0) }));
+            const grupo = [...grupoIn, ...grupoEx];
             if (!grupo.length) return null;
             return (
               <div key={k} style={{ marginTop: 10 }}>
@@ -1047,7 +1104,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   const anualGrupo = grupo.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0);
                   return (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
-                      <span style={{ ...F.label, color: colorK[k] }}>{kindL[k]}s · {grupo.length}</span>
+                      <span style={{ ...F.label, color: colorK[k] }}>{kindL[k]}s · {grupoIn.length}{grupoEx.length ? ` de ${grupo.length}` : ""}</span>
                       <span style={{ ...F.mono, fontSize: 13, color: colorK[k] }}>{fm(anualGrupo / 12)}/mes <span style={{ ...F.caption, color: C.subtle }}>· {fm(anualGrupo)} en {año}</span></span>
                     </div>
                   );
@@ -1058,7 +1115,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   grupo.forEach((f) => { const cat = f.cat || "Sin categoría"; (porCat[cat] = porCat[cat] || []).push(f); });
                   // 21-oct-2026 (Santiago: "lo más importante, saber cuánto invertí, no se ve").
                   // Capital por categoría: el del cambio si se cambió por capital, si no el del ítem.
-                  const capitalDe = (f) => { const c = f.cambio; return (c && c.tipo === "cambia" && c.modo === "capital" && Number(c.capital) > 0) ? Number(c.capital) : (Number(f.capital) || 0); };
+                  const capitalDe = (f) => { if (f.excluido) return 0; const c = f.cambio; return (c && c.tipo === "cambia" && c.modo === "capital" && Number(c.capital) > 0) ? Number(c.capital) : (Number(f.capital) || 0); };
                   const cats = Object.entries(porCat).map(([cat, fs]) => ({ cat, fs, anual: fs.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0), capital: fs.reduce((a, f) => a + capitalDe(f), 0) })).sort((a, b) => b.anual - a.anual);
                   return cats.map(({ cat, fs, anual: anualCat, capital: capCat }) => (
                     <div key={cat} style={{ marginTop: 6 }}>
