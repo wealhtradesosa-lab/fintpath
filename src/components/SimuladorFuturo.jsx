@@ -138,7 +138,10 @@ function supuestoVariable(item) {
   }
   const vals = conMonto.map((x) => x.v).sort((a, b) => a - b);
   const med = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
-  return { monto: med, texto: `mediana de ${conMonto.length} ${conMonto.length === 1 ? "mes" : "meses"} con monto (desde ${mesL(primero).toLowerCase()})` };
+  // 28-oct-2026 (Santiago: "son ingresos de todo 2027, ¿por qué dice desde septiembre si no di esa instrucción?").
+  // El cálculo ya cuenta los 12 meses; el texto daba a entender que empezaba en septiembre. Ahora dice de dónde
+  // sale el valor: lo que recibes desde ese mes de ESTE año.
+  return { monto: med, texto: `todo el año · valor típico de lo que recibes desde ${mesL(primero).toLowerCase()} de este año (${conMonto.length} ${conMonto.length === 1 ? "mes" : "meses"})` };
 }
 
 // Un ítem de hoy, en cada mes del año futuro. "unico" no se repite; "variable"
@@ -179,6 +182,11 @@ export function aplicarCambios(base, cambios, año) {
     if (c.tipo === "termina") {
       fila.meses = fila.meses.map((v, i) => (i + 1 >= desde ? 0 : v));
       fila.cambio = c; fila.origen = "termina";
+    } else if (c.tipo === "meses") {
+      // 28-oct-2026 (Santiago: "uno debería poder marcar si es todo el año o unos meses").
+      const hasta = Number(c.hastaMes) || 12;
+      fila.meses = fila.meses.map((v, i) => (i + 1 >= desde && i + 1 <= hasta ? v : 0));
+      fila.cambio = c; fila.origen = "meses";
     } else if (c.tipo === "cambia") {
       fila.meses = fila.meses.map((v, i) => (i + 1 >= desde ? Number(c.monto) || 0 : v));
       fila.cambio = c; fila.origen = "cambia";
@@ -310,6 +318,10 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
         if (d >= 1 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: `entra ${nombreDe(c)} (${fm(c.monto)}/mes)` });
         const h = Number(c.hastaMes) || 12;
         if (h < 12) ev[h].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
+      } else if (c.tipo === "meses") {
+        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: `arranca ${nombreDe(c)}` });
+        const h = Number(c.hastaMes) || 12;
+        if (h < 12) ev[h].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
       } else if (c.tipo === "termina") {
         if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
       } else if (c.tipo === "cambia") {
@@ -387,6 +399,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
                   const estado = !c ? null
                     : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
+                    : c.tipo === "meses" ? `cuenta solo de ${mesL(Number(c.desdeMes) || 1).toLowerCase()} a ${mesL(Number(c.hastaMes) || 12).toLowerCase()} de ${año}`
                     : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}${c.modo === "capital" && rentaDe(c.capital, c.tasa, c.tasaModo) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`
                     : c.tipo === "continua" ? `sigue en ${año}` : "";
                   return (
@@ -418,7 +431,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                           ) : (
                             <div style={F.caption}>
                               {f.capital > 0 && f.tasa > 0 ? <>Capital <b style={{ color: C.text }}>{fm(f.capital)}</b> × {fmtTasaEs(f.tasa)} {f.tasaModo === "mensual" ? "mensual" : "anual"} → </> : ""}
-                              {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : ""}
+                              {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : (f.meses.every((v) => v > 0) ? " · todo el año" : "")}
                             </div>
                           )}
                           {estado && (
@@ -429,13 +442,28 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                           )}
                         </div>
                         {!c && !editando && (<>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "meses", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, hastaMes: 12 })}>Unos meses</button>
                           <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
                           <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico), modo: k === "ing" && f.capital > 0 ? "capital" : "monto", capital: f.capital || "", tasa: f.tasa || "", tasaModo: f.tasaModo || "anual" })}>Cambia</button>
                         </>)}
                       </div>
                       {editando && (
                         <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
-                          {form.tipo === "termina" ? (
+                          {form.tipo === "meses" ? (<>
+                            <div style={{ flex: "1 1 100%", ...F.caption }}>¿En qué meses de {año} cuenta? Fuera de ese rango, en cero.</div>
+                            <div style={{ flex: "0 1 140px" }}>
+                              <div style={F.label}>Desde</div>
+                              <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value), hastaMes: Math.max(Number(e.target.value), Number(form.hastaMes) || 12) })}>
+                                {MESES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                              </select>
+                            </div>
+                            <div style={{ flex: "0 1 140px" }}>
+                              <div style={F.label}>Hasta</div>
+                              <select style={input} value={form.hastaMes} onChange={(e) => setForm({ ...form, hastaMes: Number(e.target.value) })}>
+                                {MESES.filter((m) => m.v >= (Number(form.desdeMes) || 1)).map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                              </select>
+                            </div>
+                          </>) : form.tipo === "termina" ? (
                             <div style={{ flex: "1 1 160px" }}>
                               <div style={F.label}>Último mes que cuenta en {año}</div>
                               <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
@@ -833,7 +861,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           </div>
 
           {cambios.length === 0 && <div style={{ ...F.body, marginTop: 10 }}>Todavía no hay cambios. Agrega algo nuevo con los botones de arriba, o baja a tu vida de hoy y marca en cada fila qué termina o qué cambia.</div>}
-          {cambios.some((c) => c.tipo === "termina" || c.tipo === "cambia") && <div style={{ ...F.caption, marginTop: 8 }}>{cambios.filter((c) => c.tipo === "termina" || c.tipo === "cambia").length} ajustes sobre tu vida de hoy: se ven marcados en cada fila, abajo.</div>}
+          {cambios.some((c) => c.tipo === "termina" || c.tipo === "cambia" || c.tipo === "meses") && <div style={{ ...F.caption, marginTop: 8 }}>{cambios.filter((c) => c.tipo === "termina" || c.tipo === "cambia" || c.tipo === "meses").length} ajustes sobre tu vida de hoy: se ven marcados en cada fila, abajo.</div>}
           {cambios.filter((c) => c.tipo === "nuevo" || c.tipo === "continua").map((c) => {
             const fila = filas.find((f) => f.key === c.ref) || filas.find((f) => f.key === c.id);
             const nombre = c.tipo === "nuevo" ? c.nombre : (fila?.nombre || "—");
