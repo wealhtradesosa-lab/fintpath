@@ -404,8 +404,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     : c.tipo === "continua" ? `sigue en ${año}` : "";
                   return (
                     <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                        <div style={{ flex: "1 1 220px", minWidth: 0 }}>
                           <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
                           {/* 11-oct-2026 (Santiago: "¿cuánto es entonces mi arriendo?").
                               Con un cambio aplicado, primero el valor que rige en el año
@@ -441,6 +441,18 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                             </div>
                           )}
                         </div>
+                        {/* 28-oct-2026 (Santiago: "es muy importante hacer más visible la renta o el gasto mensual
+                            de cada ítem; solo se ve el capital y el valor mensual es el más importante"). */}
+                        {(() => {
+                          const mensual = c && c.tipo === "cambia" ? Number(c.monto) || 0 : f.montoTipico;
+                          const col = k === "ing" ? C.ok : k === "deu" ? C.warn : C.danger;
+                          return (
+                            <div style={{ textAlign: "right", flexShrink: 0, minWidth: 120 }}>
+                              <div style={{ ...F.mono, fontSize: 16, fontWeight: 800, color: col, lineHeight: 1.1 }}>{k === "ing" ? "+" : "−"}{fm(mensual)}<span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>/mes</span></div>
+                              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fm(anual)} en {año}</div>
+                            </div>
+                          );
+                        })()}
                         {!c && !editando && (<>
                           <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "meses", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, hastaMes: 12 })}>Unos meses</button>
                           <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
