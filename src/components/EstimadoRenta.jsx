@@ -905,7 +905,7 @@ function FechaPago({ owner, ano, valor, onCambiarMes, onNavigate }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 12, padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}` }}>
       <div style={{ ...F.body, color: C.text, flex: "1 1 260px" }}>
-        📅 Pagas <b>{mm(valor)}</b> <b>{textoFechaPago(owner)} de {ano}</b>, en un solo pago.
+        📅 Pagas <b>{mm(valor)}</b> {jur ? <>en dos cuotas: <b>{auto.length > 1 || owner.mesDeclaracion ? mesesDePago(owner).map((p) => MESES_F[p.mes - 1].toLowerCase()).join(" y ") : "mayo y julio"} de {ano}</b>.</> : <><b>{textoFechaPago(owner)} de {ano}</b>, en un solo pago.</>}
         <div style={F.caption}>
           {auto[0]?.auto ? "La fecha sale de tu cédula, según el calendario de la DIAN. " : jur ? "Las sociedades pagan en dos cuotas: elige el mes de la primera. " : "Si no es ese mes, cámbialo aquí al lado. "}
           Así queda en tu{" "}
