@@ -200,11 +200,28 @@ export default function OptimizadorGananciaOcasional({ u, onGuardar }) {
       <PageHeader label="Herramientas · venta de inmueble" title="¿Cuánto pago si vendo, y cómo pago menos?" accent="pago menos" compact
         subtitle="Cuatro datos y te armamos el plan: cada paso dice qué hacer, qué norma lo permite y cuánto te ahorra. Marca los que vas a hacer y mira cómo baja el impuesto." />
 
+      {/* Barra fija arriba: guardar y PDF siempre visibles (28-oct-2026: "¿dónde quedó el botón?") */}
+      <div style={{ ...card, marginBottom: 16, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", borderColor: Cα.accent25 }}>
+        <input id="go-nombre-top" style={{ ...inp, flex: "1 1 260px", width: "auto" }} placeholder={nombreSugerido()} value={nombre} onChange={(ev) => setNombre(ev.target.value)} aria-label="Nombre del cálculo" />
+        <button type="button" disabled={!r || !onGuardar} onClick={() => guardar(false)}
+          style={{ padding: "10px 14px", borderRadius: R.md, border: "none", background: r ? C.ok : C.raised, color: r ? C.bg : C.subtle, fontWeight: 700, fontSize: 13, cursor: r ? "pointer" : "not-allowed" }}>
+          💾 {abierto ? "Guardar cambios" : "Guardar cálculo"}
+        </button>
+        {abierto && r && <button type="button" onClick={() => guardar(true, nombreSugerido())} style={{ padding: "10px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.text, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Guardar como versión nueva</button>}
+        <button type="button" disabled={!r} onClick={() => r && exportGananciaOcasionalPDF(r, { ...f, _nombre: (nombre || "").trim() || undefined })}
+          style={{ padding: "10px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: r ? C.text : C.subtle, fontWeight: 700, fontSize: 13, cursor: r ? "pointer" : "not-allowed" }}>
+          📄 Descargar PDF
+        </button>
+        {abierto && <button type="button" onClick={nuevo} style={{ padding: "10px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Cálculo nuevo</button>}
+        <div style={{ ...F.caption, flex: "1 1 100%" }}>
+          {aviso ? <span style={{ color: C.ok }}>✓ {aviso}</span> : r ? "Guarda cada inmueble con su nombre y crea versiones (v1, v2…) para comparar escenarios." : "Llena los datos de abajo y se activan Guardar y PDF."}
+        </div>
+      </div>
+
       {guardados.length > 0 && (
         <div style={{ ...card, marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
             <div style={F.h2}>💾 Mis cálculos guardados</div>
-            {abierto && <button type="button" onClick={nuevo} style={{ padding: "6px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Cálculo nuevo</button>}
           </div>
           <div style={{ display: "grid", gap: 8 }}>
             {guardados.map((g) => (
@@ -291,7 +308,7 @@ export default function OptimizadorGananciaOcasional({ u, onGuardar }) {
           <span style={{ fontSize: 28 }}>🧮</span>
           <div>
             <div style={F.h3}>Completa año, costo y precio de venta</div>
-            <div style={F.caption}>Con esos datos te mostramos cuánto pagarías hoy y el plan para pagar menos. Ahí mismo aparecen los botones 💾 Guardar cálculo y 📄 Descargar PDF.</div>
+            <div style={F.caption}>Con esos datos te mostramos cuánto pagarías hoy y el plan para pagar menos. Ahí se activan los botones 💾 Guardar cálculo y 📄 Descargar PDF de arriba.</div>
           </div>
         </div>
       ) : (
@@ -299,18 +316,7 @@ export default function OptimizadorGananciaOcasional({ u, onGuardar }) {
           <div style={{ ...card, marginBottom: 16, borderColor: r.ahorro > 0 ? Cα.ok25 : C.border }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${C.border}` }}>
               <div style={{ ...F.caption, flex: "1 1 260px" }}>Estimación para planear, no es asesoría tributaria. Todo debe validarse con un contador o asesor tributario.</div>
-              {onGuardar && (
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", flex: "1 1 100%" }}>
-                  <input id="go-nombre" style={{ ...inp, flex: "1 1 260px", width: "auto" }} placeholder={nombreSugerido()} value={nombre} onChange={(ev) => setNombre(ev.target.value)} />
-                  <button type="button" onClick={() => guardar(false)} style={{ padding: "9px 14px", borderRadius: R.md, border: "none", background: C.ok, color: C.bg, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>💾 {abierto ? "Guardar cambios" : "Guardar cálculo"}</button>
-                  {abierto && <button type="button" onClick={() => guardar(true, nombreSugerido())} style={{ padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.text, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Guardar como versión nueva</button>}
-                  {aviso && <span style={{ ...F.caption, color: C.ok }}>✓ {aviso}</span>}
-                </div>
-              )}
-              <button type="button" onClick={() => exportGananciaOcasionalPDF(r, { ...f, _nombre: (nombre || "").trim() || undefined })}
-                style={{ padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                📄 Descargar PDF para tu contador
-              </button>
+
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, alignItems: "end", marginBottom: 14 }}>
               <div>
