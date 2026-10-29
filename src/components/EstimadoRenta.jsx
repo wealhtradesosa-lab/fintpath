@@ -569,30 +569,43 @@ function TablaIngresos({ e, r, registrados, onChange }) {
     <div style={{ background: C.raised, borderRadius: R.lg, padding: 14 }}>
       <div style={F.h3}>Así estaban tus ingresos en {e.ano} · ¿qué cambia en {e.anoEst}?</div>
       {modoReparto && (
-        <div style={{ margin: "8px 0 4px" }}>
-          <Aviso tipo="info">
-            <b>Paso 1:</b> tu declaración {e.ano} dice que recibiste <b>{mm(e.brutos)}</b> en total, pero no dice de qué. Escribe en la columna «En {e.ano}» cuánto recibías de cada cosa (al mes o al año). <b>Paso 2:</b> en cada una marca qué pasa en {e.anoEst}. Así el cambio sale de tus datos, no de un porcentaje.
-            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ flex: "1 1 220px", height: 8, background: C.raised, borderRadius: R.pill, overflow: "hidden" }}><div style={{ width: `${Math.min(100, (repartido / (e.brutos || 1)) * 100)}%`, height: "100%", background: Math.abs(repartido - e.brutos) < e.brutos * 0.02 ? C.ok : C.accent }} /></div>
-              <span style={{ ...F.mono, fontSize: 13 }}>Repartido {mm(repartido)} de {mm(e.brutos)}{repartido < e.brutos ? ` · faltan ${mm(e.brutos - repartido)}` : repartido > e.brutos * 1.02 ? ` · sobran ${mm(repartido - e.brutos)}` : " ✓"}</span>
-            </div>
-            <div style={{ ...F.caption, marginTop: 6 }}>¿Prefieres que lo traigamos solo? Vuelve a subir el PDF de la declaración en Historial: ahora la leemos separada por tipo.</div>
-          </Aviso>
+        <div style={{ ...card, background: C.surface, marginTop: 8 }}>
+          <div style={F.label}>Paso 1 · Así estaba {e.ano}</div>
+          <div style={{ ...F.h2, marginTop: 4 }}>En {e.ano} tuviste ingresos por {mm(e.brutos)}. ¿Cómo estaban distribuidos?</div>
+          <p style={{ ...F.caption, margin: "4px 0 10px" }}>Pon cuánto recibías de cada cosa, al mes o al año. Lo que no tenías déjalo en cero. Así ves de dónde salieron esos {mm(e.brutos)}.</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "10px 16px" }}>
+            {filas.filter((f) => f.plantilla).map((f) => (
+              <Campo key={f.id} label={f.nombre}>
+                <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
+              </Campo>
+            ))}
+          </div>
+          <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ flex: "1 1 220px", height: 8, background: C.raised, borderRadius: R.pill, overflow: "hidden" }}><div style={{ width: `${Math.min(100, (repartido / (e.brutos || 1)) * 100)}%`, height: "100%", background: Math.abs(repartido - e.brutos) < e.brutos * 0.02 ? C.ok : C.accent }} /></div>
+            <span style={{ ...F.mono, fontSize: 13 }}>Repartido {mm(repartido)} de {mm(e.brutos)}{repartido < e.brutos * 0.98 ? ` · faltan ${mm(e.brutos - repartido)}` : repartido > e.brutos * 1.02 ? ` · sobran ${mm(repartido - e.brutos)}` : " ✓"}</span>
+          </div>
+          <div style={{ ...F.caption, marginTop: 6 }}>¿Prefieres que lo traigamos solo? Vuelve a subir el PDF de la declaración en Historial: ahora la leemos separada por tipo.</div>
         </div>
       )}
-      <p style={{ ...F.body, margin: "4px 0 6px", display: modoReparto ? "none" : "block" }}>Estos son los ingresos de tu declaración {e.ano}. En cada uno dinos si este año sigue igual, cambia o ya no llega. Si uno junta varias cosas (por ejemplo, salario y comisiones vienen juntos), usa <b style={{ color: C.text }}>Desglosar</b> para separarlos.</p>
-      {filas.map((f) => {
+      {modoReparto && (
+        <div style={{ marginTop: 14 }}>
+          <div style={F.label}>Paso 2 · {e.anoEst}</div>
+          <div style={{ ...F.h2, marginTop: 4 }}>De eso, ¿qué sigue igual, qué cambió o ya no llega? ¿Qué llegó nuevo?</div>
+          {repartido === 0 && <p style={{ ...F.caption, marginTop: 6 }}>Primero reparte arriba tus ingresos de {e.ano}; aquí aparecerán para decir qué pasa con cada uno.</p>}
+        </div>
+      )}
+      {filas.filter((f) => !(f.plantilla && !(Number(f.antes) > 0))).map((f) => {
         const nueva = !f.declarada && !f.grupo && !f.plantilla;
         return (
           <div key={f.id} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(160px, calc((100% - 51px) / 6)), 1fr))", gap: 10, alignItems: "start", padding: "12px 0", borderTop: `1px solid ${C.border}` }}>
             <Campo label={nueva ? "Ingreso nuevo" : f.grupo ? "Parte de este ingreso" : "Ingreso"} ayuda={f.formal && !f.editable ? `En la declaración: ${f.formal}` : undefined}>
-              {nueva || f.editable || f.plantilla ? <input style={inp} value={f.nombre} placeholder={nueva ? "Ej. trabajo nuevo" : "Ej. comisiones"} onChange={(ev) => upd(f.id, { nombre: ev.target.value })} />
+              {nueva || f.editable ? <input style={inp} value={f.nombre} placeholder={nueva ? "Ej. trabajo nuevo" : "Ej. comisiones"} onChange={(ev) => upd(f.id, { nombre: ev.target.value })} />
                 : <div style={{ ...inp, height: "auto", minHeight: 42, padding: "8px 12px", display: "flex", alignItems: "center", color: C.text, lineHeight: 1.3 }}>{f.nombre}</div>}
             </Campo>
             {e.nat ? <Campo label="Tipo"><select style={sel_} value={f.tipo} onChange={(ev) => upd(f.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
             <Campo label={`En ${e.ano}`}>
               {nueva ? <div style={{ ...inp, display: "flex", alignItems: "center", color: C.subtle }}>—</div>
-                : f.editable || f.plantilla ? <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
+                : f.editable ? <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
                 : <div style={{ ...inp, display: "flex", alignItems: "center", color: C.text, fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(f.antes)}</div>}
             </Campo>
             {nueva ? <div /> : (
@@ -614,7 +627,6 @@ function TablaIngresos({ e, r, registrados, onChange }) {
                   {Math.abs(d) < 1 ? "= sin cambio" : `${d > 0 ? "▲ +" : "▼ −"}${mm(Math.abs(d))}${nueva ? " nuevo" : ""}`}</span>); })()}
             </Campo>
             <div style={{ display: "flex", gap: 6, paddingTop: 37 }}>
-              {f.plantilla && <button type="button" onClick={() => guardar(filas.filter((x) => x.id !== f.id))} style={{ ...btnSeg(false, C.danger), borderRadius: R.md, color: C.muted }}>No aplica</button>}
               {!nueva && !f.grupo && !f.plantilla && Number(f.antes) > 0 && <button type="button" onClick={() => desglosar(f)} style={{ ...btnSeg(false, C.accent), borderRadius: R.md }}>Desglosar</button>}
               {(nueva || (f.grupo && f.grupo !== f.id)) && <button type="button" onClick={() => guardar(filas.filter((x) => x.id !== f.id))} style={{ ...btnSeg(false, C.danger), borderRadius: R.md, color: C.danger }}>Quitar</button>}
             </div>
@@ -632,7 +644,7 @@ function TablaIngresos({ e, r, registrados, onChange }) {
             {disponibles.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {mm(x.monto)} al año</option>)}
           </select>
         )}
-        {r.filas && r.filas.length > 0 && <button type="button" onClick={() => onChange({ filas: [] })} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Volver a las líneas de la declaración</button>}
+        {r.filas && r.filas.length > 0 && <button type="button" onClick={() => onChange({ filas: [] })} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Empezar de nuevo</button>}
       </div>
       <div style={{ ...card, marginTop: 14, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
         <div>
