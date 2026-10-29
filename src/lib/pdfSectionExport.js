@@ -564,3 +564,140 @@ export async function exportDeudasPDF(deudas, inversiones, owners, trm, en = fal
     });
   }, t.nota);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. GANANCIA OCASIONAL · plan de venta de inmueble
+// 28-oct-2026 (Santiago: "que se pueda exportar en PDF"): el documento que se
+// le lleva al contador. Resultado, datos, plan paso a paso con norma y ahorro,
+// la base legal de cada paso, la tabla del reajuste y los cuidados.
+// Ojo: helvetica de jsPDF no trae "−", "×", "≈", "→" ni "✓": se usan "-", "x", "->".
+// ═══════════════════════════════════════════════════════════════════════════
+const pdfTxt = (s) => String(s ?? "")
+  .replace(/[−–—]/g, "-").replace(/×/g, "x").replace(/≈/g, "aprox.").replace(/→/g, "->")
+  .replace(/[✓✅]/g, "").replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[^\x00-\xFF]/g, "");
+export const AVISO_LEGAL_GO = "FINPATHIA es una herramienta de información y planeación. Los resultados son estimaciones hechas con los datos que ingresaste y con la norma vigente a la fecha de este documento. No constituyen asesoría tributaria, contable ni legal, y no reemplazan la revisión de un contador público o un abogado. Cada estrategia depende de los hechos, documentos y soportes de tu caso, y de la interpretación de la DIAN, que puede cambiar. FINPATHIA no se hace responsable por las decisiones que tomes con base en esta información. Antes de firmar o declarar, valida todo con un contador público o un asesor tributario. Términos: finpathia.com/terminos.";
+const MMpdf = (v) => {
+  const x = (Number(v) || 0) / 1e6;
+  return "$" + x.toLocaleString("es-CO", { maximumFractionDigits: Math.abs(x) >= 100 ? 0 : 1 }) + " MM";
+};
+
+export async function exportGananciaOcasionalPDF(r, datos) {
+  LOC = "es-CO"; TAGLINE = "Tu family office";
+  const jur = datos.titular === "juridica";
+  const GREEN = [22, 163, 74], RED = [220, 38, 38];
+
+  await build(buildFilename("Ganancia ocasional"), (doc, autoTable) => {
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
+    let y = chrome(doc, { titulo: "Venta de inmueble · ganancia ocasional" });
+
+    const salto = (alto) => { if (y + alto > H - 24) { doc.addPage(); y = 20; } };
+    const titulo = (t) => {
+      salto(14);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11.5); doc.setTextColor(...INK);
+      doc.text(pdfTxt(t), M, y); y += 6;
+    };
+    const parrafo = (t, { bold = false, size = 9, color = INK, label = "" } = {}) => {
+      doc.setFontSize(size);
+      const texto = pdfTxt((label ? label + " " : "") + t);
+      const lineas = doc.splitTextToSize(texto, W - M * 2);
+      lineas.forEach((ln, i) => {
+        salto(5);
+        doc.setFont("helvetica", bold || (label && i === 0 && false) ? "bold" : "normal");
+        doc.setTextColor(...color);
+        doc.text(ln, M, y); y += size * 0.45;
+      });
+      y += 1.5;
+    };
+
+    // Aviso legal visible arriba, antes de cualquier cifra.
+    doc.setFillColor(255, 247, 237); doc.setDrawColor(249, 115, 22);
+    const avisoCorto = pdfTxt("Estimación para planear, no es asesoría tributaria ni legal. FINPATHIA no se hace responsable por decisiones tomadas con este documento: todo debe validarse con un contador o asesor tributario. Ver aviso legal completo al final.");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    const lAv = doc.splitTextToSize(avisoCorto, W - M * 2 - 6);
+    doc.roundedRect(M, y - 4, W - M * 2, lAv.length * 4 + 5, 2, 2, "FD");
+    doc.setTextColor(154, 52, 18); doc.text(lAv, M + 3, y + 1);
+    y += lAv.length * 4 + 8;
+
+    y = resumen(doc, y, [
+      { label: "Hoy pagarías", value: MMpdf(r.hoy), color: RED },
+      { label: "Con tu plan", value: MMpdf(r.final) },
+      { label: "Te ahorras", value: MMpdf(r.ahorro), color: GREEN },
+      { label: "Costo fiscal usado", value: MMpdf(r.costoFinal) },
+    ]);
+
+    // Datos de la venta
+    autoTable(doc, {
+      ...tableStyle, startY: y,
+      head: [["Datos de la venta", ""]],
+      body: [
+        ["Dueño", jur ? "Empresa (persona jurídica)" : "Persona natural"],
+        [jur ? "Año de compra o construcción" : "Año de compra", String(datos.anoCompra || "")],
+        [jur ? "Costo fiscal declarado" : "Valor en la escritura de compra", fm(datos.costo)],
+        ["Precio de venta", fm(datos.venta)],
+        ["Año de la escritura de venta", String(datos.anoVenta || "")],
+        ...(datos.avaluoAnterior ? [[`Avalúo catastral ${datos.anoVenta - 1}`, fm(datos.avaluoAnterior)]] : []),
+        ...(datos.avaluoSiguiente ? [[`Avalúo catastral ${datos.anoVenta}`, fm(datos.avaluoSiguiente)]] : []),
+        ...(datos.mejoras ? [["Mejoras con factura", fm(datos.mejoras)]] : []),
+        ...(datos.perdidas ? [["Pérdida de otro activo del mismo año", fm(datos.perdidas)]] : []),
+        ["Tenencia", `${r.tenencia} años · ${r.esGO ? "ganancia ocasional al 15%" : "menos de 2 años: renta ordinaria"}`],
+      ].map(([a, b]) => [pdfTxt(a), pdfTxt(b)]),
+      columnStyles: { 1: { halign: "right" } },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    // Plan
+    autoTable(doc, {
+      ...tableStyle, startY: y,
+      head: [["#", "Paso", "Norma", "Estado", "Ahorro"]],
+      body: r.pasos.map((p, i) => [
+        String(i + 1), pdfTxt(p.titulo), pdfTxt(p.norma),
+        p.info ? "Aplica" : !p.ok ? "Sin efecto" : p.on ? "Aplicado" : "No aplicado",
+        p.info ? "-" : p.ahorro > 0 ? "-" + MMpdf(p.ahorro) : "$0",
+      ]),
+      foot: [["", "Total", "", "", "-" + MMpdf(r.ahorro)]],
+      columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 80 }, 4: { halign: "right" } },
+    });
+    y = doc.lastAutoTable.finalY + 8;
+
+    titulo("Cómo se combinan las estrategias");
+    parrafo(`El ${jur ? "reajuste anual (Art. 70)" : "factor DIAN (Art. 73)"} y las mejoras se suman y forman el costo por compra (${MMpdf(r.caminoCompra)}). El avalúo catastral (Art. 72) es la alternativa: se usa el mayor de los dos, nunca los dos juntos. Las pérdidas de otros activos vendidos el mismo año${jur ? " y el dividendo no gravado (Art. 49)" : " y la exención de vivienda (Art. 311-1)"} se aplican aparte.`, { color: GRAY });
+
+    // Base legal de cada paso que suma o aplica
+    titulo("Base legal y soportes de cada paso");
+    r.pasos.filter((p) => p.info || p.ok).forEach((p, i) => {
+      salto(16);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...PURPLE);
+      doc.text(pdfTxt(`${p.titulo}  (${p.norma})`), M, y, { maxWidth: W - M * 2 }); y += 5;
+      parrafo(p.texto);
+      if (p.porque) parrafo(p.porque, { label: "Por qué:", color: INK });
+      if (p.ejemplo) parrafo(p.ejemplo, { label: "Ejemplo:", color: GRAY });
+      if (p.soporte) parrafo(p.soporte, { label: "Soporte:", color: INK });
+      if (p.ojo) parrafo(p.ojo, { label: "Ojo:", color: GRAY });
+      if (p.formula) {
+        parrafo(`Fórmula: costo x (1 + % de cada año), de ${p.formula.desde} a ${p.formula.hasta}. ${MMpdf(p.formula.costo)} x ${p.formula.factor.toLocaleString("es-CO", { maximumFractionDigits: 4 })} = ${MMpdf(p.formula.resultado)}.`, { bold: true });
+        autoTable(doc, {
+          ...tableStyle, startY: y,
+          head: [["Año", "% del decreto", "Costo al cierre"]],
+          body: p.formula.filas.map((fl) => [String(fl.ano), fl.pct.toLocaleString("es-CO") + "%", fm(fl.costo)]),
+          columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+          tableWidth: 110,
+        });
+        y = doc.lastAutoTable.finalY + 6;
+      }
+      y += 2;
+    });
+
+    titulo("Antes de firmar");
+    [
+      "Tarifa: 15% para personas y empresas si el inmueble se tuvo 2 años o más (Arts. 300, 313 y 314). Con menos de 2 años es renta normal: hasta 39% en personas y 35% en empresas.",
+      "Precio real: se escritura por lo que realmente se paga, bajo juramento de que no hubo pagos por fuera; el precio no puede ser menor que el costo ni que el avalúo catastral (Art. 90).",
+      "La fecha importa: cuenta el avalúo del año anterior a la escritura; un autoavalúo o autoestimación cuenta para ventas del año siguiente; un avalúo comercial de perito no sirve.",
+      "Sin maniobras: partir la venta, escindir una empresa o mover el inmueble solo para pagar menos puede ser abuso tributario (Art. 869).",
+      ...(jur ? ["Empresas grandes: subir el costo de los activos sube el patrimonio; revisar el impuesto temporal al patrimonio de empresas (Decreto 0173 de 2026)."] : []),
+      "Soportes: guardar escrituras, predial, facturas y este cálculo mientras la declaración pueda ser revisada (en general 3 años; más si hay pérdidas).",
+    ].forEach((t) => parrafo("- " + t));
+
+    titulo("Aviso legal");
+    parrafo(AVISO_LEGAL_GO, { color: GRAY, size: 8.5 });
+  }, "Estimación de FINPATHIA para planear con tu contador. No es asesoría tributaria ni legal; FINPATHIA no se hace responsable por decisiones tomadas con este documento.");
+}

@@ -4,6 +4,7 @@ import { C, Cα, F, R } from "../lib/designTokens";
 import { planGananciaOcasional, PLAN_DEFAULT_USAR } from "../lib/planGananciaOcasional.js";
 import { NORMA_GO_VERIFICADA } from "../lib/normaGananciaOcasional.js";
 import { claseDeActivo } from "../lib/taxonomiaActivos.js";
+import { exportGananciaOcasionalPDF, AVISO_LEGAL_GO } from "../lib/pdfSectionExport.js";
 
 /**
  * Solucionador de ganancia ocasional — venta de inmuebles (Colombia).
@@ -225,6 +226,13 @@ export default function OptimizadorGananciaOcasional({ u }) {
               </div>
             </div>
             <Escalera r={r} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ ...F.caption, flex: "1 1 260px" }}>Estimación para planear, no es asesoría tributaria. Todo debe validarse con un contador o asesor tributario.</div>
+              <button type="button" onClick={() => exportGananciaOcasionalPDF(r, f)}
+                style={{ padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                📄 Descargar PDF para tu contador
+              </button>
+            </div>
           </div>
 
           <div style={{ ...F.label, margin: "0 0 10px" }}>Tu plan, paso a paso</div>
@@ -302,6 +310,10 @@ export default function OptimizadorGananciaOcasional({ u }) {
           {jur && <li><b style={{ color: C.text }}>Empresas grandes:</b> subir el costo de los activos sube el patrimonio; revisa el impuesto temporal al patrimonio de empresas (Decreto 0173 de 2026).</li>}
           <li><b style={{ color: C.text }}>Soportes:</b> guarda escrituras, predial, facturas y el cálculo de cada paso mientras la declaración pueda ser revisada (en general 3 años; más si hay pérdidas).</li>
         </ul>
+      </div>
+      <div style={{ ...card, marginBottom: 12, borderColor: Cα.warn25 }}>
+        <div style={{ ...F.label, marginBottom: 6, color: C.warn }}>Aviso legal</div>
+        <div style={F.body}>{AVISO_LEGAL_GO}</div>
       </div>
       <div style={F.caption}>
         Normas verificadas el {NORMA_GO_VERIFICADA.split("-").reverse().join("/")}: Arts. 49, 69, 70, 72, 73, 90, 300, 311-1, 313, 314 y 869 del Estatuto Tributario; reajustes del Art. 70 por decreto de cada año (2025: Decreto 449 de 2026). Es una estimación para planear: confírmala con tu contador antes de firmar.
