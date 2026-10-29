@@ -291,7 +291,7 @@ export default function OptimizadorGananciaOcasional({ u, onGuardar }) {
           <span style={{ fontSize: 28 }}>🧮</span>
           <div>
             <div style={F.h3}>Completa año, costo y precio de venta</div>
-            <div style={F.caption}>Con esos datos te mostramos cuánto pagarías hoy y el plan para pagar menos.</div>
+            <div style={F.caption}>Con esos datos te mostramos cuánto pagarías hoy y el plan para pagar menos. Ahí mismo aparecen los botones 💾 Guardar cálculo y 📄 Descargar PDF.</div>
           </div>
         </div>
       ) : (
