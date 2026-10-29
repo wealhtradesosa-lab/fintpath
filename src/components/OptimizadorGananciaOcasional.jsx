@@ -85,6 +85,7 @@ function Nota({ paso }) {
             <div style={F.caption}>El % del año de la venta sale por decreto el año siguiente, antes de declarar, y sube el costo un poco más (no está incluido: resultado conservador). Si parte del costo son mejoras de otros años, cada parte se reajusta desde su propio año.</div>
           </>
         )}
+        {paso.ejemplo && <div style={{ ...F.body, padding: 10, borderRadius: R.md, background: Cα.ok08 }}><b style={{ color: C.text }}>Ejemplo: </b>{paso.ejemplo}</div>}
         {paso.soporte && <div style={F.body}><b style={{ color: C.text }}>Soporte que debes guardar: </b>{paso.soporte}</div>}
         {paso.ojo && <div style={F.body}><b style={{ color: C.text }}>Ojo: </b>{paso.ojo}</div>}
       </div>

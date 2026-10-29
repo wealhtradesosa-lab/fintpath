@@ -140,6 +140,7 @@ export function planGananciaOcasional(e = {}) {
       texto: p > 0 ? `Esa pérdida de $${fmt(p)} se resta de la ganancia del inmueble.`
         : "Si tienes otro activo de más de 2 años que hoy vale menos de lo que costó (acciones, un lote, un vehículo), venderlo el mismo año resta esa pérdida. Escribe la pérdida.",
       porque: "Las pérdidas por vender activos de más de 2 años (pérdidas ocasionales) se restan de las ganancias ocasionales del mismo año. Si la otra venta cae en otro año, no se puede restar.",
+      ejemplo: "La casa deja $3.489 MM de ganancia (impuesto $523 MM). El mismo año la empresa vende un lote que compró en 2018 por $1.000 MM y hoy solo vale $600 MM: pierde $400 MM. Esa pérdida se resta: la ganancia queda en $3.089 MM y el impuesto en $463 MM. Ahorro: $60 MM (15% de la pérdida). Ojo que el reajuste también sube el costo del lote, así que la pérdida fiscal puede ser mayor que la que se ve.",
       soporte: "La escritura o contrato de venta del otro activo y su costo fiscal.",
       ojo: "La venta tiene que ser real y a precio de mercado (Art. 90): venderle a un socio o vinculado por debajo de su valor la DIAN la puede desconocer. Las pérdidas de renta ordinaria de años anteriores no sirven para esto.",
     });
