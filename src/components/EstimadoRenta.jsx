@@ -6,6 +6,9 @@ import {
   RESPUESTAS_DEFAULT, ultimaDeclaracion, estimarDesdeDeclaracion, oportunidades, ahorroMarcado, patrimonioInfo,
   impuestoDividendos, calculosGODelTitular, revisarTitular, pct, mm, impuestoDeclarado, retencionDeclarada,
 } from "../lib/rentaDesdeDeclaracion.js";
+import { TIPOS_INGRESO, tipoDeCategoria } from "../lib/rentaDesdeDeclaracion.js";
+import { serieHistorial } from "../lib/rentaDesdeDeclaracion.js";
+import { Linea, Grafica } from "./RentaUI";
 import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Plata, Campo, Grid, Aviso, inp, card } from "./RentaUI";
 
 /**
@@ -18,10 +21,17 @@ import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Plata, Campo, Grid, A
  * Validado como prototipo en el chat antes de subirlo.
  */
 
-const CAMBIOS_ING = [[-0.3, "Bajaron ~30%"], [-0.15, "Bajaron ~15%"], [0, "Iguales"], [0.05, "Subieron ~5% (inflación)"], [0.15, "Subieron ~15%"], [0.3, "Subieron ~30%"]];
 const DEPS = [[-1, "Uno menos"], [0, "Iguales"], [1, "Uno más"], [2, "Dos más"]];
 const sel_ = { ...inp, cursor: "pointer" };
 const fila = { display: "flex", justifyContent: "space-between", gap: 12, padding: "8px 0", borderBottom: `1px solid ${C.border}` };
+
+// Ingresos que el titular ya tiene registrados en FINPATHIA, para traerlos como «nuevos» sin digitar.
+function ingresosRegistrados(u, ownerId) {
+  return (u?.ingresos || u?.ing || []).filter((i) => i && i.owner === ownerId).map((i) => ({
+    id: String(i.id || i.nombre), nombre: i.nombre || i.n || i.categoria || "Ingreso",
+    monto: Math.round(Number(totalAnualItem(i)) || 0), tipo: tipoDeCategoria(i.categoria || i.nombre),
+  })).filter((i) => i.monto > 0);
+}
 
 function ingresosAnualesPorOwner(u) {
   const m = {};
@@ -65,7 +75,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
   const pat = owner ? patrimonioInfo(owner, r?.casa) : null;
   const tit = e ? revisarTitular(ingApp[owner.id], e) : null;
 
-  const cambioHecho = r && (r.g !== RESPUESTAS_DEFAULT.g || r.nuevo || r.perdido || r.aportes || r.dep || r.goSel || estado[owner?.id]);
+  const cambioHecho = r && (r.g !== RESPUESTAS_DEFAULT.g || r.sigue != null || (r.nuevos || []).length || r.nuevo || r.perdido || r.aportes || r.dep || r.goSel || estado[owner?.id]);
   const marcoAlgo = r && Object.values(r.estr || {}).some((x) => x?.on);
 
   // Calcula todo para un juego de respuestas: el actual o una versión guardada.
@@ -76,7 +86,10 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
   };
   const cambiosTexto = (rr, ee) => {
     const c = [];
-    if (rr.g) c.push(`Ingresos de siempre: ${rr.g > 0 ? "suben" : "bajan"} ~${Math.round(Math.abs(rr.g) * 100)}%`);
+    for (const p of rr.perdidos || []) if (Number(p.monto)) c.push(`Ya no recibe: ${p.nombre || "un ingreso"} ${mm(p.monto)}`);
+    if (rr.sigue != null && rr.sigue !== "") c.push(`Lo de siempre: ${mm(ee.brutos)} el año pasado → ${mm(rr.sigue)} este año`);
+    else if (rr.g) c.push(`Ingresos de siempre: ${rr.g > 0 ? "suben" : "bajan"} ~${Math.round(Math.abs(rr.g) * 100)}%`);
+    for (const n of rr.nuevos || []) if (Number(n.monto)) c.push(`Ingreso nuevo: ${n.nombre || "sin nombre"} (${(TIPOS_INGRESO.find(([k]) => k === n.tipo) || [, "Otro"])[1]}) ${mm(n.monto)}${Number(n.costos) ? `, costos ${mm(n.costos)}` : ""}`);
     if (rr.nuevo) c.push(`Ingreso nuevo: ${mm(rr.nuevo)}${rr.nuevoGastos ? `, con costos de ${mm(rr.nuevoGastos)}` : ""}`);
     if (rr.perdido) c.push(`Ingreso que deja de recibir: ${mm(rr.perdido)}`);
     if (rr.aportes) c.push(`Aportes voluntarios a pensión o AFC: ${mm(rr.aportes)}`);
@@ -166,8 +179,14 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
             <Kpi k="Tasa efectiva" v={pct(impuestoDeclarado(e.d) / (Number(e.d.renglones.ingresosBrutos) || 1))} />
             <Kpi k={e.nat ? "Retenciones" : "Autorretenciones"} v={mm(retencionDeclarada(e.d))} />
             {e.d.renglones.saldoPagar != null && <Kpi k="Saldo que pagó" v={mm(e.d.renglones.saldoPagar)} />}
+            {Number(e.d.renglones.ingresosNoConstitutivos) > 0 && <Kpi k="Ingresos no constitutivos" v={mm(e.d.renglones.ingresosNoConstitutivos)} d="aportes obligatorios y similares" />}
+            {e.nat && <Kpi k="Exentas y deducciones" v={mm(["rentaExenta25", "deducIntereses", "deducMedicina", "deducDependientes", "pvAFC"].reduce((a, k) => a + (Number(e.d.renglones[k]) || 0), 0))} d="25% laboral, intereses, medicina, dependientes, AFC" />}
+            {!e.nat && Number(e.d.renglones.costosDeducciones) > 0 && <Kpi k="Costos y deducciones" v={mm(e.d.renglones.costosDeducciones)} />}
+            {e.d.renglones.patrimonioBruto != null && <Kpi k="Patrimonio bruto" v={mm(e.d.renglones.patrimonioBruto)} />}
+            {e.d.renglones.deudas != null && <Kpi k="Deudas" v={mm(e.d.renglones.deudas)} />}
             {e.d.renglones.patrimonioLiquido != null && <Kpi k="Patrimonio líquido" v={mm(e.d.renglones.patrimonioLiquido)} />}
           </KpiGrid>
+          <ResumenHistoria owner={owner} />
           {tit && (
             <div style={{ marginTop: 10 }}>
               {tit.alerta
@@ -177,27 +196,25 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
           )}
         </Panel>
 
-        <Panel titulo="3. ¿Qué cambió este año?" sub="Si algo no cambió, déjalo como está.">
+        <Panel titulo="3. ¿Qué cambió este año?" sub="Cuéntanos con tus palabras y números. Si algo no cambió, déjalo como está.">
+          <ListaIngresos modo="perdidos" nat={e.nat} lista={r.perdidos || []} registrados={[]} onChange={(perdidos) => set(owner.id, { perdidos })} />
+          <ListaIngresos modo="nuevos" nat={e.nat} lista={r.nuevos || []} registrados={ingresosRegistrados(u, owner.id)} onChange={(nuevos) => set(owner.id, { nuevos })} />
+          <ResultadoIngresos e={e} r={r} onInflacion={(on) => set(owner.id, { sigue: null, g: on ? 0.05 : 0 })} />
+          <div style={{ ...F.h3, margin: "18px 0 8px" }}>Otros cambios</div>
           <Grid>
-            <Campo label="Ingresos de siempre">
-              <select style={sel_} value={r.g} onChange={(ev) => set(owner.id, { g: Number(ev.target.value) })}>{CAMBIOS_ING.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-            </Campo>
-            <Campo label="Ingreso nuevo este año (anual)" ayuda="Un arriendo, un contrato, un negocio…"><Plata value={r.nuevo} onChange={(v) => set(owner.id, { nuevo: v })} /></Campo>
-            <Campo label="Costos de ese ingreso nuevo"><Plata value={r.nuevoGastos} onChange={(v) => set(owner.id, { nuevoGastos: v })} /></Campo>
-            <Campo label="Ingreso que deja de recibir (anual)"><Plata value={r.perdido} onChange={(v) => set(owner.id, { perdido: v })} /></Campo>
-            {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda="Lo que va a aportar de más frente al año pasado"><Plata value={r.aportes} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
+            {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda="Lo que vas a aportar de más frente al año pasado"><Plata value={r.aportes} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
             {e.nat && <Campo label="Dependientes frente al año pasado">
               <select style={sel_} value={r.dep} onChange={(ev) => set(owner.id, { dep: Number(ev.target.value) })}>{DEPS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
             </Campo>}
-            <Campo label="¿Vende un inmueble o activo este año?" ayuda="Si lo optimizaste en el solucionador, escógelo y traemos el impuesto ya optimizado">
+            <Campo label="¿Vendes un inmueble o activo este año?" ayuda="Si lo optimizaste en el solucionador, escógelo y traemos el impuesto ya optimizado">
               <select style={sel_} value={r.goSel} onChange={(ev) => set(owner.id, { goSel: ev.target.value })}>
-                <option value="">No vende nada este año</option>
+                <option value="">No vendo nada este año</option>
                 {gos.map((c) => <option key={c.id} value={c.id}>{c.nombre} · impuesto {mm(c.resumen?.final)}</option>)}
                 <option value="manual">Otra venta: escribir el impuesto</option>
               </select>
               {r.goSel === "manual" && <Plata value={r.go} onChange={(v) => set(owner.id, { go: v })} placeholder="Impuesto de ganancia ocasional" />}
             </Campo>
-            <Campo label={`Anticipo que pagó para ${e.anoEst}`} ayuda={e.antLeido ? "Leído de su declaración" : r.ant == null ? "Lo calculamos con su declaración (Art. 807). Corrígelo con el renglón real si es distinto." : "Valor que escribiste"}>
+            <Campo label={`Anticipo que pagaste para ${e.anoEst}`} ayuda={e.antLeido ? "Leído de tu declaración" : r.ant == null ? "Lo calculamos con tu declaración (Art. 807). Corrígelo con el renglón real si es distinto." : "Valor que escribiste"}>
               <Plata value={e.antPagado} onChange={(v) => set(owner.id, { ant: v })} />
             </Campo>
           </Grid>
@@ -426,5 +443,98 @@ function Versiones({ nombre, setNombre, sugerido, abierta, versiones, puedeGuard
         </div>
       )}
     </Panel>
+  );
+}
+
+// Resultado de ingresos: no se pregunta si subieron o bajaron; se calcula con lo que cambió.
+function ResultadoIngresos({ e, r, onInflacion }) {
+  const dv = e.brutos ? e.ingresosEst / e.brutos - 1 : 0;
+  const infl = r.sigue == null && Number(r.g) > 0;
+  return (
+    <div style={{ ...card, marginTop: 12, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+      <div>
+        <div style={F.label}>Tus ingresos con estos cambios</div>
+        <div style={{ ...F.monoLg, marginTop: 4 }}>{mm(e.brutos)} → {mm(e.ingresosEst)}</div>
+        <div style={{ ...F.caption, marginTop: 2 }}>{e.ano} declarado → {e.anoEst} estimado · {Math.abs(dv) < 0.005 ? "iguales" : `${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}%`}</div>
+      </div>
+      <label style={{ ...F.body, display: "inline-flex", gap: 8, alignItems: "center", cursor: "pointer", color: C.text }}>
+        <input type="checkbox" checked={infl} onChange={(ev) => onInflacion(ev.target.checked)} style={{ width: 18, height: 18, accentColor: C.accent }} />
+        Lo que sigue igual sube con la inflación (~5%)
+      </label>
+    </div>
+  );
+}
+
+// Lista de ingresos que se van (perdidos) o que llegan (nuevos). Cada uno por separado y, si es nuevo, con su tipo.
+function ListaIngresos({ modo, nat, lista, registrados, onChange }) {
+  const nuevos = modo === "nuevos";
+  const upd = (id, patch) => onChange(lista.map((n) => (n.id === id ? { ...n, ...patch } : n)));
+  const agregar = (base = {}) => onChange([...lista, { id: (nuevos ? "n" : "p") + Date.now().toString(36), nombre: "", tipo: "otro", monto: 0, costos: 0, ...base }]);
+  const yaTraidos = new Set(lista.map((n) => n.desde).filter(Boolean));
+  const disponibles = registrados.filter((i) => !yaTraidos.has(i.id));
+  const cols = nuevos ? 5 : 3;
+  return (
+    <div style={{ background: C.raised, borderRadius: R.lg, padding: 14, marginTop: nuevos ? 12 : 0 }}>
+      <div style={F.h3}>{nuevos ? "Ingresos nuevos este año" : "¿Dejaste de recibir algún ingreso?"}</div>
+      <p style={{ ...F.body, margin: "4px 0 10px" }}>{nuevos
+        ? "Agrega cada uno por separado: un arriendo, un salario nuevo, unos intereses, unas utilidades. Cada tipo paga distinto."
+        : "Por ejemplo, comisiones o utilidades que ya no llegan, un contrato que terminó o un arriendo que se acabó. Pon cuánto recibías al año."}</p>
+      {lista.map((n) => (
+        <div key={n.id} style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(max(170px, calc((100% - ${(cols - 1) * 10 + 1}px) / ${cols})), 1fr))`, gap: 10, alignItems: "end", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
+          <Campo label="Nombre"><input style={inp} value={n.nombre} placeholder={nuevos ? "Ej. arriendo bodega" : "Ej. comisiones"} onChange={(ev) => upd(n.id, { nombre: ev.target.value })} /></Campo>
+          {nuevos && nat && <Campo label="Tipo"><select style={sel_} value={n.tipo} onChange={(ev) => upd(n.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo>}
+          <Campo label={nuevos ? "Monto del año" : "Lo que recibías al año"}><Plata value={n.monto} onChange={(v) => upd(n.id, { monto: v })} /></Campo>
+          {nuevos && ((!nat || n.tipo === "arriendo" || n.tipo === "otro") ? <Campo label="Costos del año"><Plata value={n.costos} onChange={(v) => upd(n.id, { costos: v })} /></Campo> : <div />)}
+          <button type="button" onClick={() => onChange(lista.filter((x) => x.id !== n.id))} style={{ height: 42, borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.danger, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Quitar</button>
+        </div>
+      ))}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+        <button type="button" onClick={() => agregar()} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: nuevos ? "none" : `1px solid ${C.border}`, background: nuevos ? C.accent : "transparent", color: nuevos ? C.text : C.muted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{nuevos ? "+ Agregar ingreso nuevo" : "+ Agregar ingreso que ya no recibo"}</button>
+        {disponibles.length > 0 && (
+          <select style={{ ...sel_, width: "auto", minWidth: 260 }} value="" onChange={(ev) => { const it = disponibles.find((i) => i.id === ev.target.value); if (it) agregar({ nombre: it.nombre, tipo: it.tipo, monto: it.monto, desde: it.id }); }}>
+            <option value="">Traer de mis ingresos en FINPATHIA…</option>
+            {disponibles.map((i) => <option key={i.id} value={i.id}>{i.nombre} · {mm(i.monto)} al año</option>)}
+          </select>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Resumen de su historia en la ficha: ubica antes de llenar lo nuevo (29-oct-2026, Santiago).
+function ResumenHistoria({ owner }) {
+  const s = serieHistorial(owner);
+  if (s.length < 2) return null;
+  const anos = s.map((x) => x.ano), u = s.at(-1), p = s.at(-2);
+  const corto = (v) => "$" + Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO");
+  const cambio = (l, a, b, subirEsMalo) => {
+    if (a == null || b == null || !a) return null;
+    const d = (b - a) / a; if (Math.abs(d) < 0.03) return null;
+    return <li key={l}><b style={{ color: C.text }}>{l} {d > 0 ? "subió" : "bajó"} {pct(Math.abs(d), 0)}</b>: de {mm(a)} a {mm(b)} <span style={{ color: (d > 0) === subirEsMalo ? C.danger : C.ok }}>{d > 0 ? "▲" : "▼"}</span></li>;
+  };
+  const td = { padding: "6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={F.h3}>Así le ha ido, año tras año</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 8 }}>
+        <Grafica titulo="Ingresos (MM)"><Linea anos={anos} v={s.map((x) => x.ing)} fmt={corto} color={C.accent} txt={15} /></Grafica>
+        <Grafica titulo="Impuesto (MM)"><Linea anos={anos} v={s.map((x) => x.imp)} fmt={corto} color={C.danger} txt={15} /></Grafica>
+        <Grafica titulo="Tasa efectiva"><Linea anos={anos} v={s.map((x) => x.tasa)} fmt={(v) => pct(v)} color={C.warn} txt={15} /></Grafica>
+        {s.every((x) => x.pat != null) && <Grafica titulo="Patrimonio líquido (MM)"><Linea anos={anos} v={s.map((x) => x.pat)} fmt={corto} txt={15} /></Grafica>}
+      </div>
+      <div style={{ ...F.h3, marginTop: 12 }}>Principales cambios {p.ano} → {u.ano}</div>
+      <ul style={{ ...F.body, margin: "6px 0 0", paddingLeft: 18, display: "grid", gap: 4 }}>
+        {[cambio("El ingreso", p.ing, u.ing, false), cambio("El impuesto", p.imp, u.imp, true), cambio("El patrimonio líquido", p.pat, u.pat, false), cambio("La deuda", p.deudas, u.deudas, true)].filter(Boolean)}
+        <li><b style={{ color: C.text }}>Tasa efectiva</b>: {pct(p.tasa)} → {pct(u.tasa)}</li>
+      </ul>
+      <div style={{ overflowX: "auto", marginTop: 10 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", ...F.body, color: C.text }}>
+          <thead><tr>{["Año", "Ingresos", "Impuesto", "Tasa efectiva", "Saldo pagado", "Patrimonio líquido"].map((h, i) => <th key={h} style={{ ...F.label, padding: 6, textAlign: i ? "right" : "left" }}>{h}</th>)}</tr></thead>
+          <tbody>{s.slice().reverse().map((x) => (
+            <tr key={x.ano}><td style={{ ...td, textAlign: "left", fontFamily: "inherit" }}>{x.ano}</td><td style={td}>{mm(x.ing)}</td><td style={td}>{mm(x.imp)}</td><td style={td}>{pct(x.tasa)}</td><td style={td}>{mm(x.saldo)}</td><td style={td}>{x.pat != null ? mm(x.pat) : "—"}</td></tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
   );
 }

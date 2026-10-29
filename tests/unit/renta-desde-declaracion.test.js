@@ -132,3 +132,32 @@ describe("prender y apagar cambios", () => {
     expect(e.go).toBe(0);
   });
 });
+
+describe("ingresos que se van y que llegan", () => {
+  it("si deja de recibir parte, baja el impuesto y el resultado de ingresos lo refleja", () => {
+    const e = estimarDesdeDeclaracion(persona, { g: 0, perdidos: [{ id: "a", nombre: "Comisiones", monto: 300e6 }] });
+    const sin = estimarDesdeDeclaracion(persona, { g: 0 });
+    expect(e.renta).toBeLessThan(sin.renta);
+    expect(e.ingresosEst).toBeCloseTo(612e6 - 300e6, -3);
+    expect(e.ret).toBeLessThan(sin.ret);
+  });
+  it("cada ingreso nuevo tributa según su tipo: un dividendo paga menos que un arriendo del mismo monto", () => {
+    const arr = estimarDesdeDeclaracion(persona, { g: 0, nuevos: [{ id: "x", tipo: "arriendo", monto: 200e6 }] });
+    const div = estimarDesdeDeclaracion(persona, { g: 0, nuevos: [{ id: "x", tipo: "dividendos", monto: 200e6 }] });
+    expect(div.renta).toBeLessThan(arr.renta);
+    expect(arr.ingresosEst).toBeCloseTo(812e6, -3);
+  });
+  it("cada ingreso nuevo se puede apagar", () => {
+    const e = estimarDesdeDeclaracion(persona, { g: 0, nuevos: [{ id: "x", tipo: "arriendo", monto: 200e6 }], off: { n_x: true } });
+    const sin = estimarDesdeDeclaracion(persona, { g: 0 });
+    expect(e.renta).toBeCloseTo(sin.renta, 0);
+  });
+});
+
+describe("caso real: cambia la mezcla de ingresos", () => {
+  it("si lo que deja de recibir supera lo declarado, la base no queda negativa y lo nuevo sí paga", () => {
+    const e = estimarDesdeDeclaracion(persona, { g: 0, perdidos: [{ id: "a", monto: 900e6 }], nuevos: [{ id: "b", tipo: "arriendo", monto: 200e6 }] });
+    expect(e.renta).toBeGreaterThan(0);
+    expect(e.ingresosEst).toBeCloseTo(200e6, -3);
+  });
+});

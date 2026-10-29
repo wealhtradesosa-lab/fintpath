@@ -113,7 +113,7 @@ export function Barras({ anos, series, apilar = false, fmt = corto, desde = 99 }
     </div>
   );
 }
-export function Linea({ anos, v, fmt, desde = 99, color = C.ok }) {
+export function Linea({ anos, v, fmt, desde = 99, color = C.ok, txt = 10 }) {
   const W = 420, H = 210, px = 40, T = 30, B = 28;
   const mx = Math.max(...v), mn = Math.min(Math.min(...v), mx * 0.7), rg = mx - mn || mx || 1;
   const X = (i) => (anos.length === 1 ? W / 2 : px + (i * (W - 2 * px)) / (anos.length - 1)), Y = (x) => T + (H - T - B) * (1 - (x - mn) / rg);
@@ -125,8 +125,8 @@ export function Linea({ anos, v, fmt, desde = 99, color = C.ok }) {
       {proy && <polyline fill="none" stroke={color} strokeWidth={2.2} strokeDasharray="5 4" points={proy} />}
       {v.map((x, i) => (<g key={i}>
         <circle cx={X(i)} cy={Y(x)} r={4} fill={i >= desde ? C.raised : C.surface} stroke={color} strokeWidth={2} />
-        <text x={X(i)} y={Y(x) - 10} textAnchor="middle" fill={C.text} style={{ font: `600 10px ${mono}` }}>{fmt(x)}</text>
-        <text x={X(i)} y={H - 8} textAnchor="middle" fill={C.subtle} style={{ font: "500 11px system-ui" }}>{anos[i]}</text></g>))}
+        <text x={X(i)} y={Y(x) - 10} textAnchor="middle" fill={C.text} style={{ font: `600 ${txt}px ${mono}` }}>{fmt(x)}</text>
+        <text x={X(i)} y={H - 8} textAnchor="middle" fill={C.subtle} style={{ font: `500 ${txt + 1}px system-ui` }}>{anos[i]}</text></g>))}
     </svg>
   );
 }
