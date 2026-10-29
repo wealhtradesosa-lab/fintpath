@@ -34,6 +34,7 @@ const TaxOptimizerUS = lazy(() => import("./components/TaxOptimizerUS"));
 const OptimizadorGananciaOcasional = lazy(() => import("./components/OptimizadorGananciaOcasional"));
 const EstimadoRenta = lazy(() => import("./components/EstimadoRenta"));
 const HistorialDeclaraciones = lazy(() => import("./components/HistorialDeclaraciones"));
+import NotaFuenteImpuesto from "./components/NotaFuenteImpuesto";
 const DashboardUS = lazy(() => import("./components/DashboardUS"));
 const AssetsModuleUS = lazy(() => import("./components/AssetsModuleUS"));
 const VistaFamiliarConsolidada = lazy(() => import("./components/VistaFamiliarConsolidada"));
@@ -1662,7 +1663,24 @@ export default function FinPath(){
   const ultimoNivelRef=useRef((()=>{try{return JSON.parse(localStorage.getItem("fp3_ultimo_nivel")||"null")}catch{return null}})());
   // 29-oct-2026: el impuesto de toda la plataforma es el «referente»: anclado en la
   // declaración de cada titular cuando la hay (ver lib/impuestoReferente.js).
-  const calRef=useMemo(()=>{try{return u?calibracionReferente(u):{}}catch{return{}}},[u]);
+  // Año en curso: la declaración real del año anterior. Años siguientes (Simulador Futuro): el estimado.
+  // Guarda una declaración en el titular (máximo 4 años; si el año ya existe, se reemplaza).
+  const guardarDeclaracion=(ownerId,declaracion)=>{
+    const owners=(u&&u.owners||[]).map(o=>{
+      if(o.id!==ownerId)return o;
+      const actuales=Array.isArray(o.declaraciones)?[...o.declaraciones]:[];
+      const anoNuevo=Number(declaracion.anoGravable)||0;
+      const idx=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
+      if(idx>=0){actuales[idx]=declaracion}else{actuales.push(declaracion)}
+      actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
+      return{...o,declaraciones:actuales.slice(0,4)};
+    });
+    upd("owners",owners);
+    const ow=owners.find(o=>o.id===ownerId);
+    showToast("✅ Declaración "+declaracion.anoGravable+" guardada en "+(ow?.name||"el titular"));
+  };
+  const calRef=useMemo(()=>{try{return u?calibracionReferente(u,{modo:"actual"}):{}}catch{return{}}},[u]);
+  const calRefFuturo=useMemo(()=>{try{return u?calibracionReferente(u,{modo:"estimado"}):{}}catch{return{}}},[u]);
   const impRef=useMemo(()=>{if(!u)return{total:0,mes:0,detalle:[]};try{return estimarImpuestoReferente(u,calRef)}catch{return estimarImpuesto(u)}},[u,calRef]);
   const t=useMemo(()=>{if(!u)return{};const base=cT(u.inv,u.deu,u.gas,u.ingresos,impRef,trm,u.inflacionPct);return totalesConTasa(base,estTrm,ultimoNivelRef.current)},[u,trm,estTrm.modo,impRef]);
   useEffect(()=>{if(t&&t.nivel&&!t.pendienteTasa){ultimoNivelRef.current=t.nivel;try{localStorage.setItem("fp3_ultimo_nivel",JSON.stringify(t.nivel))}catch{}}},[t]);
@@ -2654,8 +2672,9 @@ export default function FinPath(){
         {/* Tax Estimate */}
         {(()=>{const tx=impRef;return tx.total>0?<Cd s={{padding:16}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>🧾 Impuestos (Anual)</div>
+          {Object.values(calRef).some(c=>c.real)&&<div style={{fontSize:11,color:T.tx3,marginBottom:8}}>Este año: según tu declaración {new Date().getFullYear()-1} (retenciones + saldo pagado).</div>}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:11,color:T.tx3}}>Total estimado</span>
+            <span style={{fontSize:11,color:T.tx3}}>{Object.values(calRef).some(c=>c.real)?"Total del año":"Total estimado"}</span>
             <span style={{fontSize:18,fontWeight:800,color:T.pr,fontFamily:"monospace"}}>{fm(tx.total)}/año</span>
           </div>
           <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>{fm(tx.mes)}/mes estimado</div>
@@ -3538,11 +3557,11 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     // Links/estado viejo con pg="plan" muestran f10. Datos guardados (perfilPlan, caminos…) se conservan.
     case"plan":
     case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
-    case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
-    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/>;
+    case"simf":return <><NotaFuenteImpuesto modo="futuro" cal={calRefFuturo} owners={(u?.owners)||[]} onNavigate={setPg} onGuardarDeclaracion={guardarDeclaracion}/><SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRefFuturo}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/></>;
+    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} onNavigate={setPg} onGuardarDeclaracion={guardarDeclaracion}/><SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/></>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.
     case"anio":
-    case"flujo":return <FlujoAnual user={u} trm={trm} isEN={isEN}/>;
+    case"flujo":return <><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} onNavigate={setPg} onGuardarDeclaracion={guardarDeclaracion}/><FlujoAnual user={u} trm={trm} isEN={isEN}/></>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
     case"metrics":return isAdmin?<AdminMetrics email={u?.p?.email} fmt={fm} T={T}/>:<div style={{padding:40,textAlign:"center",color:T.tx3}}>No disponible.</div>;

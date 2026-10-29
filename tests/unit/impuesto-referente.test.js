@@ -17,7 +17,7 @@ describe("impuesto referente", () => {
   it("con declaración, el impuesto de hoy es el de «Lo que viene»", () => {
     const u = base();
     const e = estimarDesdeDeclaracion(u.owners[0], {});
-    const ref = estimarImpuestoReferente(u);
+    const ref = estimarImpuestoReferente(u, calibracionReferente(u, { modo: "estimado" }));
     expect(bruto(ref)).toBeCloseTo(e.renta, -2);
     expect(ref.detalle[0].fuente).toBe("declaracion");
     expect(ref.referente).toBe(true);
@@ -32,7 +32,27 @@ describe("impuesto referente", () => {
   });
   it("un titular con declaración pero sin ingresos registrados igual aparece", () => {
     const u = { ...base(), ingresos: [] };
-    const ref = aplicarReferente(estimarImpuesto(u), calibracionReferente(u));
+    const ref = aplicarReferente(estimarImpuesto(u), calibracionReferente(u, { modo: "estimado" }));
     expect(ref.detalle.find((d) => d.name === "Luis")?.fuente).toBe("declaracion");
+  });
+});
+
+describe("año actual con la declaración real del año pasado", () => {
+  it("lo que sale de la caja este año = retenciones + saldo de la declaración del año pasado", () => {
+    const u = base();
+    const cal = calibracionReferente(u, { modo: "actual", hoy: new Date("2026-10-29") });
+    expect(cal.Luis.real).toBe(true);
+    expect(cal.Luis.renta).toBeCloseTo(30e6 + 10e6, 0);
+    const ref = estimarImpuestoReferente(u, cal);
+    expect(ref.detalle[0].fuente).toBe("declaracion_real");
+    expect(ref.detalle[0].impBruto - ref.detalle[0].reteN).toBeCloseTo(10e6, -3);
+  });
+  it("para años siguientes usa el estimado de la Calculadora", () => {
+    const cal = calibracionReferente(base(), { modo: "estimado" });
+    expect(cal.Luis.real).toBeUndefined();
+  });
+  it("si no tiene la declaración del año pasado, el año actual usa el estimado", () => {
+    const cal = calibracionReferente(base(), { modo: "actual", hoy: new Date("2028-03-01") });
+    expect(cal.Luis.real).toBeUndefined();
   });
 });
