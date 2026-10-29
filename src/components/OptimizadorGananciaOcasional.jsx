@@ -140,14 +140,15 @@ function Escalera({ r }) {
   );
 }
 
-export default function OptimizadorGananciaOcasional({ u }) {
+export default function OptimizadorGananciaOcasional({ u, onGuardar }) {
   const owners = u?.owners || [];
   const inmuebles = useMemo(() => (u?.inv || []).filter((i) => claseDeActivo(i.tp || i.tipo).clase === "inmueble"), [u]);
-  const [f, setF] = useState({
-    titular: "natural", tipo: "urbano", modo: "terminado", anoCompra: "", costo: "", lote: "", anoLote: "", construccion: "", anoConstruccion: "", soporteConstruccion: "si", venta: "", anoVenta: hoy.getFullYear(),
+  const vacio = () => ({
+    inmueble: "", titular: "natural", tipo: "urbano", modo: "terminado", anoCompra: "", costo: "", lote: "", anoLote: "", construccion: "", anoConstruccion: "", soporteConstruccion: "si", venta: "", anoVenta: hoy.getFullYear(),
     avaluoAnterior: "", avaluoSiguiente: "", mejoras: "", perdidas: "", reajusteContador: "",
     vivienda: false, afc: false, usar: { ...PLAN_DEFAULT_USAR },
   });
+  const [f, setF] = useState(vacio);
   const set = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
   const setUsar = (id, v) => setF((p) => ({ ...p, usar: { ...p.usar, [id]: v } }));
   const jur = f.titular === "juridica";
@@ -157,7 +158,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
     if (!i) return;
     const ow = owners.find((o) => o.id === i.owner);
     setF((p) => ({
-      ...p, modo: "terminado", titular: ow?.type === "juridica" ? "juridica" : "natural",
+      ...p, inmueble: i.n || i.nombre || "", modo: "terminado", titular: ow?.type === "juridica" ? "juridica" : "natural",
       venta: Number(i.va) || p.venta, costo: Number(i.vc ?? i.valor_compra) || p.costo,
       vivienda: ow?.type !== "juridica" && /HABITACIONAL/.test(i.fiscalCode || ""), reajusteContador: "",
     }));
@@ -165,6 +166,30 @@ export default function OptimizadorGananciaOcasional({ u }) {
 
   const listo = Number(f.venta) > 0 && (f.modo === "construido" ? Number(f.lote) > 0 && Number(f.anoLote) > 1900 : Number(f.costo) > 0 && Number(f.anoCompra) > 1900);
   const r = useMemo(() => (listo ? planGananciaOcasional(f) : null), [f, listo]);
+  // 28-oct-2026 (Santiago): "que quede guardado los cálculos… optimización
+  // ganancia Puerto Madero v1". Se guardan en user_data.calculosGO.
+  const guardados = Array.isArray(u?.calculosGO) ? u.calculosGO : [];
+  const [abierto, setAbierto] = useState(null);
+  const [nombre, setNombre] = useState("");
+  const [aviso, setAviso] = useState("");
+  const nombreSugerido = () => {
+    const base = `Optimización ganancia ${f.inmueble || "inmueble"}`;
+    const n = guardados.filter((g) => g.nombre.startsWith(base)).length;
+    return `${base} v${n + 1}`;
+  };
+  const guardar = (comoNuevo, nomForzado) => {
+    if (!r || !onGuardar) return;
+    const nom = nomForzado || (nombre || "").trim() || nombreSugerido();
+    const item = { id: comoNuevo || !abierto ? `go_${Date.now()}` : abierto, nombre: nom, fecha: new Date().toISOString(), datos: f,
+      resumen: { hoy: Math.round(r.hoy), final: Math.round(r.final), ahorro: Math.round(r.ahorro), venta: Number(f.venta) || 0 } };
+    const lista = comoNuevo || !abierto ? [item, ...guardados] : guardados.map((g) => (g.id === abierto ? item : g));
+    onGuardar(lista.slice(0, 30));
+    setAbierto(item.id); setNombre(nom); setAviso(`Guardado: «${nom}»`);
+  };
+  const abrir = (g) => { setF({ ...g.datos, usar: { ...PLAN_DEFAULT_USAR, ...(g.datos.usar || {}) } }); setAbierto(g.id); setNombre(g.nombre); setAviso(""); window.scrollTo?.({ top: 0, behavior: "smooth" }); };
+  const borrar = (g) => { if (!onGuardar) return; onGuardar(guardados.filter((x) => x.id !== g.id)); if (abierto === g.id) { setAbierto(null); setNombre(""); } };
+  const nuevo = () => { setF(vacio()); setAbierto(null); setNombre(""); setAviso(""); };
+
   const etiquetaCampo = {
     avaluoAnterior: `Avalúo catastral ${f.anoVenta - 1}`, avaluoSiguiente: `Avalúo catastral ${f.anoVenta}`,
     mejoras: "Mejoras con factura", perdidas: "Pérdida del otro activo", reajusteContador: "Costo reajustado",
@@ -174,6 +199,32 @@ export default function OptimizadorGananciaOcasional({ u }) {
     <div>
       <PageHeader label="Herramientas · venta de inmueble" title="¿Cuánto pago si vendo, y cómo pago menos?" accent="pago menos" compact
         subtitle="Cuatro datos y te armamos el plan: cada paso dice qué hacer, qué norma lo permite y cuánto te ahorra. Marca los que vas a hacer y mira cómo baja el impuesto." />
+
+      {guardados.length > 0 && (
+        <div style={{ ...card, marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            <div style={F.h2}>💾 Mis cálculos guardados</div>
+            {abierto && <button type="button" onClick={nuevo} style={{ padding: "6px 12px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>+ Cálculo nuevo</button>}
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {guardados.map((g) => (
+              <div key={g.id} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: 10, alignItems: "center", padding: "10px 12px", borderRadius: R.md,
+                background: g.id === abierto ? Cα.accent08 : C.raised, border: `1px solid ${g.id === abierto ? C.accent : C.border}` }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...F.h3 }}>{g.nombre}</div>
+                  <div style={F.caption}>
+                    {new Date(g.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })} · venta {MM(g.resumen?.venta)} · {MM(g.resumen?.hoy)} → <b style={{ color: C.ok }}>{MM(g.resumen?.final)}</b> (ahorro {MM(g.resumen?.ahorro)})
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button type="button" onClick={() => abrir(g)} style={{ padding: "6px 12px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{g.id === abierto ? "Abierto" : "Abrir"}</button>
+                  <button type="button" onClick={() => borrar(g)} aria-label={`Borrar ${g.nombre}`} style={{ padding: "6px 10px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.subtle, fontSize: 13, cursor: "pointer" }}>Borrar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ ...card, marginBottom: 16 }}>
         {inmuebles.length > 0 && (
@@ -187,6 +238,9 @@ export default function OptimizadorGananciaOcasional({ u }) {
           </div>
         )}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
+          <Campo label="Inmueble (para identificarlo)">
+            <input id="go-inmueble" style={inp} placeholder="Ej: Puerto Madero" value={f.inmueble || ""} onChange={(ev) => set("inmueble")(ev.target.value)} />
+          </Campo>
           <Campo label="¿A nombre de quién está?">
             <div style={{ display: "flex", gap: 6 }}>
               {[["natural", "👤 A mi nombre"], ["juridica", "🏢 Empresa"]].map(([v, l]) => (
@@ -262,6 +316,14 @@ export default function OptimizadorGananciaOcasional({ u }) {
             <Escalera r={r} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
               <div style={{ ...F.caption, flex: "1 1 260px" }}>Estimación para planear, no es asesoría tributaria. Todo debe validarse con un contador o asesor tributario.</div>
+              {onGuardar && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", flex: "1 1 100%" }}>
+                  <input id="go-nombre" style={{ ...inp, flex: "1 1 260px", width: "auto" }} placeholder={nombreSugerido()} value={nombre} onChange={(ev) => setNombre(ev.target.value)} />
+                  <button type="button" onClick={() => guardar(false)} style={{ padding: "9px 14px", borderRadius: R.md, border: "none", background: C.ok, color: C.bg, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>💾 {abierto ? "Guardar cambios" : "Guardar cálculo"}</button>
+                  {abierto && <button type="button" onClick={() => guardar(true, nombreSugerido())} style={{ padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.text, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Guardar como versión nueva</button>}
+                  {aviso && <span style={{ ...F.caption, color: C.ok }}>✓ {aviso}</span>}
+                </div>
+              )}
               <button type="button" onClick={() => exportGananciaOcasionalPDF(r, f)}
                 style={{ padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.raised, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 📄 Descargar PDF para tu contador

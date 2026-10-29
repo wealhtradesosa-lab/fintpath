@@ -3601,7 +3601,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       onSelectOwner={()=>{setPg("tax")}}
     />);
     case"taxopt":return gated("tax","Pro",<TaxOptimizerUS user={u}/>);
-    case"gocasional":return gated("tax","Pro",<OptimizadorGananciaOcasional u={u}/>);
+    case"gocasional":return gated("tax","Pro",<OptimizadorGananciaOcasional u={u} onGuardar={(lista)=>upd("calculosGO",lista)}/>);
     case"prevtax":return gated("tax","Pro",<DashboardFiscal
       user={authUser}
       u={u}
