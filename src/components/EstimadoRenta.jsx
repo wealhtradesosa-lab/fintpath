@@ -786,8 +786,9 @@ function CambioPatrimonio({ e, r, onChange, owner, deudasApp = 0, bienesApp = 0 
   return (
     <div style={{ ...card, background: C.surface, marginTop: 14 }}>
       <div style={F.label}>Tu patrimonio</div>
-      <div style={{ ...F.h2, marginTop: 4 }}>Al cierre de {e.ano} tenías {mm(liqA)} de patrimonio líquido. ¿Cambió en {e.anoEst}?</div>
-      <p style={{ ...F.caption, margin: "4px 0 10px" }}>Cuenta para el impuesto al patrimonio y para tu próxima declaración. Pon cómo crees que va a quedar al 31 de diciembre de {e.anoEst}.</p>
+      <div style={{ ...F.h2, marginTop: 4 }}>Lo tuyo neto al cierre de {e.ano}: {mm(liqA)}. ¿Cambió en {e.anoEst}?</div>
+      <p style={{ ...F.body, margin: "4px 0 4px" }}>Según tu declaración: <b style={{ color: C.text }}>tienes {mm(Number(R.patrimonioBruto) || 0)}</b> en bienes a tu nombre y <b style={{ color: C.text }}>debes {mm(Number(R.deudas) || 0)}</b>; lo tuyo neto (patrimonio líquido) es la diferencia: <b style={{ color: C.text }}>{mm(liqA)}</b>.</p>
+      <p style={{ ...F.caption, margin: "0 0 10px" }}>Los bienes van a valor fiscal (avalúo o costo), no comercial. Cuenta para el impuesto al patrimonio y tu próxima declaración. Pon cómo crees que quedará al 31 de diciembre de {e.anoEst}.</p>
       {lineas.map(([k, nombre, antes, ej]) => {
         const est = pm[k]?.estado || "igual";
         return (
@@ -809,7 +810,7 @@ function CambioPatrimonio({ e, r, onChange, owner, deudasApp = 0, bienesApp = 0 
         );
       })}
       <div style={{ ...F.body, marginTop: 10, color: C.text }}>
-        Patrimonio líquido: <b style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(liqA)} → {mm(liqB)}</b>
+        Lo tuyo neto (patrimonio líquido): <b style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(liqA)} → {mm(liqB)}</b>
         {Math.abs(d) > 1 && <span style={{ color: d > 0 ? C.ok : C.warn, fontWeight: 700 }}> ({d > 0 ? "sube" : "baja"} {mm(Math.abs(d))})</span>}
       </div>
     </div>
