@@ -85,3 +85,22 @@ describe("tenencia", () => {
     expect(tenenciaAnos({ anoCompra: 2024, mesCompra: 11, anoVenta: 2026, mesVenta: 10 }).anos).toBeLessThan(2);
   });
 });
+
+describe("Sociedad: vender las acciones", () => {
+  const caso = { titular: "juridica", anoCompra: 2015, anoVenta: 2026, costoDeclarado: 3000e6, precioVenta: 9500e6, enRenta: "si", costoAcciones: 3000e6, anoAcciones: 2015 };
+  it("compara 975 MM (empresa) vs (9.500 − 3.000×1,75) × 15% = 637,5 MM", () => {
+    const r = calcularGananciaOcasional(caso);
+    expect(r.acciones.impuesto).toBeCloseTo((9500e6 - 5250e6) * 0.15, 0);
+    expect(r.acciones.ahorro).toBeCloseTo(975e6 - 637.5e6, 0);
+    expect(r.estrategias.find((s) => s.id === "acciones").estado).toBe("posible");
+  });
+  it("al aplicarla, el resultado de arriba usa la venta de acciones", () => {
+    const r = calcularGananciaOcasional({ ...caso, ventaAcciones: true });
+    expect(r.despues.total).toBeCloseTo(637.5e6, 0);
+    expect(r.ahorro).toBeCloseTo(337.5e6, 0);
+  });
+  it("sin datos de acciones pide el dato", () => {
+    const r = calcularGananciaOcasional({ ...caso, costoAcciones: 0 });
+    expect(r.estrategias.find((s) => s.id === "acciones").estado).toBe("falta_dato");
+  });
+});

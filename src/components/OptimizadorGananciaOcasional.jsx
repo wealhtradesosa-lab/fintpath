@@ -61,6 +61,18 @@ function Opciones({ value, onChange, opciones }) {
   );
 }
 
+function Paso({ n, titulo, children }) {
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span style={{ width: 24, height: 24, borderRadius: R.pill, background: Cα.accent15, color: C.accent, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>{n}</span>
+        <div style={F.h2}>{titulo}</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 const ESTADO = {
   aplicada: { t: "✓ Aplicada", c: C.ok, bg: Cα.ok08 },
   posible: { t: "Puedes ganarla", c: C.warn, bg: Cα.warn08 },
@@ -79,6 +91,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
     titular: "natural", tipo: "urbano", anoCompra: "", mesCompra: "", anoVenta: hoy.getFullYear(), mesVenta: hoy.getMonth() + 1,
     valorEscritura: "", costoDeclarado: "", enRenta: "si", avaluoAnterior: "", avaluoActual: "", mejoras: "", valorizacion: "",
     depreciacion: "", precioVenta: "", esVivienda: false, afc: "tal_vez",
+    costoAcciones: "", anoAcciones: "", pctAcciones: 100, deudasEmpresa: "", ventaAcciones: false,
   });
   const set = (k) => (v) => setF((p) => ({ ...p, [k]: v }));
   const [ia, setIa] = useState({ cargando: false, texto: "", error: "" });
@@ -98,6 +111,12 @@ export default function OptimizadorGananciaOcasional({ u }) {
   };
 
   const r = useMemo(() => calcularGananciaOcasional(f), [f]);
+  // Comparación persona natural vs empresa con los mismos datos.
+  const comp = useMemo(() => {
+    const nat = calcularGananciaOcasional({ ...f, titular: "natural", ventaAcciones: false });
+    const jur = calcularGananciaOcasional({ ...f, titular: "juridica", ventaAcciones: false, costoDeclarado: f.costoDeclarado || f.valorEscritura, esVivienda: false });
+    return { nat, jur };
+  }, [f]);
   const listo = Number(f.precioVenta) > 0 && (Number(f.valorEscritura) > 0 || Number(f.costoDeclarado) > 0) && Number(f.anoCompra) > 1900;
   const jur = f.titular === "juridica";
 
@@ -131,15 +150,48 @@ export default function OptimizadorGananciaOcasional({ u }) {
   const estrategias = [...r.estrategias].sort((a, b) => estOrden.indexOf(a.estado) - estOrden.indexOf(b.estado));
   const posibleExtra = r.estrategias.filter((s) => s.estado === "posible").reduce((s, x) => s + (x.ahorro || 0), 0);
 
-  const Paso = ({ n, titulo, children }) => (
-    <div style={card}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-        <span style={{ width: 24, height: 24, borderRadius: R.pill, background: Cα.accent15, color: C.accent, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>{n}</span>
-        <div style={F.h2}>{titulo}</div>
-      </div>
-      {children}
-    </div>
-  );
+  // Cada estrategia trae los datos que le faltan (campos) y, si se puede
+  // aplicar, una acción: el botón cambia el escenario y el resultado de
+  // arriba se recalcula. (28-oct-2026: "no me aplicó nada, solo me sacó un
+  // chat de lo que se puede hacer o no").
+  const aplicar = (accion) => setF((p) => {
+    if (accion === "afc") return { ...p, afc: "si" };
+    if (accion === "quitar_afc") return { ...p, afc: "tal_vez" };
+    if (accion === "acciones") return { ...p, ventaAcciones: true };
+    if (accion === "quitar_acciones") return { ...p, ventaAcciones: false };
+    if (accion === "enero") return { ...p, anoVenta: p.anoVenta + 1, mesVenta: 1, avaluoAnterior: p.avaluoActual, avaluoActual: "" };
+    if (accion === "esperar") {
+      const a = Number(p.anoCompra) + 2, m = Number(p.mesCompra) || 12;
+      return { ...p, anoVenta: Math.max(p.anoVenta, a), mesVenta: m };
+    }
+    return p;
+  });
+  const CAMPOS = {
+    avaluoAnterior: [`Avalúo catastral ${f.anoVenta - 1}`, "plata"],
+    avaluoActual: [`Avalúo catastral ${f.anoVenta}`, "plata"],
+    mejoras: ["Mejoras con factura", "plata"],
+    valorizacion: ["Valorización pagada", "plata"],
+    costoAcciones: ["Lo que te costaron tus acciones", "plata"],
+    anoAcciones: ["Año en que las adquiriste", "ano"],
+    pctAcciones: ["% de la empresa que es tuyo", "pct"],
+    deudasEmpresa: ["Deudas de la empresa", "plata"],
+  };
+  const campoInline = (k) => {
+    const [label, tipo] = CAMPOS[k] || [k, "plata"];
+    return (
+      <label key={k} style={{ display: "block", minWidth: 0 }}>
+        <div style={{ ...F.caption, marginBottom: 4 }}>{label}</div>
+        {tipo === "plata" && <Plata value={f[k]} onChange={set(k)} />}
+        {tipo === "ano" && (
+          <select style={inp} value={f[k]} onChange={(ev) => set(k)(Number(ev.target.value))}>
+            <option value="">Año…</option>{años.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+        )}
+        {tipo === "pct" && <input style={inp} inputMode="numeric" value={f[k]} onChange={(ev) => set(k)(Number(ev.target.value.replace(/[^0-9]/g, "")) || "")} />}
+      </label>
+    );
+  };
+
   const dosCol = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 };
   const kpi = (label, valor, color, sub, tachado) => (
     <div style={{ minWidth: 0 }}>
@@ -249,7 +301,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
           <div style={dosCol}>
             <Campo label="Año">
               <select style={inp} value={f.anoVenta} onChange={(ev) => set("anoVenta")(Number(ev.target.value))}>
-                {[hoy.getFullYear(), hoy.getFullYear() + 1, hoy.getFullYear() + 2].map((a) => <option key={a} value={a}>{a}</option>)}
+                {[0, 1, 2, 3].map((d) => hoy.getFullYear() + d).map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             </Campo>
             <Campo label="Mes">
@@ -259,7 +311,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
             </Campo>
           </div>
           {f.mesVenta >= 10 && (
-            <Campo label={`Avalúo catastral ${f.anoVenta} (opcional)`} ayuda="Si es mayor, puede convenirte escriturar en enero.">
+            <Campo label={`Avalúo catastral ${f.anoVenta} (opcional)`} ayuda={`Ojo: si escrituras en ${f.anoVenta}, la ley usa el avalúo de ${f.anoVenta - 1}. El de ${f.anoVenta} solo cuenta si escrituras en enero de ${f.anoVenta + 1}; abajo te decimos si te conviene.`}>
               <Plata value={f.avaluoActual} onChange={set("avaluoActual")} />
             </Campo>
           )}
@@ -277,6 +329,41 @@ export default function OptimizadorGananciaOcasional({ u }) {
           )}
         </Paso>
       </div>
+
+      {listo && (() => {
+        const venta = Number(f.precioVenta) || 0;
+        const ops = [
+          { id: "nat", t: "👤 A tu nombre (persona natural)", imp: comp.nat.despues.total, nota: `Factor de la DIAN${comp.nat.despues.exento ? " + exención de vivienda" : ""}. Lo que queda es tuyo.` },
+          { id: "jur", t: "🏢 A nombre de la empresa · vende la casa", imp: comp.jur.despues.total, nota: "Paga la empresa; el resto te lo reparte como dividendo no gravado (Art. 49)." },
+        ];
+        if (comp.jur.acciones) ops.push({ id: "acc", t: "🏢 Empresa · vendes tus acciones", imp: comp.jur.acciones.impuesto / (comp.jur.acciones.pct || 1), nota: "Tú vendes como persona natural con el factor de acciones." });
+        const min = Math.min(...ops.map((o) => o.imp));
+        const actual = jur ? (f.ventaAcciones && comp.jur.acciones ? "acc" : "jur") : "nat";
+        return (
+          <div style={{ ...card, marginBottom: 16 }}>
+            <div style={{ ...F.h2, marginBottom: 4 }}>¿A nombre de quién conviene?</div>
+            <div style={{ ...F.caption, marginBottom: 12 }}>La misma venta, con los mismos datos, según quién sea el dueño.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+              {ops.map((o) => (
+                <div key={o.id} style={{ padding: 12, borderRadius: R.md, background: o.imp === min ? Cα.ok08 : C.raised, border: `1px solid ${o.imp === min ? Cα.ok25 : o.id === actual ? C.accent : C.border}` }}>
+                  <div style={{ ...F.h3, marginBottom: 6 }}>{o.t}</div>
+                  <div style={{ ...F.monoLg, color: o.imp === min ? C.ok : C.text }}>{fmMM(o.imp)}</div>
+                  <div style={F.caption}>Te quedan {fmMM(Math.max(0, venta - o.imp))}</div>
+                  <div style={{ ...F.caption, marginTop: 6 }}>{o.nota}</div>
+                  <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                    {o.id === actual && <span style={{ ...F.label, color: C.accent }}>Tu caso hoy</span>}
+                    {o.imp === min && <span style={{ ...F.label, color: C.ok }}>La que menos paga</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...F.caption, marginTop: 10 }}>
+              Ojo: pasar un inmueble de la empresa a tu nombre (o al revés) es una venta y paga su propio impuesto. Esta comparación sirve para decidir cómo vender hoy y a nombre de quién comprar el próximo.
+              {jur && !comp.jur.acciones ? " Escribe el costo y el año de tus acciones en la estrategia «Vender tus acciones» para ver esa opción." : ""}
+            </div>
+          </div>
+        );
+      })()}
 
       {listo && r.alertas.length > 0 && (
         <div style={{ ...card, borderColor: Cα.warn25, marginBottom: 16 }}>
@@ -329,6 +416,19 @@ export default function OptimizadorGananciaOcasional({ u }) {
                     <span style={F.label}>{s.norma}</span>
                   </div>
                   <div style={F.body}>{s.detalle}</div>
+                  {(s.campos || []).length > 0 && s.estado !== "no_aplica" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginTop: 10 }}>
+                      {s.campos.map(campoInline)}
+                    </div>
+                  )}
+                  {s.accion && (
+                    <button type="button" onClick={() => aplicar(s.accion)}
+                      style={{ marginTop: 10, padding: "8px 14px", borderRadius: R.md, cursor: "pointer", fontWeight: 700, fontSize: 13,
+                        border: s.accion.startsWith("quitar") ? `1px solid ${C.border}` : "none",
+                        background: s.accion.startsWith("quitar") ? "transparent" : C.ok, color: s.accion.startsWith("quitar") ? C.muted : C.bg }}>
+                      {s.accion.startsWith("quitar") ? "Quitar esta estrategia" : `Aplicar${s.ahorro > 0 ? ` · −${fmMM(s.ahorro)}` : ""}`}
+                    </button>
+                  )}
                 </div>
               );
             })}
