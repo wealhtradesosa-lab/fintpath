@@ -230,8 +230,8 @@ export function calcularGananciaOcasional(e = {}) {
       accion: acciones && acciones.ahorro > 0 ? (e.ventaAcciones ? "quitar_acciones" : "acciones") : null,
       ahorro: acciones ? acciones.ahorro : 0,
       detalle: !acciones
-        ? "Vendes como persona natural y a tus aportes sí les aplica el factor de la DIAN para acciones. Escribe cuánto te costaron tus acciones y en qué año, y te mostramos cuánto pagarías."
-        : `Tus acciones valdrían ${fm$(acciones.precio)}. Tu costo ${fm$(n(e.costoAcciones))} × ${acciones.factor.toLocaleString("es-CO")} (año ${e.anoAcciones}) = ${fm$(acciones.costo)}. Impuesto: ${fm$(acciones.impuesto)} frente a ${fm$(acciones.impEmpresa)} si la empresa vende la casa. Requiere que el comprador acepte comprar la sociedad (hereda su costo fiscal bajo y sus deudas): hazlo con abogado.`,
+        ? "La casa no cambia de dueño: el comprador te compra la empresa completa, con la casa adentro, y tú recibes la plata. Pagas ganancia ocasional, pero sobre tus acciones, y a tus aportes sí les aplica el factor de la DIAN. Escribe cuánto te costaron tus acciones y en qué año, y te mostramos cuánto pagarías."
+        : `El comprador se queda con la empresa y la casa; tú recibes ${fm$(acciones.precio)} por tus acciones. Tu costo ${fm$(n(e.costoAcciones))} × ${acciones.factor.toLocaleString("es-CO")} (año ${e.anoAcciones}) = ${fm$(acciones.costo)}. Impuesto: ${fm$(acciones.impuesto)} frente a ${fm$(acciones.impEmpresa)} si la empresa vende la casa. Requiere que el comprador acepte comprar la sociedad (hereda su costo fiscal bajo y sus deudas): hazlo con abogado.`,
     });
     if (dep > 0) alertas.push(`La depreciación que la empresa ya descontó ($${Math.round(dep).toLocaleString("es-CO")}) vuelve como renta ordinaria al 35% (Arts. 195-196 ET).`);
   }
