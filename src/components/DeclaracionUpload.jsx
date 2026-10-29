@@ -231,7 +231,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
         </select>
         {declaracionesGuardadas.length > 0 && (
           <div style={{ marginTop: 8, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
-            📚 Declaraciones guardadas para este owner ({declaracionesGuardadas.length}/3):{" "}
+            📚 Declaraciones guardadas para este titular ({declaracionesGuardadas.length}/4):{" "}
             {declaracionesGuardadas
               .map((d) => d?.anoGravable)
               .filter(Boolean)

@@ -89,7 +89,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      <PageHeader label="Impuestos · lo que viene" title="¿Cuánto me va a tocar pagar de renta?" accent="renta" compact
+      <PageHeader label="Impuestos · cuánto voy a pagar" title="¿Cuánto me va a tocar pagar de renta?" accent="renta" compact
         subtitle="Partimos de la última declaración que hizo tu contador y solo te preguntamos qué cambió. Así el cálculo conserva todo lo que él ya aplicó." />
 
       <Bienvenida
@@ -106,7 +106,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
           { t: "Cuéntanos qué cambió este año", hecho: !!(e && cambioHecho) },
           { t: "Marca lo que vas a hacer y descarga el resumen", hecho: !!marcoAlgo },
         ]}
-        accion={owner && !e ? { label: "Subir la declaración", onClick: () => onNavigate?.("prevtax") } : null}
+        accion={owner && !e ? { label: "Subir la declaración en «Histórico y comparativo» →", onClick: () => onNavigate?.("prevtax") } : null}
       />
 
       {!owners.length ? (
@@ -118,7 +118,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
       {sel === "grupo" && <Grupo owners={owners} respDe={respDe} calculosGO={calculosGO} />}
 
       {owner && !e && sel !== "grupo" && (
-        <Aviso><b>{owner.name} no tiene declaración cargada.</b> Súbela en «Historial de declaraciones» (el PDF del formulario {owner.type === "juridica" ? "110" : "210"}) y la leemos sola.</Aviso>
+        <Aviso><b>{owner.name} no tiene declaración cargada.</b> Súbela en «Histórico y comparativo» (el PDF del formulario {owner.type === "juridica" ? "110" : "210"}) y la leemos sola.</Aviso>
       )}
 
       {e && sel !== "grupo" && (<>
@@ -131,7 +131,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
             {e.d.renglones.saldoPagar != null && <Kpi k="Saldo que pagó" v={mm(e.d.renglones.saldoPagar)} />}
             {e.d.renglones.patrimonioLiquido != null && <Kpi k="Patrimonio líquido" v={mm(e.d.renglones.patrimonioLiquido)} />}
           </KpiGrid>
-          <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ ...F.h3, marginTop: 10, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>Ver su historial completo →</button>
+          <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ ...F.h3, marginTop: 10, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>Ver todas sus declaraciones y cómo han cambiado →</button>
           {tit && (
             <div style={{ marginTop: 10 }}>
               {tit.alerta

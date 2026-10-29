@@ -299,16 +299,16 @@ export function analisisHistorial(owner) {
     const di = (u.ing - p.ing) / p.ing, dt = (u.imp - p.imp) / p.imp;
     hallazgos.push({ nivel: dt > di + 0.02 ? "alerta" : "bien", texto: `El impuesto ${dt >= 0 ? "subió" : "bajó"} ${pct(Math.abs(dt), 0)} mientras los ingresos ${di >= 0 ? "subieron" : "bajaron"} ${pct(Math.abs(di), 0)}${dt > di + 0.02 ? ": el impuesto creció más rápido que lo que entra, típico cuando se sube de escalón en la tabla o se agotan los beneficios." : dt < di - 0.02 ? ": pagaste proporcionalmente menos." : ", en la misma línea."}` });
   }
-  if (nat && tope && usado > tope) hallazgos.push({ nivel: "alerta", texto: `Declaraste ${mm(usado)} en exentas y deducciones, pero el tope era ${mm(tope)}: ${mm(usado - tope)} no te restaron nada. En «Lo que viene» están los beneficios que van por fuera del tope.` });
+  if (nat && tope && usado > tope) hallazgos.push({ nivel: "alerta", texto: `Declaraste ${mm(usado)} en exentas y deducciones, pero el tope era ${mm(tope)}: ${mm(usado - tope)} no te restaron nada. En «Cuánto voy a pagar» están los beneficios que van por fuera del tope.` });
   if (kpis.cubierto != null && kpis.cubierto < 0.6) hallazgos.push({ nivel: "alerta", texto: `Solo ${pct(kpis.cubierto, 0)} del impuesto se cubrió con retenciones: al declarar te toca un pago grande. Conviene ir separando plata durante el año.` });
   if (p && p.deudas != null && u.deudas != null && u.deudas < p.deudas) hallazgos.push({ nivel: "bien", texto: `Bajó la deuda de ${mm(p.deudas)} a ${mm(u.deudas)}: el patrimonio líquido creció también por eso.` });
   if (n > 2) hallazgos.push({ nivel: u.tasa > s[0].tasa ? "alerta" : "bien", texto: `En ${n} años la tasa efectiva pasó de ${pct(s[0].tasa)} a ${pct(u.tasa)}${u.tasa > s[0].tasa ? ": cada año se va una porción mayor de lo que entra." : "."}` });
   if (nat && u.pat != null) {
     const um = UMBRAL_PATRIMONIO_UVT * uvtForYear(u.ano + 1);
-    if (u.pat >= um) hallazgos.push({ nivel: "alerta", texto: `Tu patrimonio líquido (${mm(u.pat)}) supera el umbral del impuesto al patrimonio (${mm(um)}). Míralo en «Lo que viene».` });
+    if (u.pat >= um) hallazgos.push({ nivel: "alerta", texto: `Tu patrimonio líquido (${mm(u.pat)}) supera el umbral del impuesto al patrimonio (${mm(um)}). Míralo en «Cuánto voy a pagar».` });
     else if (u.pat >= um * 0.85) hallazgos.push({ nivel: "alerta", texto: `Tu patrimonio líquido (${mm(u.pat)}) se acerca al umbral del impuesto al patrimonio (${mm(um)}).` });
   }
-  if (proy.imp > u.imp * 1.1) hallazgos.push({ nivel: "alerta", texto: `Si la tendencia sigue, en ${proy.ano} pagarías ${mm(proy.imp - u.imp)} más que en ${u.ano}. Revisa las oportunidades en «Lo que viene».` });
+  if (proy.imp > u.imp * 1.1) hallazgos.push({ nivel: "alerta", texto: `Si la tendencia sigue, en ${proy.ano} pagarías ${mm(proy.imp - u.imp)} más que en ${u.ano}. Revisa las oportunidades en «Cuánto voy a pagar».` });
   if (n < MAX_DECLARACIONES) hallazgos.push({ nivel: "info", texto: `Tienes ${n} de ${MAX_DECLARACIONES} declaraciones. Sube las que faltan para ver mejor la tendencia.` });
   return { serie: s, nat, kpis, proy, hallazgos };
 }

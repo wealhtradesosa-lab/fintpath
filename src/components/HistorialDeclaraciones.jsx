@@ -24,18 +24,20 @@ const SERIE = [C.accent, C.ok, C.warn, C.purple, C.danger];
 const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
 const th = { ...F.label, padding: "8px 6px", textAlign: "right" };
 
-export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSaveDeclaracion, onNavigate, isPro, onUpsell }) {
+export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSaveDeclaracion, onNavigate, isPro, onUpsell, vistaInicial }) {
   const owners = useMemo(() => (ownersIn || []).filter(Boolean), [ownersIn]);
   const conDecl = owners.find((o) => ultimaDeclaracion(o));
-  const [sel, setSel] = useState((conDecl || owners[0])?.id || "");
+  const [sel, setSel] = useState(vistaInicial || (conDecl || owners[0])?.id || "");
   const [subir, setSubir] = useState(!conDecl);
+  const [subirPara, setSubirPara] = useState(null); // titular preseleccionado al subir desde la tabla
+  const abrirSubida = (ownerId) => { setSubirPara(ownerId || null); setSubir(true); };
   const owner = owners.find((o) => o.id === sel);
   const total = owners.reduce((a, o) => a + declaracionesOrdenadas(o).length, 0);
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      <PageHeader label="Impuestos · historial" title="¿Cómo me ha ido con la renta, año tras año?" accent="año tras año" compact
-        subtitle={`Las últimas ${MAX_DECLARACIONES} declaraciones de cada persona o empresa: qué pasó, cómo se compara cada año, qué alertas hay y hacia dónde va.`} />
+      <PageHeader label="Impuestos · histórico y comparativo" title="Mis declaraciones de renta, año tras año" accent="año tras año" compact
+        subtitle={`Sube aquí cada declaración cuando llegue. Guardamos las últimas ${MAX_DECLARACIONES} de cada persona o empresa del grupo y te mostramos cómo se comparan, qué alertas hay y hacia dónde va.`} />
 
       <Bienvenida
         titulo="Sube los PDF de tus declaraciones y entiende tu renta en un vistazo"
@@ -43,31 +45,72 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
           "Lee solo el PDF del formulario 210 (personas) o 110 (empresas): no tienes que digitar nada.",
           "Te muestra tasa efectiva, crecimiento, patrimonio y deudas de cada año, con gráficas.",
           "Te alerta cuando el impuesto crece más rápido que tus ingresos, cuando beneficios se pierden por el tope o cuando te acercas al impuesto al patrimonio.",
-          "Con esa base, «Lo que viene» estima lo que pagarás este año.",
+          "Con esa base, «Cuánto voy a pagar» estima el impuesto de este año.",
         ]}
         pasos={[
           { t: "Escoge la persona o empresa", hecho: !!owner || sel === "grupo" },
           { t: `Sube sus declaraciones (hasta ${MAX_DECLARACIONES} años)`, hecho: total > 0 },
           { t: "Revisa alertas y tendencias", hecho: total > 1 },
-          { t: "Pasa a «Lo que viene» para estimar este año", hecho: false },
+          { t: "Calcula cuánto pagarás este año", hecho: false },
         ]}
-        accion={total ? { label: "Ir a «Lo que viene»", onClick: () => onNavigate?.("tax") } : { label: "Subir una declaración", onClick: () => setSubir(true) }}
+        accion={total ? { label: "Calcular cuánto pagaré este año →", onClick: () => onNavigate?.("tax") } : { label: "Subir la primera declaración", onClick: () => abrirSubida(sel !== "grupo" ? sel : null) }}
       />
 
-      {owners.length > 0 && <Panel titulo="¿De quién quieres ver el historial?"><SelectorTitular owners={owners} value={sel} onChange={setSel} /></Panel>}
+      {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} />}
 
-      <Panel titulo={subir ? "Subir una declaración" : undefined} style={subir ? undefined : { padding: 12 }}>
-        {subir ? (<>
-          <DeclaracionUpload user={user} owners={owners} isPro={isPro} onUpsell={onUpsell}
+      {subir && (
+        <Panel titulo="Subir una declaración" sub="El PDF del formulario 210 (personas) o 110 (empresas). Lo leemos solo; revisas los valores y lo guardas en el titular.">
+          <DeclaracionUpload key={subirPara || "todos"} user={user} isPro={isPro} onUpsell={onUpsell}
+            owners={subirPara ? [...owners.filter((o) => o.id === subirPara), ...owners.filter((o) => o.id !== subirPara)] : owners}
             onSaveToOwner={(ownerId, declaracion) => { onSaveDeclaracion(ownerId, declaracion); setSel(ownerId); setSubir(false); }} />
-          {conDecl && <button type="button" onClick={() => setSubir(false)} style={{ ...F.h3, marginTop: 8, background: "none", border: "none", color: C.muted, cursor: "pointer" }}>Cerrar</button>}
-        </>) : (
-          <button type="button" onClick={() => setSubir(true)} style={{ ...F.h3, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>+ Subir otra declaración (PDF)</button>
-        )}
-      </Panel>
+          <button type="button" onClick={() => setSubir(false)} style={{ ...F.h3, marginTop: 8, background: "none", border: "none", color: C.muted, cursor: "pointer" }}>Cerrar</button>
+        </Panel>
+      )}
+
+      {owners.length > 0 && <Panel titulo="¿Qué quieres ver?"><SelectorTitular owners={owners} value={sel} onChange={setSel} /></Panel>}
 
       {sel === "grupo" ? <HistGrupo owners={owners} /> : owner && <HistTitular owner={owner} onNavigate={onNavigate} />}
     </div>
+  );
+}
+
+// Tabla titular × año: qué declaraciones hay y dónde subir la que falta.
+function Cobertura({ owners, onSubir, onVer }) {
+  const ultimoAno = new Date().getFullYear() - 1; // la declaración más reciente posible es la del año pasado
+  const anos = Array.from({ length: MAX_DECLARACIONES }, (_, i) => ultimoAno - i);
+  const tdc = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "center" };
+  return (
+    <Panel titulo="Tus declaraciones" sub={`Sube cada una cuando la tengas. Guardamos ${MAX_DECLARACIONES} años por persona o empresa; si subes un año que ya está, se reemplaza.`}>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", ...F.body, color: C.text }}>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>Titular</th>{anos.map((a) => <th key={a} style={{ ...th, textAlign: "center" }}>{a}</th>)}</tr></thead>
+          <tbody>
+            {owners.map((o) => {
+              const ds = declaracionesOrdenadas(o);
+              return (
+                <tr key={o.id}>
+                  <td style={{ ...tdc, textAlign: "left" }}>
+                    <button type="button" onClick={() => onVer(o.id)} style={{ ...F.h3, background: "none", border: "none", color: C.text, cursor: "pointer", padding: 0, textAlign: "left" }}>{o.name}</button>
+                    <div style={F.caption}>{o.type === "juridica" ? "Sociedad · F-110" : "Persona natural · F-210"}</div>
+                  </td>
+                  {anos.map((a) => {
+                    const d = ds.find((x) => Number(x.anoGravable) === a);
+                    return (
+                      <td key={a} style={tdc}>
+                        {d
+                          ? <button type="button" onClick={() => onVer(o.id)} title="Ver su historial" style={{ ...F.caption, fontWeight: 600, color: C.ok, background: "none", border: "none", cursor: "pointer" }}>✓ {mm(impuestoDeclarado(d))}</button>
+                          : <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, fontWeight: 600, color: C.accent, background: "none", border: `1px dashed ${C.border}`, borderRadius: R.md, padding: "4px 10px", cursor: "pointer" }}>+ Subir</button>}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{ ...F.caption, marginTop: 8 }}>✓ = declaración cargada, con el impuesto que se pagó ese año.</div>
+    </Panel>
   );
 }
 
@@ -129,7 +172,7 @@ function HistTitular({ owner, onNavigate }) {
         <Kpi k="Tasa efectiva" v={pct(proy.tasa)} d={`de cada $100, $${Math.round(proy.tasa * 100)} a renta`} />
         {proy.pat != null && <Kpi k="Patrimonio líquido" v={mm(proy.pat)} d={`al ritmo de ${pct(proy.gPat)} anual`} />}
       </KpiGrid>
-      <button type="button" onClick={() => onNavigate?.("tax")} style={{ ...F.h3, marginTop: 12, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>Ajustar con lo que de verdad cambió este año en «Lo que viene» →</button>
+      <button type="button" onClick={() => onNavigate?.("tax")} style={{ ...F.h3, marginTop: 12, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>Calcular el impuesto de este año con lo que de verdad cambió →</button>
     </Panel>
 
     <Panel titulo="Detalle renglón por renglón">
