@@ -95,6 +95,22 @@ export function declaracionesOrdenadas(owner) {
 export const ultimaDeclaracion = (owner) => declaracionesOrdenadas(owner).at(-1) || null;
 
 export const esF110 = (d) => d?.tipo === "F110";
+
+/**
+ * Saldo de la declaración: + a pagar, − a favor. 29-oct-2026 (Santiago: "¿por qué en el simulador
+ * con la empresa Lagoon pago 171 MM?"). El lector guardaba el «saldo a favor» del F-110 sin signo y
+ * el simulador lo cobraba como pago. Regla: nadie paga al declarar más que su impuesto + el anticipo
+ * del año siguiente; si lo leído no cabe ahí, era un saldo a favor.
+ */
+export function saldoDeclarado(d) {
+  const R = d?.renglones || {};
+  const imp = impuestoDeclarado(d), antSig = num(R.anticipoAnoSiguiente);
+  const esperado = imp + antSig - retencionDeclarada(d) - num(R.anticipoAnoAnterior);
+  if (R.saldoPagar == null || R.saldoPagar === "") return { valor: esperado, ajustado: false, calculado: true };
+  const leido = num(R.saldoPagar);
+  if (leido > 0 && leido > imp + antSig + Math.max(1e6, 0.05 * leido)) return { valor: -leido, ajustado: true, leido };
+  return { valor: leido, ajustado: false };
+}
 /** Impuesto de renta declarado: F-210 el calculado; F-110 el neto (después de descuentos). */
 export const impuestoDeclarado = (d) => {
   const r = d?.renglones || {};
@@ -408,7 +424,7 @@ export function serieHistorial(owner) {
   return declaracionesOrdenadas(owner).slice(-MAX_DECLARACIONES).map((d) => {
     const R = d.renglones, imp = impuestoDeclarado(d), ing = num(R.ingresosBrutos);
     return { ano: Number(d.anoGravable), ing, imp, tasa: ing ? imp / ing : 0, ret: retencionDeclarada(d),
-      saldo: R.saldoPagar != null ? num(R.saldoPagar) : Math.max(0, imp - retencionDeclarada(d)),
+      saldo: saldoDeclarado(d).valor,
       patBruto: R.patrimonioBruto != null ? num(R.patrimonioBruto) : null, deudas: R.deudas != null ? num(R.deudas) : null,
       pat: R.patrimonioLiquido != null ? num(R.patrimonioLiquido) : null };
   });

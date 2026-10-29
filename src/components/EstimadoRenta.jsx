@@ -4,7 +4,7 @@ import { C, Cα, F, R } from "../lib/designTokens";
 import { totalAnualItem } from "../lib/flowHelpers.js";
 import {
   RESPUESTAS_DEFAULT, ultimaDeclaracion, estimarDesdeDeclaracion, oportunidades, ahorroMarcado, patrimonioInfo,
-  impuestoDividendos, calculosGODelTitular, revisarTitular, pct, mm, impuestoDeclarado, retencionDeclarada,
+  impuestoDividendos, calculosGODelTitular, revisarTitular, pct, mm, impuestoDeclarado, retencionDeclarada, saldoDeclarado,
 } from "../lib/rentaDesdeDeclaracion.js";
 import { TIPOS_INGRESO, tipoDeCategoria } from "../lib/rentaDesdeDeclaracion.js";
 import { serieHistorial, origenIngresos, lista2026DesdeIngresos } from "../lib/rentaDesdeDeclaracion.js";
@@ -201,7 +201,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
             <Kpi k="Impuesto de renta" v={mm(impuestoDeclarado(e.d))} />
             <Kpi k="Tasa efectiva" v={pct(impuestoDeclarado(e.d) / (Number(e.d.renglones.ingresosBrutos) || 1))} />
             <Kpi k={e.nat ? "Retenciones" : "Autorretenciones"} v={mm(retencionDeclarada(e.d))} />
-            {e.d.renglones.saldoPagar != null && <Kpi k="Saldo que pagó" v={mm(e.d.renglones.saldoPagar)} />}
+            {e.d.renglones.saldoPagar != null && (() => { const sd = saldoDeclarado(e.d); return <Kpi k={sd.valor < 0 ? "Saldo a favor" : "Saldo que pagó"} v={mm(Math.abs(sd.valor))} />; })()}
             {Number(e.d.renglones.ingresosNoConstitutivos) > 0 && <Kpi k="Ingresos no constitutivos" v={mm(e.d.renglones.ingresosNoConstitutivos)} d="aportes obligatorios y similares" />}
             {e.nat && <Kpi k="Exentas y deducciones" v={mm(["rentaExenta25", "deducIntereses", "deducMedicina", "deducDependientes", "pvAFC"].reduce((a, k) => a + (Number(e.d.renglones[k]) || 0), 0))} d="25% laboral, intereses, medicina, dependientes, AFC" />}
             {!e.nat && Number(e.d.renglones.costosDeducciones) > 0 && <Kpi k="Costos y deducciones" v={mm(e.d.renglones.costosDeducciones)} />}

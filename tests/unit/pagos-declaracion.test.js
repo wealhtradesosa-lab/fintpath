@@ -34,3 +34,20 @@ describe("fecha de pago por NIT (calendario DIAN personas naturales)", () => {
     expect(mesesDePago({ type: "natural" })[0].mes).toBe(9);
   });
 });
+
+import { saldoDeclarado } from "../../src/lib/rentaDesdeDeclaracion.js";
+import { calibracionReferente } from "../../src/lib/impuestoReferente.js";
+describe("saldo a favor leído sin signo (F-110)", () => {
+  const d = { tipo: "F110", anoGravable: 2025, renglones: { ingresosBrutos: 600e6, rentaLiquidaGravable: 3e5, impuestoCalculado: 1e5, impuestoNeto: 1e5, autorretencion: 172e6, saldoPagar: 171e6 } };
+  it("no puede pagar más que impuesto + anticipo: era saldo a favor", () => {
+    expect(saldoDeclarado(d)).toMatchObject({ valor: -171e6, ajustado: true });
+  });
+  it("saldo normal se respeta", () => {
+    expect(saldoDeclarado({ renglones: { impuestoCalculado: 80e6, retefuente: 50e6, saldoPagar: 30e6 } }).valor).toBe(30e6);
+  });
+  it("el simulador del año no cobra los 171 MM", () => {
+    const o = { id: "o2", name: "Lagoon", type: "juridica", declaraciones: [d] };
+    const c = calibracionReferente({ owners: [o] }, { modo: "actual", hoy: new Date(2026, 9, 29) }).Lagoon;
+    expect(c.totalAlDeclarar).toBe(0); expect(c.saldoAjustado).toBe(true);
+  });
+});

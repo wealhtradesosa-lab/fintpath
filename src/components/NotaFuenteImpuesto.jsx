@@ -50,7 +50,7 @@ export function textoFechaPago(owner) {
 }
 
 // Fila por titular: de dónde sale, cuánto y cuándo paga.
-function FilaTitular({ o, modo, anoDecl, conBase, anos, d, onCambiarMes }) {
+function FilaTitular({ o, modo, anoDecl, conBase, anos, d, onCambiarMes, ajustado }) {
   const jur = o.type === "juridica";
   const ps = mesesDePago(o);
   return (
@@ -60,6 +60,7 @@ function FilaTitular({ o, modo, anoDecl, conBase, anos, d, onCambiarMes }) {
         {" · "}{conBase ? (modo === "actual" ? `declaración ${anoDecl}` : "Calculadora") : anos.length ? `tiene ${anos.join(", ")}; falta ${anoDecl}` : "sin declaración"}
         {d ? ` · por pagar ${mm(Math.max(0, (Number(d.impBruto ?? d.impuesto) || 0) - (Number(d.reteN) || 0)))}` : ""}
         {" · paga "}<b style={{ color: C.text }}>{textoFechaPago(o)}</b>{ps[0]?.auto ? " (según su NIT)" : ""}
+        {ajustado && <div style={{ color: C.warn }}>El «saldo a pagar» leído del PDF es mayor que el impuesto: era un saldo a favor, así que no se cobra. Revísalo abajo en «¿Algún valor quedó mal leído?».</div>}
       </span>
       {onCambiarMes && (
         <select value={Number(o.mesDeclaracion) || 0} onChange={(ev) => onCambiarMes(o.id, Number(ev.target.value) || null)} style={{ ...inp, width: "auto", height: 30, fontSize: 12, cursor: "pointer" }}>
@@ -123,7 +124,7 @@ export function PagosDeRenta({ cal = {}, owners = [], detalle = [], onGuardarDec
   return (
     <div style={{ ...F.caption, color: C.muted, display: "grid", gap: 8 }}>
       <div>Lo que pagas de renta en {hoy}: retenciones cada mes y el saldo de la declaración {anoDecl} en un solo pago. Con esto se calculan los simuladores. La fecha sale del NIT de la declaración; cámbiala solo si no coincide.</div>
-      {owners.map((o) => <FilaTitular key={o.id} o={o} modo="actual" anoDecl={anoDecl} conBase={conBase(o)} anos={anos(o)} d={detalle.find((x) => x.name === o.name)} onCambiarMes={onCambiarMes} />)}
+      {owners.map((o) => <FilaTitular key={o.id} o={o} modo="actual" anoDecl={anoDecl} conBase={conBase(o)} anos={anos(o)} d={detalle.find((x) => x.name === o.name)} onCambiarMes={onCambiarMes} ajustado={cal[o.name]?.saldoAjustado} />)}
       {faltan.length > 0 && (
         <div style={{ color: C.warn }}>
           Falta la declaración {anoDecl} de {faltan.map((o) => o.name).join(", ")}; mientras tanto se usa un aproximado.{" "}

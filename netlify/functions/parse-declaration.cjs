@@ -139,7 +139,7 @@ Formato de respuesta para F-110 (jurídica):
     "autorretencion": número,
     "anticipoAnoAnterior": número (anticipo liquidado el año anterior, que se resta este año),
     "anticipoAnoSiguiente": número (anticipo de renta para el año gravable siguiente),
-    "saldoPagar": número
+    "saldoPagar": número (Saldo a pagar. Si la declaración da "Total saldo a favor", ponlo NEGATIVO; nunca positivo)
   },
   "confianza": "alta" | "media" | "baja"
 }

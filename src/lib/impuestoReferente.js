@@ -17,7 +17,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { estimarImpuesto } from "./taxCO.js";
-import { ultimaDeclaracion, declaracionesOrdenadas, estimarDesdeDeclaracion, calculosGODelTitular, impuestoDeclarado, retencionDeclarada, lista2026DesdeIngresos } from "./rentaDesdeDeclaracion.js";
+import { ultimaDeclaracion, declaracionesOrdenadas, estimarDesdeDeclaracion, calculosGODelTitular, impuestoDeclarado, retencionDeclarada, lista2026DesdeIngresos, saldoDeclarado } from "./rentaDesdeDeclaracion.js";
 
 const num = (v) => Number(v) || 0;
 const bruto = (d) => (d?.impBruto != null ? num(d.impBruto) : num(d?.impuesto));
@@ -45,9 +45,9 @@ export function calibracionReferente(u, { modo = "actual", hoy = new Date() } = 
     const real = modo === "actual" ? declaracionesOrdenadas(o).find((d) => Number(d.anoGravable) === anoPasado) : null;
     if (real) {
       // Lo que sale de la caja este año: retenciones (cada mes) + el saldo de la declaración del año pasado.
-      const ret = retencionDeclarada(real), saldo = Math.max(0, num(real.renglones.saldoPagar));
+      const ret = retencionDeclarada(real), sd = saldoDeclarado(real), saldo = Math.max(0, sd.valor);
       const renta = ret + saldo;
-      cal[o.name] = { ownerId: o.id, type: o.type || "natural", renta, ret, ano: anoPasado + 1, real: true, impDeclarado: impuestoDeclarado(real), totalAlDeclarar: saldo, anoDeclaracion: anoPasado,
+      cal[o.name] = { ownerId: o.id, type: o.type || "natural", renta, ret, ano: anoPasado + 1, real: true, impDeclarado: impuestoDeclarado(real), totalAlDeclarar: saldo, anoDeclaracion: anoPasado, saldoAjustado: sd.ajustado || false,
         fImp: mb > renta * 0.05 ? renta / mb : null, fRet: mr > 0 && ret > 0 ? ret / mr : null };
       continue;
     }
