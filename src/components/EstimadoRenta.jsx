@@ -74,7 +74,10 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
   const e = owner ? estimarDesdeDeclaracion(owner, r, { calculosGO: gos }) : null;
   const ops = e ? oportunidades(owner, e) : [];
   const ahorro = ahorroMarcado(ops, r?.estr);
-  const pat = owner ? patrimonioInfo(owner, r?.casa) : null;
+  const patDicho = (rr) => { const R0 = owner && ultimaDeclaracion(owner)?.renglones; if (!R0 || R0.patrimonioBruto == null) return null;
+    const pm = rr?.patrim || {}; const bienes = pm.bienes?.estado === "cambia" ? Number(pm.bienes.ahora) || 0 : Number(R0.patrimonioBruto) || 0;
+    const deudas = pm.deudas?.estado === "cambia" ? Number(pm.deudas.ahora) || 0 : Number(R0.deudas) || 0; return bienes - deudas; };
+  const pat = owner ? patrimonioInfo(owner, r?.casa, patDicho(r)) : null;
   const tit = e ? revisarTitular(ingApp[owner.id], e) : null;
 
   const cambioHecho = r && (r.g !== RESPUESTAS_DEFAULT.g || r.sigue != null || (r.nuevos || []).length || r.nuevo || r.perdido || r.aportes || r.dep || r.goSel || estado[owner?.id]);
@@ -84,7 +87,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
   const calcular = (rr) => {
     const ee = estimarDesdeDeclaracion(owner, rr, { calculosGO: gos });
     const oo = ee ? oportunidades(owner, ee) : [];
-    return { r: rr, e: ee, ops: oo, ahorro: ahorroMarcado(oo, rr?.estr), pat: patrimonioInfo(owner, rr?.casa) };
+    return { r: rr, e: ee, ops: oo, ahorro: ahorroMarcado(oo, rr?.estr), pat: patrimonioInfo(owner, rr?.casa, patDicho(rr)) };
   };
   const cambiosTexto = (rr, ee) => {
     const c = [];
@@ -205,6 +208,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
         <Panel titulo="3. ¿Qué cambió este año?" sub="Cuéntanos con tus palabras y números. Si algo no cambió, déjalo como está.">
           <TablaIngresos e={e} r={r} registrados={ingresosRegistrados(u, owner.id)} onChange={(patch) => set(owner.id, patch)} />
+          <CambioPatrimonio e={e} r={r} onChange={(patrim) => set(owner.id, { patrim })} />
           <div style={{ ...F.h3, margin: "18px 0 8px" }}>Otros cambios</div>
           <Grid>
             {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda="Lo que vas a aportar de más frente al año pasado"><Plata value={r.aportes} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
@@ -343,7 +347,7 @@ function Patrimonio({ pat, casa, onCasa }) {
       <KpiGrid>
         <Kpi k={`Patrimonio líquido al 1-ene-${pat.anoA}`} v={mm(pat.patA)} d={pat.exc ? `menos casa ${mm(pat.exc)}` : "según la última declaración"} />
         <Kpi k={`Impuesto ${pat.anoA}`} v={pat.aplica ? mm(pat.impA) : "No aplica"} d={pat.aplica ? "ya se debió declarar este año" : `está ${mm(pat.umbral - (pat.patA - pat.exc))} por debajo del umbral`} color={pat.aplica ? C.danger : undefined} />
-        <Kpi k={`Al 1-ene-${pat.anoB}, si sigue la tendencia`} v={mm(pat.patB)} d={`crece ${pct(pat.crec)} al año`} />
+        <Kpi k={`Al 1-ene-${pat.anoB}`} v={mm(pat.patB)} d={pat.dicho ? "con lo que dijiste de tu patrimonio" : `si sigue la tendencia (${pct(pat.crec)} al año)`} />
         <Kpi k={`Impuesto ${pat.anoB} estimado`} v={pat.impB > 0 ? mm(pat.impB) : "No aplica"} d={pat.impB > 0 ? `con la UVT ${pat.anoB} estimada` : "sigue por debajo del umbral"} color={pat.impB > 0 ? C.danger : undefined} />
       </KpiGrid>
       <div style={{ maxWidth: 360, marginTop: 12 }}>
@@ -721,6 +725,53 @@ function Cuenta({ e, ahorro }) {
             <span style={{ ...F.mono, color: C.ok }}>{mm(Math.max(0, e.totalAlDeclarar - ahorro))}</span>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// Patrimonio: lo que tenías y lo que debías al cierre del año pasado; ¿sigue igual o cambió?
+function CambioPatrimonio({ e, r, onChange }) {
+  const R = e.d.renglones;
+  if (R.patrimonioBruto == null && R.deudas == null) return null;
+  const pm = r.patrim || {};
+  const lineas = [
+    ["bienes", "Lo que tienes (bienes, inversiones, cuentas)", Number(R.patrimonioBruto) || 0, "Por ejemplo, compraste o vendiste un inmueble, o crecieron tus inversiones."],
+    ["deudas", "Lo que debes (créditos, hipotecas)", Number(R.deudas) || 0, "Por ejemplo, pagaste un crédito o tomaste uno nuevo."],
+  ];
+  const valor = (k, antes) => (pm[k]?.estado === "cambia" ? Number(pm[k].ahora) || 0 : antes);
+  const liqA = (Number(R.patrimonioBruto) || 0) - (Number(R.deudas) || 0);
+  const liqB = valor("bienes", Number(R.patrimonioBruto) || 0) - valor("deudas", Number(R.deudas) || 0);
+  const d = liqB - liqA;
+  const seg = (activo) => ({ flex: 1, height: 42, border: `1px solid ${activo ? C.accent : C.border}`, background: activo ? Cα.accent15 : "transparent", color: activo ? C.text : C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" });
+  return (
+    <div style={{ ...card, background: C.surface, marginTop: 14 }}>
+      <div style={F.label}>Tu patrimonio</div>
+      <div style={{ ...F.h2, marginTop: 4 }}>Al cierre de {e.ano} tenías {mm(liqA)} de patrimonio líquido. ¿Cambió en {e.anoEst}?</div>
+      <p style={{ ...F.caption, margin: "4px 0 10px" }}>Cuenta para el impuesto al patrimonio y para tu próxima declaración. Pon cómo crees que va a quedar al 31 de diciembre de {e.anoEst}.</p>
+      {lineas.map(([k, nombre, antes, ej]) => {
+        const est = pm[k]?.estado || "igual";
+        return (
+          <div key={k} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(200px, calc((100% - 31px) / 4)), 1fr))", gap: 10, alignItems: "start", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
+            <Campo label="Concepto" ayuda={ej}><div style={{ ...inp, display: "flex", alignItems: "center", color: C.text }}>{nombre}</div></Campo>
+            <Campo label={`Al cierre de ${e.ano}`}><div style={{ ...inp, display: "flex", alignItems: "center", fontFamily: "ui-monospace, Menlo, monospace", color: C.text }}>{mm(antes)}</div></Campo>
+            <Campo label={`En ${e.anoEst}`}>
+              <div style={{ display: "flex" }}>
+                <button type="button" onClick={() => onChange({ ...pm, [k]: { estado: "igual" } })} style={{ ...seg(est === "igual"), borderRadius: `${R.md}px 0 0 ${R.md}px` }}>Igual</button>
+                <button type="button" onClick={() => onChange({ ...pm, [k]: { estado: "cambia", ahora: pm[k]?.ahora ?? antes } })} style={{ ...seg(est === "cambia"), borderRadius: `0 ${R.md}px ${R.md}px 0`, marginLeft: -1 }}>Cambia</button>
+              </div>
+            </Campo>
+            <Campo label={`Al cierre de ${e.anoEst}`}>
+              {est === "cambia" ? <Plata value={pm[k]?.ahora} onChange={(v) => onChange({ ...pm, [k]: { estado: "cambia", ahora: v } })} />
+                : <div style={{ ...inp, display: "flex", alignItems: "center", fontFamily: "ui-monospace, Menlo, monospace", color: C.muted }}>{mm(antes)}</div>}
+              {est === "cambia" && (() => { const dd = (Number(pm[k]?.ahora) || 0) - antes; return Math.abs(dd) > 1 ? <span style={{ ...F.caption, fontWeight: 700, color: (dd > 0) === (k === "deudas") ? C.warn : C.ok }}>{dd > 0 ? "▲ +" : "▼ −"}{mm(Math.abs(dd))}</span> : null; })()}
+            </Campo>
+          </div>
+        );
+      })}
+      <div style={{ ...F.body, marginTop: 10, color: C.text }}>
+        Patrimonio líquido: <b style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(liqA)} → {mm(liqB)}</b>
+        {Math.abs(d) > 1 && <span style={{ color: d > 0 ? C.ok : C.warn, fontWeight: 700 }}> ({d > 0 ? "sube" : "baja"} {mm(Math.abs(d))})</span>}
       </div>
     </div>
   );

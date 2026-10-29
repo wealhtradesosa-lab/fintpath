@@ -325,7 +325,7 @@ export function impuestoPatrimonioUVT(baseUvt, ano) {
   if (b <= 239000) return (b - 122000) * 0.01 + 250;
   return (b - 239000) * (ano <= 2026 ? 0.015 : 0.01) + 1420;
 }
-export function patrimonioInfo(owner, casa = 0) {
+export function patrimonioInfo(owner, casa = 0, patBDicho = null) {
   const ds = declaracionesOrdenadas(owner).filter((d) => d.renglones.patrimonioLiquido != null && num(d.renglones.patrimonioLiquido) > 0);
   const u = ds.at(-1); if (!u) return null;
   const anoA = Number(u.anoGravable) + 1, anoB = anoA + 1; // 1 de enero del año en curso y del siguiente
@@ -337,11 +337,12 @@ export function patrimonioInfo(owner, casa = 0) {
   const pats = ds.map((d) => num(d.renglones.patrimonioLiquido));
   const crec = pats.length > 1 ? Math.pow(pats.at(-1) / pats[0], 1 / (pats.length - 1)) - 1 : 0;
   const exc = Math.min(num(casa), EXCLUSION_CASA_UVT * uvtA);
-  const patA = pats.at(-1), patB = patA * (1 + crec);
+  // patBDicho: lo que el usuario dijo que tendrá al cierre del año (bienes − deudas); si no, la tendencia.
+  const patA = pats.at(-1), patB = patBDicho != null ? Math.max(0, num(patBDicho)) : patA * (1 + crec);
   const umbral = UMBRAL_PATRIMONIO_UVT * uvtA;
   const impA = impuestoPatrimonioUVT(Math.max(0, patA - exc) / uvtA, anoA) * uvtA;
   const impB = impuestoPatrimonioUVT(Math.max(0, patB - exc) / uvtB, anoB) * uvtB;
-  return { sociedad: false, anoA, anoB, patA, patB, crec, exc, umbral, impA, impB, uvtA,
+  return { sociedad: false, anoA, anoB, patA, patB, crec, exc, umbral, impA, impB, uvtA, dicho: patBDicho != null,
     aplica: patA - exc >= umbral, cerca: patA - exc < umbral && patB - exc >= umbral * 0.9 };
 }
 
