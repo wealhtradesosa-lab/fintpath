@@ -161,3 +161,23 @@ describe("caso real: cambia la mezcla de ingresos", () => {
     expect(e.ingresosEst).toBeCloseTo(200e6, -3);
   });
 });
+
+describe("tabla de ingresos (sigue / cambia / ya no / nuevo)", () => {
+  it("el caso de Santiago: queda solo el salario y entran dos ingresos nuevos", () => {
+    const filas = [
+      { id: "s", nombre: "Salario", tipo: "laboral", antes: 132e6, estado: "sigue" },
+      { id: "c", nombre: "Comisiones", tipo: "laboral", antes: 360e6, estado: "no" },
+      { id: "u", nombre: "Utilidades", tipo: "dividendos", antes: 120e6, estado: "no" },
+      { id: "t", nombre: "Trabajo nuevo", tipo: "laboral", antes: 0, estado: "cambia", ahora: 150e6 },
+    ];
+    const e = estimarDesdeDeclaracion(persona, { g: 0, filas });
+    expect(e.ingresosEst).toBeCloseTo(132e6 + 150e6, -3);
+    expect(e.renta).toBeLessThan(estimarDesdeDeclaracion(persona, { g: 0 }).renta);
+    expect(e.pasos.some((p) => /Ya no recibes: Comisiones/.test(p.texto))).toBe(true);
+    expect(e.pasos.some((p) => /Nuevo: Trabajo nuevo/.test(p.texto))).toBe(true);
+  });
+  it("con inflación, lo que sigue sube 5% y el resultado lo muestra", () => {
+    const e = estimarDesdeDeclaracion(persona, { g: 0.05, filas: [{ id: "s", nombre: "Todo", tipo: "laboral", antes: 612e6, estado: "sigue" }] });
+    expect(e.ingresosEst).toBeCloseTo(612e6 * 1.05, -3);
+  });
+});

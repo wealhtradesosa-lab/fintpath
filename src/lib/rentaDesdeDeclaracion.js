@@ -44,9 +44,24 @@ export const tipoDeCategoria = (cat = "") => {
   return "otro";
 };
 
+/** De dónde vinieron los ingresos de una declaración F-210, por cédula (si el lector los trajo). */
+export const CEDULAS_F210 = [
+  ["ingresosTrabajo", "Salario (rentas de trabajo)", "laboral"],
+  ["ingresosHonorarios", "Honorarios y servicios (trabajo no laboral)", "laboral"],
+  ["ingresosCapital", "Rentas de capital: intereses, arriendos, regalías", "capital"],
+  ["ingresosNoLaborales", "Rentas no laborales", "otro"],
+  ["ingresosPensiones", "Pensiones", "otro"],
+  ["ingresosDividendos", "Dividendos y participaciones", "dividendos"],
+];
+export function origenIngresos(d) {
+  if (!d || d.tipo === "F110") return [];
+  const R = d.renglones || {};
+  return CEDULAS_F210.map(([k, nombre, tipo]) => ({ id: k, nombre, tipo, monto: num(R[k]) })).filter((x) => x.monto > 0);
+}
+
 /** Respuestas por defecto a «¿qué cambió este año?». */
 export const RESPUESTAS_DEFAULT = Object.freeze({
-  g: 0.05, sigue: null, nuevos: [], perdidos: [], nuevo: 0, nuevoGastos: 0, perdido: 0, aportes: 0, dep: 0, goSel: "", go: 0, ant: null, casa: 0, estr: {}, off: {},
+  g: 0.05, sigue: null, filas: [], nuevos: [], perdidos: [], nuevo: 0, nuevoGastos: 0, perdido: 0, aportes: 0, dep: 0, goSel: "", go: 0, ant: null, casa: 0, estr: {}, off: {},
 });
 
 const num = (v) => Number(v) || 0;
@@ -147,18 +162,38 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
     b = Math.max(0, nb); const t = tax(b); pasos.push({ clave, texto, delta: t - prev }); prev = t;
   };
   if (nat) paso("uvt", `UVT nueva (${uvt.toLocaleString("es-CO")}): la tabla sube con la inflación`, b);
+  // Tabla de ingresos (29-oct-2026): cada línea del año pasado dice si sigue, cambia o ya no; más las nuevas.
+  // Se traduce a «perdidos» (lo que baja) y «nuevos» (lo que sube o llega, con su tipo).
+  const filas = Array.isArray(r.filas) && r.filas.length ? r.filas : null;
+  let perdidosL = Array.isArray(r.perdidos) ? r.perdidos : [], nuevosL = Array.isArray(r.nuevos) ? r.nuevos : [];
+  let restoBase = null, objetivoFilas = 0;
+  if (filas) {
+    perdidosL = []; nuevosL = [];
+    let sumAntes = 0;
+    for (const f of filas) {
+      const antes = num(f.antes); sumAntes += antes;
+      const ahora = f.estado === "no" ? 0 : f.estado === "cambia" ? num(f.ahora) : antes * (1 + g);
+      objetivoFilas += ahora;
+      const nombre = (f.nombre || "").trim() || "Ingreso";
+      if (ahora < antes) perdidosL.push({ id: f.id, monto: antes - ahora, etiqueta: ahora ? `${nombre}: ${mm(antes)} → ${mm(ahora)}` : `Ya no recibes: ${nombre} (${mm(antes)})` });
+      else if (ahora > antes) nuevosL.push({ id: f.id, tipo: f.tipo, costos: f.costos, monto: ahora - antes,
+        etiqueta: antes ? (f.estado === "cambia" ? `${nombre}: ${mm(antes)} → ${mm(ahora)}` : `${nombre}: ajuste por inflación`) : `Nuevo: ${nombre} (${mm(ahora)})` });
+    }
+    restoBase = Math.max(0, brutos - sumAntes); // lo declarado que no quedó en ninguna línea
+  }
   // Ingresos que dejan de recibirse, uno por uno (antes del ajuste por inflación de lo que sigue)
   let perdidoTotal = 0;
-  for (const p of Array.isArray(r.perdidos) ? r.perdidos : []) {
+  for (const p of perdidosL) {
     const m = num(p.monto); if (!m) continue;
-    const clave = "p_" + p.id, etiqueta = `Ya no recibes: ${(p.nombre || "").trim() || "un ingreso"} (${mm(m)})`;
+    const clave = "p_" + p.id, etiqueta = p.etiqueta || `Ya no recibes: ${(p.nombre || "").trim() || "un ingreso"} (${mm(m)})`;
     if (off[clave]) { paso(clave, etiqueta, b); continue; }
     const quita = Math.min(m, Math.max(0, brutos - perdidoTotal)); // no se puede perder más de lo declarado
     perdidoTotal += quita;
     paso(clave, etiqueta, b - quita * pct);
   }
   const sigueBase = Math.max(0, brutos - perdidoTotal);
-  if (g && r.sigue == null) paso("ingresos", `Lo que sigue igual se ajusta por inflación (+${Math.round(g * 100)}%)`, b + sigueBase * g * pct);
+  if (filas) { if (g && restoBase > 0) paso("ingresos", `El resto de lo declarado (${mm(restoBase)}) sube con la inflación`, b + restoBase * g * pct); }
+  else if (g && r.sigue == null) paso("ingresos", `Lo que sigue igual se ajusta por inflación (+${Math.round(g * 100)}%)`, b + sigueBase * g * pct);
   else if (g) paso("ingresos", r.sigue != null && r.sigue !== ""
     ? `Lo de siempre pasa de ${mm(brutos)} a ${mm(brutos * (1 + g))} (${g > 0 ? "+" : "−"}${Math.round(Math.abs(g) * 100)}%)`
     : `Ingresos de siempre ${g > 0 ? "suben" : "bajan"} ~${Math.round(Math.abs(g) * 100)}%`, b + brutos * g * pct);
@@ -167,11 +202,11 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   const usado = ["rentaExenta25", "deducIntereses", "deducMedicina", "deducDependientes", "pvAFC"].reduce((a, k) => a + num(R[k]), 0);
   let espacio = Math.max(0, Math.min(0.4 * (brutos - num(R.ingresosNoConstitutivos)), 1340 * uvt) - usado * (uvt / uvtBase));
   let retNuevos = 0;
-  for (const n of Array.isArray(r.nuevos) ? r.nuevos : []) {
+  for (const n of nuevosL) {
     const m = num(n.monto); if (!m) continue;
     const clave = "n_" + n.id, tipo = n.tipo || "otro";
     const nombre = (n.nombre || "").trim() || (TIPOS_INGRESO.find(([k]) => k === tipo)?.[1] ?? "Ingreso nuevo");
-    const etiqueta = `Nuevo: ${nombre} (${mm(m)})`;
+    const etiqueta = n.etiqueta || `Nuevo: ${nombre} (${mm(m)})`;
     if (off[clave]) { paso(clave, etiqueta, b); continue; }
     if (!nat) { paso(clave, etiqueta, b + Math.max(0, m - num(n.costos))); continue; }
     if (tipo === "laboral") {
@@ -198,9 +233,11 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   const total = renta + go;
 
   const gEf = off.ingresos ? 0 : g;
-  const ret = retencionDeclarada(d) * (sigueBase / brutos) * (1 + gEf) + retNuevos;
-  const ingNuevos = (Array.isArray(r.nuevos) ? r.nuevos : []).reduce((a, n) => a + (off["n_" + n.id] ? 0 : num(n.monto)), 0);
-  const ingresosEst = (r.sigue != null && r.sigue !== "" ? brutos * (1 + gEf) : sigueBase * (1 + gEf)) + ingNuevos;
+  const ret = filas ? retencionDeclarada(d) * (sigueBase / brutos) + retNuevos : retencionDeclarada(d) * (sigueBase / brutos) * (1 + gEf) + retNuevos;
+  const ingNuevos = nuevosL.reduce((a, n) => a + (off["n_" + n.id] ? 0 : num(n.monto)), 0);
+  const ingresosEst = filas
+    ? objetivoFilas + restoBase * (1 + gEf) + perdidosL.reduce((a, p) => a + (off["p_" + p.id] ? num(p.monto) : 0), 0) - nuevosL.reduce((a, n) => a + (off["n_" + n.id] ? num(n.monto) : 0), 0)
+    : (r.sigue != null && r.sigue !== "" ? brutos * (1 + gEf) : sigueBase * (1 + gEf)) + ingNuevos;
   const ap = anticipoPagado(owner);
   const antPagado = r.ant == null ? ap.valor : num(r.ant);
   const saldo = total - ret - antPagado;

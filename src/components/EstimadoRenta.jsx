@@ -7,7 +7,7 @@ import {
   impuestoDividendos, calculosGODelTitular, revisarTitular, pct, mm, impuestoDeclarado, retencionDeclarada,
 } from "../lib/rentaDesdeDeclaracion.js";
 import { TIPOS_INGRESO, tipoDeCategoria } from "../lib/rentaDesdeDeclaracion.js";
-import { serieHistorial } from "../lib/rentaDesdeDeclaracion.js";
+import { serieHistorial, origenIngresos } from "../lib/rentaDesdeDeclaracion.js";
 import { Linea, Grafica } from "./RentaUI";
 import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Plata, Campo, Grid, Aviso, inp, card } from "./RentaUI";
 
@@ -86,6 +86,10 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
   };
   const cambiosTexto = (rr, ee) => {
     const c = [];
+    for (const f of rr.filas || []) {
+      const antes = Number(f.antes) || 0, ahora = f.estado === "no" ? 0 : f.estado === "cambia" ? Number(f.ahora) || 0 : antes;
+      if (ahora !== antes) c.push(antes ? `${f.nombre || "Ingreso"}: ${mm(antes)} → ${mm(ahora)}` : `Ingreso nuevo: ${f.nombre || "sin nombre"} ${mm(ahora)}`);
+    }
     for (const p of rr.perdidos || []) if (Number(p.monto)) c.push(`Ya no recibe: ${p.nombre || "un ingreso"} ${mm(p.monto)}`);
     if (rr.sigue != null && rr.sigue !== "") c.push(`Lo de siempre: ${mm(ee.brutos)} el año pasado → ${mm(rr.sigue)} este año`);
     else if (rr.g) c.push(`Ingresos de siempre: ${rr.g > 0 ? "suben" : "bajan"} ~${Math.round(Math.abs(rr.g) * 100)}%`);
@@ -186,6 +190,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
             {e.d.renglones.deudas != null && <Kpi k="Deudas" v={mm(e.d.renglones.deudas)} />}
             {e.d.renglones.patrimonioLiquido != null && <Kpi k="Patrimonio líquido" v={mm(e.d.renglones.patrimonioLiquido)} />}
           </KpiGrid>
+          <OrigenIngresos e={e} registrados={ingresosRegistrados(u, owner.id)} onNavigate={onNavigate} />
           <ResumenHistoria owner={owner} />
           {tit && (
             <div style={{ marginTop: 10 }}>
@@ -197,9 +202,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
         </Panel>
 
         <Panel titulo="3. ¿Qué cambió este año?" sub="Cuéntanos con tus palabras y números. Si algo no cambió, déjalo como está.">
-          <ListaIngresos modo="perdidos" nat={e.nat} lista={r.perdidos || []} registrados={[]} onChange={(perdidos) => set(owner.id, { perdidos })} />
-          <ListaIngresos modo="nuevos" nat={e.nat} lista={r.nuevos || []} registrados={ingresosRegistrados(u, owner.id)} onChange={(nuevos) => set(owner.id, { nuevos })} />
-          <ResultadoIngresos e={e} r={r} onInflacion={(on) => set(owner.id, { sigue: null, g: on ? 0.05 : 0 })} />
+          <TablaIngresos e={e} r={r} registrados={ingresosRegistrados(u, owner.id)} onChange={(patch) => set(owner.id, patch)} />
           <div style={{ ...F.h3, margin: "18px 0 8px" }}>Otros cambios</div>
           <Grid>
             {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda="Lo que vas a aportar de más frente al año pasado"><Plata value={r.aportes} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
@@ -446,60 +449,7 @@ function Versiones({ nombre, setNombre, sugerido, abierta, versiones, puedeGuard
   );
 }
 
-// Resultado de ingresos: no se pregunta si subieron o bajaron; se calcula con lo que cambió.
-function ResultadoIngresos({ e, r, onInflacion }) {
-  const dv = e.brutos ? e.ingresosEst / e.brutos - 1 : 0;
-  const infl = r.sigue == null && Number(r.g) > 0;
-  return (
-    <div style={{ ...card, marginTop: 12, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
-      <div>
-        <div style={F.label}>Tus ingresos con estos cambios</div>
-        <div style={{ ...F.monoLg, marginTop: 4 }}>{mm(e.brutos)} → {mm(e.ingresosEst)}</div>
-        <div style={{ ...F.caption, marginTop: 2 }}>{e.ano} declarado → {e.anoEst} estimado · {Math.abs(dv) < 0.005 ? "iguales" : `${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}%`}</div>
-      </div>
-      <label style={{ ...F.body, display: "inline-flex", gap: 8, alignItems: "center", cursor: "pointer", color: C.text }}>
-        <input type="checkbox" checked={infl} onChange={(ev) => onInflacion(ev.target.checked)} style={{ width: 18, height: 18, accentColor: C.accent }} />
-        Lo que sigue igual sube con la inflación (~5%)
-      </label>
-    </div>
-  );
-}
 
-// Lista de ingresos que se van (perdidos) o que llegan (nuevos). Cada uno por separado y, si es nuevo, con su tipo.
-function ListaIngresos({ modo, nat, lista, registrados, onChange }) {
-  const nuevos = modo === "nuevos";
-  const upd = (id, patch) => onChange(lista.map((n) => (n.id === id ? { ...n, ...patch } : n)));
-  const agregar = (base = {}) => onChange([...lista, { id: (nuevos ? "n" : "p") + Date.now().toString(36), nombre: "", tipo: "otro", monto: 0, costos: 0, ...base }]);
-  const yaTraidos = new Set(lista.map((n) => n.desde).filter(Boolean));
-  const disponibles = registrados.filter((i) => !yaTraidos.has(i.id));
-  const cols = nuevos ? 5 : 3;
-  return (
-    <div style={{ background: C.raised, borderRadius: R.lg, padding: 14, marginTop: nuevos ? 12 : 0 }}>
-      <div style={F.h3}>{nuevos ? "Ingresos nuevos este año" : "¿Dejaste de recibir algún ingreso?"}</div>
-      <p style={{ ...F.body, margin: "4px 0 10px" }}>{nuevos
-        ? "Agrega cada uno por separado: un arriendo, un salario nuevo, unos intereses, unas utilidades. Cada tipo paga distinto."
-        : "Por ejemplo, comisiones o utilidades que ya no llegan, un contrato que terminó o un arriendo que se acabó. Pon cuánto recibías al año."}</p>
-      {lista.map((n) => (
-        <div key={n.id} style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(max(170px, calc((100% - ${(cols - 1) * 10 + 1}px) / ${cols})), 1fr))`, gap: 10, alignItems: "end", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
-          <Campo label="Nombre"><input style={inp} value={n.nombre} placeholder={nuevos ? "Ej. arriendo bodega" : "Ej. comisiones"} onChange={(ev) => upd(n.id, { nombre: ev.target.value })} /></Campo>
-          {nuevos && nat && <Campo label="Tipo"><select style={sel_} value={n.tipo} onChange={(ev) => upd(n.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo>}
-          <Campo label={nuevos ? "Monto del año" : "Lo que recibías al año"}><Plata value={n.monto} onChange={(v) => upd(n.id, { monto: v })} /></Campo>
-          {nuevos && ((!nat || n.tipo === "arriendo" || n.tipo === "otro") ? <Campo label="Costos del año"><Plata value={n.costos} onChange={(v) => upd(n.id, { costos: v })} /></Campo> : <div />)}
-          <button type="button" onClick={() => onChange(lista.filter((x) => x.id !== n.id))} style={{ height: 42, borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.danger, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Quitar</button>
-        </div>
-      ))}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-        <button type="button" onClick={() => agregar()} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: nuevos ? "none" : `1px solid ${C.border}`, background: nuevos ? C.accent : "transparent", color: nuevos ? C.text : C.muted, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>{nuevos ? "+ Agregar ingreso nuevo" : "+ Agregar ingreso que ya no recibo"}</button>
-        {disponibles.length > 0 && (
-          <select style={{ ...sel_, width: "auto", minWidth: 260 }} value="" onChange={(ev) => { const it = disponibles.find((i) => i.id === ev.target.value); if (it) agregar({ nombre: it.nombre, tipo: it.tipo, monto: it.monto, desde: it.id }); }}>
-            <option value="">Traer de mis ingresos en FINPATHIA…</option>
-            {disponibles.map((i) => <option key={i.id} value={i.id}>{i.nombre} · {mm(i.monto)} al año</option>)}
-          </select>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // Resumen de su historia en la ficha: ubica antes de llenar lo nuevo (29-oct-2026, Santiago).
 function ResumenHistoria({ owner }) {
@@ -534,6 +484,142 @@ function ResumenHistoria({ owner }) {
             <tr key={x.ano}><td style={{ ...td, textAlign: "left", fontFamily: "inherit" }}>{x.ano}</td><td style={td}>{mm(x.ing)}</td><td style={td}>{mm(x.imp)}</td><td style={td}>{pct(x.tasa)}</td><td style={td}>{mm(x.saldo)}</td><td style={td}>{x.pat != null ? mm(x.pat) : "—"}</td></tr>
           ))}</tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+// ¿De dónde vinieron los ingresos del año pasado? Ayuda a saber qué se dejó de recibir.
+function OrigenIngresos({ e, registrados, onNavigate }) {
+  const o = origenIngresos(e.d);
+  const lista = o.length ? o : registrados;
+  const total = lista.reduce((a, x) => a + x.monto, 0) || 1;
+  if (!e.nat && !o.length) return null;
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={F.h3}>{o.length ? `¿De dónde vinieron tus ingresos de ${e.ano}?` : "Tus ingresos registrados en FINPATHIA, por tipo"}</div>
+      {!o.length && (
+        <p style={{ ...F.caption, margin: "4px 0 8px" }}>Esta declaración se leyó antes de que separáramos los ingresos por tipo (salario, honorarios, dividendos…). Vuelve a subir el PDF en <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", fontWeight: 600 }}>Historial</button> y aparecerá aquí. Mientras tanto, esto es lo que tienes registrado.</p>
+      )}
+      {lista.length === 0 ? <p style={F.caption}>No hay ingresos registrados a nombre de este titular.</p> : (
+        <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
+          {lista.map((x) => (
+            <div key={x.id} style={{ display: "grid", gridTemplateColumns: "minmax(160px, 1.3fr) 3fr auto", gap: 10, alignItems: "center" }}>
+              <span style={{ ...F.body, color: C.text }}>{x.nombre}</span>
+              <div style={{ height: 10, background: C.raised, borderRadius: R.pill, overflow: "hidden" }}><div style={{ width: `${Math.max(2, (x.monto / total) * 100)}%`, height: "100%", background: C.accent }} /></div>
+              <span style={{ fontFamily: "ui-monospace, Menlo, monospace", fontSize: 13, color: C.text, whiteSpace: "nowrap" }}>{mm(x.monto)} · {pct(x.monto / total, 0)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Tabla de ingresos: las líneas del año pasado (de la declaración) y qué pasa con cada una este año,
+// más las nuevas. Si la declaración no separa algo (comisiones dentro del salario), se desglosa.
+const ESTADOS = [["sigue", "Igual"], ["cambia", "Cambia"], ["no", "Ya no"]];
+function filasIniciales(e) {
+  const o = origenIngresos(e.d);
+  if (o.length) return o.map((x) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo, antes: x.monto, estado: "sigue", declarada: true }));
+  return [{ id: "total", nombre: "Ingresos declarados (total)", tipo: e.nat ? "laboral" : "otro", antes: e.brutos, estado: "sigue", declarada: true }];
+}
+function TablaIngresos({ e, r, registrados, onChange }) {
+  const filas = r.filas && r.filas.length ? r.filas : filasIniciales(e);
+  const g = r.sigue == null ? Number(r.g) || 0 : 0;
+  const guardar = (nf) => onChange({ filas: nf, sigue: null });
+  const upd = (id, patch) => guardar(filas.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  const nuevaId = () => "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const desglosar = (f) => {
+    const i = filas.findIndex((x) => x.id === f.id);
+    const grupo = f.grupo || f.id, total = f.total ?? f.antes;
+    const copia = filas.map((x) => (x.id === f.id ? { ...x, grupo, total, editable: true } : x));
+    copia.splice(i + 1, 0, { id: nuevaId(), nombre: "", tipo: f.tipo, antes: 0, estado: "sigue", grupo, total, editable: true });
+    guardar(copia);
+  };
+  const ahoraDe = (f) => (f.estado === "no" ? 0 : f.estado === "cambia" ? Number(f.ahora) || 0 : (Number(f.antes) || 0) * (1 + g));
+  const yaTraidos = new Set(filas.map((f) => f.desde).filter(Boolean));
+  const disponibles = registrados.filter((i) => !yaTraidos.has(i.id));
+  const grupos = {};
+  for (const f of filas) if (f.grupo) grupos[f.grupo] = { total: f.total, suma: (grupos[f.grupo]?.suma || 0) + (Number(f.antes) || 0), nombre: grupos[f.grupo]?.nombre || f.nombre };
+  const btnSeg = (activo, color) => ({ flex: 1, height: 42, border: `1px solid ${activo ? color : C.border}`, background: activo ? Cα.accent15 : "transparent", color: activo ? C.text : C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer", padding: "0 8px" });
+  const dv = e.brutos ? e.ingresosEst / e.brutos - 1 : 0;
+  let baja = 0, sube = 0, nuevo = 0; const bajan = [], suben = [], nuevos = [];
+  for (const f of filas) {
+    const a = Number(f.antes) || 0, d = ahoraDe(f) - a, n = (f.nombre || "Ingreso").trim();
+    if (d < -1) { baja += -d; bajan.push(n); } else if (d > 1) { if (a) { sube += d; suben.push(n); } else { nuevo += d; nuevos.push(n); } }
+  }
+  return (
+    <div style={{ background: C.raised, borderRadius: R.lg, padding: 14 }}>
+      <div style={F.h3}>Tus ingresos: el año pasado y este año</div>
+      <p style={{ ...F.body, margin: "4px 0 6px" }}>Estas son las líneas de tu declaración {e.ano}. En cada una dinos si sigue igual, cambia o ya no llega. Si una línea junta varias cosas (por ejemplo, salario y comisiones van juntos en «rentas de trabajo»), usa <b style={{ color: C.text }}>Desglosar</b>.</p>
+      {filas.map((f) => {
+        const nueva = !f.declarada && !f.grupo;
+        return (
+          <div key={f.id} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(160px, calc((100% - 51px) / 6)), 1fr))", gap: 10, alignItems: "start", padding: "12px 0", borderTop: `1px solid ${C.border}` }}>
+            <Campo label={nueva ? "Ingreso nuevo" : f.grupo ? "Parte de la línea" : "Línea de la declaración"}>
+              {nueva || f.editable ? <input style={inp} value={f.nombre} placeholder={nueva ? "Ej. trabajo nuevo" : "Ej. comisiones"} onChange={(ev) => upd(f.id, { nombre: ev.target.value })} />
+                : <div style={{ ...inp, display: "flex", alignItems: "center", color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={f.nombre}>{f.nombre}</div>}
+            </Campo>
+            {e.nat ? <Campo label="Tipo"><select style={sel_} value={f.tipo} onChange={(ev) => upd(f.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
+            <Campo label={`En ${e.ano}`}>
+              {nueva ? <div style={{ ...inp, display: "flex", alignItems: "center", color: C.subtle }}>—</div>
+                : f.editable ? <Plata value={f.antes} onChange={(v) => upd(f.id, { antes: v })} />
+                : <div style={{ ...inp, display: "flex", alignItems: "center", color: C.text, fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(f.antes)}</div>}
+            </Campo>
+            {nueva ? <div /> : (
+              <Campo label="Este año">
+                <div style={{ display: "flex" }}>
+                  {ESTADOS.map(([k, l], i) => (
+                    <button key={k} type="button" onClick={() => upd(f.id, { estado: k, ahora: k === "cambia" ? (f.ahora ?? f.antes) : f.ahora })}
+                      style={{ ...btnSeg(f.estado === k, k === "no" ? C.danger : C.accent), borderRadius: i === 0 ? `${R.md}px 0 0 ${R.md}px` : i === ESTADOS.length - 1 ? `0 ${R.md}px ${R.md}px 0` : 0, marginLeft: i ? -1 : 0 }}>{l}</button>
+                  ))}
+                </div>
+              </Campo>
+            )}
+            <Campo label={`En ${e.anoEst}`}>
+              {nueva || f.estado === "cambia"
+                ? <Plata value={f.ahora} onChange={(v) => upd(f.id, { ahora: v, estado: "cambia" })} />
+                : <div style={{ ...inp, display: "flex", alignItems: "center", fontFamily: "ui-monospace, Menlo, monospace", color: f.estado === "no" ? C.subtle : C.text }}>{mm(ahoraDe(f))}</div>}
+              {(() => { const d = ahoraDe(f) - (Number(f.antes) || 0); return (
+                <span style={{ ...F.caption, fontWeight: 700, color: Math.abs(d) < 1 ? C.subtle : d > 0 ? C.accent : C.warn }}>
+                  {Math.abs(d) < 1 ? "= sin cambio" : `${d > 0 ? "▲ +" : "▼ −"}${mm(Math.abs(d))}${nueva ? " nuevo" : ""}`}</span>); })()}
+            </Campo>
+            <div style={{ display: "flex", gap: 6, paddingTop: 37 }}>
+              {!nueva && !f.grupo && Number(f.antes) > 0 && <button type="button" onClick={() => desglosar(f)} style={{ ...btnSeg(false, C.accent), borderRadius: R.md }}>Desglosar</button>}
+              {(nueva || (f.grupo && f.grupo !== f.id)) && <button type="button" onClick={() => guardar(filas.filter((x) => x.id !== f.id))} style={{ ...btnSeg(false, C.danger), borderRadius: R.md, color: C.danger }}>Quitar</button>}
+            </div>
+          </div>
+        );
+      })}
+      {Object.entries(grupos).map(([id, gr]) => Math.abs((gr.total || 0) - gr.suma) > 1000 && (
+        <div key={id} style={{ marginTop: 8 }}><Aviso>Al desglosar «{gr.nombre}» repartiste {mm(gr.suma)} de {mm(gr.total)}: {gr.suma < gr.total ? `faltan ${mm(gr.total - gr.suma)}` : `sobran ${mm(gr.suma - gr.total)}`}.</Aviso></div>
+      ))}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 12 }}>
+        <button type="button" onClick={() => guardar([...filas, { id: nuevaId(), nombre: "", tipo: e.nat ? "laboral" : "otro", antes: 0, estado: "cambia", ahora: 0 }])} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Agregar ingreso nuevo</button>
+        {disponibles.length > 0 && (
+          <select style={{ ...sel_, width: "auto", minWidth: 260 }} value="" onChange={(ev) => { const it = disponibles.find((x) => x.id === ev.target.value); if (it) guardar([...filas, { id: nuevaId(), nombre: it.nombre, tipo: it.tipo, antes: 0, estado: "cambia", ahora: it.monto, desde: it.id }]); }}>
+            <option value="">Traer de mis ingresos en FINPATHIA…</option>
+            {disponibles.map((x) => <option key={x.id} value={x.id}>{x.nombre} · {mm(x.monto)} al año</option>)}
+          </select>
+        )}
+        {r.filas && r.filas.length > 0 && <button type="button" onClick={() => onChange({ filas: [] })} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Volver a las líneas de la declaración</button>}
+      </div>
+      <div style={{ ...card, marginTop: 14, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={F.label}>Resultado: tus ingresos con estos cambios</div>
+          <div style={{ ...F.monoLg, marginTop: 4 }}>{mm(e.brutos)} → {mm(e.ingresosEst)}</div>
+          <div style={{ ...F.caption, marginTop: 2 }}>{e.ano} declarado → {e.anoEst} estimado · {Math.abs(dv) < 0.005 ? "iguales" : `${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}%`}</div>
+          <div style={{ display: "grid", gap: 2, marginTop: 8, ...F.body }}>
+            {baja > 0 && <span><b style={{ color: C.warn }}>▼ −{mm(baja)}</b> lo que deja de llegar o baja: {bajan.join(", ")}</span>}
+            {sube > 0 && <span><b style={{ color: C.accent }}>▲ +{mm(sube)}</b> lo que sube: {suben.join(", ")}</span>}
+            {nuevo > 0 && <span><b style={{ color: C.accent }}>▲ +{mm(nuevo)}</b> ingresos nuevos: {nuevos.join(", ")}</span>}
+          </div>
+        </div>
+        <label style={{ ...F.body, display: "inline-flex", gap: 8, alignItems: "center", cursor: "pointer", color: C.text }}>
+          <input type="checkbox" checked={g > 0} onChange={(ev) => onChange({ g: ev.target.checked ? 0.05 : 0, sigue: null })} style={{ width: 18, height: 18, accentColor: C.accent }} />
+          Lo que «sigue igual» sube con la inflación (~5%)
+        </label>
       </div>
     </div>
   );

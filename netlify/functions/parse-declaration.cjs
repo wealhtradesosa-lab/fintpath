@@ -84,6 +84,13 @@ Formato de respuesta para F-210 (natural):
   "nit": "NIT/cédula o null",
   "renglones": {
     "ingresosBrutos": número (total de ingresos del año),
+    "ingresosTrabajo": número (ingresos brutos por rentas de trabajo: salarios y demás pagos laborales),
+    "ingresosHonorarios": número (ingresos brutos por rentas de trabajo que no provienen de una relación laboral: honorarios, compensación por servicios personales),
+    "ingresosCapital": número (ingresos brutos por rentas de capital: intereses, rendimientos financieros, arrendamientos, regalías),
+    "ingresosNoLaborales": número (ingresos brutos por rentas no laborales),
+    "ingresosPensiones": número (ingresos brutos por pensiones),
+    "ingresosDividendos": número (total de ingresos por dividendos y participaciones, de todas sus subcédulas),
+    "ingresosGananciaOcasional": número (ingresos por ganancias ocasionales),
     "ingresosNoConstitutivos": número (aportes obligatorios a salud/pensión del empleado, etc.),
     "ingresosNetos": número,
     "rentaExenta25": número (el 25% exento laboral, Art. 206 #10 ET),

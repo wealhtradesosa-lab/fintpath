@@ -31,6 +31,13 @@ const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 // crudos pero legibles.
 const RENGLON_LABELS_F210 = {
   ingresosBrutos: "Ingresos brutos",
+  ingresosTrabajo: "Ingresos rentas de trabajo (salario)",
+  ingresosHonorarios: "Ingresos honorarios (trabajo no laboral)",
+  ingresosCapital: "Ingresos rentas de capital",
+  ingresosNoLaborales: "Ingresos rentas no laborales",
+  ingresosPensiones: "Ingresos pensiones",
+  ingresosDividendos: "Ingresos dividendos y participaciones",
+  ingresosGananciaOcasional: "Ingresos ganancia ocasional",
   ingresosNoConstitutivos: "Ingresos no constitutivos (aportes oblig.)",
   ingresosNetos: "Ingresos netos",
   rentaExenta25: "Renta exenta 25% laboral",
@@ -43,6 +50,7 @@ const RENGLON_LABELS_F210 = {
   patrimonioLiquido: "Patrimonio líquido",
   impuestoCalculado: "Impuesto calculado",
   retefuente: "Retención en la fuente practicada",
+  anticipoAnoSiguiente: "Anticipo renta año siguiente",
   saldoPagar: "Saldo a pagar",
   descDonaciones: "Descuento donaciones",
   descCTI: "Descuento CTI",
@@ -65,6 +73,7 @@ const RENGLON_LABELS_F110 = {
   descCTI: "Descuento CTI (Art. 256)",
   impuestoNeto: "Impuesto neto",
   autorretencion: "Autorretención",
+  anticipoAnoSiguiente: "Anticipo renta año siguiente",
   saldoPagar: "Saldo a pagar",
 };
 
@@ -144,13 +153,13 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       return;
     }
 
-    // Commit 5.5: si el array tiene 3 y el año no existe, avisar que se descarta el más viejo.
+    // Commit 5.5 (29-oct-2026: 4 años): si ya hay 4 y el año no existe, avisar que se descarta el más viejo.
     const existentes = selectedOwner.declaraciones || [];
     const yaExisteMismoAno = existentes.some(d => Number(d?.anoGravable) === ano);
-    if (!yaExisteMismoAno && existentes.length >= 3) {
+    if (!yaExisteMismoAno && existentes.length >= 4) {
       const masVieja = [...existentes].sort((a, b) => (Number(a?.anoGravable) || 0) - (Number(b?.anoGravable) || 0))[0];
       const ok = window.confirm(
-        `Ya tienes 3 declaraciones guardadas para ${selectedOwner.name}. Se descartará la más vieja (año ${masVieja?.anoGravable || "?"}) para guardar esta nueva (año ${ano}).\n\n¿Continuar?`
+        `Ya tienes 4 declaraciones guardadas para ${selectedOwner.name}. Se descartará la más vieja (año ${masVieja?.anoGravable || "?"}) para guardar esta nueva (año ${ano}).\n\n¿Continuar?`
       );
       if (!ok) return;
     }
