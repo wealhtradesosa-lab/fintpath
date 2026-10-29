@@ -521,7 +521,7 @@ function OrigenIngresos({ e, registrados, onNavigate }) {
 const ESTADOS = [["sigue", "Igual"], ["cambia", "Cambia"], ["no", "Ya no"]];
 function filasIniciales(e) {
   const o = origenIngresos(e.d);
-  if (o.length) return o.map((x) => ({ id: x.id, nombre: x.nombre, tipo: x.tipo, antes: x.monto, estado: "sigue", declarada: true }));
+  if (o.length) return o.map((x) => ({ id: x.id, nombre: x.nombre, formal: x.formal, tipo: x.tipo, antes: x.monto, estado: "sigue", declarada: true }));
   return [{ id: "total", nombre: "Ingresos declarados (total)", tipo: e.nat ? "laboral" : "otro", antes: e.brutos, estado: "sigue", declarada: true }];
 }
 function TablaIngresos({ e, r, registrados, onChange }) {
@@ -551,20 +551,20 @@ function TablaIngresos({ e, r, registrados, onChange }) {
   }
   return (
     <div style={{ background: C.raised, borderRadius: R.lg, padding: 14 }}>
-      <div style={F.h3}>Tus ingresos: el año pasado y este año</div>
-      <p style={{ ...F.body, margin: "4px 0 6px" }}>Estas son las líneas de tu declaración {e.ano}. En cada una dinos si sigue igual, cambia o ya no llega. Si una línea junta varias cosas (por ejemplo, salario y comisiones van juntos en «rentas de trabajo»), usa <b style={{ color: C.text }}>Desglosar</b>.</p>
+      <div style={F.h3}>Así estaban tus ingresos en {e.ano} · ¿qué cambia en {e.anoEst}?</div>
+      <p style={{ ...F.body, margin: "4px 0 6px" }}>Estos son los ingresos de tu declaración {e.ano}. En cada uno dinos si este año sigue igual, cambia o ya no llega. Si uno junta varias cosas (por ejemplo, salario y comisiones vienen juntos), usa <b style={{ color: C.text }}>Desglosar</b> para separarlos.</p>
       {filas.map((f) => {
         const nueva = !f.declarada && !f.grupo;
         return (
           <div key={f.id} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(160px, calc((100% - 51px) / 6)), 1fr))", gap: 10, alignItems: "start", padding: "12px 0", borderTop: `1px solid ${C.border}` }}>
-            <Campo label={nueva ? "Ingreso nuevo" : f.grupo ? "Parte de la línea" : "Línea de la declaración"}>
+            <Campo label={nueva ? "Ingreso nuevo" : f.grupo ? "Parte de este ingreso" : "Ingreso"} ayuda={f.formal && !f.editable ? `En la declaración: ${f.formal}` : undefined}>
               {nueva || f.editable ? <input style={inp} value={f.nombre} placeholder={nueva ? "Ej. trabajo nuevo" : "Ej. comisiones"} onChange={(ev) => upd(f.id, { nombre: ev.target.value })} />
-                : <div style={{ ...inp, display: "flex", alignItems: "center", color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={f.nombre}>{f.nombre}</div>}
+                : <div style={{ ...inp, height: "auto", minHeight: 42, padding: "8px 12px", display: "flex", alignItems: "center", color: C.text, lineHeight: 1.3 }}>{f.nombre}</div>}
             </Campo>
             {e.nat ? <Campo label="Tipo"><select style={sel_} value={f.tipo} onChange={(ev) => upd(f.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
             <Campo label={`En ${e.ano}`}>
               {nueva ? <div style={{ ...inp, display: "flex", alignItems: "center", color: C.subtle }}>—</div>
-                : f.editable ? <Plata value={f.antes} onChange={(v) => upd(f.id, { antes: v })} />
+                : f.editable ? <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
                 : <div style={{ ...inp, display: "flex", alignItems: "center", color: C.text, fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(f.antes)}</div>}
             </Campo>
             {nueva ? <div /> : (
@@ -579,7 +579,7 @@ function TablaIngresos({ e, r, registrados, onChange }) {
             )}
             <Campo label={`En ${e.anoEst}`}>
               {nueva || f.estado === "cambia"
-                ? <Plata value={f.ahora} onChange={(v) => upd(f.id, { ahora: v, estado: "cambia" })} />
+                ? <PlataPeriodo value={f.ahora} per={f.per} onPer={(p) => upd(f.id, { per: p })} onChange={(v) => upd(f.id, { ahora: v, estado: "cambia" })} />
                 : <div style={{ ...inp, display: "flex", alignItems: "center", fontFamily: "ui-monospace, Menlo, monospace", color: f.estado === "no" ? C.subtle : C.text }}>{mm(ahoraDe(f))}</div>}
               {(() => { const d = ahoraDe(f) - (Number(f.antes) || 0); return (
                 <span style={{ ...F.caption, fontWeight: 700, color: Math.abs(d) < 1 ? C.subtle : d > 0 ? C.accent : C.warn }}>
@@ -621,6 +621,20 @@ function TablaIngresos({ e, r, registrados, onChange }) {
           Lo que «sigue igual» sube con la inflación (~5%)
         </label>
       </div>
+    </div>
+  );
+}
+
+// Monto con «al mes / al año»: se guarda siempre anual; si escribe mensual, se multiplica por 12.
+function PlataPeriodo({ value, onChange, per = "año", onPer }) {
+  const mes = per === "mes";
+  const mostrado = value ? (mes ? Math.round(Number(value) / 12) : Number(value)) : 0;
+  const b = (activo) => ({ height: 42, padding: "0 8px", border: `1px solid ${C.border}`, background: activo ? Cα.accent15 : C.raised, color: activo ? C.text : C.muted, fontSize: 12, fontWeight: 600, cursor: "pointer" });
+  return (
+    <div style={{ display: "flex", minWidth: 0 }}>
+      <div style={{ flex: 1, minWidth: 0 }}><Plata value={mostrado} onChange={(v) => onChange(mes ? Number(v) * 12 : v)} /></div>
+      <button type="button" onClick={() => onPer("mes")} style={{ ...b(mes), marginLeft: -1 }}>/mes</button>
+      <button type="button" onClick={() => onPer("año")} style={{ ...b(!mes), marginLeft: -1, borderRadius: `0 ${R.md}px ${R.md}px 0` }}>/año</button>
     </div>
   );
 }

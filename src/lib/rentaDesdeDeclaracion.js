@@ -32,8 +32,8 @@ export const UMBRAL_PATRIMONIO_EXTRAORDINARIO_UVT = 200000; // Decreto 173 de 20
 
 /** Tipos de ingreso nuevo: cada uno tributa distinto. */
 export const TIPOS_INGRESO = [
-  ["laboral", "Salario u honorarios"], ["arriendo", "Arriendo"], ["capital", "Intereses o rendimientos"],
-  ["dividendos", "Dividendos o utilidades de una empresa"], ["otro", "Otro"],
+  ["laboral", "Salario, comisiones u honorarios"], ["arriendo", "Arriendo"], ["capital", "Intereses o rendimientos"],
+  ["dividendos", "Utilidades o dividendos de una empresa"], ["otro", "Otro"],
 ];
 export const tipoDeCategoria = (cat = "") => {
   const c = String(cat).toLowerCase();
@@ -46,17 +46,18 @@ export const tipoDeCategoria = (cat = "") => {
 
 /** De dónde vinieron los ingresos de una declaración F-210, por cédula (si el lector los trajo). */
 export const CEDULAS_F210 = [
-  ["ingresosTrabajo", "Salario (rentas de trabajo)", "laboral"],
-  ["ingresosHonorarios", "Honorarios y servicios (trabajo no laboral)", "laboral"],
-  ["ingresosCapital", "Rentas de capital: intereses, arriendos, regalías", "capital"],
-  ["ingresosNoLaborales", "Rentas no laborales", "otro"],
-  ["ingresosPensiones", "Pensiones", "otro"],
-  ["ingresosDividendos", "Dividendos y participaciones", "dividendos"],
+  // [renglón, cómo lo entiende cualquiera, tipo para el cálculo, cómo lo llama la declaración]
+  ["ingresosTrabajo", "Salario y pagos de tu empleo (incluye comisiones y bonos)", "laboral", "rentas de trabajo"],
+  ["ingresosHonorarios", "Honorarios: lo que cobras por servicios, sin contrato laboral", "laboral", "rentas de trabajo no laborales"],
+  ["ingresosCapital", "Arriendos, intereses y rendimientos de tus inversiones", "capital", "rentas de capital"],
+  ["ingresosNoLaborales", "Otros ingresos: ventas, negocios propios, premios", "otro", "rentas no laborales"],
+  ["ingresosPensiones", "Pensión", "otro", "rentas de pensiones"],
+  ["ingresosDividendos", "Utilidades y dividendos que te pagaron tus empresas", "dividendos", "dividendos y participaciones"],
 ];
 export function origenIngresos(d) {
   if (!d || d.tipo === "F110") return [];
   const R = d.renglones || {};
-  return CEDULAS_F210.map(([k, nombre, tipo]) => ({ id: k, nombre, tipo, monto: num(R[k]) })).filter((x) => x.monto > 0);
+  return CEDULAS_F210.map(([k, nombre, tipo, formal]) => ({ id: k, nombre, tipo, formal, monto: num(R[k]) })).filter((x) => x.monto > 0);
 }
 
 /** Respuestas por defecto a «¿qué cambió este año?». */
