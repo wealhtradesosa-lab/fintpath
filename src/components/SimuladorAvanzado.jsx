@@ -2327,7 +2327,15 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     {/* Impuestos */}
                     {grp.tax && <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto de renta (cálculo dinámico)</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto de renta {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : grp.tax.fuente === "declaracion" ? "· estimado" : "· cálculo aproximado"}</div>
+                      </div>
+                      {/* 29-oct-2026 (Santiago: "uno debe saber basado en qué se está calculando el impuesto") */}
+                      <div style={{ fontSize: 12, color: T.txt2, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, lineHeight: 1.45 }}>
+                        {grp.tax.fuente === "declaracion_real"
+                          ? <>Basado en tu <b style={{ color: T.txt }}>declaración de renta {new Date().getFullYear() - 1}</b>, que ya presentaste: lo que te retuvieron durante el año más el saldo que pagaste al declarar. Es plata real de este año. La renta que estás ganando ahora se paga el año que viene.</>
+                          : grp.tax.fuente === "declaracion"
+                            ? <>Estimado con la <b style={{ color: T.txt }}>Calculadora de declaración</b>, a partir de tu última declaración. Para este año conviene cargar la declaración {new Date().getFullYear() - 1}.</>
+                            : <><b style={{ color: T.txt }}>Cálculo aproximado</b> con los ingresos registrados, porque este titular no tiene la declaración {new Date().getFullYear() - 1} cargada. Súbela en Impuestos → Historial o escribe arriba lo que pagaste: es clave para la simulación.</>}
                       </div>
                       {(()=>{
                         const nameKey = grp.tax.name;
@@ -2364,7 +2372,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                         // Coincide con la decision tomada en CalculadoraWizard.jsx (Commit 14
                         // "Camino A"). Aplicar misma logica al simulador es coherencia UX.
                         const ahorroOptAnual = (impBrutoActualMes - impBrutoOptMes) * 12;
-                        const mostrarComparativo = ahorroOptAnual > 100_000;
+                        // Con la declaración del año pasado ya presentada no hay nada que optimizar este año.
+                        const mostrarComparativo = ahorroOptAnual > 100_000 && grp.tax.fuente !== "declaracion_real";
                         // Si NO hay ahorro real, forzar modo Actual (no Optimizado) para evitar
                         // estado inconsistente. El usuario nunca ve el toggle pero internamente
                         // estamos en modo Actual = el unico escenario real.
@@ -2404,7 +2413,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                                 <div>
-                                  <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
+                                  <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{grp.tax.fuente === "declaracion_real" ? `🧾 Impuesto de la declaración ${new Date().getFullYear() - 1} (retenciones + saldo pagado)` : isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
                                   <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{fmtPctEs(tasaEfectivaEff, 1)}{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {fmtPctEs(((grp.tax.baseGravable / grp.tax.ingreso) * 100), 0)}</span>}</div>
                                 </div>
                                 <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
@@ -2418,7 +2427,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                   <div style={{fontSize:11,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
                                   <div style={{fontSize:16,fontWeight:800,color:saldoAnualEffectivo===0?T.gn:T.txt}}>{fm(saldoAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
-                                {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución.</div>}
+                                {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>{grp.tax.fuente === "declaracion_real" ? "✅ Tus retenciones cubrieron el impuesto: al declarar no pagaste saldo." : "✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución."}</div>}
                               </>}
                             </div>
                             {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
