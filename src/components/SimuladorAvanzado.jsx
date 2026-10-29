@@ -2327,15 +2327,15 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     {/* Impuestos */}
                     {grp.tax && <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto de renta {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : grp.tax.fuente === "declaracion" ? "· estimado" : "· cálculo aproximado"}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto de renta de {ow.name} {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : `· falta la declaración ${new Date().getFullYear() - 1}`}</div>
                       </div>
                       {/* 29-oct-2026 (Santiago: "uno debe saber basado en qué se está calculando el impuesto") */}
                       <div style={{ fontSize: 12, color: T.txt2, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, lineHeight: 1.45 }}>
                         {grp.tax.fuente === "declaracion_real"
                           ? <>Basado en tu <b style={{ color: T.txt }}>declaración de renta {new Date().getFullYear() - 1}</b>, que ya presentaste: lo que te retuvieron durante el año más el saldo que pagaste al declarar. Es plata real de este año. La renta que estás ganando ahora se paga el año que viene.</>
                           : grp.tax.fuente === "declaracion"
-                            ? <>Estimado con la <b style={{ color: T.txt }}>Calculadora de declaración</b>, a partir de tu última declaración. Para este año conviene cargar la declaración {new Date().getFullYear() - 1}.</>
-                            : <><b style={{ color: T.txt }}>Cálculo aproximado</b> con los ingresos registrados, porque este titular no tiene la declaración {new Date().getFullYear() - 1} cargada. Súbela en Impuestos → Historial o escribe arriba lo que pagaste: es clave para la simulación.</>}
+                            ? <>⚠️ <b style={{ color: T.txt }}>{ow.name} no tiene cargada la declaración {new Date().getFullYear() - 1}</b>, que es la que se paga este año. Por eso este valor es solo un estimado hecho con una declaración más vieja y puede salir muy distinto de lo real. <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ background: "none", border: "none", padding: 0, color: "#60a5fa", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Súbela en Impuestos › Historial</button> y aquí saldrá lo que de verdad pagaste.</>
+                            : <>⚠️ <b style={{ color: T.txt }}>{ow.name} no tiene cargada la declaración {new Date().getFullYear() - 1}</b>. Este valor es un cálculo aproximado con los ingresos registrados. <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ background: "none", border: "none", padding: 0, color: "#60a5fa", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>Súbela en Impuestos › Historial</button> y aquí saldrá lo que de verdad pagaste.</>}
                       </div>
                       {(()=>{
                         const nameKey = grp.tax.name;
