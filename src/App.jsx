@@ -99,6 +99,7 @@ import RoleBanner from "./components/RoleBanner";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
+import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte } from "./lib/norteUnMinuto.js";
 import { TRM_PROVISIONAL } from "./lib/trm.js";
 import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
@@ -1659,7 +1660,11 @@ export default function FinPath(){
   const CONSULTA_DESDE="2026-10-26";
   const modoConsulta=!isAdmin&&plan==="free"&&!!trialEnd&&!trialActive&&String(trialEnd).slice(0,10)>=CONSULTA_DESDE&&!u?.p?.anonymous;
   const ultimoNivelRef=useRef((()=>{try{return JSON.parse(localStorage.getItem("fp3_ultimo_nivel")||"null")}catch{return null}})());
-  const t=useMemo(()=>{if(!u)return{};const base=cT(u.inv,u.deu,u.gas,u.ingresos,estimarImpuesto(u),trm,u.inflacionPct);return totalesConTasa(base,estTrm,ultimoNivelRef.current)},[u,trm,estTrm.modo]);
+  // 29-oct-2026: el impuesto de toda la plataforma es el «referente»: anclado en la
+  // declaración de cada titular cuando la hay (ver lib/impuestoReferente.js).
+  const calRef=useMemo(()=>{try{return u?calibracionReferente(u):{}}catch{return{}}},[u]);
+  const impRef=useMemo(()=>{if(!u)return{total:0,mes:0,detalle:[]};try{return estimarImpuestoReferente(u,calRef)}catch{return estimarImpuesto(u)}},[u,calRef]);
+  const t=useMemo(()=>{if(!u)return{};const base=cT(u.inv,u.deu,u.gas,u.ingresos,impRef,trm,u.inflacionPct);return totalesConTasa(base,estTrm,ultimoNivelRef.current)},[u,trm,estTrm.modo,impRef]);
   useEffect(()=>{if(t&&t.nivel&&!t.pendienteTasa){ultimoNivelRef.current=t.nivel;try{localStorage.setItem("fp3_ultimo_nivel",JSON.stringify(t.nivel))}catch{}}},[t]);
   // ═══ 11-oct-2026 — ACTIVACIÓN = «primer activo cargado» (copy v3) ═══
   // Cuando la persona tiene al menos un activo en Patrimonio (u.inv), el
@@ -2647,7 +2652,7 @@ export default function FinPath(){
           </ResponsiveContainer>
         </Cd>
         {/* Tax Estimate */}
-        {(()=>{const tx=estimarImpuesto(u);return tx.total>0?<Cd s={{padding:16}}>
+        {(()=>{const tx=impRef;return tx.total>0?<Cd s={{padding:16}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>🧾 Impuestos (Anual)</div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
             <span style={{fontSize:11,color:T.tx3}}>Total estimado</span>
@@ -3115,7 +3120,7 @@ export default function FinPath(){
             </div>
 
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
-            {(()=>{const tx=estimarImpuesto(u);if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+            {(()=>{const tx=impRef;if(tx.total<=0)return null;return<div style={{marginTop:14,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
               <div style={{fontSize:11,color:T.tx3,fontWeight:600,marginBottom:6}}>{`🧾 IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG ${DEFAULT_AG})`}</div>
               <div style={{fontSize:10,color:T.tx3,marginBottom:14,lineHeight:1.5}}>{`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Año gravable ${DEFAULT_AG} (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
               {tx.sinClasificar>0&&<div style={{background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:11,color:T.orange}}>⚠️ {tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>💰 Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
@@ -3533,8 +3538,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     // Links/estado viejo con pg="plan" muestran f10. Datos guardados (perfilPlan, caminos…) se conservan.
     case"plan":
     case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
-    case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
-    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={estimarImpuesto(u)} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}]}} totals={t} fmt={fm} onNavigate={setPg}/>;
+    case"simf":return <SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/>;
+    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.
     case"anio":
     case"flujo":return <FlujoAnual user={u} trm={trm} isEN={isEN}/>;

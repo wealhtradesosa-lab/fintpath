@@ -25,7 +25,7 @@ const fila = { display: "flex", justifyContent: "space-between", gap: 12, paddin
 
 function ingresosAnualesPorOwner(u) {
   const m = {};
-  for (const i of u?.ing || []) if (i?.owner) m[i.owner] = (m[i.owner] || 0) + (Number(totalAnualItem(i)) || 0);
+  for (const i of u?.ingresos || u?.ing || []) if (i?.owner) m[i.owner] = (m[i.owner] || 0) + (Number(totalAnualItem(i)) || 0);
   return m;
 }
 
@@ -35,7 +35,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
   const conDecl = owners.find((o) => ultimaDeclaracion(o));
   const [sel, setSel] = useState((conDecl || owners[0])?.id || "");
   const [estado, setEstado] = useState(() => u?.estimadoRenta || {});
-  const ingApp = useMemo(() => ingresosAnualesPorOwner(u), [u?.ing]);
+  const ingApp = useMemo(() => ingresosAnualesPorOwner(u), [u?.ingresos, u?.ing]);
 
   // Guardar las respuestas sin disparar un guardado por cada tecla
   const t = useRef(null);

@@ -28,7 +28,7 @@ import {
 } from "recharts";
 import PageHeader from "./PageHeader";
 import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto, rangoEfectivo } from "../lib/flowHelpers.js";
-import { estimarImpuesto } from "../lib/taxCO";
+import { estimarImpuestoReferente } from "../lib/impuestoReferente";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 
@@ -85,7 +85,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     const deudas = user?.deu || user?.deudas || [];
 
     // Impuestos y retención (constantes al mes, anualizados ÷ 12)
-    const taxData = estimarImpuesto(user);
+    const taxData = estimarImpuestoReferente(user);
     let impuestoBrutoAnual = 0;
     let retencionAnual = 0;
     (taxData?.detalle || []).forEach(td => {
@@ -342,7 +342,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     const deudas = user?.deu || user?.deudas || [];
 
     // Impuestos anualizados (mismo cálculo que en datosMensuales)
-    const taxData = estimarImpuesto(user);
+    const taxData = estimarImpuestoReferente(user);
     let impuestoBrutoAnual = 0;
     let retencionAnual = 0;
     (taxData?.detalle || []).forEach(td => {

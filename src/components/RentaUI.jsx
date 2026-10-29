@@ -4,7 +4,8 @@ import { C, Cα, F, R } from "../lib/designTokens";
 import { mm, ultimaDeclaracion } from "../lib/rentaDesdeDeclaracion.js";
 
 export const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16 };
-export const inp = { width: "100%", boxSizing: "border-box", background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, color: C.text, padding: "10px 12px", fontSize: 14, outline: "none" };
+// Misma altura para casillas y listas: antes la lista desplegable salía más alta y nada alineaba.
+export const inp = { width: "100%", boxSizing: "border-box", height: 42, margin: 0, background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, color: C.text, padding: "0 12px", fontSize: 14, lineHeight: "normal", outline: "none" };
 const mono = "ui-monospace, 'SF Mono', Menlo, monospace";
 
 export function Panel({ titulo, sub, children, style }) {
@@ -151,16 +152,19 @@ export function Plata({ value, onChange, id, placeholder = "$0" }) {
   return <input id={id} inputMode="numeric" style={inp} placeholder={placeholder} value={txt ? "$" + txt : ""}
     onChange={(ev) => { const d = ev.target.value.replace(/[^0-9]/g, ""); onChange(d ? Number(d) : 0); }} />;
 }
+// Etiqueta con alto fijo de dos líneas y pegada abajo: así todas las casillas de una fila
+// quedan en la misma línea aunque una etiqueta sea corta y otra larga.
 export function Campo({ label, ayuda, children }) {
   return (
-    <label style={{ display: "grid", gap: 5, minWidth: 0 }}>
-      <span style={{ ...F.caption, fontWeight: 600, color: C.muted }}>{label}</span>
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+      <span style={{ ...F.caption, fontWeight: 600, color: C.muted, minHeight: 31, display: "flex", alignItems: "flex-end" }}>{label}</span>
       {children}
       {ayuda && <span style={F.caption}>{ayuda}</span>}
     </label>
   );
 }
-export const Grid = ({ children, min = 200 }) => <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fit, minmax(${min}px, 1fr))`, gap: 12 }}>{children}</div>;
+// Máximo 4 columnas: con pantallas anchas salían 7 casillas apretadas en una fila.
+export const Grid = ({ children, min = 220 }) => <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill, minmax(max(${min}px, calc((100% - 43px) / 4)), 1fr))`, gap: "16px 14px", alignItems: "start" }}>{children}</div>;
 export const Aviso = ({ tipo = "warn", children }) => (
   <div style={{ ...F.body, color: C.text, background: tipo === "ok" ? Cα.ok08 : tipo === "info" ? Cα.accent08 : Cα.warn08, border: `1px solid ${tipo === "ok" ? Cα.ok25 : tipo === "info" ? Cα.accent25 : Cα.warn25}`, borderRadius: R.md, padding: "10px 12px" }}>{children}</div>
 );

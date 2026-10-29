@@ -28,7 +28,7 @@
 import { fmtPctEs, fmtTasaEs, fmtPlataCortaEs } from "../lib/formato.js";
 import { useState, useMemo, useEffect, useRef } from "react";
 import PageHeader from "./PageHeader";
-import { estimarImpuesto } from "../lib/taxCO";
+import { estimarImpuestoReferente } from "../lib/impuestoReferente";
 import { C, Cα, F, R } from "../lib/designTokens";
 import SankeyFlujo from "./SankeyFlujo";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
@@ -240,11 +240,11 @@ export function usuarioFuturo(user, filas) {
         owner: dueño(base, f) });
     }
   });
-  return { owners: user.owners || [], ingresos: ing, gas, deu, inv: user.inv || [], trm: user.trm || 4200 };
+  return { owners: user.owners || [], ingresos: ing, gas, deu, inv: user.inv || [], trm: user.trm || 4200, _calRef: user._calRef };
 }
 
 export function impuestoAnual(u) {
-  const t = estimarImpuesto(u);
+  const t = estimarImpuestoReferente(u, u._calRef || {});
   let bruto = 0, rete = 0;
   (t.detalle || []).forEach((d) => {
     bruto += d.impBruto != null ? d.impBruto : (d.impuesto || 0);

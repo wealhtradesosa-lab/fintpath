@@ -5,7 +5,7 @@ import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics
 import Disclaimer from "./Disclaimer";
 import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { estimarImpuesto } from "../lib/taxCO";
+import { estimarImpuestoReferente } from "../lib/impuestoReferente";
 import SankeyFlujo from "./SankeyFlujo";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
@@ -671,7 +671,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       inv: user.inv || [],
       trm,
     };
-    const dynTax = estimarImpuesto(userSim);
+    // 29-oct-2026: escalado al impuesto referente (declaración) — ver lib/impuestoReferente.js
+    const dynTax = estimarImpuestoReferente(userSim, user._calRef || {});
 
     let impuestoBrutoAnual = 0;
     let retencionAnual = 0;
