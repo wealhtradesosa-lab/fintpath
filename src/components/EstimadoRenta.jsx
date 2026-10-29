@@ -7,7 +7,7 @@ import {
   impuestoDividendos, calculosGODelTitular, revisarTitular, pct, mm, impuestoDeclarado, retencionDeclarada,
 } from "../lib/rentaDesdeDeclaracion.js";
 import { TIPOS_INGRESO, tipoDeCategoria } from "../lib/rentaDesdeDeclaracion.js";
-import { serieHistorial, origenIngresos } from "../lib/rentaDesdeDeclaracion.js";
+import { serieHistorial, origenIngresos, lista2026DesdeIngresos } from "../lib/rentaDesdeDeclaracion.js";
 import { Linea, Grafica } from "./RentaUI";
 import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Plata, Campo, Grid, Aviso, inp, card } from "./RentaUI";
 
@@ -58,6 +58,8 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
   const respDe = (o) => {
     const r = { ...RESPUESTAS_DEFAULT, ...(estado[o.id] || {}) };
+    // «¿Qué recibes este año?»: si no lo ha tocado, arranca con sus ingresos registrados en FINPATHIA.
+    if (r.lista2026 == null) { const l = lista2026DesdeIngresos(u, o.id); if (l.length) r.lista2026 = l; }
     // La versión anterior guardaba una sola línea «Ingresos declarados (total)»: se descarta para repartirla.
     if (Array.isArray(r.filas) && r.filas.some((f) => f?.id === "total")) r.filas = r.filas.filter((f) => f?.id !== "total" && !f?.declarada);
     if (!estado[o.id]) { // primera vez: si hay una venta optimizada para el año, se trae sola
@@ -218,7 +220,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
         </Panel>
 
         <Panel titulo="3. ¿Qué cambió este año?" sub="Cuéntanos con tus palabras y números. Si algo no cambió, déjalo como está.">
-          <TablaIngresos e={e} r={r} registrados={ingresosRegistrados(u, owner.id)} onChange={(patch) => set(owner.id, patch)} />
+          <Lista2026 e={e} r={r} registrados={lista2026DesdeIngresos(u, owner.id)} onChange={(patch) => set(owner.id, patch)} />
           <CambioPatrimonio e={e} r={r} onChange={(patrim) => set(owner.id, { patrim })} />
           <div style={{ ...F.h3, margin: "18px 0 8px" }}>Otros cambios</div>
           <Grid>
@@ -804,6 +806,78 @@ function CambioPatrimonio({ e, r, onChange }) {
         Patrimonio líquido: <b style={{ fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(liqA)} → {mm(liqB)}</b>
         {Math.abs(d) > 1 && <span style={{ color: d > 0 ? C.ok : C.warn, fontWeight: 700 }}> ({d > 0 ? "sube" : "baja"} {mm(Math.abs(d))})</span>}
       </div>
+    </div>
+  );
+}
+
+// «¿Qué ingresos tienes este año?» (29-oct-2026, Santiago: "no tiene sentido inventar los 418 MM
+// que ya fueron declarados; que uno calcule cada cosa de este año"). Lo declarado queda fijo como
+// referencia; el año en curso se arma ítem por ítem, empezando por lo registrado en FINPATHIA.
+function Lista2026({ e, r, registrados, onChange }) {
+  const lista = Array.isArray(r.lista2026) ? r.lista2026 : [];
+  const guardar = (l) => onChange({ lista2026: l });
+  const upd = (id, patch) => guardar(lista.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+  const nuevaId = () => "l" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const usados = new Set(lista.map((x) => x.desde).filter(Boolean));
+  const disponibles = registrados.filter((x) => !usados.has(x.desde));
+  const o = origenIngresos(e.d);
+  const total = lista.reduce((a, x) => a + (Number(x.monto) || 0), 0);
+  const dv = e.brutos ? total / e.brutos - 1 : 0;
+  const pesa = (id) => (e.aportesLista || []).find((x) => x.id === id)?.impuesto || 0;
+  return (
+    <div style={{ display: "grid", gap: 12 }}>
+      <div style={{ ...card, background: C.surface }}>
+        <div style={F.label}>Tu referencia · {e.ano} (ya declarado)</div>
+        <div style={{ ...F.h2, marginTop: 4 }}>En {e.ano} declaraste ingresos por {mm(e.brutos)}</div>
+        {o.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {o.map((x) => <span key={x.id} style={{ ...F.caption, color: C.text, background: C.raised, borderRadius: R.pill, padding: "4px 10px" }}>{x.nombre.split(":")[0].split("(")[0].trim()}: <b>{mm(x.monto)}</b></span>)}
+          </div>
+        )}
+        {o.length === 0 && <div style={{ ...F.body, marginTop: 6 }}>¿En qué estaban esos {mm(e.brutos)}? Tu PDF se leyó antes de que los separáramos por tipo. Vuelve a subirlo una vez en <b style={{ color: C.text }}>Impuestos → Historial</b> y aquí verás: salario tanto, honorarios tanto, arriendos tanto, dividendos tanto.</div>}
+        <div style={{ ...F.caption, marginTop: 6 }}>Este número no se toca: es contra lo que comparamos tu {e.anoEst}.</div>
+      </div>
+
+      <div style={{ ...card, background: C.surface }}>
+        <div style={F.label}>Tu {e.anoEst} · lo que estás recibiendo</div>
+        <div style={{ ...F.h2, marginTop: 4 }}>¿Qué ingresos tienes en {e.anoEst}?</div>
+        <p style={{ ...F.body, margin: "4px 0 6px" }}>{registrados.length ? "Los trajimos de tus ingresos en FINPATHIA. Revisa cada uno: ajusta el monto, quita lo que ya no recibes y agrega lo nuevo." : "Agrega cada ingreso que estás recibiendo este año: salario, honorarios, arriendos, utilidades…"} Puedes poner el monto al mes o al año.</p>
+        {lista.map((x) => (
+          <div key={x.id} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(170px, calc((100% - 41px) / 5)), 1fr))", gap: 10, alignItems: "start", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
+            <Campo label="Ingreso"><input style={inp} value={x.nombre} placeholder="Ej. salario" onChange={(ev) => upd(x.id, { nombre: ev.target.value })} /></Campo>
+            {e.nat ? <Campo label="Tipo"><select style={sel_} value={x.tipo} onChange={(ev) => upd(x.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
+            <Campo label={`Monto en ${e.anoEst}`}>
+              <PlataPeriodo value={x.monto} per={x.per} onPer={(p) => upd(x.id, { per: p })} onChange={(v) => upd(x.id, { monto: v })} />
+              {pesa(x.id) > 0 && <span style={{ ...F.caption, color: C.muted }}>pesa ~{mm(pesa(x.id))} en tu impuesto</span>}
+            </Campo>
+            {(!e.nat || x.tipo === "arriendo" || x.tipo === "otro") ? <Campo label="Costos del año"><Plata value={x.costos} onChange={(v) => upd(x.id, { costos: v })} /></Campo> : <div />}
+            <div style={{ paddingTop: 37 }}><button type="button" onClick={() => guardar(lista.filter((y) => y.id !== x.id))} style={{ width: "100%", height: 42, borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.danger, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Ya no lo recibo</button></div>
+          </div>
+        ))}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+          <button type="button" onClick={() => guardar([...lista, { id: nuevaId(), nombre: "", tipo: e.nat ? "laboral" : "otro", monto: 0, per: "mes" }])} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Agregar ingreso</button>
+          {disponibles.length > 0 && (
+            <select style={{ ...sel_, width: "auto", minWidth: 260 }} value="" onChange={(ev) => { const it = disponibles.find((y) => y.desde === ev.target.value); if (it) guardar([...lista, { ...it, id: nuevaId() }]); }}>
+              <option value="">Traer de mis ingresos en FINPATHIA…</option>
+              {disponibles.map((y) => <option key={y.desde} value={y.desde}>{y.nombre} · {mm(y.monto)} al año</option>)}
+            </select>
+          )}
+          {registrados.length > 0 && <button type="button" onClick={() => guardar(registrados)} style={{ height: 42, padding: "0 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Volver a mis ingresos registrados</button>}
+        </div>
+      </div>
+
+      {lista.length > 0 && (
+        <div style={{ ...card, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={F.label}>Resultado</div>
+            <div style={{ ...F.monoLg, marginTop: 4 }}>{e.ano}: {mm(e.brutos)} → {e.anoEst}: {mm(total)}</div>
+            <div style={{ ...F.body, marginTop: 4, color: Math.abs(dv) < 0.005 ? C.muted : dv > 0 ? C.accent : C.warn, fontWeight: 700 }}>
+              {Math.abs(dv) < 0.005 ? "Tus ingresos están iguales" : `Tus ingresos ${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}% (${dv > 0 ? "+" : "−"}${mm(Math.abs(total - e.brutos))})`}
+            </div>
+          </div>
+          <button type="button" onClick={() => document.getElementById("tu-cuenta")?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ height: 42, padding: "0 16px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Ver cuánto me toca pagar ↓</button>
+        </div>
+      )}
     </div>
   );
 }

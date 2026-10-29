@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
 import { calibracionReferente, aplicarReferente, estimarImpuestoReferente } from "../../src/lib/impuestoReferente.js";
-import { estimarDesdeDeclaracion } from "../../src/lib/rentaDesdeDeclaracion.js";
+import { estimarDesdeDeclaracion, lista2026DesdeIngresos } from "../../src/lib/rentaDesdeDeclaracion.js";
 
 const decl = { tipo: "F210", anoGravable: 2025, renglones: { ingresosBrutos: 300e6, ingresosNoConstitutivos: 8e6, rentaExenta25: 30e6, impuestoCalculado: 40e6, retefuente: 30e6, saldoPagar: 10e6 } };
 const base = (mensual = 25e6, conDecl = true) => ({ trm: 4200, gas: {}, deu: [], inv: [],
@@ -16,7 +16,7 @@ describe("impuesto referente", () => {
   });
   it("con declaración, el impuesto de hoy es el de «Lo que viene»", () => {
     const u = base();
-    const e = estimarDesdeDeclaracion(u.owners[0], {});
+    const e = estimarDesdeDeclaracion(u.owners[0], { lista2026: lista2026DesdeIngresos(u, "o1") });
     const ref = estimarImpuestoReferente(u, calibracionReferente(u, { modo: "estimado" }));
     expect(bruto(ref)).toBeCloseTo(e.renta, -2);
     expect(ref.detalle[0].fuente).toBe("declaracion");

@@ -17,7 +17,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { estimarImpuesto } from "./taxCO.js";
-import { ultimaDeclaracion, declaracionesOrdenadas, estimarDesdeDeclaracion, calculosGODelTitular, impuestoDeclarado, retencionDeclarada } from "./rentaDesdeDeclaracion.js";
+import { ultimaDeclaracion, declaracionesOrdenadas, estimarDesdeDeclaracion, calculosGODelTitular, impuestoDeclarado, retencionDeclarada, lista2026DesdeIngresos } from "./rentaDesdeDeclaracion.js";
 
 const num = (v) => Number(v) || 0;
 const bruto = (d) => (d?.impBruto != null ? num(d.impBruto) : num(d?.impuesto));
@@ -51,7 +51,9 @@ export function calibracionReferente(u, { modo = "actual", hoy = new Date() } = 
         fImp: mb > renta * 0.05 ? renta / mb : null, fRet: mr > 0 && ret > 0 ? ret / mr : null };
       continue;
     }
-    const e = estimarDesdeDeclaracion(o, { ...(u?.estimadoRenta?.[o.id] || {}), goSel: "" }, { calculosGO: calculosGODelTitular(u?.calculosGO, o) });
+    const resp = { ...(u?.estimadoRenta?.[o.id] || {}), goSel: "" };
+    if (resp.lista2026 == null) { const l = lista2026DesdeIngresos(u, o.id); if (l.length) resp.lista2026 = l; } // igual que la Calculadora
+    const e = estimarDesdeDeclaracion(o, resp, { calculosGO: calculosGODelTitular(u?.calculosGO, o) });
     if (!e) continue;
     // Si el motor casi no ve ingresos de este titular, no sirve como base de escala: valor absoluto.
     cal[o.name] = {

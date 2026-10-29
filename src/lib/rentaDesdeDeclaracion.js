@@ -23,6 +23,7 @@
 
 import { calcImpRenta } from "./tablaArt241.js";
 import { uvtForYear } from "./taxCO.js";
+import { totalAnualItem } from "./flowHelpers.js";
 
 export const TARIFA_SOCIEDADES = 0.35;
 export const MAX_DECLARACIONES = 4;
@@ -60,9 +61,24 @@ export function origenIngresos(d) {
   return CEDULAS_F210.map(([k, nombre, tipo, formal]) => ({ id: k, nombre, tipo, formal, monto: num(R[k]) })).filter((x) => x.monto > 0);
 }
 
+/**
+ * Ingresos del año en curso, traídos de lo que el titular tiene registrado en FINPATHIA
+ * (29-oct-2026, Santiago: "no tiene sentido inventar los 418 MM que ya fueron declarados;
+ * que uno calcule cada cosa de este año"). Punto de partida editable de «¿qué recibes este año?».
+ */
+export function lista2026DesdeIngresos(u, ownerId) {
+  return (u?.ingresos || u?.ing || []).filter((i) => i && i.owner === ownerId && i.sim !== false).map((i) => ({
+    id: "r" + String(i.id || i.nombre || Math.random().toString(36).slice(2, 7)),
+    nombre: i.nombre || i.n || i.categoria || "Ingreso",
+    tipo: tipoDeCategoria(`${i.categoria || ""} ${i.nombre || ""}`),
+    monto: Math.round((Number(totalAnualItem(i)) || 0) * (i.moneda === "USD" ? (Number(u?.trm) || 4200) : 1)),
+    desde: String(i.id || ""),
+  })).filter((x) => x.monto > 0);
+}
+
 /** Respuestas por defecto a «¿qué cambió este año?». */
 export const RESPUESTAS_DEFAULT = Object.freeze({
-  g: 0.05, sigue: null, filas: [], nuevos: [], perdidos: [], nuevo: 0, nuevoGastos: 0, perdido: 0, aportes: 0, dep: 0, goSel: "", go: 0, ant: null, casa: 0, estr: {}, off: {},
+  g: 0.05, sigue: null, lista2026: null, filas: [], nuevos: [], perdidos: [], nuevo: 0, nuevoGastos: 0, perdido: 0, aportes: 0, dep: 0, goSel: "", go: 0, ant: null, casa: 0, estr: {}, off: {},
 });
 
 const num = (v) => Number(v) || 0;
@@ -153,6 +169,7 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   const descuentos = nat ? 0 : Math.max(0, num(R.impuestoCalculado) - impBase);
   const pct = base0 / brutos; // qué parte de cada peso facturado terminó gravado
   let descDiv = 0; // descuento del 19% de dividendos (Art. 254-1) que se va acumulando
+  let retNuevos = 0; // retenciones que traen los ingresos nuevos
   const tax = (b) => nat ? Math.max(0, impuesto241(b, uvt) - descDiv) : Math.max(0, Math.max(0, b) * TARIFA_SOCIEDADES - descuentos);
 
   const pasos = []; let b = base0, prev = impBase;
@@ -165,8 +182,9 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   if (nat) paso("uvt", `UVT nueva (${uvt.toLocaleString("es-CO")}): la tabla sube con la inflación`, b);
   // Tabla de ingresos (29-oct-2026): cada línea del año pasado dice si sigue, cambia o ya no; más las nuevas.
   // Se traduce a «perdidos» (lo que baja) y «nuevos» (lo que sube o llega, con su tipo).
-  const filas = Array.isArray(r.filas) && r.filas.length ? r.filas : null;
-  let perdidosL = Array.isArray(r.perdidos) ? r.perdidos : [], nuevosL = Array.isArray(r.nuevos) ? r.nuevos : [];
+  const lista = Array.isArray(r.lista2026) ? r.lista2026 : null;
+  const filas = !lista && Array.isArray(r.filas) && r.filas.length ? r.filas : null;
+  let perdidosL = !lista && Array.isArray(r.perdidos) ? r.perdidos : [], nuevosL = !lista && Array.isArray(r.nuevos) ? r.nuevos : [];
   let restoBase = null, objetivoFilas = 0, sumAntesFilas = 0;
   if (filas) {
     perdidosL = []; nuevosL = [];
@@ -194,7 +212,31 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
     paso(clave, etiqueta, b - quita * pct);
   }
   const sigueBase = Math.max(0, brutos - perdidoTotal);
-  if (filas) { if (g && restoBase > 0) paso("ingresos", `El resto de lo declarado (${mm(restoBase)}) sube con la inflación`, b + restoBase * g * pct); }
+  // ── Modo «¿qué recibes este año?»: lo declarado queda fijo como referencia y el año se arma ítem por ítem.
+  let ingresosLista = null, aportesLista = [], ordLista = 0;
+  if (lista) {
+    let ord = 0, div = 0;
+    for (const it of lista) {
+      if (off["l_" + it.id]) continue;
+      const m = num(it.monto); if (!m) continue;
+      if (nat && it.tipo === "dividendos") div += m; else ord += Math.max(0, m - num(it.costos));
+    }
+    ingresosLista = lista.reduce((a, it) => a + (off["l_" + it.id] ? 0 : num(it.monto)), 0);
+    ordLista = ord;
+    // Base del año: lo ordinario con la misma proporción gravable que tuvo la declaración; los dividendos aparte.
+    const nb = ord * pct + div;
+    descDiv += nat ? 0.19 * Math.max(0, div - 1090 * uvt) : 0;
+    retNuevos += nat ? 0.15 * Math.max(0, div - 1090 * uvt) : 0;
+    paso("lista", `Tus ingresos de ${anoEst}: ${mm(ingresosLista)} (en ${ano} declaraste ${mm(brutos)})`, nb);
+    // Cuánto pesa cada ingreso en el impuesto: se quita uno a la vez.
+    for (const it of lista) {
+      const m = num(it.monto); if (!m || off["l_" + it.id]) { aportesLista.push({ id: it.id, impuesto: 0 }); continue; }
+      const sinB = it.tipo === "dividendos" && nat ? nb - m : nb - Math.max(0, m - num(it.costos)) * pct;
+      aportesLista.push({ id: it.id, impuesto: Math.max(0, tax(nb) - tax(Math.max(0, sinB))) });
+    }
+  }
+  if (lista) { /* ya se armó arriba */ }
+  else if (filas) { if (g && restoBase > 0) paso("ingresos", `El resto de lo declarado (${mm(restoBase)}) sube con la inflación`, b + restoBase * g * pct); }
   else if (g && r.sigue == null) paso("ingresos", `Lo que sigue igual se ajusta por inflación (+${Math.round(g * 100)}%)`, b + sigueBase * g * pct);
   else if (g) paso("ingresos", r.sigue != null && r.sigue !== ""
     ? `Lo de siempre pasa de ${mm(brutos)} a ${mm(brutos * (1 + g))} (${g > 0 ? "+" : "−"}${Math.round(Math.abs(g) * 100)}%)`
@@ -203,7 +245,6 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   // Ingresos nuevos, uno por uno, según su tipo
   const usado = ["rentaExenta25", "deducIntereses", "deducMedicina", "deducDependientes", "pvAFC"].reduce((a, k) => a + num(R[k]), 0);
   let espacio = Math.max(0, Math.min(0.4 * (brutos - num(R.ingresosNoConstitutivos)), 1340 * uvt) - usado * (uvt / uvtBase));
-  let retNuevos = 0;
   for (const n of nuevosL) {
     const m = num(n.monto); if (!m) continue;
     const clave = "n_" + n.id, tipo = n.tipo || "otro";
@@ -235,9 +276,10 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   const total = renta + go;
 
   const gEf = off.ingresos ? 0 : g;
-  const ret = filas ? retencionDeclarada(d) * (sigueBase / brutos) + retNuevos : retencionDeclarada(d) * (sigueBase / brutos) * (1 + gEf) + retNuevos;
+  const ret = lista ? retencionDeclarada(d) * Math.min(1.5, ordLista / brutos) + retNuevos
+    : filas ? retencionDeclarada(d) * (sigueBase / brutos) + retNuevos : retencionDeclarada(d) * (sigueBase / brutos) * (1 + gEf) + retNuevos;
   const ingNuevos = nuevosL.reduce((a, n) => a + (off["n_" + n.id] ? 0 : num(n.monto)), 0);
-  const ingresosEst = filas
+  const ingresosEst = lista ? ingresosLista : filas
     ? objetivoFilas + restoBase * (1 + gEf) + perdidosL.reduce((a, p) => a + (off["p_" + p.id] ? num(p.monto) : 0), 0) - nuevosL.reduce((a, n) => a + (off["n_" + n.id] ? num(n.monto) : 0), 0)
     : (r.sigue != null && r.sigue !== "" ? brutos * (1 + gEf) : sigueBase * (1 + gEf)) + ingNuevos;
   const ap = anticipoPagado(owner);
@@ -252,7 +294,7 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
     d, nat, ano, anoEst, uvt, uvtBase, impBase, base0, base: b, brutos, renta, go, gc, total,
     rango: [total * 0.9, total * 1.1], perdidoTotal, ingNuevos, ingresosEst,
     // Piso de comparación: con la tabla, lo que el usuario repartió (más lo declarado sin repartir).
-    ingresosAntes: filas ? sumAntesFilas + restoBase : brutos, ret, antPagado, antLeido: r.ant == null && ap.leido, saldo,
+    ingresosAntes: filas ? sumAntesFilas + restoBase : brutos, aportesLista, modoLista: !!lista, ret, antPagado, antLeido: r.ant == null && ap.leido, saldo,
     pctA, anticipoSiguiente, totalAlDeclarar, pasos, marginal: nat ? tarifaMarginal241(b, uvt) : TARIFA_SOCIEDADES,
   };
 }

@@ -190,3 +190,25 @@ describe("el piso de comparación es lo que el usuario repartió", () => {
     expect(e.ingresosEst).toBeCloseTo(700e6, -3);
   });
 });
+
+import { lista2026DesdeIngresos } from "../../src/lib/rentaDesdeDeclaracion.js";
+describe("¿qué recibes este año? (2025 fijo, 2026 ítem por ítem)", () => {
+  it("sin cambios de ingresos, el impuesto queda cerca del declarado", () => {
+    const e = estimarDesdeDeclaracion(persona, { g: 0, lista2026: [{ id: "a", tipo: "laboral", monto: 612e6 }] });
+    expect(e.ingresosEst).toBe(612e6);
+    expect(e.ingresosAntes).toBe(612e6);
+    expect(Math.abs(e.renta - 96e6)).toBeLessThan(6e6);
+  });
+  it("si este año recibe la mitad, el impuesto baja y cada ítem dice cuánto pesa", () => {
+    const e = estimarDesdeDeclaracion(persona, { g: 0, lista2026: [{ id: "a", nombre: "Salario", tipo: "laboral", monto: 200e6 }, { id: "b", nombre: "Arriendo", tipo: "arriendo", monto: 100e6 }] });
+    expect(e.renta).toBeLessThan(96e6);
+    expect(e.aportesLista.find((x) => x.id === "b").impuesto).toBeGreaterThan(0);
+  });
+  it("trae los ingresos registrados del titular como punto de partida", () => {
+    const u = { ingresos: [{ id: "x", owner: "own_1", nombre: "Honorarios", categoria: "Honorarios", mensual: 10e6, tipo: "fijo" }, { id: "y", owner: "otro", nombre: "Z", mensual: 1e6 }] };
+    const l = lista2026DesdeIngresos(u, "own_1");
+    expect(l).toHaveLength(1);
+    expect(l[0].tipo).toBe("laboral");
+    expect(l[0].monto).toBeGreaterThan(0);
+  });
+});
