@@ -955,7 +955,7 @@ export const estimarImpuesto = (u, options = {}) => {
       //   común). Lo que excede tributa al 15%.
       // - Venta inmueble: utilidad = valorVenta - costoFiscal, × 15% sin exención
       //   adicional (el 15% ya es beneficio vs 39% ordinario; Art. 311-1 tiene
-      //   exención adicional de 7.500 uvt pero requiere condiciones específicas
+      //   exención adicional de 5.000 UVT (Ley 2277 de 2022; ver lib/gananciaOcasional.js) pero requiere condiciones específicas
       //   que no se capturan en el switch — el contador los aplicará en la
       //   declaración real).
       // - Lotería: 20% sin exención (Art. 317).

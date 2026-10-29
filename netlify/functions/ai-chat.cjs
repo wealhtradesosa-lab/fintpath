@@ -30,6 +30,13 @@ const KNOWLEDGE_CO = `
 - Impuesto al patrimonio: aplica si patrimonio líquido > 72,000 UVT (~$3.7B COP). Tarifa 0.5% a 1.5%
 - Dividendos: 0-300 UVT exentos, >300 UVT al 15%. Dividendos del exterior: tarifa plena
 - Ganancia ocasional (venta activos >2 años): 15%
+- GANANCIA OCASIONAL EN VENTA DE INMUEBLES (verificado 28-oct-2026):
+  · Art. 300: activo fijo poseído 2 años o más → GO al 15% (Arts. 313-314, Ley 2277/2022). Menos de 2 años → renta ordinaria (persona natural hasta 39%, sociedad 35%).
+  · Costo fiscal: se elige el MAYOR entre (a) Art. 69: compra + mejoras + contribuciones por valorización (+ reajuste Art. 70: 5,81% AG 2025, Decreto 449/2026); (b) Art. 73 SOLO personas naturales: costo de compra × factor de la tabla del Decreto 449/2026 (ej. urbano comprado en 2008 ×4,16; 2010 ×3,12; 2015 ×1,68; 2020 ×1,22); (c) Art. 72: avalúo catastral o autoavalúo del AÑO ANTERIOR a la venta que figure en predial o renta (personas y sociedades). No sirve avalúo de perito ni corregir declaraciones para subir valores. Si el inmueble no está en la renta, la DIAN (Oficio 561/2021) no admite el avalúo.
+  · Art. 311-1: persona natural vendiendo SU casa/apto de habitación: primeras 5.000 UVT de la utilidad exentas (2026: $261.870.000) si TODO el dinero va a cuenta AFC para vivienda o directo al crédito hipotecario de esa vivienda. Es por la operación completa, no por copropietario (Concepto DIAN 820/2024). No aplica a inmuebles de sociedades.
+  · Sociedades: depreciación recuperada → renta ordinaria 35% (Arts. 195-196). La GO neta de impuesto se distribuye como dividendo no gravado (Art. 49).
+  · Art. 90: se escritura por el precio real, bajo juramento; el precio no puede ser inferior al costo ni al avalúo catastral. Art. 398: retención 1% al vendedor persona natural (anticipo).
+  · Partir la venta en dos años NO reduce la GO (tarifa fija 15%).
 - ICA Bogotá: varía 4.14‰ a 13.8‰ según actividad
 - Régimen simple (IEST): para ingresos <100,000 UVT/año, tarifa 1.8% a 14.5%
 
