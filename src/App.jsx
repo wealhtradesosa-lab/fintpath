@@ -1628,7 +1628,7 @@ export default function FinPath(){
   // 25-oct-2026: en modo consulta (prueba vencida, cuentas nuevas) no se guarda: se ofrece el plan.
   const upd=(k,v)=>{if(modoConsulta){setPaywall(true);return}showToast("💾 Guardando…");setU(p=>p?{...p,[k]:v}:p);};
   // 28-oct-2026: admin por el correo de la SESIÓN verificada (authUser), no por
-  // u.p.email, que vive en user_data y el propio usuario podría reescribir.
+  // el correo del perfil, que vive en user_data y el propio usuario podría reescribir.
   const isAdmin=String(authUser?.email||"").toLowerCase()==="santiagososa1@me.com";
   const INVITADOS=["andres.isaza@grupogiesas.com","renatomaestri76@hotmail.com"];
   const getTrialDays=(email)=>INVITADOS.includes(email)?30:14;

@@ -2,11 +2,40 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 
+// 28-oct-2026 — "Algo salió mal" al cambiar de sección. Cada publicación
+// cambia el nombre de los archivos de cada sección; una pestaña abierta desde
+// antes pide los viejos, que ya no existen (404), y la sección se cae.
+// Solución: si falla la carga de un archivo de sección, se recarga la página
+// UNA vez (para traer la versión nueva). El guardado evita un ciclo infinito
+// si el problema fuera otro.
+const esCargaFallida = (e) =>
+  /dynamically imported module|Importing a module script failed|error loading dynamically|ChunkLoadError|Failed to fetch dynamically|Unable to preload/i
+    .test(String(e?.message || e || ""));
+function recargarUnaVez() {
+  try {
+    const k = "fp3_recarga_version";
+    const ultima = Number(sessionStorage.getItem(k) || 0);
+    if (Date.now() - ultima < 30000) return false;
+    sessionStorage.setItem(k, String(Date.now()));
+  } catch { /* sin sessionStorage: igual se recarga */ }
+  window.location.reload();
+  return true;
+}
+window.addEventListener("vite:preloadError", (ev) => { if (recargarUnaVez()) ev.preventDefault(); });
+window.addEventListener("unhandledrejection", (ev) => { if (esCargaFallida(ev.reason)) recargarUnaVez(); });
+
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
-  static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("FINPATHIA Error:", error, info); }
+  static getDerivedStateFromError(error) { return { hasError: true, error, actualizando: esCargaFallida(error) }; }
+  componentDidCatch(error, info) {
+    console.error("FINPATHIA Error:", error, info);
+    if (esCargaFallida(error) && !recargarUnaVez()) this.setState({ actualizando: false });
+  }
   render() {
+    if (this.state.hasError && this.state.actualizando) {
+      return React.createElement("div", {style:{background:"#09090b",color:"#a1a1aa",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui",fontSize:14}},
+        "Actualizando FINPATHIA a la versión nueva…");
+    }
     if (this.state.hasError) {
       return React.createElement("div", {style:{background:"#09090b",color:"#fafafa",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui"}},
         React.createElement("div", {style:{textAlign:"center",maxWidth:400,padding:32}},
