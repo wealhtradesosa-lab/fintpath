@@ -89,6 +89,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
   const [parsed, setParsed] = useState(null); // { tipo, anoGravable, renglones, confianza, ... }
   const [editedRenglones, setEditedRenglones] = useState({});
   const fileInputRef = useRef(null);
+  const previewRef = useRef(null);
 
   const selectedOwner = owners.find((o) => o.id === selectedOwnerId);
 
@@ -132,6 +133,8 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       }
       setParsed(j.data);
       setEditedRenglones({ ...j.data.renglones });
+      // 29-oct-2026 (Santiago: "la subí y ya no está"): leer no es guardar. Se baja hasta el paso 3.
+      setTimeout(() => previewRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
     } catch (e) {
       setError("Error de red: " + (e.message || "intenta de nuevo"));
     } finally {
@@ -299,7 +302,10 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
       {/* Paso 3: preview editable */}
       {parsed && (
-        <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "2px solid " + T.green, marginBottom: 14 }}>
+        <div ref={previewRef} style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "2px solid " + T.green, marginBottom: 14 }}>
+          <div style={{ padding: "8px 10px", background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, marginBottom: 10, fontSize: 13, color: T.txt, fontWeight: 600 }}>
+            ⚠️ Todavía no está guardada. Revisa los valores y pulsa «💾 Guardar en {selectedOwner?.name}» al final.
+          </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>
