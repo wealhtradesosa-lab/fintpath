@@ -2210,7 +2210,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Histórico y comparativo",parent:"tax",hidden:isUS},{id:"taxcalc",i:"🧮",l:isEN?"Tax Planning":"Cuánto voy a pagar",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"🧮",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
       // datos siguen vivos) y los absorbe Mi plan. Flujo Anual (el desempeño
       // del año completo) y el Simulador del año siguiente se quedan: son el
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
@@ -4221,7 +4221,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
               const parentExpanded=expandedMenus[n.parent]||pg===n.id;
               if(!parentExpanded)return null;
               const a=pg===n.id;
-              return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"calc(100% - 12px)",marginLeft:12,display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s",borderLeft:`2px solid ${a?T.gn:T.border}`}}><span style={{fontSize:13}}>{n.i}</span>{n.l}</button>;
+              return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"calc(100% - 12px)",marginLeft:12,display:"flex",alignItems:"center",justifyContent:"flex-start",textAlign:"left",gap:8,padding:"7px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s",borderLeft:`2px solid ${a?T.gn:T.border}`}}><span style={{fontSize:13}}>{n.i}</span>{n.l}</button>;
             }
             // Item con hijos (menú desplegable): clickear navega Y expande/colapsa
             if(n.hasChildren){

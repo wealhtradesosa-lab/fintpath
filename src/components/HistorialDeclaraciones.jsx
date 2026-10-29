@@ -36,7 +36,7 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      <PageHeader label="Impuestos · histórico y comparativo" title="Mis declaraciones de renta, año tras año" accent="año tras año" compact
+      <PageHeader label="Impuestos · historial" title="Historial de mis declaraciones, año tras año" accent="año tras año" compact
         subtitle={`Sube aquí cada declaración cuando llegue. Guardamos las últimas ${MAX_DECLARACIONES} de cada persona o empresa del grupo y te mostramos cómo se comparan, qué alertas hay y hacia dónde va.`} />
 
       <Bienvenida
@@ -45,7 +45,7 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
           "Lee solo el PDF del formulario 210 (personas) o 110 (empresas): no tienes que digitar nada.",
           "Te muestra tasa efectiva, crecimiento, patrimonio y deudas de cada año, con gráficas.",
           "Te alerta cuando el impuesto crece más rápido que tus ingresos, cuando beneficios se pierden por el tope o cuando te acercas al impuesto al patrimonio.",
-          "Con esa base, «Cuánto voy a pagar» estima el impuesto de este año.",
+          "Con esa base, la Calculadora de declaración estima el impuesto de este año.",
         ]}
         pasos={[
           { t: "Escoge la persona o empresa", hecho: !!owner || sel === "grupo" },

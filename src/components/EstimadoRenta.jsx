@@ -89,7 +89,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      <PageHeader label="Impuestos · cuánto voy a pagar" title="¿Cuánto me va a tocar pagar de renta?" accent="renta" compact
+      <PageHeader label="Impuestos · calculadora de declaración" title="¿Cuánto me va a tocar pagar de renta?" accent="renta" compact
         subtitle="Partimos de la última declaración que hizo tu contador y solo te preguntamos qué cambió. Así el cálculo conserva todo lo que él ya aplicó." />
 
       <Bienvenida
@@ -106,7 +106,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
           { t: "Cuéntanos qué cambió este año", hecho: !!(e && cambioHecho) },
           { t: "Marca lo que vas a hacer y descarga el resumen", hecho: !!marcoAlgo },
         ]}
-        accion={owner && !e ? { label: "Subir la declaración en «Histórico y comparativo» →", onClick: () => onNavigate?.("prevtax") } : null}
+        accion={owner && !e ? { label: "Subir la declaración en «Historial» →", onClick: () => onNavigate?.("prevtax") } : null}
       />
 
       {!owners.length ? (
@@ -118,7 +118,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
       {sel === "grupo" && <Grupo owners={owners} respDe={respDe} calculosGO={calculosGO} />}
 
       {owner && !e && sel !== "grupo" && (
-        <Aviso><b>{owner.name} no tiene declaración cargada.</b> Súbela en «Histórico y comparativo» (el PDF del formulario {owner.type === "juridica" ? "110" : "210"}) y la leemos sola.</Aviso>
+        <Aviso><b>{owner.name} no tiene declaración cargada.</b> Súbela en «Historial» (el PDF del formulario {owner.type === "juridica" ? "110" : "210"}) y la leemos sola.</Aviso>
       )}
 
       {e && sel !== "grupo" && (<>
