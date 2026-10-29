@@ -716,3 +716,68 @@ export async function exportGananciaOcasionalPDF(r, datos) {
     parrafo(AVISO_LEGAL_GO, { color: GRAY, size: 8.5 });
   }, "Estimación de FINPATHIA para planear con tu contador. No es asesoría tributaria ni legal; FINPATHIA no se hace responsable por decisiones tomadas con este documento.");
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Resumen para el contador (29-oct-2026). Una hoja con la declaración base, lo
+// que el cliente dice que cambió, el estimado con anticipo y las estrategias
+// que quiere aplicar. Posiciona a FINPATHIA como aliado del contador.
+// ═══════════════════════════════════════════════════════════════════════════
+export async function exportResumenContadorPDF({ titular, e, cambios = [], estrategias = [], patrimonio = null, preguntas = [] }) {
+  LOC = "es-CO"; TAGLINE = "Tu family office";
+  const RED = [220, 38, 38];
+  await build(buildFilename(pdfTxt(`Resumen contador ${titular}`)), (doc, autoTable) => {
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
+    let y = chrome(doc, { titulo: pdfTxt(`Resumen para el contador · ${titular}`) });
+    const salto = (alto) => { if (y + alto > H - 24) { doc.addPage(); y = 20; } };
+    const titulo = (t) => { salto(14); doc.setFont("helvetica", "bold"); doc.setFontSize(11.5); doc.setTextColor(...INK); doc.text(pdfTxt(t), M, y); y += 6; };
+    const lista = (items) => { doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...INK);
+      items.forEach((t) => { doc.splitTextToSize(pdfTxt("- " + t), W - M * 2).forEach((ln) => { salto(5); doc.text(ln, M, y); y += 4.2; }); }); y += 3; };
+
+    doc.setFillColor(255, 247, 237); doc.setDrawColor(249, 115, 22);
+    const aviso = pdfTxt("Estimación de referencia para planear, no es una declaración ni asesoría tributaria. Los valores y estrategias deben validarse con el contador.");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(8.5);
+    const lAv = doc.splitTextToSize(aviso, W - M * 2 - 6);
+    doc.roundedRect(M, y - 4, W - M * 2, lAv.length * 4 + 5, 2, 2, "FD");
+    doc.setTextColor(154, 52, 18); doc.text(lAv, M + 3, y + 1); y += lAv.length * 4 + 8;
+
+    y = resumen(doc, y, [
+      { label: `Impuesto ${e.anoEst}`, value: MMpdf(e.total), color: RED },
+      { label: "Saldo del impuesto", value: MMpdf(e.saldo) },
+      { label: `Anticipo ${e.anoEst + 1}`, value: MMpdf(e.anticipoSiguiente) },
+      { label: "Total al declarar", value: MMpdf(e.totalAlDeclarar), color: RED },
+    ]);
+
+    const R = e.d.renglones;
+    autoTable(doc, { ...tableStyle, startY: y, head: [[pdfTxt(`Declaración base · ${e.d.tipo === "F110" ? "F-110" : "F-210"} año gravable ${e.ano}`), ""]],
+      body: [["Ingresos brutos", R.ingresosBrutos], ["Impuesto", e.impBase], [e.nat ? "Retenciones" : "Autorretenciones", e.nat ? R.retefuente : R.autorretencion], ["Saldo pagado", R.saldoPagar], ["Patrimonio líquido", R.patrimonioLiquido]]
+        .filter(([, v]) => v != null).map(([k, v]) => [pdfTxt(k), MMpdf(v)]), columnStyles: { 1: { halign: "right" } } });
+    y = doc.lastAutoTable.finalY + 8;
+
+    titulo("Lo que cambió este año (según el cliente)"); lista(cambios.length ? cambios : ["Sin cambios reportados"]);
+
+    autoTable(doc, { ...tableStyle, startY: y, head: [[pdfTxt(`Estimado ${e.anoEst}`), ""]], body: [
+      ["Impuesto estimado (rango +/-10%)", `${MMpdf(e.total)} (${MMpdf(e.rango[0])} - ${MMpdf(e.rango[1])})`],
+      ["Retenciones estimadas", MMpdf(e.ret)], ["Anticipo ya pagado", MMpdf(e.antPagado)], ["Saldo del impuesto", MMpdf(e.saldo)],
+      [pdfTxt(`Anticipo ${e.anoEst + 1} (Art. 807, ${Math.round(e.pctA * 100)}%)`), MMpdf(e.anticipoSiguiente)], ["Total a pagar al declarar", MMpdf(e.totalAlDeclarar)],
+    ].map(([a, b]) => [pdfTxt(a), pdfTxt(b)]), columnStyles: { 1: { halign: "right" } } });
+    y = doc.lastAutoTable.finalY + 8;
+
+    titulo(`Por qué cambia frente a ${e.ano}`);
+    lista(e.pasos.map((p) => `${p.texto}: ${p.delta >= 0 ? "+" : "-"}${MMpdf(Math.abs(p.delta))}`));
+
+    if (estrategias.length) {
+      autoTable(doc, { ...tableStyle, startY: y, head: [["Estrategia que el cliente quiere aplicar", "Valor", "Norma", "Ahorro estimado"]],
+        body: estrategias.map((s) => [pdfTxt(s.titulo), pdfTxt(s.valor), pdfTxt(s.norma), MMpdf(s.ahorro)]), columnStyles: { 3: { halign: "right" } } });
+      y = doc.lastAutoTable.finalY + 8;
+    } else { titulo("Estrategias que el cliente quiere aplicar"); lista(["Ninguna marcada todavía"]); }
+
+    if (patrimonio && !patrimonio.sociedad) { titulo("Impuesto al patrimonio");
+      lista([`Patrimonio líquido al 1 de enero de ${patrimonio.anoA}: ${MMpdf(patrimonio.patA)} (umbral ${MMpdf(patrimonio.umbral)})`,
+        patrimonio.aplica ? `Impuesto ${patrimonio.anoA} estimado: ${MMpdf(patrimonio.impA)}` : "Por debajo del umbral",
+        `Al 1 de enero de ${patrimonio.anoB}, si sigue la tendencia: ${MMpdf(patrimonio.patB)}${patrimonio.impB > 0 ? `, impuesto estimado ${MMpdf(patrimonio.impB)}` : ""}`]); }
+
+    titulo("Preguntas para revisar"); lista(preguntas);
+    titulo("Aviso legal"); doc.setFontSize(8); doc.setTextColor(...GRAY);
+    doc.splitTextToSize(pdfTxt(AVISO_LEGAL_GO), W - M * 2).forEach((ln) => { salto(4); doc.text(ln, M, y); y += 3.6; });
+  }, pdfTxt("Documento generado por FINPATHIA. Estimación de referencia; no es asesoría tributaria. Validar con un contador público."));
+}

@@ -96,6 +96,8 @@ Formato de respuesta para F-210 (natural):
     "patrimonioLiquido": número,
     "impuestoCalculado": número (renglón impuesto sobre renta líquida gravable),
     "retefuente": número (retenciones practicadas al contribuyente),
+    "anticipoAnoAnterior": número (anticipo de renta liquidado el año anterior, que se resta este año),
+    "anticipoAnoSiguiente": número (anticipo de renta para el año gravable siguiente),
     "saldoPagar": número (si positivo: pagar; si saldo a favor, ponlo en negativo),
     "descDonaciones": número (descuentos por donaciones art 257 ET),
     "descCTI": número (ciencia/tecnología/innovación art 256 ET)
@@ -126,6 +128,8 @@ Formato de respuesta para F-110 (jurídica):
     "descCTI": número (Art. 256),
     "impuestoNeto": número (después de descuentos),
     "autorretencion": número,
+    "anticipoAnoAnterior": número (anticipo liquidado el año anterior, que se resta este año),
+    "anticipoAnoSiguiente": número (anticipo de renta para el año gravable siguiente),
     "saldoPagar": número
   },
   "confianza": "alta" | "media" | "baja"

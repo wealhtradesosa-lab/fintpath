@@ -32,10 +32,11 @@ const PensionesColpensiones = lazy(() => import("./components/PensionesColpensio
 const BorradorDeclaracionF110 = lazy(() => import("./components/BorradorDeclaracionF110"));
 const TaxOptimizerUS = lazy(() => import("./components/TaxOptimizerUS"));
 const OptimizadorGananciaOcasional = lazy(() => import("./components/OptimizadorGananciaOcasional"));
+const EstimadoRenta = lazy(() => import("./components/EstimadoRenta"));
+const HistorialDeclaraciones = lazy(() => import("./components/HistorialDeclaraciones"));
 const DashboardUS = lazy(() => import("./components/DashboardUS"));
 const AssetsModuleUS = lazy(() => import("./components/AssetsModuleUS"));
 const VistaFamiliarConsolidada = lazy(() => import("./components/VistaFamiliarConsolidada"));
-const DashboardFiscal = lazy(() => import("./components/DashboardFiscal"));
 const EstrategiaTributaria = lazy(() => import("./components/EstrategiaTributaria"));
 const AsesorIA = lazy(() => import("./components/AsesorIA"));
 const MetasModule = lazy(() => import("./components/MetasModule"));
@@ -2204,7 +2205,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Declaraciones anteriores",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:isUS||((u?.owners||[]).length<=1)},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Historial de declaraciones",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
       // datos siguen vivos) y los absorbe Mi plan. Flujo Anual (el desempeño
       // del año completo) y el Simulador del año siguiente se quedan: son el
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
@@ -3587,13 +3588,19 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // Sin tabs, sin modos paralelos. Vista familiar y declaraciones
       // anteriores se acceden desde el menú lateral como entradas separadas.
       // ─────────────────────────────────────────────────────────────────
-      return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><DeclaracionFlow
+      // 29-oct-2026 (Santiago: "el módulo de impuestos es muy complicado… necesito
+      // estimar cuánto voy a pagar"). Impuestos abre «Lo que viene»: parte de la
+      // última declaración de cada titular y solo pregunta qué cambió. El borrador
+      // detallado desde cero sigue en "taxdet" para quien lo necesite.
+      return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onNavigate={setPg}/>
+        <button type="button" onClick={()=>setPg("taxdet")} style={{marginTop:12,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:12,textDecoration:"underline"}}>¿Prefieres el borrador detallado, renglón por renglón? Ábrelo aquí</button></>);
+    }
+    case"taxdet":return isUS?null:gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><DeclaracionFlow
         user={u}
         estimacion={estimarImpuesto(u)}
         onUpdateUser={(newUser)=>setU(newUser)}
         ano={DEFAULT_AG}
       /></>);
-    }
     case"famtax":return gated("tax","Pro",<VistaFamiliarConsolidada
       user={u}
       estimacion={estimarImpuesto(u)}
@@ -3602,12 +3609,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     />);
     case"taxopt":return gated("tax","Pro",<TaxOptimizerUS user={u}/>);
     case"gocasional":return gated("tax","Pro",<OptimizadorGananciaOcasional u={u} onGuardar={(lista)=>upd("calculosGO",lista)}/>);
-    case"prevtax":return gated("tax","Pro",<DashboardFiscal
+    case"prevtax":return gated("tax","Pro",<HistorialDeclaraciones
       user={authUser}
       u={u}
       owners={(u&&u.owners)||[]}
-      estimacion={estimarImpuesto(u)}
-      warnings={getFiscalWarnings(u)}
       onNavigate={setPg}
       onSaveDeclaracion={(ownerId,declaracion)=>{
         const owners=(u&&u.owners||[]).map(o=>{
@@ -3617,21 +3622,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           const idxMismoAno=actuales.findIndex(d=>Number(d?.anoGravable)===anoNuevo);
           if(idxMismoAno>=0){actuales[idxMismoAno]=declaracion}else{actuales.push(declaracion)}
           actuales.sort((a,b)=>(Number(b?.anoGravable)||0)-(Number(a?.anoGravable)||0));
-          return{...o,declaraciones:actuales.slice(0,3)};
+          // 29-oct-2026: 4 años (antes 3) para ver tendencia en el historial.
+          return{...o,declaraciones:actuales.slice(0,4)};
         });
         upd("owners",owners);
         const ow=owners.find(o=>o.id===ownerId);
         const n=ow?.declaraciones?.length||0;
-        showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/3 años)");
-      }}
-      onMarkReviewed={(reviewKey)=>{
-        const fr={...((u&&u.fiscalReviewed)||{}),[reviewKey]:{revisadoEn:new Date().toISOString()}};
-        upd("fiscalReviewed",fr);
-      }}
-      onUnmarkReviewed={(reviewKey)=>{
-        const fr={...((u&&u.fiscalReviewed)||{})};
-        delete fr[reviewKey];
-        upd("fiscalReviewed",fr);
+        showToast("✅ Declaración guardada en "+(ow?.name||"owner")+" ("+n+"/4 años)");
       }}
       isPro={hasProAccess}
       onUpsell={()=>setPg("price")}
