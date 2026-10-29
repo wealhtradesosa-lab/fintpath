@@ -277,6 +277,21 @@ export default function OptimizadorGananciaOcasional({ u }) {
         </>
       )}
 
+      {/* 28-oct-2026 (Santiago): "de acuerdo a la fecha de escritura puede tener más
+          oportunidades… los cambios de año es bueno aprovecharlos". */}
+      <div style={{ ...card, marginBottom: 12, borderColor: Cα.accent25 }}>
+        <div style={{ ...F.h2, marginBottom: 4 }}>📅 La fecha de la escritura también ahorra</div>
+        <div style={{ ...F.caption, marginBottom: 10 }}>El año en que firmas cambia qué valores cuentan. Si tienes margen para escoger la fecha, planéala con tiempo.</div>
+        <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8, ...F.body }}>
+          <li><b style={{ color: C.text }}>Cada enero cambia el avalúo que cuenta.</b> Firmas en {f.anoVenta} → cuenta el avalúo {f.anoVenta - 1}. Firmas en enero de {f.anoVenta + 1} → cuenta el avalúo {f.anoVenta}. Compara los dos recibos del predial: si el nuevo es mayor, esperar unas semanas puede bajar el impuesto (Art. 72).</li>
+          <li><b style={{ color: C.text }}>Subir el avalúo se planea con un año de anticipación.</b> Donde el predial se declara (como Bogotá) puedes declarar un autoavalúo mayor; en otras ciudades se le pide al catastro una autoestimación. Ese valor cuenta para ventas del año siguiente, no del mismo año, y sube el predial. Un avalúo comercial de perito no sirve.</li>
+          <li><b style={{ color: C.text }}>Cada año suma un reajuste más.</b> El costo por compra se reajusta con el porcentaje del año de la venta (Art. 70 para empresas, factor del Art. 73 para personas), así que vender un año después también sube un poco el costo.</li>
+          <li><b style={{ color: C.text }}>Los 2 años cambian la tarifa.</b> Si te falta poco para cumplir 2 años con el inmueble, esperar a cumplirlos pasa de renta normal (hasta 39% o 35%) a ganancia ocasional (15%). Cuenta desde la fecha de la escritura de compra.</li>
+          <li><b style={{ color: C.text }}>Junta las pérdidas en el mismo año.</b> Si vas a vender otro activo que perdió valor, hazlo el mismo año de esta escritura para restarlo.</li>
+        </ul>
+        <div style={{ ...F.caption, marginTop: 10 }}>Lo que define el año es la escritura, no la promesa de compraventa. Si recibes anticipos antes, confirma con tu contador cuándo se reconoce el ingreso.</div>
+      </div>
+
       <div style={{ ...card, marginBottom: 12 }}>
         <div style={{ ...F.label, marginBottom: 8 }}>Antes de firmar</div>
         <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 6, ...F.body }}>
