@@ -147,6 +147,17 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
       <PageHeader label="Impuestos · calculadora de declaración" title="¿Cuánto me va a tocar pagar de renta?" accent="renta" compact
         subtitle="Partimos de la última declaración que hizo tu contador y solo te preguntamos qué cambió. Así el cálculo conserva todo lo que él ya aplicó." />
 
+      {(() => { const y = new Date().getFullYear(); return (
+        <div style={{ ...card, background: Cα.accent08, borderColor: Cα.accent25, display: "grid", gap: 6 }}>
+          <div style={F.h3}>📅 Para qué sirve este cálculo</div>
+          <div style={{ ...F.body, color: C.text }}>
+            Aquí calculas la <b>renta de {y}</b> (lo que estás ganando este año), que <b>se declara y se paga en {y + 1}</b>.
+            {" "}Ese resultado es el que usa el <button type="button" onClick={() => onNavigate?.("simf")} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Simulador {y + 1}</button> para proyectar tu flujo de caja de ese año.
+          </div>
+          <div style={F.caption}>Los impuestos que pagas en {y} salen de tu declaración {y - 1}, que ya presentaste: esos los usa el simulador del año actual.</div>
+        </div>
+      ); })()}
+
       <Bienvenida
         titulo="En tres minutos sabes cuánto vas a pagar y cuánta plata tener lista"
         potencial={[
@@ -231,6 +242,9 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
         <Panel titulo={`4. Tu cuenta: cuánto te toca pagar en ${e.anoEst + 1}`} sub={`Renta del año ${e.anoEst}, que se declara y paga en ${e.anoEst + 1}. Así se llega al número, renglón por renglón.`}>
           <Cuenta e={e} ahorro={ahorro} />
+          <div style={{ ...F.body, marginTop: 10, color: C.text }}>
+            📈 Este «te toca pagar» de {mm(e.totalAlDeclarar)} es lo que el <button type="button" onClick={() => onNavigate?.("simf")} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Simulador {e.anoEst + 1}</button> pone en el mes en que declaras, para proyectar tu {e.anoEst + 1}.
+          </div>
           <div style={{ ...F.h3, marginTop: 14 }}>¿Por qué cambia?</div>
           <div style={{ ...F.caption, marginTop: 2 }}>Prende o apaga cada cambio para ver cómo queda el impuesto con o sin él.</div>
           <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 6 }}>
