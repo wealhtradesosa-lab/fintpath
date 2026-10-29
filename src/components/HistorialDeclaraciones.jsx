@@ -30,7 +30,12 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
   const [sel, setSel] = useState(vistaInicial || (conDecl || owners[0])?.id || "");
   const [subir, setSubir] = useState(!conDecl);
   const [subirPara, setSubirPara] = useState(null); // titular preseleccionado al subir desde la tabla
-  const abrirSubida = (ownerId) => { setSubirPara(ownerId || null); setSubir(true); };
+  // 29-oct-2026: al tocar «+ Subir» el formulario quedaba debajo de la tabla, fuera de la vista,
+  // y parecía que el botón no hacía nada. Ahora va arriba de la tabla y la pantalla baja hasta él.
+  const abrirSubida = (ownerId) => {
+    setSubirPara(ownerId || null); setSubir(true);
+    setTimeout(() => document.getElementById("subir-declaracion")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  };
   const owner = owners.find((o) => o.id === sel);
   const total = owners.reduce((a, o) => a + declaracionesOrdenadas(o).length, 0);
 
@@ -56,16 +61,19 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
         accion={total ? null : { label: "Subir la primera declaración", onClick: () => abrirSubida(sel !== "grupo" ? sel : null) }}
       />
 
-      {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} onBorrar={onDeleteDeclaracion} />}
-
       {subir && (
-        <Panel titulo="Subir una declaración" sub="El PDF del formulario 210 (personas) o 110 (empresas). Lo leemos solo; revisas los valores y lo guardas en el titular.">
+        <div id="subir-declaracion" />
+      )}
+      {subir && (
+        <Panel titulo={subirPara ? `Subir una declaración de ${owners.find((o) => o.id === subirPara)?.name || ""}` : "Subir una declaración"} sub="El PDF del formulario 210 (personas) o 110 (empresas). Lo leemos solo; revisas los valores y lo guardas en el titular.">
           <DeclaracionUpload key={subirPara || "todos"} user={user} isPro={isPro} onUpsell={onUpsell}
             owners={subirPara ? [...owners.filter((o) => o.id === subirPara), ...owners.filter((o) => o.id !== subirPara)] : owners}
             onSaveToOwner={(ownerId, declaracion) => { onSaveDeclaracion(ownerId, declaracion); setSel(ownerId); setSubir(false); }} />
           <button type="button" onClick={() => setSubir(false)} style={{ ...F.h3, marginTop: 8, background: "none", border: "none", color: C.muted, cursor: "pointer" }}>Cerrar</button>
         </Panel>
       )}
+      {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} onBorrar={onDeleteDeclaracion} />}
+
 
       {owners.length > 0 && <Panel titulo="¿Qué quieres ver?"><SelectorTitular owners={owners} value={sel} onChange={setSel} /></Panel>}
 
