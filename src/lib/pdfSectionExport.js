@@ -586,9 +586,9 @@ export async function exportGananciaOcasionalPDF(r, datos) {
   const jur = datos.titular === "juridica";
   const GREEN = [22, 163, 74], RED = [220, 38, 38];
 
-  await build(buildFilename("Ganancia ocasional"), (doc, autoTable) => {
+  await build(buildFilename(pdfTxt(datos._nombre || "Ganancia ocasional")), (doc, autoTable) => {
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
-    let y = chrome(doc, { titulo: "Venta de inmueble · ganancia ocasional" });
+    let y = chrome(doc, { titulo: pdfTxt(datos._nombre || (datos.inmueble ? `Ganancia ocasional · ${datos.inmueble}` : "Venta de inmueble · ganancia ocasional")) });
 
     const salto = (alto) => { if (y + alto > H - 24) { doc.addPage(); y = 20; } };
     const titulo = (t) => {
