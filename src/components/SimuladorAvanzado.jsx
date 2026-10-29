@@ -637,7 +637,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
         if (g.sim === false) return;
         // NUEVO: promedio mensualizado según frecuencia
         // Ej: impuesto anual $12M → cuenta como $1M/mes en el promedio
-        const monto = montoPromedioMensual(g);
+        const monto = montoPromedioMensual(g) * (g.moneda === "USD" ? trm : 1); // gastos en dólares, a pesos (como el Dashboard)
         if (cat === "Seguridad Social") aportesObligatorios += monto;
         else gastosFamiliares += monto;
       });
@@ -809,7 +809,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       });
       gasWithOverrides.forEach(g => {
         if (g.sim === false) return;
-        const monto = montoDelMes(g, añoActual, mes);
+        const monto = montoDelMes(g, añoActual, mes) * (g.moneda === "USD" ? trm : 1);
         if (cat === "Seguridad Social") aportesObligatoriosMes += monto;
         else gastosFamiliaresMes += monto;
       });
@@ -1008,7 +1008,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       Object.entries(user.gastos || {}).forEach(([cat, items]) => {
         (items || []).forEach((g, gi) => {
           if (g.sim === false) return;
-          const monto = montoDelMes({ ...g, m: ov(`gf_${cat}_${gi}`, g.m || 0) }, año, mes);
+          const monto = montoDelMes({ ...g, m: ov(`gf_${cat}_${gi}`, g.m || 0) }, año, mes) * (g.moneda === "USD" ? trm : 1);
           if (cat === "Seguridad Social") aportesObl += monto;
           else gastosFam += monto;
         });
@@ -2511,10 +2511,18 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                 const base = (Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1);
                 return { nombre: i.nombre || i.fuente || "Ingreso", valor: montoDelMes({ ...i, mensual: base }, simTMes.añoActual, simTMes.mes) };
               });
-            const gastosCats = Object.entries(user.gastos || {})
+            // 29-oct-2026 (Santiago: "veo el arriendo en 16 MM cuando en diciembre pago 10"):
+            // los gastos en dólares no se pasaban a pesos ni se tomaban los deslizadores, y
+            // «Inmueble arrendado» (gastos de los inmuebles que el usuario arrienda) se leía
+            // como si fuera su arriendo. Ahora: en pesos, con deslizadores, nombre claro y detalle.
+            const NOMBRE_CAT = { "Inmueble arrendado": "Gastos de inmuebles que arriendas", "Vivienda": "Vivienda (incluye tu arriendo)" };
+            const itemsMes = Object.entries(user.gastos || {})
               .filter(([cat]) => cat !== "Seguridad Social")
-              .map(([cat, its]) => [cat, (its || []).filter((g) => g.sim !== false)
-                .reduce((s, g) => s + montoDelMes(g, simTMes.añoActual, simTMes.mes), 0)]);
+              .map(([cat, its]) => [cat, (its || []).map((g, gi) => g.sim === false ? null : ({
+                nombre: g.c || g.n || g.nombre || cat,
+                valor: montoDelMes({ ...g, m: getVal(`gf_${cat}_${gi}`, g.m || 0) }, simTMes.añoActual, simTMes.mes) * (g.moneda === "USD" ? trm : 1),
+              })).filter((x) => x && x.valor > 0)]);
+            const gastosCats = itemsMes.map(([cat, its]) => [NOMBRE_CAT[cat] || cat, its.reduce((s0, x) => s0 + x.valor, 0)]);
             return (
               <div>
                 <SankeyFlujo
@@ -2526,11 +2534,29 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                   aportes={simTMes.aportesObligatoriosMes}
                   cuotas={simTMes.cuotasDeudasMes}
                   gastosCats={gastosCats}
+                  labels={{ impuesto: `Saldo declaración ${simTMes.añoActual - 1}`, impuestoNota: `renta del año anterior (${simTMes.añoActual - 1})` }}
                   cashFlow={simTMes.cashFlowMes}
                   subtitulo={`${(MESES.find((m) => m.v === simTMes.mes) || {}).l || ""} ${simTMes.añoActual}.`}
                   fmt={fmt}
                   T={{ card: T.card, border: T.border, tx: T.txt, tx2: T.txt2, tx3: T.txt3 }}
                 />
+                <details style={{ marginTop: 10 }}>
+                  <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#3b82f6" }}>Ver los gastos de {(MESES.find((m) => m.v === simTMes.mes) || {}).l || "este mes"} uno por uno</summary>
+                  <div style={{ display: "grid", gap: 10, marginTop: 8 }}>
+                    {itemsMes.filter(([, its]) => its.length).sort((x, y) => y[1].reduce((a2, b2) => a2 + b2.valor, 0) - x[1].reduce((a2, b2) => a2 + b2.valor, 0)).map(([cat, its]) => (
+                      <div key={cat}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 700, color: T.txt }}>
+                          <span>{NOMBRE_CAT[cat] || cat}</span><span style={{ fontFamily: "monospace" }}>{fmt(its.reduce((a2, b2) => a2 + b2.valor, 0))}</span>
+                        </div>
+                        {its.map((x, k) => (
+                          <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: T.txt3, paddingLeft: 12 }}>
+                            <span>{x.nombre}</span><span style={{ fontFamily: "monospace" }}>{fmt(x.valor)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </details>
               </div>
             );
           })()}

@@ -41,7 +41,7 @@ const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "
 
 export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners = [], detalle = [], onNavigate, onGuardarDeclaracion, onCambiarMes }) {
   const hoy = new Date().getFullYear();
-  const [abrir, setAbrir] = useState(false);
+  const [abrir, setAbrir] = useState(modo === "actual"); // si falta la declaración, el formulario se ve de una
   if (!owners.length) return null;
   const cs = Object.values(cal);
   const sinBase = owners.filter((o) => !cs.some((c) => c.ownerId === o.id && (modo !== "actual" || c.real)));
@@ -50,7 +50,7 @@ export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners =
     <div style={{ ...F.body, color: C.text, background: Cα.accent08, border: `1px solid ${Cα.accent25}`, borderRadius: R.md, padding: "12px 14px", marginBottom: 14 }}>
       {modo === "actual" ? (
         <>
-          <div><b>🧾 Los impuestos de {hoy} se corren sobre tu declaración del año anterior ({hoy - 1}).</b></div>
+          <div><b>🧾 El impuesto de este simulador corresponde a tu declaración de renta del año anterior ({hoy - 1}).</b></div>
           <div style={{ marginTop: 4 }}>Lo que pagas este año es real: las retenciones de cada mes y el saldo que pagaste al declarar {hoy - 1}. La renta que estás ganando en {hoy} se declara y se paga en {hoy + 1}: esa se estima en la {link("Calculadora de declaración", "taxcalc")} y se ve en el {link(`Simulador ${hoy + 1}+`, "simf")}.</div>
         </>
       ) : (
@@ -96,9 +96,9 @@ export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners =
         </details>
       )}
       {sinBase.length > 0 && (
-        <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${Cα.accent25}` }}>
+        <div style={{ marginTop: 10, padding: 10, background: Cα.warn08, border: `1px solid ${Cα.warn25}`, borderRadius: R.md }}>
           <div style={F.body}>
-            <b>Falta la declaración {hoy - 1} de:</b> {sinBase.map((o) => o.name).join(", ")}. Mientras tanto usamos un cálculo aproximado.
+            <b>⚠️ Clave para la simulación — falta la declaración {hoy - 1} de:</b> {sinBase.map((o) => o.name).join(", ")}. Mientras tanto usamos un cálculo aproximado.
             {" "}{link("Subir el PDF en Historial", "prevtax")} o, si no lo tienes a mano,{" "}
             <button type="button" onClick={() => setAbrir(!abrir)} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>escribe lo que pagaste</button>.
           </div>
