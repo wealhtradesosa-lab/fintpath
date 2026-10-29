@@ -240,6 +240,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
           </Grid>
         </Panel>
 
+        <div id="tu-cuenta" />
         <Panel titulo={`4. Tu cuenta: cuánto te toca pagar en ${e.anoEst + 1}`} sub={`Renta del año ${e.anoEst}, que se declara y paga en ${e.anoEst + 1}. Así se llega al número, renglón por renglón.`}>
           <Cuenta e={e} ahorro={ahorro} />
           <div style={{ ...F.body, marginTop: 10, color: C.text }}>
@@ -587,10 +588,19 @@ function TablaIngresos({ e, r, registrados, onChange }) {
   return (
     <div style={{ background: C.raised, borderRadius: R.lg, padding: 14 }}>
       <div style={F.h3}>Así estaban tus ingresos en {e.ano} · ¿qué cambia en {e.anoEst}?</div>
+      <ol style={{ display: "flex", flexWrap: "wrap", gap: 8, listStyle: "none", padding: 0, margin: "10px 0 4px" }}>
+        {[[`${e.ano}: ¿de dónde venían tus ingresos?`, repartido > 0 || !modoReparto], [`${e.anoEst}: ¿qué sigue igual, qué cambió, qué es nuevo?`, filas.some((f) => f.estado !== "sigue" || (!f.declarada && !f.plantilla && !f.grupo))], ["Resultado: cuánto ganas y cuánto pagas", false]].map(([t, ok], i) => (
+          <li key={t} style={{ flex: "1 1 220px", display: "flex", gap: 8, alignItems: "center", background: C.surface, border: `1px solid ${ok ? Cα.ok25 : C.border}`, borderRadius: R.md, padding: "8px 10px" }}>
+            <span style={{ ...F.h3, minWidth: 22, height: 22, borderRadius: R.pill, display: "inline-flex", alignItems: "center", justifyContent: "center", background: ok ? C.ok : C.raised, color: ok ? C.bg : C.muted }}>{ok ? "✓" : i + 1}</span>
+            <span style={{ ...F.body, color: C.text }}>{t}</span>
+          </li>
+        ))}
+      </ol>
       {modoReparto && (
         <div style={{ ...card, background: C.surface, marginTop: 8 }}>
           <div style={F.label}>Paso 1 · Así estaba {e.ano}</div>
           <div style={{ ...F.h2, marginTop: 4 }}>En {e.ano} tuviste ingresos por {mm(e.brutos)}. ¿Cómo estaban distribuidos?</div>
+          <div style={{ marginTop: 8 }}><Aviso tipo="info"><b>Lo ideal es que esto salga solo de tu declaración.</b> Tu PDF se leyó antes de que separáramos los ingresos por tipo. Vuelve a subirlo una vez y aquí aparecerá «En {e.ano} tenías {mm(e.brutos)}: salario tanto, honorarios tanto, arriendos tanto…»; tú solo dirías qué cambió. Si no lo tienes a mano, repártelo abajo con tus números.</Aviso></div>
           <p style={{ ...F.caption, margin: "4px 0 10px" }}>Pon cuánto recibías de cada cosa, al mes o al año. Lo que no tenías déjalo en cero. Así ves de dónde salieron esos {mm(e.brutos)}.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "10px 16px" }}>
             {filas.filter((f) => f.plantilla).map((f) => (
@@ -608,13 +618,13 @@ function TablaIngresos({ e, r, registrados, onChange }) {
               <b>Repartiste {mm(repartido - e.brutos)} más de lo que dice tu declaración.</b> Puede pasar si algún ingreso estaba a nombre de otra persona o de una empresa, si «otros ingresos» incluye plata que no es renta tuya (préstamos, aportes de una sociedad), o si el monto real fue distinto. Para comparar con {e.anoEst} usamos lo que repartiste; revísalo con tu contador.
             </Aviso></div>
           )}
-          <div style={{ ...F.caption, marginTop: 6 }}>¿Prefieres que lo traigamos solo? Vuelve a subir el PDF de la declaración en Historial: ahora la leemos separada por tipo.</div>
         </div>
       )}
       {modoReparto && (
         <div style={{ marginTop: 14 }}>
           <div style={F.label}>Paso 2 · {e.anoEst}</div>
           <div style={{ ...F.h2, marginTop: 4 }}>De eso, ¿qué sigue igual, qué cambió o ya no llega? ¿Qué llegó nuevo?</div>
+          <p style={{ ...F.body, margin: "6px 0 0" }}>En cada línea toca un botón. <b style={{ color: C.text }}>Igual</b>: lo sigues recibiendo como antes. <b style={{ color: C.text }}>Cambia</b>: escribe cuánto recibes ahora. <b style={{ color: C.text }}>Ya no</b>: dejó de llegar. Ejemplo: si las comisiones se acabaron, «Ya no»; si te subieron el salario, «Cambia» y el nuevo valor. Si entró algo que antes no tenías, usa «+ Agregar ingreso nuevo» al final.</p>
           {repartido === 0 && <p style={{ ...F.caption, marginTop: 6 }}>Primero reparte arriba tus ingresos de {e.ano}; aquí aparecerán para decir qué pasa con cada uno.</p>}
         </div>
       )}
@@ -672,7 +682,7 @@ function TablaIngresos({ e, r, registrados, onChange }) {
       </div>
       <div style={{ ...card, marginTop: 14, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <div style={F.label}>Resultado: tus ingresos con estos cambios</div>
+          <div style={F.label}>Paso 3 · Resultado: tus ingresos con estos cambios</div>
           <div style={{ ...F.monoLg, marginTop: 4 }}>{mm(piso)} → {mm(e.ingresosEst)}</div>
           <div style={{ ...F.caption, marginTop: 2 }}>{e.ano} {Math.abs(piso - e.brutos) > e.brutos * 0.02 ? `según tu reparto (la declaración dice ${mm(e.brutos)})` : "declarado"} → {e.anoEst} estimado · {Math.abs(dv) < 0.005 ? "iguales" : `${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}%`}</div>
           <div style={{ display: "grid", gap: 2, marginTop: 8, ...F.body }}>
@@ -686,6 +696,7 @@ function TablaIngresos({ e, r, registrados, onChange }) {
           Lo que «sigue igual» sube con la inflación (~5%)
         </label>
       </div>
+      <button type="button" onClick={() => document.getElementById("tu-cuenta")?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ marginTop: 10, height: 42, padding: "0 16px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Ver cuánto me toca pagar ↓</button>
     </div>
   );
 }
