@@ -37,7 +37,9 @@ function LoQuePague({ owner, ano, onGuardar }) {
   );
 }
 
-export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners = [], detalle = [], onNavigate, onGuardarDeclaracion }) {
+const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners = [], detalle = [], onNavigate, onGuardarDeclaracion, onCambiarMes }) {
   const hoy = new Date().getFullYear();
   const [abrir, setAbrir] = useState(false);
   if (!owners.length) return null;
@@ -56,6 +58,25 @@ export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners =
           <div><b>🧾 Los impuestos de {hoy + 1} en adelante son estimados.</b></div>
           <div style={{ marginTop: 4 }}>Salen de la {link("Calculadora de declaración", "taxcalc")}: la renta de {hoy}, que se declara y paga en {hoy + 1}, calculada desde tu declaración {hoy - 1} y lo que le dijiste que cambia.</div>
         </>
+      )}
+      {onCambiarMes && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${Cα.accent25}` }}>
+          <div style={F.body}><b>El saldo no se paga cada mes:</b> sale de un golpe en el mes en que declaras. Las retenciones sí van mes a mes. ¿En qué mes declara cada uno?</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 8 }}>
+            {owners.map((o) => {
+              const jur = o.type === "juridica";
+              const m = Number(o.mesDeclaracion) || (jur ? 5 : 9);
+              return (
+                <label key={o.id} style={{ display: "grid", gap: 4, minWidth: 200 }}>
+                  <span style={F.caption}><b style={{ color: C.text }}>{o.name}</b> · {jur ? "primera cuota (la segunda, dos meses después)" : "según los dos últimos dígitos de la cédula"}</span>
+                  <select value={m} onChange={(ev) => onCambiarMes(o.id, Number(ev.target.value))} style={{ ...inp, cursor: "pointer" }}>
+                    {(jur ? [4, 5, 6] : [8, 9, 10]).map((k) => <option key={k} value={k}>{MESES[k - 1]}{jur ? ` y ${MESES[k + 1]}` : ""}</option>)}
+                  </select>
+                </label>
+              );
+            })}
+          </div>
+        </div>
       )}
       {detalle.length > 0 && (
         <details style={{ marginTop: 8 }}>

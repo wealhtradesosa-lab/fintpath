@@ -28,7 +28,7 @@ import {
 } from "recharts";
 import PageHeader from "./PageHeader";
 import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto, rangoEfectivo } from "../lib/flowHelpers.js";
-import { estimarImpuestoReferente, calibracionReferente } from "../lib/impuestoReferente";
+import { estimarImpuestoReferente, calibracionReferente, saldoImpuestoDelMes } from "../lib/impuestoReferente";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 
@@ -93,7 +93,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       retencionAnual += (td.reteN || 0);
     });
     const retencionMes = Math.round(retencionAnual / 12);
-    const impuestoNetoMes = Math.max(0, Math.round((impuestoBrutoAnual - retencionAnual) / 12));
+    // El saldo de la declaración no se paga cada mes: sale de un golpe en el mes que le toca a cada titular.
+    const impuestoNetoEnMes = (mes) => Math.round(saldoImpuestoDelMes(taxData?.detalle, user?.owners, mes));
 
     // 27-sep-2026 (Santiago: "ya pagué el crédito de libre inversión y me
     // aparece todavía en diciembre con una cuota de 2.500.000 por pagar").
@@ -146,6 +147,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
 
       const cuotasDeudasMes = cuotaDeudasEnMes(mes);
       const disponible = ingresosMes - retencionMes;
+      const impuestoNetoMes = impuestoNetoEnMes(mes);
       const egresosMes = aportesObligatorios + gastosFamiliares + cuotasDeudasMes + impuestoNetoMes;
       const cashFlow = disponible - egresosMes;
 

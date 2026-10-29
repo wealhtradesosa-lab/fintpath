@@ -5,7 +5,7 @@ import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics
 import Disclaimer from "./Disclaimer";
 import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
-import { estimarImpuestoReferente } from "../lib/impuestoReferente";
+import { estimarImpuestoReferente, mesesDePago } from "../lib/impuestoReferente";
 import SankeyFlujo from "./SankeyFlujo";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
@@ -676,6 +676,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
     let impuestoBrutoAnual = 0;
     let retencionAnual = 0;
+    const saldoPorMes = Array(12).fill(0);
     (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
       const anualBase = isOpt
@@ -685,10 +686,16 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const simImpBrutoMes = gv(`tax_${td.name}`, mesBase);
       impuestoBrutoAnual += simImpBrutoMes * 12;
       retencionAnual += (td.reteN || 0);
+      // El saldo sale en el mes de la declaración de ese titular, no repartido en 12.
+      const saldoOwner = Math.max(0, simImpBrutoMes * 12 - (td.reteN || 0));
+      const ow = (user.owners || []).find((o) => o.name === td.name) || { type: td.type };
+      for (const p of mesesDePago(ow)) saldoPorMes[p.mes - 1] += saldoOwner * p.fraccion;
     });
 
     const retencionMensual = Math.round(retencionAnual / 12);
     const impuestoBrutoMensual = Math.round(impuestoBrutoAnual / 12);
+    // Promedio mensual para las cifras del año; el detalle mes a mes (saldoPorMes) dice en qué
+    // mes sale de verdad el saldo de cada declaración (29-oct-2026).
     const impuestoNeto = Math.max(0, Math.round((impuestoBrutoAnual - retencionAnual) / 12));
 
     // ─── PASO 5: Consolidación (Disponible → Cash Flow) ─────────────────
@@ -736,6 +743,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       cuotasDeudas,
       impuestoBrutoMensual,
       impuestoNeto,
+      saldoPorMes: saldoPorMes.map((x) => Math.round(x)),
       egresosTotales,
       cashFlow,
       independencia,
@@ -819,7 +827,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
     // Retención proporcional al ingreso del mes; impuesto de renta parejo.
     const retencionMes = retencionDelMes(brutoDelMes, simT.brutoTotal || 0, simT.retencionMensual || 0);
-    const impuestoNetoMes = simT.impuestoNeto || 0;
+    // El saldo de la declaración sale en su mes (29-oct-2026), no 1/12 cada mes.
+    const impuestoNetoMes = simT.saldoPorMes ? (simT.saldoPorMes[mes - 1] || 0) : (simT.impuestoNeto || 0);
 
     // Consolidación
     const disponibleMes = brutoDelMes - retencionMes;
@@ -841,7 +850,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       // Delta vs promedio (para mostrar en color)
       deltaVsPromedio: cashFlowMes - (simT.cashFlow || 0),
     };
-  }, [user, simVals, mesVisualizado, getVal, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto, simT.cashFlow]);
+  }, [user, simVals, mesVisualizado, getVal, simT.cuotasDeudas, simT.retencionMensual, simT.impuestoNeto, simT.saldoPorMes, simT.cashFlow]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // expT — LO QUE SE EXPORTA (rehecho 01-sep-2026)
@@ -1027,7 +1036,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
         cuotas += cuotaDeudaDelMes(d, ov(`debt_${di}`, d.pago || d.pg || 0), año, mes, trm);
       });
       const retencion = retencionDelMes(ingresosMes, simT.brutoTotal || 0, simT.retencionMensual || 0);
-      const impNeto = simT.impuestoNeto || 0;
+      // El saldo de la declaración sale en su mes, no 1/12 cada mes (29-oct-2026).
+      const impNeto = simT.saldoPorMes ? (simT.saldoPorMes[mes - 1] || 0) : (simT.impuestoNeto || 0);
       const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto);
       // 14-sep-2026 (Santiago: "es super bueno ver cuánto ha ingresado total
       // en el año, cuánto ha salido y cuánto ha quedado"). El cálculo ya tenía
@@ -1036,7 +1046,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const sale = retencion + aportesObl + gastosFam + cuotas + impNeto;
       return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf, entra, sale };
     });
-  }, [user, getVal, trm, simT.retencionMensual, simT.impuestoNeto, simT.brutoTotal]);
+  }, [user, getVal, trm, simT.retencionMensual, simT.impuestoNeto, simT.saldoPorMes, simT.brutoTotal]);
 
   // ── Baseline (sin overrides de simVals, sin toggle Optimizado) ──
   // Reproduce la misma fórmula de simT pero usando los valores de la data
@@ -1786,7 +1796,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             { label: "A. Aportes obligatorios", sub: "Pensión + salud (independiente)", value: simT.aportesObligatorios || 0, color: "#f59e0b" },
             { label: "B. Gastos familiares", sub: "Vivienda, educación, transporte…", value: simT.gastosFamiliares || 0, color: T.txt2 },
             { label: "C. Cuotas de deudas", sub: "Hipotecas, préstamos, TC", value: simT.cuotasDeudas || 0, color: T.txt2 },
-            { label: "D. Impuesto neto", sub: "Saldo a pagar tras retención", value: simT.impuestoNeto || 0, color: "#a78bfa" },
+            { label: "D. Impuesto neto", sub: "Promedio al mes; el saldo real sale de un golpe en el mes de tu declaración", value: simT.impuestoNeto || 0, color: "#a78bfa" },
           ].map((row, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, opacity: row.value > 0 ? 1 : 0.5 }}>
               <div>

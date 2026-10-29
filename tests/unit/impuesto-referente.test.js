@@ -56,3 +56,19 @@ describe("año actual con la declaración real del año pasado", () => {
     expect(cal.Luis.real).toBeUndefined();
   });
 });
+
+import { mesesDePago, saldoImpuestoDelMes } from "../../src/lib/impuestoReferente.js";
+describe("el saldo se paga en el mes de la declaración", () => {
+  it("persona: un solo pago en su mes; sociedad: dos cuotas", () => {
+    expect(mesesDePago({ type: "natural", mesDeclaracion: 8 })).toEqual([{ mes: 8, fraccion: 1 }]);
+    expect(mesesDePago({ type: "juridica" })).toEqual([{ mes: 5, fraccion: 0.5 }, { mes: 7, fraccion: 0.5 }]);
+  });
+  it("el saldo cae completo en su mes y en cero los demás", () => {
+    const det = [{ name: "Luis", impBruto: 100, reteN: 40 }, { name: "SAS", type: "juridica", impBruto: 200, reteN: 0 }];
+    const owners = [{ name: "Luis", type: "natural", mesDeclaracion: 8 }, { name: "SAS", type: "juridica" }];
+    expect(saldoImpuestoDelMes(det, owners, 8)).toBe(60);
+    expect(saldoImpuestoDelMes(det, owners, 5)).toBe(100);
+    expect(saldoImpuestoDelMes(det, owners, 7)).toBe(100);
+    expect(saldoImpuestoDelMes(det, owners, 3)).toBe(0);
+  });
+});

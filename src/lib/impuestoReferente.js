@@ -97,3 +97,27 @@ export function estimarImpuestoReferente(u, cal) {
   const est = estimarImpuesto(u);
   return aplicarReferente(est, cal || u?._calRef || calibracionReferente(u));
 }
+
+// ─── En qué mes se paga ───────────────────────────────────────────────────
+// 29-oct-2026 (Santiago: "los impuestos no se pagan cada mes: uno paga en el mes que
+// le toca el valor que le toca"). Las retenciones sí salen cada mes (las descuenta
+// quien paga); el saldo de la declaración sale de un golpe:
+//   personas  → un pago, entre agosto y octubre según los dos últimos dígitos de la cédula;
+//   sociedades→ dos cuotas iguales, cerca de mayo y julio (último dígito del NIT).
+// owner.mesDeclaracion (1-12) fija el mes; si no está, persona → septiembre, sociedad → mayo.
+export function mesesDePago(owner) {
+  const jur = owner?.type === "juridica";
+  const m = Number(owner?.mesDeclaracion) || (jur ? 5 : 9);
+  return jur ? [{ mes: m, fraccion: 0.5 }, { mes: Math.min(12, m + 2), fraccion: 0.5 }] : [{ mes: m, fraccion: 1 }];
+}
+/** Saldo del impuesto que se paga en un mes dado (sin retenciones), sumando todos los titulares. */
+export function saldoImpuestoDelMes(detalle, owners, mes) {
+  let total = 0;
+  for (const d of detalle || []) {
+    const saldo = Math.max(0, num(d.impBruto ?? d.impuesto) - num(d.reteN));
+    if (!saldo) continue;
+    const o = (owners || []).find((x) => x.name === d.name) || { type: d.type };
+    for (const p of mesesDePago(o)) if (p.mes === mes) total += saldo * p.fraccion;
+  }
+  return total;
+}
