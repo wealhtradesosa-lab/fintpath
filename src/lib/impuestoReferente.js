@@ -47,7 +47,7 @@ export function calibracionReferente(u, { modo = "actual", hoy = new Date() } = 
       // Lo que sale de la caja este año: retenciones (cada mes) + el saldo de la declaración del año pasado.
       const ret = retencionDeclarada(real), saldo = Math.max(0, num(real.renglones.saldoPagar));
       const renta = ret + saldo;
-      cal[o.name] = { ownerId: o.id, type: o.type || "natural", renta, ret, ano: anoPasado + 1, real: true, impDeclarado: impuestoDeclarado(real),
+      cal[o.name] = { ownerId: o.id, type: o.type || "natural", renta, ret, ano: anoPasado + 1, real: true, impDeclarado: impuestoDeclarado(real), totalAlDeclarar: saldo, anoDeclaracion: anoPasado,
         fImp: mb > renta * 0.05 ? renta / mb : null, fRet: mr > 0 && ret > 0 ? ret / mr : null };
       continue;
     }
@@ -58,6 +58,8 @@ export function calibracionReferente(u, { modo = "actual", hoy = new Date() } = 
     // Si el motor casi no ve ingresos de este titular, no sirve como base de escala: valor absoluto.
     cal[o.name] = {
       ownerId: o.id, type: o.type || (e.nat ? "natural" : "juridica"), renta: e.renta, ret: e.ret, ano: e.anoEst,
+      // Lo que se paga al presentar la declaración de e.anoEst (en e.anoEst + 1): saldo + anticipo del año siguiente.
+      saldo: e.saldo, anticipoSiguiente: e.anticipoSiguiente, totalAlDeclarar: e.totalAlDeclarar, anoDeclaracion: e.anoEst,
       fImp: mb > e.renta * 0.05 ? e.renta / mb : null,
       fRet: mr > 0 && e.ret > 0 ? e.ret / mr : null,
     };
@@ -122,4 +124,37 @@ export function saldoImpuestoDelMes(detalle, owners, mes) {
     for (const p of mesesDePago(o)) if (p.mes === mes) total += saldo * p.fraccion;
   }
   return total;
+}
+
+/**
+ * 29-oct-2026 (Santiago: "en la proyección del año siguiente uno no ve el impuesto del 2026,
+ * el que se generó"; "debería ser por persona natural y por jurídica").
+ * Lo que cada titular paga de UN golpe en el año del simulador por la declaración del año
+ * anterior. Fuente: la calibración (Calculadora o declaración real); si el titular no tiene
+ * declaración, el motor sobre los ingresos de ese año anterior (detalleRespaldo).
+ * Devuelve { titulares: [{name, type, ano, total, saldo, anticipo, fuente, meses}], porMes: [12] }.
+ */
+export function pagosDeclaracion(owners, cal, detalleRespaldo, anoDeclaracion) {
+  const porMes = Array(12).fill(0);
+  const titulares = [];
+  const nombres = new Set([...(owners || []).map((o) => o.name), ...Object.keys(cal || {})]);
+  for (const name of nombres) {
+    const o = (owners || []).find((x) => x.name === name) || { name, type: cal?.[name]?.type };
+    const c = cal?.[name];
+    let total, saldo, anticipo = 0, fuente;
+    if (c && c.totalAlDeclarar != null) {
+      total = Math.max(0, num(c.totalAlDeclarar)); saldo = c.saldo != null ? num(c.saldo) : total; anticipo = num(c.anticipoSiguiente);
+      fuente = c.real ? "real" : "calculadora";
+    } else if (c) {
+      total = Math.max(0, num(c.renta) - num(c.ret)); saldo = total; fuente = c.real ? "real" : "calculadora";
+    } else {
+      const d = (detalleRespaldo || []).find((x) => x.name === name);
+      if (!d) continue;
+      total = Math.max(0, bruto(d) - num(d.reteN)); saldo = total; fuente = "motor";
+    }
+    const meses = mesesDePago(o);
+    for (const m of meses) porMes[m.mes - 1] += total * m.fraccion;
+    titulares.push({ name, type: o.type || "natural", ano: c?.anoDeclaracion ?? anoDeclaracion, total, saldo, anticipo, fuente, meses });
+  }
+  return { titulares, porMes, total: porMes.reduce((a, v) => a + v, 0) };
 }
