@@ -53,13 +53,19 @@ export function calibracionReferente(u, { modo = "actual", hoy = new Date() } = 
     }
     const resp = { ...(u?.estimadoRenta?.[o.id] || {}), goSel: "" };
     if (resp.lista2026 == null) { const l = lista2026DesdeIngresos(u, o.id); if (l.length) resp.lista2026 = l; } // igual que la Calculadora
-    const e = estimarDesdeDeclaracion(o, resp, { calculosGO: calculosGODelTitular(u?.calculosGO, o) });
+    const gos = { calculosGO: calculosGODelTitular(u?.calculosGO, o) };
+    const e = estimarDesdeDeclaracion(o, resp, gos);
     if (!e) continue;
+    // El pago al declarar sí lleva la ganancia ocasional (se paga en la misma declaración):
+    // mismo número que «Te toca pagar» de la Calculadora.
+    const respTodo = { ...(u?.estimadoRenta?.[o.id] || {}) };
+    if (respTodo.lista2026 == null && resp.lista2026) respTodo.lista2026 = resp.lista2026;
+    let eTodo = e; try { eTodo = estimarDesdeDeclaracion(o, respTodo, gos) || e; } catch { /* sin GO */ }
     // Si el motor casi no ve ingresos de este titular, no sirve como base de escala: valor absoluto.
     cal[o.name] = {
       ownerId: o.id, type: o.type || (e.nat ? "natural" : "juridica"), renta: e.renta, ret: e.ret, ano: e.anoEst,
       // Lo que se paga al presentar la declaración de e.anoEst (en e.anoEst + 1): saldo + anticipo del año siguiente.
-      saldo: e.saldo, anticipoSiguiente: e.anticipoSiguiente, totalAlDeclarar: e.totalAlDeclarar, anoDeclaracion: e.anoEst,
+      saldo: eTodo.saldo, anticipoSiguiente: eTodo.anticipoSiguiente, totalAlDeclarar: eTodo.totalAlDeclarar, anoDeclaracion: e.anoEst,
       fImp: mb > e.renta * 0.05 ? e.renta / mb : null,
       fRet: mr > 0 && e.ret > 0 ? e.ret / mr : null,
     };
