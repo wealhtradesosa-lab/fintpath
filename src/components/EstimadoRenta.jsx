@@ -223,13 +223,8 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
           </Grid>
         </Panel>
 
-        <Panel titulo={`4. Su estimado ${e.anoEst}`}>
-          <KpiGrid>
-            <Kpi k="Impuesto estimado" v={mm(e.total)} d={`Rango probable: ${mm(e.rango[0])} – ${mm(e.rango[1])}`} />
-            <Kpi k={`Frente a ${e.ano}`} v={(e.total - e.impBase >= 0 ? "+" : "") + mm(e.total - e.impBase)} d={`${e.ano}: ${mm(e.impBase)}`} color={e.total > e.impBase ? C.danger : C.ok} />
-            <Kpi k="Saldo del impuesto" v={e.saldo >= 0 ? mm(e.saldo) : "A favor " + mm(-e.saldo)} d={`Impuesto − ${e.nat ? "retenciones" : "autorretenciones"} (~${mm(e.ret)}) − anticipo ya pagado (${mm(e.antPagado)})`} />
-            <Kpi k="Total a pagar al declarar" v={mm(e.totalAlDeclarar)} d={`Saldo + anticipo de ${e.anoEst + 1} (~${mm(e.anticipoSiguiente)}, ${Math.round(e.pctA * 100)}% del Art. 807). Es la plata que debes tener lista.`} color={C.warn} />
-          </KpiGrid>
+        <Panel titulo={`4. Tu cuenta: cuánto te toca pagar en ${e.anoEst + 1}`} sub={`Renta del año ${e.anoEst}, que se declara y paga en ${e.anoEst + 1}. Así se llega al número, renglón por renglón.`}>
+          <Cuenta e={e} ahorro={ahorro} />
           <div style={{ ...F.h3, marginTop: 14 }}>¿Por qué cambia?</div>
           <div style={{ ...F.caption, marginTop: 2 }}>Prende o apaga cada cambio para ver cómo queda el impuesto con o sin él.</div>
           <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 6 }}>
@@ -275,6 +270,19 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
           </ul>
         </Panel>
       </>)}
+
+      {e && sel !== "grupo" && (
+        <div style={{ position: "sticky", bottom: 0, zIndex: 5, ...card, padding: "12px 16px", borderColor: Cα.accent25, background: C.surface, boxShadow: "0 -8px 24px rgba(0,0,0,0.35)", display: "flex", flexWrap: "wrap", gap: "8px 24px", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={F.label}>{owner.name} · te toca pagar al declarar en {e.anoEst + 1}</div>
+            <div style={{ ...F.monoXl, color: C.warn }}>{mm(e.totalAlDeclarar)}</div>
+          </div>
+          <div style={{ ...F.caption, display: "grid", gap: 2, textAlign: "right" }}>
+            <span>Impuesto {mm(e.total)} − ya retenido y anticipado {mm(e.ret + e.antPagado)} + anticipo {e.anoEst + 1} {mm(e.anticipoSiguiente)}</span>
+            {ahorro > 0 && <span style={{ color: C.ok, fontWeight: 600 }}>Con las estrategias que marcaste: {mm(Math.max(0, e.totalAlDeclarar - ahorro))}</span>}
+          </div>
+        </div>
+      )}
 
       <p style={F.caption}>Estimación para planear tu flujo de caja, no es una declaración ni asesoría tributaria: tu contador hace la declaración real. Personas: tabla del Art. 241; sociedades: 35% (Art. 240); ganancia ocasional 15%; anticipo Art. 807; impuesto al patrimonio Ley 2277 de 2022.</p>
     </div>
@@ -635,6 +643,52 @@ function PlataPeriodo({ value, onChange, per = "año", onPer }) {
       <div style={{ flex: 1, minWidth: 0 }}><Plata value={mostrado} onChange={(v) => onChange(mes ? Number(v) * 12 : v)} /></div>
       <button type="button" onClick={() => onPer("mes")} style={{ ...b(mes), marginLeft: -1 }}>/mes</button>
       <button type="button" onClick={() => onPer("año")} style={{ ...b(!mes), marginLeft: -1, borderRadius: `0 ${R.md}px ${R.md}px 0` }}>/año</button>
+    </div>
+  );
+}
+
+// La cuenta, como la haría un contador: de los ingresos a lo que hay que pagar al declarar.
+function Cuenta({ e, ahorro }) {
+  const fila = (texto, v, { signo = "", fuerte = false, sub, color, linea } = {}) => (
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", padding: fuerte ? "10px 0" : "7px 0", borderTop: linea ? `1px solid ${C.borderStrong}` : "none" }}>
+      <div>
+        <div style={{ ...(fuerte ? F.h2 : F.body), color: fuerte ? C.text : C.muted }}>{texto}</div>
+        {sub && <div style={F.caption}>{sub}</div>}
+      </div>
+      <div style={{ ...(fuerte ? F.monoLg : F.mono), color: color || (fuerte ? C.text : C.muted), whiteSpace: "nowrap" }}>{signo}{mm(Math.abs(v))}</div>
+    </div>
+  );
+  const noPaga = Math.max(0, e.ingresosEst - e.base);
+  const aFavor = e.saldo < 0;
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+      <div style={{ background: C.raised, borderRadius: R.lg, padding: "6px 16px 10px" }}>
+        <div style={{ ...F.label, padding: "8px 0 4px" }}>1 · Cuánto paga renta</div>
+        {fila(`Tus ingresos de ${e.anoEst}`, e.ingresosEst)}
+        {fila(e.nat ? "Lo que no paga renta: aportes, exentas, deducciones y costos" : "Costos y deducciones", noPaga, { signo: "− ", sub: `Proporción de tu declaración ${e.ano}` })}
+        {fila("Lo que sí paga renta (base gravable)", e.base, { signo: "= ", fuerte: true, linea: true })}
+        {fila(e.nat ? "Impuesto de renta según la tabla (Art. 241)" : "Impuesto de renta (35%)", e.renta, { sub: e.nat ? `Tu tarifa más alta es ${Math.round(e.marginal * 100)}%` : undefined })}
+        {e.go > 0 && fila("Ganancia ocasional de la venta (15%)", e.go, { signo: "+ " })}
+        {fila(`Impuesto total del año ${e.anoEst}`, e.total, { signo: "= ", fuerte: true, linea: true, sub: `Rango probable ${mm(e.rango[0])} – ${mm(e.rango[1])} · en ${e.ano} fue ${mm(e.impBase)}` })}
+      </div>
+      <div style={{ background: C.raised, borderRadius: R.lg, padding: "6px 16px 10px" }}>
+        <div style={{ ...F.label, padding: "8px 0 4px" }}>2 · Cuánto pagas al declarar</div>
+        {fila("Impuesto total", e.total)}
+        {fila(e.nat ? "Lo que ya te retuvieron durante el año" : "Autorretenciones del año", e.ret, { signo: "− ", color: C.ok })}
+        {fila(`Anticipo que ya pagaste para ${e.anoEst}`, e.antPagado, { signo: "− ", color: C.ok })}
+        {fila(aFavor ? "Saldo a tu favor" : "Saldo del impuesto", e.saldo, { signo: "= ", fuerte: true, linea: true, color: aFavor ? C.ok : C.text })}
+        {fila(`Anticipo del año ${e.anoEst + 1}`, e.anticipoSiguiente, { signo: "+ ", sub: `${Math.round(e.pctA * 100)}% que exige la DIAN por adelantado (Art. 807)` })}
+        <div style={{ background: Cα.warn08, border: `1px solid ${Cα.warn25}`, borderRadius: R.md, padding: "10px 12px", marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+          <div style={{ ...F.h2 }}>Te toca pagar al declarar</div>
+          <div style={{ ...F.monoXl, color: C.warn }}>{mm(e.totalAlDeclarar)}</div>
+        </div>
+        {ahorro > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 2px 0", ...F.body }}>
+            <span style={{ color: C.ok, fontWeight: 600 }}>Con las estrategias que marcaste (−{mm(ahorro)})</span>
+            <span style={{ ...F.mono, color: C.ok }}>{mm(Math.max(0, e.totalAlDeclarar - ahorro))}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
