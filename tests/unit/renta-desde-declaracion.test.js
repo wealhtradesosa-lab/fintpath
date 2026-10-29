@@ -181,3 +181,12 @@ describe("tabla de ingresos (sigue / cambia / ya no / nuevo)", () => {
     expect(e.ingresosEst).toBeCloseTo(612e6 * 1.05, -3);
   });
 });
+
+describe("el piso de comparación es lo que el usuario repartió", () => {
+  it("si reparte más de lo declarado y todo sigue igual, no aparece una subida falsa", () => {
+    const filas = [{ id: "a", nombre: "Salario", tipo: "laboral", antes: 400e6, estado: "sigue" }, { id: "b", nombre: "Otros", tipo: "otro", antes: 300e6, estado: "sigue" }];
+    const e = estimarDesdeDeclaracion(persona, { g: 0, filas });
+    expect(e.ingresosAntes).toBeCloseTo(700e6, -3);
+    expect(e.ingresosEst).toBeCloseTo(700e6, -3);
+  });
+});

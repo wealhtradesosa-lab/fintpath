@@ -577,7 +577,8 @@ function TablaIngresos({ e, r, registrados, onChange }) {
   const grupos = {};
   for (const f of filas) if (f.grupo) grupos[f.grupo] = { total: f.total, suma: (grupos[f.grupo]?.suma || 0) + (Number(f.antes) || 0), nombre: grupos[f.grupo]?.nombre || f.nombre };
   const btnSeg = (activo, color) => ({ flex: 1, height: 42, border: `1px solid ${activo ? color : C.border}`, background: activo ? Cα.accent15 : "transparent", color: activo ? C.text : C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer", padding: "0 8px" });
-  const dv = e.brutos ? e.ingresosEst / e.brutos - 1 : 0;
+  const piso = e.ingresosAntes || e.brutos;
+  const dv = piso ? e.ingresosEst / piso - 1 : 0;
   let baja = 0, sube = 0, nuevo = 0; const bajan = [], suben = [], nuevos = [];
   for (const f of filas) {
     const a = Number(f.antes) || 0, d = ahoraDe(f) - a, n = (f.nombre || "Ingreso").trim();
@@ -602,6 +603,11 @@ function TablaIngresos({ e, r, registrados, onChange }) {
             <div style={{ flex: "1 1 220px", height: 8, background: C.raised, borderRadius: R.pill, overflow: "hidden" }}><div style={{ width: `${Math.min(100, (repartido / (e.brutos || 1)) * 100)}%`, height: "100%", background: Math.abs(repartido - e.brutos) < e.brutos * 0.02 ? C.ok : C.accent }} /></div>
             <span style={{ ...F.mono, fontSize: 13 }}>Repartido {mm(repartido)} de {mm(e.brutos)}{repartido < e.brutos * 0.98 ? ` · faltan ${mm(e.brutos - repartido)}` : repartido > e.brutos * 1.02 ? ` · sobran ${mm(repartido - e.brutos)}` : " ✓"}</span>
           </div>
+          {repartido > e.brutos * 1.02 && (
+            <div style={{ marginTop: 8 }}><Aviso>
+              <b>Repartiste {mm(repartido - e.brutos)} más de lo que dice tu declaración.</b> Puede pasar si algún ingreso estaba a nombre de otra persona o de una empresa, si «otros ingresos» incluye plata que no es renta tuya (préstamos, aportes de una sociedad), o si el monto real fue distinto. Para comparar con {e.anoEst} usamos lo que repartiste; revísalo con tu contador.
+            </Aviso></div>
+          )}
           <div style={{ ...F.caption, marginTop: 6 }}>¿Prefieres que lo traigamos solo? Vuelve a subir el PDF de la declaración en Historial: ahora la leemos separada por tipo.</div>
         </div>
       )}
@@ -667,8 +673,8 @@ function TablaIngresos({ e, r, registrados, onChange }) {
       <div style={{ ...card, marginTop: 14, background: Cα.accent08, borderColor: Cα.accent25, display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <div style={F.label}>Resultado: tus ingresos con estos cambios</div>
-          <div style={{ ...F.monoLg, marginTop: 4 }}>{mm(e.brutos)} → {mm(e.ingresosEst)}</div>
-          <div style={{ ...F.caption, marginTop: 2 }}>{e.ano} declarado → {e.anoEst} estimado · {Math.abs(dv) < 0.005 ? "iguales" : `${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}%`}</div>
+          <div style={{ ...F.monoLg, marginTop: 4 }}>{mm(piso)} → {mm(e.ingresosEst)}</div>
+          <div style={{ ...F.caption, marginTop: 2 }}>{e.ano} {Math.abs(piso - e.brutos) > e.brutos * 0.02 ? `según tu reparto (la declaración dice ${mm(e.brutos)})` : "declarado"} → {e.anoEst} estimado · {Math.abs(dv) < 0.005 ? "iguales" : `${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}%`}</div>
           <div style={{ display: "grid", gap: 2, marginTop: 8, ...F.body }}>
             {baja > 0 && <span><b style={{ color: C.warn }}>▼ −{mm(baja)}</b> lo que deja de llegar o baja: {bajan.join(", ")}</span>}
             {sube > 0 && <span><b style={{ color: C.accent }}>▲ +{mm(sube)}</b> lo que sube: {suben.join(", ")}</span>}

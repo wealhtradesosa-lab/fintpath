@@ -167,7 +167,7 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   // Se traduce a «perdidos» (lo que baja) y «nuevos» (lo que sube o llega, con su tipo).
   const filas = Array.isArray(r.filas) && r.filas.length ? r.filas : null;
   let perdidosL = Array.isArray(r.perdidos) ? r.perdidos : [], nuevosL = Array.isArray(r.nuevos) ? r.nuevos : [];
-  let restoBase = null, objetivoFilas = 0;
+  let restoBase = null, objetivoFilas = 0, sumAntesFilas = 0;
   if (filas) {
     perdidosL = []; nuevosL = [];
     let sumAntes = 0;
@@ -181,6 +181,7 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
         etiqueta: antes ? (f.estado === "cambia" ? `${nombre}: ${mm(antes)} → ${mm(ahora)}` : `${nombre}: ajuste por inflación`) : `Nuevo: ${nombre} (${mm(ahora)})` });
     }
     restoBase = Math.max(0, brutos - sumAntes); // lo declarado que no quedó en ninguna línea
+    sumAntesFilas = sumAntes;
   }
   // Ingresos que dejan de recibirse, uno por uno (antes del ajuste por inflación de lo que sigue)
   let perdidoTotal = 0;
@@ -249,7 +250,9 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
 
   return {
     d, nat, ano, anoEst, uvt, uvtBase, impBase, base0, base: b, brutos, renta, go, gc, total,
-    rango: [total * 0.9, total * 1.1], perdidoTotal, ingNuevos, ingresosEst, ret, antPagado, antLeido: r.ant == null && ap.leido, saldo,
+    rango: [total * 0.9, total * 1.1], perdidoTotal, ingNuevos, ingresosEst,
+    // Piso de comparación: con la tabla, lo que el usuario repartió (más lo declarado sin repartir).
+    ingresosAntes: filas ? sumAntesFilas + restoBase : brutos, ret, antPagado, antLeido: r.ant == null && ap.leido, saldo,
     pctA, anticipoSiguiente, totalAlDeclarar, pasos, marginal: nat ? tarifaMarginal241(b, uvt) : TARIFA_SOCIEDADES,
   };
 }
