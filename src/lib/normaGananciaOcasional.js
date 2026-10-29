@@ -85,3 +85,27 @@ export function factorArt73(anoCompra, tipo = "urbano") {
   if (T73[a]) return T73[a][col];
   return 1;
 }
+
+// Reajuste fiscal Art. 70 por año gravable (un decreto cada año). El % del año
+// Y aplica a lo poseído en Y y a las ventas hechas en Y. 2023 = 12,40% (Decreto
+// 0128 de 2024), 2024 = 10,97% (Decreto 0174 de 2025), 2025 = 5,81% (Decreto 0449 de 2026).
+export const PCT_ART70 = {
+  1990: 26.64, 1991: 30.04, 1992: 29.81, 1993: 26.20, 1994: 22.08, 1995: 22.31, 1996: 18.00,
+  1997: 16.00, 1998: 16.00, 1999: 17.07, 2000: 9.36, 2001: 8.96, 2002: 6.00, 2003: 6.00,
+  2004: 6.95, 2005: 6.10, 2006: 4.87, 2007: 5.15, 2008: 7.75, 2009: 3.33, 2010: 2.35,
+  2011: 3.65, 2012: 3.04, 2013: 2.40, 2014: 2.89, 2015: 5.21, 2016: 7.08, 2017: 4.07,
+  2018: 4.07, 2019: 3.36, 2020: 3.90, 2021: 1.97, 2022: 4.67, 2023: 12.40, 2024: 10.97, 2025: 5.81,
+};
+export const ULTIMO_AG_ART70 = 2025;
+
+/** Reajuste Art. 70 acumulado: desde el año siguiente a la compra hasta el último decreto. */
+export function tablaArt70(anoCompra, costo) {
+  const filas = [];
+  let acum = Number(costo) || 0, f = 1;
+  for (let y = Math.max(Number(anoCompra) + 1, 1990); y <= ULTIMO_AG_ART70; y++) {
+    const pct = PCT_ART70[y] || 0;
+    f *= 1 + pct / 100; acum *= 1 + pct / 100;
+    filas.push({ ano: y, pct, costo: acum });
+  }
+  return { factor: f, costo: (Number(costo) || 0) * f, filas };
+}
