@@ -221,7 +221,9 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
         <Panel titulo="3. ¿Qué cambió este año?" sub="Cuéntanos con tus palabras y números. Si algo no cambió, déjalo como está.">
           <Lista2026 e={e} r={r} registrados={lista2026DesdeIngresos(u, owner.id)} onChange={(patch) => set(owner.id, patch)} />
-          <CambioPatrimonio e={e} r={r} onChange={(patrim) => set(owner.id, { patrim })} />
+          <CambioPatrimonio e={e} r={r} onChange={(patrim) => set(owner.id, { patrim })} owner={owner}
+            deudasApp={(u?.deu || []).filter((d) => d && d.owner === owner.id && d.sim !== false).reduce((a, d) => a + (Number(d.mt) || 0) * (d.moneda === "USD" ? (Number(u?.trm) || 4200) : 1), 0)}
+            bienesApp={(u?.inv || []).filter((i) => i && i.owner === owner.id && i.sim !== false).reduce((a, i) => a + (Number(i.va) || 0) * (i.moneda === "USD" ? (Number(u?.trm) || 4200) : 1), 0)} />
           <div style={{ ...F.h3, margin: "18px 0 8px" }}>Otros cambios</div>
           <Grid>
             {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda="Lo que vas a aportar de más frente al año pasado"><Plata value={r.aportes} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
@@ -764,13 +766,13 @@ function Cuenta({ e, ahorro }) {
 }
 
 // Patrimonio: lo que tenías y lo que debías al cierre del año pasado; ¿sigue igual o cambió?
-function CambioPatrimonio({ e, r, onChange }) {
+function CambioPatrimonio({ e, r, onChange, owner, deudasApp = 0, bienesApp = 0 }) {
   const R = e.d.renglones;
   if (R.patrimonioBruto == null && R.deudas == null) return null;
   const pm = r.patrim || {};
   const lineas = [
     ["bienes", "Lo que tienes (bienes, inversiones, cuentas)", Number(R.patrimonioBruto) || 0, "Por ejemplo, compraste o vendiste un inmueble, o crecieron tus inversiones."],
-    ["deudas", "Lo que debes (créditos, hipotecas)", Number(R.deudas) || 0, "Por ejemplo, pagaste un crédito o tomaste uno nuevo."],
+    ["deudas", `Lo que debes tú (${owner?.name || "este titular"}): créditos, hipotecas, tarjetas`, Number(R.deudas) || 0, "Solo deudas a tu nombre; las de tus empresas van en la declaración de cada empresa."],
   ];
   const valor = (k, antes) => (pm[k]?.estado === "cambia" ? Number(pm[k].ahora) || 0 : antes);
   const liqA = (Number(R.patrimonioBruto) || 0) - (Number(R.deudas) || 0);
@@ -786,8 +788,8 @@ function CambioPatrimonio({ e, r, onChange }) {
         const est = pm[k]?.estado || "igual";
         return (
           <div key={k} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(200px, calc((100% - 31px) / 4)), 1fr))", gap: 10, alignItems: "start", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
-            <Campo label="Concepto" ayuda={ej}><div style={{ ...inp, display: "flex", alignItems: "center", color: C.text }}>{nombre}</div></Campo>
-            <Campo label={`Al cierre de ${e.ano}`}><div style={{ ...inp, display: "flex", alignItems: "center", fontFamily: "ui-monospace, Menlo, monospace", color: C.text }}>{mm(antes)}</div></Campo>
+            <Campo label="Concepto" ayuda={ej}><div style={{ ...inp, height: "auto", minHeight: 42, padding: "8px 12px", display: "flex", alignItems: "center", color: C.text, lineHeight: 1.3 }}>{nombre}</div></Campo>
+            <Campo label={`Al cierre de ${e.ano}`} ayuda={`Según tu declaración ${e.ano}. En FINPATHIA tienes a nombre de ${owner?.name || "este titular"}: ${mm(k === "deudas" ? deudasApp : bienesApp)}${k === "bienes" ? " a valor comercial (la declaración usa valor fiscal)" : ""}.`}><div style={{ ...inp, display: "flex", alignItems: "center", fontFamily: "ui-monospace, Menlo, monospace", color: C.text }}>{mm(antes)}</div></Campo>
             <Campo label={`En ${e.anoEst}`}>
               <div style={{ display: "flex" }}>
                 <button type="button" onClick={() => onChange({ ...pm, [k]: { estado: "igual" } })} style={{ ...seg(est === "igual"), borderRadius: `${R.md}px 0 0 ${R.md}px` }}>Igual</button>
