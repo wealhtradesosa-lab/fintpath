@@ -636,7 +636,7 @@ export async function exportGananciaOcasionalPDF(r, datos) {
         ["Precio de venta", fm(datos.venta)],
         ["Año de la escritura de venta", String(datos.anoVenta || "")],
         ...(datos.avaluoAnterior ? [[`Avalúo catastral ${datos.anoVenta - 1}`, fm(datos.avaluoAnterior)]] : []),
-        ...(datos.avaluoSiguiente ? [[`Avalúo catastral ${datos.anoVenta}`, fm(datos.avaluoSiguiente)]] : []),
+        
         ...(datos.mejoras ? [["Mejoras con factura", fm(datos.mejoras)]] : []),
         ...(datos.perdidas ? [["Pérdida de otro activo del mismo año", fm(datos.perdidas)]] : []),
         ["Tenencia", `${r.tenencia} años · ${r.esGO ? "ganancia ocasional al 15%" : "menos de 2 años: renta ordinaria"}`],
@@ -658,6 +658,12 @@ export async function exportGananciaOcasionalPDF(r, datos) {
       columnStyles: { 0: { cellWidth: 8 }, 1: { cellWidth: 80 }, 4: { halign: "right" } },
     });
     y = doc.lastAutoTable.finalY + 8;
+
+    if (r.alternativaEnero && r.alternativaEnero.tieneAvaluo) {
+      const a = r.alternativaEnero;
+      titulo(`Otra fecha: firmar en enero de ${a.anoNuevo}`);
+      parrafo(`Con el avalúo catastral ${a.avaluoAno} de ${fm(datos.avaluoSiguiente)}, firmando en enero de ${a.anoNuevo} pagarías ${MMpdf(a.final)}${a.ahorroExtra > 0 ? `, ${MMpdf(a.ahorroExtra)} menos que firmando en ${datos.anoVenta}` : "; no mejora frente a firmar en " + datos.anoVenta}. No está incluido en el plan de arriba.`, { color: GRAY });
+    }
 
     titulo("Cómo se combinan las estrategias");
     parrafo(`El ${jur ? "reajuste anual (Art. 70)" : "factor DIAN (Art. 73)"} y las mejoras se suman y forman el costo por compra (${MMpdf(r.caminoCompra)}). El avalúo catastral (Art. 72) es la alternativa: se usa el mayor de los dos, nunca los dos juntos. Las pérdidas de otros activos vendidos el mismo año${jur ? " y el dividendo no gravado (Art. 49)" : " y la exención de vivienda (Art. 311-1)"} se aplican aparte.`, { color: GRAY });

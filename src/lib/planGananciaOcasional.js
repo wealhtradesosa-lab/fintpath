@@ -19,7 +19,7 @@ import { TARIFA_GO, TARIFA_SOCIEDADES, EXENCION_311_1_UVT, factorArt73, tablaArt
 
 const n = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
 
-export const PLAN_DEFAULT_USAR = { factor: true, reajuste: true, mejoras: true, avaluo: true, enero: false, perdidas: true, vivienda: true };
+export const PLAN_DEFAULT_USAR = { factor: true, reajuste: true, mejoras: true, avaluo: true, perdidas: true, vivienda: true };
 
 /**
  * @param {object} e
@@ -113,23 +113,6 @@ export function planGananciaOcasional(e = {}) {
     if (usar.avaluo) aval = Math.max(aval, av);
   }
 
-  // 4 · Firmar en enero del año siguiente (cuenta el avalúo de este año)
-  {
-    const av2 = n(e.avaluoSiguiente);
-    const d = impuesto(C(), exento) - prueba((t) => { t.aval = Math.max(t.aval, av2); });
-    pasos.push({
-      id: "enero", grupo: "avaluo", titulo: `Firma la escritura en enero de ${anoVenta + 1} para usar el avalúo ${anoVenta}`, norma: "Art. 72 ET",
-      ok: d > 0, on: usar.enero, ahorro: d, campos: ["avaluoSiguiente"],
-      texto: !av2 ? `Escribe el avalúo catastral ${anoVenta} para saber si conviene esperar unas semanas.`
-        : d > 0 ? `En ${anoVenta + 1} cuenta el avalúo de ${anoVenta} ($${fmt(av2)}), que es mayor. Mover la firma unas semanas te ahorra esto.`
-        : `El avalúo ${anoVenta} no mejora tu costo: firma cuando quieras.`,
-      porque: "El Art. 72 toma el avalúo del año anterior a la venta. La venta ocurre cuando se firma la escritura, así que firmar en enero hace que cuente el avalúo del año que termina.",
-      soporte: `La factura del predial ${anoVenta} y la escritura con fecha de ${anoVenta + 1}.`,
-      ojo: "La promesa de compraventa puede firmarse antes; lo que define el año es la escritura. Si recibes anticipos antes, habla con tu contador sobre cuándo se reconoce el ingreso.",
-    });
-    if (usar.enero && d > 0) aval = Math.max(aval, av2);
-  }
-
   // 5 · Pérdidas ocasionales del mismo año (aparte)
   {
     const p = n(e.perdidas);
@@ -173,7 +156,21 @@ export function planGananciaOcasional(e = {}) {
   }
 
   const final = impuesto(C(), exento);
-  return { nat, uvt, esGO, tenencia, hoy, final, ahorro: Math.max(0, hoy - final), costoFinal: C(), caminoCompra: hist, caminoAvaluo: aval, pasos };
+
+  // Alternativa de fecha (no es un paso del plan): solo si la escritura es este año.
+  // 28-oct-2026 (Santiago: "si uno pone arriba la escritura en un año, ¿por qué
+  // en las preguntas pone dos años de avalúo?"). El plan usa solo el avalúo del
+  // año elegido; esta tarjeta compara contra firmar en enero del año siguiente.
+  let alternativaEnero = null;
+  const anoActual = Number(e.anoActual) || new Date().getFullYear();
+  if (!e._sinAlternativa && anoVenta === anoActual) {
+    const r2 = planGananciaOcasional({ ...e, anoVenta: anoVenta + 1, avaluoAnterior: e.avaluoSiguiente, avaluoSiguiente: "", _sinAlternativa: true });
+    alternativaEnero = {
+      anoNuevo: anoVenta + 1, avaluoAno: anoVenta, tieneAvaluo: n(e.avaluoSiguiente) > 0,
+      final: r2.final, ahorroExtra: Math.max(0, final - r2.final),
+    };
+  }
+  return { nat, uvt, esGO, tenencia, hoy, final, alternativaEnero, ahorro: Math.max(0, hoy - final), costoFinal: C(), caminoCompra: hist, caminoAvaluo: aval, pasos };
 }
 
 function fmt(v) { return Math.round(v).toLocaleString("es-CO"); }
