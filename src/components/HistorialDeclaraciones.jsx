@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import PageHeader from "./PageHeader";
 import DeclaracionUpload from "./DeclaracionUpload";
-import { C, F, R } from "../lib/designTokens";
+import { C, Cα, F, R } from "../lib/designTokens";
 import { analisisHistorial, declaracionesOrdenadas, ultimaDeclaracion, impuestoDeclarado, esF110, MAX_DECLARACIONES, mm, pct } from "../lib/rentaDesdeDeclaracion.js";
 import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Barras, Linea, Grafica, Aviso } from "./RentaUI";
 
@@ -69,7 +69,7 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
 
       {owners.length > 0 && <Panel titulo="¿Qué quieres ver?"><SelectorTitular owners={owners} value={sel} onChange={setSel} /></Panel>}
 
-      {sel === "grupo" ? <HistGrupo owners={owners} /> : owner && <HistTitular owner={owner} onNavigate={onNavigate} />}
+      {sel === "grupo" ? <HistGrupo owners={owners} /> : owner && <HistTitular owner={owner} onNavigate={onNavigate} onSaveDeclaracion={onSaveDeclaracion} />}
     </div>
   );
 }
@@ -114,7 +114,7 @@ function Cobertura({ owners, onSubir, onVer }) {
   );
 }
 
-function HistTitular({ owner, onNavigate }) {
+function HistTitular({ owner, onNavigate, onSaveDeclaracion }) {
   const a = analisisHistorial(owner);
   if (!a) return <Aviso><b>{owner.name} no tiene declaraciones cargadas.</b> Sube los PDF de los últimos años (formulario {owner.type === "juridica" ? "110" : "210"}) y aquí verás su historial.</Aviso>;
   const { serie: s, kpis: k, proy, hallazgos, nat } = a;
@@ -175,6 +175,8 @@ function HistTitular({ owner, onNavigate }) {
     </Panel>
 
     {ds.length > 1 && <CompararAnos ds={ds} filas={filas} />}
+
+    {onSaveDeclaracion && <CorregirValores owner={owner} ds={ds} onSave={onSaveDeclaracion} />}
 
     <Panel titulo="Detalle renglón por renglón">
       <div style={{ overflowX: "auto" }}>
@@ -281,6 +283,53 @@ function CompararAnos({ ds, filas }) {
           </tbody>
         </table>
       </div>
+    </Panel>
+  );
+}
+
+// Corregir a mano un renglón mal leído del PDF (29-oct-2026, Santiago: "¿de dónde debo yo 1.600 MM?").
+function CorregirValores({ owner, ds, onSave }) {
+  const [ano, setAno] = useState(null);
+  const [vals, setVals] = useState({});
+  const d = ds.find((x) => Number(x.anoGravable) === ano);
+  const filas = d ? (esF110(d) ? FILAS_110 : FILAS_210) : [];
+  const abrir = (a) => { const dd = ds.find((x) => Number(x.anoGravable) === a); setAno(a); setVals({ ...(dd?.renglones || {}) }); };
+  const inp = { height: 38, boxSizing: "border-box", background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, color: C.text, padding: "0 10px", fontSize: 14, width: "100%" };
+  const guardar = () => {
+    const renglones = Object.fromEntries(Object.entries(vals).map(([k, v]) => [k, Number(v) || 0]));
+    onSave(owner.id, { ...d, renglones, corregidoEl: new Date().toISOString() });
+    setAno(null);
+  };
+  return (
+    <Panel titulo="¿Algún valor quedó mal leído?" sub="Si un renglón no coincide con tu PDF (por ejemplo, las deudas), corrígelo aquí a mano. Compáralo con la sección Patrimonio y Liquidación de tu formulario.">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {ds.slice().reverse().map((x) => (
+          <button key={x.anoGravable} type="button" onClick={() => abrir(Number(x.anoGravable))}
+            style={{ height: 38, padding: "0 14px", borderRadius: R.md, cursor: "pointer", fontWeight: 600, fontSize: 13, border: `1px solid ${ano === Number(x.anoGravable) ? C.accent : C.border}`, background: ano === Number(x.anoGravable) ? Cα.accent15 : "transparent", color: C.text }}>
+            Corregir valores de {x.anoGravable}
+          </button>
+        ))}
+      </div>
+      {d && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+            {filas.map(([l, key]) => (
+              <label key={key} style={{ display: "grid", gap: 4 }}>
+                <span style={{ ...F.caption, fontWeight: 600, color: C.muted }}>{l}</span>
+                <input inputMode="numeric" style={inp} value={vals[key] ? "$" + Math.round(Number(vals[key])).toLocaleString("es-CO") : ""} placeholder="$0"
+                  onChange={(ev) => { const dg = ev.target.value.replace(/[^0-9-]/g, ""); setVals({ ...vals, [key]: dg ? Number(dg) : 0 }); }} />
+              </label>
+            ))}
+          </div>
+          {vals.patrimonioBruto != null && vals.deudas != null && vals.patrimonioLiquido != null && Math.abs((Number(vals.patrimonioBruto) - Number(vals.deudas)) - Number(vals.patrimonioLiquido)) > 1e6 && (
+            <div style={{ marginTop: 10 }}><Aviso>Patrimonio bruto − deudas ({mm(Number(vals.patrimonioBruto) - Number(vals.deudas))}) no da el patrimonio líquido ({mm(vals.patrimonioLiquido)}). Revisa cuál de los tres quedó mal.</Aviso></div>
+          )}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button type="button" onClick={guardar} style={{ height: 38, padding: "0 16px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Guardar corrección</button>
+            <button type="button" onClick={() => setAno(null)} style={{ height: 38, padding: "0 16px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Cancelar</button>
+          </div>
+        </div>
+      )}
     </Panel>
   );
 }
