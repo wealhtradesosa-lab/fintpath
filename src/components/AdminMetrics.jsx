@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { fmtPctEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
+import { normasPendientes, RESUMEN_VIGENCIA } from "../lib/vigenciaNormas.js";
 
 /**
  * AdminMetrics — El embudo de FINPATHIA de un vistazo.
@@ -48,6 +49,20 @@ export default function AdminMetrics({ email, fmt, T }) {
         </div>
         <button onClick={cargar} style={{ background: T.bg3, border: `1px solid ${T.border}`, color: T.tx2, padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>↻ Actualizar</button>
       </div>
+
+      {/* 28-oct-2026 — Normas DIAN al día: lo que vence y la última revisión del revisor semanal. */}
+      {(() => {
+        const pend = normasPendientes();
+        const v = RESUMEN_VIGENCIA();
+        const ok = pend.length === 0;
+        return (
+          <div style={{ background: ok ? T.gnB : T.rdB, border: `1px solid ${ok ? T.gn : T.rd}55`, borderRadius: 10, padding: "10px 14px" }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: ok ? T.gn : T.rd }}>{ok ? "🧾 Normas DIAN al día" : `🧾 ${pend.length} norma${pend.length > 1 ? "s" : ""} por actualizar`}</div>
+            {pend.map((p) => <div key={p.id} style={{ fontSize: 12, color: T.tx2, marginTop: 4 }}><b style={{ color: T.tx }}>{p.titulo}.</b> {p.detalle}</div>)}
+            <div style={{ fontSize: 11, color: T.tx3, marginTop: 4 }}>Última revisión: {v.ultimaRevision} · UVT hasta {v.uvtHasta} · reajuste Art. 70 y tabla Art. 73 hasta {v.art70Hasta}</div>
+          </div>
+        );
+      })()}
 
       {/* Alerta si el registro se detuvo — el síntoma que costó 3 semanas detectar */}
       {diasSin !== null && diasSin >= 3 && (
