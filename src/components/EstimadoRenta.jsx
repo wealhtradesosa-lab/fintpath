@@ -848,13 +848,13 @@ function Lista2026({ e, r, registrados, onChange }) {
         {lista.map((x) => (
           <div key={x.id} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(170px, calc((100% - 41px) / 5)), 1fr))", gap: 10, alignItems: "start", padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
             <Campo label="Ingreso"><input style={inp} value={x.nombre} placeholder="Ej. salario" onChange={(ev) => upd(x.id, { nombre: ev.target.value })} /></Campo>
-            {e.nat ? <Campo label="Tipo"><select style={sel_} value={x.tipo} onChange={(ev) => upd(x.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
+            {e.nat ? <Campo label="¿Qué es esta plata?" ayuda="El nombre puede ser cualquiera; el tipo define el impuesto."><select style={sel_} value={x.tipo} onChange={(ev) => upd(x.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
             <Campo label={`Monto en ${e.anoEst}`}>
               <PlataPeriodo value={x.monto} per={x.per} onPer={(p) => upd(x.id, { per: p })} onChange={(v) => upd(x.id, { monto: v })} />
               {x.tipo === "noRenta" ? <span style={{ ...F.caption, color: C.ok }}>no paga renta: no suma a tu impuesto</span>
                 : pesa(x.id) > 0 && <span style={{ ...F.caption, color: C.muted }}>pesa ~{mm(pesa(x.id))} en tu impuesto</span>}
             </Campo>
-            {x.tipo !== "noRenta" && (!e.nat || x.tipo === "arriendo" || x.tipo === "otro") ? (
+            {(!e.nat || x.tipo === "arriendo") ? (
               <Campo label={x.tipo === "arriendo" ? "Gastos de este arriendo" : "Gastos de este ingreso"}
                 ayuda={x.tipo === "arriendo" ? "Administración, predial, mantenimiento, seguro, intereses del crédito. Se restan antes del impuesto." : "Lo que te cuesta generarlo (con factura). Se resta antes del impuesto."}>
                 <PlataPeriodo value={x.costos} per={x.perCostos || x.per} onPer={(p) => upd(x.id, { perCostos: p })} onChange={(v) => upd(x.id, { costos: v })} />
