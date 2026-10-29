@@ -73,7 +73,9 @@ export function aplicarReferente(est, cal) {
     const impBruto = c.fImp != null ? bruto(d) * c.fImp : c.renta;
     const reteN = c.fRet != null ? num(d.reteN) * c.fRet : c.ret;
     const impuesto = Math.max(0, impBruto - reteN);
-    return { ...d, impBruto, impuestoACargo: impBruto, reteN, impuesto, saldoAPagar: impuesto,
+    // impOptBruto también: el Simulador lo usa cuando el titular tiene «optimizado» activo.
+    const impOptBruto = d.impOptBruto != null ? (c.fImp != null ? num(d.impOptBruto) * c.fImp : Math.min(c.renta, impBruto)) : undefined;
+    return { ...d, impBruto, impOptBruto, impuestoACargo: impBruto, reteN, impuesto, saldoAPagar: impuesto,
       tasaBruta: d.ingreso > 0 ? (impBruto / d.ingreso) * 100 : d.tasaBruta,
       fuente: c.real ? "declaracion_real" : "declaracion", impMotor: bruto(d), reteMotor: num(d.reteN) };
   });

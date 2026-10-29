@@ -37,7 +37,7 @@ function LoQuePague({ owner, ano, onGuardar }) {
   );
 }
 
-export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners = [], onNavigate, onGuardarDeclaracion }) {
+export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners = [], detalle = [], onNavigate, onGuardarDeclaracion }) {
   const hoy = new Date().getFullYear();
   const [abrir, setAbrir] = useState(false);
   if (!owners.length) return null;
@@ -56,6 +56,23 @@ export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners =
           <div><b>🧾 Los impuestos de {hoy + 1} en adelante son estimados.</b></div>
           <div style={{ marginTop: 4 }}>Salen de la {link("Calculadora de declaración", "taxcalc")}: la renta de {hoy}, que se declara y paga en {hoy + 1}, calculada desde tu declaración {hoy - 1} y lo que le dijiste que cambia.</div>
         </>
+      )}
+      {detalle.length > 0 && (
+        <details style={{ marginTop: 8 }}>
+          <summary style={{ ...F.body, fontWeight: 700, color: C.accent, cursor: "pointer" }}>Ver de dónde sale el impuesto de cada titular</summary>
+          <div style={{ display: "grid", gap: 4, marginTop: 6 }}>
+            {detalle.map((d) => {
+              const c = cal[d.name]; const bruto = Number(d.impBruto ?? d.impuesto) || 0, ret = Number(d.reteN) || 0;
+              const fuente = d.fuente === "declaracion_real" ? `declaración ${hoy - 1} (real)` : d.fuente === "declaracion" ? "estimado desde su declaración" : "cálculo aproximado con lo registrado (sin declaración)";
+              return (
+                <div key={d.name} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, ...F.caption, color: C.muted, borderTop: `1px solid ${Cα.accent25}`, paddingTop: 4 }}>
+                  <span><b style={{ color: C.text }}>{d.name}</b> · {fuente}</span>
+                  <span style={{ fontFamily: "ui-monospace, Menlo, monospace", color: C.text }}>impuesto ${Math.round(bruto / 1e6).toLocaleString("es-CO")} MM · retenido ${Math.round(ret / 1e6).toLocaleString("es-CO")} MM · {c?.real ? "saldo pagado" : "por pagar"} ${Math.round(Math.max(0, bruto - ret) / 1e6).toLocaleString("es-CO")} MM</span>
+                </div>
+              );
+            })}
+          </div>
+        </details>
       )}
       {sinBase.length > 0 && (
         <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${Cα.accent25}` }}>
