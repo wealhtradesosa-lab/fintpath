@@ -248,10 +248,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
         <div id="tu-cuenta" />
         <Panel titulo={`4. Tu cuenta: cuánto te toca pagar en ${e.anoEst + 1}`} sub={`Renta del año ${e.anoEst}, que se declara y paga en ${e.anoEst + 1}. Así se llega al número, renglón por renglón.`}>
           <Cuenta e={e} ahorro={ahorro} />
-          <FechaPago owner={owner} ano={e.anoEst + 1} onCambiarMes={onCambiarMes} />
-          <div style={{ ...F.body, marginTop: 10, color: C.text }}>
-            📈 Este «te toca pagar» de {mm(e.totalAlDeclarar)} es lo que el <button type="button" onClick={() => onNavigate?.("simf")} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Simulador {e.anoEst + 1}</button> pone en el mes en que declaras, para proyectar tu {e.anoEst + 1}.
-          </div>
+          <FechaPago owner={owner} ano={e.anoEst + 1} valor={e.totalAlDeclarar} onCambiarMes={onCambiarMes} onNavigate={onNavigate} />
           <div style={{ ...F.h3, marginTop: 14 }}>¿Por qué cambia?</div>
           <div style={{ ...F.caption, marginTop: 2 }}>Prende o apaga cada cambio para ver cómo queda el impuesto con o sin él.</div>
           <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 6 }}>
@@ -902,14 +899,18 @@ function Lista2026({ e, r, registrados, onChange }) {
 // 29-oct-2026 (Santiago: "¿dónde pone uno qué mes se paga?"). Aquí mismo, junto al número.
 // Sale sola del NIT de la declaración (calendario DIAN); se cambia solo si no coincide.
 const MESES_F = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-function FechaPago({ owner, ano, onCambiarMes }) {
+function FechaPago({ owner, ano, valor, onCambiarMes, onNavigate }) {
   const jur = owner.type === "juridica";
   const auto = mesesDePago({ ...owner, mesDeclaracion: null });
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 12, padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}` }}>
       <div style={{ ...F.body, color: C.text, flex: "1 1 260px" }}>
-        📅 Lo pagas <b>{textoFechaPago(owner)} de {ano}</b>, de una sola vez.
-        <div style={F.caption}>{auto[0]?.auto ? "Fecha según el NIT de tu declaración (calendario DIAN)." : jur ? "Las sociedades pagan en dos cuotas; elige el mes de la primera." : "Por defecto septiembre. Si subes la declaración en PDF, la fecha sale exacta por tu cédula."}</div>
+        📅 Pagas <b>{mm(valor)}</b> <b>{textoFechaPago(owner)} de {ano}</b>, en un solo pago.
+        <div style={F.caption}>
+          {auto[0]?.auto ? "La fecha sale de tu cédula, según el calendario de la DIAN. " : jur ? "Las sociedades pagan en dos cuotas: elige el mes de la primera. " : "Si no es ese mes, cámbialo aquí al lado. "}
+          Así queda en tu{" "}
+          <button type="button" onClick={() => onNavigate?.("simf")} style={{ ...F.caption, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Simulador {ano}</button>.
+        </div>
       </div>
       {onCambiarMes && (
         <select value={Number(owner.mesDeclaracion) || 0} onChange={(ev) => onCambiarMes(owner.id, Number(ev.target.value) || null)} style={{ ...inp, width: "auto", minWidth: 190, cursor: "pointer" }}>
