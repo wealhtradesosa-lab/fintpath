@@ -57,3 +57,35 @@ class ErrorBoundary extends React.Component {
 ReactDOM.createRoot(document.getElementById("root")).render(
   React.createElement(ErrorBoundary, null, React.createElement(App))
 );
+
+// 29-oct-2026 — Aviso de versión nueva. Con despliegues seguidos, una pestaña abierta
+// desde antes sigue mostrando la versión vieja (Santiago veía pantallas que ya no
+// existían). Cada 3 minutos se compara el script principal publicado con el cargado;
+// si cambió, aparece una barra discreta con «Actualizar».
+(function avisoVersionNueva() {
+  if (typeof window === "undefined" || import.meta.env?.DEV) return;
+  const actual = [...document.querySelectorAll('script[type="module"][src]')].map((s) => s.getAttribute("src")).find((s) => /\/assets\//.test(s || ""));
+  if (!actual) return;
+  let mostrado = false;
+  const revisar = async () => {
+    if (mostrado || document.hidden) return;
+    try {
+      const html = await (await fetch("/index.html?v=" + Date.now(), { cache: "no-store" })).text();
+      const m = html.match(/<script[^>]+type="module"[^>]+src="([^"]*\/assets\/[^"]+)"/);
+      if (!m || m[1] === actual) return;
+      mostrado = true;
+      const b = document.createElement("div");
+      b.setAttribute("role", "status");
+      b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;background:#141418;color:#fafafa;border:1px solid rgba(59,130,246,0.4);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;font:600 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,0.4)";
+      b.innerHTML = '<span>Hay una versión nueva de FINPATHIA</span>';
+      const btn = document.createElement("button");
+      btn.textContent = "Actualizar";
+      btn.style.cssText = "background:#3b82f6;color:#fafafa;border:none;border-radius:8px;padding:7px 12px;font:700 13px system-ui;cursor:pointer";
+      btn.onclick = () => window.location.reload();
+      b.appendChild(btn);
+      document.body.appendChild(b);
+    } catch { /* sin red: se intenta en la próxima vuelta */ }
+  };
+  setInterval(revisar, 180000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) revisar(); });
+})();

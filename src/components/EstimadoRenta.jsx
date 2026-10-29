@@ -58,6 +58,8 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
   const respDe = (o) => {
     const r = { ...RESPUESTAS_DEFAULT, ...(estado[o.id] || {}) };
+    // La versión anterior guardaba una sola línea «Ingresos declarados (total)»: se descarta para repartirla.
+    if (Array.isArray(r.filas) && r.filas.some((f) => f?.id === "total")) r.filas = r.filas.filter((f) => f?.id !== "total" && !f?.declarada);
     if (!estado[o.id]) { // primera vez: si hay una venta optimizada para el año, se trae sola
       const go = calculosGODelTitular(calculosGO, o).find((c) => Number(c?.datos?.anoVenta) === (Number(ultimaDeclaracion(o)?.anoGravable) || 0) + 1);
       if (go) r.goSel = go.id;
@@ -530,10 +532,16 @@ const ESTADOS = [["sigue", "Igual"], ["cambia", "Cambia"], ["no", "Ya no"]];
 function filasIniciales(e) {
   const o = origenIngresos(e.d);
   if (o.length) return o.map((x) => ({ id: x.id, nombre: x.nombre, formal: x.formal, tipo: x.tipo, antes: x.monto, estado: "sigue", declarada: true }));
-  return [{ id: "total", nombre: "Ingresos declarados (total)", tipo: e.nat ? "laboral" : "otro", antes: e.brutos, estado: "sigue", declarada: true }];
+  // La declaración no trae el detalle: primero se reparte el total en una lista típica, después se dice qué cambia.
+  const base = e.nat
+    ? [["Salario", "laboral"], ["Comisiones y bonos", "laboral"], ["Honorarios por servicios", "laboral"], ["Utilidades y dividendos de tus empresas", "dividendos"], ["Arriendos", "arriendo"], ["Intereses y rendimientos", "capital"], ["Otros ingresos", "otro"]]
+    : [["Ventas o servicios", "otro"], ["Arriendos", "arriendo"], ["Intereses y rendimientos", "capital"], ["Otros ingresos", "otro"]];
+  return base.map(([nombre, tipo], i) => ({ id: "pl" + i, nombre, tipo, antes: 0, estado: "sigue", plantilla: true, perAntes: tipo === "laboral" ? "mes" : "año" }));
 }
 function TablaIngresos({ e, r, registrados, onChange }) {
   const filas = r.filas && r.filas.length ? r.filas : filasIniciales(e);
+  const modoReparto = filas.some((f) => f.plantilla);
+  const repartido = filas.filter((f) => f.plantilla).reduce((a, f) => a + (Number(f.antes) || 0), 0);
   const g = r.sigue == null ? Number(r.g) || 0 : 0;
   const guardar = (nf) => onChange({ filas: nf, sigue: null });
   const upd = (id, patch) => guardar(filas.map((f) => (f.id === id ? { ...f, ...patch } : f)));
@@ -560,19 +568,31 @@ function TablaIngresos({ e, r, registrados, onChange }) {
   return (
     <div style={{ background: C.raised, borderRadius: R.lg, padding: 14 }}>
       <div style={F.h3}>Así estaban tus ingresos en {e.ano} · ¿qué cambia en {e.anoEst}?</div>
-      <p style={{ ...F.body, margin: "4px 0 6px" }}>Estos son los ingresos de tu declaración {e.ano}. En cada uno dinos si este año sigue igual, cambia o ya no llega. Si uno junta varias cosas (por ejemplo, salario y comisiones vienen juntos), usa <b style={{ color: C.text }}>Desglosar</b> para separarlos.</p>
+      {modoReparto && (
+        <div style={{ margin: "8px 0 4px" }}>
+          <Aviso tipo="info">
+            <b>Paso 1:</b> tu declaración {e.ano} dice que recibiste <b>{mm(e.brutos)}</b> en total, pero no dice de qué. Escribe en la columna «En {e.ano}» cuánto recibías de cada cosa (al mes o al año). <b>Paso 2:</b> en cada una marca qué pasa en {e.anoEst}. Así el cambio sale de tus datos, no de un porcentaje.
+            <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 220px", height: 8, background: C.raised, borderRadius: R.pill, overflow: "hidden" }}><div style={{ width: `${Math.min(100, (repartido / (e.brutos || 1)) * 100)}%`, height: "100%", background: Math.abs(repartido - e.brutos) < e.brutos * 0.02 ? C.ok : C.accent }} /></div>
+              <span style={{ ...F.mono, fontSize: 13 }}>Repartido {mm(repartido)} de {mm(e.brutos)}{repartido < e.brutos ? ` · faltan ${mm(e.brutos - repartido)}` : repartido > e.brutos * 1.02 ? ` · sobran ${mm(repartido - e.brutos)}` : " ✓"}</span>
+            </div>
+            <div style={{ ...F.caption, marginTop: 6 }}>¿Prefieres que lo traigamos solo? Vuelve a subir el PDF de la declaración en Historial: ahora la leemos separada por tipo.</div>
+          </Aviso>
+        </div>
+      )}
+      <p style={{ ...F.body, margin: "4px 0 6px", display: modoReparto ? "none" : "block" }}>Estos son los ingresos de tu declaración {e.ano}. En cada uno dinos si este año sigue igual, cambia o ya no llega. Si uno junta varias cosas (por ejemplo, salario y comisiones vienen juntos), usa <b style={{ color: C.text }}>Desglosar</b> para separarlos.</p>
       {filas.map((f) => {
-        const nueva = !f.declarada && !f.grupo;
+        const nueva = !f.declarada && !f.grupo && !f.plantilla;
         return (
           <div key={f.id} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(max(160px, calc((100% - 51px) / 6)), 1fr))", gap: 10, alignItems: "start", padding: "12px 0", borderTop: `1px solid ${C.border}` }}>
             <Campo label={nueva ? "Ingreso nuevo" : f.grupo ? "Parte de este ingreso" : "Ingreso"} ayuda={f.formal && !f.editable ? `En la declaración: ${f.formal}` : undefined}>
-              {nueva || f.editable ? <input style={inp} value={f.nombre} placeholder={nueva ? "Ej. trabajo nuevo" : "Ej. comisiones"} onChange={(ev) => upd(f.id, { nombre: ev.target.value })} />
+              {nueva || f.editable || f.plantilla ? <input style={inp} value={f.nombre} placeholder={nueva ? "Ej. trabajo nuevo" : "Ej. comisiones"} onChange={(ev) => upd(f.id, { nombre: ev.target.value })} />
                 : <div style={{ ...inp, height: "auto", minHeight: 42, padding: "8px 12px", display: "flex", alignItems: "center", color: C.text, lineHeight: 1.3 }}>{f.nombre}</div>}
             </Campo>
             {e.nat ? <Campo label="Tipo"><select style={sel_} value={f.tipo} onChange={(ev) => upd(f.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
             <Campo label={`En ${e.ano}`}>
               {nueva ? <div style={{ ...inp, display: "flex", alignItems: "center", color: C.subtle }}>—</div>
-                : f.editable ? <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
+                : f.editable || f.plantilla ? <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
                 : <div style={{ ...inp, display: "flex", alignItems: "center", color: C.text, fontFamily: "ui-monospace, Menlo, monospace" }}>{mm(f.antes)}</div>}
             </Campo>
             {nueva ? <div /> : (
@@ -594,7 +614,8 @@ function TablaIngresos({ e, r, registrados, onChange }) {
                   {Math.abs(d) < 1 ? "= sin cambio" : `${d > 0 ? "▲ +" : "▼ −"}${mm(Math.abs(d))}${nueva ? " nuevo" : ""}`}</span>); })()}
             </Campo>
             <div style={{ display: "flex", gap: 6, paddingTop: 37 }}>
-              {!nueva && !f.grupo && Number(f.antes) > 0 && <button type="button" onClick={() => desglosar(f)} style={{ ...btnSeg(false, C.accent), borderRadius: R.md }}>Desglosar</button>}
+              {f.plantilla && <button type="button" onClick={() => guardar(filas.filter((x) => x.id !== f.id))} style={{ ...btnSeg(false, C.danger), borderRadius: R.md, color: C.muted }}>No aplica</button>}
+              {!nueva && !f.grupo && !f.plantilla && Number(f.antes) > 0 && <button type="button" onClick={() => desglosar(f)} style={{ ...btnSeg(false, C.accent), borderRadius: R.md }}>Desglosar</button>}
               {(nueva || (f.grupo && f.grupo !== f.id)) && <button type="button" onClick={() => guardar(filas.filter((x) => x.id !== f.id))} style={{ ...btnSeg(false, C.danger), borderRadius: R.md, color: C.danger }}>Quitar</button>}
             </div>
           </div>
