@@ -852,7 +852,11 @@ function Lista2026({ e, r, registrados, onChange }) {
               <PlataPeriodo value={x.monto} per={x.per} onPer={(p) => upd(x.id, { per: p })} onChange={(v) => upd(x.id, { monto: v })} />
               {pesa(x.id) > 0 && <span style={{ ...F.caption, color: C.muted }}>pesa ~{mm(pesa(x.id))} en tu impuesto</span>}
             </Campo>
-            {(!e.nat || x.tipo === "arriendo" || x.tipo === "otro") ? <Campo label="Costos del año"><Plata value={x.costos} onChange={(v) => upd(x.id, { costos: v })} /></Campo> : <div />}
+            {(!e.nat || x.tipo === "arriendo" || x.tipo === "otro") ? (
+              <Campo label={x.tipo === "arriendo" ? "Gastos de este arriendo" : "Gastos de este ingreso"}
+                ayuda={x.tipo === "arriendo" ? "Administración, predial, mantenimiento, seguro, intereses del crédito. Se restan antes del impuesto." : "Lo que te cuesta generarlo (con factura). Se resta antes del impuesto."}>
+                <PlataPeriodo value={x.costos} per={x.perCostos || x.per} onPer={(p) => upd(x.id, { perCostos: p })} onChange={(v) => upd(x.id, { costos: v })} />
+              </Campo>) : <div />}
             <div style={{ paddingTop: 37 }}><button type="button" onClick={() => guardar(lista.filter((y) => y.id !== x.id))} style={{ width: "100%", height: 42, borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.danger, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Ya no lo recibo</button></div>
           </div>
         ))}
