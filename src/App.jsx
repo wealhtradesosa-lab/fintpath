@@ -3639,6 +3639,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       u={u}
       owners={(u&&u.owners)||[]}
       onNavigate={setPg}
+      onDeleteDeclaracion={(ownerId,ano)=>{
+        upd("owners",(u?.owners||[]).map(o=>o.id!==ownerId?o:{...o,declaraciones:(o.declaraciones||[]).filter(d=>Number(d?.anoGravable)!==Number(ano))}));
+        showToast("🗑️ Declaración "+ano+" borrada");
+      }}
       onSaveDeclaracion={(ownerId,declaracion)=>{
         const owners=(u&&u.owners||[]).map(o=>{
           if(o.id!==ownerId)return o;

@@ -24,7 +24,7 @@ const SERIE = [C.accent, C.ok, C.warn, C.purple, C.danger];
 const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
 const th = { ...F.label, padding: "8px 6px", textAlign: "right" };
 
-export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSaveDeclaracion, onNavigate, isPro, onUpsell, vistaInicial }) {
+export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSaveDeclaracion, onDeleteDeclaracion, onNavigate, isPro, onUpsell, vistaInicial }) {
   const owners = useMemo(() => (ownersIn || []).filter(Boolean), [ownersIn]);
   const conDecl = owners.find((o) => ultimaDeclaracion(o));
   const [sel, setSel] = useState(vistaInicial || (conDecl || owners[0])?.id || "");
@@ -56,7 +56,7 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
         accion={total ? null : { label: "Subir la primera declaración", onClick: () => abrirSubida(sel !== "grupo" ? sel : null) }}
       />
 
-      {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} />}
+      {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} onBorrar={onDeleteDeclaracion} />}
 
       {subir && (
         <Panel titulo="Subir una declaración" sub="El PDF del formulario 210 (personas) o 110 (empresas). Lo leemos solo; revisas los valores y lo guardas en el titular.">
@@ -75,7 +75,8 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
 }
 
 // Tabla titular × año: qué declaraciones hay y dónde subir la que falta.
-function Cobertura({ owners, onSubir, onVer }) {
+function Cobertura({ owners, onSubir, onVer, onBorrar }) {
+  const [porBorrar, setPorBorrar] = useState(null); // "ownerId|año" esperando confirmación
   const ultimoAno = new Date().getFullYear() - 1; // la declaración más reciente posible es la del año pasado
   const anos = Array.from({ length: MAX_DECLARACIONES }, (_, i) => ultimoAno - i);
   const tdc = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "center" };
@@ -97,8 +98,23 @@ function Cobertura({ owners, onSubir, onVer }) {
                     const d = ds.find((x) => Number(x.anoGravable) === a);
                     return (
                       <td key={a} style={tdc}>
-                        {d
-                          ? <button type="button" onClick={() => onVer(o.id)} title="Ver su historial" style={{ ...F.caption, fontWeight: 600, color: C.ok, background: "none", border: "none", cursor: "pointer" }}>✓ {mm(impuestoDeclarado(d))}</button>
+                        {d ? (
+                          porBorrar === `${o.id}|${a}` ? (
+                            <span style={{ ...F.caption, display: "inline-flex", gap: 6, alignItems: "center", color: C.text }}>
+                              ¿Borrar {a}?
+                              <button type="button" onClick={() => { onBorrar?.(o.id, a); setPorBorrar(null); }} style={{ ...F.caption, fontWeight: 700, color: C.danger, background: "none", border: `1px solid ${C.danger}`, borderRadius: R.sm, padding: "2px 8px", cursor: "pointer" }}>Sí</button>
+                              <button type="button" onClick={() => setPorBorrar(null)} style={{ ...F.caption, fontWeight: 600, color: C.muted, background: "none", border: `1px solid ${C.border}`, borderRadius: R.sm, padding: "2px 8px", cursor: "pointer" }}>No</button>
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                              <button type="button" onClick={() => onVer(o.id)} title="Ver su historial" style={{ ...F.caption, fontWeight: 600, color: C.ok, background: "none", border: "none", cursor: "pointer" }}>✓ {mm(impuestoDeclarado(d))}</button>
+                              {onBorrar && <span style={{ display: "inline-flex", gap: 8 }}>
+                                <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Reemplazar</button>
+                                <button type="button" onClick={() => setPorBorrar(`${o.id}|${a}`)} style={{ ...F.caption, color: C.danger, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Borrar</button>
+                              </span>}
+                            </span>
+                          )
+                        )
                           : <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, fontWeight: 600, color: C.accent, background: "none", border: `1px dashed ${C.border}`, borderRadius: R.md, padding: "4px 10px", cursor: "pointer" }}>+ Subir</button>}
                       </td>
                     );
