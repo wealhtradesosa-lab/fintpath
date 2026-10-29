@@ -631,8 +631,11 @@ export async function exportGananciaOcasionalPDF(r, datos) {
       head: [["Datos de la venta", ""]],
       body: [
         ["Dueño", jur ? "Empresa (persona jurídica)" : "Persona natural"],
-        [jur ? "Año de compra o construcción" : "Año de compra", String(datos.anoCompra || "")],
-        [jur ? "Costo fiscal declarado" : "Valor en la escritura de compra", fm(datos.costo)],
+        ...(datos.modo === "construido"
+          ? [["Lote", `${fm(datos.lote)} (${datos.anoLote || ""})`],
+             ["Construcción", `${fm(datos.construccion)} (${datos.anoConstruccion || ""})${datos.soporteConstruccion === "no" ? " - sin soportes" : ""}`]]
+          : [[jur ? "Año de compra" : "Año de compra", String(datos.anoCompra || "")],
+             [jur ? "Costo fiscal declarado" : "Valor en la escritura de compra", fm(datos.costo)]]),
         ["Precio de venta", fm(datos.venta)],
         ["Año de la escritura de venta", String(datos.anoVenta || "")],
         ...(datos.avaluoAnterior ? [[`Avalúo catastral ${datos.anoVenta - 1}`, fm(datos.avaluoAnterior)]] : []),
@@ -675,20 +678,26 @@ export async function exportGananciaOcasionalPDF(r, datos) {
       doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...PURPLE);
       doc.text(pdfTxt(`${p.titulo}  (${p.norma})`), M, y, { maxWidth: W - M * 2 }); y += 5;
       parrafo(p.texto);
+      if (p.destacado) parrafo(p.destacado, { label: "Importante:", color: [154, 52, 18] });
       if (p.porque) parrafo(p.porque, { label: "Por qué:", color: INK });
       if (p.ejemplo) parrafo(p.ejemplo, { label: "Ejemplo:", color: GRAY });
       if (p.soporte) parrafo(p.soporte, { label: "Soporte:", color: INK });
       if (p.ojo) parrafo(p.ojo, { label: "Ojo:", color: GRAY });
       if (p.formula) {
-        parrafo(`Fórmula: costo x (1 + % de cada año), de ${p.formula.desde} a ${p.formula.hasta}. ${MMpdf(p.formula.costo)} x ${p.formula.factor.toLocaleString("es-CO", { maximumFractionDigits: 4 })} = ${MMpdf(p.formula.resultado)}.`, { bold: true });
-        autoTable(doc, {
-          ...tableStyle, startY: y,
-          head: [["Año", "% del decreto", "Costo al cierre"]],
-          body: p.formula.filas.map((fl) => [String(fl.ano), fl.pct.toLocaleString("es-CO") + "%", fm(fl.costo)]),
-          columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
-          tableWidth: 110,
+        parrafo(p.formula.hasta ? `Fórmula: costo x (1 + % de cada año), desde el año siguiente al pago hasta ${p.formula.hasta}.` : "Fórmula: costo x factor DIAN del año de cada parte.", { bold: true });
+        p.formula.partes.forEach((pt) => {
+          parrafo(`${pt.concepto}: ${MMpdf(pt.costo)} x ${pt.factor.toLocaleString("es-CO", { maximumFractionDigits: 4 })} = ${MMpdf(pt.resultado)}`, { bold: true });
+          if (pt.filas && pt.filas.length) {
+            autoTable(doc, {
+              ...tableStyle, startY: y,
+              head: [["Año", "% del decreto", "Costo al cierre"]],
+              body: pt.filas.map((fl) => [String(fl.ano), fl.pct.toLocaleString("es-CO") + "%", fm(fl.costo)]),
+              columnStyles: { 1: { halign: "right" }, 2: { halign: "right" } },
+              tableWidth: 110,
+            });
+            y = doc.lastAutoTable.finalY + 6;
+          }
         });
-        y = doc.lastAutoTable.finalY + 6;
       }
       y += 2;
     });

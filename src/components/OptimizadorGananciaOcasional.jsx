@@ -54,6 +54,18 @@ function Check({ checked, onChange, children }) {
   );
 }
 
+function Botones({ value, onChange, opciones }) {
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {opciones.map(([v, l]) => (
+        <button key={v} type="button" onClick={() => onChange(v)}
+          style={{ flex: "1 1 auto", padding: "9px 10px", borderRadius: R.md, cursor: "pointer", fontWeight: 600, fontSize: 13,
+            border: `1px solid ${value === v ? C.accent : C.border}`, background: value === v ? Cα.accent15 : C.raised, color: value === v ? C.text : C.muted }}>{l}</button>
+      ))}
+    </div>
+  );
+}
+
 function Nota({ paso }) {
   if (!paso.porque && !paso.formula) return null;
   return (
@@ -63,27 +75,29 @@ function Nota({ paso }) {
         {paso.porque && <div style={F.body}><b style={{ color: C.text }}>Por qué: </b>{paso.porque}</div>}
         {paso.formula && (
           <>
-            <div style={F.body}>
-              <b style={{ color: C.text }}>Fórmula: </b>costo × (1 + % de cada año), desde {paso.formula.desde} hasta {paso.formula.hasta}.{" "}
-              <span style={{ ...F.mono, fontSize: 13 }}>{MM(paso.formula.costo)} × {paso.formula.factor.toLocaleString("es-CO", { maximumFractionDigits: 4 })} = {MM(paso.formula.resultado)}</span>
-            </div>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ borderCollapse: "collapse", minWidth: 280, fontSize: 13 }}>
-                <thead>
-                  <tr>{["Año", "% del decreto", "Costo al cierre"].map((h) => <th key={h} style={{ ...td, textAlign: "left", color: C.subtle }}>{h}</th>)}</tr>
-                </thead>
-                <tbody>
-                  {paso.formula.filas.map((fl) => (
-                    <tr key={fl.ano}>
-                      <td style={{ ...td, color: C.muted }}>{fl.ano}</td>
-                      <td style={{ ...td, color: C.muted }}>{fl.pct.toLocaleString("es-CO")}%</td>
-                      <td style={{ ...td, color: C.text, fontVariantNumeric: "tabular-nums" }}>{MM(fl.costo)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={F.caption}>El % del año de la venta sale por decreto el año siguiente, antes de declarar, y sube el costo un poco más (no está incluido: resultado conservador). Si parte del costo son mejoras de otros años, cada parte se reajusta desde su propio año.</div>
+            <div style={F.body}><b style={{ color: C.text }}>Fórmula: </b>{paso.formula.hasta ? `costo × (1 + % de cada año), desde el año siguiente al pago hasta ${paso.formula.hasta}.` : "costo × factor DIAN del año de cada parte."}</div>
+            {paso.formula.partes.map((pt) => (
+              <div key={pt.concepto} style={{ display: "grid", gap: 6 }}>
+                <div style={{ ...F.mono, fontSize: 13, color: C.text }}>{pt.concepto} ({pt.desde}{paso.formula.hasta ? `–${paso.formula.hasta}` : ""}): {MM(pt.costo)} × {pt.factor.toLocaleString("es-CO", { maximumFractionDigits: 4 })} = {MM(pt.resultado)}</div>
+                {pt.filas && pt.filas.length > 0 && (
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ borderCollapse: "collapse", minWidth: 280, fontSize: 13 }}>
+                      <thead><tr>{["Año", "% del decreto", "Costo al cierre"].map((h) => <th key={h} style={{ ...td, textAlign: "left", color: C.subtle }}>{h}</th>)}</tr></thead>
+                      <tbody>
+                        {pt.filas.map((fl) => (
+                          <tr key={fl.ano}>
+                            <td style={{ ...td, color: C.muted }}>{fl.ano}</td>
+                            <td style={{ ...td, color: C.muted }}>{fl.pct.toLocaleString("es-CO")}%</td>
+                            <td style={{ ...td, color: C.text, fontVariantNumeric: "tabular-nums" }}>{MM(fl.costo)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ))}
+            {paso.formula.hasta && <div style={F.caption}>El % del año de la venta sale por decreto el año siguiente, antes de declarar, y sube el costo un poco más (no está incluido: resultado conservador).</div>}
           </>
         )}
         {paso.ejemplo && <div style={{ ...F.body, padding: 10, borderRadius: R.md, background: Cα.ok08 }}><b style={{ color: C.text }}>Ejemplo: </b>{paso.ejemplo}</div>}
@@ -94,7 +108,7 @@ function Nota({ paso }) {
   );
 }
 
-const ETIQUETA_BARRA = { factor: "Factor DIAN", reajuste: "Reajuste", mejoras: "Mejoras", avaluo: "Avalúo", perdidas: "Pérdidas", vivienda: "Vivienda" };
+const ETIQUETA_BARRA = { soportes: "Soportes", factor: "Factor DIAN", reajuste: "Reajuste", mejoras: "Mejoras", avaluo: "Avalúo", perdidas: "Pérdidas", vivienda: "Vivienda" };
 
 function Escalera({ r }) {
   const items = [{ l: "Hoy", v: r.hoy, t: "total" }];
@@ -130,7 +144,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
   const owners = u?.owners || [];
   const inmuebles = useMemo(() => (u?.inv || []).filter((i) => claseDeActivo(i.tp || i.tipo).clase === "inmueble"), [u]);
   const [f, setF] = useState({
-    titular: "natural", tipo: "urbano", anoCompra: "", costo: "", venta: "", anoVenta: hoy.getFullYear(),
+    titular: "natural", tipo: "urbano", modo: "terminado", anoCompra: "", costo: "", lote: "", anoLote: "", construccion: "", anoConstruccion: "", soporteConstruccion: "si", venta: "", anoVenta: hoy.getFullYear(),
     avaluoAnterior: "", avaluoSiguiente: "", mejoras: "", perdidas: "", reajusteContador: "",
     vivienda: false, afc: false, usar: { ...PLAN_DEFAULT_USAR },
   });
@@ -143,13 +157,13 @@ export default function OptimizadorGananciaOcasional({ u }) {
     if (!i) return;
     const ow = owners.find((o) => o.id === i.owner);
     setF((p) => ({
-      ...p, titular: ow?.type === "juridica" ? "juridica" : "natural",
+      ...p, modo: "terminado", titular: ow?.type === "juridica" ? "juridica" : "natural",
       venta: Number(i.va) || p.venta, costo: Number(i.vc ?? i.valor_compra) || p.costo,
       vivienda: ow?.type !== "juridica" && /HABITACIONAL/.test(i.fiscalCode || ""), reajusteContador: "",
     }));
   };
 
-  const listo = Number(f.venta) > 0 && Number(f.costo) > 0 && Number(f.anoCompra) > 1900;
+  const listo = Number(f.venta) > 0 && (f.modo === "construido" ? Number(f.lote) > 0 && Number(f.anoLote) > 1900 : Number(f.costo) > 0 && Number(f.anoCompra) > 1900);
   const r = useMemo(() => (listo ? planGananciaOcasional(f) : null), [f, listo]);
   const etiquetaCampo = {
     avaluoAnterior: `Avalúo catastral ${f.anoVenta - 1}`, avaluoSiguiente: `Avalúo catastral ${f.anoVenta}`,
@@ -182,12 +196,25 @@ export default function OptimizadorGananciaOcasional({ u }) {
               ))}
             </div>
           </Campo>
-          <Campo label={jur ? "Año de compra o construcción" : "Año de compra"}>
-            <select id="go-ano" style={inp} value={f.anoCompra} onChange={(ev) => set("anoCompra")(Number(ev.target.value))}>
-              <option value="">Año…</option>{AÑOS.map((a) => <option key={a} value={a}>{a}</option>)}
-            </select>
+          <Campo label="¿Cómo lo tienes?">
+            <Botones value={f.modo} onChange={set("modo")} opciones={[["terminado", "Lo compré terminado"], ["construido", "Compré lote y construí"]]} />
           </Campo>
-          <Campo label={jur ? "Costo fiscal declarado" : "Valor en la escritura de compra"}><Plata id="go-costo" value={f.costo} onChange={set("costo")} /></Campo>
+          {f.modo !== "construido" ? (
+            <>
+              <Campo label="Año de compra"><select id="go-ano" style={inp} value={f.anoCompra} onChange={(ev) => set("anoCompra")(Number(ev.target.value))}><option value="">Año…</option>{AÑOS.map((a) => <option key={a} value={a}>{a}</option>)}</select></Campo>
+              <Campo label={jur ? "Costo fiscal declarado" : "Valor en la escritura de compra"}><Plata id="go-costo" value={f.costo} onChange={set("costo")} /></Campo>
+            </>
+          ) : (
+            <>
+              <Campo label="Valor del lote (escritura)"><Plata id="go-lote" value={f.lote} onChange={set("lote")} /></Campo>
+              <Campo label="Año en que compraste el lote"><select id="go-anolote" style={inp} value={f.anoLote} onChange={(ev) => set("anoLote")(Number(ev.target.value))}><option value="">Año…</option>{AÑOS.map((a) => <option key={a} value={a}>{a}</option>)}</select></Campo>
+              <Campo label="Lo que costó construir"><Plata id="go-construccion" value={f.construccion} onChange={set("construccion")} /></Campo>
+              <Campo label="Año en que se construyó"><select id="go-anocons" style={inp} value={f.anoConstruccion} onChange={(ev) => set("anoConstruccion")(Number(ev.target.value))}><option value="">Año…</option>{AÑOS.map((a) => <option key={a} value={a}>{a}</option>)}</select></Campo>
+              <Campo label="¿Tienes cómo probar lo que costó la construcción?">
+                <Botones value={f.soporteConstruccion} onChange={set("soporteConstruccion")} opciones={[["si", "Sí"], ["no", "No o casi nada"]]} />
+              </Campo>
+            </>
+          )}
           <Campo label="Precio de venta"><Plata id="go-venta" value={f.venta} onChange={set("venta")} /></Campo>
           <Campo label="¿En qué año firmas la escritura?">
             <select id="go-anoventa" style={inp} value={f.anoVenta} onChange={(ev) => set("anoVenta")(Number(ev.target.value))}>
@@ -196,6 +223,13 @@ export default function OptimizadorGananciaOcasional({ u }) {
           </Campo>
         </div>
       </div>
+
+      {f.modo === "construido" && (
+        <div style={{ ...card, marginBottom: 16, borderColor: Cα.accent25, ...F.body }}>
+          <b style={{ color: C.text }}>Por qué te preguntamos esto: </b>
+          lo que pagas de impuesto depende de lo que puedas <b style={{ color: C.text }}>probar</b> que te costó el inmueble. Si compraste un lote y construiste, el costo es el lote <b style={{ color: C.text }}>más</b> la construcción, y cada uno se ajusta desde su propio año. Que la casa tenga licencia y matrícula prueba que existe, pero no cuánto costó: para eso sirven facturas, contratos de obra y pagos. Si no los tienes, la DIAN puede tomar solo el lote y el impuesto sube mucho; ahí te mostramos qué hacer.
+        </div>
+      )}
 
       {!r ? (
         <div style={{ ...card, display: "flex", gap: 12, alignItems: "center", marginBottom: 16 }}>
@@ -212,7 +246,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
               <div>
                 <div style={F.label}>Hoy pagarías</div>
                 <div style={{ ...F.monoXl, color: C.danger, marginTop: 4 }}>{MM(r.hoy)}</div>
-                <div style={F.caption}>{r.esGO ? `(${MM(f.venta)} − ${MM(f.costo)}) × 15%` : "Menos de 2 años: se paga como renta normal, no al 15%."}</div>
+                <div style={F.caption}>{r.esGO ? `(${MM(f.venta)} − ${MM(r.costoBase)}) × 15%` : "Menos de 2 años: se paga como renta normal, no al 15%."}</div>
               </div>
               <div>
                 <div style={F.label}>Con tu plan</div>
@@ -255,6 +289,7 @@ export default function OptimizadorGananciaOcasional({ u }) {
                     <div style={F.label}>{p.norma}</div>
                     <div style={{ ...F.h2, marginTop: 2 }}>{p.titulo}</div>
                     <div style={{ ...F.body, marginTop: 4 }}>{p.texto}</div>
+                    {p.destacado && <div style={{ ...F.body, marginTop: 8, padding: 10, borderRadius: R.md, background: Cα.warn08, color: C.text }}>⚠️ {p.destacado}</div>}
                     {(p.campos || []).length > 0 && (
                       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginTop: 10 }}>
                         {p.campos.map((k) => (

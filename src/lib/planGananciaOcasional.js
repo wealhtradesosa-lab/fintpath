@@ -19,7 +19,7 @@ import { TARIFA_GO, TARIFA_SOCIEDADES, EXENCION_311_1_UVT, factorArt73, tablaArt
 
 const n = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
 
-export const PLAN_DEFAULT_USAR = { factor: true, reajuste: true, mejoras: true, avaluo: true, perdidas: true, vivienda: true };
+export const PLAN_DEFAULT_USAR = { soportes: false, factor: true, reajuste: true, mejoras: true, avaluo: true, perdidas: true, vivienda: true };
 
 /**
  * @param {object} e
@@ -31,52 +31,99 @@ export function planGananciaOcasional(e = {}) {
   const nat = e.titular !== "juridica";
   const anoVenta = Number(e.anoVenta) || new Date().getFullYear();
   const uvt = uvtForYear(anoVenta);
-  const venta = n(e.venta), costo0 = n(e.costo), anoCompra = Number(e.anoCompra) || anoVenta;
+  const venta = n(e.venta);
   const usar = { ...PLAN_DEFAULT_USAR, ...(e.usar || {}) };
+
+  // 28-oct-2026 (Santiago: "la gente no lo sabe… ¿tiene registrado casa y lote,
+  // solo lote a pesar de tener casa construida? Según el escenario, que proponga").
+  // modo "terminado": una sola compra (escritura). modo "construido": lote + construcción,
+  // cada una con su año; la construcción solo cuenta si tiene soportes.
+  const construido = e.modo === "construido";
+  const sinSoporte = construido && e.soporteConstruccion === "no";
+  const partes = construido
+    ? [
+        { id: "lote", concepto: "Lote", valor: n(e.lote), ano: Number(e.anoLote) || anoVenta },
+        { id: "construccion", concepto: "Construcción", valor: n(e.construccion), ano: Number(e.anoConstruccion) || Number(e.anoLote) || anoVenta, sinSoporte },
+      ].filter((p) => p.valor > 0)
+    : [{ id: "compra", concepto: "Compra", valor: n(e.costo), ano: Number(e.anoCompra) || anoVenta }];
+  const anoCompra = construido ? Math.max(...partes.map((p) => p.ano), 0) || anoVenta : (Number(e.anoCompra) || anoVenta);
   const tenencia = anoVenta - anoCompra;
   const esGO = tenencia >= 2;
+  const incluir = (p) => !p.sinSoporte || usar.soportes;
+  const costoBase = partes.filter((p) => !p.sinSoporte).reduce((a, p) => a + p.valor, 0);
 
   const impuesto = (costo, exento = 0) => {
     const u = Math.max(0, venta - costo);
     if (!esGO) return nat ? calcImpRenta(u / uvt, uvt) : u * TARIFA_SOCIEDADES;
     return Math.max(0, u - exento) * TARIFA_GO;
   };
+  // Ajuste de cada parte desde su propio año: factor Art. 73 (persona) o reajuste Art. 70 (empresa).
+  const ajustar = (lista) => lista.map((p) => {
+    if (nat) { const f = factorArt73(p.ano, e.tipo || "urbano"); return { ...p, factor: f, resultado: p.valor * f }; }
+    const t = tablaArt70(p.ano, p.valor);
+    return { ...p, factor: t.factor, resultado: t.costo, filas: t.filas, desde: p.ano + 1 };
+  });
+  const sumaAjustada = (lista) => ajustar(lista).reduce((a, p) => a + p.resultado, 0);
 
-  let hist = costo0, aval = 0, perd = 0, exento = 0;
+  let hist = costoBase, aval = 0, perd = 0, exento = 0;
   const C = () => Math.max(hist, aval) + perd;
   const prueba = (fn, ex = exento) => { const t = { hist, aval, perd }; fn(t); return impuesto(Math.max(t.hist, t.aval) + t.perd, ex); };
-  const hoy = impuesto(costo0);
+  const hoy = impuesto(costoBase);
   const pasos = [];
 
-  // 1 · Camino por compra: factor (persona) o reajuste (empresa)
-  if (nat) {
-    const f = factorArt73(anoCompra, e.tipo || "urbano");
-    const cF = costo0 * f;
-    const d = impuesto(C(), exento) - prueba((t) => { t.hist = Math.max(t.hist, cF); });
+  // 0 · Construcción sin soportes: conseguirlos (o apoyarse en el avalúo)
+  if (sinSoporte) {
+    const cons = partes.find((p) => p.id === "construccion");
+    const conAjuste = (usar.factor !== false && usar.reajuste !== false);
+    const valorCons = conAjuste ? sumaAjustada([cons]) : cons.valor;
+    const d = impuesto(C(), exento) - prueba((t) => { t.hist += cons.valor; });
     pasos.push({
-      id: "factor", grupo: "compra", titulo: `Multiplica tu costo × ${f.toLocaleString("es-CO")} (factor DIAN, compra de ${anoCompra})`,
-      norma: "Art. 73 ET · Decreto 449 de 2026", ok: f > 1, on: usar.factor, ahorro: d,
-      texto: f > 1 ? `Tu costo por compra pasa de $${fmt(costo0)} a $${fmt(cF)}. Lo aplica el contador en la declaración.` : "La compra es muy reciente: todavía no hay factor.",
-      porque: "El Art. 73 deja a las personas naturales llevar a pesos de hoy el costo de inmuebles, acciones y aportes, multiplicándolo por el factor de su año de compra. La tabla la publica el Gobierno cada año (vigente: Decreto 449 de 2026). Si usas el Art. 73 no puedes usar también el reajuste del Art. 70 para el mismo bien (Art. 280).",
-      soporte: "La escritura de compra (prueba el año y el valor).",
-      ojo: "Para ventas de 2026 el factor oficial sale en 2027 y será un poco mayor: este resultado es conservador.",
+      id: "soportes", grupo: "compra", titulo: "Reúne los soportes de la construcción", norma: "Arts. 69 y 771-2 ET",
+      ok: true, on: usar.soportes, ahorro: d,
+      texto: `Hoy solo puedes probar el lote, así que el cálculo arranca en $${fmt(costoBase)}. Si consigues los soportes de los $${fmt(cons.valor)} de construcción, ese valor suma a tu costo${conAjuste ? ` y también se reajusta desde ${cons.ano} (queda en unos $${fmt(valorCons)})` : ""}. Marca «Lo voy a hacer» si los vas a reunir.`,
+      porque: "El costo fiscal es lo que puedes probar que pagaste: el lote más la construcción y las mejoras (Art. 69). Sin soportes, la DIAN puede rechazar la construcción y dejar solo el lote como costo, aunque la casa exista. Si la empresa ya declaraba un valor que incluía la construcción, ese valor vale mientras la DIAN no lo cuestione, pero en una revisión te pedirán soportes.",
+      soporte: "Licencia de construcción, contratos de obra, facturas de materiales (ferretería, concreto, acero), pagos de mano de obra y seguridad social, y la contabilidad de los años de la obra.",
+      ojo: "Si no logras reunir soportes, el avalúo catastral (paso de abajo) suele ser tu mejor salida: el catastro sí incluye la casa construida.",
     });
-    if (usar.factor && f > 1) hist = Math.max(hist, cF);
-  } else {
-    const t70 = tablaArt70(anoCompra, costo0);
-    const cR = n(e.reajusteContador) > costo0 ? n(e.reajusteContador) : t70.costo;
-    const d = impuesto(C(), exento) - prueba((t) => { t.hist = Math.max(t.hist, cR); });
-    pasos.push({
-      id: "reajuste", grupo: "compra", titulo: "Reajusta el costo de la empresa año por año",
-      norma: "Art. 70 ET · Oficio DIAN 914975 de 2021", ok: d > 0 || cR > costo0, on: usar.reajuste, ahorro: d,
-      campos: ["reajusteContador"], valores: { reajusteContador: cR },
-      texto: `Tu costo reajustado es $${fmt(cR)} (antes $${fmt(costo0)}). Ya quedó en la casilla; cámbialo solo si tu contador tiene otro valor.`,
-      formula: { factor: t70.factor, desde: anoCompra + 1, hasta: ULTIMO_AG_ART70, filas: t70.filas, costo: costo0, resultado: t70.costo },
-      porque: "El Art. 70 deja subir cada año el costo de los activos fijos con el porcentaje que fija el Gobierno por decreto. Es opcional, y la DIAN aceptó aplicarlo al calcular la ganancia de la venta aunque no se haya aplicado ni declarado antes (Oficio 914975 de 2021). A las empresas no les aplica el factor del Art. 73: este es su ajuste.",
-      soporte: "El cálculo año por año con los decretos de cada porcentaje (la tabla de este paso).",
-      ojo: "El oficio no dice palabra por palabra que se sumen todos los años de una vez; muchos asesores lo aplican así. Tu contador debe firmarlo. Subir el costo también sube el patrimonio: revisa el impuesto temporal al patrimonio de empresas (Decreto 0173 de 2026).",
-    });
-    if (usar.reajuste) hist = Math.max(hist, cR);
+    if (usar.soportes) hist += cons.valor;
+  }
+
+  // 1 · Ajuste por años: factor (persona) o reajuste (empresa), cada parte desde su año
+  {
+    const lista = partes.filter(incluir);
+    const aj = ajustar(lista);
+    const base = lista.reduce((a, p) => a + p.valor, 0);
+    const conAj = aj.reduce((a, p) => a + p.resultado, 0);
+    const cR = !nat && n(e.reajusteContador) > base ? n(e.reajusteContador) : conAj;
+    const d = impuesto(C(), exento) - prueba((t) => { t.hist = t.hist - base + Math.max(base, cR); });
+    const detalle = aj.length > 1 ? aj.map((p) => `${p.concepto} ${p.ano}: $${fmt(p.valor)} × ${p.factor.toLocaleString("es-CO", { maximumFractionDigits: 4 })} = $${fmt(p.resultado)}`).join(" · ") : "";
+    const formula = { hasta: nat ? null : ULTIMO_AG_ART70, partes: aj.map((p) => ({ concepto: p.concepto, desde: nat ? p.ano : p.ano + 1, costo: p.valor, factor: p.factor, resultado: p.resultado, filas: p.filas || null })) };
+    if (nat) {
+      const ok = conAj > base;
+      pasos.push({
+        id: "factor", grupo: "compra",
+        titulo: aj.length === 1 ? `Multiplica tu costo × ${aj[0].factor.toLocaleString("es-CO")} (factor DIAN, ${aj[0].ano})` : "Lleva cada parte a pesos de hoy con el factor DIAN",
+        norma: "Art. 73 ET · Decreto 449 de 2026", ok, on: usar.factor, ahorro: d,
+        texto: ok ? `Tu costo por compra pasa de $${fmt(base)} a $${fmt(conAj)}.${detalle ? " " + detalle + "." : ""} Lo aplica el contador en la declaración.` : "La compra es muy reciente: todavía no hay factor.",
+        formula: aj.length > 1 ? formula : null,
+        porque: "El Art. 73 deja a las personas naturales llevar a pesos de hoy el costo de inmuebles, acciones y aportes, multiplicándolo por el factor de su año. Si construiste, el lote se ajusta desde el año en que lo compraste y la construcción desde el año en que la pagaste. La tabla la publica el Gobierno cada año (vigente: Decreto 449 de 2026). Si usas el Art. 73 no puedes usar también el reajuste del Art. 70 para el mismo bien (Art. 280).",
+        soporte: "La escritura del lote o de la compra y, si construiste, los soportes de la obra con sus fechas.",
+        ojo: "Para ventas de 2026 el factor oficial sale en 2027 y será un poco mayor: este resultado es conservador.",
+      });
+      if (usar.factor && ok) hist = hist - base + conAj;
+    } else {
+      pasos.push({
+        id: "reajuste", grupo: "compra", titulo: aj.length > 1 ? "Reajusta el lote y la construcción, cada uno desde su año" : "Reajusta el costo de la empresa año por año",
+        norma: "Art. 70 ET · Oficio DIAN 914975 de 2021", ok: cR > base, on: usar.reajuste, ahorro: d,
+        campos: ["reajusteContador"], valores: { reajusteContador: cR },
+        texto: `Tu costo reajustado es $${fmt(cR)} (antes $${fmt(base)}).${detalle ? " " + detalle + "." : ""} Ya quedó en la casilla; cámbialo solo si tu contador tiene otro valor.`,
+        formula,
+        porque: "El Art. 70 deja subir cada año el costo de los activos fijos con el porcentaje que fija el Gobierno por decreto. Cada parte se reajusta desde el año siguiente a cuando se pagó: el lote desde su compra y la construcción desde que se hizo. Es opcional, y la DIAN aceptó aplicarlo al vender aunque no se haya aplicado ni declarado antes (Oficio 914975 de 2021). A las empresas no les aplica el factor del Art. 73: este es su ajuste.",
+        soporte: "El cálculo año por año con los decretos de cada porcentaje (la tabla de este paso).",
+        ojo: "Si el valor que tiene la empresa ya incluye una revaluación contable o reajustes aplicados antes, no se reajusta otra vez encima: se parte del costo histórico real. El oficio no dice palabra por palabra que se sumen todos los años de una vez; muchos asesores lo aplican así. Subir el costo también sube el patrimonio: revisa el impuesto temporal al patrimonio de empresas (Decreto 0173 de 2026).",
+      });
+      if (usar.reajuste) hist = hist - base + Math.max(base, cR);
+    }
   }
 
   // 2 · Mejoras (se suman al camino por compra)
@@ -106,6 +153,7 @@ export function planGananciaOcasional(e = {}) {
       texto: (!av ? `Escribe el avalúo catastral ${anoVenta - 1} (está en el predial). Si es mayor que tu costo por compra, se usa en su lugar.`
         : d > 0 ? `El avalúo ($${fmt(av)}) es mayor que tu costo por compra ($${fmt(hist)}), así que la ley te deja usarlo en su lugar.`
         : `Tu costo por compra ($${fmt(hist)}) ya es mayor que el avalúo, así que no lo necesitas. El avalúo no se suma: se usa el mayor de los dos.`) + ` Regla: cuenta el avalúo del año anterior a la firma de la escritura (firmas en ${anoVenta} → avalúo ${anoVenta - 1}; firmas en ${anoVenta + 1} → avalúo ${anoVenta}).`,
+      ...(sinSoporte ? { destacado: "Como no tienes soportes de la construcción, este paso es clave: el avalúo catastral sí incluye la casa construida." } : {}),
       porque: "El Art. 72 deja tomar como costo el avalúo catastral (o el autoavalúo) del año anterior a la venta, en vez del costo por compra. Aplica a personas y empresas si el inmueble es activo fijo. Basta con que aparezca en el predial o en la renta (Consejo de Estado, sentencia 20677 de 2018).",
       soporte: `La factura o declaración del predial de ${anoVenta - 1}.`,
       ojo: "Un avalúo comercial de perito NO sirve, aunque sea más alto. Lo que sí sirve es el avalúo catastral o el autoavalúo que quede en el predial: en ciudades donde el predial se declara (como Bogotá) puedes declarar un autoavalúo mayor; en otras se le pide al catastro una autoestimación del avalúo. Ese valor cuenta para ventas del año siguiente y sube el predial. Tampoco vale corregir declaraciones para subirlo. El inmueble tiene que estar en la declaración de renta (Oficio DIAN 561 de 2021).",
@@ -170,7 +218,7 @@ export function planGananciaOcasional(e = {}) {
       final: r2.final, ahorroExtra: Math.max(0, final - r2.final),
     };
   }
-  return { nat, uvt, esGO, tenencia, hoy, final, alternativaEnero, ahorro: Math.max(0, hoy - final), costoFinal: C(), caminoCompra: hist, caminoAvaluo: aval, pasos };
+  return { nat, uvt, esGO, tenencia, hoy, final, alternativaEnero, costoBase, construido, sinSoporte, ahorro: Math.max(0, hoy - final), costoFinal: C(), caminoCompra: hist, caminoAvaluo: aval, pasos };
 }
 
 function fmt(v) { return Math.round(v).toLocaleString("es-CO"); }

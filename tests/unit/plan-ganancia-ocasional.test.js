@@ -54,3 +54,25 @@ describe("Solucionador · persona natural", () => {
     expect(r.final).toBeCloseTo(150e6, 0);
   });
 });
+
+describe("Lote + construcción (caso Santiago: lote 2008, casa 2011)", () => {
+  const base = { titular: "juridica", modo: "construido", lote: 300e6, anoLote: 2008, construccion: 2700e6, anoConstruccion: 2011, venta: 9500e6, anoVenta: 2026 };
+  it("con soportes: cada parte se reajusta desde su año", () => {
+    const r = planGananciaOcasional({ ...base, soporteConstruccion: "si" });
+    expect(r.costoBase).toBe(3000e6);
+    expect(r.caminoCompra / 1e6).toBeCloseTo(300 * 2.19648 + 2700 * 2.00378, 0);
+    expect(r.pasos.map((p) => p.id)).not.toContain("soportes");
+  });
+  it("sin soportes: arranca solo con el lote y propone reunirlos", () => {
+    const r = planGananciaOcasional({ ...base, soporteConstruccion: "no" });
+    expect(r.costoBase).toBe(300e6);
+    expect(r.hoy).toBeCloseTo((9500e6 - 300e6) * 0.15, 0);
+    const s = r.pasos.find((p) => p.id === "soportes");
+    expect(s.ahorro).toBeGreaterThan(0);
+    expect(r.pasos.find((p) => p.id === "avaluo").destacado).toBeTruthy();
+  });
+  it("si se compromete a reunirlos, la construcción entra y se reajusta", () => {
+    const r = planGananciaOcasional({ ...base, soporteConstruccion: "no", usar: { soportes: true } });
+    expect(r.caminoCompra / 1e6).toBeCloseTo(300 * 2.19648 + 2700 * 2.00378, 0);
+  });
+});
