@@ -45,15 +45,15 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
           "Lee solo el PDF del formulario 210 (personas) o 110 (empresas): no tienes que digitar nada.",
           "Te muestra tasa efectiva, crecimiento, patrimonio y deudas de cada año, con gráficas.",
           "Te alerta cuando el impuesto crece más rápido que tus ingresos, cuando beneficios se pierden por el tope o cuando te acercas al impuesto al patrimonio.",
-          "Con esa base, la Calculadora de declaración estima el impuesto de este año.",
+          "Compara dos años cualquiera, renglón por renglón, para entender qué cambió.",
         ]}
         pasos={[
           { t: "Escoge la persona o empresa", hecho: !!owner || sel === "grupo" },
           { t: `Sube sus declaraciones (hasta ${MAX_DECLARACIONES} años)`, hecho: total > 0 },
           { t: "Revisa alertas y tendencias", hecho: total > 1 },
-          { t: "Calcula cuánto pagarás este año", hecho: false },
+          { t: "Compara dos años lado a lado", hecho: total > 1 },
         ]}
-        accion={total ? { label: "Calcular cuánto pagaré este año →", onClick: () => onNavigate?.("tax") } : { label: "Subir la primera declaración", onClick: () => abrirSubida(sel !== "grupo" ? sel : null) }}
+        accion={total ? null : { label: "Subir la primera declaración", onClick: () => abrirSubida(sel !== "grupo" ? sel : null) }}
       />
 
       {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} />}
@@ -172,8 +172,9 @@ function HistTitular({ owner, onNavigate }) {
         <Kpi k="Tasa efectiva" v={pct(proy.tasa)} d={`de cada $100, $${Math.round(proy.tasa * 100)} a renta`} />
         {proy.pat != null && <Kpi k="Patrimonio líquido" v={mm(proy.pat)} d={`al ritmo de ${pct(proy.gPat)} anual`} />}
       </KpiGrid>
-      <button type="button" onClick={() => onNavigate?.("tax")} style={{ ...F.h3, marginTop: 12, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>Calcular el impuesto de este año con lo que de verdad cambió →</button>
     </Panel>
+
+    {ds.length > 1 && <CompararAnos ds={ds} filas={filas} />}
 
     <Panel titulo="Detalle renglón por renglón">
       <div style={{ overflowX: "auto" }}>
@@ -235,4 +236,51 @@ function HistGrupo({ owners }) {
       </div>
     </Panel>
   </>);
+}
+
+// Comparar dos años cualquiera, lado a lado (29-oct-2026, Santiago).
+function CompararAnos({ ds, filas }) {
+  const anos = ds.map((d) => Number(d.anoGravable));
+  const [a, setA] = useState(anos[0]);
+  const [b, setB] = useState(anos.at(-1));
+  const dA = ds.find((d) => Number(d.anoGravable) === Number(a)), dB = ds.find((d) => Number(d.anoGravable) === Number(b));
+  const sel = { height: 42, boxSizing: "border-box", background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, color: C.text, padding: "0 12px", fontSize: 14 };
+  const ing = (d) => Number(d?.renglones.ingresosBrutos) || 0, imp = (d) => impuestoDeclarado(d), tasa = (d) => (ing(d) ? imp(d) / ing(d) : 0);
+  const v = (x, y) => (x ? (y - x) / Math.abs(x) : null);
+  const resumen = [
+    ["Ingresos", mm(ing(dA)), mm(ing(dB)), v(ing(dA), ing(dB)), false],
+    ["Impuesto", mm(imp(dA)), mm(imp(dB)), v(imp(dA), imp(dB)), true],
+    ["Tasa efectiva", pct(tasa(dA)), pct(tasa(dB)), null, tasa(dB) > tasa(dA)],
+  ];
+  return (
+    <Panel titulo="Comparar dos años" sub="Escoge cualquier par de años y mira qué cambió, renglón por renglón.">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", marginBottom: 12 }}>
+        <select value={a} onChange={(ev) => setA(Number(ev.target.value))} style={sel}>{anos.map((x) => <option key={x} value={x}>{x}</option>)}</select>
+        <span style={{ ...F.h3, color: C.muted }}>contra</span>
+        <select value={b} onChange={(ev) => setB(Number(ev.target.value))} style={sel}>{anos.map((x) => <option key={x} value={x}>{x}</option>)}</select>
+      </div>
+      <KpiGrid>
+        {resumen.map(([k, x, y, dv, malo]) => (
+          <Kpi key={k} k={k} v={`${x} → ${y}`} color={k === "Tasa efectiva" ? (malo ? C.danger : C.ok) : undefined}
+            d={k === "Tasa efectiva" ? `${((tasa(dB) - tasa(dA)) * 100 >= 0 ? "▲" : "▼")} ${Math.abs((tasa(dB) - tasa(dA)) * 100).toLocaleString("es-CO", { maximumFractionDigits: 1 })} pts` : dv == null ? "" : `${dv >= 0 ? "▲" : "▼"} ${pct(Math.abs(dv), 0)}`} />
+        ))}
+      </KpiGrid>
+      <div style={{ overflowX: "auto", marginTop: 12 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", ...F.body, color: C.text }}>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>Renglón</th><th style={th}>{a}</th><th style={th}>{b}</th><th style={th}>Diferencia</th><th style={th}>%</th></tr></thead>
+          <tbody>
+            {filas.map(([l, key]) => {
+              const x = Number(dA?.renglones[key]) || 0, y = Number(dB?.renglones[key]) || 0;
+              if (!x && !y) return null;
+              const dv = v(x, y), malo = (y - x > 0) === MALOS.includes(key);
+              return (<tr key={key}><td style={{ ...td, textAlign: "left", fontFamily: "inherit" }}>{l}</td>
+                <td style={td}>{x ? mm(x) : "—"}</td><td style={td}>{y ? mm(y) : "—"}</td>
+                <td style={{ ...td, color: y === x ? C.subtle : malo ? C.danger : C.ok }}>{y - x >= 0 ? "+" : "−"}{mm(Math.abs(y - x))}</td>
+                <td style={{ ...td, color: C.subtle }}>{dv == null ? "—" : `${dv >= 0 ? "+" : "−"}${pct(Math.abs(dv), 0)}`}</td></tr>);
+            })}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
 }

@@ -29,7 +29,7 @@ function ingresosAnualesPorOwner(u) {
   return m;
 }
 
-export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
+export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavigate }) {
   const owners = useMemo(() => (u?.owners || []).filter(Boolean), [u?.owners]);
   const calculosGO = u?.calculosGO || [];
   const conDecl = owners.find((o) => ultimaDeclaracion(o));
@@ -68,24 +68,57 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
   const cambioHecho = r && (r.g !== RESPUESTAS_DEFAULT.g || r.nuevo || r.perdido || r.aportes || r.dep || r.goSel || estado[owner?.id]);
   const marcoAlgo = r && Object.values(r.estr || {}).some((x) => x?.on);
 
-  const cambiosTexto = () => {
+  // Calcula todo para un juego de respuestas: el actual o una versión guardada.
+  const calcular = (rr) => {
+    const ee = estimarDesdeDeclaracion(owner, rr, { calculosGO: gos });
+    const oo = ee ? oportunidades(owner, ee) : [];
+    return { r: rr, e: ee, ops: oo, ahorro: ahorroMarcado(oo, rr?.estr), pat: patrimonioInfo(owner, rr?.casa) };
+  };
+  const cambiosTexto = (rr, ee) => {
     const c = [];
-    if (r.g) c.push(`Ingresos de siempre: ${r.g > 0 ? "suben" : "bajan"} ~${Math.round(Math.abs(r.g) * 100)}%`);
-    if (r.nuevo) c.push(`Ingreso nuevo: ${mm(r.nuevo)}${r.nuevoGastos ? `, con costos de ${mm(r.nuevoGastos)}` : ""}`);
-    if (r.perdido) c.push(`Ingreso que deja de recibir: ${mm(r.perdido)}`);
-    if (r.aportes) c.push(`Aportes voluntarios a pensión o AFC: ${mm(r.aportes)}`);
-    if (r.dep) c.push(`Dependientes: ${r.dep > 0 ? "+" : ""}${r.dep}`);
-    if (e.go) c.push(e.gc ? `Venta: ${e.gc.nombre} (precio ${mm(e.gc.resumen?.venta)}, ganancia ocasional optimizada ${mm(e.go)})` : `Venta de activo: ganancia ocasional ${mm(e.go)}`);
+    if (rr.g) c.push(`Ingresos de siempre: ${rr.g > 0 ? "suben" : "bajan"} ~${Math.round(Math.abs(rr.g) * 100)}%`);
+    if (rr.nuevo) c.push(`Ingreso nuevo: ${mm(rr.nuevo)}${rr.nuevoGastos ? `, con costos de ${mm(rr.nuevoGastos)}` : ""}`);
+    if (rr.perdido) c.push(`Ingreso que deja de recibir: ${mm(rr.perdido)}`);
+    if (rr.aportes) c.push(`Aportes voluntarios a pensión o AFC: ${mm(rr.aportes)}`);
+    if (rr.dep) c.push(`Dependientes: ${rr.dep > 0 ? "+" : ""}${rr.dep}`);
+    if (ee.go) c.push(ee.gc ? `Venta: ${ee.gc.nombre} (precio ${mm(ee.gc.resumen?.venta)}, ganancia ocasional optimizada ${mm(ee.go)})` : `Venta de activo: ganancia ocasional ${mm(ee.go)}`);
+    for (const p of ee.pasos) if (p.off) c.push(`Apagado en esta simulación: ${p.texto}`);
     return c;
   };
-  const descargarPDF = async () => {
+  const descargarPDF = async (rr = r, nombre) => {
+    const k = calcular(rr); if (!k.e) return;
     const { exportResumenContadorPDF } = await import("../lib/pdfSectionExport.js");
-    const estrategias = ops.filter((op) => !op.info && r.estr?.[op.id]?.on).map((op) => ({ titulo: op.titulo, norma: op.norma, ahorro: op.ahorro(r.estr[op.id].v), valor: op.entero ? String(r.estr[op.id].v) : mm(r.estr[op.id].v) }));
+    const estrategias = k.ops.filter((op) => !op.info && rr.estr?.[op.id]?.on).map((op) => ({ titulo: op.titulo, norma: op.norma, ahorro: op.ahorro(rr.estr[op.id].v), valor: op.entero ? String(rr.estr[op.id].v) : mm(rr.estr[op.id].v) }));
     const preguntas = ["¿Las retenciones estimadas coinciden con los certificados del año?", "¿Aplican las estrategias marcadas y con qué soportes?"];
-    if (pat && !pat.sociedad && (pat.aplica || pat.cerca)) preguntas.push("Impuesto al patrimonio: valor patrimonial de los activos y exclusión de la casa de habitación.");
-    if (e.anticipoSiguiente > 0) preguntas.push("¿Conviene pedir reducción del anticipo (Art. 809)?");
-    await exportResumenContadorPDF({ titular: owner.name, e, cambios: cambiosTexto(), estrategias, patrimonio: pat, preguntas });
+    if (k.pat && !k.pat.sociedad && (k.pat.aplica || k.pat.cerca)) preguntas.push("Impuesto al patrimonio: valor patrimonial de los activos y exclusión de la casa de habitación.");
+    if (k.e.anticipoSiguiente > 0) preguntas.push("¿Conviene pedir reducción del anticipo (Art. 809)?");
+    await exportResumenContadorPDF({ titular: nombre ? `${owner.name} · ${nombre}` : owner.name, e: k.e, cambios: cambiosTexto(rr, k.e), estrategias, patrimonio: k.pat, preguntas });
   };
+
+  // ── Versiones guardadas («Renta 2026 v1: con venta», «v2: sin venta»…) ──
+  const versiones = (u?.versionesRenta || []).filter((v) => v.ownerId === owner?.id);
+  const [nombreV, setNombreV] = useState("");
+  const [abierta, setAbierta] = useState(null);
+  const sugerirNombre = () => `Renta ${e?.anoEst || ""} ${owner?.name || ""} v${versiones.length + 1}`;
+  const guardarVersion = (nueva) => {
+    if (!e || !onGuardarVersiones) return;
+    const nombreAbierta = versiones.find((v) => v.id === abierta)?.nombre;
+    const escrito = (nombreV || "").trim();
+    // «Guardar como versión nueva» con el mismo nombre de la abierta → sugerir el siguiente (v2, v3…)
+    const nombre = !escrito || (nueva && escrito === nombreAbierta) ? sugerirNombre() : escrito;
+    const resumen = { total: Math.round(e.total), totalAlDeclarar: Math.round(e.totalAlDeclarar), ahorro: Math.round(ahorro), go: Math.round(e.go), anoEst: e.anoEst };
+    const todas = u?.versionesRenta || [];
+    if (!nueva && abierta && todas.some((v) => v.id === abierta)) {
+      onGuardarVersiones(todas.map((v) => (v.id === abierta ? { ...v, nombre, fecha: new Date().toISOString(), resp: r, resumen } : v)));
+    } else {
+      const id = "vr_" + Date.now().toString(36);
+      onGuardarVersiones([{ id, ownerId: owner.id, nombre, fecha: new Date().toISOString(), resp: r, resumen }, ...todas].slice(0, 40));
+      setAbierta(id);
+    }
+    setNombreV(nombre);
+  };
+  const abrirVersion = (v) => { setEstado((s0) => ({ ...s0, [owner.id]: { ...RESPUESTAS_DEFAULT, ...v.resp } })); setAbierta(v.id); setNombreV(v.nombre); };
+  const borrarVersion = (v) => { onGuardarVersiones?.((u?.versionesRenta || []).filter((x) => x.id !== v.id)); if (abierta === v.id) { setAbierta(null); setNombreV(""); } };
 
   return (
     <div style={{ display: "grid", gap: 16 }}>
@@ -122,6 +155,10 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
       )}
 
       {e && sel !== "grupo" && (<>
+        <Versiones nombre={nombreV} setNombre={setNombreV} sugerido={sugerirNombre()} abierta={abierta} versiones={versiones}
+          puedeGuardar={!!onGuardarVersiones} actual={{ total: e.total, totalAlDeclarar: e.totalAlDeclarar, ahorro }}
+          onGuardar={guardarVersion} onAbrir={abrirVersion} onBorrar={borrarVersion} onPDF={(v) => descargarPDF({ ...RESPUESTAS_DEFAULT, ...v.resp }, v.nombre)}
+          onNueva={() => { setEstado((s0) => { const n = { ...s0 }; delete n[owner.id]; return n; }); setAbierta(null); setNombreV(""); }} />
         <Panel titulo="2. Su ficha: lo que declaró el año pasado" sub={`${e.d.tipo === "F110" ? "Formulario 110" : "Formulario 210"} · año gravable ${e.ano} · traída del historial`}>
           <KpiGrid>
             <Kpi k="Ingresos brutos" v={mm(e.d.renglones.ingresosBrutos)} />
@@ -131,7 +168,6 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
             {e.d.renglones.saldoPagar != null && <Kpi k="Saldo que pagó" v={mm(e.d.renglones.saldoPagar)} />}
             {e.d.renglones.patrimonioLiquido != null && <Kpi k="Patrimonio líquido" v={mm(e.d.renglones.patrimonioLiquido)} />}
           </KpiGrid>
-          <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ ...F.h3, marginTop: 10, background: "none", border: "none", color: C.accent, cursor: "pointer", padding: 0 }}>Ver todas sus declaraciones y cómo han cambiado →</button>
           {tit && (
             <div style={{ marginTop: 10 }}>
               {tit.alerta
@@ -194,7 +230,7 @@ export default function EstimadoRenta({ u, onGuardar, onNavigate }) {
               );
             })}
           </ul>
-          <button type="button" onClick={descargarPDF} style={{ marginTop: 14, padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.accent}`, background: "transparent", color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>📄 Resumen para el contador (PDF)</button>
+          <button type="button" onClick={() => descargarPDF(r, abierta ? nombreV : undefined)} style={{ marginTop: 14, padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.accent}`, background: "transparent", color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>📄 Resumen para el contador (PDF)</button>
         </Panel>
 
         {pat && (!pat.sociedad || pat.extraordinario) && <Patrimonio pat={pat} casa={r.casa} onCasa={(v) => set(owner.id, { casa: v })} />}
@@ -341,4 +377,54 @@ function Grupo({ owners, respDe, calculosGO }) {
       </Panel>
     )}
   </>);
+}
+
+// Barra de versiones: guardar el escenario con un nombre, abrir, comparar y descargar cada uno.
+function Versiones({ nombre, setNombre, sugerido, abierta, versiones, puedeGuardar, actual, onGuardar, onAbrir, onBorrar, onPDF, onNueva }) {
+  const btn = (primario) => ({ padding: "0 14px", height: 42, borderRadius: R.md, border: primario ? "none" : `1px solid ${C.border}`, background: primario ? C.accent : "transparent", color: primario ? C.text : C.muted, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" });
+  const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
+  return (
+    <Panel titulo="Versiones de este cálculo" sub="Guarda escenarios distintos («con venta», «sin venta», «con aportes») para compararlos y mandarle al contador el que decidas.">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "end" }}>
+        <div style={{ flex: "1 1 260px" }}>
+          <Campo label={abierta ? "Nombre de la versión abierta" : "Nombre de la versión"}>
+            <input style={inp} value={nombre} placeholder={sugerido} onChange={(ev) => setNombre(ev.target.value)} />
+          </Campo>
+        </div>
+        <button type="button" disabled={!puedeGuardar} onClick={() => onGuardar(false)} style={btn(true)}>💾 {abierta ? "Guardar cambios" : "Guardar versión"}</button>
+        {abierta && <button type="button" onClick={() => onGuardar(true)} style={btn(false)}>Guardar como versión nueva</button>}
+        <button type="button" onClick={onNueva} style={btn(false)}>+ Empezar de cero</button>
+      </div>
+      {versiones.length > 0 && (
+        <div style={{ overflowX: "auto", marginTop: 14 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", ...F.body, color: C.text }}>
+            <thead><tr>{["Versión", "Impuesto", "Total al declarar", "Ahorro marcado", ""].map((h, i) => <th key={h || i} style={{ ...F.label, padding: "8px 6px", textAlign: i ? "right" : "left" }}>{h}</th>)}</tr></thead>
+            <tbody>
+              {!abierta && (
+                <tr><td style={{ ...td, textAlign: "left", fontFamily: "inherit", color: C.muted }}>En pantalla (sin guardar)</td><td style={td}>{mm(actual.total)}</td><td style={td}>{mm(actual.totalAlDeclarar)}</td><td style={{ ...td, color: C.ok }}>{mm(actual.ahorro)}</td><td style={td} /></tr>
+              )}
+              {versiones.map((v) => (
+                <tr key={v.id} style={{ background: abierta === v.id ? Cα.accent08 : "transparent" }}>
+                  <td style={{ ...td, textAlign: "left", fontFamily: "inherit" }}>
+                    <div style={{ ...F.h3, color: abierta === v.id ? C.accent : C.text }}>{v.nombre}{abierta === v.id ? " · abierta" : ""}</div>
+                    <div style={F.caption}>{new Date(v.fecha).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" })}</div>
+                  </td>
+                  <td style={td}>{mm(v.resumen?.total)}</td>
+                  <td style={td}>{mm(v.resumen?.totalAlDeclarar)}</td>
+                  <td style={{ ...td, color: C.ok }}>{mm(v.resumen?.ahorro)}</td>
+                  <td style={{ ...td, fontFamily: "inherit" }}>
+                    <div style={{ display: "inline-flex", gap: 6 }}>
+                      <button type="button" onClick={() => onAbrir(v)} style={{ ...btn(false), height: 30, padding: "0 10px" }}>Abrir</button>
+                      <button type="button" onClick={() => onPDF(v)} style={{ ...btn(false), height: 30, padding: "0 10px" }}>📄 PDF</button>
+                      <button type="button" onClick={() => onBorrar(v)} style={{ ...btn(false), height: 30, padding: "0 10px", color: C.danger }}>Borrar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Panel>
+  );
 }
