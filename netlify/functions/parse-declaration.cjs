@@ -83,7 +83,7 @@ Formato de respuesta para F-210 (natural):
   "nombreContribuyente": "nombre completo o null",
   "nit": "NIT/cédula o null",
   "renglones": {
-    "ingresosBrutos": número (total de ingresos del año),
+    "ingresosBrutos": número (TOTAL de ingresos brutos del año: la SUMA de todas las cédulas — rentas de trabajo (renglón 32), rentas de trabajo no laborales (43), rentas de capital (58), rentas no laborales (74), pensiones (99) y dividendos (104 + 107 + 108 + 109). NO tomes solo la primera columna),
     "ingresosTrabajo": número (ingresos brutos por rentas de trabajo: salarios y demás pagos laborales),
     "ingresosHonorarios": número (ingresos brutos por rentas de trabajo que no provienen de una relación laboral: honorarios, compensación por servicios personales),
     "ingresosCapital": número (ingresos brutos por rentas de capital: intereses, rendimientos financieros, arrendamientos, regalías),
@@ -91,7 +91,9 @@ Formato de respuesta para F-210 (natural):
     "ingresosPensiones": número (ingresos brutos por pensiones),
     "ingresosDividendos": número (total de ingresos por dividendos y participaciones, de todas sus subcédulas),
     "ingresosGananciaOcasional": número (ingresos por ganancias ocasionales),
-    "ingresosNoConstitutivos": número (aportes obligatorios a salud/pensión del empleado, etc.),
+    "ingresosNoConstitutivos": número (suma de los ingresos no constitutivos de renta de todas las cédulas),
+    "costosNoLaborales": número (costos y deducciones procedentes de rentas no laborales y de capital),
+    "dependientes": número (número de dependientes económicos, renglón 138),
     "ingresosNetos": número,
     "rentaExenta25": número (el 25% exento laboral, Art. 206 #10 ET),
     "deducIntereses": número (intereses vivienda, Art. 119 ET),
@@ -143,6 +145,8 @@ Formato de respuesta para F-110 (jurídica):
 }
 
 Reglas adicionales:
+- En el F-210 los valores de "Patrimonio" están arriba: Total patrimonio bruto (29), Deudas (30), Total patrimonio líquido (31). Verifica que bruto − deudas = líquido.
+- En el F-210, "impuestoCalculado" es el Impuesto neto de renta (126); "retefuente" son las Retenciones año gravable a declarar (132); "anticipoAnoSiguiente" es el renglón 133; "anticipoAnoAnterior" el 130; "saldoPagar" es el Saldo a pagar por impuesto (134), y si hay Total saldo a favor (137) ponlo como saldoPagar NEGATIVO.
 - Si detectas que el documento NO es una declaración DIAN válida, responde:
   { "error": "El documento no parece una declaración DIAN válida" }
 - Si el formulario es otro (F-490, F-350, etc.), responde:
