@@ -226,7 +226,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
             bienesApp={(u?.inv || []).filter((i) => i && i.owner === owner.id && i.sim !== false).reduce((a, i) => a + (Number(i.va) || 0) * (i.moneda === "USD" ? (Number(u?.trm) || 4200) : 1), 0)} />
           <div style={{ ...F.h3, margin: "18px 0 8px" }}>Otros cambios</div>
           <Grid>
-            {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda="Lo que vas a aportar de más frente al año pasado"><Plata value={r.aportes} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
+            {e.nat && <Campo label="Aportes voluntarios a pensión o AFC" ayuda={`Lo que vas a aportar de más que el año pasado. Escoge si es al mes o en todo el año${r.perAportes === "mes" && r.aportes ? ` (= ${mm(r.aportes)} en el año)` : ""}.`}><PlataPeriodo value={r.aportes} per={r.perAportes || "año"} onPer={(p) => set(owner.id, { perAportes: p })} onChange={(v) => set(owner.id, { aportes: v })} /></Campo>}
             {e.nat && <Campo label="Dependientes frente al año pasado">
               <select style={sel_} value={r.dep} onChange={(ev) => set(owner.id, { dep: Number(ev.target.value) })}>{DEPS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
             </Campo>}
