@@ -212,3 +212,13 @@ describe("¿qué recibes este año? (2025 fijo, 2026 ítem por ítem)", () => {
     expect(l[0].monto).toBeGreaterThan(0);
   });
 });
+
+describe("lo que no es renta", () => {
+  it("un préstamo no suma al impuesto ni a los ingresos de renta", () => {
+    const sin = estimarDesdeDeclaracion(persona, { g: 0, lista2026: [{ id: "a", tipo: "laboral", monto: 300e6 }] });
+    const con = estimarDesdeDeclaracion(persona, { g: 0, lista2026: [{ id: "a", tipo: "laboral", monto: 300e6 }, { id: "p", nombre: "préstamos Lagoon", tipo: "noRenta", monto: 240e6 }] });
+    expect(con.renta).toBeCloseTo(sin.renta, 0);
+    expect(con.ingresosEst).toBe(300e6);
+    expect(con.noRentaLista).toBe(240e6);
+  });
+});

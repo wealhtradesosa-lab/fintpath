@@ -823,7 +823,8 @@ function Lista2026({ e, r, registrados, onChange }) {
   const usados = new Set(lista.map((x) => x.desde).filter(Boolean));
   const disponibles = registrados.filter((x) => !usados.has(x.desde));
   const o = origenIngresos(e.d);
-  const total = lista.reduce((a, x) => a + (Number(x.monto) || 0), 0);
+  const total = lista.reduce((a, x) => a + (x.tipo === "noRenta" ? 0 : Number(x.monto) || 0), 0);
+  const noRenta = lista.reduce((a, x) => a + (x.tipo === "noRenta" ? Number(x.monto) || 0 : 0), 0);
   const dv = e.brutos ? total / e.brutos - 1 : 0;
   const pesa = (id) => (e.aportesLista || []).find((x) => x.id === id)?.impuesto || 0;
   return (
@@ -850,9 +851,10 @@ function Lista2026({ e, r, registrados, onChange }) {
             {e.nat ? <Campo label="Tipo"><select style={sel_} value={x.tipo} onChange={(ev) => upd(x.id, { tipo: ev.target.value })}>{TIPOS_INGRESO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></Campo> : <div />}
             <Campo label={`Monto en ${e.anoEst}`}>
               <PlataPeriodo value={x.monto} per={x.per} onPer={(p) => upd(x.id, { per: p })} onChange={(v) => upd(x.id, { monto: v })} />
-              {pesa(x.id) > 0 && <span style={{ ...F.caption, color: C.muted }}>pesa ~{mm(pesa(x.id))} en tu impuesto</span>}
+              {x.tipo === "noRenta" ? <span style={{ ...F.caption, color: C.ok }}>no paga renta: no suma a tu impuesto</span>
+                : pesa(x.id) > 0 && <span style={{ ...F.caption, color: C.muted }}>pesa ~{mm(pesa(x.id))} en tu impuesto</span>}
             </Campo>
-            {(!e.nat || x.tipo === "arriendo" || x.tipo === "otro") ? (
+            {x.tipo !== "noRenta" && (!e.nat || x.tipo === "arriendo" || x.tipo === "otro") ? (
               <Campo label={x.tipo === "arriendo" ? "Gastos de este arriendo" : "Gastos de este ingreso"}
                 ayuda={x.tipo === "arriendo" ? "Administración, predial, mantenimiento, seguro, intereses del crédito. Se restan antes del impuesto." : "Lo que te cuesta generarlo (con factura). Se resta antes del impuesto."}>
                 <PlataPeriodo value={x.costos} per={x.perCostos || x.per} onPer={(p) => upd(x.id, { perCostos: p })} onChange={(v) => upd(x.id, { costos: v })} />
@@ -877,6 +879,7 @@ function Lista2026({ e, r, registrados, onChange }) {
           <div>
             <div style={F.label}>Resultado</div>
             <div style={{ ...F.monoLg, marginTop: 4 }}>{e.ano}: {mm(e.brutos)} → {e.anoEst}: {mm(total)}</div>
+            {noRenta > 0 && <div style={{ ...F.caption, marginTop: 2 }}>Además recibes {mm(noRenta)} que no es renta (préstamos, reembolsos): es plata que entra, pero no paga impuesto.</div>}
             <div style={{ ...F.body, marginTop: 4, color: Math.abs(dv) < 0.005 ? C.muted : dv > 0 ? C.accent : C.warn, fontWeight: 700 }}>
               {Math.abs(dv) < 0.005 ? "Tus ingresos están iguales" : `Tus ingresos ${dv > 0 ? "suben" : "bajan"} ${Math.round(Math.abs(dv) * 100)}% (${dv > 0 ? "+" : "−"}${mm(Math.abs(total - e.brutos))})`}
             </div>

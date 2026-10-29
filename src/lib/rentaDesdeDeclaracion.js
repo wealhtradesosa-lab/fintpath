@@ -35,9 +35,11 @@ export const UMBRAL_PATRIMONIO_EXTRAORDINARIO_UVT = 200000; // Decreto 173 de 20
 export const TIPOS_INGRESO = [
   ["laboral", "Salario, comisiones u honorarios"], ["arriendo", "Arriendo"], ["capital", "Intereses o rendimientos"],
   ["dividendos", "Utilidades o dividendos de una empresa"], ["otro", "Otro"],
+  ["noRenta", "No paga renta (préstamo, reembolso, aporte)"],
 ];
 export const tipoDeCategoria = (cat = "") => {
   const c = String(cat).toLowerCase();
+  if (/pr[eé]stam|reembols|devoluci|aporte de capital|abono a capital/.test(c)) return "noRenta";
   if (/salari|honorari|comisi|prima|bonific|cesant|laboral/.test(c)) return "laboral";
   if (/arriendo|arrend|alquiler/.test(c)) return "arriendo";
   if (/dividend|utilidad|participaci/.test(c)) return "dividendos";
@@ -213,15 +215,16 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
   }
   const sigueBase = Math.max(0, brutos - perdidoTotal);
   // ── Modo «¿qué recibes este año?»: lo declarado queda fijo como referencia y el año se arma ítem por ítem.
-  let ingresosLista = null, aportesLista = [], ordLista = 0;
+  let ingresosLista = null, aportesLista = [], ordLista = 0, noRentaLista = 0;
   if (lista) {
     let ord = 0, div = 0;
     for (const it of lista) {
-      if (off["l_" + it.id]) continue;
+      if (off["l_" + it.id] || it.tipo === "noRenta") continue; // un préstamo o reembolso no es renta
       const m = num(it.monto); if (!m) continue;
       if (nat && it.tipo === "dividendos") div += m; else ord += Math.max(0, m - num(it.costos));
     }
-    ingresosLista = lista.reduce((a, it) => a + (off["l_" + it.id] ? 0 : num(it.monto)), 0);
+    ingresosLista = lista.reduce((a, it) => a + (off["l_" + it.id] || it.tipo === "noRenta" ? 0 : num(it.monto)), 0);
+    noRentaLista = lista.reduce((a, it) => a + (it.tipo === "noRenta" && !off["l_" + it.id] ? num(it.monto) : 0), 0);
     ordLista = ord;
     // Base del año: lo ordinario con la misma proporción gravable que tuvo la declaración; los dividendos aparte.
     const nb = ord * pct + div;
@@ -230,7 +233,7 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
     paso("lista", `Tus ingresos de ${anoEst}: ${mm(ingresosLista)} (en ${ano} declaraste ${mm(brutos)})`, nb);
     // Cuánto pesa cada ingreso en el impuesto: se quita uno a la vez.
     for (const it of lista) {
-      const m = num(it.monto); if (!m || off["l_" + it.id]) { aportesLista.push({ id: it.id, impuesto: 0 }); continue; }
+      const m = num(it.monto); if (!m || off["l_" + it.id] || it.tipo === "noRenta") { aportesLista.push({ id: it.id, impuesto: 0 }); continue; }
       const sinB = it.tipo === "dividendos" && nat ? nb - m : nb - Math.max(0, m - num(it.costos)) * pct;
       aportesLista.push({ id: it.id, impuesto: Math.max(0, tax(nb) - tax(Math.max(0, sinB))) });
     }
@@ -294,7 +297,7 @@ export function estimarDesdeDeclaracion(owner, resp = {}, opt = {}) {
     d, nat, ano, anoEst, uvt, uvtBase, impBase, base0, base: b, brutos, renta, go, gc, total,
     rango: [total * 0.9, total * 1.1], perdidoTotal, ingNuevos, ingresosEst,
     // Piso de comparación: con la tabla, lo que el usuario repartió (más lo declarado sin repartir).
-    ingresosAntes: filas ? sumAntesFilas + restoBase : brutos, aportesLista, modoLista: !!lista, ret, antPagado, antLeido: r.ant == null && ap.leido, saldo,
+    ingresosAntes: filas ? sumAntesFilas + restoBase : brutos, aportesLista, modoLista: !!lista, noRentaLista, ret, antPagado, antLeido: r.ant == null && ap.leido, saldo,
     pctA, anticipoSiguiente, totalAlDeclarar, pasos, marginal: nat ? tarifaMarginal241(b, uvt) : TARIFA_SOCIEDADES,
   };
 }
