@@ -190,10 +190,9 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
       )}
 
       {e && sel !== "grupo" && (<>
-        <Versiones nombre={nombreV} setNombre={setNombreV} sugerido={sugerirNombre()} abierta={abierta} versiones={versiones}
-          puedeGuardar={!!onGuardarVersiones} actual={{ total: e.total, totalAlDeclarar: e.totalAlDeclarar, ahorro }}
-          onGuardar={guardarVersion} onAbrir={abrirVersion} onBorrar={borrarVersion} onPDF={(v) => descargarPDF({ ...RESPUESTAS_DEFAULT, ...v.resp }, v.nombre)}
-          onNueva={() => { setEstado((s0) => { const n = { ...s0 }; delete n[owner.id]; return n; }); setAbierta(null); setNombreV(""); }} />
+        {versiones.length > 0 && (
+          <div style={{ ...F.body, color: C.text }}>💾 Tienes {versiones.length} cálculo{versiones.length > 1 ? "s" : ""} guardado{versiones.length > 1 ? "s" : ""} para {owner.name}. <button type="button" onClick={() => document.getElementById("guardar-calculo")?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Verlos o abrir uno ↓</button></div>
+        )}
         <Panel titulo="2. Su ficha: lo que declaró el año pasado" sub={`${e.d.tipo === "F110" ? "Formulario 110" : "Formulario 210"} · año gravable ${e.ano} · traída del historial`}>
           <KpiGrid>
             <Kpi k="Ingresos brutos" v={mm(e.d.renglones.ingresosBrutos)} />
@@ -287,6 +286,11 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
           </div>
         </Panel>
 
+        <div id="guardar-calculo" />
+        <Versiones nombre={nombreV} setNombre={setNombreV} sugerido={sugerirNombre()} abierta={abierta} versiones={versiones}
+          puedeGuardar={!!onGuardarVersiones} actual={{ total: e.total, totalAlDeclarar: e.totalAlDeclarar, ahorro }}
+          onGuardar={guardarVersion} onAbrir={abrirVersion} onBorrar={borrarVersion} onPDF={(v) => descargarPDF({ ...RESPUESTAS_DEFAULT, ...v.resp }, v.nombre)}
+          onNueva={() => { setEstado((s0) => { const n = { ...s0 }; delete n[owner.id]; return n; }); setAbierta(null); setNombreV(""); }} />
         <Panel titulo="6. Antes del 31 de diciembre">
           <ul style={{ ...F.body, margin: 0, paddingLeft: 18, display: "grid", gap: 6 }}>
             {e.totalAlDeclarar > 0 && <li><Calendario e={e} /></li>}
@@ -437,7 +441,7 @@ function Versiones({ nombre, setNombre, sugerido, abierta, versiones, puedeGuard
   const btn = (primario) => ({ padding: "0 14px", height: 42, borderRadius: R.md, border: primario ? "none" : `1px solid ${C.border}`, background: primario ? C.accent : "transparent", color: primario ? C.text : C.muted, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" });
   const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
   return (
-    <Panel titulo="Versiones de este cálculo" sub="Guarda escenarios distintos («con venta», «sin venta», «con aportes») para compararlos y mandarle al contador el que decidas.">
+    <Panel titulo="💾 Guardar este cálculo" sub="Cuando termines, guárdalo con un nombre. Puedes guardar varios escenarios («con venta», «sin venta», «con aportes») para compararlos y mandarle al contador el que decidas.">
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "end" }}>
         <div style={{ flex: "1 1 260px" }}>
           <Campo label={abierta ? "Nombre de la versión abierta" : "Nombre de la versión"}>
