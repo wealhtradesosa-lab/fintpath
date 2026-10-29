@@ -180,6 +180,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       renglones: cleaned,
       capturadoEl: new Date().toISOString(),
       fuenteCaptura: "upload_pdf_ia",
+      ...(parsed.nit ? { nit: String(parsed.nit) } : {}),
     };
     onSaveToOwner(selectedOwner.id, payload);
     setFile(null);

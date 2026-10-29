@@ -109,10 +109,31 @@ export function estimarImpuestoReferente(u, cal) {
 //   personas  → un pago, entre agosto y octubre según los dos últimos dígitos de la cédula;
 //   sociedades→ dos cuotas iguales, cerca de mayo y julio (último dígito del NIT).
 // owner.mesDeclaracion (1-12) fija el mes; si no está, persona → septiembre, sociedad → mayo.
+// 29-oct-2026: la fecha sale sola del NIT/cédula leído en la declaración (calendario DIAN
+// personas naturales 2026, por los dos últimos dígitos; para años siguientes se asume el mismo
+// patrón hasta que salga el nuevo decreto). Sociedades: 1.ª cuota en mayo y 2.ª en julio.
+const CAL_PN = [[8,12],[8,13],[8,14],[8,18],[8,19],[8,20],[8,21],[8,24],[8,25],[8,26],[8,27],[8,28],[8,31],[9,1],[9,2],[9,3],[9,4],[9,7],[9,8],[9,9],[9,10],[9,11],[9,14],[9,15],[9,16],[9,17],[9,18],[9,21],[9,22],[9,23],[9,24],[9,25],[9,28],[10,1],[10,2],[10,5],[10,6],[10,7],[10,8],[10,9],[10,13],[10,14],[10,15],[10,16],[10,19],[10,20],[10,21],[10,22],[10,23],[10,26]];
+export function nitDe(owner) {
+  if (owner?.nit) return String(owner.nit);
+  const ds = Array.isArray(owner?.declaraciones) ? [...owner.declaraciones].reverse() : [];
+  const d = ds.find((x) => x?.nit);
+  return d ? String(d.nit) : null;
+}
+/** Vencimiento de persona natural por los dos últimos dígitos del NIT (sin dígito de verificación). */
+export function fechaPersonaNatural(nit) {
+  const lim = String(nit || "").split("-")[0].replace(/[^0-9]/g, "");
+  if (lim.length < 2) return null;
+  let d = Number(lim.slice(-2)); if (d === 0) d = 100;
+  const [mes, dia] = CAL_PN[Math.ceil(d / 2) - 1];
+  return { mes, dia };
+}
 export function mesesDePago(owner) {
   const jur = owner?.type === "juridica";
-  const m = Number(owner?.mesDeclaracion) || (jur ? 5 : 9);
-  return jur ? [{ mes: m, fraccion: 0.5 }, { mes: Math.min(12, m + 2), fraccion: 0.5 }] : [{ mes: m, fraccion: 1 }];
+  const fijo = Number(owner?.mesDeclaracion) || null;
+  if (jur) { const m = fijo || 5; return [{ mes: m, fraccion: 0.5 }, { mes: Math.min(12, m + 2), fraccion: 0.5 }]; }
+  const f = fijo ? null : fechaPersonaNatural(nitDe(owner));
+  if (f) return [{ mes: f.mes, dia: f.dia, fraccion: 1, auto: true }];
+  return [{ mes: fijo || 9, fraccion: 1 }];
 }
 /** Saldo del impuesto que se paga en un mes dado (sin retenciones), sumando todos los titulares. */
 export function saldoImpuestoDelMes(detalle, owners, mes) {

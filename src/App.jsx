@@ -3557,11 +3557,11 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     // Links/estado viejo con pg="plan" muestran f10. Datos guardados (perfilPlan, caminos…) se conservan.
     case"plan":
     case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
-    case"simf":return <><NotaFuenteImpuesto modo="futuro" cal={calRefFuturo} owners={(u?.owners)||[]} onNavigate={setPg} onGuardarDeclaracion={guardarDeclaracion}/><SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRefFuturo,_calRefHoy:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/></>;
-    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg} onGuardarDeclaracion={guardarDeclaracion} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/><SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/></>;
+    case"simf":return <><SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRefFuturo,_calRefHoy:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/><NotaFuenteImpuesto modo="futuro" cal={calRefFuturo} owners={(u?.owners)||[]} onNavigate={setPg}/></>;
+    case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<><SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg}/></>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.
     case"anio":
-    case"flujo":return <><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg} onGuardarDeclaracion={guardarDeclaracion} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/><FlujoAnual user={u} trm={trm} isEN={isEN}/></>;
+    case"flujo":return <><FlujoAnual user={u} trm={trm} isEN={isEN}/><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg}/></>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
     case"metrics":return isAdmin?<AdminMetrics email={u?.p?.email} fmt={fm} T={T}/>:<div style={{padding:40,textAlign:"center",color:T.tx3}}>No disponible.</div>;
@@ -3636,6 +3636,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"gocasional":return gated("tax","Pro",<OptimizadorGananciaOcasional u={u} onGuardar={(lista)=>upd("calculosGO",lista)}/>);
     case"prevtax":return gated("tax","Pro",<HistorialDeclaraciones
       user={authUser}
+      calRef={calRef}
+      detalleImpuesto={impRef?.detalle||[]}
+      onGuardarDeclaracion={guardarDeclaracion}
+      onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}
       u={u}
       owners={(u&&u.owners)||[]}
       onNavigate={setPg}

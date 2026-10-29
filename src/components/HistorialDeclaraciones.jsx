@@ -3,6 +3,7 @@ import PageHeader from "./PageHeader";
 import DeclaracionUpload from "./DeclaracionUpload";
 import { C, Cα, F, R } from "../lib/designTokens";
 import { analisisHistorial, declaracionesOrdenadas, ultimaDeclaracion, impuestoDeclarado, esF110, MAX_DECLARACIONES, mm, pct } from "../lib/rentaDesdeDeclaracion.js";
+import { PagosDeRenta } from "./NotaFuenteImpuesto";
 import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Barras, Linea, Grafica, Aviso } from "./RentaUI";
 
 /**
@@ -24,7 +25,7 @@ const SERIE = [C.accent, C.ok, C.warn, C.purple, C.danger];
 const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
 const th = { ...F.label, padding: "8px 6px", textAlign: "right" };
 
-export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSaveDeclaracion, onDeleteDeclaracion, onNavigate, isPro, onUpsell, vistaInicial }) {
+export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSaveDeclaracion, onDeleteDeclaracion, onNavigate, isPro, onUpsell, vistaInicial, calRef, detalleImpuesto, onCambiarMes, onGuardarDeclaracion }) {
   const owners = useMemo(() => (ownersIn || []).filter(Boolean), [ownersIn]);
   const conDecl = owners.find((o) => ultimaDeclaracion(o));
   const [sel, setSel] = useState(vistaInicial || (conDecl || owners[0])?.id || "");
@@ -73,6 +74,11 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
         </Panel>
       )}
       {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} onBorrar={onDeleteDeclaracion} />}
+      {owners.length > 0 && calRef && (
+        <Panel titulo={`💸 Lo que pagas de renta en ${new Date().getFullYear()} y cuándo`} sub="De aquí sale el impuesto de los simuladores y del flujo de caja.">
+          <PagosDeRenta cal={calRef} owners={owners} detalle={detalleImpuesto || []} onGuardarDeclaracion={onGuardarDeclaracion} onCambiarMes={onCambiarMes} onSubir={() => abrirSubida(null)} />
+        </Panel>
+      )}
 
 
       {owners.length > 0 && <Panel titulo="¿Qué quieres ver?"><SelectorTitular owners={owners} value={sel} onChange={setSel} /></Panel>}

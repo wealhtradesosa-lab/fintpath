@@ -1170,50 +1170,43 @@ const FUENTE_PAGO = {
 function RentaQuePagas({ pago, año, porMes, onNavigate, onVerMes }) {
   const tit = (pago?.titulares || []).filter((t) => t.total > 0 || t.fuente !== "motor");
   if (!tit.length) return null;
-  const grupos = [["natural", "Personas naturales"], ["juridica", "Sociedades"]].map(([k, l]) => [l, tit.filter((t) => (t.type === "juridica") === (k === "juridica"))]).filter(([, g]) => g.length);
+  const fecha = (m) => (m.dia ? `${m.dia} ${mesL(m.mes).slice(0, 3).toLowerCase()}` : mesL(m.mes).toLowerCase());
+  const falta = pago.porMes.map((v, i) => ({ v, i, queda: porMes[i]?.queda ?? 0 })).filter((x) => x.v > 0 && x.queda < 0);
+  const grupos = [["Personas naturales", tit.filter((t) => t.type !== "juridica")], ["Sociedades", tit.filter((t) => t.type === "juridica")]].filter(([, g]) => g.length);
   return (
-    <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: R.md, background: C.surface, border: `1px solid ${C.border}` }}>
-      <div style={{ ...F.h3, color: C.text }}>🧾 Renta {año - 1} que te toca pagar en {año}: {fm(pago.total)}</div>
-      <div style={{ ...F.caption, marginTop: 4 }}>
-        Es lo que pagas al presentar la declaración del año {año - 1} (saldo + anticipo de {año}). No sale cada mes: sale de una vez en el mes que te toca por tu cédula o NIT.
-      </div>
+    <details style={{ marginTop: 10, ...F.caption, border: `1px solid ${C.border}`, borderRadius: R.md, padding: "8px 12px" }}>
+      <summary style={{ cursor: "pointer", color: C.muted }}>
+        🧾 Renta {año - 1} que pagas en {año}: <b style={{ color: C.text }}>{fm(pago.total)}</b>
+        {" · "}{tit.filter((t) => t.total > 0).map((t) => `${t.name} ${t.meses.map(fecha).join(" y ")}`).join(" · ") || "nadie paga"}
+        {falta.length > 0 && <span style={{ color: C.danger }}> · ese mes no alcanza</span>}
+        <span style={{ color: C.accent }}> · ver detalle</span>
+      </summary>
+      <div style={{ marginTop: 6 }}>Se paga de una vez al presentar la declaración {año - 1} (saldo + anticipo de {año}), no cada mes.</div>
       {grupos.map(([l, g]) => (
-        <div key={l} style={{ marginTop: 10 }}>
-          <div style={{ ...F.label, marginBottom: 4 }}>{l}</div>
+        <div key={l} style={{ marginTop: 8 }}>
+          <div style={{ ...F.label, marginBottom: 2 }}>{l}</div>
           {g.map((t) => (
-            <div key={t.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, padding: "7px 0", borderTop: `1px solid ${C.border}` }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ ...F.body, color: C.text, fontWeight: 600 }}>{t.name}</div>
-                <div style={F.caption}>
-                  {FUENTE_PAGO[t.fuente]}
-                  {t.total <= 0 && t.saldo < 0 ? ` · te queda saldo a favor de ${fm(-t.saldo)}: no pagas` : t.anticipo > 0 ? ` · saldo ${fm(t.saldo)} + anticipo ${fm(t.anticipo)}` : ""}
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                  {t.meses.map((m) => (
-                    <button key={m.mes} type="button" onClick={() => onVerMes(m.mes)} style={{ ...F.caption, cursor: "pointer", padding: "2px 8px", borderRadius: R.pill, border: `1px solid ${C.border}`, background: "transparent", color: C.text }}>
-                      {mesL(m.mes)}{m.fraccion < 1 ? ` · ${fm(t.total * m.fraccion)}` : ""} · ver ese mes
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <span style={{ ...F.mono, color: C.purple, fontWeight: 700, flexShrink: 0 }}>{fm(t.total)}</span>
+            <div key={t.name} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
+              <span>
+                <b style={{ color: C.text }}>{t.name}</b> · {FUENTE_PAGO[t.fuente]}
+                {t.total <= 0 && t.saldo < 0 ? ` · saldo a favor de ${fm(-t.saldo)}: no paga` : t.anticipo > 0 ? ` · saldo ${fm(t.saldo)} + anticipo ${fm(t.anticipo)}` : ""}
+                {t.total > 0 && <> · {t.meses.map((m) => (
+                  <button key={m.mes} type="button" onClick={() => onVerMes(m.mes)} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: "0 4px", cursor: "pointer", textDecoration: "underline" }}>
+                    {fecha(m)}{m.fraccion < 1 ? ` (${fm(t.total * m.fraccion)})` : ""}
+                  </button>
+                ))}</>}
+              </span>
+              <span style={{ ...F.mono, color: C.text, fontWeight: 700 }}>{fm(t.total)}</span>
             </div>
           ))}
         </div>
       ))}
-      {(() => {
-        const peor = pago.porMes.map((v, i) => ({ v, i })).filter((x) => x.v > 0).map((x) => ({ ...x, queda: porMes[x.i]?.queda ?? 0 }));
-        const falta = peor.filter((x) => x.queda < 0);
-        return falta.length ? (
-          <div style={{ ...F.caption, marginTop: 8, color: C.danger }}>
-            Ojo: {falta.map((x) => `en ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}. Conviene ir apartando desde antes.
-          </div>
-        ) : null;
-      })()}
-      <div style={{ ...F.caption, marginTop: 8 }}>
-        El mes de pago se cambia en la nota de arriba. Para que esta cifra sea más precisa, llena la{" "}
-        <button type="button" onClick={() => onNavigate?.("taxcalc")} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}>Calculadora de declaración</button>.
+      {falta.length > 0 && <div style={{ marginTop: 6, color: C.danger }}>{falta.map((x) => `En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}: conviene ir apartando desde antes.</div>}
+      <div style={{ marginTop: 6 }}>
+        La cifra sale de la{" "}
+        <button type="button" onClick={() => onNavigate?.("taxcalc")} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}>Calculadora de declaración</button>; las fechas, de{" "}
+        <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}>Impuestos › Historial</button>.
       </div>
-    </div>
+    </details>
   );
 }

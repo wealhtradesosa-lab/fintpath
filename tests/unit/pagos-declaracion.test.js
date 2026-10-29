@@ -20,3 +20,17 @@ describe("pagosDeclaracion: renta del año anterior de una vez", () => {
   });
   it("total = suma de meses", () => { expect(p.total).toBe(84e6); });
 });
+
+import { fechaPersonaNatural, mesesDePago } from "../../src/lib/impuestoReferente.js";
+describe("fecha de pago por NIT (calendario DIAN personas naturales)", () => {
+  it("dos últimos dígitos, sin dígito de verificación", () => {
+    expect(fechaPersonaNatural("71.234.501-3")).toEqual({ mes: 8, dia: 12 });
+    expect(fechaPersonaNatural("98765400")).toEqual({ mes: 10, dia: 26 });
+    expect(fechaPersonaNatural("1036")).toEqual({ mes: 9, dia: 7 });
+  });
+  it("el NIT de la declaración fija el mes; el mes manual manda", () => {
+    expect(mesesDePago({ type: "natural", declaraciones: [{ nit: "800" }] })[0]).toMatchObject({ mes: 10, dia: 26, auto: true });
+    expect(mesesDePago({ type: "natural", mesDeclaracion: 8, declaraciones: [{ nit: "800" }] })[0].mes).toBe(8);
+    expect(mesesDePago({ type: "natural" })[0].mes).toBe(9);
+  });
+});
