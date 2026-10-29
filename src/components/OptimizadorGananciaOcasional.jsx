@@ -131,29 +131,80 @@ export default function OptimizadorGananciaOcasional({ u }) {
   const estrategias = [...r.estrategias].sort((a, b) => estOrden.indexOf(a.estado) - estOrden.indexOf(b.estado));
   const posibleExtra = r.estrategias.filter((s) => s.estado === "posible").reduce((s, x) => s + (x.ahorro || 0), 0);
 
+  const Paso = ({ n, titulo, children }) => (
+    <div style={card}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <span style={{ width: 24, height: 24, borderRadius: R.pill, background: Cα.accent15, color: C.accent, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700 }}>{n}</span>
+        <div style={F.h2}>{titulo}</div>
+      </div>
+      {children}
+    </div>
+  );
+  const dosCol = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 };
+  const kpi = (label, valor, color, sub, tachado) => (
+    <div style={{ minWidth: 0 }}>
+      <div style={F.label}>{label}</div>
+      <div style={{ ...F.monoXl, color, marginTop: 4, textDecoration: tachado ? "line-through" : "none", opacity: tachado ? 0.7 : 1 }}>{valor}</div>
+      {sub && <div style={{ ...F.caption, marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+
   return (
     <div>
-      <PageHeader label="Impuestos · venta de inmueble" title="¿Cuánto pago si vendo?" accent="vendo" compact
-        subtitle="Llena lo que sabes de tu inmueble. Te mostramos lo que paga la mayoría y lo mínimo que puedes pagar aplicando bien la norma." />
+      <PageHeader label="Herramientas · venta de inmueble" title="¿Cuánto pago si vendo?" accent="vendo" compact
+        subtitle="Llena lo que sabes de tu inmueble. Te mostramos lo que pagarías sin optimizar y lo mínimo que puedes pagar aplicando bien la norma." />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16, alignItems: "start" }}>
-        {/* ── Formulario ── */}
-        <div style={card}>
-          {inmuebles.length > 0 && (
-            <Campo label="Trae uno de tus inmuebles" ayuda="Llenamos lo que ya tienes en Patrimonio. Revisa y completa.">
-              <select style={inp} defaultValue="" onChange={(ev) => traer(ev.target.value)}>
-                <option value="" disabled>Elegir…</option>
-                {inmuebles.map((i) => { const k = String(i.id ?? i.n ?? i.nombre); return <option key={k} value={k}>{i.n || i.nombre || "Inmueble"}</option>; })}
-              </select>
-            </Campo>
-          )}
+      {/* ── Resultado siempre arriba ── */}
+      <div style={{ ...card, position: "sticky", top: 0, zIndex: 5, marginBottom: 16, borderColor: listo && r.ahorro > 0 ? Cα.ok25 : C.border, boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
+        {!listo ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 22 }}>🧮</span>
+            <div>
+              <div style={F.h3}>Completa año de compra, valor de escritura y precio de venta</div>
+              <div style={F.caption}>Con esos tres datos ves al instante cuánto pagarías y cuánto puede bajar.</div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 16, alignItems: "end" }}>
+              {kpi("Sin optimizar", fmMM(r.antes.total), C.danger, `Costo ${fmMM(r.antes.costo)}`, r.ahorro > 0)}
+              {kpi("Con la norma bien aplicada", fmMM(r.despues.total), C.text, `Costo ${fmMM(r.despues.costo)}${r.mejor ? ` · ${r.mejor.norma}` : ""}`)}
+              {kpi("Diferencia estimada", r.ahorro > 0 ? fmMM(r.ahorro) : "$0", r.ahorro > 0 ? C.ok : C.subtle,
+                posibleExtra > 0 ? `y hasta ${fmMM(posibleExtra)} más si aplicas lo pendiente` : "confírmala con tu contador")}
+            </div>
+            <div style={{ ...F.caption, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+              {r.esGO
+                ? `Ganancia ocasional: ${fmMM(r.despues.utilidad)} de utilidad${r.despues.exento ? `, ${fmMM(r.despues.exento)} exentos` : ""}, al 15%.`
+                : `Tienes el inmueble hace menos de 2 años: la utilidad se paga como renta ${jur ? "de la empresa (35%)" : "normal (hasta 39%; mostramos el mínimo, sin tus otros ingresos)"}.`}
+              {r.despues.impRecaptura > 0 ? ` Incluye ${fmMM(r.despues.impRecaptura)} por depreciación recuperada (35%).` : ""}
+            </div>
+          </>
+        )}
+      </div>
+
+      {inmuebles.length > 0 && (
+        <div style={{ ...card, marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ ...F.h3, flex: "0 0 auto" }}>Trae uno de tus inmuebles</div>
+          <select style={{ ...inp, flex: "1 1 220px", width: "auto" }} defaultValue="" onChange={(ev) => traer(ev.target.value)}>
+            <option value="" disabled>Elegir…</option>
+            {inmuebles.map((i) => { const k = String(i.id ?? i.n ?? i.nombre); return <option key={k} value={k}>{i.n || i.nombre || "Inmueble"}</option>; })}
+          </select>
+          <div style={{ ...F.caption, flex: "1 1 100%" }}>Llenamos lo que ya tienes en Patrimonio. Revisa y completa.</div>
+        </div>
+      )}
+
+      {/* ── Formulario en 3 pasos ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, alignItems: "start", marginBottom: 16 }}>
+        <Paso n="1" titulo="El inmueble">
           <Campo label="¿A nombre de quién está la escritura?">
-            <Opciones value={f.titular} onChange={set("titular")} opciones={[["natural", "👤 Mío (persona)"], ["juridica", "🏢 De una empresa"]]} />
+            <Opciones value={f.titular} onChange={set("titular")} opciones={[["natural", "👤 Mío"], ["juridica", "🏢 Empresa"]]} />
           </Campo>
-          <Campo label="Tipo de inmueble">
-            <Opciones value={f.tipo} onChange={set("tipo")} opciones={[["urbano", "Urbano"], ["rural_agro", "Rural agropecuario"], ["rural_otro", "Rural (otro)"]]} />
+          <Campo label="Tipo">
+            <select style={inp} value={f.tipo} onChange={(ev) => set("tipo")(ev.target.value)}>
+              <option value="urbano">Urbano</option><option value="rural_agro">Rural agropecuario</option><option value="rural_otro">Rural (otro)</option>
+            </select>
           </Campo>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={dosCol}>
             <Campo label="Año de compra">
               <select style={inp} value={f.anoCompra} onChange={(ev) => set("anoCompra")(Number(ev.target.value))}>
                 <option value="">Año…</option>{años.map((a) => <option key={a} value={a}>{a}</option>)}
@@ -168,35 +219,40 @@ export default function OptimizadorGananciaOcasional({ u }) {
           <Campo label="Valor en la escritura de compra" ayuda="El que dice la escritura, no lo que crees que pagaste.">
             <Plata value={f.valorEscritura} onChange={set("valorEscritura")} />
           </Campo>
-          {jur && (
-            <Campo label="Costo fiscal en la declaración de la empresa" ayuda="Lo tiene tu contador (F-110 o balance fiscal). Si no lo sabes, déjalo vacío.">
-              <Plata value={f.costoDeclarado} onChange={set("costoDeclarado")} />
-            </Campo>
-          )}
-          <Campo label={jur ? "¿Está en la declaración de renta de la empresa?" : "¿Está en tu declaración de renta?"}>
-            <Opciones value={f.enRenta} onChange={set("enRenta")} opciones={[["si", "Sí"], ["no", "No"], ["nose", "No sé"]]} />
-          </Campo>
-          <Campo label={`Avalúo catastral ${f.anoVenta - 1}`} ayuda="Está en la factura del predial de ese año.">
-            <Plata value={f.avaluoAnterior} onChange={set("avaluoAnterior")} />
-          </Campo>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <div style={dosCol}>
             <Campo label="Mejoras con factura"><Plata value={f.mejoras} onChange={set("mejoras")} /></Campo>
             <Campo label="Valorización pagada"><Plata value={f.valorizacion} onChange={set("valorizacion")} /></Campo>
           </div>
+        </Paso>
+
+        <Paso n="2" titulo="Ante la DIAN">
+          <Campo label={jur ? "¿Está en la declaración de la empresa?" : "¿Está en tu declaración de renta?"}>
+            <Opciones value={f.enRenta} onChange={set("enRenta")} opciones={[["si", "Sí"], ["no", "No"], ["nose", "No sé"]]} />
+          </Campo>
           {jur && (
-            <Campo label="Depreciación que la empresa ya descontó" ayuda="Pregúntale al contador. Si no la depreciaron, 0.">
+            <Campo label="Costo fiscal declarado por la empresa" ayuda="Lo tiene tu contador (F-110). Si no lo sabes, déjalo vacío.">
+              <Plata value={f.costoDeclarado} onChange={set("costoDeclarado")} />
+            </Campo>
+          )}
+          <Campo label={`Avalúo catastral ${f.anoVenta - 1}`} ayuda="Está en la factura del predial de ese año.">
+            <Plata value={f.avaluoAnterior} onChange={set("avaluoAnterior")} />
+          </Campo>
+          {jur && (
+            <Campo label="Depreciación ya descontada" ayuda="Pregúntale al contador. Si no la depreciaron, déjalo en 0.">
               <Plata value={f.depreciacion} onChange={set("depreciacion")} />
             </Campo>
           )}
-          <div style={{ height: 1, background: C.border, margin: "8px 0 14px" }} />
-          <Campo label="¿En cuánto la vas a vender?"><Plata value={f.precioVenta} onChange={set("precioVenta")} /></Campo>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <Campo label="Año de venta">
+        </Paso>
+
+        <Paso n="3" titulo="La venta">
+          <Campo label="Precio de venta"><Plata value={f.precioVenta} onChange={set("precioVenta")} /></Campo>
+          <div style={dosCol}>
+            <Campo label="Año">
               <select style={inp} value={f.anoVenta} onChange={(ev) => set("anoVenta")(Number(ev.target.value))}>
                 {[hoy.getFullYear(), hoy.getFullYear() + 1, hoy.getFullYear() + 2].map((a) => <option key={a} value={a}>{a}</option>)}
               </select>
             </Campo>
-            <Campo label="Mes de venta">
+            <Campo label="Mes">
               <select style={inp} value={f.mesVenta} onChange={(ev) => set("mesVenta")(Number(ev.target.value))}>
                 {MESES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
               </select>
@@ -209,139 +265,99 @@ export default function OptimizadorGananciaOcasional({ u }) {
           )}
           {!jur && (
             <>
-              <Campo label="¿Es la casa o apartamento donde vives?">
-                <Opciones value={f.esVivienda ? "si" : "no"} onChange={(v) => set("esVivienda")(v === "si")} opciones={[["si", "Sí, vivo ahí"], ["no", "No"]]} />
+              <Campo label="¿Vives ahí?">
+                <Opciones value={f.esVivienda ? "si" : "no"} onChange={(v) => set("esVivienda")(v === "si")} opciones={[["si", "Sí"], ["no", "No"]]} />
               </Campo>
               {f.esVivienda && (
-                <Campo label="¿Vas a poner el dinero en una cuenta AFC o pagar el crédito de esta casa?" ayuda="Con esto, las primeras 5.000 UVT de la ganancia no pagan impuesto.">
-                  <Opciones value={f.afc} onChange={set("afc")} opciones={[["si", "Sí, todo"], ["tal_vez", "Tal vez"], ["no", "No"]]} />
+                <Campo label="¿Todo el dinero irá a una cuenta AFC o al crédito de esta casa?" ayuda="Así las primeras 5.000 UVT de la ganancia no pagan impuesto.">
+                  <Opciones value={f.afc} onChange={set("afc")} opciones={[["si", "Sí"], ["tal_vez", "Tal vez"], ["no", "No"]]} />
                 </Campo>
               )}
             </>
           )}
+        </Paso>
+      </div>
+
+      {listo && r.alertas.length > 0 && (
+        <div style={{ ...card, borderColor: Cα.warn25, marginBottom: 16 }}>
+          <div style={{ ...F.h3, marginBottom: 8 }}>⚠️ Antes de firmar</div>
+          {r.alertas.map((a, i) => <div key={i} style={{ ...F.body, marginBottom: 6 }}>• {a}</div>)}
         </div>
+      )}
 
-        {/* ── Resultado ── */}
-        <div style={{ display: "grid", gap: 16 }}>
-          {!listo ? (
-            <div style={{ ...card, textAlign: "center", padding: 32 }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>🏠</div>
-              <div style={F.h2}>Llena año de compra, valor de escritura y precio de venta</div>
-              <div style={{ ...F.body, marginTop: 6 }}>Con esos tres datos ya te mostramos cuánto pagarías y cuánto puedes ahorrar.</div>
+      {listo && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16, alignItems: "start", marginBottom: 16 }}>
+          <div style={{ display: "grid", gap: 16 }}>
+            <div style={card}>
+              <div style={{ ...F.h2, marginBottom: 4 }}>Tu costo fiscal: la ley te deja elegir el mayor</div>
+              <div style={{ ...F.caption, marginBottom: 12 }}>Mientras más alto el costo, menor la ganancia y menor el impuesto.</div>
+              {r.vias.map((v) => (
+                <div key={v.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "10px 12px", marginBottom: 6, borderRadius: R.md,
+                  background: v.gana ? Cα.ok08 : C.raised, border: `1px solid ${v.gana ? Cα.ok25 : C.border}`, opacity: v.valida ? 1 : 0.55 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...F.h3, color: v.gana ? C.ok : C.text }}>{v.gana ? "✓ " : ""}{v.nombre}</div>
+                    <div style={F.caption}>{v.norma}{v.nota ? ` · ${v.nota}` : ""}</div>
+                  </div>
+                  <div style={{ ...F.mono, color: v.valida ? C.text : C.subtle, whiteSpace: "nowrap" }}>{v.valida ? fmMM(v.valor) : "—"}</div>
+                </div>
+              ))}
             </div>
-          ) : (
-            <>
-              <div style={{ ...card, borderColor: r.ahorro > 0 ? Cα.ok25 : C.border }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <div>
-                    <div style={F.label}>Sin optimizar</div>
-                    <div style={{ ...F.monoXl, color: C.danger, marginTop: 4, textDecoration: r.ahorro > 0 ? "line-through" : "none", opacity: r.ahorro > 0 ? 0.7 : 1 }}>{fmMM(r.antes.total)}</div>
-                    <div style={F.caption}>Costo: {fmMM(r.antes.costo)}</div>
-                  </div>
-                  <div>
-                    <div style={F.label}>Con la norma bien aplicada</div>
-                    <div style={{ ...F.monoXl, color: C.text, marginTop: 4 }}>{fmMM(r.despues.total)}</div>
-                    <div style={F.caption}>Costo: {fmMM(r.despues.costo)}{r.mejor ? ` · ${r.mejor.norma}` : ""}</div>
-                  </div>
-                </div>
-                {r.ahorro > 0 && (
-                  <div style={{ marginTop: 14, padding: 12, borderRadius: R.md, background: Cα.ok08, border: `1px solid ${Cα.ok25}` }}>
-                    <div style={{ ...F.h2, color: C.ok }}>Pagarías {fmMM(r.ahorro)} menos</div>
-                    <div style={F.caption}>{fm(r.ahorro)} de diferencia, estimada, solo aplicando normas vigentes. Confírmala con tu contador.</div>
-                  </div>
-                )}
-                {posibleExtra > 0 && (
-                  <div style={{ marginTop: 10, padding: 12, borderRadius: R.md, background: Cα.warn08, border: `1px solid ${Cα.warn25}` }}>
-                    <div style={{ ...F.h3, color: C.warn }}>Y podría bajar hasta {fmMM(posibleExtra)} más</div>
-                    <div style={F.caption}>Mira abajo las estrategias marcadas «Puedes ganarla».</div>
-                  </div>
-                )}
-                <div style={{ ...F.caption, marginTop: 12 }}>
-                  {r.esGO
-                    ? `Ganancia ocasional: ${fmMM(r.despues.utilidad)} de utilidad${r.despues.exento ? `, ${fmMM(r.despues.exento)} exentos` : ""}, al 15%.`
-                    : `Tienes el inmueble hace menos de 2 años: la utilidad se paga como renta ${jur ? "de la empresa (35%)" : "normal (hasta 39%; mostramos el mínimo, sin tus otros ingresos)"}.`}
-                  {r.despues.impRecaptura > 0 ? ` Incluye ${fmMM(r.despues.impRecaptura)} por depreciación recuperada (35%).` : ""}
-                </div>
-              </div>
-
-              {r.alertas.length > 0 && (
-                <div style={{ ...card, borderColor: Cα.warn25 }}>
-                  <div style={{ ...F.h3, marginBottom: 8 }}>⚠️ Antes de firmar</div>
-                  {r.alertas.map((a, i) => <div key={i} style={{ ...F.body, marginBottom: 6 }}>• {a}</div>)}
-                </div>
-              )}
-
-              <div style={card}>
-                <div style={{ ...F.h2, marginBottom: 4 }}>Tu costo fiscal: la ley te deja elegir el mayor</div>
-                <div style={{ ...F.caption, marginBottom: 12 }}>Mientras más alto el costo, menor la ganancia y menor el impuesto.</div>
-                {r.vias.map((v) => (
-                  <div key={v.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "10px 12px", marginBottom: 6, borderRadius: R.md,
-                    background: v.gana ? Cα.ok08 : C.raised, border: `1px solid ${v.gana ? Cα.ok25 : C.border}`, opacity: v.valida ? 1 : 0.55 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ ...F.h3, color: v.gana ? C.ok : C.text }}>{v.gana ? "✓ " : ""}{v.nombre}</div>
-                      <div style={F.caption}>{v.norma}{v.nota ? ` · ${v.nota}` : ""}</div>
-                    </div>
-                    <div style={{ ...F.mono, color: v.valida ? C.text : C.subtle, whiteSpace: "nowrap" }}>{v.valida ? fmMM(v.valor) : "—"}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={card}>
-                <div style={{ ...F.h2, marginBottom: 12 }}>Estrategias para tu caso</div>
-                {estrategias.map((s) => {
-                  const e = ESTADO[s.estado] || ESTADO.info;
-                  return (
-                    <div key={s.id} style={{ padding: 12, marginBottom: 8, borderRadius: R.md, background: e.bg, border: `1px solid ${C.border}`, opacity: s.estado === "no_aplica" || s.estado === "superada" ? 0.7 : 1 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline", flexWrap: "wrap" }}>
-                        <div style={{ ...F.h3, flex: "1 1 200px" }}>{s.titulo}</div>
-                        {s.ahorro > 0 && <div style={{ ...F.mono, color: s.estado === "aplicada" ? C.ok : C.warn }}>−{fmMM(s.ahorro)}</div>}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, margin: "4px 0 6px", flexWrap: "wrap" }}>
-                        <span style={{ ...F.label, color: e.c }}>{e.t}</span>
-                        <span style={F.label}>{s.norma}</span>
-                      </div>
-                      <div style={F.body}>{s.detalle}</div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={card}>
-                <div style={{ ...F.h2, marginBottom: 6 }}>🤖 Diseña más estrategias con la IA</div>
-                <div style={{ ...F.caption, marginBottom: 10 }}>La IA revisa tu caso completo y propone otras vías legales, con la norma y el riesgo de cada una, más las preguntas para tu contador.</div>
-                <button type="button" onClick={pedirIA} disabled={ia.cargando}
-                  style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: "none", cursor: ia.cargando ? "wait" : "pointer", background: C.accent, color: C.text, fontWeight: 700, fontSize: 14 }}>
-                  {ia.cargando ? "Analizando tu caso…" : "Analizar mi caso"}
-                </button>
-                {ia.error && <div style={{ ...F.body, color: C.danger, marginTop: 10 }}>{ia.error}</div>}
-                {ia.texto && <div style={{ ...F.body, color: C.text, marginTop: 12, whiteSpace: "pre-wrap" }}>{ia.texto}</div>}
-              </div>
-            </>
-          )}
-
-          <div style={card}>
-            <div style={{ ...F.h2, marginBottom: 10 }}>Lo que la gente cree… y no funciona</div>
-            {r.mitos.map((m) => (
-              <div key={m.mito} style={{ marginBottom: 10 }}>
-                <div style={{ ...F.h3, color: C.danger }}>✗ {m.mito}</div>
-                <div style={F.body}>{m.realidad}</div>
-              </div>
-            ))}
+            <div style={card}>
+              <div style={{ ...F.h2, marginBottom: 6 }}>🤖 Diseña más estrategias con la IA</div>
+              <div style={{ ...F.caption, marginBottom: 10 }}>Revisa tu caso completo y propone otras vías legales, con la norma y el riesgo de cada una, más las preguntas para tu contador.</div>
+              <button type="button" onClick={pedirIA} disabled={ia.cargando}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: R.md, border: "none", cursor: ia.cargando ? "wait" : "pointer", background: C.accent, color: C.text, fontWeight: 700, fontSize: 14 }}>
+                {ia.cargando ? "Analizando tu caso…" : "Analizar mi caso"}
+              </button>
+              {ia.error && <div style={{ ...F.body, color: C.danger, marginTop: 10 }}>{ia.error}</div>}
+              {ia.texto && <div style={{ ...F.body, color: C.text, marginTop: 12, whiteSpace: "pre-wrap" }}>{ia.texto}</div>}
+            </div>
           </div>
 
-          <details style={card}>
-            <summary style={{ ...F.h3, cursor: "pointer" }}>📚 Normas que usa esta calculadora · verificadas el {NORMA_GO_VERIFICADA.split("-").reverse().join("/")}</summary>
-            <div style={{ marginTop: 10 }}>
-              {FUENTES_GO.map((x) => (
-                <div key={x.norma} style={{ ...F.body, marginBottom: 6 }}><b style={{ color: C.text }}>{x.norma}:</b> {x.que}</div>
-              ))}
-              <div style={{ ...F.caption, marginTop: 8 }}>
-                UVT {r.anoVenta}: {fm(r.uvt)}. Tabla del Art. 73 del año gravable {TABLA_ART73_AG}; para ventas de {TABLA_ART73_AG + 1} el factor real será un poco mayor (te mostramos el resultado conservador).
-                Esto es una estimación para planear: confírmala con tu contador antes de firmar.
-              </div>
-            </div>
-          </details>
+          <div style={card}>
+            <div style={{ ...F.h2, marginBottom: 12 }}>Estrategias para tu caso</div>
+            {estrategias.map((s) => {
+              const e = ESTADO[s.estado] || ESTADO.info;
+              return (
+                <div key={s.id} style={{ padding: 12, marginBottom: 8, borderRadius: R.md, background: e.bg, border: `1px solid ${C.border}`, opacity: s.estado === "no_aplica" || s.estado === "superada" ? 0.7 : 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline" }}>
+                    <div style={{ ...F.h3, minWidth: 0 }}>{s.titulo}</div>
+                    {s.ahorro > 0 && <div style={{ ...F.mono, color: s.estado === "aplicada" ? C.ok : C.warn, whiteSpace: "nowrap" }}>−{fmMM(s.ahorro)}</div>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, margin: "4px 0 6px", flexWrap: "wrap" }}>
+                    <span style={{ ...F.label, color: e.c }}>{e.t}</span>
+                    <span style={F.label}>{s.norma}</span>
+                  </div>
+                  <div style={F.body}>{s.detalle}</div>
+                </div>
+              );
+            })}
+          </div>
         </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: 16, alignItems: "start" }}>
+        <div style={card}>
+          <div style={{ ...F.h2, marginBottom: 10 }}>Lo que la gente cree… y no funciona</div>
+          {r.mitos.map((m) => (
+            <div key={m.mito} style={{ marginBottom: 10 }}>
+              <div style={{ ...F.h3, color: C.danger }}>✗ {m.mito}</div>
+              <div style={F.body}>{m.realidad}</div>
+            </div>
+          ))}
+        </div>
+        <details style={card}>
+          <summary style={{ ...F.h3, cursor: "pointer" }}>📚 Normas que usa esta calculadora · verificadas el {NORMA_GO_VERIFICADA.split("-").reverse().join("/")}</summary>
+          <div style={{ marginTop: 10 }}>
+            {FUENTES_GO.map((x) => (
+              <div key={x.norma} style={{ ...F.body, marginBottom: 6 }}><b style={{ color: C.text }}>{x.norma}:</b> {x.que}</div>
+            ))}
+            <div style={{ ...F.caption, marginTop: 8 }}>
+              UVT {r.anoVenta}: {fm(r.uvt)}. Tabla del Art. 73 del año gravable {TABLA_ART73_AG}; para ventas de {TABLA_ART73_AG + 1} el factor real será un poco mayor (te mostramos el resultado conservador).
+              Esto es una estimación para planear: confírmala con tu contador antes de firmar.
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   );
