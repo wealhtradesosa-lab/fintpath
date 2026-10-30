@@ -32,6 +32,7 @@ const PensionesColpensiones = lazy(() => import("./components/PensionesColpensio
 const BorradorDeclaracionF110 = lazy(() => import("./components/BorradorDeclaracionF110"));
 const TaxOptimizerUS = lazy(() => import("./components/TaxOptimizerUS"));
 const OptimizadorGananciaOcasional = lazy(() => import("./components/OptimizadorGananciaOcasional"));
+const InformeContador = lazy(() => import("./components/InformeContador"));
 const EstimadoRenta = lazy(() => import("./components/EstimadoRenta"));
 const HistorialDeclaraciones = lazy(() => import("./components/HistorialDeclaraciones"));
 import NotaFuenteImpuesto from "./components/NotaFuenteImpuesto";
@@ -2228,7 +2229,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"🧮",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"🧮",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"taxinf",i:"📤",l:"Informe para el contador",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
       // datos siguen vivos) y los absorbe Mi plan. Flujo Anual (el desempeño
       // del año completo) y el Simulador del año siguiente se quedan: son el
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
@@ -3619,6 +3620,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/>
         <button type="button" onClick={()=>setPg("taxdet")} style={{marginTop:12,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:12,textDecoration:"underline"}}>¿Prefieres el borrador detallado, renglón por renglón? Ábrelo aquí</button></>);
     }
+    case"taxinf":return gated("tax","Pro",<InformeContador u={u}/>);
     case"taxcalc":return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/></>);
     case"taxdet":return isUS?null:gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><DeclaracionFlow
         user={u}

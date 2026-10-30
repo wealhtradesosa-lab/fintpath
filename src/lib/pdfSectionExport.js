@@ -211,7 +211,7 @@ function footer(doc, nota) {
 /**
  * Envoltorio: carga las libs, arma el doc, dibuja y descarga.
  */
-async function build(filename, drawFn, nota) {
+async function build(filename, drawFn, nota, opts = {}) {
   const [jm, am] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
 
   // jspdf expone el constructor distinto según cómo se resuelva el módulo:
@@ -225,7 +225,19 @@ async function build(filename, drawFn, nota) {
   const doc = new jsPDF({ unit: "mm", format: "letter" });
   drawFn(doc, autoTable);
   footer(doc, nota);
+  // 30-oct-2026 (Santiago: compartir con el contador): en el celular abre el menú de
+  // compartir (WhatsApp, correo…) con el PDF adjunto; donde no se puede, lo descarga.
+  if (opts.compartir && typeof navigator !== "undefined" && navigator.canShare) {
+    try {
+      const file = new File([doc.output("blob")], filename, { type: "application/pdf" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: opts.titulo || filename, text: opts.texto || "" });
+        return "compartido";
+      }
+    } catch (e) { if (e?.name === "AbortError") return "cancelado"; }
+  }
   doc.save(filename);
+  return "descargado";
 }
 
 // Estilo de tabla único para las 4 secciones.
@@ -722,10 +734,10 @@ export async function exportGananciaOcasionalPDF(r, datos) {
 // que el cliente dice que cambió, el estimado con anticipo y las estrategias
 // que quiere aplicar. Posiciona a FINPATHIA como aliado del contador.
 // ═══════════════════════════════════════════════════════════════════════════
-export async function exportResumenContadorPDF({ titular, e, cambios = [], estrategias = [], patrimonio = null, preguntas = [] }) {
+export async function exportResumenContadorPDF({ titular, e, cambios = [], estrategias = [], patrimonio = null, preguntas = [], datos = null, compartir = false }) {
   LOC = "es-CO"; TAGLINE = "Tu family office";
   const RED = [220, 38, 38];
-  await build(buildFilename(pdfTxt(`Resumen contador ${titular}`)), (doc, autoTable) => {
+  return build(buildFilename(pdfTxt(`Resumen contador ${titular}`)), (doc, autoTable) => {
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
     let y = chrome(doc, { titulo: pdfTxt(`Resumen para el contador · ${titular}`) });
     const salto = (alto) => { if (y + alto > H - 24) { doc.addPage(); y = 20; } };
@@ -765,6 +777,25 @@ export async function exportResumenContadorPDF({ titular, e, cambios = [], estra
     titulo(`Por qué cambia frente a ${e.ano}`);
     lista(e.pasos.map((p) => `${p.texto}: ${p.delta >= 0 ? "+" : "-"}${MMpdf(Math.abs(p.delta))}`));
 
+    // 30-oct-2026: lo que el cliente ya tiene cargado y le sirve al contador
+    // (ingresos, bienes, deudas y solo los gastos que cuentan para la declaración).
+    const tabla = (titulo, head, filas, total) => {
+      if (!filas.length) return;
+      salto(20);
+      autoTable(doc, { ...tableStyle, startY: y, head: [head.map(pdfTxt)], body: filas.map((f) => f.map((c) => (typeof c === "number" ? MMpdf(c) : pdfTxt(c)))),
+        foot: total != null ? [[pdfTxt("Total"), ...head.slice(1, -1).map(() => ""), { content: MMpdf(total), styles: { halign: "right" } }]] : undefined,
+        columnStyles: { [head.length - 1]: { halign: "right" } } });
+      y = doc.lastAutoTable.finalY + 8;
+      void titulo;
+    };
+    if (datos) {
+      const sum = (l, k) => l.reduce((a, x) => a + (Number(x[k]) || 0), 0);
+      tabla("ing", ["Ingresos registrados en FINPATHIA", "Tipo", "Al año"], datos.ingresos.map((x) => [x.nombre, x.tipo, x.anual]), sum(datos.ingresos, "anual"));
+      tabla("bienes", ["Bienes (patrimonio)", "Tipo", "Valor"], datos.bienes.map((x) => [x.nombre, x.tipo, x.valor]), sum(datos.bienes, "valor"));
+      tabla("deudas", ["Deudas", "Tipo", "Saldo"], datos.deudas.map((x) => [x.nombre, x.tipo, x.saldo]), sum(datos.deudas, "saldo"));
+      tabla("gastos", ["Gastos que cuentan para la declaración", "Categoría", "Al año"], datos.gastos.map((x) => [x.nombre, x.cat, x.anual]), sum(datos.gastos, "anual"));
+    }
+
     if (estrategias.length) {
       autoTable(doc, { ...tableStyle, startY: y, head: [["Estrategia que el cliente quiere aplicar", "Valor", "Norma", "Ahorro estimado"]],
         body: estrategias.map((s) => [pdfTxt(s.titulo), pdfTxt(s.valor), pdfTxt(s.norma), MMpdf(s.ahorro)]), columnStyles: { 3: { halign: "right" } } });
@@ -779,5 +810,68 @@ export async function exportResumenContadorPDF({ titular, e, cambios = [], estra
     titulo("Preguntas para revisar"); lista(preguntas);
     titulo("Aviso legal"); doc.setFontSize(8); doc.setTextColor(...GRAY);
     doc.splitTextToSize(pdfTxt(AVISO_LEGAL_GO), W - M * 2).forEach((ln) => { salto(4); doc.text(ln, M, y); y += 3.6; });
-  }, pdfTxt("Documento generado por FINPATHIA. Estimación de referencia; no es asesoría tributaria. Validar con un contador público."));
+  }, pdfTxt("Documento generado por FINPATHIA. Estimación de referencia; no es asesoría tributaria. Validar con un contador público."),
+  { compartir, titulo: `Resumen para el contador · ${titular}`, texto: `Hola, te comparto el resumen de mi renta de ${titular} hecho en FINPATHIA.` });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Informe para el contador (30-oct-2026, Santiago: "en impuestos, informes para el
+// contador donde sale todo completo: patrimonio, ingresos, gastos, deudas, por persona
+// natural y jurídica, e historial de declaraciones"). Un documento, un capítulo por titular.
+// titulares: [{ nombre, tipo, declaraciones:[{ano, form, ingresos, impuesto, retenciones, saldo, patrimonio}], e, datos }]
+// ═══════════════════════════════════════════════════════════════════════════
+export async function exportInformeContadorPDF({ titulares = [], compartir = false }) {
+  LOC = "es-CO"; TAGLINE = "Tu family office";
+  const nombres = titulares.map((t) => t.nombre).join(", ");
+  return build(buildFilename(pdfTxt("Informe contador")), (doc, autoTable) => {
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
+    let y = chrome(doc, { titulo: pdfTxt("Informe para el contador") });
+    const salto = (alto) => { if (y + alto > H - 24) { doc.addPage(); y = 20; } };
+    const titulo = (t, size = 11.5) => { salto(30); doc.setFont("helvetica", "bold"); doc.setFontSize(size); doc.setTextColor(...INK); doc.text(pdfTxt(t), M, y); y += 6; };
+    const nota = (t) => { doc.setFont("helvetica", "normal"); doc.setFontSize(8.5); doc.setTextColor(...GRAY); doc.splitTextToSize(pdfTxt(t), W - M * 2).forEach((ln) => { salto(5); doc.text(ln, M, y); y += 4; }); y += 2; };
+    const tabla = (head, filas, total) => {
+      if (!filas.length) { nota("Nada registrado."); return; }
+      salto(20);
+      autoTable(doc, { ...tableStyle, startY: y, head: [head.map(pdfTxt)], body: filas.map((f) => f.map((c) => (typeof c === "number" ? MMpdf(c) : pdfTxt(c)))),
+        foot: total != null ? [[pdfTxt("Total"), ...head.slice(1, -1).map(() => ""), { content: MMpdf(total), styles: { halign: "right" } }]] : undefined,
+        columnStyles: { [head.length - 1]: { halign: "right" } } });
+      y = doc.lastAutoTable.finalY + 7;
+    };
+    const sum = (l, k) => l.reduce((a, x) => a + (Number(x[k]) || 0), 0);
+    nota("Información registrada por el cliente en FINPATHIA y sus declaraciones anteriores. Estimaciones de referencia; no es una declaración ni asesoría tributaria.");
+
+    // Resumen del grupo
+    autoTable(doc, { ...tableStyle, startY: y, head: [["Titular", "Tipo", "Bienes", "Deudas", "Ingresos al año", "Estimado al declarar"].map(pdfTxt)],
+      body: titulares.map((t) => [pdfTxt(t.nombre), pdfTxt(t.tipo === "juridica" ? "Sociedad" : "Persona natural"), MMpdf(sum(t.datos.bienes, "valor")), MMpdf(sum(t.datos.deudas, "saldo")), MMpdf(sum(t.datos.ingresos, "anual")), t.e ? MMpdf(t.e.totalAlDeclarar) : "-"]),
+      columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } } });
+    y = doc.lastAutoTable.finalY + 8;
+
+    titulares.forEach((t) => {
+      doc.addPage(); y = 20;
+      titulo(`${t.nombre} · ${t.tipo === "juridica" ? "Sociedad (F-110)" : "Persona natural (F-210)"}`, 14);
+      if (t.nit) nota(`NIT / cédula: ${t.nit}`);
+      titulo("Historial de declaraciones");
+      if (t.declaraciones.length) {
+        autoTable(doc, { ...tableStyle, startY: y, head: [["Año", "Ingresos brutos", "Impuesto", "Retenciones", "Saldo", "Patrimonio líquido"].map(pdfTxt)],
+          body: t.declaraciones.map((d) => [String(d.ano), MMpdf(d.ingresos), MMpdf(d.impuesto), MMpdf(d.retenciones), d.saldo < 0 ? pdfTxt(`${MMpdf(-d.saldo)} a favor`) : MMpdf(d.saldo), d.patrimonio != null ? MMpdf(d.patrimonio) : "-"]),
+          columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } } });
+        y = doc.lastAutoTable.finalY + 7;
+      } else nota("Sin declaraciones cargadas.");
+      if (t.e) {
+        titulo(`Estimado de la renta ${t.e.anoEst} (se declara en ${t.e.anoEst + 1})`);
+        autoTable(doc, { ...tableStyle, startY: y, head: [["Concepto", "Valor"]], body: [
+          ["Impuesto estimado", MMpdf(t.e.total)], ["Retenciones estimadas", MMpdf(t.e.ret)], ["Anticipo ya pagado", MMpdf(t.e.antPagado)],
+          [`Anticipo ${t.e.anoEst + 1}`, MMpdf(t.e.anticipoSiguiente)], ["Total a pagar al declarar", MMpdf(t.e.totalAlDeclarar)],
+        ].map(([a, b]) => [pdfTxt(a), b]), columnStyles: { 1: { halign: "right" } } });
+        y = doc.lastAutoTable.finalY + 5;
+        if (t.cambios?.length) { nota("Lo que cambió este año, según el cliente:"); t.cambios.forEach((c) => nota("- " + c)); }
+      }
+      titulo("Patrimonio (bienes)"); tabla(["Bien", "Tipo", "Valor"], t.datos.bienes.map((x) => [x.nombre, x.tipo, x.valor]), sum(t.datos.bienes, "valor"));
+      titulo("Deudas"); tabla(["Deuda", "Tipo", "Saldo"], t.datos.deudas.map((x) => [x.nombre, x.tipo, x.saldo]), sum(t.datos.deudas, "saldo"));
+      titulo("Ingresos"); tabla(["Ingreso", "Tipo", "Al año"], t.datos.ingresos.map((x) => [x.nombre, x.tipo, x.anual]), sum(t.datos.ingresos, "anual"));
+      titulo(t.tipo === "juridica" ? "Costos y gastos" : "Gastos que cuentan para la renta");
+      tabla(["Gasto", "Categoría", "Al año"], t.datos.gastos.map((x) => [x.nombre, x.cat, x.anual]), sum(t.datos.gastos, "anual"));
+    });
+  }, pdfTxt("Documento generado por FINPATHIA con la información del cliente. Estimación de referencia; no es asesoría tributaria."),
+  { compartir, titulo: "Informe para el contador", texto: `Hola, te comparto mi informe de FINPATHIA (${nombres}).` });
 }

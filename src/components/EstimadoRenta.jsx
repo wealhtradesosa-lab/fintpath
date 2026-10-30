@@ -111,14 +111,17 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
     for (const p of ee.pasos) if (p.off) c.push(`Apagado en esta simulación: ${p.texto}`);
     return c;
   };
-  const descargarPDF = async (rr = r, nombre) => {
+  const [envio, setEnvio] = useState("");
+  const descargarPDF = async (rr = r, nombre, compartir = false) => {
     const k = calcular(rr); if (!k.e) return;
     const { exportResumenContadorPDF } = await import("../lib/pdfSectionExport.js");
     const estrategias = k.ops.filter((op) => !op.info && rr.estr?.[op.id]?.on).map((op) => ({ titulo: op.titulo, norma: op.norma, ahorro: op.ahorro(rr.estr[op.id].v), valor: op.entero ? String(rr.estr[op.id].v) : mm(rr.estr[op.id].v) }));
     const preguntas = ["¿Las retenciones estimadas coinciden con los certificados del año?", "¿Aplican las estrategias marcadas y con qué soportes?"];
     if (k.pat && !k.pat.sociedad && (k.pat.aplica || k.pat.cerca)) preguntas.push("Impuesto al patrimonio: valor patrimonial de los activos y exclusión de la casa de habitación.");
     if (k.e.anticipoSiguiente > 0) preguntas.push("¿Conviene pedir reducción del anticipo (Art. 809)?");
-    await exportResumenContadorPDF({ titular: nombre ? `${owner.name} · ${nombre}` : owner.name, e: k.e, cambios: cambiosTexto(rr, k.e), estrategias, patrimonio: k.pat, preguntas });
+    const { datosParaContador } = await import("../lib/datosParaContador.js");
+    const res = await exportResumenContadorPDF({ titular: nombre ? `${owner.name} · ${nombre}` : owner.name, e: k.e, cambios: cambiosTexto(rr, k.e), estrategias, patrimonio: k.pat, preguntas, datos: datosParaContador(u, owner.id), compartir });
+    if (compartir) setEnvio(res === "compartido" ? "Listo, enviado." : res === "descargado" ? "Se descargó el PDF: adjúntalo en tu correo o WhatsApp para tu contador." : "");
   };
 
   // ── Versiones guardadas («Renta 2026 v1: con venta», «v2: sin venta»…) ──
@@ -269,7 +272,17 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
               );
             })}
           </ul>
-          <button type="button" onClick={() => descargarPDF(r, abierta ? nombreV : undefined)} style={{ marginTop: 14, padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.accent}`, background: "transparent", color: C.accent, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>📄 Resumen para el contador (PDF)</button>
+          {/* 30-oct-2026 (Santiago: "que el contador vea la información"). Primer paso: un PDF
+              con lo que ya está cargado, enviado desde el celular por WhatsApp o correo. */}
+          <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}` }}>
+            <div style={{ ...F.h3 }}>📤 Para tu contador</div>
+            <div style={{ ...F.caption, marginTop: 2 }}>Un PDF con tu declaración anterior, lo que cambió, este estimado y lo que ya tienes en FINPATHIA: ingresos, bienes, deudas y los gastos que cuentan para la renta. Tus gastos del día a día no van.</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+              <button type="button" onClick={() => descargarPDF(r, abierta ? nombreV : undefined, true)} style={{ padding: "9px 14px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Enviar a mi contador</button>
+              <button type="button" onClick={() => descargarPDF(r, abierta ? nombreV : undefined)} style={{ padding: "9px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>Descargar PDF</button>
+            </div>
+            {envio && <div style={{ ...F.caption, marginTop: 8, color: C.ok }}>{envio}</div>}
+          </div>
         </Panel>
 
         {pat && (!pat.sociedad || pat.extraordinario) && <Patrimonio pat={pat} casa={r.casa} onCasa={(v) => set(owner.id, { casa: v })} />}
