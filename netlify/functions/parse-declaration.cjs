@@ -81,7 +81,7 @@ Formato de respuesta para F-210 (natural):
   "tipo": "F210",
   "anoGravable": número (ej: 2024),
   "nombreContribuyente": "nombre completo o null",
-  "nit": "NIT/cédula o null",
+  "nit": "solo el número de identificación de la casilla 5 (NIT o cédula), SIN el dígito de verificación de la casilla 6, o null",
   "renglones": {
     "ingresosBrutos": número (TOTAL de ingresos brutos del año: la SUMA de todas las cédulas — rentas de trabajo (renglón 32), rentas de trabajo no laborales (43), rentas de capital (58), rentas no laborales (74), pensiones (99) y dividendos (104 + 107 + 108 + 109). NO tomes solo la primera columna),
     "ingresosTrabajo": número (ingresos brutos por rentas de trabajo: salarios y demás pagos laborales),
@@ -119,7 +119,7 @@ Formato de respuesta para F-110 (jurídica):
   "tipo": "F110",
   "anoGravable": número,
   "nombreContribuyente": "razón social o null",
-  "nit": "NIT o null",
+  "nit": "solo el NIT de la casilla 5, SIN el dígito de verificación (casilla 6), o null",
   "renglones": {
     "ingresosBrutos": número,
     "ingresosNoConstitutivos": número,

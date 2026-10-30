@@ -669,7 +669,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               franja y así liberar espacio para gráficos"). Hoy vs futuro en una
               sola tabla: una fila por año, una columna por concepto. */}
           {(() => {
-            const cols = [["Ingresos", (x) => x.ingresos, C.ok], ["Gastos", (x) => x.gastos, C.danger], ["Cuotas", (x) => x.cuotas, C.warn], ["Impuestos", (x) => x.impuesto + x.retencion, C.purple], ["Queda", (x) => x.queda, null]];
+            // 29-oct-2026 (Santiago: "¿esto es al mes o anual? ¿cuotas qué es, créditos?").
+            const cols = [["Ingresos", (x) => x.ingresos, C.ok], ["Gastos", (x) => x.gastos, C.danger], ["Cuotas de créditos", (x) => x.cuotas, C.warn], [foco ? "Impuestos" : "Retención de renta", (x) => x.impuesto + x.retencion, C.purple], ["Te queda", (x) => x.queda, null]];
             const filasT = [
               { k: "hoy", titulo: `Hoy · ${añoHoy}`, sub: "referencia, no cambia", d: hoy },
               { k: "fut", titulo: foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`, sub: foco ? "ese mes en concreto" : (cambios.length ? `promedio ${mesL(mesRegimen).toLowerCase()}–dic, ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"}` : "sin cambios todavía"), d: vista, fuerte: true },
@@ -679,7 +680,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             return (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead><tr><th style={{ ...th, textAlign: "left" }}></th>{cols.map(([t]) => <th key={t} style={th}>{t}</th>)}</tr></thead>
+                  <thead><tr><th style={{ ...th, textAlign: "left" }}>Todo es <b style={{ color: C.text }}>al mes</b></th>{cols.map(([t]) => <th key={t} style={th}>{t}</th>)}</tr></thead>
                   <tbody>
                     {filasT.map((r) => (
                       <tr key={r.k} style={{ background: r.fuerte ? Cα.ok08 : "transparent", borderTop: `1px solid ${C.border}` }}>
@@ -1189,34 +1190,50 @@ function fechaPago(t) {
   const f = (m) => (m.dia ? `el ${m.dia} de ${mesL(m.mes).toLowerCase()}` : `en ${mesL(m.mes).toLowerCase()}`);
   return t.meses.length > 1 ? `en dos cuotas: ${t.meses.map((m) => mesL(m.mes).toLowerCase()).join(" y ")}` : f(t.meses[0]);
 }
+// 29-oct-2026 (Santiago: "cómo dejar claro que la declaración es cobro y la retención no;
+// así como está uno cree que también se la están cobrando"). Dos bloques separados:
+// lo que ya te descuentan al pagarte (no sale aparte de tu bolsillo) y lo que pagas al declarar.
 function GrupoImpuestos({ pago, año, porMes, onNavigate, onVerMes }) {
   const ret = porMes.reduce((a, m) => a + (m.retencion || 0), 0);
   const tit = (pago?.titulares || []).filter((t) => t.total > 0 || t.fuente !== "motor");
-  const total = ret + (pago?.total || 0);
+  const alDeclarar = pago?.total || 0;
   const falta = (pago?.porMes || []).map((v, i) => ({ v, i, queda: porMes[i]?.queda ?? 0 })).filter((x) => x.v > 0 && x.queda < 0);
   const link = { ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" };
-  const fila = (key, nombre, sub, mensual, anual, extra) => (
-    <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 8px", borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+  const bloque = (titulo, sub, valor, color, hijos) => (
+    <div style={{ marginTop: 8, border: `1px solid ${C.border}`, borderRadius: R.md, overflow: "hidden" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "8px 10px", background: C.raised, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ ...F.h3, fontSize: 13, color: C.text }}>{titulo}</div>
+          <div style={F.caption}>{sub}</div>
+        </div>
+        <span style={{ ...F.mono, fontSize: 14, fontWeight: 700, color }}>{valor}</span>
+      </div>
+      {hijos}
+    </div>
+  );
+  const fila = (key, nombre, sub, derecha, colorDer = C.text) => (
+    <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 10px", borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
       <div style={{ flex: "1 1 220px", minWidth: 0 }}>
         <div style={{ ...F.body, color: C.text }}>{nombre}</div>
-        <div style={F.caption}>{sub}{extra}</div>
+        <div style={F.caption}>{sub}</div>
       </div>
-      <span style={{ ...F.mono, fontSize: 13, color: C.text }}>{mensual}<span style={{ ...F.caption, color: C.subtle }}> · {fm(anual)} en {año}</span></span>
+      <span style={{ ...F.mono, fontSize: 13, color: colorDer }}>{derecha}</span>
     </div>
   );
   return (
-    <div style={{ marginTop: 10 }}>
+    <div style={{ marginTop: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
-        <span style={{ ...F.label, color: C.purple }}>impuestos · {1 + tit.length}</span>
-        <span style={{ ...F.mono, fontSize: 13, color: C.purple }}>{fm(total)} en {año}</span>
+        <span style={{ ...F.label, color: C.purple }}>impuestos de renta</span>
+        <span style={{ ...F.caption }}>en total, tu renta de {año} pesa {fm(ret + alDeclarar)}</span>
       </div>
-      {fila("ret", "Retención en la fuente", "Es un adelanto de tu renta, no un impuesto aparte: te la descuentan al pagarte y al declarar se resta del impuesto (si te retienen de más, queda saldo a favor). Sale de las retenciones de tu última declaración, ajustadas a tus ingresos de este escenario.", `${fm(ret / 12)}/mes`, ret)}
-      {tit.map((t) => fila(t.name, `Declaración de renta ${año - 1} · ${t.name}`,
-        `${t.type === "juridica" ? "Sociedad" : "Persona natural"} · se paga ${fechaPago(t)}, no cada mes`,
-        t.total > 0 ? fm(t.total) : t.saldo < 0 ? "saldo a favor" : "$0", t.total,
-        <>{" · "}{t.fuente === "motor" ? "aproximado (sin declaración)" : <button type="button" onClick={() => onNavigate?.("taxcalc")} style={link}>de la Calculadora</button>}
-          {t.total > 0 && <>{" · "}<button type="button" onClick={() => onVerMes(t.meses[0].mes)} style={link}>ver ese mes</button></>}</>))}
-      {falta.length > 0 && <div style={{ ...F.caption, color: C.danger, padding: "4px 8px" }}>{falta.map((x) => `En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}: conviene ir apartando desde antes.</div>}
+      {bloque("1 · Ya te lo descuentan al pagarte", "Retención en la fuente. No es un cobro aparte: es parte de tu impuesto, pagado por adelantado. Por eso a tu cuenta llega menos de lo que registraste como ingreso.", `${fm(ret / 12)}/mes`, C.muted,
+        fila("ret", "Retención en la fuente", `${fm(ret)} en ${año} · sale de las retenciones de tu última declaración, ajustadas a tus ingresos de este escenario. Al declarar se resta del impuesto.`, "ya descontada", C.muted))}
+      {bloque("2 · Lo que pagas de tu bolsillo al declarar", `La declaración de ${año - 1}: impuesto − lo que ya te retuvieron + anticipo. Sale de una vez, en la fecha de cada uno.`, fm(alDeclarar), alDeclarar > 0 ? C.danger : C.ok,
+        tit.map((t) => fila(t.name, `${t.name} · ${t.type === "juridica" ? "sociedad" : "persona natural"}`,
+          <>{t.total > 0 ? `Paga ${fechaPago(t)}` : "Lo retenido cubre su impuesto"}{" · "}{t.fuente === "motor" ? "aproximado (sin declaración)" : <button type="button" onClick={() => onNavigate?.("taxcalc")} style={link}>de la Calculadora</button>}
+            {t.total > 0 && <>{" · "}<button type="button" onClick={() => onVerMes(t.meses[0].mes)} style={link}>ver ese mes</button></>}</>,
+          t.total > 0 ? `paga ${fm(t.total)}` : t.saldo < 0 ? `no paga · saldo a favor ${fm(-t.saldo)}` : "no paga", t.total > 0 ? C.danger : C.ok)))}
+      {falta.length > 0 && <div style={{ ...F.caption, color: C.danger, padding: "6px 2px" }}>{falta.map((x) => `En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}: conviene ir apartando desde antes.</div>}
     </div>
   );
 }
