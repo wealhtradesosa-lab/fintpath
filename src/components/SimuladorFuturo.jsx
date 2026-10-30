@@ -708,10 +708,9 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
             <div style={{ ...F.caption, marginTop: 4 }}>
               Gastos {fm(vista.gastos)} + cuotas {fm(vista.cuotas)} = lo que gastas. Aparte, la retención en la fuente: {fm(vista.retencion)}{foco ? "" : "/mes"}.
-              {foco ? (vista.impuesto > 0 ? ` En ${mesL(foco.mes).toLowerCase()} además pagas la declaración de renta ${año - 1}: ${fm(vista.impuesto)}.` : "") : ` La declaración de renta ${año - 1} no entra en el mes típico: se paga de una vez (mira abajo en qué mes).`}
+              {foco ? (vista.impuesto > 0 ? ` En ${mesL(foco.mes).toLowerCase()} además pagas la declaración de renta ${año - 1}: ${fm(vista.impuesto)}.` : "") : ` La declaración de renta ${año - 1} no entra en el mes típico: se paga de una vez (mírala abajo en Impuestos).`}
             </div>
           </div>
-          <RentaQuePagas pago={pagoFut} año={año} porMes={porMes} onNavigate={onNavigate} onVerMes={(m) => setMesFoco(m)} />
 
           {/* 28-oct-2026 (Santiago: "no sé de dónde sale que en 2027 tengo ingresos superiores a 150 M").
               Lo que más mueve los ingresos y los gastos frente a hoy, ítem por ítem. */}
@@ -906,9 +905,31 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     );
                   })}
                 </div>
-                <div style={{ ...F.caption, marginTop: 8 }}>
-                  Más retención en la fuente {fm(vista.retencion)}{foco ? "" : "/mes"}{vista.impuesto > 0 ? ` y la declaración de renta ${año - 1}: ${fm(vista.impuesto)} este mes` : ""}.
-                </div>
+                {(() => {
+                  // 29-oct-2026 (Santiago: "así como se ven ingresos, gastos, deudas, debería verse impuestos").
+                  const decl = (pagoFut.titulares || []).filter((t) => t.total > 0).map((t) => ({ t, v: foco ? t.meses.filter((m) => m.mes === foco.mes).reduce((a, m) => a + t.total * m.fraccion, 0) : 0 }));
+                  const total = vista.retencion + vista.impuesto;
+                  return (
+                    <div style={{ background: C.raised, borderRadius: R.md, padding: "8px 10px", border: `1px solid ${C.border}`, marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}>
+                        <span style={{ ...F.label, color: C.purple }}>Impuestos · {1 + decl.length}</span>
+                        <span style={{ ...F.mono, fontSize: 12, color: C.purple }}>{fm(total)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
+                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Retención en la fuente<div style={{ ...F.caption, fontSize: 10 }}>se descuenta cada mes de lo que te pagan</div></div>
+                        <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(vista.retencion)}</span>
+                      </div>
+                      {decl.map(({ t, v }) => (
+                        <div key={t.name} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
+                          <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Declaración de renta {año - 1} · {t.name}
+                            <div style={{ ...F.caption, fontSize: 10 }}>{fm(t.total)} {fechaPago(t)}{foco && !v ? " · no cae en este mes" : !foco ? " · no entra al mes típico" : ""}</div>
+                          </div>
+                          <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(v)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })()}
@@ -1150,6 +1171,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             );
           })}
 
+          <GrupoImpuestos pago={pagoFut} año={año} porMes={porMes} onNavigate={onNavigate} onVerMes={(m) => setMesFoco(m)} />
+
           {filas.filter((f) => f.origen === "hoy").length === 0 && (
             <div style={F.body}>No hay nada encendido para simular. Revisa los interruptores "simular" en Ingresos, Egresos y Deudas{onNavigate ? "" : "."}</div>
           )}
@@ -1162,51 +1185,38 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 // ─── Renta del año anterior que se paga en el año simulado ─────────────────
 // 29-oct-2026 (Santiago: "en la proyección del año siguiente uno no ve el impuesto del 2026,
 // el que se generó"; "se paga en un solo mes"; "por persona natural y por jurídica").
-const FUENTE_PAGO = {
-  calculadora: "de tu Calculadora de declaración",
-  real: "de tu declaración ya presentada",
-  motor: "estimado con tus ingresos (sin declaración cargada)",
-};
-function RentaQuePagas({ pago, año, porMes, onNavigate, onVerMes }) {
+function fechaPago(t) {
+  const f = (m) => (m.dia ? `el ${m.dia} de ${mesL(m.mes).toLowerCase()}` : `en ${mesL(m.mes).toLowerCase()}`);
+  return t.meses.length > 1 ? `en dos cuotas: ${t.meses.map((m) => mesL(m.mes).toLowerCase()).join(" y ")}` : f(t.meses[0]);
+}
+function GrupoImpuestos({ pago, año, porMes, onNavigate, onVerMes }) {
+  const ret = porMes.reduce((a, m) => a + (m.retencion || 0), 0);
   const tit = (pago?.titulares || []).filter((t) => t.total > 0 || t.fuente !== "motor");
-  if (!tit.length) return null;
-  const fecha = (m) => (m.dia ? `${m.dia} ${mesL(m.mes).slice(0, 3).toLowerCase()}` : mesL(m.mes).toLowerCase());
-  const falta = pago.porMes.map((v, i) => ({ v, i, queda: porMes[i]?.queda ?? 0 })).filter((x) => x.v > 0 && x.queda < 0);
-  const grupos = [["Personas naturales", tit.filter((t) => t.type !== "juridica")], ["Sociedades", tit.filter((t) => t.type === "juridica")]].filter(([, g]) => g.length);
-  return (
-    <details style={{ marginTop: 10, ...F.caption, border: `1px solid ${C.border}`, borderRadius: R.md, padding: "8px 12px" }}>
-      <summary style={{ cursor: "pointer", color: C.muted }}>
-        🧾 Renta {año - 1} que pagas en {año}: <b style={{ color: C.text }}>{fm(pago.total)}</b>
-        {" · "}{tit.filter((t) => t.total > 0).map((t) => `${t.name} ${t.meses.map(fecha).join(" y ")}`).join(" · ") || "nadie paga"}
-        {falta.length > 0 && <span style={{ color: C.danger }}> · ese mes no alcanza</span>}
-        <span style={{ color: C.accent }}> · ver detalle</span>
-      </summary>
-      <div style={{ marginTop: 6 }}>Se paga de una vez al presentar la declaración {año - 1} (saldo + anticipo de {año}), no cada mes.</div>
-      {grupos.map(([l, g]) => (
-        <div key={l} style={{ marginTop: 8 }}>
-          <div style={{ ...F.label, marginBottom: 2 }}>{l}</div>
-          {g.map((t) => (
-            <div key={t.name} style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
-              <span>
-                <b style={{ color: C.text }}>{t.name}</b> · {FUENTE_PAGO[t.fuente]}
-                {t.total <= 0 && t.saldo < 0 ? ` · saldo a favor de ${fm(-t.saldo)}: no paga` : t.anticipo > 0 ? ` · saldo ${fm(t.saldo)} + anticipo ${fm(t.anticipo)}` : ""}
-                {t.total > 0 && <> · {t.meses.map((m) => (
-                  <button key={m.mes} type="button" onClick={() => onVerMes(m.mes)} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: "0 4px", cursor: "pointer", textDecoration: "underline" }}>
-                    {fecha(m)}{m.fraccion < 1 ? ` (${fm(t.total * m.fraccion)})` : ""}
-                  </button>
-                ))}</>}
-              </span>
-              <span style={{ ...F.mono, color: C.text, fontWeight: 700 }}>{fm(t.total)}</span>
-            </div>
-          ))}
-        </div>
-      ))}
-      {falta.length > 0 && <div style={{ marginTop: 6, color: C.danger }}>{falta.map((x) => `En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}: conviene ir apartando desde antes.</div>}
-      <div style={{ marginTop: 6 }}>
-        La cifra sale de la{" "}
-        <button type="button" onClick={() => onNavigate?.("taxcalc")} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}>Calculadora de declaración</button>; las fechas, de{" "}
-        <button type="button" onClick={() => onNavigate?.("prevtax")} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" }}>Impuestos › Historial</button>.
+  const total = ret + (pago?.total || 0);
+  const falta = (pago?.porMes || []).map((v, i) => ({ v, i, queda: porMes[i]?.queda ?? 0 })).filter((x) => x.v > 0 && x.queda < 0);
+  const link = { ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline" };
+  const fila = (key, nombre, sub, mensual, anual, extra) => (
+    <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "8px 8px", borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+      <div style={{ flex: "1 1 220px", minWidth: 0 }}>
+        <div style={{ ...F.body, color: C.text }}>{nombre}</div>
+        <div style={F.caption}>{sub}{extra}</div>
       </div>
-    </details>
+      <span style={{ ...F.mono, fontSize: 13, color: C.text }}>{mensual}<span style={{ ...F.caption, color: C.subtle }}> · {fm(anual)} en {año}</span></span>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
+        <span style={{ ...F.label, color: C.purple }}>impuestos · {1 + tit.length}</span>
+        <span style={{ ...F.mono, fontSize: 13, color: C.purple }}>{fm(total)} en {año}</span>
+      </div>
+      {fila("ret", "Retención en la fuente", "Se descuenta cada mes de lo que te pagan.", `${fm(ret / 12)}/mes`, ret)}
+      {tit.map((t) => fila(t.name, `Declaración de renta ${año - 1} · ${t.name}`,
+        `${t.type === "juridica" ? "Sociedad" : "Persona natural"} · se paga ${fechaPago(t)}, no cada mes`,
+        t.total > 0 ? fm(t.total) : t.saldo < 0 ? "saldo a favor" : "$0", t.total,
+        <>{" · "}{t.fuente === "motor" ? "aproximado (sin declaración)" : <button type="button" onClick={() => onNavigate?.("taxcalc")} style={link}>de la Calculadora</button>}
+          {t.total > 0 && <>{" · "}<button type="button" onClick={() => onVerMes(t.meses[0].mes)} style={link}>ver ese mes</button></>}</>))}
+      {falta.length > 0 && <div style={{ ...F.caption, color: C.danger, padding: "4px 8px" }}>{falta.map((x) => `En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}: conviene ir apartando desde antes.</div>}
+    </div>
   );
 }
