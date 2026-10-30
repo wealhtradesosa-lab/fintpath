@@ -916,7 +916,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                         <span style={{ ...F.mono, fontSize: 12, color: C.purple }}>{fm(total)}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
-                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Retención en la fuente<div style={{ ...F.caption, fontSize: 10 }}>se descuenta cada mes de lo que te pagan</div></div>
+                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Retención en la fuente<div style={{ ...F.caption, fontSize: 10 }}>adelanto de tu renta que te descuentan al pagarte</div></div>
                         <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(vista.retencion)}</span>
                       </div>
                       {decl.map(({ t, v }) => (
@@ -1210,7 +1210,7 @@ function GrupoImpuestos({ pago, año, porMes, onNavigate, onVerMes }) {
         <span style={{ ...F.label, color: C.purple }}>impuestos · {1 + tit.length}</span>
         <span style={{ ...F.mono, fontSize: 13, color: C.purple }}>{fm(total)} en {año}</span>
       </div>
-      {fila("ret", "Retención en la fuente", "Se descuenta cada mes de lo que te pagan.", `${fm(ret / 12)}/mes`, ret)}
+      {fila("ret", "Retención en la fuente", "Es un adelanto de tu renta, no un impuesto aparte: te la descuentan al pagarte y al declarar se resta del impuesto (si te retienen de más, queda saldo a favor). Sale de las retenciones de tu última declaración, ajustadas a tus ingresos de este escenario.", `${fm(ret / 12)}/mes`, ret)}
       {tit.map((t) => fila(t.name, `Declaración de renta ${año - 1} · ${t.name}`,
         `${t.type === "juridica" ? "Sociedad" : "Persona natural"} · se paga ${fechaPago(t)}, no cada mes`,
         t.total > 0 ? fm(t.total) : t.saldo < 0 ? "saldo a favor" : "$0", t.total,
