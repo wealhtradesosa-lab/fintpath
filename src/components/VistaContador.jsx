@@ -33,7 +33,7 @@ export default function VistaContador({ supabase, clientes = [] }) {
 
   if (!clientes.length) {
     return (
-      <div style={{ display: "grid", gap: 14 }}>
+      <div style={{ display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)" }}>
         <PageHeader label="Contador" title="Clientes que me comparten" compact />
         <Panel titulo="Todavía no tienes clientes">
           <div style={F.body}>Cuando un cliente te invite como contador desde su FINPATHIA, aparece aquí.</div>
@@ -43,7 +43,7 @@ export default function VistaContador({ supabase, clientes = [] }) {
   }
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div style={{ display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <Panel titulo="Clientes que me comparten" sub="Solo lectura. Ves lo tributario de cada uno; no puedes cambiar nada.">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {clientes.map((c) => {

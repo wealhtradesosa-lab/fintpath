@@ -472,7 +472,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
       }}>
         {(member.display_name || member.email || "U").charAt(0).toUpperCase()}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: "1 1 170px", minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           <span>{member.display_name || member.email.split("@")[0]}</span>
           {isMe && <span style={{ fontSize: 10, color: T.txt3, fontWeight: 400 }}>(tú)</span>}
@@ -543,7 +543,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
       }}>
         ⏳
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ flex: "1 1 170px", minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {invitation.email}
         </div>

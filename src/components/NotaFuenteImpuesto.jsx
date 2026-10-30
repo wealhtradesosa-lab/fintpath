@@ -28,7 +28,7 @@ function LoQuePague({ owner, ano, onGuardar }) {
     onGuardar(owner.id, { tipo: jur ? "F110" : "F210", anoGravable: ano, capturadoEl: new Date().toISOString(), fuenteCaptura: "manual", renglones });
   };
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 8, alignItems: "end", padding: "8px 0", borderTop: `1px solid ${C.border}` }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))", gap: 8, alignItems: "end", padding: "8px 0", borderTop: `1px solid ${C.border}` }}>
       <div style={{ ...F.h3, alignSelf: "center" }}>{owner.name}</div>
       <label style={{ display: "grid", gap: 4 }}><span style={F.caption}>Saldo que pagaste al declarar {ano}</span><Plata value={v.saldo} onChange={(x) => setV({ ...v, saldo: x })} /></label>
       <label style={{ display: "grid", gap: 4 }}><span style={F.caption}>Retenciones del año (si las sabes)</span><Plata value={v.ret} onChange={(x) => setV({ ...v, ret: x })} /></label>

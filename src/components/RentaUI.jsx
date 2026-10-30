@@ -78,7 +78,7 @@ export function Kpi({ k, v, d, color }) {
     </div>
   );
 }
-export const KpiGrid = ({ children }) => <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 }}>{children}</div>;
+export const KpiGrid = ({ children }) => <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 10 }}>{children}</div>;
 
 const corto = (v) => "$" + Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO");
 

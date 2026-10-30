@@ -677,6 +677,36 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             ];
             const th = { ...F.label, textAlign: "right", padding: "4px 8px", whiteSpace: "nowrap" };
             const td = { ...F.mono, textAlign: "right", padding: "6px 8px", whiteSpace: "nowrap" };
+            // 30-oct-2026 (Santiago: "no están bien diseñadas para mobile"): en el celular la
+            // tabla de 5 columnas no cabía; se voltea (concepto por fila) con cifras cortas.
+            if (typeof window !== "undefined" && window.innerWidth < 640) {
+              const [h, f] = filasT;
+              return (
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead><tr>
+                    <th style={{ ...th, textAlign: "left", padding: "4px 4px" }}>Al mes</th>
+                    <th style={{ ...th, padding: "4px 4px" }}>{h.titulo}</th>
+                    <th style={{ ...th, padding: "4px 4px" }}>{f.titulo}</th>
+                  </tr></thead>
+                  <tbody>
+                    {cols.map(([t, g, col]) => {
+                      const a = g(h.d), b2 = g(f.d), dif = b2 - a;
+                      const bueno = t === "Ingresos" || t === "Te queda" ? dif >= 0 : dif <= 0;
+                      return (
+                        <tr key={t} style={{ borderTop: `1px solid ${C.border}` }}>
+                          <td style={{ ...F.body, padding: "6px 4px" }}>{t}</td>
+                          <td style={{ ...td, padding: "6px 4px", color: col || (a >= 0 ? C.ok : C.danger) }}>{fmC(a)}</td>
+                          <td style={{ ...td, padding: "6px 4px", fontWeight: 700, color: col || (b2 >= 0 ? C.ok : C.danger) }}>
+                            {fmC(b2)}
+                            {Math.abs(dif) >= 1 && <div style={{ ...F.caption, fontWeight: 400, color: bueno ? C.ok : C.danger }}>{(dif > 0 ? "+" : "−") + fmC(Math.abs(dif))}</div>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              );
+            }
             return (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -690,7 +720,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     ))}
                     <tr style={{ borderTop: `1px solid ${C.border}` }}>
                       <td style={{ padding: "4px 8px", ...F.caption }}>Diferencia vs hoy</td>
-                      {cols.map(([t, g]) => { const d = g(vista) - g(hoy); const bueno = t === "Ingresos" || t === "Queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 11, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
+                      {cols.map(([t, g]) => { const d = g(vista) - g(hoy); const bueno = t === "Ingresos" || t === "Te queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 11, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
                     </tr>
                   </tbody>
                 </table>
@@ -1223,7 +1253,7 @@ function GrupoImpuestos({ pago, año, porMes, onNavigate, onVerMes }) {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
-        <span style={{ ...F.label, color: C.purple }}>impuestos de renta</span>
+        <span style={{ ...F.label, color: C.purple, whiteSpace: "nowrap" }}>impuestos de renta</span>
         <span style={{ ...F.caption }}>en total, tu renta de {año} pesa {fm(ret + alDeclarar)}</span>
       </div>
       {bloque("1 · Ya te lo descuentan al pagarte", "Retención en la fuente. No es un cobro aparte: es parte de tu impuesto, pagado por adelantado. Por eso a tu cuenta llega menos de lo que registraste como ingreso.", `${fm(ret / 12)}/mes`, C.muted,

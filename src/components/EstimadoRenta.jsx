@@ -150,7 +150,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
   const borrarVersion = (v) => { onGuardarVersiones?.((u?.versionesRenta || []).filter((x) => x.id !== v.id)); if (abierta === v.id) { setAbierta(null); setNombreV(""); } };
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <PageHeader label="Impuestos · calculadora de declaración" title="¿Cuánto me va a tocar pagar de renta?" accent="renta" compact
         subtitle="Partimos de la última declaración que hizo tu contador y solo te preguntamos qué cambió. Así el cálculo conserva todo lo que él ya aplicó." />
 
@@ -288,7 +288,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
         {pat && (!pat.sociedad || pat.extraordinario) && <Patrimonio pat={pat} casa={r.casa} onCasa={(v) => set(owner.id, { casa: v })} />}
 
         <Panel titulo="5. Oportunidades para pagar menos" sub="Detectadas con su declaración y lo que tiene en FINPATHIA. Marca las que vas a hacer y mira cómo cambia el impuesto.">
-          <div style={{ ...card, background: Cα.ok08, borderColor: Cα.ok25, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+          <div style={{ ...card, background: Cα.ok08, borderColor: Cα.ok25, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: 12 }}>
             <div><div style={F.label}>Hoy va para</div><div style={F.monoXl}>{mm(e.total)}</div></div>
             <div><div style={F.label}>Con lo que marcaste</div><div style={F.monoXl}>{mm(Math.max(0, e.total - ahorro))}</div></div>
             <div><div style={F.label}>Ahorro estimado</div><div style={{ ...F.monoXl, color: C.ok }}>{mm(ahorro)}</div><div style={F.caption}>{ahorro ? "Valídalo con tu contador" : "Marca una estrategia"}</div></div>
@@ -314,15 +314,17 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
       </>)}
 
       {e && sel !== "grupo" && (
-        <div style={{ position: "sticky", bottom: 0, zIndex: 5, ...card, padding: "12px 16px", borderColor: Cα.accent25, background: C.surface, boxShadow: "0 -8px 24px rgba(0,0,0,0.35)", display: "flex", flexWrap: "wrap", gap: "8px 24px", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ position: "sticky", bottom: 0, zIndex: 5, ...card, padding: typeof window !== "undefined" && window.innerWidth < 640 ? "8px 12px" : "12px 16px", borderColor: Cα.accent25, background: C.surface, boxShadow: "0 -8px 24px rgba(0,0,0,0.35)", display: "flex", flexWrap: "wrap", gap: "8px 24px", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={F.label}>{owner.name} · te toca pagar {textoFechaPago(owner)} de {e.anoEst + 1}</div>
             <div style={{ ...F.monoXl, color: C.warn }}>{mm(e.totalAlDeclarar)}</div>
           </div>
-          <div style={{ ...F.caption, display: "grid", gap: 2, textAlign: "right" }}>
+          {/* 30-oct-2026 (Santiago: "no están bien diseñadas para mobile"): en el celular la barra
+              fija queda en una línea; el desglose está arriba, en «Tu cuenta». */}
+          {!(typeof window !== "undefined" && window.innerWidth < 640) && <div style={{ ...F.caption, display: "grid", gap: 2, textAlign: "right" }}>
             <span>Impuesto {mm(e.total)} − ya retenido y anticipado {mm(e.ret + e.antPagado)} + anticipo {e.anoEst + 1} {mm(e.anticipoSiguiente)}</span>
             {ahorro > 0 && <span style={{ color: C.ok, fontWeight: 600 }}>Con las estrategias que marcaste: {mm(Math.max(0, e.totalAlDeclarar - ahorro))}</span>}
-          </div>
+          </div>}
         </div>
       )}
 
@@ -516,7 +518,7 @@ function ResumenHistoria({ owner }) {
   return (
     <div style={{ marginTop: 16 }}>
       <div style={F.h3}>Así le ha ido, año tras año</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginTop: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 10, marginTop: 8 }}>
         <Grafica titulo="Ingresos (MM)"><Linea anos={anos} v={s.map((x) => x.ing)} fmt={corto} color={C.accent} txt={15} /></Grafica>
         <Grafica titulo="Impuesto (MM)"><Linea anos={anos} v={s.map((x) => x.imp)} fmt={corto} color={C.danger} txt={15} /></Grafica>
         <Grafica titulo="Tasa efectiva"><Linea anos={anos} v={s.map((x) => x.tasa)} fmt={(v) => pct(v)} color={C.warn} txt={15} /></Grafica>
@@ -623,7 +625,7 @@ function TablaIngresos({ e, r, registrados, onChange }) {
           <div style={{ ...F.h2, marginTop: 4 }}>En {e.ano} tuviste ingresos por {mm(e.brutos)}. ¿Cómo estaban distribuidos?</div>
           <div style={{ marginTop: 8 }}><Aviso tipo="info"><b>Lo ideal es que esto salga solo de tu declaración.</b> Tu PDF se leyó antes de que separáramos los ingresos por tipo. Vuelve a subirlo una vez y aquí aparecerá «En {e.ano} tenías {mm(e.brutos)}: salario tanto, honorarios tanto, arriendos tanto…»; tú solo dirías qué cambió. Si no lo tienes a mano, repártelo abajo con tus números.</Aviso></div>
           <p style={{ ...F.caption, margin: "4px 0 10px" }}>Pon cuánto recibías de cada cosa, al mes o al año. Lo que no tenías déjalo en cero. Así ves de dónde salieron esos {mm(e.brutos)}.</p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "10px 16px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: "10px 16px" }}>
             {filas.filter((f) => f.plantilla).map((f) => (
               <Campo key={f.id} label={f.nombre}>
                 <PlataPeriodo value={f.antes} per={f.perAntes} onPer={(p) => upd(f.id, { perAntes: p })} onChange={(v) => upd(f.id, { antes: v })} />
@@ -750,7 +752,7 @@ function Cuenta({ e, ahorro }) {
   const noPaga = Math.max(0, e.ingresosEst - e.base);
   const aFavor = e.saldo < 0;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 16 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 16 }}>
       <div style={{ background: C.raised, borderRadius: R.lg, padding: "6px 16px 10px" }}>
         <div style={{ ...F.label, padding: "8px 0 4px" }}>1 · Cuánto paga renta</div>
         {fila(`Tus ingresos de ${e.anoEst}`, e.ingresosEst)}
@@ -846,7 +848,7 @@ function Lista2026({ e, r, registrados, onChange }) {
   const dv = e.brutos ? total / e.brutos - 1 : 0;
   const pesa = (id) => (e.aportesLista || []).find((x) => x.id === id)?.impuesto || 0;
   return (
-    <div style={{ display: "grid", gap: 12 }}>
+    <div style={{ display: "grid", gap: 12, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <div style={{ ...card, background: C.surface }}>
         <div style={F.label}>Tu referencia · {e.ano} (ya declarado)</div>
         <div style={{ ...F.h2, marginTop: 4 }}>En {e.ano} declaraste ingresos por {mm(e.brutos)}</div>

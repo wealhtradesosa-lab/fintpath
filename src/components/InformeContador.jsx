@@ -53,7 +53,7 @@ export default function InformeContador({ u, modoContador = false, cliente = "",
   const btn = (fuerte) => ({ padding: "10px 16px", borderRadius: R.md, border: fuerte ? "none" : `1px solid ${C.border}`, background: fuerte ? C.accent : "transparent", color: fuerte ? C.text : C.muted, fontWeight: 700, fontSize: 13, cursor: elegidos.length ? "pointer" : "default", opacity: elegidos.length ? 1 : 0.5 });
 
   return (
-    <div style={{ display: "grid", gap: 14 }}>
+    <div style={{ display: "grid", gap: 14, gridTemplateColumns: "minmax(0, 1fr)" }}>
       {modoContador
         ? <PageHeader label="Cliente que te compartió" title={`Información de ${cliente || "tu cliente"}`} compact />
         : <PageHeader label="Impuestos · contador" title="Informe para el contador" accent="contador" compact />}

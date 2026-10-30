@@ -41,7 +41,7 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
   const total = owners.reduce((a, o) => a + declaracionesOrdenadas(o).length, 0);
 
   return (
-    <div style={{ display: "grid", gap: 16 }}>
+    <div style={{ display: "grid", gap: 16, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <PageHeader label="Impuestos · historial" title="Historial de mis declaraciones, año tras año" accent="año tras año" compact
         subtitle={`Sube aquí cada declaración cuando llegue. Guardamos las últimas ${MAX_DECLARACIONES} de cada persona o empresa del grupo y te mostramos cómo se comparan, qué alertas hay y hacia dónde va.`} />
 
@@ -94,6 +94,49 @@ function Cobertura({ owners, onSubir, onVer, onBorrar }) {
   const ultimoAno = new Date().getFullYear() - 1; // la declaración más reciente posible es la del año pasado
   const anos = Array.from({ length: MAX_DECLARACIONES }, (_, i) => ultimoAno - i);
   const tdc = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "center" };
+  const celda = (o, a, d) => (d ? (
+                          porBorrar === `${o.id}|${a}` ? (
+                            <span style={{ ...F.caption, display: "inline-flex", gap: 6, alignItems: "center", color: C.text }}>
+                              ¿Borrar {a}?
+                              <button type="button" onClick={() => { onBorrar?.(o.id, a); setPorBorrar(null); }} style={{ ...F.caption, fontWeight: 700, color: C.danger, background: "none", border: `1px solid ${C.danger}`, borderRadius: R.sm, padding: "2px 8px", cursor: "pointer" }}>Sí</button>
+                              <button type="button" onClick={() => setPorBorrar(null)} style={{ ...F.caption, fontWeight: 600, color: C.muted, background: "none", border: `1px solid ${C.border}`, borderRadius: R.sm, padding: "2px 8px", cursor: "pointer" }}>No</button>
+                            </span>
+                          ) : (
+                            <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                              <button type="button" onClick={() => onVer(o.id)} title="Ver su historial" style={{ ...F.caption, fontWeight: 600, color: C.ok, background: "none", border: "none", cursor: "pointer" }}>✓ {mm(impuestoDeclarado(d))}</button>
+                              {onBorrar && <span style={{ display: "inline-flex", gap: 8 }}>
+                                <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Reemplazar</button>
+                                <button type="button" onClick={() => setPorBorrar(`${o.id}|${a}`)} style={{ ...F.caption, color: C.danger, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Borrar</button>
+                              </span>}
+                            </span>
+                          )
+                        )
+                          : <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, fontWeight: 600, color: C.accent, background: "none", border: `1px dashed ${C.border}`, borderRadius: R.md, padding: "4px 10px", cursor: "pointer" }}>+ Subir</button>);
+  // 30-oct-2026 (Santiago: "no están bien diseñadas para mobile"): en el celular la tabla
+  // titular × año no cabía (se veían 2 de 4 años); va como una tarjeta por titular.
+  if (typeof window !== "undefined" && window.innerWidth < 640) {
+    return (
+      <Panel titulo="Tus declaraciones" sub={`Guardamos ${MAX_DECLARACIONES} años por persona o empresa; si subes un año que ya está, se reemplaza.`}>
+        {owners.map((o) => {
+          const ds = declaracionesOrdenadas(o);
+          return (
+            <div key={o.id} style={{ borderTop: `1px solid ${C.border}`, padding: "10px 0" }}>
+              <button type="button" onClick={() => onVer(o.id)} style={{ ...F.h3, background: "none", border: "none", color: C.text, cursor: "pointer", padding: 0, textAlign: "left" }}>{o.name}</button>
+              <div style={F.caption}>{o.type === "juridica" ? "Sociedad · F-110" : "Persona natural · F-210"}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 8 }}>
+                {anos.map((a) => (
+                  <div key={a} style={{ background: C.raised, borderRadius: R.md, padding: "8px 6px", textAlign: "center", display: "grid", gap: 4, justifyItems: "center" }}>
+                    <span style={{ ...F.label }}>{a}</span>
+                    {celda(o, a, ds.find((x) => Number(x.anoGravable) === a))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </Panel>
+    );
+  }
   return (
     <Panel titulo="Tus declaraciones" sub={`Sube cada una cuando la tengas. Guardamos ${MAX_DECLARACIONES} años por persona o empresa; si subes un año que ya está, se reemplaza.`}>
       <div style={{ overflowX: "auto" }}>
@@ -112,24 +155,7 @@ function Cobertura({ owners, onSubir, onVer, onBorrar }) {
                     const d = ds.find((x) => Number(x.anoGravable) === a);
                     return (
                       <td key={a} style={tdc}>
-                        {d ? (
-                          porBorrar === `${o.id}|${a}` ? (
-                            <span style={{ ...F.caption, display: "inline-flex", gap: 6, alignItems: "center", color: C.text }}>
-                              ¿Borrar {a}?
-                              <button type="button" onClick={() => { onBorrar?.(o.id, a); setPorBorrar(null); }} style={{ ...F.caption, fontWeight: 700, color: C.danger, background: "none", border: `1px solid ${C.danger}`, borderRadius: R.sm, padding: "2px 8px", cursor: "pointer" }}>Sí</button>
-                              <button type="button" onClick={() => setPorBorrar(null)} style={{ ...F.caption, fontWeight: 600, color: C.muted, background: "none", border: `1px solid ${C.border}`, borderRadius: R.sm, padding: "2px 8px", cursor: "pointer" }}>No</button>
-                            </span>
-                          ) : (
-                            <span style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                              <button type="button" onClick={() => onVer(o.id)} title="Ver su historial" style={{ ...F.caption, fontWeight: 600, color: C.ok, background: "none", border: "none", cursor: "pointer" }}>✓ {mm(impuestoDeclarado(d))}</button>
-                              {onBorrar && <span style={{ display: "inline-flex", gap: 8 }}>
-                                <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Reemplazar</button>
-                                <button type="button" onClick={() => setPorBorrar(`${o.id}|${a}`)} style={{ ...F.caption, color: C.danger, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Borrar</button>
-                              </span>}
-                            </span>
-                          )
-                        )
-                          : <button type="button" onClick={() => onSubir(o.id)} style={{ ...F.caption, fontWeight: 600, color: C.accent, background: "none", border: `1px dashed ${C.border}`, borderRadius: R.md, padding: "4px 10px", cursor: "pointer" }}>+ Subir</button>}
+                        {celda(o, a, d)}
                       </td>
                     );
                   })}
@@ -177,7 +203,7 @@ function HistTitular({ owner, onNavigate, onSaveDeclaracion }) {
     )}
 
     <Panel titulo="Tendencias">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: 12 }}>
         <Grafica titulo="Ingresos e impuesto" sub={`Cuánto entró y cuánto se fue en renta · ${proy.ano}e = si sigue la tendencia`}>
           <Barras anos={anosP} desde={n} series={[{ n: "Ingresos brutos", c: C.accent, v: [...s.map((x) => x.ing), proy.ing] }, { n: "Impuesto", c: C.danger, v: [...s.map((x) => x.imp), proy.imp] }]} />
         </Grafica>
@@ -251,7 +277,7 @@ function HistGrupo({ owners }) {
       </KpiGrid>
     </Panel>
     <Panel titulo="Tendencias">
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: 12 }}>
         <Grafica titulo="Impuesto por titular" sub="Cuánto aporta cada uno al total del grupo"><Barras anos={anos} apilar series={ser(fI)} /></Grafica>
         <Grafica titulo="Patrimonio líquido por titular" sub="Lo que es de cada uno, sin deudas"><Barras anos={anos} apilar series={ser(fP)} /></Grafica>
       </div>
@@ -342,7 +368,7 @@ function CorregirValores({ owner, ds, onSave }) {
       </div>
       {d && (
         <div style={{ marginTop: 12 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 220px), 1fr))", gap: 10 }}>
             {filas.map(([l, key]) => (
               <label key={key} style={{ display: "grid", gap: 4 }}>
                 <span style={{ ...F.caption, fontWeight: 600, color: C.muted }}>{l}</span>
