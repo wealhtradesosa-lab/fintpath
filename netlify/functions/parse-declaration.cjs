@@ -145,6 +145,7 @@ Formato de respuesta para F-110 (jurídica):
 }
 
 Reglas adicionales:
+- En el F-210 los ingresos están en una TABLA: las COLUMNAS son las cédulas (Rentas de trabajo | Rentas de trabajo no laborales / honorarios | Rentas de capital | Rentas no laborales) y las FILAS son los conceptos (Ingresos brutos, Ingresos no constitutivos de renta, Costos y deducciones procedentes, Renta líquida…). ingresosTrabajo, ingresosHonorarios, ingresosCapital e ingresosNoLaborales salen SOLO de la fila «Ingresos brutos» de cada columna (renglones 32, 43, 58 y 74). Los valores de la fila «Ingresos no constitutivos» NO son ingresos brutos: súmalos en ingresosNoConstitutivos. Si una columna está vacía o en 0, su valor es 0; no corras los números a la columna vecina.
 - En el F-210 los valores de "Patrimonio" están arriba: Total patrimonio bruto (29), Deudas (30), Total patrimonio líquido (31). Verifica que bruto − deudas = líquido.
 - En el F-210, "impuestoCalculado" es el Impuesto neto de renta (126); "retefuente" son las Retenciones año gravable a declarar (132); "anticipoAnoSiguiente" es el renglón 133; "anticipoAnoAnterior" el 130; "saldoPagar" es el Saldo a pagar por impuesto (134), y si hay Total saldo a favor (137) ponlo como saldoPagar NEGATIVO.
 - Si detectas que el documento NO es una declaración DIAN válida, responde:
@@ -214,6 +215,14 @@ ${tipoHint && tipoHint !== "auto" ? `\n- El usuario indicó que el formulario es
         body: JSON.stringify({ success: false, error: "Respuesta del modelo incompleta", raw: parsed }),
       };
     }
+
+    // 30-oct-2026: coherencia que la IA no siempre respeta. El total de ingresos brutos
+    // nunca es menor que la suma de sus cédulas, y el NIT va sin dígito de verificación.
+    const R = parsed.renglones;
+    const n = (v) => Number(v) || 0;
+    const sumaCedulas = n(R.ingresosTrabajo) + n(R.ingresosHonorarios) + n(R.ingresosCapital) + n(R.ingresosNoLaborales) + n(R.ingresosPensiones) + n(R.ingresosDividendos);
+    if (sumaCedulas > n(R.ingresosBrutos)) R.ingresosBrutos = sumaCedulas;
+    if (parsed.nit) parsed.nit = String(parsed.nit).split("-")[0].replace(/[^0-9]/g, "") || null;
 
     return { statusCode: 200, headers, body: JSON.stringify({ success: true, data: parsed }) };
   } catch (err) {
