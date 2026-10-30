@@ -27,6 +27,14 @@ const T = {
   gradAdv: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)",
 };
 
+// 30-oct-2026 (Santiago: "¿cómo saben que van para mi cuenta?"): el nombre por defecto de
+// las cuentas es «Mi cuenta», que al invitado no le dice nada. Se muestra de quién es.
+const nombreCuenta = (inv) => {
+  const n = (inv?.account_name || "").trim();
+  const quien = inv?.invited_by_name || "quien te invitó";
+  return !n || /^mi cuenta$/i.test(n) ? `la cuenta de ${quien}` : n;
+};
+
 export default function AcceptInvite({ token, onComplete }) {
   const [stage, setStage] = useState("validating"); // validating | ready | signup | login | accepting | done | error
   const [error, setError] = useState("");
@@ -127,8 +135,11 @@ export default function AcceptInvite({ token, onComplete }) {
         // Flujo family (Fase 3): la RPC accept_invitation matchea email
         // del caller con el de la invitación, crea/reactiva membership
         // y marca consumed_at.
-        const { error: acceptErr } = await supabase.rpc("accept_invitation", { p_token: token });
+        const { data: acc, error: acceptErr } = await supabase.rpc("accept_invitation", { p_token: token });
         if (acceptErr) throw new Error(acceptErr.message || "No se pudo aceptar la invitación");
+        // 30-oct-2026: al entrar, abrir la cuenta a la que lo invitaron (no su cuenta propia vacía).
+        // El contador no: él la ve en «Clientes que me comparten».
+        try { if (acc?.account_id && acc?.role !== "contador") localStorage.setItem("fp3_active_account", acc.account_id); } catch { /* storage bloqueado */ }
       } else {
         // Flujo advisor (legacy): netlify function intacta
         const acceptRes = await fetchAuth("/.netlify/functions/advisor-accept-invite", {
@@ -238,7 +249,7 @@ export default function AcceptInvite({ token, onComplete }) {
           <p style={{ fontSize: 14, color: T.txt2, marginBottom: 20, lineHeight: 1.6 }}>
             {isFamily ? (
               <>
-                Ya tienes acceso a <strong style={{ color: T.txt }}>{invitation?.account_name}</strong>
+                Ya tienes acceso a <strong style={{ color: T.txt }}>{nombreCuenta(invitation)}</strong>
                 {invitation?.role === "contador" ? " como contador (solo lectura). La encuentras en el menú «Clientes que me comparten»" : invitation?.role === "reader" ? " como solo lectura" : " como administrador"}.
                 Redirigiendo...
               </>
@@ -267,7 +278,8 @@ export default function AcceptInvite({ token, onComplete }) {
             <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(167,139,250,0.08))", border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>🎉 Invitación recibida</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: T.txt, marginBottom: 6, lineHeight: 1.35 }}>
-                {invitation?.invited_by_name || "Alguien"} te invitó a su cuenta{invitation?.account_name ? <> <strong style={{ color: T.green }}>{invitation.account_name}</strong></> : ""} en Finpathia
+                {invitation?.invited_by_name || "Alguien"} te invitó a <strong style={{ color: T.green }}>{nombreCuenta(invitation)}</strong> en Finpathia
+                {invitation?.invited_by_email && <div style={{ fontSize: 12, fontWeight: 500, color: T.txt3, marginTop: 4 }}>Enviada por {invitation.invited_by_email}{invitation?.email_invited ? <> · para {invitation.email_invited}</> : null}</div>}
               </div>
               <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.55 }}>
                 {invitation?.role === "contador"

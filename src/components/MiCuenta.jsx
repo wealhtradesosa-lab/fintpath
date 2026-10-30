@@ -438,12 +438,13 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
         <InviteModal
           supabase={supabase}
           accountId={accountId}
-          accountName={displayName}
+          accountName={displayName && !/^mi cuenta$/i.test(displayName.trim()) ? displayName : `la cuenta de ${currentUserName || "tu contacto"}`}
           inviterName={currentUserName}
           onClose={() => { setShowInvite(false); setInviteResult(null); loadAll(); }}
           onSuccess={(result) => setInviteResult(result)}
           inviteResult={inviteResult}
           soloContador={inviteContador}
+          renombrarA={(!displayName || /^mi cuenta$/i.test(displayName.trim())) && currentUserName ? `Cuenta de ${currentUserName}` : null}
         />
       )}
     </div>
@@ -576,7 +577,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
   );
 }
 
-function InviteModal({ supabase, accountId, accountName, inviterName, onClose, onSuccess, inviteResult, soloContador = false }) {
+function InviteModal({ supabase, accountId, accountName, inviterName, onClose, onSuccess, inviteResult, soloContador = false, renombrarA = null }) {
   const [email, setEmail] = useState("");
   const [memberRole, setMemberRole] = useState(soloContador ? "contador" : "reader");
   const [submitting, setSubmitting] = useState(false);
@@ -594,6 +595,8 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
     setSubmitError("");
     setSubmitting(true);
     try {
+      // 30-oct-2026: «Mi cuenta» no le dice nada al invitado (ni en su selector de cuentas).
+      if (renombrarA) { try { await supabase.from("accounts").update({ display_name: renombrarA }).eq("id", accountId); } catch { /* no bloquea */ } }
       const { data, error } = await supabase.rpc("create_invitation", {
         p_account_id: accountId,
         p_email: email,
