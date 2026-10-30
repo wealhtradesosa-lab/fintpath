@@ -1470,6 +1470,30 @@ export default function FinPath(){
        eventos:[bodega,...pensiones,{id:"demo_mv_motor",mes:2,tipo:"motor",nombre:"Proyectos de construcción asociativos",lote:1200000000,obra:1500000000,venta:3645000000,mesesVuelta:16,impuestoPct:35,vueltas:6,reinvierte:true,origen:[{posicionId:"demo_d_fondo"}]}],
        excedente:[{canasta:"rentas",pct:30},{canasta:"crecimiento",pct:70}],colchonMeses:6,canastas:null,condiciones:[]},
     ];
+    // 30-oct-2026 (Santiago: "monta en el demo unos 5 escenarios futuros con conceptos
+    // diferentes: protección, crecer, mercado"). Van en «Mi futuro a 10 años», que es la
+    // sección viva (MiPlan/caminos salió del menú). Mismo patrimonio, cinco ideas:
+    // blindar, vivir de rentas, equilibrio, crecer en mercado global y crecer en finca raíz.
+    const pagarTodo={d_d1:true,d_d2:true,d_d3:true,d_d4:true,d_d5:true};
+    const pagarCaras={d_d3:true,d_d4:true,d_d5:true};
+    const pagarConOrlando={d_d2:true,d_d3:true,d_d4:true,d_d5:true};
+    // En «Mi futuro» las canastas reinvierten; lo que debe pagar cada mes va como inversión propia que entrega el 100%.
+    const rfPaga=(nombre,monto,tasa,moneda="COP")=>({preset:"custom",nombre,monto,anio:1,rendimientoNomPct:tasa,pctRecibe:100,moneda,fuente:"venta"});
+    const bodegaF10={accion:"modifica",inversionMonto:600000000,inversionAnio:1,rentaNuevaMensual:8000000,rentaNuevaDesdeMes:6,valorizacionNomPct:7};
+    const f10=(id,nombre,descripcion,config)=>({id,nombre,descripcion,creado:"2026-10-30T12:00:00.000Z",config:{escenario:"base",decisiones:{},norte:"equilibrio",mezcla:null,nuevas:[],reinversiones:[],futuros:{ingresos:[],activos:[],gastos:[]},...config}});
+    nd.futuro10={escenarios:[
+      f10("demo_f10_1","1 · Protección: blindar la familia","Quedar sin deudas y con la vida pagada pase lo que pase: vender Orlando (renta menos de lo que cuesta), la fintech y el bitcoin, pagar todos los créditos y dejar lo que sobra en liquidez y renta fija. Se quedan la casa del lago y el fondo que paga cada mes.",
+        {decisiones:{d_i2:{accion:"vende"},d_i7:{accion:"vende"},d_i10:{accion:"vende"}},pagarDeudas:pagarTodo,mezcla:{liquidez:30,renta:65,crecimiento:5}}),
+      f10("demo_f10_2","2 · Vivir de rentas","Vender la casa del lago y Orlando, pagar los créditos caros y poner la plata a pagar cada mes: dos tercios en renta fija que deposita cada mes, el resto creciendo.",
+        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"}},pagarDeudas:pagarConOrlando,norte:"rentas",nuevas:[rfPaga("Renta fija que paga cada mes (CDT y TES)",6500000000,10)]}),
+      f10("demo_f10_3","3 · Equilibrio","Vender la casa del lago y Orlando, construir la bodega en el lote y repartir mitad en renta, mitad creciendo.",
+        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i5:bodegaF10},pagarDeudas:pagarConOrlando,norte:"equilibrio",nuevas:[rfPaga("Renta fija que paga cada mes (CDT y TES)",4000000000,10)]}),
+      f10("demo_f10_4","4 · Crecer en mercado global","Salir del ladrillo grande: vender la casa del lago, Orlando y Miami, pagar todo y llevar el 70% a un portafolio global de acciones (S&P 500, en dólares). Líquido y diversificado, pero sube y baja.",
+        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i3:{accion:"vende"}},pagarDeudas:pagarTodo,norte:"crecer",nuevas:[rfPaga("Bonos globales que pagan cada mes",2500000000,7,"USD")]}),
+      f10("demo_f10_5","5 · Crecer en finca raíz","Quedarse con los inmuebles y sumar más: construir la bodega en el lote y meter el efectivo y la fintech en un proyecto de vivienda en preventa que se valoriza.",
+        {decisiones:{d_i5:bodegaF10,d_i7:{accion:"vende"},d_i8:{accion:"vende"}},pagarDeudas:pagarCaras,norte:"crecer",
+         nuevas:[{preset:"custom",nombre:"Proyecto de vivienda en preventa",monto:1200000000,anio:1,rendimientoNomPct:14,pctRecibe:0,moneda:"COP",fuente:"venta"}]}),
+    ]};
     nd.caminoElegido="demo_esc_1";
     // Declaraciones de años anteriores, para que "Tu renta, año tras año" tenga con qué comparar.
     nd.owners[0].declaraciones=[
