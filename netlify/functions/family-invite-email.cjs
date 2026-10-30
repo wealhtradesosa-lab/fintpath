@@ -99,7 +99,7 @@ exports.handler = async (event) => {
   }
 
   const from = process.env.RESEND_FROM || "Finpathia <noreply@finpathia.com>";
-  const safeRole = role === "admin" ? "Administrador" : "Solo lectura";
+  const safeRole = role === "admin" ? "Administrador" : role === "contador" ? "Contador (solo lectura de lo tributario)" : "Solo lectura";
   const safeAccountName = account_name || "una cuenta familiar";
   const safeInviter = invited_by_name || "El administrador";
   const expiresLine = expires_at
@@ -128,7 +128,9 @@ exports.handler = async (event) => {
             <strong style="color:#10b981">${safeRole}</strong>.
           </p>
           <p style="font-size:14px;line-height:1.6;color:#a1a1aa;margin:0 0 24px">
-            ${role === "reader"
+            ${role === "contador"
+              ? "Te invitan como contador: vas a poder ver, sin modificar nada, sus declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta, y descargar el informe en PDF. No ves sus gastos personales del día a día."
+              : role === "reader"
               ? "Vas a poder ver todos los datos de la cuenta — ingresos, gastos, inversiones, plan tributario — en modo solo lectura. Las modificaciones las hace el administrador."
               : "Vas a poder ver y editar todos los datos de la cuenta — ingresos, gastos, inversiones, plan tributario — junto con los demás administradores."}
           </p>

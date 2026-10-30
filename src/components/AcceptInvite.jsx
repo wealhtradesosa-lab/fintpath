@@ -239,7 +239,7 @@ export default function AcceptInvite({ token, onComplete }) {
             {isFamily ? (
               <>
                 Ya tienes acceso a <strong style={{ color: T.txt }}>{invitation?.account_name}</strong>
-                {invitation?.role === "reader" ? " como solo lectura" : " como administrador"}.
+                {invitation?.role === "contador" ? " como contador (solo lectura). La encuentras en el menú «Clientes que me comparten»" : invitation?.role === "reader" ? " como solo lectura" : " como administrador"}.
                 Redirigiendo...
               </>
             ) : (
@@ -270,7 +270,9 @@ export default function AcceptInvite({ token, onComplete }) {
                 {invitation?.invited_by_name || "Alguien"} te invitó a su cuenta{invitation?.account_name ? <> <strong style={{ color: T.green }}>{invitation.account_name}</strong></> : ""} en Finpathia
               </div>
               <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.55 }}>
-                {invitation?.role === "admin"
+                {invitation?.role === "contador"
+                  ? <>Te invitan como <strong style={{ color: T.txt }}>contador</strong>: vas a poder <strong style={{ color: T.txt }}>ver</strong>, sin cambiar nada, sus declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta, y descargar el informe.</>
+                  : invitation?.role === "admin"
                   ? <>Vas a poder <strong style={{ color: T.txt }}>ver y editar</strong> toda la información financiera de la cuenta compartida.</>
                   : <>Vas a poder <strong style={{ color: T.txt }}>ver</strong> toda la información financiera de la cuenta compartida (modo solo lectura).</>}
               </div>

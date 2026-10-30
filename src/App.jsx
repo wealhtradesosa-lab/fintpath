@@ -33,6 +33,7 @@ const BorradorDeclaracionF110 = lazy(() => import("./components/BorradorDeclarac
 const TaxOptimizerUS = lazy(() => import("./components/TaxOptimizerUS"));
 const OptimizadorGananciaOcasional = lazy(() => import("./components/OptimizadorGananciaOcasional"));
 const InformeContador = lazy(() => import("./components/InformeContador"));
+const VistaContador = lazy(() => import("./components/VistaContador"));
 const EstimadoRenta = lazy(() => import("./components/EstimadoRenta"));
 const HistorialDeclaraciones = lazy(() => import("./components/HistorialDeclaraciones"));
 import NotaFuenteImpuesto from "./components/NotaFuenteImpuesto";
@@ -164,8 +165,9 @@ const sLR=async(uid,accountId)=>{
   // Multi-cuenta (Fase 2): si tenemos accountId, leer por account_id.
   // Sino, fallback legacy a leer por uid.
   const r=await leerUserData({
-    leer:()=>{const q=supabase.from("user_data").select("data,jurisdiction");return accountId?q.eq("account_id",accountId).maybeSingle():q.eq("id",uid).maybeSingle()},
+    leer:()=>{const q=supabase.from("user_data").select("data,jurisdiction,updated_at");return accountId?q.eq("account_id",accountId).maybeSingle():q.eq("id",uid).maybeSingle()},
     procesar:async(row)=>{
+      _versionServidor=row.updated_at||null;
       let sd=row.data;
       if(sd._encrypted&&sd.payload){
         // La llave vive en memoria desde el #66; nunca en storage.
@@ -330,6 +332,14 @@ const E2E={
   }
 };
 let _svT=null;
+// 30-oct-2026 (Santiago: "creé una persona jurídica y no queda guardada… delicado eso").
+// El guardado manda el blob completo: la última pantalla que guarda gana. Con dos
+// pestañas, dos dispositivos o varias personas en la cuenta, una borraba los cambios
+// de la otra sin aviso. Ahora cada pantalla recuerda la versión (updated_at) que leyó
+// o guardó; si en el servidor hay una más nueva, no pisa: avisa (fp3-save-conflict).
+let _versionServidor=null;
+let _forzarGuardado=false;
+export const forzarSiguienteGuardado=()=>{_forzarGuardado=true;};
 const takeSnapshot=(d)=>{
   try{
     const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
@@ -383,16 +393,28 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
           // handle_new_user (PATCH 5/FIX 1) o la migración retroactiva.
           // Caso legacy (accountId nulo o isLegacy=true): mantener upsert
           // por id, idéntico al comportamiento pre-Fase 2.
+          // ¿Alguien guardó después de que esta pantalla leyó? Entonces no se pisa.
+          if(_versionServidor&&!_forzarGuardado){
+            const qv=supabase.from("user_data").select("updated_at");
+            const cur=accountId&&!isLegacy?await qv.eq("account_id",accountId).maybeSingle():await qv.eq("id",uid).maybeSingle();
+            const srv=cur?.data?.updated_at;
+            if(srv&&new Date(srv).getTime()>new Date(_versionServidor).getTime()+500){
+              try{window.dispatchEvent(new CustomEvent("fp3-save-conflict",{detail:{servidor:srv}}))}catch{}
+              return;
+            }
+          }
+          _forzarGuardado=false;
+          const ahoraISO=new Date().toISOString();
           let result;
           if(accountId&&!isLegacy){
             result=await supabase.from("user_data")
-              .update({data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()})
-              .eq("account_id",accountId);
+              .update({data:d,jurisdiction:d.jurisdiction||"CO",updated_at:ahoraISO})
+              .eq("account_id",accountId).select("updated_at");
           }else{
             result=await supabase.from("user_data").upsert(
-              {id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:new Date().toISOString()},
+              {id:uid,data:d,jurisdiction:d.jurisdiction||"CO",updated_at:ahoraISO},
               {onConflict:"id"}
-            );
+            ).select("updated_at");
           }
           if(result.error){
             console.error("[fp3] Supabase save ERROR:",result.error);
@@ -400,6 +422,9 @@ const sS=async(d,uid,accountId,isLegacy,role)=>{
             // Toast visible al usuario para que sepa que hay un problema
             try{const ev=new CustomEvent("fp3-save-error",{detail:result.error});window.dispatchEvent(ev)}catch{}
           }else{
+            // La versión la pone el servidor (trigger user_data_updated_at).
+            const fila=Array.isArray(result.data)?result.data[0]:result.data;
+            _versionServidor=fila?.updated_at||ahoraISO;
             window.__fp3LastSaveOk=new Date().toISOString();
             // Commit 23 Tarea 3: notificar al usuario cuando el upsert a Supabase
             // se confirma. Resuelve la duda 'se guardo o no?' que tenia el usuario
@@ -701,6 +726,14 @@ export default function FinPath(){
   // (admin) y todo el flujo cae al camino legacy. Cuando está aplicada, los
   // saves van a public.user_data por account_id en lugar de por id.
   const{accountId,role,isLegacy,displayName,plan:planAccount,maxMembers,memberships,subscriptionStatus,graceUntil,loading:accountLoading,refresh:refreshAccount}=useAccount(authUser,supabase);
+  // 30-oct-2026: cuentas que invitaron a este usuario como contador (solo lectura tributaria).
+  const[clientesContador,setClientesContador]=useState([]);
+  useEffect(()=>{
+    if(!authUser||!isSupabaseConfigured)return;
+    let vivo=true;
+    supabase.rpc("contador_mis_clientes").then(({data})=>{if(vivo&&Array.isArray(data))setClientesContador(data)}).catch(()=>{});
+    return()=>{vivo=false};
+  },[authUser?.id]);
   // Refs para que sS() (que es global, fuera del componente) acceda a los
   // values frescos sin recrear el callback ni cerrar sobre values stale del
   // setTimeout de 2s del debounce de save.
@@ -747,6 +780,9 @@ export default function FinPath(){
   },[accountId,accountLoading]);
   // Copia vieja en pantalla: banner + solo lectura + [Reintentar].
   const[noSinc,setNoSinc]=useState(datosNoSincronizados);
+  // 30-oct-2026: alguien (otra pestaña, otro dispositivo u otra persona de la cuenta) guardó después.
+  const[conflicto,setConflicto]=useState(false);
+  useEffect(()=>{const h=()=>setConflicto(true);window.addEventListener("fp3-save-conflict",h);return()=>window.removeEventListener("fp3-save-conflict",h)},[]);
   const[reintentando,setReintentando]=useState(false);
   useEffect(()=>alCambiarSincronizacion(setNoSinc),[]);
   const reintentarCarga=async()=>{
@@ -2229,7 +2265,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"🧮",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"taxinf",i:"📤",l:"Informe para el contador",parent:"tax",hidden:isUS},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
+  const nvs=[{id:"dash",i:"📊",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"🏦",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"💰",l:isEN?"Income":"Ingresos"},{id:"gas",i:"💳",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"📋",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"🧾",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"🎯",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"👨‍👩‍👧‍👦",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"📚",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"🧮",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"taxinf",i:"📤",l:"Informe para el contador",parent:"tax",hidden:isUS},{id:"contclientes",i:"🧾",l:"Clientes que me comparten",hidden:!clientesContador.length},{id:"_sep2",sep:true,l:isEN?"TOOLS":"HERRAMIENTAS"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
       // datos siguen vivos) y los absorbe Mi plan. Flujo Anual (el desempeño
       // del año completo) y el Simulador del año siguiente se quedan: son el
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
@@ -3620,7 +3656,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/>
         <button type="button" onClick={()=>setPg("taxdet")} style={{marginTop:12,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:12,textDecoration:"underline"}}>¿Prefieres el borrador detallado, renglón por renglón? Ábrelo aquí</button></>);
     }
-    case"taxinf":return gated("tax","Pro",<InformeContador u={u}/>);
+    case"taxinf":return gated("tax","Pro",<InformeContador u={u} onNavigate={setPg}/>);
+    case"contclientes":return <VistaContador supabase={supabase} clientes={clientesContador}/>;
     case"taxcalc":return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/></>);
     case"taxdet":return isUS?null:gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><DeclaracionFlow
         user={u}
@@ -4279,6 +4316,13 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
           al entrar a una sección por primera vez, y un spinner llamativo se
           vería peor que un texto quieto. */}
       {noSinc&&authUser&&<AvisoNoSincronizado onReintentar={reintentarCarga} cargando={reintentando}/>}
+      {conflicto&&authUser&&<div role="alert" style={{background:"rgba(249,115,22,0.12)",borderBottom:"1px solid rgba(249,115,22,0.35)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap",fontSize:13,color:T.txt}}>
+        <span>⚠️ Hay cambios más nuevos guardados desde otra pestaña, otro dispositivo u otra persona de tu cuenta. Para no borrarlos, lo último que hiciste aquí no se guardó.</span>
+        <span style={{display:"flex",gap:8}}>
+          <button onClick={()=>window.location.reload()} style={{background:"#f97316",color:"#000",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Recargar y ver lo más nuevo</button>
+          <button onClick={()=>{if(!confirm("Esto reemplaza lo que se guardó desde el otro lado con lo que ves en esta pantalla. ¿Seguro?"))return;forzarSiguienteGuardado();setConflicto(false);setU(p=>p?{...p}:p)}} style={{background:"transparent",color:T.tx2,border:"1px solid "+T.border,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontSize:12}}>Guardar lo mío de todas formas</button>
+        </span>
+      </div>}
       <Suspense fallback={<div style={{padding:40,textAlign:"center",color:T.tx3,fontSize:13}}>Cargando…</div>}>
         {noSinc&&authUser?<fieldset disabled style={{border:0,margin:0,padding:0,minWidth:0}}>{rp()}</fieldset>:rp()}
       </Suspense>

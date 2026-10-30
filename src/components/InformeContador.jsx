@@ -34,7 +34,7 @@ function armarTitular(u, o) {
   };
 }
 
-export default function InformeContador({ u }) {
+export default function InformeContador({ u, modoContador = false, cliente = "", onNavigate }) {
   const owners = useMemo(() => (u?.owners || []).filter(Boolean), [u?.owners]);
   const titulares = useMemo(() => owners.map((o) => armarTitular(u, o)), [u, owners]);
   const [sel, setSel] = useState(() => Object.fromEntries(owners.map((o) => [o.id, true])));
@@ -54,8 +54,10 @@ export default function InformeContador({ u }) {
 
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <PageHeader label="Impuestos · contador" title="Informe para el contador" accent="contador" compact />
-      <Bienvenida
+      {modoContador
+        ? <PageHeader label="Cliente que te compartió" title={`Información de ${cliente || "tu cliente"}`} compact />
+        : <PageHeader label="Impuestos · contador" title="Informe para el contador" accent="contador" compact />}
+      {!modoContador && <Bienvenida
         titulo="Todo lo que tu contador necesita, en un solo documento"
         potencial={[
           "Sale con lo que ya tienes en FINPATHIA: no tienes que llenar nada nuevo.",
@@ -63,8 +65,11 @@ export default function InformeContador({ u }) {
           "De las personas solo van los gastos que cuentan para la renta; tu día a día queda privado. De las sociedades van todos sus costos y gastos.",
         ]}
         pasos={[{ t: "Elige los titulares" }, { t: "Envíalo o descárgalo" }]}
-      />
-      <Panel titulo="1. ¿De quiénes?" sub="Marca los titulares que quieres incluir.">
+      />}
+      {modoContador && <div style={{ ...F.caption, padding: "10px 12px", borderRadius: R.md, background: Cα.accent08, border: `1px solid ${Cα.accent25}` }}>
+        Ves lo que tu cliente registró en FINPATHIA, en solo lectura: declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta. Las cifras las cargó el cliente y los estimados son de referencia.
+      </div>}
+      <Panel titulo={modoContador ? "Titulares" : "1. ¿De quiénes?"} sub={modoContador ? "Marca los que quieres ver y descargar." : "Marca los titulares que quieres incluir."}>
         {grupos.map(([l, g]) => (
           <div key={l} style={{ marginTop: 8 }}>
             <div style={{ ...F.label, marginBottom: 4 }}>{l}</div>
@@ -82,16 +87,69 @@ export default function InformeContador({ u }) {
           </div>
         ))}
       </Panel>
+      <Detalle titulares={elegidos} />
+      {modoContador ? (
+        <Panel titulo="Descargar el informe" sub="Un PDF con un capítulo por titular.">
+          <button type="button" disabled={!elegidos.length} onClick={() => generar(false)} style={btn(true)}>Descargar PDF</button>
+          {estado && <div style={{ ...F.caption, marginTop: 8, color: C.ok }}>{estado}</div>}
+        </Panel>
+      ) : (
       <Panel titulo="2. Envíalo a tu contador" sub="En el celular se abre el menú para mandarlo por WhatsApp o correo. En el computador se descarga y lo adjuntas.">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           <button type="button" disabled={!elegidos.length} onClick={() => generar(true)} style={btn(true)}>📤 Enviar a mi contador</button>
           <button type="button" disabled={!elegidos.length} onClick={() => generar(false)} style={btn(false)}>Descargar PDF</button>
         </div>
         {estado && <div style={{ ...F.caption, marginTop: 8, color: C.ok }}>{estado}</div>}
+        <div style={{ ...F.caption, marginTop: 10 }}>
+          ¿Prefieres que tu contador lo vea en vivo, siempre actualizado?{" "}
+          <button type="button" onClick={() => onNavigate?.("cuenta")} style={{ ...F.caption, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Invítalo en Mi cuenta › Personas con acceso</button>: solo verá esto, sin poder cambiar nada.
+        </div>
         <div style={{ ...F.caption, marginTop: 10, padding: "8px 10px", borderRadius: R.md, background: Cα.warn08, border: `1px solid ${Cα.warn25}` }}>
           Las cifras son las que registraste y los estimados son de referencia. Tu contador las valida con los certificados oficiales.
         </div>
       </Panel>
+      )}
     </div>
+  );
+}
+
+// Detalle en pantalla, un desplegable por titular (lo mismo que trae el PDF).
+function Detalle({ titulares }) {
+  if (!titulares.length) return null;
+  const th = { ...F.label, textAlign: "left", padding: "6px 8px" };
+  const td = { ...F.body, padding: "6px 8px", borderTop: `1px solid ${C.border}` };
+  const tdN = { ...td, ...F.mono, textAlign: "right", whiteSpace: "nowrap" };
+  const tabla = (titulo, cols, filas, total) => (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ ...F.h3, marginBottom: 4 }}>{titulo}</div>
+      {filas.length === 0 ? <div style={F.caption}>Nada registrado.</div> : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead><tr>{cols.map((c, i) => <th key={c} style={{ ...th, textAlign: i === cols.length - 1 ? "right" : "left" }}>{c}</th>)}</tr></thead>
+            <tbody>
+              {filas.map((f, i) => <tr key={i}>{f.map((v, j) => <td key={j} style={j === f.length - 1 ? tdN : td}>{v}</td>)}</tr>)}
+              {total != null && <tr><td style={{ ...td, fontWeight: 700 }} colSpan={cols.length - 1}>Total</td><td style={{ ...tdN, fontWeight: 700 }}>{mm(total)}</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+  return (
+    <Panel titulo="Detalle" sub="Ábrelo por titular. Es lo mismo que trae el PDF.">
+      {titulares.map((t) => (
+        <details key={t.id} style={{ borderTop: `1px solid ${C.border}`, padding: "8px 0" }}>
+          <summary style={{ ...F.h3, cursor: "pointer" }}>{t.nombre} <span style={F.caption}>· {t.tipo === "juridica" ? "Sociedad" : "Persona natural"}{t.nit ? ` · ${t.nit}` : ""}</span></summary>
+          {tabla("Declaraciones", ["Año", "Ingresos", "Impuesto", "Retenciones", "Saldo"],
+            t.declaraciones.map((d) => [d.ano, mm(d.ingresos), mm(d.impuesto), mm(d.retenciones), d.saldo < 0 ? `${mm(-d.saldo)} a favor` : mm(d.saldo)]))}
+          {t.e && tabla(`Estimado renta ${t.e.anoEst}`, ["Concepto", "Valor"], [
+            ["Impuesto estimado", mm(t.e.total)], ["Retenciones estimadas", mm(t.e.ret)], [`Anticipo ${t.e.anoEst + 1}`, mm(t.e.anticipoSiguiente)], ["Total a pagar al declarar", mm(t.e.totalAlDeclarar)]])}
+          {tabla("Patrimonio (bienes)", ["Bien", "Tipo", "Valor"], t.datos.bienes.map((x) => [x.nombre, x.tipo, mm(x.valor)]), sum(t.datos.bienes, "valor"))}
+          {tabla("Deudas", ["Deuda", "Tipo", "Saldo"], t.datos.deudas.map((x) => [x.nombre, x.tipo, mm(x.saldo)]), sum(t.datos.deudas, "saldo"))}
+          {tabla("Ingresos", ["Ingreso", "Tipo", "Al año"], t.datos.ingresos.map((x) => [x.nombre, x.tipo, mm(x.anual)]), sum(t.datos.ingresos, "anual"))}
+          {tabla(t.tipo === "juridica" ? "Costos y gastos" : "Gastos que cuentan para la renta", ["Gasto", "Categoría", "Al año"], t.datos.gastos.map((x) => [x.nombre, x.cat, mm(x.anual)]), sum(t.datos.gastos, "anual"))}
+        </details>
+      ))}
+    </Panel>
   );
 }

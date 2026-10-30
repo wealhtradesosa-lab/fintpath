@@ -47,6 +47,7 @@ const PLAN_LABELS = {
 const ROLE_LABELS = {
   admin: "Administrador",
   reader: "Solo lectura",
+  contador: "Contador",
 };
 
 // ── Utilidades ─────────────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ export default function MiCuenta({
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
   const tabs = [
-    showMembersTab && { id: "miembros", label: "👨‍👩‍👧 Miembros y permisos" },
+    showMembersTab && { id: "miembros", label: "👥 Personas con acceso" },
     configContent && { id: "config", label: "⚙️ Configuración" },
   ].filter(Boolean);
 
@@ -141,9 +142,17 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
   const [error, setError] = useState("");
   const [showInvite, setShowInvite] = useState(false);
   const [inviteResult, setInviteResult] = useState(null);
+  const [inviteContador, setInviteContador] = useState(false);
 
   const isAdmin = role === "admin";
-  const totalUsed = members.length + invitations.length;
+  // 30-oct-2026: los contadores van aparte y no ocupan cupo (máx. 3).
+  const esCont = (x) => x.role === "contador";
+  const familia = members.filter((m) => !esCont(m));
+  const contadores = members.filter(esCont);
+  const invFamilia = invitations.filter((i) => !esCont(i));
+  const invContadores = invitations.filter(esCont);
+  const totalUsed = familia.length + invFamilia.length;
+  const contadoresLibres = Math.max(0, 3 - contadores.length - invContadores.length);
   const slotsLeft = Math.max(0, (maxMembers || 1) - totalUsed);
 
   // ── Cargar miembros + invitaciones ─────────────────────────────────────
@@ -232,7 +241,9 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                 Plan {PLAN_LABELS[plan] || plan}
               </span>
               <span style={{ color: T.txt2, fontSize: 13 }}>
-                {totalUsed} de {maxMembers || 1} miembros
+                {totalUsed} de {maxMembers || 1} personas</span>
+              <span style={{ color: T.txt3, fontSize: 13 }}>
+                · {contadores.length} de 3 contadores
               </span>
               {role === "reader" && (
                 <span style={{ background: T.amberB, color: T.amber, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
@@ -245,14 +256,14 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {slotsLeft > 0 ? (
                 <button
-                  onClick={() => setShowInvite(true)}
+                  onClick={() => { setInviteContador(false); setShowInvite(true); }}
                   style={{
                     background: T.green, color: "#000", border: "none",
                     padding: "10px 18px", borderRadius: 10, cursor: "pointer",
                     fontWeight: 700, fontSize: 13,
                   }}
                 >
-                  + Invitar miembro
+                  + Invitar persona
                 </button>
               ) : (
                 <div style={{ background: T.amberB, color: T.amber, padding: "10px 16px", borderRadius: 10, fontSize: 12, fontWeight: 600 }}>
@@ -332,7 +343,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
           {plan === "pro_familiar" ? (
             <>👨‍👩‍👧 <strong style={{ color: T.txt }}>Plan Pro Familiar:</strong> hasta 10 personas pueden ver y trabajar con los mismos datos. Útil para familia + contador.</>
           ) : plan === "pro" ? (
-            <>⭐ <strong style={{ color: T.txt }}>Plan Pro:</strong> hasta 3 personas con la misma información. Para familia chica o pareja + contador.</>
+            <>⭐ <strong style={{ color: T.txt }}>Tu plan:</strong> hasta 3 personas con la misma información y el mismo acceso, y aparte hasta 3 contadores que solo ven lo tributario, sin poder cambiar nada.</>
           ) : plan === "managed" ? (
             <>👤 <strong style={{ color: T.txt }}>Cuenta gestionada por asesor:</strong> tu asesor configuró este espacio.</>
           ) : plan === "basico" ? (
@@ -361,17 +372,18 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
         </div>
       )}
 
-      {/* Lista de miembros activos */}
+      {/* Personas de la cuenta */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Miembros activos ({members.length})</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Personas de la cuenta ({familia.length})</div>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Ven y trabajan con la misma información. «Administrador» puede editar; «Solo lectura» solo mira.</div>
         </div>
         <div>
-          {members.map((m, idx) => (
+          {familia.map((m, idx) => (
             <MemberRow
               key={m.user_id}
               member={m}
-              isLast={idx === members.length - 1}
+              isLast={idx === familia.length - 1}
               isAdmin={isAdmin}
               currentUserId={currentUserId}
               onRoleChange={handleRoleChange}
@@ -379,6 +391,22 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             />
           ))}
         </div>
+      </div>
+
+      {/* Contadores: solo lectura de lo tributario, no ocupan cupo */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div style={{ padding: "16px 20px", borderBottom: contadores.length ? `1px solid ${T.border}` : "none", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ minWidth: 0, flex: "1 1 260px" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Tus contadores ({contadores.length} de 3)</div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Solo ven, sin poder cambiar nada: declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta (de las sociedades, todos sus gastos). No ven tus gastos del día a día, metas ni simulaciones. Queda registro de cada vez que entran, y les quitas el acceso cuando quieras.</div>
+          </div>
+          {isAdmin && (contadoresLibres > 0
+            ? <button onClick={() => { setInviteContador(true); setShowInvite(true); }} style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.borderL}`, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>+ Invitar a mi contador</button>
+            : <span style={{ fontSize: 12, color: T.txt3 }}>Ya tienes 3 contadores</span>)}
+        </div>
+        {contadores.map((m, idx) => (
+          <MemberRow key={m.user_id} member={m} isLast={idx === contadores.length - 1} isAdmin={isAdmin} currentUserId={currentUserId} onRoleChange={handleRoleChange} onRemove={handleRemove} />
+        ))}
       </div>
 
       {/* Invitaciones pendientes (solo admin) */}
@@ -415,6 +443,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
           onClose={() => { setShowInvite(false); setInviteResult(null); loadAll(); }}
           onSuccess={(result) => setInviteResult(result)}
           inviteResult={inviteResult}
+          soloContador={inviteContador}
         />
       )}
     </div>
@@ -427,6 +456,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
   const isMe = member.user_id === currentUserId;
   const isOwner = member.is_owner;
   const canModify = isAdmin && !isMe && !isOwner;
+  const esContador = member.role === "contador";
 
   return (
     <div style={{
@@ -460,7 +490,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
       </div>
       {canModify && (
         <div style={{ display: "flex", gap: 6 }}>
-          <button
+          {!esContador && <button
             onClick={() => onRoleChange(member.user_id, member.role, member.email)}
             style={{
               background: T.bg3, border: `1px solid ${T.borderL}`,
@@ -470,7 +500,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
             title={member.role === "admin" ? "Bajar a solo lectura" : "Promover a administrador"}
           >
             {member.role === "admin" ? "↓ A reader" : "↑ A admin"}
-          </button>
+          </button>}
           <button
             onClick={() => onRemove(member.user_id, member.email)}
             style={{
@@ -546,9 +576,9 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
   );
 }
 
-function InviteModal({ supabase, accountId, accountName, inviterName, onClose, onSuccess, inviteResult }) {
+function InviteModal({ supabase, accountId, accountName, inviterName, onClose, onSuccess, inviteResult, soloContador = false }) {
   const [email, setEmail] = useState("");
-  const [memberRole, setMemberRole] = useState("reader");
+  const [memberRole, setMemberRole] = useState(soloContador ? "contador" : "reader");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -699,7 +729,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
         width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", padding: 32,
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Invitar nuevo miembro</h3>
+          <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{soloContador ? "Invitar a tu contador" : "Invitar a una persona"}</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
         </div>
         <div>
@@ -710,7 +740,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="familiar@email.com"
+            placeholder={soloContador ? "contador@email.com" : "familiar@email.com"}
             autoFocus
             style={{
               width: "100%", marginTop: 6, padding: "10px 12px",
@@ -723,6 +753,11 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
           </div>
         </div>
 
+        {soloContador ? (
+          <div style={{ marginTop: 18, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+            Tu contador va a poder <strong style={{ color: T.txt }}>ver, sin cambiar nada</strong>: tus declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta, y descargar el informe en PDF. No ve tus gastos del día a día, metas ni simulaciones. No ocupa cupo de tu plan.
+          </div>
+        ) : (
         <div style={{ marginTop: 18 }}>
           <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.05em" }}>
             Rol
@@ -733,7 +768,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               currentValue={memberRole}
               onChange={setMemberRole}
               title="Solo lectura"
-              description="Puede ver toda la información pero no editarla. Ideal para tu contador o un familiar que solo necesita revisar."
+              description="Puede ver toda la información pero no editarla. Para tu contador, mejor usa «Invitar a mi contador»: solo ve lo tributario."
             />
             <RoleOption
               value="admin"
@@ -744,6 +779,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
             />
           </div>
         </div>
+        )}
 
         {submitError && (
           <div style={{ marginTop: 12, padding: "10px 12px", background: T.redB, border: `1px solid ${T.red}`, color: T.red, borderRadius: 10, fontSize: 12 }}>
