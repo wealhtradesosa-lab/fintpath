@@ -76,7 +76,7 @@ export default function CtaUnaAccion({
           marginBottom: 8,
         }}
       >
-        Siguiente paso · una acción
+        Tu siguiente paso
       </div>
 
       <div
@@ -118,7 +118,7 @@ export default function CtaUnaAccion({
                 marginLeft: 6,
               }}
             >
-              {isRojo ? "/año (CF)" : "este período"}
+              {isRojo ? "al año" : "este mes"}
             </span>
           </div>
         )}
@@ -176,7 +176,7 @@ export default function CtaUnaAccion({
             fontWeight: 600,
           }}
         >
-          {showSupuestos ? "Ocultar supuestos" : "Ver supuestos"}
+          {showSupuestos ? "Ocultar" : "¿Por qué esta sugerencia?"}
         </button>
         <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", lineHeight: 1.4 }}>
           Estimación · no es asesoría financiera ni tributaria.
@@ -196,56 +196,45 @@ export default function CtaUnaAccion({
             lineHeight: 1.55,
           }}
         >
+          {/* 31-oct-2026 (Santiago: «qué es esto, no se entiende»). Era la
+              regla interna del motor; ahora se cuenta como se le explicaría a
+              una persona. */}
           <div>
-            CF simulado del período:{" "}
-            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>
-              {fm(cfMensualSimulado)}
-            </strong>
-            /mes.
+            Te queda al mes, con lo que estás simulando:{" "}
+            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>{fm(cfMensualSimulado)}</strong>.
           </div>
-          <div style={{ marginTop: 4 }}>
-            Prioridad: CF≤0 → deuda cara → meta con gap → colchón corto
-            (&lt;~{MESES_COLCHON_OBJETIVO} meses de egresos, o sin datos) →
-            espacio UVT Art.336 (si aplica) → norte / inversión. Una sola
-            acción; sin rachas ni hábitos.
+          <div style={{ marginTop: 6 }}>
+            Te sugerimos una sola cosa a la vez, en este orden: 1) que no te salga más de lo que entra;
+            2) pagar la deuda más cara; 3) completar una meta que tengas;
+            4) tener {MESES_COLCHON_OBJETIVO} meses de gastos guardados para imprevistos;
+            5) bajar impuestos con aportes a AFC o pensión voluntaria; 6) invertir lo que sobre.
           </div>
-          {accion.path === "fiscal" && accion.detalle && (
-            <div style={{ marginTop: 4 }}>
-              UVT restantes (espacio PV/AFC): ~{accion.detalle.uvtRestantes}.
-              Saldo a pagar estimado: {fm(accion.detalle.saldoAPagar)}.
-              Colchón: ~
-              {accion.detalle.colchon?.meses === Infinity
-                ? "∞"
-                : accion.detalle.colchon?.meses ?? "—"}{" "}
-              meses. Cifras del motor existente (borrador); no tip.
-            </div>
-          )}
           {accion.path === "deuda" && accion.detalle && (
-            <div style={{ marginTop: 4 }}>
-              Monto = min(50% CF, 1 cuota o sugerido, saldo). Tasa{" "}
-              {fmtPctEs(Number(accion.detalle.tasa || 0), 1)} E.A.
+            <div style={{ marginTop: 6 }}>
+              El abono sugerido es lo menor entre la mitad de lo que te sobra, una cuota y lo que debes.
+              Esa deuda cobra {fmtPctEs(Number(accion.detalle.tasa || 0), 1)} de interés al año.
             </div>
           )}
           {accion.path === "meta" && accion.detalle && (
-            <div style={{ marginTop: 4 }}>
-              Gap de la meta: {fm(accion.detalle.gap)}. Aporte ≈ 40% del CF del
-              período, topeado al gap.
+            <div style={{ marginTop: 6 }}>
+              Te faltan {fm(accion.detalle.gap)} para la meta. Sugerimos poner cerca del 40 % de lo que te sobra, sin pasarte de lo que falta.
             </div>
           )}
           {accion.path === "reserva" && accion.detalle?.colchon && (
-            <div style={{ marginTop: 4 }}>
-              Colchón líquido estimado: {fm(accion.detalle.colchon.liquidos)} ≈{" "}
-              {accion.detalle.colchon.sinDatos
-                ? "sin datos (asumido corto)"
-                : `~${accion.detalle.colchon.meses} meses`}{" "}
-              de egresos (meta ~{MESES_COLCHON_OBJETIVO}). Aporte = 30% del CF.
+            <div style={{ marginTop: 6 }}>
+              Plata a la mano: {fm(accion.detalle.colchon.liquidos)}
+              {accion.detalle.colchon.sinDatos ? "" : `, unos ${accion.detalle.colchon.meses} meses de gastos`}.
+              Sugerimos guardar el 30 % de lo que te sobra hasta llegar a {MESES_COLCHON_OBJETIVO} meses.
+            </div>
+          )}
+          {accion.path === "fiscal" && accion.detalle && (
+            <div style={{ marginTop: 6 }}>
+              Estimado con tus datos: no reemplaza la declaración. Pregúntale a tu contador antes de hacer el aporte.
             </div>
           )}
           {accion.path === "norte" && (
-            <div style={{ marginTop: 4 }}>
-              Colchón ≥{MESES_COLCHON_OBJETIVO} meses y sin path fiscal
-              prioritario. Aporte = 30% del CF a norte / inversión (no reserva
-              ciega).
+            <div style={{ marginTop: 6 }}>
+              Sugerimos invertir el 30 % de lo que te sobra; el resto queda libre.
             </div>
           )}
         </div>

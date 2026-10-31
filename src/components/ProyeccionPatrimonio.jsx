@@ -301,97 +301,55 @@ export default function ProyeccionPatrimonio({
         </AreaChart>
       </ResponsiveContainer>
 
-      <details style={{ marginTop: 16 }}>
-        <summary style={{ cursor: "pointer", fontSize: 13, color: sub2, fontWeight: 600 }}>¿Cómo se calcula? Ver tabla y supuestos</summary>
-        <div style={{ fontSize: 12, color: sub, lineHeight: 1.6, margin: "10px 0 12px" }}>
-          Cada año: <strong style={{ color: sub2 }}>1)</strong> lo que tienes sube al porcentaje de arriba;{" "}
-          <strong style={{ color: sub2 }}>2)</strong> se suma lo que te queda (ingresos menos gastos, cuotas e impuestos);{" "}
-          <strong style={{ color: sub2 }}>3)</strong> se descuenta la inflación para verlo en plata de hoy.
-          «Crece» quiere decir que en plata de hoy tendrás más que ahora; «se come», que lo que te queda no alcanza a cubrir la inflación.
-          {mezcla && <div style={{ marginTop: 6 }}>Lo esperable por lo que tienes: {mezcla.detalle.map((d) => `${d.label} ${fmtPctEs(d.peso * 100, 0)} (${d.r > 0 ? "+" : ""}${fmtPctEs(d.r * 100, 0)})`).join(" · ")}.</div>}
-        </div>
-      {/* Tabla resumen */}
-      <div style={{ overflowX: "auto", marginTop: 12 }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: 11,
-            color: T.txt2 || "var(--fp-txt2)",
-          }}
-        >
-          <thead>
-            <tr style={{ textAlign: "left", color: T.txt3 || "var(--fp-txt3)" }}>
-              <th style={{ padding: "6px 4px", fontWeight: 600 }}>Año</th>
-              <th style={{ padding: "6px 4px", fontWeight: 600 }}>Patrimonio</th>
-              <th style={{ padding: "6px 4px", fontWeight: 600 }}>Real</th>
-              <th style={{ padding: "6px 4px", fontWeight: 600 }}>Activos</th>
-              <th style={{ padding: "6px 4px", fontWeight: 600 }}>Deudas</th>
-            </tr>
-          </thead>
-          <tbody>
-            {proy.serie
-              .filter((s) => s.año === 0 || DEFAULTS_PROYECCION.horizontes.includes(s.año))
-              .map((s) => (
-                <tr
-                  key={s.año}
-                  style={{ borderTop: `1px solid ${T.border || "rgba(var(--fp-ink),0.06)"}` }}
-                >
-                  <td style={{ padding: "7px 4px", color: T.txt || "var(--fp-txt)", fontWeight: 600 }}>
-                    {s.label}
-                  </td>
-                  <td style={{ padding: "7px 4px", fontVariantNumeric: "tabular-nums" }}>
-                    {fm(s.patrimonio)}
-                  </td>
-                  <td style={{ padding: "7px 4px", fontVariantNumeric: "tabular-nums" }}>
-                    {fm(s.patrimonioReal)}
-                  </td>
-                  <td style={{ padding: "7px 4px", fontVariantNumeric: "tabular-nums" }}>
-                    {fm(s.activos)}
-                  </td>
-                  <td style={{ padding: "7px 4px", fontVariantNumeric: "tabular-nums" }}>
-                    {fm(s.deudas)}
-                  </td>
+      {/* 31-oct-2026 — «¿Cómo se calcula?» ordenado: tres pasos en lista,
+          crecimiento por tipo de activo como chips (sin los de 0 %) y tabla
+          con nombres en español y cifras cortas. */}
+      <details className="fp-detalle" style={{ marginTop: 20, borderTop: "1px solid " + borde, paddingTop: 14 }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, color: T.bl || "#3b82f6", fontWeight: 600, listStyle: "none", outline: "none" }}>¿Cómo se calcula?</summary>
+        <ol style={{ fontSize: 13, color: sub2, lineHeight: 1.6, margin: "12px 0 0", paddingLeft: 20 }}>
+          <li>Lo que tienes sube cada año al porcentaje de los supuestos.</li>
+          <li>Se suma lo que te queda en el año (ingresos menos gastos, cuotas e impuestos).</li>
+          <li>Se descuenta la inflación para verlo en plata de hoy. «Crece» = en plata de hoy tendrás más que ahora.</li>
+        </ol>
+        {mezcla && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ fontSize: 12, color: sub, marginBottom: 6 }}>Cuánto suele subir cada tipo de activo al año, ya sin inflación</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {mezcla.detalle.filter((d) => d.peso >= 0.005).map((d) => (
+                <span key={d.clase} style={{ fontSize: 12, color: sub2, background: "rgba(var(--fp-ink),0.04)", borderRadius: 999, padding: "4px 10px" }}>
+                  {d.label} · {fmtPctEs(d.peso * 100, 0)} de lo tuyo · <span style={{ color: d.r < 0 ? (T.rd || "#ef4444") : sub2 }}>{d.r > 0 ? "+" : ""}{fmtPctEs(d.r * 100, 0)}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        <div style={{ overflowX: "auto", marginTop: 16 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: sub2, fontVariantNumeric: "tabular-nums" }}>
+            <thead>
+              <tr style={{ color: sub, fontSize: 12 }}>
+                <th style={{ padding: "6px 8px 6px 0", fontWeight: 500, textAlign: "left" }}></th>
+                <th style={{ padding: "6px 8px", fontWeight: 500, textAlign: "right" }}>En plata de hoy</th>
+                <th style={{ padding: "6px 8px", fontWeight: 500, textAlign: "right" }}>Con inflación</th>
+                <th style={{ padding: "6px 8px", fontWeight: 500, textAlign: "right" }}>Lo que tienes</th>
+                <th style={{ padding: "6px 0 6px 8px", fontWeight: 500, textAlign: "right" }}>Lo que debes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {proy.serie.filter((r) => r.año === 0 || DEFAULTS_PROYECCION.horizontes.includes(r.año)).map((r) => (
+                <tr key={r.año} style={{ borderTop: "1px solid " + borde }}>
+                  <td style={{ padding: "9px 8px 9px 0", color: txt, fontWeight: 600, whiteSpace: "nowrap" }}>{r.año === 0 ? "Hoy" : `En ${r.año} años`}</td>
+                  <td title={fm(r.patrimonioReal)} style={{ padding: "9px 8px", textAlign: "right", color: txt, fontWeight: 600 }}>{fmtPlataCortaEs(r.patrimonioReal)}</td>
+                  <td title={fm(r.patrimonio)} style={{ padding: "9px 8px", textAlign: "right" }}>{fmtPlataCortaEs(r.patrimonio)}</td>
+                  <td title={fm(r.activos)} style={{ padding: "9px 8px", textAlign: "right" }}>{fmtPlataCortaEs(r.activos)}</td>
+                  <td title={fm(r.deudas)} style={{ padding: "9px 0 9px 8px", textAlign: "right" }}>{fmtPlataCortaEs(r.deudas)}</td>
                 </tr>
               ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Supuestos visibles */}
-      <div
-        style={{
-          marginTop: 14,
-          padding: 12,
-          background: T.bg2 || "var(--fp-card)",
-          borderRadius: 10,
-          fontSize: 10,
-          color: T.txt3 || "var(--fp-txt3)",
-          lineHeight: 1.55,
-        }}
-      >
-        <div style={{ fontWeight: 700, color: T.txt2 || "var(--fp-txt2)", marginBottom: 4 }}>
-          Con qué números se calculó
+            </tbody>
+          </table>
         </div>
-        <div>
-          Patrimonio hoy: <strong style={{ color: T.txt2 }}>{fm(snap.patrimonioNeto)}</strong>
-          {" · "}Activos {fm(snap.activos)} − Deudas {fm(snap.deudasTotales)}
+        <div style={{ fontSize: 12, color: sub, marginTop: 12, lineHeight: 1.55 }}>
+          Hoy tienes {fm(snap.activos)} y debes {fm(snap.deudasTotales)}. Las deudas bajan con lo que abonas de capital en las cuotas (unos {fm(amortAnual)} al año).
         </div>
-        <div>
-          Lo que te queda al año: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
-          {cfOverride == null ? " (del simulador)" : " (escrito por ti)"}
-          {" · "}Valorización patrimonio {Number(retornoPct) || 0}%
-          {" · "}Inflación {(Number(inflacionPct) || 0).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
-        </div>
-        <div>
-          Amortización de capital estimada: {fm(amortAnual)}/año (reduce pasivo; no se resta del CF).
-        </div>
-        <div style={{ marginTop: 4 }}>
-          Fórmula: activos × (1 + valorización) + lo que te queda cada año; deudas bajan por
-          amortización estimada. Veredicto “crece / se come” usa patrimonio <em>real</em> (deflactado).
-        </div>
-      </div>
-
       </details>
 
       <div style={{ marginTop: 10 }}>

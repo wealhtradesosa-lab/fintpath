@@ -321,14 +321,14 @@ export function elegirUnaAccion(input = {}) {
       path: "cf_rojo",
       frase:
         cf < 0
-          ? "No aumentes gasto fijo: estabiliza el cash flow"
-          : "No aumentes gasto fijo: el cash flow está en cero",
+          ? "Antes de cualquier otra cosa, que te deje de salir más de lo que entra"
+          : "No sumes gastos fijos: hoy entra justo lo que sale",
       monto: anual !== 0 ? anual : null,
       porQue:
         anual < 0
-          ? `Con CF de ${fmtCop(anual)}/año te comes el patrimonio si sostienes este ritmo.`
-          : "Sin excedente no hay abono extra ni reserva; primero equilibra ingresos y egresos.",
-      chip: "CF no alcanza — no aumentes gasto",
+          ? `Este año sale ${fmtCop(Math.abs(anual))} más de lo que entra: si sigues así, te comes lo que tienes ahorrado.`
+          : "Sin plata que sobre no hay cómo abonar ni ahorrar: primero equilibra lo que entra y lo que sale.",
+      chip: "Hoy sale más de lo que entra",
       detalle: { cfMensual: cf, cfAnual: anual },
     };
   }
@@ -343,10 +343,10 @@ export function elegirUnaAccion(input = {}) {
       return {
         id: "abono_deuda",
         path: "deuda",
-        frase: `Esta semana: abona ${fmtCop(x)} extra a ${deuda.nombre}`,
+        frase: `Abona ${fmtCop(x)} extra a ${deuda.nombre}`,
         monto: x,
-        porQue: `Es tu deuda con mayor tasa (${fmtPctEs(deuda.tasa, 1)} E.A.) y saldo ${fmtCop(deuda.saldo)}.`,
-        chip: "Fondeado con tu CF",
+        porQue: `Es tu deuda más cara (${fmtPctEs(deuda.tasa, 1)} de interés al año, debes ${fmtCop(deuda.saldo)}). Cada peso que abonas ahí te ahorra más intereses que en cualquier otra.`,
+        chip: "Sale de lo que te sobra al mes",
         detalle: { ...deuda, cfMensual: cf },
       };
     }
@@ -365,8 +365,8 @@ export function elegirUnaAccion(input = {}) {
         path: "meta",
         frase: `Aparta ${fmtCop(z)} hacia “${meta.nombre}”`,
         monto: z,
-        porQue: `Te faltan ${fmtCop(meta.gap)} para esa meta; este paso usa parte del CF del período.`,
-        chip: "Fondeado con tu CF",
+        porQue: `Te faltan ${fmtCop(meta.gap)} para esa meta. Sale de lo que te sobra al mes.`,
+        chip: "Sale de lo que te sobra al mes",
         detalle: { ...meta, cfMensual: cf },
       };
     }
@@ -381,12 +381,12 @@ export function elegirUnaAccion(input = {}) {
     return {
       id: "reserva_colchon",
       path: "reserva",
-      frase: `Aparta ${fmtCop(zReserva)} a reserva (colchón)`,
+      frase: `Aparta ${fmtCop(zReserva)} para tu fondo de imprevistos`,
       monto: zReserva,
       porQue: colchon.sinDatos
-        ? `Sin datos de liquidez suficientes, asumimos colchón corto (<${MESES_COLCHON_OBJETIVO} meses). Prioriza reserva antes de fiscal o norte.`
-        : `Tu colchón líquido cubre ${mesesTxt} (meta ~${MESES_COLCHON_OBJETIVO}). Prioriza reserva antes de fiscal o norte.`,
-      chip: "Fondeado con tu CF · colchón",
+        ? `No vemos plata disponible a la mano (cuentas, CDT, fondos). Lo primero es tener al menos ${MESES_COLCHON_OBJETIVO} meses de gastos guardados para imprevistos.`
+        : `La plata que tienes a la mano cubre ${mesesTxt} de gastos; lo sano es tener unos ${MESES_COLCHON_OBJETIVO}. Primero eso, antes de invertir.`,
+      chip: "Sale de lo que te sobra al mes",
       detalle: {
         cfMensual: cf,
         pct: 0.3,
@@ -413,10 +413,10 @@ export function elegirUnaAccion(input = {}) {
       return {
         id: "espacio_336",
         path: "fiscal",
-        frase: `Te quedan ~${fiscal.uvtRestantes} UVT del tope Art. 336; un AFC/PV de ${fmtCop(aporte)} baja el saldo a pagar ~${fmtCop(ahorro)}`,
+        frase: `Aporta ${fmtCop(aporte)} a una cuenta AFC o pensión voluntaria y pagas unos ${fmtCop(ahorro)} menos de renta`,
         monto: aporte,
-        porQue: `Colchón ~${mesesTxt} meses (≥${MESES_COLCHON_OBJETIVO}); ~${fiscal.uvtRestantes} UVT restantes Art.336; saldo a pagar estimado ${fmtCop(fiscal.saldoAPagar)} (borrador; no es tip ni liquidación DIAN).`,
-        chip: "Fondeado con tu CF · estimación",
+        porQue: `Ya tienes fondo de imprevistos (${mesesTxt} meses) y todavía te queda espacio para bajar impuestos con estos aportes. Hoy pagarías unos ${fmtCop(fiscal.saldoAPagar)} al declarar (estimado).`,
+        chip: "Estimado · revísalo con tu contador",
         detalle: {
           ...fiscal,
           aporte,
@@ -434,10 +434,10 @@ export function elegirUnaAccion(input = {}) {
   return {
     id: "aporte_norte",
     path: "norte",
-    frase: `Aparta ${fmtCop(zNorte)} a Tu Norte / inversión`,
+    frase: `Invierte ${fmtCop(zNorte)} de lo que te sobra este mes`,
     monto: zNorte,
-    porQue: `Colchón ~${mesesTxt} meses (≥${MESES_COLCHON_OBJETIVO}) y sin espacio fiscal prioritario: el excedente del período va a norte patrimonial / inversión — no a reserva ciega.`,
-    chip: "Fondeado con tu CF · norte",
+    porQue: `Ya tienes fondo de imprevistos (${mesesTxt} meses) y no hay un ahorro de impuestos pendiente. Lo que sobra conviene ponerlo a producir.`,
+    chip: "Sale de lo que te sobra al mes",
     detalle: { cfMensual: cf, pct: 0.3, colchon },
   };
 }
