@@ -311,10 +311,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: "Deuda Total", v: fm(totalDeuda), c: T.red },
-          { l: "Cuotas/mes", v: fm(totalCuotas), c: T.orange },
-          { l: "Cuotas/año", v: fm(totalCuotas * 12), c: T.purple },
-          { l: "Intereses/año", v: interesAnual > 0 ? fm(interesAnual) : "—", c: "#ff5000" },
+          { l: "Deuda total", v: fm(totalDeuda), c: T.txt },
+          { l: "Cuotas al mes", v: fm(totalCuotas), c: T.txt },
+          { l: "Cuotas al año", v: fm(totalCuotas * 12), c: T.txt },
+          { l: "Intereses al año", v: interesAnual > 0 ? fm(interesAnual) : "—", c: "#ff5000" },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
@@ -466,28 +466,21 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       })()}
                     </td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{d.tp}</span>
+                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{({ mortgage: "Hipoteca", vehiculo: "Vehículo", loan: "Libre inversión", card: "Tarjeta", tarjeta: "Tarjeta", leasing: "Leasing" })[d.tp] || d.tp}</span>
                     </td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(d.mt)}</td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>{fm(d.pg)}</td>
+                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 600, color: T.txt, whiteSpace: "nowrap" }}>{fm(d.mt)}</td>
+                    <td style={{ padding: "10px 14px", textAlign: "right", whiteSpace: "nowrap" }}>{fm(d.pg)}</td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>{fmtTasaEs(d.ts)}</td>
                     {(() => {
                       const cc = costoCredito(d);
                       return (
-                        <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                          <div style={{ fontWeight: 700, fontFamily: "monospace", color: T.orange }}>{fm(cc.interesAnual)}</div>
-                          {cc.noAmortiza ? (
-                            <div style={{ fontSize: 11, color: T.red, marginTop: 2 }}>la cuota no cubre el interés</div>
-                          ) : cc.meses != null ? (
-                            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                              termina en {Math.floor(cc.meses / 12)}a {cc.meses % 12}m
-                              {cc.interesTotal > 0 && <> · <span title="Interés restante hasta pagarla toda">interés total {fm(cc.interesTotal)}</span></>}
-                              <div style={{ marginTop: 2 }}>
-                                cuota: <strong style={{ color: T.orange }}>{fm(cc.interesMes)}</strong> interés · <strong style={{ color: T.green }}>{fm(cc.capitalMes)}</strong> capital
-                                {" "}(<strong style={{ color: cc.pctCapital < 25 ? T.red : cc.pctCapital < 50 ? T.orange : T.green }}>{Math.round(cc.pctCapital)}%</strong> baja deuda)
-                              </div>
-                            </div>
-                          ) : null}
+                        <td style={{ padding: "10px 14px", textAlign: "right", whiteSpace: "nowrap" }}
+                          title={cc.meses != null && !cc.noAmortiza ? `Cuota: ${fm(cc.interesMes)} de interés y ${fm(cc.capitalMes)} de capital (${Math.round(cc.pctCapital)}% baja la deuda).${cc.interesTotal > 0 ? ` Interés que falta pagar: ${fm(cc.interesTotal)}.` : ""}` : undefined}>
+                          {/* 31-oct-2026 (crítica de diseño): una cifra y una línea; el desglose, al pasar el mouse. */}
+                          <div style={{ fontWeight: 600, color: "#ff5000" }}>{fm(cc.interesAnual)}</div>
+                          {cc.noAmortiza
+                            ? <div style={{ fontSize: 12, color: "#ff5000", marginTop: 2 }}>la cuota no cubre el interés</div>
+                            : cc.meses != null && <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>termina en {cc.meses >= 12 ? `${Math.floor(cc.meses / 12)} a ${cc.meses % 12} m` : `${cc.meses} m`}</div>}
                         </td>
                       );
                     })()}

@@ -670,7 +670,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               sola tabla: una fila por año, una columna por concepto. */}
           {(() => {
             // 29-oct-2026 (Santiago: "¿esto es al mes o anual? ¿cuotas qué es, créditos?").
-            const cols = [["Ingresos", (x) => x.ingresos, C.ok], ["Gastos", (x) => x.gastos, C.danger], ["Cuotas de créditos", (x) => x.cuotas, C.warn], [foco ? "Impuestos" : "Retención de renta", (x) => x.impuesto + x.retencion, C.purple], ["Te queda", (x) => x.queda, null]];
+            const cols = [["Ingresos", (x) => x.ingresos, C.text], ["Gastos", (x) => x.gastos, C.text], ["Cuotas de créditos", (x) => x.cuotas, C.text], [foco ? "Impuestos" : "Retención de renta", (x) => x.impuesto + x.retencion, C.text], ["Te queda", (x) => x.queda, null]]; // 31-oct-2026: cifras neutras; color solo en «Te queda» y la diferencia
             const filasT = [
               { k: "hoy", titulo: `Hoy · ${añoHoy}`, sub: "referencia, no cambia", d: hoy },
               { k: "fut", titulo: foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`, sub: foco ? "ese mes en concreto" : (cambios.length ? `promedio ${mesL(mesRegimen).toLowerCase()}–dic, ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"}` : "sin cambios todavía"), d: vista, fuerte: true },

@@ -165,6 +165,8 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
   );
 }
 
+const fmCorto = (n) => { const a = Math.abs(Number(n) || 0); return "$" + (a >= 1e6 ? (a / 1e6).toLocaleString("es-CO", { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + " M" : Math.round(a).toLocaleString("es-CO")); };
+
 // ─── FREEDOM BAR (inline, reactive) ───
 function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null }) {
   const [verOcultos, setVerOcultos] = useState(false);
@@ -205,7 +207,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(var(--fp-ink),0.04)", border: "1px solid " + T.border, borderRadius: 12, padding: "8px 16px" }}>
             <span style={{ fontSize: 20 }}>{currentData.icon}</span>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: currentData.color }}>{currentData.name}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{currentData.name}</div>
               <div style={{ fontSize: 11, color: T.txt3 }}>Nivel {currentLevel}/5</div>
             </div>
           </div>
@@ -240,6 +242,65 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           se ganaron (metrics.js → nivelLibertad). Pero tampoco se puede callar:
           se dice acá, encima de la barra. Si el nivel YA es Déficit, el badge
           lo dice y repetirlo sería ruido. */}
+
+      {/* 31-oct-2026 (Santiago: «es bueno ver en la franja las otras etapas,
+          dónde estoy, cuánto falta para la siguiente y qué tan lejos estoy de
+          la que acabo de pasar»). Cinco tramos iguales, cada uno con su
+          nombre y su meta debajo (no se montan); el tramo actual se llena
+          según lo recorrido hacia el siguiente. */}
+      {(() => {
+        const u = (l) => (l && l.porCobertura ? umbral(l) || 0 : null);
+        const frac = (() => {
+          if (currentLevel >= 5) return 1;
+          if (currentLevel <= 0) return 0;
+          const cur = LEVELS[currentLevel - 1], nxt = LEVELS[currentLevel];
+          if (cur.porCobertura && u(nxt) > u(cur)) return Math.max(0.04, Math.min(1, (ni - u(cur)) / (u(nxt) - u(cur))));
+          if (!cur.porCobertura && nxt && nxt.porCobertura && u(nxt) > 0) return Math.max(0.04, Math.min(1, ni / u(nxt)));
+          return 0.5;
+        })();
+        const cur = currentLevel > 0 ? LEVELS[currentLevel - 1] : null;
+        const sobre = cur && cur.porCobertura ? ni - u(cur) : (currentLevel === 2 ? fl : null);
+        const verde = "#00c805";
+        const escMovil = typeof window !== "undefined" && window.innerWidth < 640; // en celular la escalera va vertical
+        return (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "grid", gridTemplateColumns: escMovil ? "minmax(0, 1fr)" : "repeat(5, minmax(0, 1fr))", gap: escMovil ? 14 : 8, paddingTop: 28 }}>
+              {LEVELS.map((l, idx) => {
+                // Un color por etapa (de naranja a verde intenso): se ve dónde termina cada una.
+                const colEt = ["#ff6b35", "#f5b544", "#7ee08a", "#1fd15f", "#00a83a"][idx] || verde;
+                const lleno = l.id < currentLevel ? 1 : l.id === currentLevel ? frac : 0;
+                const actual = l.id === currentLevel, pasada = l.id < currentLevel;
+                const sig = LEVELS[idx + 1];
+                const rango = l.porCobertura
+                  ? (sig && sig.porCobertura ? `${fmCorto(u(l))} a ${fmCorto(u(sig))}` : `${fmCorto(u(l))} o más`)
+                  : l.id === 1 ? "sale más de lo que entra" : "te alcanza el mes";
+                return (
+                  <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} title="Toca para ver qué significa" style={{ minWidth: 0, cursor: "pointer" }}>
+                    {/* nodo numerado + tramo */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
+                      <span style={{ width: 24, height: 24, borderRadius: 999, flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700,
+                        background: pasada || actual ? colEt : "transparent", color: pasada || actual ? "#000" : colEt,
+                        border: "2px solid " + colEt }}>{pasada ? "✓" : l.id}</span>
+                      <div style={{ position: "relative", flex: 1, height: 10, borderRadius: 6, background: colEt + "26" }}>
+                        <div style={{ width: lleno * 100 + "%", height: "100%", borderRadius: 6, background: colEt, transition: "width .3s" }} />
+                        {actual && <div style={{ position: "absolute", top: -6, left: `calc(${lleno * 100}% - 2px)`, width: 4, height: 22, borderRadius: 999, background: T.txt }} />}
+                        {actual && <div style={{ position: "absolute", top: -26, left: `calc(${lleno * 100}% - 12px)`, fontSize: 11, fontWeight: 700, color: "var(--fp-bg)", background: T.txt, borderRadius: 6, padding: "1px 6px" }}>Tú</div>}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 10, paddingLeft: 2 }}>
+                      <div style={{ fontSize: 13, fontWeight: actual ? 700 : 600, color: actual ? T.txt : pasada ? T.txt2 : T.txt3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.name}</div>
+                      <div style={{ fontSize: 11, color: T.txt3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{l.porCobertura ? "rentas de " : ""}{rango}{l.porCobertura ? " al mes" : ""}</div>
+                      {actual && <div style={{ fontSize: 12, fontWeight: 700, color: verde, marginTop: 4 }}>{sobre != null && sobre >= 0 ? `+${fmCorto(sobre)}/mes sobre la meta` : "Estás aquí"}</div>}
+                      {nextData && l.id === nextData.id && <div style={{ fontSize: 12, fontWeight: 700, color: T.txt, marginTop: 4 }}>{`te faltan ${fmCorto(monthlyGap)}/mes`}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {currentLevel >= 5 && <div style={{ marginTop: 12, fontSize: 13, fontWeight: 700, color: verde }}>Llegaste al nivel más alto</div>}
+          </div>
+        );
+      })()}
       {nivel?.deficitFlujo && currentLevel > 1 && (
         <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: T.rd + "12", border: "1px solid " + T.rd + "30", borderRadius: 12, padding: "10px 14px", marginBottom: 14 }}>
           <span style={{ fontSize: 15, lineHeight: 1.3 }}></span>
@@ -249,44 +310,11 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
         </div>
       )}
 
-      {/* Progress Bar */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ height: 14, background: T.bg3, borderRadius: 8, overflow: "hidden", position: "relative", marginTop: 26 }}>
-          {/* Level markers */}
-          {LEVELS.filter((l) => l.porCobertura).map((l) => {
-            return (
-              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", top: 0, bottom: 0, width: 2, background: "rgba(var(--fp-ink),0.1)", zIndex: 2 }}>
-                
-              </div>
-            );
-          })}
-          {/* Fill bar */}
-          <div style={{
-            width: overallProg + "%", height: "100%",
-            background: currentLevel >= 4 ? "#00c805" : currentLevel === 3 ? "#3b82f6" : "#94a3b8", // 31-oct-2026: un solo color (antes arcoíris)
-            borderRadius: 12, transition: "width 0.3s ease",
-            display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 14,
-            minWidth: overallProg > 3 ? 50 : 0,
-          }}>
-
-          </div>
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.txt3, marginTop: 4 }}>
-          <span style={{ fontWeight: 700, color: T.txt }}>{pctPiso(ip, ob)}% cubierto</span>
-          {vista?.desborde
-            ? <span style={{ fontSize: 12, fontWeight: 700, color: currentData?.color || T.gd }}>{vista.desborde}</span>
-            : <span>100% = tus gastos cubiertos</span>}
-        </div>
-
-        {/* 31-oct-2026: sin la fila de etiquetas debajo (se montaban y se salían); los niveles están en las tarjetas. */}
-      </div>
-
       {/* Lo que el ojo de Gastos/Ingresos dejó fuera de esta cuenta. Ocultar
           es un botón de VER (dice "Ocultar"/"Mostrar"), pero la plata oculta
           desaparecía del nivel sin que nada lo dijera. */}
       {ocultos && (ocultos.nGastos > 0 || ocultos.nIngresos > 0) && (
-        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "9px 14px", marginBottom: 12, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ borderTop: "1px solid " + T.border, padding: "10px 0 0", marginBottom: 12, fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>
           Esta cuenta <b>no incluye</b> lo que tienes oculto:
           {ocultos.nGastos > 0 && <> {ocultos.nGastos} gasto{ocultos.nGastos > 1 ? "s" : ""} por <b>{fm(ocultos.gastos)}/mes</b></>}
           {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
@@ -316,70 +344,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
         </div>
       )}
 
-      {/* 5 Level mini-cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 6, marginBottom: 16 }}>
-        {LEVELS.map((l) => {
-          const est = estadoNivel(l.id, currentLevel);
-          const current = est === "actual";
-          const pasado = est === "pasado";
-          const reached = current; // solo la tarjeta actual va a color
-          const needed = umbral(l);
-          return (
-            <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
-              background: current ? "rgba(var(--fp-ink),0.05)" : "transparent",
-              border: "1px solid " + (current ? "rgba(var(--fp-ink),0.35)" : T.border),
-              borderRadius: 12, padding: "10px 10px", position: "relative", minWidth: 0, overflowWrap: "anywhere",
-              opacity: current ? 1 : 0.7, cursor: "pointer", transition: "all 0.2s", textAlign: "left",
-            }}>
-              {current && <div style={{ fontSize: 11, fontWeight: 700, color: "#00c805", marginBottom: 2 }}>Estás aquí</div>}
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, lineHeight: 1.25 }}>{llevaCheck(l.id, currentLevel) ? `✓ ${l.name}` : l.name}</div>
-              {l.porCobertura ? (
-                <>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2, marginTop: 4 }}>
-                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(needed)}<span style={{ fontSize: 11 }}>/mes</span></span>
-                  </div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
-                    de ingreso pasivo<br />{l.def.umbral === "esencial" ? "paga lo esencial" : l.def.factor > 1 ? "paga todo, con margen" : "paga todo"}
-                  </div>
-                  {l.def.umbral === "esencial" && pistaSeguridad && (
-                    <div style={{ fontSize: 11, color: T.gd, marginTop: 3, lineHeight: 1.3 }}>{pistaSeguridad}</div>
-                  )}
-                </>
-              ) : (
-                // 21-oct-2026 (Santiago: "¿aquí no debería aparecer un valor
-                // estimado o algo?"). Déficit y Estabilidad eran las únicas dos
-                // tarjetas sin cifra: mostraban la frase del criterio mientras
-                // las otras tres mostraban un monto. No se ganan con ingreso
-                // pasivo, así que no tienen umbral — pero sí tienen una cifra, y
-                // es el flujo del mes, que es justo lo que las separa.
-                // 24-oct-2026 — Estabilidad también muestra su meta: flujo del
-                // mes ≥ $0 (regla de nivelLibertad). Déficit es el punto de
-                // partida y no tiene meta.
-                metaNivel(l.def) ? (
-                <>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2, marginTop: 4 }}>
-                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(0)}<span style={{ fontSize: 11 }}>/mes</span></span>
-                  </div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
-                    de flujo o más<br />hoy: {fm(fl)}/mes
-                  </div>
-                </>
-                ) : (
-                <>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2, marginTop: 4 }}>
-                    {fm(fl)}<span style={{ fontSize: 11 }}>/mes</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
-                    tu flujo del mes<br />en rojo = estás aquí
-                  </div>
-                </>
-                )
-              )}
-            </div>
-          );
-        })}
-      </div>
-
+      {/* 31-oct-2026: las 5 tarjetas se quitaron; la escalera de arriba ya dice lo mismo y cada tramo abre su explicación. */}
       {/* Expanded level explanation */}
       {expandedLvl && (() => {
         const l = LEVELS.find(x => x.id === expandedLvl);
@@ -419,21 +384,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
         );
       })()}
 
-      {/* Next level info */}
-      {nextData && (
-        <div style={{ background: nextData.color + "08", border: "1px solid " + nextData.color + "20", borderRadius: 12, padding: "12px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-          <div>
-            <span style={{ fontSize: 13, fontWeight: 700, color: nextData.color }}>{nextData.icon} Siguiente: {nextData.name}</span>
-            <span style={{ fontSize: 12, color: T.txt3, marginLeft: 8 }}>{nextData.desc}</span>
-          </div>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: T.txt3 }}>Te faltan</div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: nextData.color, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(monthlyGap)}<span style={{ fontSize: 11 }}>/mes</span></div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 31-oct-2026: «Siguiente» ya va en la línea bajo la escalera. */}
       {currentLevel >= 5 && (
         <div style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04))", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 12, padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 32 }}></div>

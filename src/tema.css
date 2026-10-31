@@ -94,3 +94,9 @@ html[data-tema="claro"] .fp-app { --fp-pos: #00873c; --fp-neg: #d9480f; --fp-ale
 /* sin brillos ni degradados decorativos en las tarjetas */
 .fp-app [style*="radial-gradient"] { background-image: none !important; }
 .fp-app [style*="box-shadow: rgba(0, 200, 5"], .fp-app [style*="0px 0px 24px"] { box-shadow: none !important; }
+/* Etiquetas tipo «pastilla» dentro de tablas y listas: un solo estilo neutro
+   (crítica de diseño: pastillas de tres colores en cada fila = ruido). */
+.fp-app span[style*="border-radius: 999px"][style*="padding: 2px"],
+.fp-app span[style*="border-radius: 6px"][style*="padding: 2px 8px"] {
+  background: rgba(var(--fp-ink),0.05) !important; color: var(--fp-txt2) !important; border-color: transparent !important; font-weight: 500 !important;
+}

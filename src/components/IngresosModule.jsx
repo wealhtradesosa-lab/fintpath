@@ -272,6 +272,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
   );
 
 export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, authUser, plan, onUpgrade, onIrAPatrimonio}) {
+  const [verRevisar, setVerRevisar] = useState(false);
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
   // de escritura abortan vía guardEdit() y emiten 'fp3-reader-blocked'.
@@ -737,15 +738,18 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
       {/* Banner contextual: warnings fiscales de esta sección con lista navegable */}
       {fiscalWarnings.length > 0 && (
-        <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 14 }}></span>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
-              {fiscalWarnings.length} ingreso{fiscalWarnings.length !== 1 ? "s" : ""} con clasificación fiscal pendiente
+        <div style={{ marginBottom: 16, padding: "12px 16px", border: "1px solid " + T.border, borderRadius: 12 }}>
+          {/* 31-oct-2026 (crítica de diseño): una sola línea con «Revisar»; la lista se abre al pedirla. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, background: "#f59e0b", flexShrink: 0 }} />
+            <div style={{ fontSize: 14, fontWeight: 500, color: T.txt, flex: 1 }}>
+              {fiscalWarnings.length} ingreso{fiscalWarnings.length !== 1 ? "s" : ""} por revisar para que tu impuesto quede bien calculado
             </div>
+            <button type="button" onClick={() => setVerRevisar((v) => !v)} style={{ background: "transparent", border: "1px solid " + T.border, borderRadius: 8, padding: "6px 12px", color: T.txt, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{verRevisar ? "Cerrar" : "Revisar"}</button>
           </div>
-          <div style={{ fontSize: 12, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
-            Estos items afectan el cálculo de Impuestos. Revísalos y edítalos para mayor precisión.
+          {verRevisar && <>
+          <div style={{ fontSize: 13, color: T.txt3, margin: "10px 0", lineHeight: 1.5 }}>
+            Estos ítems afectan el cálculo de Impuestos. Revísalos y edítalos para mayor precisión.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {fiscalWarnings.slice(0, 6).map((w, idx) => {
@@ -773,6 +777,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               </div>
             )}
           </div>
+          </>}
         </div>
       )}
 
