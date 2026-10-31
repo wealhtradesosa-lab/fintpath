@@ -4336,7 +4336,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
             if(n.sep)return<div key={n.id} style={{padding:n.l?"10px 12px 4px":"6px 0",fontSize:9,fontWeight:700,color:T.tx3,letterSpacing:"0.1em",borderTop:n.l?`1px solid ${T.border}`:"none",marginTop:n.l?4:0}}>{n.l||""}</div>;
             // Sub-item del menú desplegable: solo se muestra si el padre está expandido o si el sub-item es la página actual
             if(n.parent){
-              const parentExpanded=expandedMenus[n.parent]||pg===n.id;
+              const parentExpanded=expandedMenus[n.parent]||pg===n.id||nvs.some(x=>x.parent===n.parent&&x.id===pg); // 31-oct-2026: estando en una calculadora se ven sus hermanas
               if(!parentExpanded)return null;
               const a=pg===n.id;
               return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"calc(100% - 12px)",marginLeft:12,display:"flex",alignItems:"center",justifyContent:"flex-start",textAlign:"left",gap:8,padding:"7px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s",borderLeft:`2px solid ${a?T.gn:T.border}`}}><span style={{fontSize:13}}>{n.i}</span>{n.l}</button>;
