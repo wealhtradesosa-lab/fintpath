@@ -22,7 +22,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", red: "#ff5000", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
@@ -201,7 +201,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
     <div style={{ maxWidth: 820, margin: "0 auto", padding: "16px" }}>
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, color: T.txt, marginBottom: 6 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, color: T.txt, marginBottom: 6 }}>
           📋 Declaración oficial DIAN
         </div>
         <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6 }}>
@@ -227,7 +227,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
       {/* Paso 1: elegir owner */}
       <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "1px solid " + T.border, marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 8 }}>
           1. ¿De qué propietario fiscal es esta declaración?
         </div>
         <select
@@ -243,7 +243,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           ))}
         </select>
         {declaracionesGuardadas.length > 0 && (
-          <div style={{ marginTop: 8, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+          <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
             📚 Declaraciones guardadas para este titular ({declaracionesGuardadas.length}/4):{" "}
             {declaracionesGuardadas
               .map((d) => d?.anoGravable)
@@ -263,7 +263,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
       {/* Paso 2: subir PDF */}
       <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "1px solid " + T.border, marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 8 }}>
           2. Sube el PDF de la declaración
         </div>
         <input
@@ -274,7 +274,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           disabled={!isPro}
           style={{ display: "block", width: "100%", fontSize: 12, color: T.txt2 }}
         />
-        <div style={{ fontSize: 10, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>
           Formatos aceptados: PDF hasta 5MB. Funciona mejor con PDFs nativos de MUISCA (no escaneos). La IA es <strong>Claude Sonnet 4</strong>; los datos no se guardan en Anthropic más allá del tiempo de proceso.
         </div>
         {file && (
@@ -308,7 +308,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5 }}>
                 3. Verifica los datos extraídos
               </div>
               <div style={{ fontSize: 13, color: T.txt, marginTop: 4, fontWeight: 600 }}>
@@ -321,7 +321,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           </div>
 
           {parsed.confianza === "baja" && (
-            <div style={{ padding: 10, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 8, marginBottom: 10, fontSize: 11, color: T.txt2 }}>
+            <div style={{ padding: 10, background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.2)", borderRadius: 8, marginBottom: 10, fontSize: 12, color: T.txt2 }}>
               ⚠️ La IA marcó la lectura como <strong>baja confianza</strong>. Revisa cada campo y corrige los que no coincidan con tu declaración antes de guardar.
             </div>
           )}
@@ -329,13 +329,13 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
             {Object.keys(labels).map((k) => (
               <div key={k} style={{ padding: "8px 10px", background: T.bg3, borderRadius: 6 }}>
-                <div style={{ fontSize: 10, color: T.txt3, marginBottom: 3 }}>{labels[k]}</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginBottom: 3 }}>{labels[k]}</div>
                 <NumberInput
                   value={editedRenglones[k] ?? ""}
                   onChange={(v) => setEditedRenglones((p) => ({ ...p, [k]: v === "" ? "" : String(v) }))}
                   style={{ width: "100%", background: "transparent", border: "none", color: T.txt, fontSize: 13, fontFamily: "monospace", outline: "none", padding: 0 }}
                 />
-                <div style={{ fontSize: 9, color: T.txt3, marginTop: 2 }}>{fm(editedRenglones[k])}</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>{fm(editedRenglones[k])}</div>
               </div>
             ))}
           </div>
@@ -358,7 +358,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       )}
 
       {/* Info: declaraciones ya guardadas */}
-      <div style={{ fontSize: 11, color: T.txt3, padding: 12, background: T.bg3, borderRadius: 8, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: T.txt3, padding: 12, background: T.bg3, borderRadius: 8, lineHeight: 1.6 }}>
         💡 <strong>¿Qué pasa después?</strong> Los datos se guardan en el perfil del propietario fiscal. El sistema usa esa información para <strong>detectar desajustes</strong> contra tu situación actual —por ejemplo, si el año pasado aportaste a pensión voluntaria pero este año no registraste aportes, aparece una alerta en el Plan Tributario.
       </div>
     </div>

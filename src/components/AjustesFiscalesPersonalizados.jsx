@@ -27,7 +27,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.06)",
-  green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", red: "#ff5000", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const fm = (v) => {
@@ -42,7 +42,7 @@ const fm = (v) => {
 // ─────────────────────────────────────────────────────────────────────────
 function SwitchRow({ label, descripcion, baseLegal, impactoTexto, value, onChange, children }) {
   return (
-    <div style={{ padding: "12px 14px", background: T.bg3, borderRadius: 8, marginBottom: 8, border: "1px solid " + (value ? "rgba(34,197,94,0.3)" : T.border) }}>
+    <div style={{ padding: "12px 14px", background: T.bg3, borderRadius: 8, marginBottom: 8, border: "1px solid " + (value ? "rgba(0,200,5,0.3)" : T.border) }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <button
           type="button"
@@ -63,9 +63,9 @@ function SwitchRow({ label, descripcion, baseLegal, impactoTexto, value, onChang
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: T.txt, lineHeight: 1.4 }}>{label}</div>
-          {descripcion && <div style={{ fontSize: 11, color: T.txt2, marginTop: 3, lineHeight: 1.5 }}>{descripcion}</div>}
-          {baseLegal && <div style={{ fontSize: 9, color: T.txt3, marginTop: 4, fontFamily: "monospace" }}>📖 {baseLegal}</div>}
-          {impactoTexto && value && <div style={{ fontSize: 10, color: T.green, marginTop: 4, fontWeight: 600 }}>💚 {impactoTexto}</div>}
+          {descripcion && <div style={{ fontSize: 12, color: T.txt2, marginTop: 3, lineHeight: 1.5 }}>{descripcion}</div>}
+          {baseLegal && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, fontFamily: "monospace" }}>📖 {baseLegal}</div>}
+          {impactoTexto && value && <div style={{ fontSize: 11, color: T.green, marginTop: 4, fontWeight: 600 }}>💚 {impactoTexto}</div>}
           {value && children && <div style={{ marginTop: 10 }}>{children}</div>}
         </div>
       </div>
@@ -79,7 +79,7 @@ function SwitchRow({ label, descripcion, baseLegal, impactoTexto, value, onChang
 function NumberInput({ label, value, onChange, placeholder, hint }) {
   return (
     <div>
-      {label && <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>}
+      {label && <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4, letterSpacing: 0.5 }}>{label}</div>}
       <SmartNumberInput
         value={value ?? ""}
         onChange={(v) => onChange(v === "" ? null : Number(v))}
@@ -90,7 +90,7 @@ function NumberInput({ label, value, onChange, placeholder, hint }) {
           fontFamily: "monospace", outline: "none",
         }}
       />
-      {hint && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
+      {hint && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
     </div>
   );
 }
@@ -113,9 +113,9 @@ function Collapsible({ icono, titulo, descripcion, cantActivos, total, defaultOp
         <span style={{ fontSize: 18 }}>{icono}</span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 700 }}>{titulo}</div>
-          {descripcion && <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>{descripcion}</div>}
+          {descripcion && <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{descripcion}</div>}
         </div>
-        <div style={{ fontSize: 11, color: cantActivos > 0 ? T.green : T.txt3, fontWeight: 600 }}>
+        <div style={{ fontSize: 12, color: cantActivos > 0 ? T.green : T.txt3, fontWeight: 600 }}>
           {cantActivos > 0 ? `${cantActivos} activos` : `${total} preguntas`}
         </div>
         <span style={{ fontSize: 14, color: T.txt3, transform: open ? "rotate(90deg)" : "none", transition: "transform 0.2s" }}>▶</span>
@@ -199,7 +199,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
         <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 4 }}>
           ⚙️ Ajustes fiscales personalizados {totalActivos > 0 && <span style={{ color: T.green }}>({totalActivos} activos)</span>}
         </div>
-        <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           Un contador senior te haría estas preguntas para estimar tu impuesto con más precisión. Contesta solo las que apliquen a ti — el resto quedan vacías y no afectan el cálculo.
         </div>
       </div>
@@ -229,7 +229,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
               hint="Número total de personas que dependen económicamente de ti."
             />
             <div style={{ marginTop: 10 }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 11, color: T.txt2 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", fontSize: 12, color: T.txt2 }}>
                 <input
                   type="checkbox"
                   checked={!!profile.dependientes?.conDiscapacidad}
@@ -261,7 +261,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
               placeholder="Ej: 50"
               hint="Si la deuda es compartida 50/50 con tu pareja, escribe 50. Si es 100% tuya, deja este toggle apagado."
             />
-            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: 6, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
               <strong style={{ color: T.txt }}>⚖️ Por qué importa:</strong> el Art. 119 ET permite
               deducir intereses solo en proporción a tu responsabilidad legal. Si declaras 100% sin
               serlo, la DIAN puede cuestionar la deducción.
@@ -309,12 +309,12 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           descripcion="Si eres accionista o dueño de una jurídica, los dividendos se calculan automáticamente"
           total={socios.length}
         >
-          <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             ℹ️ Si eres socio de una empresa que tienes cargada como owner jurídica, declara tu participación. El motor calculará automáticamente los dividendos que te corresponden y los aplicará a tu impuesto (Art. 49 #3 + Art. 242 ET) — sin que tengas que cargarlos manualmente como ingreso.
           </div>
 
           {juridicasDisponibles.length === 0 ? (
-            <div style={{ padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            <div style={{ padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
               ⚠️ No tienes owners jurídicos cargados todavía. Primero crea la empresa como owner jurídica desde la pantalla principal de la calculadora; después puedes vincular tu participación acá.
             </div>
           ) : (
@@ -326,7 +326,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                   <div key={idx} style={{ marginBottom: 8, padding: "10px 12px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 8, display: "flex", alignItems: "center", gap: 10 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: T.txt }}>{juridica?.name || "Empresa eliminada"}</div>
-                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Tu participación: <strong style={{ color: T.green }}>{s.porcentaje}%</strong></div>
+                      <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Tu participación: <strong style={{ color: T.green }}>{s.porcentaje}%</strong></div>
                     </div>
                     <input
                       type="number"
@@ -339,12 +339,12 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                         newSocios[idx] = { ...newSocios[idx], porcentaje: Math.max(0, Math.min(100, Number(e.target.value) || 0)) };
                         updateProfile({ socios: newSocios });
                       }}
-                      style={{ width: 70, padding: "6px 8px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 11, textAlign: "right" }}
+                      style={{ width: 70, padding: "6px 8px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 12, textAlign: "right" }}
                     />
-                    <span style={{ fontSize: 11, color: T.txt3 }}>%</span>
+                    <span style={{ fontSize: 12, color: T.txt3 }}>%</span>
                     <button
                       onClick={() => updateProfile({ socios: socios.filter((_, i) => i !== idx) })}
-                      style={{ background: "transparent", border: "1px solid rgba(239,68,68,0.3)", color: "#ef4444", padding: "4px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer" }}
+                      style={{ background: "transparent", border: "1px solid rgba(255,80,0,0.3)", color: "#ff5000", padding: "4px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
                       title="Quitar esta participación"
                     >
                       🗑️
@@ -359,19 +359,19 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                 const disponibles = juridicasDisponibles.filter(j => !yaVinculadas.has(j.id));
                 if (disponibles.length === 0) {
                   return (
-                    <div style={{ marginTop: 8, padding: "8px 12px", fontSize: 10, color: T.txt3, fontStyle: "italic", textAlign: "center" }}>
+                    <div style={{ marginTop: 8, padding: "8px 12px", fontSize: 11, color: T.txt3, fontStyle: "italic", textAlign: "center" }}>
                       Ya vinculaste todas las jurídicas disponibles.
                     </div>
                   );
                 }
                 return (
                   <div style={{ marginTop: 8, padding: "10px 12px", background: T.bg3, border: "1px dashed " + T.border, borderRadius: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: T.txt2, marginBottom: 6 }}>+ Agregar participación</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 6 }}>+ Agregar participación</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                       <select
                         id={`add-socio-${owner?.id || "default"}`}
                         defaultValue=""
-                        style={{ flex: 1, minWidth: 120, padding: "6px 8px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 11 }}
+                        style={{ flex: 1, minWidth: 120, padding: "6px 8px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 6, color: T.txt, fontSize: 12 }}
                       >
                         <option value="">— Elige la empresa —</option>
                         {disponibles.map(j => <option key={j.id} value={j.id}>{j.name}</option>)}
@@ -384,12 +384,12 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                           updateProfile({ socios: [...socios, nuevoSocio] });
                           sel.value = "";
                         }}
-                        style={{ background: T.green, color: "#000", border: "none", padding: "6px 14px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                        style={{ background: T.green, color: "#000", border: "none", padding: "6px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                       >
                         + Agregar
                       </button>
                     </div>
-                    <div style={{ marginTop: 6, fontSize: 9, color: T.txt3, fontStyle: "italic" }}>
+                    <div style={{ marginTop: 6, fontSize: 11, color: T.txt3, fontStyle: "italic" }}>
                       Por defecto se asigna 100%. Ajusta el porcentaje después según tu participación real.
                     </div>
                   </div>
@@ -530,7 +530,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             onChange={(v) => updateProfile({ inversionesCTI: v ? { monto: profile.inversionesCTI?.monto || 0, tipo: profile.inversionesCTI?.tipo || "cti" } : { monto: 0 } })}
           >
             <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Tipo</div>
+              <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4, letterSpacing: 0.5 }}>Tipo</div>
               <select
                 value={profile.inversionesCTI?.tipo || "cti"}
                 onChange={(e) => updateProfile({ inversionesCTI: { ...profile.inversionesCTI, tipo: e.target.value } })}
@@ -560,7 +560,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
             onChange={(v) => updateProfile({ regimenEspecial: v ? (profile.regimenEspecial || "zona_franca") : null })}
           >
             <div>
-              <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>Régimen</div>
+              <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4, letterSpacing: 0.5 }}>Régimen</div>
               <select
                 value={profile.regimenEspecial || "zona_franca"}
                 onChange={(e) => updateProfile({ regimenEspecial: e.target.value })}

@@ -56,7 +56,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.08)",
   borderL: "rgba(var(--fp-ink),0.14)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", red: "#ef4444", blue: "#3b82f6",
+  green: "#00c805", red: "#ff5000", blue: "#3b82f6",
   amber: "#f59e0b", purple: "#3b82f6",
 };
 
@@ -347,8 +347,8 @@ function OpportunityCard({ opp, expanded, onToggle }) {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <span
               style={{
-                fontSize: 10,
-                fontWeight: 800,
+                fontSize: 11,
+                fontWeight: 700,
                 letterSpacing: 1,
                 color: priColor,
                 background: priColor + "15",
@@ -358,9 +358,9 @@ function OpportunityCard({ opp, expanded, onToggle }) {
             >
               {priLabel}
             </span>
-            <span style={{ fontSize: 11, color: T.txt3 }}>{opp.category}</span>
+            <span style={{ fontSize: 12, color: T.txt3 }}>{opp.category}</span>
           </div>
-          <h3 style={{ fontSize: 18, fontWeight: 800, color: T.txt, margin: "0 0 6px", fontFamily: FONT_DISPLAY }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: T.txt, margin: "0 0 6px", fontFamily: FONT_DISPLAY }}>
             {opp.title}
           </h3>
           <p style={{ fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.5 }}>{opp.oneliner}</p>
@@ -368,11 +368,11 @@ function OpportunityCard({ opp, expanded, onToggle }) {
         <div style={{ textAlign: "right", minWidth: 120 }}>
           {opp.savings > 0 && (
             <>
-              <div style={{ fontSize: 11, color: T.txt3, marginBottom: 2 }}>You save</div>
-              <div style={{ fontSize: 24, fontWeight: 900, color: T.green, fontFamily: "monospace", lineHeight: 1 }}>
+              <div style={{ fontSize: 12, color: T.txt3, marginBottom: 2 }}>You save</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: T.green, fontFamily: "monospace", lineHeight: 1 }}>
                 {fm(opp.savings)}
               </div>
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>per year</div>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>per year</div>
             </>
           )}
           {opp.savings === 0 && (
@@ -386,14 +386,14 @@ function OpportunityCard({ opp, expanded, onToggle }) {
       {expanded && (
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: T.txt3, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1, marginBottom: 6 }}>
               ✅ What to do
             </div>
             <p style={{ fontSize: 13, color: T.txt, margin: 0, lineHeight: 1.6 }}>{opp.action}</p>
           </div>
 
           <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: T.txt3, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1, marginBottom: 6 }}>
               💡 Why this works
             </div>
             <p style={{ fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.6 }}>{opp.why}</p>
@@ -401,7 +401,7 @@ function OpportunityCard({ opp, expanded, onToggle }) {
 
           {opp.risk && (
             <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, color: T.amber, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.amber, letterSpacing: 1, marginBottom: 6 }}>
                 ⚠️ Risk / caveat
               </div>
               <p style={{ fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.6 }}>{opp.risk}</p>
@@ -409,7 +409,7 @@ function OpportunityCard({ opp, expanded, onToggle }) {
           )}
 
           {opp.irc && (
-            <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic", marginTop: 10 }}>
+            <div style={{ fontSize: 12, color: T.txt3, fontStyle: "italic", marginTop: 10 }}>
               Legal basis: {opp.irc}
             </div>
           )}
@@ -431,7 +431,7 @@ export default function TaxOptimizerUS({ user }) {
     return (
       <div>
         <div style={{ marginBottom: 20 }}>
-          <h2 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
+          <h2 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
             🎯 Tax Review
           </h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>
@@ -454,7 +454,7 @@ export default function TaxOptimizerUS({ user }) {
     <div>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
+        <h2 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
           🎯 Tax Review
         </h2>
         <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>
@@ -477,7 +477,7 @@ export default function TaxOptimizerUS({ user }) {
         }}
       >
         <div style={{ flex: 1, minWidth: 250 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: T.green, letterSpacing: 1, marginBottom: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.green, letterSpacing: 1, marginBottom: 6 }}>
             💰 OPPORTUNITIES DETECTED
           </div>
           <div style={{ fontSize: 14, color: T.txt2, lineHeight: 1.5 }}>
@@ -487,11 +487,11 @@ export default function TaxOptimizerUS({ user }) {
         </div>
         {totalSavings > 0 && (
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 2 }}>Potential annual savings</div>
-            <div style={{ fontSize: "clamp(28px, 7vw, 36px)", fontWeight: 900, color: T.green, fontFamily: "monospace", lineHeight: 1 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginBottom: 2 }}>Potential annual savings</div>
+            <div style={{ fontSize: "clamp(28px, 7vw, 36px)", fontWeight: 700, color: T.green, fontFamily: "monospace", lineHeight: 1 }}>
               {fm(totalSavings)}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>tax savings · year 1</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>tax savings · year 1</div>
           </div>
         )}
       </div>
@@ -516,7 +516,7 @@ export default function TaxOptimizerUS({ user }) {
           background: T.bg3,
           border: `1px solid ${T.border}`,
           borderRadius: 12,
-          fontSize: 11,
+          fontSize: 12,
           color: T.txt3,
           lineHeight: 1.6,
         }}

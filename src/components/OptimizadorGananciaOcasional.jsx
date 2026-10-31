@@ -352,7 +352,7 @@ export default function OptimizadorGananciaOcasional({ u, onGuardar }) {
               const gris = !p.ok && !p.info;
               return (
                 <div key={p.id} style={{ ...card, display: "grid", gridTemplateColumns: "auto minmax(0,1fr) auto", gap: 14, opacity: apagado ? 0.65 : 1 }}>
-                  <div style={{ width: 30, height: 30, borderRadius: R.pill, display: "grid", placeItems: "center", fontWeight: 800, fontSize: 14,
+                  <div style={{ width: 30, height: 30, borderRadius: R.pill, display: "grid", placeItems: "center", fontWeight: 700, fontSize: 14,
                     background: gris ? C.raised : Cα.ok15, color: gris ? C.subtle : C.ok }}>{i + 1}</div>
                   <div style={{ minWidth: 0 }}>
                     <div style={F.label}>{p.norma}</div>

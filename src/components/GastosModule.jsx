@@ -29,15 +29,15 @@ const T = {
   bg2: C.surface, bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: C.border,
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
-  red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
+  green: "#00c805", greenDim: "rgba(0,200,5,0.1)",
+  red: "#ff5000", redDim: "rgba(255,80,0,0.08)",
   blue: "#3b82f6", orange: "#f59e0b",
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
+      <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
       {options
         ? <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={valorOpcion(o)} value={valorOpcion(o)}>{etiquetaOpcion(o)}</option>)}</select>
         : type === "number"
@@ -62,49 +62,49 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 // Fallback al comportamiento legacy si no hay fiscalCode (items pre-1.5).
 const REGLA_POR_FISCAL_CODE = {
   // Aporte tributario (detracción de la base, Arts. 126-1, 126-4, 387)
-  "AP_TRIB_PV":                 { txt: "✅ Detracción fiscal", color: "#22c55e", help: "Pensión voluntaria — detrae base hasta tope conjunto Art. 126-1 ET" },
-  "AP_TRIB_AFC":                { txt: "✅ Detracción fiscal", color: "#22c55e", help: "AFC — detrae base hasta tope conjunto Art. 126-4 ET" },
-  "AP_TRIB_SALUD_PREPAGADA":    { txt: "✅ Hasta 16 UVT/mes", color: "#22c55e", help: "Salud prepagada — Art. 387 #2 ET, tope 16 UVT mensuales" },
+  "AP_TRIB_PV":                 { txt: "✅ Detracción fiscal", color: "#00c805", help: "Pensión voluntaria — detrae base hasta tope conjunto Art. 126-1 ET" },
+  "AP_TRIB_AFC":                { txt: "✅ Detracción fiscal", color: "#00c805", help: "AFC — detrae base hasta tope conjunto Art. 126-4 ET" },
+  "AP_TRIB_SALUD_PREPAGADA":    { txt: "✅ Hasta 16 UVT/mes", color: "#00c805", help: "Salud prepagada — Art. 387 #2 ET, tope 16 UVT mensuales" },
   // Vivienda
-  "DEU_NAT_VIVIENDA_HABITACIONAL": { txt: "✅ Intereses 1.200 UVT", color: "#22c55e", help: "Intereses vivienda habitacional — Art. 119 ET, tope 1.200 UVT/año" },
+  "DEU_NAT_VIVIENDA_HABITACIONAL": { txt: "✅ Intereses 1.200 UVT", color: "#00c805", help: "Intereses vivienda habitacional — Art. 119 ET, tope 1.200 UVT/año" },
   // Inmueble (depende del uso)
-  "GAS_INMUEBLE_ADMINISTRACION":   { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Gasto del inmueble arrendado — deducible 100% de la renta de capital" },
-  "GAS_INMUEBLE_SERVICIOS":        { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Servicios del inmueble arrendado" },
-  "GAS_INMUEBLE_REPARACION":       { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Reparación del inmueble arrendado" },
-  "GAS_INMUEBLE_MANTENIMIENTO":    { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Mantenimiento del inmueble arrendado" },
-  "GAS_INMUEBLE_PREDIAL":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Predial del inmueble arrendado" },
-  "GAS_INMUEBLE_SEGUROS":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Seguros del inmueble arrendado" },
+  "GAS_INMUEBLE_ADMINISTRACION":   { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Gasto del inmueble arrendado — deducible 100% de la renta de capital" },
+  "GAS_INMUEBLE_SERVICIOS":        { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Servicios del inmueble arrendado" },
+  "GAS_INMUEBLE_REPARACION":       { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Reparación del inmueble arrendado" },
+  "GAS_INMUEBLE_MANTENIMIENTO":    { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Mantenimiento del inmueble arrendado" },
+  "GAS_INMUEBLE_PREDIAL":          { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Predial del inmueble arrendado" },
+  "GAS_INMUEBLE_SEGUROS":          { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Seguros del inmueble arrendado" },
   // Commit 15 Tarea 3: impuesto vehicular (rodamiento)
   "IMP_VEHICULAR_PERSONAL":        { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Rodamiento vehículo personal — no cumple Art. 107 ET" },
   "IMP_VEHICULAR_PROFESIONAL":     { txt: "📊 50% Art. 107", color: "#f59e0b", help: "Rodamiento vehículo profesional — 50% conservador (uso mixto), máx 1" },
   // Honorarios (Art. 107 ET — actividad independiente)
-  "GAS_HON_SEG_SOCIAL":          { txt: "✅ 100% Art. 126-1", color: "#22c55e", help: "Seguridad social independiente — deducible 100%" },
-  "GAS_HON_NOMINA_TERCEROS":     { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Nómina/honorarios a terceros — deducible 100%" },
-  "GAS_HON_OFICINA":             { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Arriendo oficina — deducible 100%" },
-  "GAS_HON_SERVICIOS_OFICINA":   { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Servicios oficina — deducible 100%" },
-  "GAS_HON_INTERNET_TELEFONIA":  { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Internet/telefonía profesional" },
-  "GAS_HON_MATERIALES":          { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Materiales y suministros profesionales" },
+  "GAS_HON_SEG_SOCIAL":          { txt: "✅ 100% Art. 126-1", color: "#00c805", help: "Seguridad social independiente — deducible 100%" },
+  "GAS_HON_NOMINA_TERCEROS":     { txt: "✅ 100% Art. 107", color: "#00c805", help: "Nómina/honorarios a terceros — deducible 100%" },
+  "GAS_HON_OFICINA":             { txt: "✅ 100% Art. 107", color: "#00c805", help: "Arriendo oficina — deducible 100%" },
+  "GAS_HON_SERVICIOS_OFICINA":   { txt: "✅ 100% Art. 107", color: "#00c805", help: "Servicios oficina — deducible 100%" },
+  "GAS_HON_INTERNET_TELEFONIA":  { txt: "✅ 100% Art. 107", color: "#00c805", help: "Internet/telefonía profesional" },
+  "GAS_HON_MATERIALES":          { txt: "✅ 100% Art. 107", color: "#00c805", help: "Materiales y suministros profesionales" },
   "GAS_HON_VEHICULO":            { txt: "📊 50% Art. 107", color: "#f59e0b", help: "Vehículo profesional — 50% conservador (uso mixto), máx 1" },
-  "GAS_HON_VIAJES":              { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Viajes con propósito profesional documentado" },
+  "GAS_HON_VIAJES":              { txt: "✅ 100% Art. 107", color: "#00c805", help: "Viajes con propósito profesional documentado" },
   "GAS_HON_REPRESENTACION":      { txt: "📊 Tope 10%", color: "#f59e0b", help: "Representación — tope 10% Art. 107-1 ET" },
-  "GAS_HON_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Capacitación profesional" },
-  "GAS_HON_OTROS":               { txt: "✅ Con causalidad", color: "#22c55e", help: "Otros con causalidad documentada" },
+  "GAS_HON_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#00c805", help: "Capacitación profesional" },
+  "GAS_HON_OTROS":               { txt: "✅ Con causalidad", color: "#00c805", help: "Otros con causalidad documentada" },
   // Seguros (persona natural — la mayoría NO deducibles)
-  "SEG_SALUD":                   { txt: "✅ Hasta 16 UVT/mes", color: "#22c55e", help: "Seguro de salud — Art. 387 #2 ET, tope 16 UVT mensuales" },
+  "SEG_SALUD":                   { txt: "✅ Hasta 16 UVT/mes", color: "#00c805", help: "Seguro de salud — Art. 387 #2 ET, tope 16 UVT mensuales" },
   "SEG_VIDA":                    { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Seguro de vida personal — no cumple Art. 107 ET" },
   "SEG_VEHICULO":                { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Seguro de vehículo personal — no cumple Art. 107 ET" },
   "SEG_HOGAR":                   { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Seguro de hogar personal — no cumple Art. 107 ET" },
   // Gastos juridica
-  "GAS_JUR_DEDUCIBLE":           { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Gasto deducible con causalidad" },
+  "GAS_JUR_DEDUCIBLE":           { txt: "✅ 100% Art. 107", color: "#00c805", help: "Gasto deducible con causalidad" },
   "GAS_JUR_NO_DEDUCIBLE":        { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Gasto sin causalidad probada" },
   // Commit 17 Tarea 3: fiscalCodes de juridica con sus reglas reales
-  "GAS_JUR_NOMINA":              { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Nómina + prestaciones de empleados — deducible 100%" },
-  "GAS_JUR_PARAFISCALES":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Parafiscales (SENA, ICBF, Cajas) — deducible 100%" },
-  "GAS_JUR_HONORARIOS_PROF":     { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Honorarios profesionales (contador, abogado, etc.) — deducible 100%" },
-  "GAS_JUR_OPERATIVO":           { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Gasto operativo con causalidad — deducible 100%" },
-  "GAS_JUR_PREDIAL":             { txt: "✅ 100% Art. 115", color: "#22c55e", help: "Predial pagado por la empresa — deducible 100% (Art. 115 ET)" },
-  "GAS_JUR_DEPRECIACION":        { txt: "✅ 100% Art. 128-141", color: "#22c55e", help: "Depreciación de activos productivos — deducible según vida útil fiscal" },
-  "GAS_JUR_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Capacitación de empleados — deducible 100%" },
+  "GAS_JUR_NOMINA":              { txt: "✅ 100% Art. 107", color: "#00c805", help: "Nómina + prestaciones de empleados — deducible 100%" },
+  "GAS_JUR_PARAFISCALES":        { txt: "✅ 100% Art. 107", color: "#00c805", help: "Parafiscales (SENA, ICBF, Cajas) — deducible 100%" },
+  "GAS_JUR_HONORARIOS_PROF":     { txt: "✅ 100% Art. 107", color: "#00c805", help: "Honorarios profesionales (contador, abogado, etc.) — deducible 100%" },
+  "GAS_JUR_OPERATIVO":           { txt: "✅ 100% Art. 107", color: "#00c805", help: "Gasto operativo con causalidad — deducible 100%" },
+  "GAS_JUR_PREDIAL":             { txt: "✅ 100% Art. 115", color: "#00c805", help: "Predial pagado por la empresa — deducible 100% (Art. 115 ET)" },
+  "GAS_JUR_DEPRECIACION":        { txt: "✅ 100% Art. 128-141", color: "#00c805", help: "Depreciación de activos productivos — deducible según vida útil fiscal" },
+  "GAS_JUR_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#00c805", help: "Capacitación de empleados — deducible 100%" },
   // Personal
   "GAS_NAT_PERSONAL":            { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Gasto personal — no cumple Art. 107 ET" },
 };
@@ -558,7 +558,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
-          <button onClick={openAdd} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
+          <button onClick={openAdd} style={{ background: "#00c805", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
 
@@ -571,7 +571,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {fiscalWarnings.length} egreso{fiscalWarnings.length !== 1 ? "s" : ""} con clasificación fiscal pendiente
             </div>
           </div>
-          <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
             Estos items requieren confirmación de causalidad o tipo fiscal. Afectan tu cálculo de Impuestos.
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -580,7 +580,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               const key = w.itemGastoCat + "|" + w.itemGastoIdx;
               const item = allItems.find(it => it.key === key);
               if (!item) return null;
-              const colorBySev = w.severity === "error" ? "#ef4444" : (w.severity === "warning" ? "#f59e0b" : "#3b82f6");
+              const colorBySev = w.severity === "error" ? "#ff5000" : (w.severity === "warning" ? "#f59e0b" : "#3b82f6");
               return (
                 <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(var(--fp-hundir),0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
                   <span style={{ width: 6, height: 6, borderRadius: 3, background: colorBySev, flexShrink: 0 }} />
@@ -588,16 +588,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {item.c || w.itemConcepto || w.itemCategoria || "(sin descripción)"} <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· {fm(item.m || 0)}/mes · {item.cat}</span>
                     </div>
-                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>{w.message || w.accionSugerida}</div>
+                    <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>{w.message || w.accionSugerida}</div>
                   </div>
-                  <button onClick={() => openEdit(item)} style={{ padding: "5px 10px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: "#22c55e", cursor: "pointer", fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+                  <button onClick={() => openEdit(item)} style={{ padding: "5px 10px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, color: "#00c805", cursor: "pointer", fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
                     Editar →
                   </button>
                 </div>
               );
             })}
             {fiscalWarnings.length > 6 && (
-              <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", padding: "4px 0" }}>
+              <div style={{ fontSize: 11, color: T.txt3, textAlign: "center", padding: "4px 0" }}>
                 + {fiscalWarnings.length - 6} más
               </div>
             )}
@@ -618,7 +618,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.orange },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", fontWeight: 600 }}>{m.l}</div>
+            <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
           </div>
         ))}
@@ -643,7 +643,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
           if (datos.length < 2) return null;   // con una sola categoría no dice nada
           const tot = datos.reduce((s, d) => s + d.value, 0);
-          const PAL = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
+          const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
           return (
             <div style={{ marginBottom: 16 }}>
               <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
@@ -666,7 +666,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           <thead>
             <tr>
               {["Concepto", "Categoría", "DIAN", "Monto/mes", "On/Off", ""].map((h) => (
-                <th key={h} style={{ padding: "12px 14px", textAlign: h === "Monto/mes" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                <th key={h} style={{ padding: "12px 14px", textAlign: h === "Monto/mes" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -678,12 +678,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>Registra tus gastos mensuales</h3>
                       <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Vivienda, alimentación, transporte, educación, seguros, entretenimiento. <strong style={{color:"var(--fp-txt2)"}}>Solo gastos — no incluyas cuotas de créditos ni hipotecas</strong>, esas van en la sección Deudas.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
-                        <button onClick={()=>setShowForm(true)} style={{background:"#22c55e",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar gasto</button>
+                        <button onClick={()=>setShowForm(true)} style={{background:"#00c805",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar gasto</button>
                         {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de gastos</button>}
                       </div>
                       <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
-                        <table style={{width:"100%",fontSize:11,color:"var(--fp-txt2)"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <table style={{width:"100%",fontSize:12,color:"var(--fp-txt2)"}}>
                           <thead><tr style={{borderBottom:"1px solid rgba(var(--fp-ink),0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"var(--fp-txt3)"}}>Concepto</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>Monto/mes</th><th style={{padding:"4px 8px",color:"var(--fp-txt3)"}}>Categoría</th></tr></thead>
                           <tbody>
                             <tr><td style={{padding:"4px 8px"}}>Arriendo vivienda</td><td style={{textAlign:"right",padding:"4px 8px"}}>$4,500,000</td><td style={{padding:"4px 8px"}}>Vivienda</td></tr>
@@ -699,10 +699,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     <tr key={item.key} onClick={() => setCerrados((c) => ({ ...c, [item.key]: !c[item.key] }))} title={cerrados[item.key] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
                       <td colSpan={6} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: T.txt }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.key] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: T.red, fontFamily: "monospace" }}>
                             {fm(item.__sub)}/mes
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
                           </span>
@@ -720,7 +720,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         <span
                           onClick={() => openEdit(item)}
                           title={ws.map(w => "• " + (w.message || w.accionSugerida)).join("\n")}
-                          style={{ fontSize: 13, cursor: "pointer", color: hasError ? "#ef4444" : "#f59e0b", flexShrink: 0 }}
+                          style={{ fontSize: 13, cursor: "pointer", color: hasError ? "#ff5000" : "#f59e0b", flexShrink: 0 }}
                         >⚠️</span>
                       );
                     })()}
@@ -733,7 +733,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         <span
                           title={`${badge.label} — ${badge.sub}`}
                           style={{
-                            fontSize: 9,
+                            fontSize: 11,
                             fontWeight: 700,
                             padding: "2px 8px",
                             borderRadius: 10,
@@ -756,13 +756,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         onClick={(e) => { e.stopPropagation(); togglePagoItem(item); }}
                         title={estaPagadoEnAño(item, añoActual) ? `Ya pagado en ${añoActual} — click para desmarcar` : `Aún no pagado en ${añoActual} — click para marcar como pagado`}
                         style={{
-                          fontSize: 9,
+                          fontSize: 11,
                           fontWeight: 700,
                           cursor: "pointer",
                           padding: "2px 8px",
                           borderRadius: 10,
-                          background: estaPagadoEnAño(item, añoActual) ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)",
-                          color: estaPagadoEnAño(item, añoActual) ? "#22c55e" : "#f59e0b",
+                          background: estaPagadoEnAño(item, añoActual) ? "rgba(0,200,5,0.15)" : "rgba(245,158,11,0.15)",
+                          color: estaPagadoEnAño(item, añoActual) ? "#00c805" : "#f59e0b",
                           letterSpacing: 0.3,
                           userSelect: "none",
                         }}
@@ -773,16 +773,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   </div>
                   {(()=>{
                     if(!item.owner || item.owner==="") return null;
-                    if(item.owner==="na") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
-                    if(item.owner==="own_1") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
+                    if(item.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
+                    if(item.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
                     const ow=(owners||[]).find(o=>o.id===item.owner);
-                    return ow ? <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                    return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <span style={{ background: T.redDim, color: T.red, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.cat}</span>
+                  <span style={{ background: T.redDim, color: T.red, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.cat}</span>
                 </td>
-                <td style={{ padding: "10px 14px", fontSize: 10 }}>
+                <td style={{ padding: "10px 14px", fontSize: 11 }}>
                   {(()=>{
                     if(!item.owner || item.owner==="" || item.owner==="na") return <span style={{color:"var(--fp-txt3)"}}>—</span>;
                     // Commit 17 Tarea 3: jurídica también usa reglaItem para coherencia
@@ -793,7 +793,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.t === "f" ? "fijo" : "variable"}</span>
+                  <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.t === "f" ? "fijo" : "variable"}</span>
                 </td>
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                   <div style={{ fontWeight: 700, color: T.red }}>{fm(promedioMesActivo(item))}</div>
@@ -803,7 +803,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     if (!badge) return null; // mensual todo año: no hace falta
                     const total = totalAnualItem(item);
                     return (
-                      <div style={{ fontSize: 9, color: T.txt3, fontWeight: 500, marginTop: 2 }}>
+                      <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginTop: 2 }}>
                         {fm(total)}/año
                       </div>
                     );
@@ -811,9 +811,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}>{item.sim===false?"⬜":"✅"}</button>
-                  <button onClick={() => openEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 11, marginRight: 4 }}>✏️</button>
+                  <button onClick={() => openEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}>✏️</button>
                   <button onClick={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }}
-                    style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 11 }}>🗑️</button>
+                    style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}>🗑️</button>
                 </td>
               </tr>
               )
@@ -885,13 +885,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                       <span style={{ fontSize: 20 }}>{templateElegido.emoji}</span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Tipo elegido</div>
+                        <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5, fontWeight: 700 }}>Tipo elegido</div>
                         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, marginTop: 1 }}>{templateElegido.titulo("gasto")}</div>
                       </div>
                     </div>
                     <button type="button"
                       onClick={() => { setTemplateElegido(null); }}
-                      style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", color: T.txt3, fontSize: 11, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", color: T.txt3, fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}>
                       Cambiar
                     </button>
                   </div>
@@ -901,13 +901,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {plan==="free" ? (
                 <div style={{background:"rgba(245,158,11,0.06)",border:"1px dashed rgba(245,158,11,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>onUpgrade&&onUpgrade()}>
                   <div style={{fontSize:12,fontWeight:600,color:"#f59e0b"}}>🔒 📸 Lectura de facturas con IA</div>
-                  <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Disponible desde el plan Básico · click para ver planes</div>
+                  <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Disponible desde el plan Básico · click para ver planes</div>
                 </div>
               ) : (
                 <div style={{background:"rgba(59,130,246,0.06)",border:"1px dashed rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
                   {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>🔄 Leyendo factura...</div> : <>
                     <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>📸 ¿Tienes la factura o recibo?</div>
-                    <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
+                    <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                   </>}
                 </div>
               )}
@@ -924,7 +924,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   a ningún activo, y forzar el vínculo produciría datos falsos. */}
               {((user?.inv || []).length > 0) && (
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3,
+                  <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3,
                         display: "block", marginBottom: 5 }}>
                     Activo al que pertenece
                     <span style={{ fontWeight: 400, opacity: 0.7 }}> · opcional</span>
@@ -942,7 +942,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       </option>
                     ))}
                   </select>
-                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.45 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.45 }}>
                     Predial, administración, seguros o mantenimiento del activo.
                     Se descuentan de su rentabilidad.
                   </div>
@@ -964,13 +964,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const currentFC = form.fiscalCode || "AP_TRIB_PV";
                 return (
                   <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#a855f7",marginBottom:8}}>{opts.question}</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#a855f7",marginBottom:8}}>{opts.question}</div>
                     <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
                       {opts.options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
                     </select>
-                    <div style={{fontSize:10,color:"var(--fp-txt2)",marginTop:8,lineHeight:1.5}}>{opts.help}</div>
-                    <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:6,lineHeight:1.5,fontStyle:"italic"}}>
+                    <div style={{fontSize:11,color:"var(--fp-txt2)",marginTop:8,lineHeight:1.5}}>{opts.help}</div>
+                    <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:6,lineHeight:1.5,fontStyle:"italic"}}>
                       ℹ️ Esta categoría sólo reduce impuestos si la asignas a un propietario fiscal de tipo <strong>persona natural</strong> con ingresos laborales.
                     </div>
                   </div>
@@ -998,13 +998,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   ? "Para persona natural NO es deducible. Sólo en jurídica con causalidad probada (Art. 107 ET)."
                   : "Default conservador. Si tienes un seguro deducible, especifica el tipo correcto.";
                 return (
-                  <div style={{gridColumn:"1/-1",background:"rgba(34,197,94,0.04)",border:"1px solid rgba(34,197,94,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#22c55e",marginBottom:8}}>🛡️ ¿Qué tipo de seguro es?</div>
+                  <div style={{gridColumn:"1/-1",background:"rgba(0,200,5,0.04)",border:"1px solid rgba(0,200,5,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
+                    <div style={{fontSize:12,fontWeight:700,color:"#00c805",marginBottom:8}}>🛡️ ¿Qué tipo de seguro es?</div>
                     <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
                       {opts.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
                     </select>
-                    <div style={{fontSize:10,color:"var(--fp-txt2)",marginTop:8,lineHeight:1.5}}>{help}</div>
+                    <div style={{fontSize:11,color:"var(--fp-txt2)",marginTop:8,lineHeight:1.5}}>{help}</div>
                   </div>
                 );
               })()}
@@ -1012,7 +1012,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {/* Toggle modo: valor fijo vs capital × tasa */}
               <div style={{ gridColumn: "1/-1", background: T.bg3, borderRadius: 10, padding: "8px", display: "flex", gap: 6, marginTop: 4, marginBottom: 4 }}>
                 <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "fijo" }))}
-                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: form.montoModo !== "tasa" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: form.montoModo !== "tasa" ? "rgba(34,197,94,0.08)" : "transparent", color: form.montoModo !== "tasa" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: form.montoModo !== "tasa" ? 700 : 500, cursor: "pointer" }}>
+                  style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: form.montoModo !== "tasa" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: form.montoModo !== "tasa" ? "rgba(0,200,5,0.08)" : "transparent", color: form.montoModo !== "tasa" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: form.montoModo !== "tasa" ? 700 : 500, cursor: "pointer" }}>
                   💵 Valor fijo
                 </button>
                 <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "tasa" }))}
@@ -1041,7 +1041,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       "Mensual" = lo que sale cada mes / "Total del año" = suma anual. */}
                   {mostrarCampo("modoIngresoSimple") && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                         💵 ¿El monto que vas a poner es...?
                       </label>
                       <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
@@ -1054,9 +1054,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("porPago");
                           }}
-                          style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           💵 Mensual<br/>
-                          <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>Lo que sale cada mes</span>
+                          <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>Lo que sale cada mes</span>
                         </button>
                         <button type="button"
                           onClick={() => {
@@ -1067,9 +1067,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("anual");
                           }}
-                          style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "anual" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           📊 Total del año<br/>
-                          <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>La suma anual</span>
+                          <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>La suma anual</span>
                         </button>
                       </div>
                     </div>
@@ -1078,7 +1078,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {/* Toggle avanzado (por pago vs anual) — solo para frecuencia distinta a mensual */}
                   {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
-                      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
                         💵 ¿Cómo conoces el monto?
                       </label>
                       <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
@@ -1092,9 +1092,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("porPago");
                           }}
-                          style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           Por pago<br/>
-                          <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(lo que sale cada vez)</span>
+                          <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>(lo que sale cada vez)</span>
                         </button>
                         <button type="button"
                           onClick={() => {
@@ -1106,9 +1106,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             }
                             setModoIngreso("anual");
                           }}
-                          style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                          style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "anual" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                           Total anual<br/>
-                          <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(gasto del año)</span>
+                          <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>(gasto del año)</span>
                         </button>
                       </div>
                     </div>
@@ -1164,7 +1164,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </>
               ) : (
                 <div style={{ gridColumn: "1/-1", background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 11, color: "#3b82f6", marginBottom: 8, fontWeight: 600 }}>📊 Cálculo automático: capital × tasa = monto mensual</div>
+                  <div style={{ fontSize: 12, color: "#3b82f6", marginBottom: 8, fontWeight: 600 }}>📊 Cálculo automático: capital × tasa = monto mensual</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     <In l="💼 Capital" value={form.capital} onChange={(v) => {
                       const cap = Number(v) || 0;
@@ -1188,13 +1188,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     setForm(p => ({ ...p, tasaModo: v, m: (cap > 0 && tas > 0) ? String(mensual) : p.m, freq: "mes" }));
                   }} options={[{ v: "mensual", l: "📅 Mensual (ej: 1% mensual)" }, { v: "anual", l: "📅 Anual (ej: 12% anual)" }]} />
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && (
-                    <div style={{ marginTop: 4, padding: "10px 12px", background: "rgba(34,197,94,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#22c55e" }}>
+                    <div style={{ marginTop: 4, padding: "10px 12px", background: "rgba(0,200,5,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#00c805" }}>
                       💰 Monto calculado: {fm(form.tasaModo === "anual" ? (Number(form.capital) * Number(form.tasa) / 100) / 12 : Number(form.capital) * Number(form.tasa) / 100)} / mes
                     </div>
                   )}
                   {/* Commit E: warning si capital muy bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
-                    <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
+                    <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.3)", borderRadius: 8, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
                       ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Si el valor es correcto, ignora este aviso.
                     </div>
                   )}
@@ -1207,14 +1207,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     const altoNaranja = tm === "mensual" ? tas > 5 : tas > 50;
                     if (altoRojo) {
                       return (
-                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 11, color: T.red, lineHeight: 1.5 }}>
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.3)", borderRadius: 8, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
                           ⚠️ Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
                         </div>
                       );
                     }
                     if (altoNaranja) {
                       return (
-                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, fontSize: 11, color: "#f59e0b", lineHeight: 1.5 }}>
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, fontSize: 12, color: "#f59e0b", lineHeight: 1.5 }}>
                           🟠 Tasa alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta.
                         </div>
                       );
@@ -1243,14 +1243,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const deductibleCode = form.cat === "Educación" ? "GAS_JUR_CAPACITACION" : "GAS_JUR_OPERATIVO";
                 return (
                   <div style={{background:"rgba(245,158,11,0.04)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#f59e0b",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
                     <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
                       <option value={deductibleCode}>✅ Sí — relacionado con la actividad productora de renta (DEDUCIBLE)</option>
                       <option value="GAS_JUR_NO_DEDUCIBLE">❌ No — gasto personal o sin nexo con la actividad (NO deducible)</option>
                     </select>
-                    <div style={{fontSize:10,color:"var(--fp-txt2)",marginTop:6,lineHeight:1.5}}>Art. 107 ET exige causalidad, necesidad y proporcionalidad. <strong>Ejemplos</strong>: colegio de hijos del socio = NO deducible aunque lo pague la SAS. Cursos de contabilidad para empleados = SÍ deducible. Arriendo de oficina operativa = SÍ. Arriendo de vivienda del socio = NO.</div>
-                    <div style={{fontSize:10,fontWeight:600,marginTop:6,color:isDeductible?"#22c55e":"#ef4444"}}>{isDeductible ? "✅ Este gasto bajará el impuesto de renta de la empresa" : "⚠️ Este gasto NO bajará el impuesto de renta (pero sí se registra en tu cash flow)"}</div>
+                    <div style={{fontSize:11,color:"var(--fp-txt2)",marginTop:6,lineHeight:1.5}}>Art. 107 ET exige causalidad, necesidad y proporcionalidad. <strong>Ejemplos</strong>: colegio de hijos del socio = NO deducible aunque lo pague la SAS. Cursos de contabilidad para empleados = SÍ deducible. Arriendo de oficina operativa = SÍ. Arriendo de vivienda del socio = NO.</div>
+                    <div style={{fontSize:11,fontWeight:600,marginTop:6,color:isDeductible?"#00c805":"#ff5000"}}>{isDeductible ? "✅ Este gasto bajará el impuesto de renta de la empresa" : "⚠️ Este gasto NO bajará el impuesto de renta (pero sí se registra en tu cash flow)"}</div>
                   </div>
                 );
               })()}
@@ -1312,7 +1312,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         <div style={{fontSize:12,fontWeight:700,color:isHon?"#3b82f6":T.txt}}>
                           🧾 ¿Es gasto de tu actividad por honorarios? (Art. 107 ET)
                         </div>
-                        <div style={{fontSize:10,color:T.txt3,marginTop:2,lineHeight:1.4}}>
+                        <div style={{fontSize:11,color:T.txt3,marginTop:2,lineHeight:1.4}}>
                           Márcalo si este gasto cumple causalidad, necesidad y proporcionalidad con tu actividad independiente. Reduce la base gravable de tus honorarios antes de aplicar la cédula laboral.
                         </div>
                       </div>
@@ -1320,7 +1320,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
                     {isHon && (
                       <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(59,130,246,0.15)"}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:6}}>Tipo de gasto deducible</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#3b82f6",marginBottom:6}}>Tipo de gasto deducible</div>
                         <select
                           value={form.fiscalCode}
                           onChange={(e) => setForm(p => ({ ...p, fiscalCode: e.target.value }))}
@@ -1340,7 +1340,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         </select>
 
                         <div style={{marginTop:10}}>
-                          <label style={{fontSize:11,fontWeight:700,color:"#3b82f6",display:"block",marginBottom:4}}>
+                          <label style={{fontSize:12,fontWeight:700,color:"#3b82f6",display:"block",marginBottom:4}}>
                             Nota de causalidad (opcional pero recomendado)
                           </label>
                           <input
@@ -1350,18 +1350,18 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             placeholder="Ej: Internet de oficina usado para reuniones con clientes"
                             style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:12,outline:"none"}}
                           />
-                          <div style={{fontSize:10,color:T.txt3,marginTop:4,lineHeight:1.4}}>
+                          <div style={{fontSize:11,color:T.txt3,marginTop:4,lineHeight:1.4}}>
                             Si la DIAN cuestiona la deducción, esta nota ayuda a justificar la causalidad. No es obligatorio.
                           </div>
                         </div>
 
                         {form.fiscalCode === "GAS_HON_VEHICULO" && (
-                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
+                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:11,color:T.orange,lineHeight:1.4}}>
                             ⚠️ El motor aplica solo el 50% del gasto del vehículo (uso mixto). Solo se permite UN vehículo deducible por persona.
                           </div>
                         )}
                         {form.fiscalCode === "GAS_HON_REPRESENTACION" && (
-                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
+                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:11,color:T.orange,lineHeight:1.4}}>
                             ⚠️ Los gastos de representación tienen tope rígido del 10% del honorario bruto (Art. 107-1 ET). El motor lo aplica automáticamente.
                           </div>
                         )}
@@ -1375,7 +1375,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
-              <button onClick={handleSave} style={{ background: "#22c55e", color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editKey ? "Guardar" : "Agregar"}</button>
+              <button onClick={handleSave} style={{ background: "#00c805", color: "#000", border: "none", padding: "10px 24px", borderRadius: 10, cursor: "pointer", fontWeight: 700 }}>{editKey ? "Guardar" : "Agregar"}</button>
             </div>
               </>
             )}

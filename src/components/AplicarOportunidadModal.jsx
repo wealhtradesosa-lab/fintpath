@@ -32,13 +32,13 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   orange: "#fbbf24",
 };
 
@@ -206,7 +206,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
       <Backdrop onClose={onClose}>
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>💡</div>
-          <h3 style={{ fontSize: 18, fontWeight: 800, color: C.txt, margin: 0, textAlign: "center" }}>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: C.txt, margin: 0, textAlign: "center" }}>
             {oportunidad?.titulo || "Esta oportunidad no es aplicable directamente"}
           </h3>
           <p style={{ fontSize: 13, color: C.txt2, marginTop: 12, lineHeight: 1.5, textAlign: "center" }}>
@@ -244,7 +244,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
       <Backdrop onClose={onClose}>
         <div style={{ padding: 32, textAlign: "center" }}>
           <div style={{ fontSize: 56, marginBottom: 16 }}>✅</div>
-          <h3 style={{ fontSize: 20, fontWeight: 800, color: C.txt, margin: 0, marginBottom: 12 }}>
+          <h3 style={{ fontSize: 20, fontWeight: 700, color: C.txt, margin: 0, marginBottom: 12 }}>
             Oportunidad aplicada
           </h3>
           <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, maxWidth: 420, margin: "0 auto 16px" }}>
@@ -259,13 +259,13 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
               maxWidth: 400,
               margin: "0 auto 20px",
             }}>
-              <div style={{ fontSize: 11, color: C.green, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>
+              <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                 💰 Ahorro estimado
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.txt, marginTop: 4 }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginTop: 4 }}>
                 {fm(oportunidad.ahorroAnualEstimado)} / año
               </div>
-              <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
+              <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
                 Tu impuesto va a recalcularse automáticamente.
               </div>
             </div>
@@ -290,10 +290,10 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
       }}>
         <span style={{ fontSize: 28 }}>💡</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, color: C.green, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
             Aplicar oportunidad fiscal
           </div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.3 }}>
             {config.title}
           </h2>
           <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
@@ -321,10 +321,10 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
           }}>
             <span style={{ fontSize: 16 }}>💰</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: C.green, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>
+              <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                 Ahorro estimado
               </div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: C.txt, marginTop: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: C.txt, marginTop: 1 }}>
                 {fm(oportunidad.ahorroAnualEstimado)} / año
               </div>
             </div>
@@ -336,7 +336,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
       <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
         {config.inputs.map((inp) => (
           <div key={inp.key} style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.txt2, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.txt2, marginBottom: 6, letterSpacing: 0.5 }}>
               {inp.label}
             </label>
             {inp.type === "select" ? (
@@ -391,7 +391,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
               </div>
             )}
             {inp.helpText && (
-              <div style={{ fontSize: 11, color: C.txt3, marginTop: 6, lineHeight: 1.4 }}>
+              <div style={{ fontSize: 12, color: C.txt3, marginTop: 6, lineHeight: 1.4 }}>
                 {inp.helpText}
               </div>
             )}
@@ -462,7 +462,7 @@ const btnPrimary = {
   color: "#000",
   cursor: "pointer",
   fontSize: 13,
-  fontWeight: 800,
+  fontWeight: 700,
 };
 
 const btnSec = {

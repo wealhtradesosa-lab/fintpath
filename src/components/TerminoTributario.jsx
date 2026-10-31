@@ -64,7 +64,7 @@ const STYLES = {
     color: "#c4b5fd",
   },
   nombreCompleto: {
-    fontSize: 11,
+    fontSize: 12,
     color: "var(--fp-txt2)",
     fontStyle: "italic",
   },
@@ -83,10 +83,9 @@ const STYLES = {
     marginTop: 8,
   },
   ejemploLabel: {
-    color: "#4ade80",
+    color: "#3ddc45",
     fontWeight: 700,
-    fontSize: 10,
-    textTransform: "uppercase",
+    fontSize: 11,
     letterSpacing: 0.5,
     marginBottom: 2,
   },
@@ -188,7 +187,7 @@ export default function TerminoTributario({ clave, children, placement }) {
         aria-label={`Definición de ${data.termino || clave}`}
       >
         {children}
-        <span style={{ fontSize: 10, marginLeft: 2, opacity: 0.7 }}>ⓘ</span>
+        <span style={{ fontSize: 11, marginLeft: 2, opacity: 0.7 }}>ⓘ</span>
       </button>
 
       {open && (

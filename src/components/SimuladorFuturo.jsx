@@ -510,9 +510,9 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                             </div>
                           )}
                           {estado && (
-                            <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 11, fontWeight: 700 }}>
+                            <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 12, fontWeight: 700 }}>
                               {estado}
-                              <button onClick={() => quitarCambio(c.id)} style={{ background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 11, textDecoration: "underline", padding: 0 }}>deshacer</button>
+                              <button onClick={() => quitarCambio(c.id)} style={{ background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}>deshacer</button>
                             </div>
                           )}
                         </div>
@@ -523,15 +523,15 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                           const col = k === "ing" ? C.ok : k === "deu" ? C.warn : C.danger;
                           return (
                             <div style={{ textAlign: "right", flexShrink: 0, minWidth: 120 }}>
-                              <div style={{ ...F.mono, fontSize: 16, fontWeight: 800, color: col, lineHeight: 1.1 }}>{k === "ing" ? "+" : "−"}{fm(mensual)}<span style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>/mes</span></div>
-                              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{fm(anual)} en {año}</div>
+                              <div style={{ ...F.mono, fontSize: 16, fontWeight: 700, color: col, lineHeight: 1.1 }}>{k === "ing" ? "+" : "−"}{fm(mensual)}<span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>/mes</span></div>
+                              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{fm(anual)} en {año}</div>
                             </div>
                           );
                         })()}
                         {!c && !editando && (<>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "meses", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, hastaMes: 12 })}>Unos meses</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico), modo: k === "ing" && f.capital > 0 ? "capital" : "monto", capital: f.capital || "", tasa: f.tasa || "", tasaModo: f.tasaModo || "anual" })}>Cambia</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "meses", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, hastaMes: 12 })}>Unos meses</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico), modo: k === "ing" && f.capital > 0 ? "capital" : "monto", capital: f.capital || "", tasa: f.tasa || "", tasaModo: f.tasaModo || "anual" })}>Cambia</button>
                         </>)}
                       </div>
                       {editando && (
@@ -566,7 +566,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                               <div style={{ flex: "1 1 100%", display: "flex", gap: 6 }}>
                                 {[["capital", "Capital y % rentabilidad"], ["monto", "Monto directo"]].map(([m, l]) => (
                                   <button key={m} type="button" onClick={() => setForm({ ...form, modo: m, monto: m === "capital" && rentaDe(form.capital, form.tasa, form.tasaModo) > 0 ? String(rentaDe(form.capital, form.tasa, form.tasaModo)) : form.monto })}
-                                    style={{ ...btn(form.modo === m), padding: "4px 10px", fontSize: 11 }}>{l}</button>
+                                    style={{ ...btn(form.modo === m), padding: "4px 10px", fontSize: 12 }}>{l}</button>
                                 ))}
                               </div>
                             )}
@@ -653,7 +653,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
       {esc && (<>
         {/* Tira fija: el resultado a la vista mientras se edita abajo (10-oct-2026,
             Santiago: "uno le da Terminar y como que no pasa nada"). */}
-        {!veredictoVisible && <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", width: "min(720px, calc(100vw - 32px))", zIndex: 500, padding: "8px 12px", background: C.surface, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(239,68,68,0.25)"}`, borderRadius: R.md, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)" }}>
+        {!veredictoVisible && <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", width: "min(720px, calc(100vw - 32px))", zIndex: 500, padding: "8px 12px", background: C.surface, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(255,80,0,0.25)"}`, borderRadius: R.md, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)" }}>
           <div style={{ ...F.caption, minWidth: 0 }}>
             <b style={{ color: C.text }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`}</b> · {cambios.length} {cambios.length === 1 ? "cambio" : "cambios"}
           </div>
@@ -720,14 +720,14 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     ))}
                     <tr style={{ borderTop: `1px solid ${C.border}` }}>
                       <td style={{ padding: "4px 8px", ...F.caption }}>Diferencia vs hoy</td>
-                      {cols.map(([t, g]) => { const d = g(vista) - g(hoy); const bueno = t === "Ingresos" || t === "Te queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 11, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
+                      {cols.map(([t, g]) => { const d = g(vista) - g(hoy); const bueno = t === "Ingresos" || t === "Te queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 12, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
                     </tr>
                   </tbody>
                 </table>
               </div>
             );
           })()}
-          <div style={{ marginTop: 12, padding: "10px 13px", borderRadius: R.md, background: vista.queda >= 0 ? Cα.ok08 : Cα.danger08, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(239,68,68,0.25)"}` }}>
+          <div style={{ marginTop: 12, padding: "10px 13px", borderRadius: R.md, background: vista.queda >= 0 ? Cα.ok08 : Cα.danger08, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(255,80,0,0.25)"}` }}>
             <div style={{ ...F.h3, color: vista.queda >= 0 ? C.ok : C.danger }}>
               {vista.queda >= 0
                 ? `Te sostienes: quedan ${fm(vista.queda)} al mes (${vista.ingresos > 0 ? Math.round((vista.queda / vista.ingresos) * 100) : 0}% de lo que entra).`
@@ -772,7 +772,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                         <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</div>
                         <div style={F.caption}>{fm(x.a)} hoy → {fm(x.b)} en {año}{x.motivo ? ` · ${x.motivo}` : ""}</div>
                       </div>
-                      <div style={{ ...F.mono, fontWeight: 800, color: (k === "ing") === (x.d > 0) ? C.ok : C.danger, whiteSpace: "nowrap" }}>{x.d > 0 ? "+" : "−"}{fm(Math.abs(x.d))}</div>
+                      <div style={{ ...F.mono, fontWeight: 700, color: (k === "ing") === (x.d > 0) ? C.ok : C.danger, whiteSpace: "nowrap" }}>{x.d > 0 ? "+" : "−"}{fm(Math.abs(x.d))}</div>
                     </div>
                   ))}
                 </div>
@@ -781,7 +781,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             if (!difs.length) return null;
             return (
               <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.surface }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 }}>🔎 ¿Por qué cambia frente a hoy?</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>🔎 ¿Por qué cambia frente a hoy?</div>
                 <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
                   {bloqueK("ing", "Ingresos", vista.ingresos - hoy.ingresos)}
                   {bloqueK("gas", "Gastos", vista.gastos - hoy.gastos)}
@@ -803,7 +803,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.danger, borderRadius: 3, marginRight: 4 }} />Gastos + cuotas + impuestos y retención</span>
               <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.warn, borderRadius: "50%", marginRight: 4 }} />algo entra, termina o cambia</span>
             </div>
-            {mesFoco && <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11, marginLeft: "auto" }} onClick={() => setMesFoco(null)}>← volver al mes típico</button>}
+            {mesFoco && <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12, marginLeft: "auto" }} onClick={() => setMesFoco(null)}>← volver al mes típico</button>}
           </div>
           <div style={{ ...F.caption, marginTop: 4 }}>
             {mesesIguales
@@ -819,7 +819,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                 <div key={m.mes} onClick={() => setMesFoco(sel ? null : m.mes)} onMouseEnter={() => setMesHover(m.mes)}
                   style={{ flex: 1, cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%", minWidth: 0,
                     background: sel || hov ? C.raised : "transparent", borderRadius: R.md, border: `1px solid ${sel ? C.text : "transparent"}`, padding: "4px 2px 2px" }}>
-                  <div style={{ ...F.mono, fontSize: 10, textAlign: "center", color: pos ? C.ok : C.danger, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>{fmC(m.queda)}</div>
+                  <div style={{ ...F.mono, fontSize: 11, textAlign: "center", color: pos ? C.ok : C.danger, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3 }}>{fmC(m.queda)}</div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 2, flex: 1 }}>
                     <div style={{ flex: 1, height: `${Math.max(3, hi)}%`, background: C.ok, opacity: sel || hov ? 1 : 0.6, borderRadius: 3 }} />
                     <div style={{ flex: 1, height: `${Math.max(3, he)}%`, background: C.danger, opacity: sel || hov ? 1 : 0.6, borderRadius: 3 }} />
@@ -830,7 +830,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           </div>
           <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
             {MESES.map((m, i) => (
-              <div key={m.v} style={{ flex: 1, textAlign: "center", ...F.caption, fontSize: 10, color: mesFoco === m.v ? C.text : undefined, fontWeight: mesFoco === m.v ? 700 : 400 }}>
+              <div key={m.v} style={{ flex: 1, textAlign: "center", ...F.caption, fontSize: 11, color: mesFoco === m.v ? C.text : undefined, fontWeight: mesFoco === m.v ? 700 : 400 }}>
                 {m.l.slice(0, 3)}{eventosMes[i].length > 0 && <span style={{ display: "inline-block", width: 6, height: 6, background: C.warn, borderRadius: "50%", marginLeft: 3, verticalAlign: "middle" }} />}
               </div>
             ))}
@@ -901,7 +901,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
             return (
               <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>🧾 De dónde sale cada número</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>🧾 De dónde sale cada número</div>
                 <div style={{ ...F.caption, marginBottom: 10 }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`} · ítem por ítem, ordenado de mayor a menor.</div>
                 {/* 21-oct-2026 (Santiago, en el celular: "esta sección no se deja
                     recorrer"): el scroll interno de 400 px peleaba con el scroll de la
@@ -925,7 +925,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                               <div style={{ ...F.body, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {f.nombre}{f.origen === "nuevo" ? " · nuevo" : f.cambio ? " · con cambio" : ""}
                               </div>
-                              <div style={{ ...F.caption, fontSize: 10 }}>
+                              <div style={{ ...F.caption, fontSize: 11 }}>
                                 {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${fmtTasaEs(f.tasa)} ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
                               </div>
                             </div>
@@ -947,13 +947,13 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                         <span style={{ ...F.mono, fontSize: 12, color: C.purple }}>{fm(total)}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
-                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Retención en la fuente<div style={{ ...F.caption, fontSize: 10 }}>adelanto de tu renta que te descuentan al pagarte</div></div>
+                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Retención en la fuente<div style={{ ...F.caption, fontSize: 11 }}>adelanto de tu renta que te descuentan al pagarte</div></div>
                         <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(vista.retencion)}</span>
                       </div>
                       {decl.map(({ t, v }) => (
                         <div key={t.name} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
                           <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Declaración de renta {año - 1} · {t.name}
-                            <div style={{ ...F.caption, fontSize: 10 }}>{fm(t.total)} {fechaPago(t)}{foco && !v ? " · no cae en este mes" : !foco ? " · no entra al mes típico" : ""}</div>
+                            <div style={{ ...F.caption, fontSize: 11 }}>{fm(t.total)} {fechaPago(t)}{foco && !v ? " · no cae en este mes" : !foco ? " · no entra al mes típico" : ""}</div>
                           </div>
                           <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(v)}</span>
                         </div>
@@ -1071,7 +1071,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.border}`, marginTop: 8 }}>
                 <span style={{ ...F.label, color: colorK[c.kind], minWidth: 56 }}>{kindL[c.kind]}</span>
                 <span style={{ ...F.body, color: C.text, flex: 1 }}><b>{nombre}</b> {texto}</span>
-                <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => quitarCambio(c.id)}>Quitar</button>
+                <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12 }} onClick={() => quitarCambio(c.id)}>Quitar</button>
               </div>
             );
           })}
@@ -1166,8 +1166,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                     <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
                     <div style={F.caption}>{fm(f.montoTipico)}/mes</div>
                   </div>
-                  <button style={{ ...btn(true), padding: "3px 10px", fontSize: 11 }} onClick={() => setActivo([f.key], true)}>Contar</button>
-                  <button style={{ ...btn(false), padding: "3px 10px", fontSize: 11 }} onClick={() => setActivo([f.key], false)}>No</button>
+                  <button style={{ ...btn(true), padding: "3px 10px", fontSize: 12 }} onClick={() => setActivo([f.key], true)}>Contar</button>
+                  <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12 }} onClick={() => setActivo([f.key], false)}>No</button>
                 </div>
               ))}
             </div>

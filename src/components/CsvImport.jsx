@@ -16,8 +16,8 @@ const T = {
   bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
-  red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
+  green: "#00c805", greenDim: "rgba(0,200,5,0.1)",
+  red: "#ff5000", redDim: "rgba(255,80,0,0.08)",
   blue: "#3b82f6", purple: "#3b82f6",
 };
 
@@ -231,7 +231,7 @@ export default function CsvImport({ onImport, onClose }) {
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
           <div>
-            <h3 style={{ fontSize: 22, fontWeight: 800, margin: 0, color: T.txt }}>🧠 Importar Excel con IA</h3>
+            <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: T.txt }}>🧠 Importar Excel con IA</h3>
             <p style={{ fontSize: 13, color: T.txt3, margin: "6px 0 0" }}>
               Sube una tabla Excel por cada categoría: gastos, ingresos, activos o deudas. La IA organiza los datos automáticamente.
             </p>
@@ -279,7 +279,7 @@ export default function CsvImport({ onImport, onClose }) {
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                 {["Columnas en cualquier orden", "Headers en cualquier fila", "Fórmulas y cálculos", "Español o inglés", "COP o USD"].map((t) => (
-                  <span key={t} style={{ background: T.purple + "10", color: T.purple, fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 6 }}>{t}</span>
+                  <span key={t} style={{ background: T.purple + "10", color: T.purple, fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 6 }}>{t}</span>
                 ))}
               </div>
             </div>
@@ -339,7 +339,7 @@ export default function CsvImport({ onImport, onClose }) {
                     <thead>
                       <tr>
                         {Object.keys(parsed[0]).filter((k) => k !== "id" && k !== "la" && k !== "link").map((k) => (
-                          <th key={k} style={{ padding: "10px 14px", color: T.txt3, borderBottom: `1px solid ${T.border}`, textAlign: "left", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", position: "sticky", top: 0, background: T.bg2 }}>{k}</th>
+                          <th key={k} style={{ padding: "10px 14px", color: T.txt3, borderBottom: `1px solid ${T.border}`, textAlign: "left", fontSize: 11, fontWeight: 700, letterSpacing: "0.05em", position: "sticky", top: 0, background: T.bg2 }}>{k}</th>
                         ))}
                       </tr>
                     </thead>
@@ -366,7 +366,7 @@ export default function CsvImport({ onImport, onClose }) {
                     ← Otro archivo
                   </button>
                   <button onClick={handleConfirm}
-                    style={{ background: T.green, color: "#000", padding: "12px 28px", borderRadius: 12, cursor: "pointer", fontWeight: 800, border: "none", fontSize: 14 }}>
+                    style={{ background: T.green, color: "#000", padding: "12px 28px", borderRadius: 12, cursor: "pointer", fontWeight: 700, border: "none", fontSize: 14 }}>
                     ✓ Importar {parsed.length} registros
                   </button>
                 </div>

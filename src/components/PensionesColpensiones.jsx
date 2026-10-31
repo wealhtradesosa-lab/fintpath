@@ -16,8 +16,8 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
-  red: "#ef4444", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", greenDim: "rgba(0,200,5,0.1)",
+  red: "#ff5000", blue: "#3b82f6", purple: "#3b82f6",
   orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const SM_2026 = 1_750_905;
@@ -35,7 +35,7 @@ const Cd = ({ children, style: s, glow }) => (
 );
 const Row = ({ l, v, color, bold, sub }) => (
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
-    <div><span style={{ fontSize: 14, color: T.txt2 }}>{l}</span>{sub && <div style={{ fontSize: 11, color: T.txt3 }}>{sub}</div>}</div>
+    <div><span style={{ fontSize: 14, color: T.txt2 }}>{l}</span>{sub && <div style={{ fontSize: 12, color: T.txt3 }}>{sub}</div>}</div>
     <span style={{ fontSize: 14, fontWeight: bold ? 700 : 600, color: color || T.txt, fontFamily: "monospace" }}>{v}</span>
   </div>
 );
@@ -43,7 +43,7 @@ const In = ({ label, value, onChange, unit, min, max, step }) => {
   const isMonetary = unit === "COP" || unit === "$/mes" || unit === "$/año";
   return (
     <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{label}</label>
+      <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{label}</label>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {isMonetary
           ? <NumberInput value={value} onChange={(v) => onChange(v === "" ? 0 : Number(v) || 0)}
@@ -274,23 +274,23 @@ export default function PensionesColpensiones({ trm }) {
                 }}>{g.l}</button>
               ))}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Te pensionas a los {edadJub} años</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Te pensionas a los {edadJub} años</div>
           </div>
 
           <div>
             <In label="¿Qué edad tienes?" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Te faltan <strong style={{color: T.blue}}>{aniosFaltantes} años</strong> para pensionarte</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Te faltan <strong style={{color: T.blue}}>{aniosFaltantes} años</strong> para pensionarte</div>
           </div>
 
           <div>
             <In label="¿Cuántos años llevas trabajando?" value={Math.round(semanas/52)} onChange={v => setSemanas(v * 52)} unit="años" min={0} max={45} />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>{semanas} semanas cotizadas {semanas >= 1300 ? <span style={{color:T.green}}>✅ Cumples el mínimo</span> : <span style={{color:T.orange}}>⚠️ Necesitas {1300-semanas} más</span>}</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{semanas} semanas cotizadas {semanas >= 1300 ? <span style={{color:T.green}}>✅ Cumples el mínimo</span> : <span style={{color:T.orange}}>⚠️ Necesitas {1300-semanas} más</span>}</div>
           </div>
 
           <div>
             <In label="¿Sobre cuántos salarios mínimos cotizas? (IBC) (IBC)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Equivale a {fCOP(ibcSM * SM_2026)}/mes. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Revisa tu desprendible de nómina o planilla PILA</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Equivale a {fCOP(ibcSM * SM_2026)}/mes. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Revisa tu desprendible de nómina o planilla PILA</div>
           </div>
         </div>
       </Cd>
@@ -303,11 +303,11 @@ export default function PensionesColpensiones({ trm }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
           <div>
             <In label="¿Cuánto tienes ahorrado?" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} step={1000000} />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Consulta tu extracto del fondo</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Consulta tu extracto del fondo</div>
           </div>
           <div>
             <In label="Rendimiento esperado anual" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Promedio histórico fondos Colombia: 7-10%</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Promedio histórico fondos Colombia: 7-10%</div>
           </div>
         </div>
       </Cd>
@@ -316,15 +316,15 @@ export default function PensionesColpensiones({ trm }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
         <Cd glow={colpJub.pensionFinal >= rais.retiroProgramado ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: T.txt3 }}>🏛️ Colpensiones</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: T.green, margin: "8px 0" }}>{fCOP(colpJub.pensionFinal)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
-          <div style={{ fontSize: 11, color: T.txt3 }}>Pensión de por vida</div>
-          {colpJub.pensionFinal >= rais.retiroProgramado && <div style={{ fontSize: 11, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.green, margin: "8px 0" }}>{fCOP(colpJub.pensionFinal)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>Pensión de por vida</div>
+          {colpJub.pensionFinal >= rais.retiroProgramado && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
         </Cd>
         <Cd glow={rais.retiroProgramado > colpJub.pensionFinal ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: T.txt3 }}>🏦 Fondo privado</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: T.blue, margin: "8px 0" }}>{fCOP(rais.retiroProgramado)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
-          <div style={{ fontSize: 11, color: T.txt3 }}>Retiro programado • Saldo: {fCOP(rais.saldoFinal)}</div>
-          {rais.retiroProgramado > colpJub.pensionFinal && <div style={{ fontSize: 11, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.blue, margin: "8px 0" }}>{fCOP(rais.retiroProgramado)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>Retiro programado • Saldo: {fCOP(rais.saldoFinal)}</div>
+          {rais.retiroProgramado > colpJub.pensionFinal && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
         </Cd>
       </div>
 
@@ -340,24 +340,24 @@ export default function PensionesColpensiones({ trm }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
               <div>
                 <In label="¿Piensas subir tu cotización antes de pensionarte? (IBC futuro) (IBC futuro)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>
+                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>
                   {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM
                     ? <>Proyección: cotizarás sobre {ibcFuturoSM} SMMLV ({fCOP(ibcFuturoSM * SM_2026)}/mes) los próximos {aniosFaltantes} años</>
                     : <>Déjalo en 0 si planeas seguir cotizando igual</>}
                 </div>
-                {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 11, color: T.orange, marginTop: 4 }}>⚠️ Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
+                {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>⚠️ Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
               </div>
               <div>
                 <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL) (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
+                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
               </div>
               <div>
                 <In label="¿Aportas voluntario a pensión?" value={aportesVol} onChange={setAportesVol} unit="$/mes" min={0} step={100000} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Solo aplica para fondo privado. Aumenta tu ahorro y tu pensión.</div>
+                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Solo aplica para fondo privado. Aumenta tu ahorro y tu pensión.</div>
               </div>
               <div>
                 <In label="¿Te cambiaste de fondo alguna vez? (bono pensional)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} step={1000000} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: -8 }}>Si te trasladaste de Colpensiones a fondo privado, tienes un bono. Si nunca te cambiaste, déjalo en $0.</div>
+                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Si te trasladaste de Colpensiones a fondo privado, tienes un bono. Si nunca te cambiaste, déjalo en $0.</div>
               </div>
             </div>
           </div>
@@ -403,7 +403,7 @@ export default function PensionesColpensiones({ trm }) {
                 { l: "Estado", v: colp.cumpleRequisitos ? "✅ Cumple" : "⏳ En proceso", ok: colp.cumpleRequisitos, actual: colp.cumpleRequisitos ? "Listo" : `Faltan ${colp.semanasQueFaltan} sem` },
               ].map((r) => (
                 <div key={r.l} style={{ background: r.ok ? T.greenDim : T.bg3, border: `1px solid ${r.ok ? T.green + "20" : T.border}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4 }}>{r.l}</div>
+                  <div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>{r.l}</div>
                   <div style={{ fontSize: 18, fontWeight: 700, color: r.ok ? T.green : T.txt }}>{r.v}</div>
                   <div style={{ fontSize: 12, color: r.ok ? T.green : T.txt3, marginTop: 4 }}>Tú: {r.actual}</div>
                 </div>
@@ -430,12 +430,12 @@ export default function PensionesColpensiones({ trm }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {/* RESULTADO PRINCIPAL */}
               <Cd glow={T.blue} style={{ padding: 28, textAlign: "center" }}>
-                <div style={{ fontSize: 12, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Tu Pensión Mensual Neta</div>
-                <div style={{ fontSize: 48, fontWeight: 800, color: T.blue, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(colp.pensionFinal)}</div>
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Si paras de cotizar hoy</div>
+                <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.1em" }}>Tu Pensión Mensual Neta</div>
+                <div style={{ fontSize: 48, fontWeight: 700, color: T.blue, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(colp.pensionFinal)}</div>
+                <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>Si paras de cotizar hoy</div>
                 {aniosFaltantes > 0 && <div style={{ borderTop: "1px solid " + T.border, marginTop: 12, paddingTop: 12 }}>
-                  <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase" }}>Al jubilarte ({edad + aniosFaltantes} años)</div>
-                  <div style={{ fontSize: 36, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 4 }}>{fCOP(colpJub.pensionFinal)}</div>
+                  <div style={{ fontSize: 12, color: T.txt3 }}>Al jubilarte ({edad + aniosFaltantes} años)</div>
+                  <div style={{ fontSize: 36, fontWeight: 700, color: T.green, letterSpacing: "-0.04em", marginTop: 4 }}>{fCOP(colpJub.pensionFinal)}</div>
                   <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Tasa: {pc(colpJub.tasaTotal)} • {colpJub.semanasTotales.toLocaleString("es-CO")} semanas</div>
                 </div>}
                 <div style={{ fontSize: 14, color: T.txt3, marginTop: 8 }}>≈ {fUSD(colp.pensionFinal, trm)}</div>
@@ -445,12 +445,12 @@ export default function PensionesColpensiones({ trm }) {
               {/* Métricas adicionales */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <Cd style={{ padding: 16, textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: T.txt3 }}>EN 20 AÑOS</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: T.txt }}>{fCOP(colp.total20Anios)}</div>
+                  <div style={{ fontSize: 11, color: T.txt3 }}>EN 20 AÑOS</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: T.txt }}>{fCOP(colp.total20Anios)}</div>
                 </Cd>
                 <Cd style={{ padding: 16, textAlign: "center" }}>
-                  <div style={{ fontSize: 10, color: T.txt3 }}>PENSIÓN MÍNIMA</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: T.green }}>{fCOP(SM_2026)}</div>
+                  <div style={{ fontSize: 11, color: T.txt3 }}>PENSIÓN MÍNIMA</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: T.green }}>{fCOP(SM_2026)}</div>
                 </Cd>
               </div>
 
@@ -488,7 +488,7 @@ export default function PensionesColpensiones({ trm }) {
                 <thead>
                   <tr>
                     {["Semanas","Extras","Bloques×50","Bonus","Tasa total","Pensión bruta","Neta (−12%)","Estado"].map(h => (
-                      <th key={h} style={{ padding: "8px 6px", textAlign: h === "Estado" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding: "8px 6px", textAlign: h === "Estado" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -518,7 +518,7 @@ export default function PensionesColpensiones({ trm }) {
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, color: esTope ? T.green : T.blue, fontSize: 13 }}>{fmtPctEs(tasaT, 1)}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(bruta)}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(neta)}</td>
-                        <td style={{ padding: "8px 6px", fontSize: 11, color: yaAlcanzo ? T.green : esAlcanzable ? T.orange : T.txt3 }}>
+                        <td style={{ padding: "8px 6px", fontSize: 12, color: yaAlcanzo ? T.green : esAlcanzable ? T.orange : T.txt3 }}>
                           {esActual ? "← Tú estás aquí" : yaAlcanzo ? "✅ Ya alcanzado" : esAlcanzable ? "📅 Alcanzable" : esTope ? "🏆 Tope 80%" : ""}
                         </td>
                       </tr>
@@ -580,7 +580,7 @@ export default function PensionesColpensiones({ trm }) {
                     );
                   })()}
                 </div>
-                <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.08), rgba(59,130,246,0.05))", border: "1px solid " + T.green + "20", borderRadius: 12, padding: 16 }}>
+                <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.08), rgba(59,130,246,0.05))", border: "1px solid " + T.green + "20", borderRadius: 12, padding: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>📌 Recomendación actuarial</div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
                     {colp.tasaTotal >= 75 ? (
@@ -611,7 +611,7 @@ export default function PensionesColpensiones({ trm }) {
                 <thead>
                   <tr>
                     {["Si pago...","Tendrás","Semanas","Extras","Bloques","Tasa","Pensión neta","Ganas vs hoy","En 20 años"].map(h => (
-                      <th key={h} style={{ padding: "10px 8px", textAlign: h === "Si pago..." ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding: "10px 8px", textAlign: h === "Si pago..." ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -695,7 +695,7 @@ export default function PensionesColpensiones({ trm }) {
                     </div>
                   </div>
                 </div>
-                {colp.tasaTotal < 80 && <div style={{ marginTop: 8, fontSize: 11, color: T.green }}>
+                {colp.tasaTotal < 80 && <div style={{ marginTop: 8, fontSize: 12, color: T.green }}>
                   💡 Si cotizas {Math.ceil((80 - colp.tasaTotal) / 1.5) * 50} semanas más llegas al tope de 80%
                 </div>}
               </div>
@@ -706,11 +706,11 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 20, marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Tu tasa de reemplazo vs máximos</div>
             <div style={{ position: "relative", height: 32, background: T.bg3, borderRadius: 16, overflow: "hidden", marginBottom: 8 }}>
-              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ef4444 0%, #f59e0b 30%, #22c55e 60%, #3b82f6 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{pc(colp.tasaTotal)}</span>
+              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ff5000 0%, #f59e0b 30%, #00c805 60%, #3b82f6 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#000" }}>{pc(colp.tasaTotal)}</span>
               </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.txt3 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.txt3 }}>
               <span>55% mínimo</span>
               <span>65.5% base</span>
               <span>80% máximo</span>
@@ -737,14 +737,14 @@ export default function PensionesColpensiones({ trm }) {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <Cd glow={T.green} style={{ padding: 28, textAlign: "center" }}>
-                <div style={{ fontSize: 12, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em" }}>Retiro Programado</div>
-                <div style={{ fontSize: 40, fontWeight: 800, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(rais.retiroProgramado)}</div>
+                <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.1em" }}>Retiro Programado</div>
+                <div style={{ fontSize: 40, fontWeight: 700, color: T.green, letterSpacing: "-0.04em", marginTop: 8 }}>{fCOP(rais.retiroProgramado)}</div>
                 <div style={{ fontSize: 13, color: T.txt3, marginTop: 4 }}>≈ {fUSD(rais.retiroProgramado, trm)}</div>
                 <div style={{ fontSize: 12, color: T.txt2, marginTop: 8, lineHeight: 1.6 }}>Heredable • Saldo en AFP • Tasa 4% real</div>
                 <div style={{ borderTop: "1px solid " + T.border, marginTop: 12, paddingTop: 12 }}>
-                  <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase" }}>Renta Vitalicia (aseguradora)</div>
+                  <div style={{ fontSize: 12, color: T.txt3 }}>Renta Vitalicia (aseguradora)</div>
                   <div style={{ fontSize: 24, fontWeight: 700, color: T.blue, marginTop: 4 }}>{fCOP(rais.rentaVitalicia)}</div>
-                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>No heredable • Pago fijo de por vida • Tasa 3% real</div>
+                  <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>No heredable • Pago fijo de por vida • Tasa 3% real</div>
                 </div>
               </Cd>
 
@@ -788,8 +788,8 @@ export default function PensionesColpensiones({ trm }) {
             <Cd glow={T.blue} style={{ padding: 28, textAlign: "center" }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>🏛️</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 12 }}>Colpensiones</div>
-              <div style={{ fontSize: 11, color: T.txt3 }}>PENSIÓN MENSUAL</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: T.blue }}>{fCOP(colp.pensionFinal)}</div>
+              <div style={{ fontSize: 12, color: T.txt3 }}>PENSIÓN MENSUAL</div>
+              <div style={{ fontSize: 36, fontWeight: 700, color: T.blue }}>{fCOP(colp.pensionFinal)}</div>
               <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>{fUSD(colp.pensionFinal, trm)}</div>
               <div style={{ marginTop: 16, fontSize: 12, color: T.txt2, textAlign: "left" }}>
                 <Row l="Tasa reemplazo" v={pc(colp.tasaTotal)} color={T.blue} bold />
@@ -803,8 +803,8 @@ export default function PensionesColpensiones({ trm }) {
             <Cd glow={T.green} style={{ padding: 28, textAlign: "center" }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>🏦</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>Fondo Privado</div>
-              <div style={{ fontSize: 11, color: T.txt3 }}>RENTA MENSUAL</div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: T.green }}>{fCOP(rais.rentaMes)}</div>
+              <div style={{ fontSize: 12, color: T.txt3 }}>RENTA MENSUAL</div>
+              <div style={{ fontSize: 36, fontWeight: 700, color: T.green }}>{fCOP(rais.rentaMes)}</div>
               <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>{fUSD(rais.rentaMes, trm)}</div>
               <div style={{ marginTop: 16, fontSize: 12, color: T.txt2, textAlign: "left" }}>
                 <Row l="Saldo final" v={fCOP(rais.saldoFinal)} color={T.green} bold />
@@ -832,7 +832,7 @@ export default function PensionesColpensiones({ trm }) {
                     <span style={{ fontSize: 12, color: T.blue }}>Colpensiones</span>
                     <div style={{ height: 24, background: T.bg3, borderRadius: 6, overflow: "hidden" }}>
                       <div style={{ width: `${(c.colp / max) * 100}%`, height: "100%", background: T.blue, borderRadius: 6, display: "flex", alignItems: "center", paddingLeft: 8 }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{fCOP(c.colp)}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{fCOP(c.colp)}</span>
                       </div>
                     </div>
                   </div>
@@ -840,7 +840,7 @@ export default function PensionesColpensiones({ trm }) {
                     <span style={{ fontSize: 12, color: T.green }}>Fondo Priv.</span>
                     <div style={{ height: 24, background: T.bg3, borderRadius: 6, overflow: "hidden" }}>
                       <div style={{ width: `${(c.rais / max) * 100}%`, height: "100%", background: T.green, borderRadius: 6, display: "flex", alignItems: "center", paddingLeft: 8 }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: "#fff" }}>{fCOP(c.rais)}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{fCOP(c.rais)}</span>
                       </div>
                     </div>
                   </div>
@@ -854,7 +854,7 @@ export default function PensionesColpensiones({ trm }) {
             <div style={{ fontSize: 16, color: T.txt2 }}>
               {rais.rentaMes > colp.pensionFinal ? "El Fondo Privado paga más" : "Colpensiones paga más"}
             </div>
-            <div style={{ fontSize: 56, fontWeight: 800, background: "linear-gradient(135deg, " + (rais.rentaMes > colp.pensionFinal ? T.green : T.blue) + ", " + T.cyan + ")", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <div style={{ fontSize: 56, fontWeight: 700, background: "linear-gradient(135deg, " + (rais.rentaMes > colp.pensionFinal ? T.green : T.blue) + ", " + T.cyan + ")", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {rais.rentaMes > colp.pensionFinal ? (rais.rentaMes / Math.max(colp.pensionFinal, 1)).toFixed(1) + "x" : (colp.pensionFinal / Math.max(rais.rentaMes, 1)).toFixed(1) + "x"}
             </div>
             <div style={{ fontSize: 14, color: T.txt2 }}>
@@ -868,7 +868,7 @@ export default function PensionesColpensiones({ trm }) {
       )}
 
       <div style={{ textAlign: "center", marginTop: 24, padding: "12px 0", borderTop: `1px solid ${T.border}` }}>
-        <p style={{ fontSize: 11, color: T.txt3 }}>⚠️ Simulador educativo • Los cálculos son aproximados • Consulta un asesor pensional certificado • Ley 100/1993 • Ley 797/2003</p>
+        <p style={{ fontSize: 12, color: T.txt3 }}>⚠️ Simulador educativo • Los cálculos son aproximados • Consulta un asesor pensional certificado • Ley 100/1993 • Ley 797/2003</p>
       </div>
       <Disclaimer variante="proyeccion" T={T} />
     </div>

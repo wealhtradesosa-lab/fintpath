@@ -51,7 +51,7 @@ export const TEMPLATES = [
     // El default sigue siendo 1-12, así que quien no lo toque no ve diferencia.
     camposVisibles: ["monto", "modoIngresoSimple", "vigencia"],
     modoIngresoDefault: "porPago",
-    color: "#22c55e",
+    color: "#00c805",
   },
   {
     id: "mensual-limitado",
@@ -148,7 +148,7 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, letterSpacing: "-0.02em", marginBottom: 4 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, letterSpacing: "-0.02em", marginBottom: 4 }}>
           ¿Cuándo se {tipo === "ingreso" ? "recibe" : "paga"}?
         </div>
         <div style={{ fontSize: 13, color: T.txt3, lineHeight: 1.5 }}>
@@ -196,7 +196,7 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
               <div style={{ fontSize: 12, color: T.txt2, marginBottom: 3 }}>
                 {tpl.descripcion(tipo)}
               </div>
-              <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic" }}>
+              <div style={{ fontSize: 12, color: T.txt3, fontStyle: "italic" }}>
                 {tpl.ejemplo(tipo)}
               </div>
             </div>

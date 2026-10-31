@@ -26,13 +26,13 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
   orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   redBg: "rgba(248,113,113,0.10)",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
@@ -117,7 +117,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
               color: C.txt2,
               padding: "5px 10px",
               borderRadius: 6,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -166,13 +166,13 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
       >
         <span style={{ fontSize: 24 }}>🔍</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: headerColor, letterSpacing: 0.5, marginBottom: 4, textTransform: "uppercase" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: headerColor, letterSpacing: 0.5, marginBottom: 4 }}>
             Auditoría del Contador IA
           </div>
           <div style={{ fontSize: 14, color: C.txt, fontWeight: 700, lineHeight: 1.4 }}>
             {resumen.mensaje}
           </div>
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
             {errores.length > 0 && <span style={{ color: C.red, marginRight: 12 }}>{errores.length} error{errores.length > 1 ? "es" : ""}</span>}
             {(advertencias.length + faltantes.length) > 0 && <span style={{ color: C.orange, marginRight: 12 }}>{advertencias.length + faltantes.length} para revisar</span>}
             {oportunidadesData.length > 0 && <span style={{ color: C.blue }}>{oportunidadesData.length} oportunidad{oportunidadesData.length > 1 ? "es" : ""}</span>}
@@ -375,14 +375,14 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
             {hallazgo.mensaje}
           </div>
           {hallazgo.sugerencia && (
-            <div style={{ fontSize: 11, color: C.txt3, lineHeight: 1.5, fontStyle: "italic", marginBottom: hallazgo.items || textoBoton ? 8 : 0 }}>
+            <div style={{ fontSize: 12, color: C.txt3, lineHeight: 1.5, fontStyle: "italic", marginBottom: hallazgo.items || textoBoton ? 8 : 0 }}>
               💬 {hallazgo.sugerencia}
             </div>
           )}
 
           {/* Lista de items afectados (compacta) */}
           {hallazgo.items && hallazgo.items.length > 0 && (
-            <div style={{ marginBottom: 8, padding: "6px 10px", background: C.bg3, borderRadius: 6, fontSize: 11, color: C.txt2 }}>
+            <div style={{ marginBottom: 8, padding: "6px 10px", background: C.bg3, borderRadius: 6, fontSize: 12, color: C.txt2 }}>
               {hallazgo.items.slice(0, 3).map((it, i) => (
                 <div key={i} style={{ marginBottom: i < Math.min(hallazgo.items.length, 3) - 1 ? 2 : 0 }}>
                   • {it.label}{it.mensual ? ` ($${Number(it.mensual).toLocaleString("es-CO")}/mes)` : ""}{it.monto ? ` ($${Number(it.monto).toLocaleString("es-CO")})` : ""}{it.valor ? ` ($${Number(it.valor).toLocaleString("es-CO")})` : ""}
@@ -434,7 +434,7 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
           </div>
 
           {hallazgo.ahorroEstimado && (
-            <div style={{ marginTop: 6, fontSize: 11, color: C.green, fontWeight: 600 }}>
+            <div style={{ marginTop: 6, fontSize: 12, color: C.green, fontWeight: 600 }}>
               💰 Ahorro potencial: hasta ${Number(hallazgo.ahorroEstimado).toLocaleString("es-CO")}
             </div>
           )}
@@ -465,7 +465,7 @@ function HallazgoIgnorado({ hallazgo, onReactivar }) {
         <div style={{ fontSize: 12, color: C.txt2, fontWeight: 600 }}>
           {hallazgo.titulo}
         </div>
-        <div style={{ fontSize: 11, color: C.txt3, marginTop: 1 }}>
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 1 }}>
           Marcado como "está bien así"
         </div>
       </div>
@@ -478,7 +478,7 @@ function HallazgoIgnorado({ hallazgo, onReactivar }) {
             color: C.txt3,
             padding: "4px 8px",
             borderRadius: 6,
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 600,
             cursor: "pointer",
             flexShrink: 0,

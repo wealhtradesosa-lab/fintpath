@@ -119,9 +119,9 @@
 
         /* Acentos semánticos */
         --fp-accent:        #3b82f6;
-        --fp-ok:            #22c55e;
+        --fp-ok:            #00c805;
         --fp-warn:          #f59e0b;
-        --fp-danger:        #ef4444;
+        --fp-danger:        #ff5000;
         --fp-purple:        #3b82f6;
 
         /* Tipografía */
@@ -193,10 +193,10 @@
         span, div, td, th, label { color: #333 !important; }
         
         /* Preserve semantic colors */
-        [style*="color:#22c55e"], [style*="color: rgb(34, 197, 94)"],
-        [style*="color:"#22c55e"] { color: #16a34a !important; }
-        [style*="color:#ef4444"], [style*="color: rgb(239, 68, 68)"],
-        [style*="color:"#ef4444"] { color: #dc2626 !important; }
+        [style*="color:#00c805"], [style*="color: rgb(34, 197, 94)"],
+        [style*="color:"#00c805"] { color: #00a804 !important; }
+        [style*="color:#ff5000"], [style*="color: rgb(239, 68, 68)"],
+        [style*="color:"#ff5000"] { color: #e64800 !important; }
         [style*="color:#3b82f6"] { color: #2563eb !important; }
         [style*="color:#f59e0b"], [style*="color:#f59e0b"] { color: #d97706 !important; }
         [style*="color:#3b82f6"] { color: #2563eb !important; }
@@ -301,7 +301,7 @@
         div[style*="position: sticky"], div[style*="position:sticky"] { position: static !important; }
         
         /* Report branding */
-        body::before { content: "FINPATHIA — Reporte Financiero"; display: block; font-size: 13px; font-weight: 800; color: #16a34a; padding: 0 0 6px; border-bottom: 2px solid #16a34a; margin-bottom: 8px; }
+        body::before { content: "FINPATHIA — Reporte Financiero"; display: block; font-size: 13px; font-weight: 800; color: #00a804; padding: 0 0 6px; border-bottom: 2px solid #00a804; margin-bottom: 8px; }
         body::after { content: "Generado el " attr(data-date) " | finpathia.com"; display: block; font-size: 8px; color: #999; padding: 6px 0 0; border-top: 1px solid #ddd; margin-top: 6px; text-align: center; }
       }
     </style>
@@ -400,7 +400,7 @@
 
   </head>
   <body style="margin:0;background:#09090b;">
-    <div id="root"><div style="background:#09090b;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui"><div style="text-align:center"><div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#22c55e,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">FINPATHIA</div><div style="color:#71717a;font-size:13px">Cargando tu patrimonio...</div></div></div></div>
+    <div id="root"><div style="background:#09090b;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui"><div style="text-align:center"><div style="font-size:28px;font-weight:900;background:linear-gradient(135deg,#00c805,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px">FINPATHIA</div><div style="color:#71717a;font-size:13px">Cargando tu patrimonio...</div></div></div></div>
     <!-- 6-oct-2026 — Autocuración de la copia instalada. Santiago abrió la app
          instalada (Mac y celular) y vio pantalla negra: el service worker servía
          un index.html viejo que apuntaba a archivos con hash que el deploy nuevo

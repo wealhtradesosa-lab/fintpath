@@ -8,7 +8,7 @@ import { ChartTooltip } from "../lib/chartTheme.jsx";
  * libre y lo que pagas en intereses; con y sin abono extra. Antes era una
  * cifra ("Cero en 138 meses") y un campo "Override".
  */
-const V = { txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", green: "#22c55e", red: "#ef4444", orange: "#f59e0b" };
+const V = { txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", green: "#00c805", red: "#ff5000", orange: "#f59e0b" };
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 export const fechaEnMeses = (n, hoy = new Date()) => {
@@ -52,14 +52,14 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
   }, [data]);
 
   const sel = extraOverride == null || extraOverride === "" ? "cf" : Number(extraOverride);
-  const chip = (on) => ({ padding: "7px 12px", borderRadius: 999, border: `1px solid ${on ? V.green : V.border}`, background: on ? "rgba(34,197,94,0.12)" : "transparent", color: on ? V.green : V.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer" });
+  const chip = (on) => ({ padding: "7px 12px", borderRadius: 999, border: `1px solid ${on ? V.green : V.border}`, background: on ? "rgba(0,200,5,0.12)" : "transparent", color: on ? V.green : V.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer" });
 
   const caja = (titulo, s, color) => (
     <div style={{ flex: "1 1 200px", background: V.bg3, borderRadius: 12, padding: "12px 14px", borderLeft: `3px solid ${color}` }}>
-      <div style={{ fontSize: 11, color: V.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{titulo}</div>
+      <div style={{ fontSize: 12, color: V.txt3, fontWeight: 700, letterSpacing: 0.5 }}>{titulo}</div>
       {s?.converge ? (
         <>
-          <div style={{ fontSize: 18, fontWeight: 800, color: V.txt, marginTop: 4 }}>Libre en {fechaEnMeses(s.meses)}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: V.txt, marginTop: 4 }}>Libre en {fechaEnMeses(s.meses)}</div>
           <div style={{ fontSize: 12, color: V.txt2, marginTop: 2 }}>{s.labelMeses} · pagas {fm(s.interesTotal)} en intereses</div>
         </>
       ) : (
@@ -101,8 +101,8 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
-              <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: V.txt3, fontSize: 11 }} width={56} tickFormatter={(v) => fm(v).replace("$", "")} axisLine={false} tickLine={false} />
+              <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={56} tickFormatter={(v) => fm(v).replace("$", "")} axisLine={false} tickLine={false} />
               <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />
               <Line type="monotone" dataKey="solo" name="Solo cuotas" stroke={V.red} strokeWidth={2} dot={false} />
               {conExtra && <Line type="monotone" dataKey="extra" name={`Con ${fm(plan.extra)} extra`} stroke={V.green} strokeWidth={2} dot={false} />}

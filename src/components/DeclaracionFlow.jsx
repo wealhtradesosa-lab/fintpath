@@ -62,7 +62,7 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
@@ -70,7 +70,7 @@ const C = {
   purpleBg: "rgba(196,181,253,0.10)",
   orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   redBg: "rgba(248,113,113,0.10)",
 };
 
@@ -1095,7 +1095,7 @@ export default function DeclaracionFlow({
     return (
       <div style={{ padding: "40px 28px", textAlign: "center" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🧾</div>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: C.txt, marginBottom: 8 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 8 }}>
           Empieza tu declaración
         </h1>
         <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, maxWidth: 440, margin: "0 auto" }}>
@@ -1181,12 +1181,12 @@ export default function DeclaracionFlow({
             )}
           </div>
           <div style={{
-            fontSize: 40, fontWeight: 900, color: saldoActual > 0 ? C.txt : C.green,
+            fontSize: 40, fontWeight: 700, color: saldoActual > 0 ? C.txt : C.green,
             lineHeight: 1, letterSpacing: -1, fontFamily: "monospace",
           }}>
             {fm(Math.max(0, saldoActual))}
           </div>
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 8, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: C.txt3, marginTop: 8, lineHeight: 1.5 }}>
             Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria.
             Impuesto a cargo puede ser mayor que lo que transfieres tras retenciones. Tu contador es quien firma;
             presenta la declaración solo en canales oficiales de la DIAN.
@@ -1247,7 +1247,7 @@ export default function DeclaracionFlow({
               borderRadius: 10,
               color: "#000",
               fontSize: 14,
-              fontWeight: 800,
+              fontWeight: 700,
               cursor: "pointer",
               marginTop: 8,
             }}
@@ -1284,10 +1284,10 @@ export default function DeclaracionFlow({
               }}>
                 <span style={{ fontSize: 24 }}>💚</span>
                 <div style={{ flex: 1, minWidth: 200 }}>
-                  <div style={{ fontSize: 11, color: C.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                     Ahorro detectado hasta ahora
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: C.green }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: C.green }}>
                     {fm(ahorroTotal)}
                   </div>
                 </div>
@@ -1338,7 +1338,7 @@ export default function DeclaracionFlow({
                   borderRadius: 10,
                   color: todasRevisadas ? "#000" : C.txt2,
                   fontSize: 14,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   cursor: "pointer",
                   marginTop: 8,
                 }}
@@ -1372,20 +1372,20 @@ export default function DeclaracionFlow({
               marginBottom: 16,
               border: `1.5px solid ${C.green}30`,
             }}>
-              <div style={{ fontSize: 11, color: C.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: C.txt3, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12 }}>
                 Comparación
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 14, alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 11, color: C.txt3, marginBottom: 4 }}>Antes (sin ajustes)</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: C.txt2, textDecoration: ahorroTotal > 0 ? "line-through" : "none", fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 12, color: C.txt3, marginBottom: 4 }}>Antes (sin ajustes)</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: C.txt2, textDecoration: ahorroTotal > 0 ? "line-through" : "none", fontFamily: "monospace" }}>
                     {fm(saldoOriginal)}
                   </div>
                 </div>
                 <div style={{ fontSize: 24, color: C.txt3 }}>→</div>
                 <div>
-                  <div style={{ fontSize: 11, color: C.green, marginBottom: 4, fontWeight: 700 }}>Después (con ajustes)</div>
-                  <div style={{ fontSize: 28, fontWeight: 900, color: C.green, fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 12, color: C.green, marginBottom: 4, fontWeight: 700 }}>Después (con ajustes)</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: C.green, fontFamily: "monospace" }}>
                     {fm(saldoActual)}
                   </div>
                 </div>
@@ -1409,7 +1409,7 @@ export default function DeclaracionFlow({
             {/* Lista de cambios aplicados */}
             {cambiosAplicados.length > 0 && (
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: C.txt2, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 12, color: C.txt2, fontWeight: 700, marginBottom: 10, letterSpacing: 0.5 }}>
                   Cambios aplicados ({cambiosAplicados.length})
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1490,15 +1490,15 @@ function SeccionEtapa({ numero, titulo, subtitulo, activa, completa, children })
           background: completa ? C.green : (activa ? C.purple : C.bg3),
           color: completa || activa ? "#000" : C.txt3,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 16, fontWeight: 800, flexShrink: 0,
+          fontSize: 16, fontWeight: 700, flexShrink: 0,
         }}>
           {completa ? "✓" : numero}
         </div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.txt3, letterSpacing: 0.5 }}>
             Paso {numero}
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
             {titulo}
           </h2>
           {subtitulo && (
@@ -1520,14 +1520,14 @@ function MiniCard({ icono, label, valor, color, sub }) {
       borderLeft: `3px solid ${color}`,
       borderRadius: 8,
     }}>
-      <div style={{ fontSize: 10, color: C.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: C.txt3, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
         {icono} {label}
       </div>
-      <div style={{ fontSize: 18, fontWeight: 800, color, fontFamily: "monospace", lineHeight: 1 }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color, fontFamily: "monospace", lineHeight: 1 }}>
         {valor}
       </div>
       {sub && (
-        <div style={{ fontSize: 10, color: C.txt3, marginTop: 4 }}>{sub}</div>
+        <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>{sub}</div>
       )}
     </div>
   );
@@ -1620,7 +1620,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
           background: aplicada || yaConfigurado ? C.green : noAplica ? C.bg3 : C.bg3,
           color: aplicada || yaConfigurado ? "#000" : noAplica ? C.txt3 : C.txt2,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 13, fontWeight: 800, flexShrink: 0,
+          fontSize: 13, fontWeight: 700, flexShrink: 0,
         }}>
           {aplicada || yaConfigurado ? "✓" : noAplica ? "—" : index}
         </div>
@@ -1632,7 +1632,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
             </span>
             {aplicada && respuesta.ahorro > 0 && (
               <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.greenBg, color: C.green, fontWeight: 700,
               }}>
                 💚 {fmShort(respuesta.ahorro)}
@@ -1640,7 +1640,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
             )}
             {yaConfigurado && (
               <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.greenBg, color: C.green, fontWeight: 700,
               }}>
                 ✓ Ya cargado
@@ -1648,7 +1648,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
             )}
             {noAplica && (
               <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.bg3, color: C.txt3, fontWeight: 600,
               }}>
                 No aplica
@@ -1692,7 +1692,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
             border: `1px solid ${C.border}`,
             borderRadius: 6,
             color: C.txt2,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 600,
             cursor: "pointer",
           }}
@@ -1712,7 +1712,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
             <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
               {area.explicacion}
             </div>
-            <div style={{ fontSize: 10, color: C.txt3, marginTop: 4, fontStyle: "italic" }}>
+            <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, fontStyle: "italic" }}>
               Base legal: {area.baseLegal}
             </div>
           </div>
@@ -1843,7 +1843,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
 function InputInline({ input, value, onChange }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: C.txt2, marginBottom: 4 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: C.txt2, marginBottom: 4 }}>
         {input.label}
       </label>
       {input.type === "select" ? (
@@ -1894,7 +1894,7 @@ function InputInline({ input, value, onChange }) {
         />
       )}
       {input.helpText && (
-        <div style={{ fontSize: 10, color: C.txt3, marginTop: 4, lineHeight: 1.3 }}>
+        <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, lineHeight: 1.3 }}>
           {input.helpText}
         </div>
       )}
@@ -1922,7 +1922,7 @@ function BotonAccion({ icono, titulo, subtitulo, color, onClick }) {
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: C.txt }}>{titulo}</div>
         {subtitulo && (
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>{subtitulo}</div>
+          <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>{subtitulo}</div>
         )}
       </div>
       <span style={{ fontSize: 14, color: C.txt3 }}>→</span>
@@ -1978,11 +1978,11 @@ class DetalleFormularioErrorBoundary extends Component {
             de esta sección el que falló.
           </p>
           {this.state.error && (
-            <details style={{ marginTop: 8, fontSize: 11, color: C.txt3 }}>
+            <details style={{ marginTop: 8, fontSize: 12, color: C.txt3 }}>
               <summary style={{ cursor: "pointer" }}>Detalles técnicos (para soporte)</summary>
               <pre style={{
                 marginTop: 6, padding: "8px 10px", background: C.bg2,
-                borderRadius: 6, fontSize: 10, overflow: "auto", maxHeight: 200,
+                borderRadius: 6, fontSize: 11, overflow: "auto", maxHeight: 200,
               }}>
                 {String(this.state.error?.message || this.state.error)}
               </pre>
@@ -1993,7 +1993,7 @@ class DetalleFormularioErrorBoundary extends Component {
             style={{
               marginTop: 10, padding: "6px 12px", background: "transparent",
               border: `1px solid ${C.border}`, borderRadius: 6,
-              color: C.txt2, fontSize: 11, fontWeight: 600, cursor: "pointer",
+              color: C.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer",
             }}
           >
             Reintentar
@@ -2096,7 +2096,7 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
           <div style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>
             Ver el detalle del formulario {isJuridica ? "F-110" : "F-210"}
           </div>
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>
+          <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>
             Cada renglón con valor según los datos cargados — para que tu contador valide
             {" · "}AG {ano || DEFAULT_AG} · UVT ${uvtForYear(ano || DEFAULT_AG).toLocaleString("es-CO")}
           </div>
@@ -2119,7 +2119,7 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
             const seccionColor = seccionInfo.color || C.txt3;
             return (
               <div key={seccionId} style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 11, color: seccionColor, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ fontSize: 12, color: seccionColor, fontWeight: 700, letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                   {seccionIcon && <span style={{ fontSize: 13 }}>{seccionIcon}</span>}
                   {seccionLabel}
                 </div>

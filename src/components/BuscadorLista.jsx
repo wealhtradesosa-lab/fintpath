@@ -74,7 +74,7 @@ export default function BuscadorLista({ valor, onChange, T, total, filtrados, pl
           evita que alguien lea el total como si fuera el de lo que está
           viendo — el mismo criterio que con los ítems bloqueados por plan. */}
       {buscando && (
-        <div style={{ fontSize: 11, color: T.txt3 || T.tx3, marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: T.txt3 || T.tx3, marginTop: 6 }}>
           {filtrados} de {total} · los totales de arriba siguen siendo del listado completo
         </div>
       )}

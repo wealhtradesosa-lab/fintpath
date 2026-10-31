@@ -38,20 +38,20 @@ export const CHART = {
   txt3: "var(--fp-txt3)",
 
   // Colores semánticos (alineados con landing)
-  green: "#22c55e",
+  green: "#00c805",
   blue: "#3b82f6",
   purple: "#3b82f6",
   cyan: "#94a3b8",
   pink: "#64748b",
   orange: "#f59e0b",
   gold: "#f59e0b",
-  red: "#ef4444",
+  red: "#ff5000",
 
   // Paleta para charts categóricos (orden importa: primero los más usados)
   // Optimizada para distinguibilidad y armonía cromática
   // 31-oct-2026 (Santiago: "demasiados colores… eso hace que se vea pesado").
   // Verde y azul para lo principal; el resto, grises azulados.
-  series: ["#22c55e", "#3b82f6", "#64748b", "#94a3b8", "#475569", "#b4bfcc", "#334155", "#7a8699"],
+  series: ["#00c805", "#3b82f6", "#64748b", "#94a3b8", "#475569", "#b4bfcc", "#334155", "#7a8699"],
 
   // Tipografía (mantener consistencia con PageHeader)
   fontDisplay: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
@@ -139,11 +139,10 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
     }}>
       {label !== undefined && (
         <div style={{
-          fontSize: 11,
+          fontSize: 12,
           color: CHART.txt3,
           fontWeight: 600,
           letterSpacing: "0.04em",
-          textTransform: "uppercase",
           marginBottom: 8,
           paddingBottom: 6,
           borderBottom: `1px solid ${CHART.border}`,
@@ -193,7 +192,7 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
 export const axisProps = {
   tick: {
     fill: SVG_TXT, // atributo SVG: no acepta var(); gris que se lee en claro y en oscuro
-    fontSize: 11,
+    fontSize: 12,
     fontFamily: CHART.fontBody,
     fontWeight: 500,
   },

@@ -28,10 +28,10 @@ export default function NavRecorrido({ pg, setPg, mb }) {
         return (
           <button key={p.go} type="button" onClick={() => setPg(p.go)} aria-current={on ? "page" : undefined}
             style={{ flex: "1 1 0", minWidth: mb ? 104 : 150, textAlign: "left", padding: mb ? "8px 10px" : "10px 14px", borderRadius: 12, cursor: "pointer",
-              border: `1px solid ${on ? "rgba(34,197,94,0.45)" : "rgba(var(--fp-ink),0.08)"}`, background: on ? "rgba(34,197,94,0.10)" : "rgba(var(--fp-ink),0.02)", color: "var(--fp-txt)" }}>
-            <div style={{ fontSize: 10, color: on ? "#22c55e" : "var(--fp-txt3)", fontWeight: 700, letterSpacing: 0.5 }}>{k === "horizonte" ? `PASO ${i + 1}` : ""}{k === "horizonte" && i < r.pasos.length - 1 ? " →" : ""}</div>
+              border: `1px solid ${on ? "rgba(0,200,5,0.45)" : "rgba(var(--fp-ink),0.08)"}`, background: on ? "rgba(0,200,5,0.10)" : "rgba(var(--fp-ink),0.02)", color: "var(--fp-txt)" }}>
+            <div style={{ fontSize: 11, color: on ? "#00c805" : "var(--fp-txt3)", fontWeight: 700, letterSpacing: 0.5 }}>{k === "horizonte" ? `PASO ${i + 1}` : ""}{k === "horizonte" && i < r.pasos.length - 1 ? " →" : ""}</div>
             <div style={{ fontSize: mb ? 13 : 14, fontWeight: 700 }}>{p.l}</div>
-            {!mb && <div style={{ fontSize: 11, color: "var(--fp-txt3)" }}>{p.s}</div>}
+            {!mb && <div style={{ fontSize: 12, color: "var(--fp-txt3)" }}>{p.s}</div>}
           </button>
         );
       })}

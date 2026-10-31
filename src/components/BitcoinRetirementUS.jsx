@@ -27,7 +27,7 @@ const C = {
   bg2: "var(--fp-card)", bg3: "var(--fp-raised)", card: "var(--fp-card)",
   border: "rgba(var(--fp-ink),0.06)",
   tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", tx3: "var(--fp-txt3)",
-  gn: "#22c55e", rd: "#ef4444", or: "#f59e0b", bl: "#3b82f6", gold: "#f59e0b",
+  gn: "#00c805", rd: "#ff5000", or: "#f59e0b", bl: "#3b82f6", gold: "#f59e0b",
 };
 
 const LIMITS = {
@@ -56,14 +56,14 @@ function Sl({ label, value, onChange, min, max, step, display, color, sub }) {
         <span style={{ fontSize: 13, color: C.tx2, fontWeight: 600, flex: "1 1 auto", minWidth: 0 }}>
           {label}
         </span>
-        <span style={{ fontSize: 14, fontWeight: 800, color: color || C.tx, fontFamily: "monospace" }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: color || C.tx, fontFamily: "monospace" }}>
           {display}
         </span>
       </div>
       <input type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{ width: "100%", accentColor: color || C.gn, cursor: "pointer" }} />
-      {sub && <div style={{ fontSize: 11, color: C.tx3, marginTop: 5, lineHeight: 1.5 }}>{sub}</div>}
+      {sub && <div style={{ fontSize: 12, color: C.tx3, marginTop: 5, lineHeight: 1.5 }}>{sub}</div>}
     </div>
   );
 }
@@ -86,8 +86,8 @@ const Rw = ({ l, v, color, bold }) => (
 
 const Sec = ({ n, t, s }) => (
   <div style={{ marginTop: 22, marginBottom: 12, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
-    <div style={{ fontSize: 10, fontWeight: 800, color: C.tx3, letterSpacing: "0.08em" }}>{n} · {t}</div>
-    <div style={{ fontSize: 11, color: C.tx3, marginTop: 3 }}>{s}</div>
+    <div style={{ fontSize: 11, fontWeight: 700, color: C.tx3, letterSpacing: "0.08em" }}>{n} · {t}</div>
+    <div style={{ fontSize: 12, color: C.tx3, marginTop: 3 }}>{s}</div>
   </div>
 );
 
@@ -178,7 +178,7 @@ export default function BitcoinRetirementUS({ user }) {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>₿ Bitcoin vs. 401(k)</h2>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>₿ Bitcoin vs. 401(k)</h2>
         <p style={{ color: C.tx3, fontSize: 12, margin: 0 }}>
           What if the same money you put into your retirement plan went into Bitcoin instead?
         </p>
@@ -205,11 +205,11 @@ export default function BitcoinRetirementUS({ user }) {
             min={1} max={15} step={1} display={"up to " + matchCap + "% of salary"} color={C.gn} />
 
           <div style={{ background: C.bg3, borderRadius: 10, padding: "12px 14px", marginBottom: 4 }}>
-            <div style={{ fontSize: 11, color: C.tx3, marginBottom: 4 }}>Total going in every year:</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: C.gn, fontFamily: "monospace" }}>
+            <div style={{ fontSize: 12, color: C.tx3, marginBottom: 4 }}>Total going in every year:</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.gn, fontFamily: "monospace" }}>
               {fFull(total401k)}
             </div>
-            <div style={{ fontSize: 11, color: C.tx3, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: C.tx3, marginTop: 4 }}>
               {fFull(yourContrib)} yours + {fFull(employerMatch)} employer · {fFull(monthly401k)}/mo
             </div>
           </div>
@@ -232,7 +232,7 @@ export default function BitcoinRetirementUS({ user }) {
           )}
           {freq === "annual" && (
             <div>
-              <div style={{ fontSize: 11, color: C.tx3, marginBottom: 5, fontWeight: 600 }}>AMOUNT PER YEAR (USD)</div>
+              <div style={{ fontSize: 12, color: C.tx3, marginBottom: 5, fontWeight: 600 }}>AMOUNT PER YEAR (USD)</div>
               <input value={annual} onChange={(e) => setAnnual(e.target.value.replace(/[^0-9]/g, ""))}
                 placeholder="20000" inputMode="numeric"
                 style={{ width: "100%", background: C.bg3, border: "1px solid " + C.border,
@@ -241,7 +241,7 @@ export default function BitcoinRetirementUS({ user }) {
           )}
           {freq === "once" && (
             <div>
-              <div style={{ fontSize: 11, color: C.tx3, marginBottom: 5, fontWeight: 600 }}>BUY NOW AND HOLD (USD)</div>
+              <div style={{ fontSize: 12, color: C.tx3, marginBottom: 5, fontWeight: 600 }}>BUY NOW AND HOLD (USD)</div>
               <input value={once} onChange={(e) => setOnce(e.target.value.replace(/[^0-9]/g, ""))}
                 placeholder="50000" inputMode="numeric"
                 style={{ width: "100%", background: C.bg3, border: "1px solid " + C.border,
@@ -281,19 +281,19 @@ export default function BitcoinRetirementUS({ user }) {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 18 }}>
               <div style={{ background: C.bg3, borderRadius: 12, padding: "16px 18px" }}>
-                <div style={{ fontSize: 11, color: C.tx3 }}>🏛️ 401(k) + Social Security</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: C.bl, marginTop: 6, fontFamily: "monospace" }}>
+                <div style={{ fontSize: 12, color: C.tx3 }}>🏛️ 401(k) + Social Security</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: C.bl, marginTop: 6, fontFamily: "monospace" }}>
                   {fUSD(traditionalTotal)}
                 </div>
-                <div style={{ fontSize: 11, color: C.tx3, marginTop: 2 }}>per month</div>
+                <div style={{ fontSize: 12, color: C.tx3, marginTop: 2 }}>per month</div>
               </div>
               <div style={{ background: "rgba(247,147,26,0.08)", borderRadius: 12, padding: "16px 18px" }}>
-                <div style={{ fontSize: 11, color: C.tx3 }}>₿ Bitcoin</div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: C.or, marginTop: 6, fontFamily: "monospace" }}>
+                <div style={{ fontSize: 12, color: C.tx3 }}>₿ Bitcoin</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: C.or, marginTop: 6, fontFamily: "monospace" }}>
                   {fUSD(btc.monthlyIncome)}
                 </div>
-                <div style={{ fontSize: 11, color: C.tx3, marginTop: 2 }}>per month (base case)</div>
-                <div style={{ fontSize: 11, color: C.tx3, marginTop: 8, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 12, color: C.tx3, marginTop: 2 }}>per month (base case)</div>
+                <div style={{ fontSize: 12, color: C.tx3, marginTop: 8, lineHeight: 1.5 }}>
                   Stress -50%: <strong style={{ color: C.or }}>{fUSD(btc.monthlyIncome * 0.5)}/mo</strong>
                   {" · "}-70%: <strong style={{ color: C.rd }}>{fUSD(btc.monthlyIncome * 0.3)}/mo</strong>
                 </div>
@@ -302,7 +302,7 @@ export default function BitcoinRetirementUS({ user }) {
 
             {mult > 0 && (
               <div style={{ textAlign: "center", padding: "14px 16px", background: C.bg3, borderRadius: 12 }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: mult >= 1 ? C.or : C.bl, fontFamily: "monospace" }}>
+                <div style={{ fontSize: 32, fontWeight: 700, color: mult >= 1 ? C.or : C.bl, fontFamily: "monospace" }}>
                   {mult >= 1 ? mult.toFixed(1) + "×" : (1 / mult).toFixed(1) + "×"}
                 </div>
                 <div style={{ fontSize: 13, color: C.tx2, marginTop: 4 }}>
@@ -321,7 +321,7 @@ export default function BitcoinRetirementUS({ user }) {
               <Rw l="401(k) balance:" v={fUSD(k401.fv)} color={C.bl} bold />
               <Rw l={`Income at ${swr}%:`} v={fFull(k401.monthlyIncome) + "/mo"} />
               <Rw l="Social Security:" v={fFull(ssMonthly) + "/mo"} />
-              <div style={{ fontSize: 11, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
                 Assumes 7% real return. Social Security is a rough estimate from your salary —
                 check ssa.gov for your actual projection.
               </div>
@@ -334,7 +334,7 @@ export default function BitcoinRetirementUS({ user }) {
               <Rw l={`Price in ${years} years:`} v={fUSD(btc.finalPrice)} />
               <Rw l="Portfolio value:" v={fUSD(btc.fv)} color={C.or} bold />
               <Rw l={`Income at ${swr}%:`} v={fFull(btc.monthlyIncome) + "/mo"} />
-              <div style={{ fontSize: 11, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
                 No employer match, no tax deferral, and far higher volatility.
                 Bitcoin has dropped over 70% multiple times. Stress rows above apply -50%/-70% to the projected portfolio income.
               </div>
@@ -350,7 +350,7 @@ export default function BitcoinRetirementUS({ user }) {
           {btc.serie && btc.serie.length > 0 && (
             <Cd style={{ padding: 20 }}>
               <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📈 Year by year</div>
-              <div style={{ fontSize: 11, color: C.tx3, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: C.tx3, marginBottom: 12 }}>
                 Bitcoin price growing at {cagr}% a year — this is the assumption doing the heavy lifting.
               </div>
               {(() => {
@@ -370,7 +370,7 @@ export default function BitcoinRetirementUS({ user }) {
                         <span style={{ fontSize: 13, fontWeight: 700 }}>
                           {abierta ? "▾" : "▸"} Years {bloque[0].year}–{ultimo.year}
                         </span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: C.or, fontFamily: "monospace" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: C.or, fontFamily: "monospace" }}>
                           {fUSD(ultimo.value)}
                           <span style={{ color: C.tx3, fontWeight: 500, marginLeft: 8 }}>
                             {ultimo.coins.toFixed(3)} ₿
@@ -384,7 +384,7 @@ export default function BitcoinRetirementUS({ user }) {
                               <tr>
                                 {["Year", "BTC price", "You hold", "Value", "Invested"].map((h) => (
                                   <th key={h} style={{ padding: "7px 10px", textAlign: h === "Year" ? "left" : "right",
-                                        color: C.tx3, fontWeight: 600, fontSize: 10, textTransform: "uppercase",
+                                        color: C.tx3, fontWeight: 600, fontSize: 11,
                                         borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
                                 ))}
                               </tr>
@@ -422,7 +422,7 @@ export default function BitcoinRetirementUS({ user }) {
             <Rw l={`Bitcoin price in ${years} years:`} v={fUSD(btc.finalPrice)} color={C.gold} />
             <Rw l="Withdrawal rate:" v={swr + "% (Bengen 1994)"} />
             <Rw l="Social Security:" v={`estimated from AIME brackets`} />
-            <div style={{ fontSize: 11, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: C.tx3, marginTop: 10, lineHeight: 1.5 }}>
               The 7% for the 401(k) is a long-run market average. The Bitcoin CAGR is
               whatever you set above — it is not a forecast, and it's the number that
               decides the outcome.

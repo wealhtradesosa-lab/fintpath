@@ -43,7 +43,7 @@ describe("copy de /patrimonio", () => {
 describe("modal de registro en /patrimonio", () => {
   it("oculta E2E, Explorar sin cuenta y demo en esa ruta", () => {
     const app = read("src/App.jsx");
-    expect(app).toContain("{!__enLandingPatrimonio&&aM!==\"signup\"&&<div style={{background:\"rgba(34,197,94,0.04)\"");
+    expect(app).toContain("{!__enLandingPatrimonio&&aM!==\"signup\"&&<div style={{background:\"rgba(0,200,5,0.04)\"");
     expect(app).toContain("{!__enLandingPatrimonio&&aM!==\"signup\"&&<><div style={{marginTop:24");
   });
   it("el login de /patrimonio abre la pestaña Ingresar", () => {

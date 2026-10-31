@@ -21,7 +21,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.08)",
   borderStrong: "rgba(var(--fp-ink),0.14)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", red: "#ef4444",
+  green: "#00c805", blue: "#3b82f6", red: "#ff5000",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -92,7 +92,7 @@ function SecurityCard({ icon: Icon, title, badge, description }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{
           width: 44, height: 44, borderRadius: 12,
-          background: "rgba(34,197,94,0.1)",
+          background: "rgba(0,200,5,0.1)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <Icon size={22} color={T.green} />
@@ -104,10 +104,9 @@ function SecurityCard({ icon: Icon, title, badge, description }) {
           {badge && (
             <span style={{
               display: "inline-block", marginTop: 4,
-              fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
-              color: T.green, background: "rgba(34,197,94,0.1)",
+              fontSize: 11, fontWeight: 700, letterSpacing: 0.5,
+              color: T.green, background: "rgba(0,200,5,0.1)",
               padding: "2px 8px", borderRadius: 999,
-              textTransform: "uppercase",
             }}>
               {badge}
             </span>
@@ -163,7 +162,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
         maxWidth: 1200, margin: "0 auto",
       }}>
         <a href="/" onClick={(e) => { e.preventDefault(); goBack(); }} style={{
-          fontSize: 20, fontWeight: 800, color: T.green,
+          fontSize: 20, fontWeight: 700, color: T.green,
           textDecoration: "none", fontFamily: FONT_DISPLAY,
           letterSpacing: -0.5,
         }}>
@@ -181,8 +180,8 @@ export default function LandingSeguridad({ onBack = () => {} }) {
         <div style={{ textAlign: "center", marginBottom: 60 }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 8,
-            background: "rgba(34,197,94,0.1)",
-            border: `1px solid rgba(34,197,94,0.3)`,
+            background: "rgba(0,200,5,0.1)",
+            border: `1px solid rgba(0,200,5,0.3)`,
             padding: "6px 14px", borderRadius: 999,
             fontSize: 12, fontWeight: 600, color: T.green,
             marginBottom: 24,
@@ -194,7 +193,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
           <h1 style={{
             fontFamily: FONT_DISPLAY,
             fontSize: "clamp(36px, 6vw, 56px)",
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1.1,
             margin: "0 0 20px 0",
             letterSpacing: -1.5,
@@ -337,7 +336,7 @@ export default function LandingSeguridad({ onBack = () => {} }) {
 
         {/* CONTACTO */}
         <section style={{
-          background: `linear-gradient(135deg, rgba(34,197,94,0.08), rgba(59,130,246,0.08))`,
+          background: `linear-gradient(135deg, rgba(0,200,5,0.08), rgba(59,130,246,0.08))`,
           border: `1px solid ${T.borderStrong}`,
           borderRadius: 20,
           padding: "32px",

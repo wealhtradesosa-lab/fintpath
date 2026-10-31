@@ -37,8 +37,8 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.06)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#c4b5fd",
-  orange: "#f59e0b", red: "#ef4444", gold: "#f59e0b",
+  green: "#00c805", blue: "#3b82f6", purple: "#c4b5fd",
+  orange: "#f59e0b", red: "#ff5000", gold: "#f59e0b",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
@@ -233,7 +233,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <span style={{ fontSize: 36 }}>🤖</span>
             <div>
-              <h2 style={{ fontSize: 24, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
+              <h2 style={{ fontSize: 24, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.2 }}>
                 Agente Tributario IA
               </h2>
               <div style={{ fontSize: 13, color: T.txt2, fontWeight: 500, marginTop: 4 }}>
@@ -245,7 +245,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
 
         <div style={{ padding: "32px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
-          <h3 style={{ fontSize: 22, fontWeight: 800, color: T.txt, marginBottom: 12 }}>
+          <h3 style={{ fontSize: 22, fontWeight: 700, color: T.txt, marginBottom: 12 }}>
             ¿Es tu primera vez? Empecemos juntos
           </h3>
           <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto 24px" }}>
@@ -262,7 +262,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
               borderRadius: 10,
               color: "#000",
               fontSize: 15,
-              fontWeight: 800,
+              fontWeight: 700,
               cursor: "pointer",
             }}
           >
@@ -380,13 +380,13 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         <button
           onClick={() => setModoExperto(false)}
           style={{
-            background: "#22c55e",
-            border: "1.5px solid #22c55e",
+            background: "#00c805",
+            border: "1.5px solid #00c805",
             color: "#000",
             padding: "10px 18px",
             borderRadius: 10,
             fontSize: 13,
-            fontWeight: 800,
+            fontWeight: 700,
             cursor: "pointer",
           }}
         >
@@ -402,7 +402,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
               padding: "10px 18px",
               borderRadius: 10,
               fontSize: 13,
-              fontWeight: 800,
+              fontWeight: 700,
               cursor: "pointer",
               whiteSpace: "nowrap",
             }}
@@ -410,7 +410,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           >
             📄 Descargar PDF
           </button>
-          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600, letterSpacing: 0.5 }}>
             📋 Modo Experto
           </div>
         </div>
@@ -420,7 +420,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
           <span style={{ fontSize: 36 }}>🤖</span>
           <div>
-            <h2 style={{ fontSize: 24, fontWeight: 800, color: T.txt, margin: 0, lineHeight: 1.2 }}>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.2 }}>
               Modo experto · Formulario <TerminoTributario clave={isJuridica ? "f110" : "f210"}>{formulario}</TerminoTributario>
             </h2>
             <div style={{ fontSize: 13, color: T.txt2, fontWeight: 500, marginTop: 4 }}>
@@ -523,7 +523,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             <li><strong>📊 Dividendos:</strong> si te pagó plata una empresa donde eres socio.</li>
           </ul>
           <div style={{ marginTop: 14, padding: "10px 14px", background: T.bg3, borderRadius: 8, fontSize: 13, color: T.txt, lineHeight: 1.5 }}>
-            💡 <strong>Tip:</strong> toca el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 3, color: "#fff", fontWeight: 700, fontSize: 11 }}>💡</span> de cualquier fila para que te explique
+            💡 <strong>Tip:</strong> toca el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 3, color: "#fff", fontWeight: 700, fontSize: 12 }}>💡</span> de cualquier fila para que te explique
             qué significa cada cosa, cuánto te conviene y por qué.
           </div>
         </div>
@@ -552,7 +552,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       <div style={{ marginBottom: 20 }}>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Owner fiscal · Formulario {formulario}</label>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 4 }}>Owner fiscal · Formulario {formulario}</label>
             <select
               value={selectedOwnerId}
               onChange={(e) => setSelectedOwnerId(e.target.value)}
@@ -566,7 +566,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             </select>
           </div>
           <div>
-            <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Año gravable</label>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 4 }}>Año gravable</label>
             <select
               value={ano}
               onChange={(e) => setAno(Number(e.target.value))}
@@ -577,12 +577,12 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           </div>
           {overridesCount > 0 && (
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 11, color: T.purple, fontWeight: 600 }}>
+              <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>
                 ✏️ {overridesCount} override{overridesCount > 1 ? "s" : ""} activo{overridesCount > 1 ? "s" : ""}
               </span>
               <button
                 onClick={handleResetTodos}
-                style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "6px 12px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "6px 12px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
               >
                 ↺ Resetear todos
               </button>
@@ -601,7 +601,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       {/* Tabla de renglones por sección */}
       {renglonesPorSeccion.map(({ seccion, info, items }) => (
         <div key={seccion} style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: info.color, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: info.color, letterSpacing: 0.6, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{ fontSize: 16 }}>{info.icon}</span>
             <span>{info.label}</span>
           </div>
@@ -625,7 +625,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                   }}
                 >
                   {/* Número renglón */}
-                  <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600, fontFamily: "monospace" }}>
                     {r.numero}
                   </div>
 
@@ -646,7 +646,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                     >
                       <span>{r.concepto}</span>
                       {r.articulo && (
-                        <span style={{ fontSize: 10, color: T.txt3, fontWeight: 500 }}>
+                        <span style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>
                           ({r.articulo})
                         </span>
                       )}
@@ -659,7 +659,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                             color: T.purple,
                             padding: "1px 6px",
                             borderRadius: 3,
-                            fontSize: 10,
+                            fontSize: 11,
                             cursor: "pointer",
                             fontWeight: 600,
                           }}
@@ -670,14 +670,14 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                       )}
                     </div>
                     {r.fuente && !isFormula && (
-                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 2, fontStyle: "italic" }}>
+                      <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, fontStyle: "italic" }}>
                         ↳ {r.fuente}
                       </div>
                     )}
                     {/* Tip expandido */}
                     {r.tip && showTipFor === r.numero && (
                       <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-                        <span style={{ color: T.purple, fontWeight: 700, fontSize: 11, marginRight: 6 }}>💡 TIP:</span>
+                        <span style={{ color: T.purple, fontWeight: 700, fontSize: 12, marginRight: 6 }}>💡 TIP:</span>
                         {r.tip}
                       </div>
                     )}
@@ -706,7 +706,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                       fontFamily: "monospace",
                       minWidth: 160,
                     }}>
-                      {hasOverride && <span style={{ fontSize: 11, marginRight: 4 }}>✏️</span>}
+                      {hasOverride && <span style={{ fontSize: 12, marginRight: 4 }}>✏️</span>}
                       {fm(r.valor)}
                     </div>
                   )}
@@ -717,20 +717,20 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                       <div style={{ display: "flex", gap: 4 }}>
                         <button
                           onClick={handleGuardarEdit}
-                          style={{ background: T.green, color: "#000", border: "none", padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700 }}
+                          style={{ background: T.green, color: "#000", border: "none", padding: "5px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 700 }}
                         >
                           ✓
                         </button>
                         <button
                           onClick={() => setEditingRenglon(null)}
-                          style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
+                          style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}
                         >
                           ✕
                         </button>
                         {hasOverride && (
                           <button
                             onClick={() => handleResetear(r.numero)}
-                            style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, padding: "5px 8px", borderRadius: 6, fontSize: 10, cursor: "pointer" }}
+                            style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, padding: "5px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
                             title="Volver a valor automático"
                           >
                             ↺
@@ -738,11 +738,11 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                         )}
                       </div>
                     ) : isFormula ? (
-                      <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>Σ</span>
+                      <span style={{ fontSize: 12, color: T.txt3, fontWeight: 600 }}>Σ</span>
                     ) : (
                       <button
                         onClick={() => handleEditar(r)}
-                        style={{ background: "transparent", border: `1px solid ${T.border}`, color: hasOverride ? T.purple : T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 600 }}
+                        style={{ background: "transparent", border: `1px solid ${T.border}`, color: hasOverride ? T.purple : T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
                       >
                         ✏️ {hasOverride ? "Editado" : "Editar"}
                       </button>
@@ -799,7 +799,7 @@ function ResumenCard({ label, value, color, prefix = "", bold = false }) {
       padding: "12px 16px",
       borderLeft: `3px solid ${color}`,
     }}>
-      <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 4 }}>
         {label}
       </div>
       <div style={{ fontSize: bold ? 22 : 18, fontWeight: bold ? 800 : 700, color, fontFamily: "monospace" }}>
@@ -872,13 +872,13 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
         border: `2px solid ${T.blue}`,
         borderRadius: 16,
       }}>
-        <div style={{ fontSize: 14, color: T.txt2, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 14, color: T.txt2, fontWeight: 600, marginBottom: 8, letterSpacing: 0.5 }}>
           {isJuridica ? "🏢" : "👤"} Resumen para {nombreOwner} · Año {ano}
         </div>
         <div style={{ fontSize: 16, color: T.txt, marginBottom: 6, fontWeight: 500 }}>
           Lo que tendrías que pagar {isJuridica ? "tu empresa" : "tú"} en mayo:
         </div>
-        <div style={{ fontSize: 48, fontWeight: 800, color: T.txt, lineHeight: 1.1, marginBottom: 12, fontFamily: "monospace" }}>
+        <div style={{ fontSize: 48, fontWeight: 700, color: T.txt, lineHeight: 1.1, marginBottom: 12, fontFamily: "monospace" }}>
           {fm(saldoFinal)}
         </div>
         <div style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6 }}>
@@ -974,13 +974,13 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
               color: T.txt,
               transition: "all 0.15s",
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(34,197,94,0.08)"}
+            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(0,200,5,0.08)"}
             onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 20 }}>💡</span>
               ¿Cómo pago menos?
-              <span style={{ fontSize: 11, background: "#22c55e", color: "#000", padding: "2px 8px", borderRadius: 3, fontWeight: 700 }}>
+              <span style={{ fontSize: 12, background: "#00c805", color: "#000", padding: "2px 8px", borderRadius: 3, fontWeight: 700 }}>
                 PASO A PASO
               </span>
             </div>
@@ -1020,7 +1020,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             dispara el modal de aplicación.  */}
         {mostrarOportunidades && oportunidadesOwner.length > 0 && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: T.txt2, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.txt2, marginBottom: 12, letterSpacing: 0.5 }}>
               💡 Deducciones y beneficios a revisar · {oportunidadesOwner.length}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1037,7 +1037,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                     padding: "14px 16px",
                     background: T.bg3,
                     border: `1px solid ${T.border}`,
-                    borderLeft: `4px solid #22c55e`,
+                    borderLeft: `4px solid #00c805`,
                     borderRadius: 10,
                     display: "flex",
                     alignItems: "center",
@@ -1046,9 +1046,9 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                   }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: "50%",
-                      background: "rgba(34,197,94,0.15)", color: "#22c55e",
+                      background: "rgba(0,200,5,0.15)", color: "#00c805",
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 13, fontWeight: 800, flexShrink: 0,
+                      fontSize: 13, fontWeight: 700, flexShrink: 0,
                     }}>
                       {i + 1}
                     </div>
@@ -1060,24 +1060,24 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                         {opo.descripcion || ""}
                       </div>
                       {opo.base && (
-                        <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, fontStyle: "italic" }}>
+                        <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, fontStyle: "italic" }}>
                           Base legal: {opo.base}
                         </div>
                       )}
                     </div>
                     <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>Te ahorras</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#22c55e", lineHeight: 1 }}>
+                      <div style={{ fontSize: 12, color: T.txt3 }}>Te ahorras</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: "#00c805", lineHeight: 1 }}>
                         {"$" + Math.round(ahorro).toLocaleString("es-CO")}
                       </div>
-                      <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>al año</div>
+                      <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>al año</div>
                     </div>
                     {aplicable ? (
                       <button
                         onClick={() => onAplicarOportunidad(opo)}
                         style={{
                           padding: "9px 14px",
-                          background: "#22c55e",
+                          background: "#00c805",
                           border: "none",
                           borderRadius: 8,
                           color: "#000",
@@ -1097,7 +1097,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                         border: `1px solid ${T.border}`,
                         borderRadius: 8,
                         color: T.txt3,
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 600,
                         flexShrink: 0,
                         whiteSpace: "nowrap",
@@ -1114,7 +1114,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
       </div>
 
       {/* Mensaje final tranquilizador */}
-      <div style={{ marginTop: 20, padding: "16px 20px", background: "rgba(34,197,94,0.06)", border: `1px solid rgba(34,197,94,0.20)`, borderRadius: 10, fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
+      <div style={{ marginTop: 20, padding: "16px 20px", background: "rgba(0,200,5,0.06)", border: `1px solid rgba(0,200,5,0.20)`, borderRadius: 10, fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
         💬 <strong>¿Tienes dudas?</strong> El número de arriba es solo una estimación. Tu contador es quien
         firma y presenta la declaración a DIAN. Si nunca declaraste, no te preocupes: con este resumen y la
         ayuda de un contador, lo manejas tranquilo.
@@ -1137,7 +1137,7 @@ function CardSimple({ icon, label, value, color, explica, esResta = false, desta
         <span style={{ fontSize: 18 }}>{icon}</span>
         {label}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color, fontFamily: "monospace", marginBottom: 8 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color, fontFamily: "monospace", marginBottom: 8 }}>
         {esResta && value > 0 ? "−" : ""}{fm(value)}
       </div>
       <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>

@@ -50,7 +50,7 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
@@ -58,7 +58,7 @@ const C = {
   purpleBg: "rgba(196,181,253,0.10)",
   orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   redBg: "rgba(248,113,113,0.10)",
 };
 
@@ -154,7 +154,7 @@ export default function EstrategiaTributaria({
     return (
       <div style={{ padding: "40px 28px", textAlign: "center" }}>
         <div style={{ fontSize: 56, marginBottom: 16 }}>🧾</div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: C.txt, marginBottom: 8 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: C.txt, marginBottom: 8 }}>
           Empecemos tu estrategia tributaria
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, lineHeight: 1.5, maxWidth: 480, margin: "0 auto 24px" }}>
@@ -170,7 +170,7 @@ export default function EstrategiaTributaria({
             borderRadius: 10,
             color: "#fff",
             fontSize: 15,
-            fontWeight: 800,
+            fontWeight: 700,
             cursor: "pointer",
           }}
         >
@@ -188,13 +188,13 @@ export default function EstrategiaTributaria({
           ───────────────────────────────────────────────────────────── */}
       <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.txt3, letterSpacing: 0.5, marginBottom: 4 }}>
             🧾 Tu situación tributaria · Año {ano}
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <span style={{ fontSize: 24 }}>{isJuridica ? "🏢" : "👤"}</span>
             {ownerName}
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.txt3, padding: "3px 8px", background: C.bg3, borderRadius: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: C.txt3, padding: "3px 8px", background: C.bg3, borderRadius: 6 }}>
               {isJuridica ? "Persona jurídica" : "Persona natural"}
             </span>
           </h1>
@@ -246,7 +246,7 @@ export default function EstrategiaTributaria({
 
         <div style={{
           fontSize: 56,
-          fontWeight: 900,
+          fontWeight: 700,
           color: saldoACargo > 0 ? C.txt : C.green,
           lineHeight: 1,
           letterSpacing: -2,
@@ -288,7 +288,7 @@ export default function EstrategiaTributaria({
               <div style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>
                 Detectamos cómo bajarte ese número en {fm(ahorroPotencial)}/año
               </div>
-              <div style={{ fontSize: 11, color: C.txt3 }}>
+              <div style={{ fontSize: 12, color: C.txt3 }}>
                 Sin trampa: son {oportunidades.length} {oportunidades.length === 1 ? "forma legal" : "formas legales"} que la ley te permite y no estás usando.
               </div>
             </div>
@@ -301,7 +301,7 @@ export default function EstrategiaTributaria({
           ───────────────────────────────────────────────────────────── */}
       {oportunidades.length > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, letterSpacing: 0.5 }}>
             💡 Deducciones y beneficios a revisar
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -322,7 +322,7 @@ export default function EstrategiaTributaria({
           ───────────────────────────────────────────────────────────── */}
       {hallazgos.total > 0 && (
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, letterSpacing: 0.5 }}>
             ⚠️ Cosas por revisar ({hallazgos.total})
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -340,7 +340,7 @@ export default function EstrategiaTributaria({
           BLOQUE 5: ACCIONES SECUNDARIAS (chrome bajo, no principal)
           ───────────────────────────────────────────────────────────── */}
       <div style={{ marginTop: 24, paddingTop: 20, borderTop: `1px solid ${C.border}` }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.txt3, marginBottom: 12, letterSpacing: 0.5 }}>
           Más acciones
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
@@ -439,7 +439,7 @@ function OportunidadCard({ opo, index, onAplicar }) {
         width: 32, height: 32, borderRadius: "50%",
         background: C.greenBg, color: C.green,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 13, fontWeight: 800,
+        fontSize: 13, fontWeight: 700,
         flexShrink: 0,
       }}>
         {index}
@@ -453,11 +453,11 @@ function OportunidadCard({ opo, index, onAplicar }) {
         </div>
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
-        <div style={{ fontSize: 11, color: C.txt3 }}>Te ahorras</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: C.green, lineHeight: 1 }}>
+        <div style={{ fontSize: 12, color: C.txt3 }}>Te ahorras</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: C.green, lineHeight: 1 }}>
           {fmShort(ahorro)}
         </div>
-        <div style={{ fontSize: 10, color: C.txt3, marginTop: 2 }}>al año</div>
+        <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>al año</div>
       </div>
       {aplicable && (
         <button
@@ -513,7 +513,7 @@ function AlertaCard({ hallazgo, severidad, onResolver }) {
           {hallazgo.titulo}
         </div>
         {hallazgo.descripcion && (
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 2, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 12, color: C.txt3, marginTop: 2, lineHeight: 1.4 }}>
             {hallazgo.descripcion}
           </div>
         )}
@@ -526,7 +526,7 @@ function AlertaCard({ hallazgo, severidad, onResolver }) {
           border: `1px solid ${color}`,
           borderRadius: 6,
           color,
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
           cursor: "pointer",
           whiteSpace: "nowrap",
@@ -562,7 +562,7 @@ function AccionSecundaria({ icono, titulo, descripcion, onClick }) {
         <div style={{ fontSize: 13, fontWeight: 700, color: C.txt, lineHeight: 1.2 }}>
           {titulo}
         </div>
-        <div style={{ fontSize: 11, color: C.txt3, marginTop: 2, lineHeight: 1.3 }}>
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 2, lineHeight: 1.3 }}>
           {descripcion}
         </div>
       </div>

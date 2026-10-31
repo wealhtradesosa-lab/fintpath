@@ -50,10 +50,10 @@ export default function CtaUnaAccion({
   );
 
   const isRojo = accion.path === "cf_rojo";
-  const accent = isRojo ? T.rd || "#ef4444" : T.gn || "#22c55e";
+  const accent = isRojo ? T.rd || "#ff5000" : T.gn || "#00c805";
   const accentDim = isRojo
-    ? T.rdD || "rgba(239,68,68,0.08)"
-    : T.gnD || "rgba(34,197,94,0.1)";
+    ? T.rdD || "rgba(255,80,0,0.08)"
+    : T.gnD || "rgba(0,200,5,0.1)";
 
   return (
     <div
@@ -68,10 +68,9 @@ export default function CtaUnaAccion({
     >
       <div
         style={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 700,
           letterSpacing: 0.8,
-          textTransform: "uppercase",
           color: T.txt3 || "var(--fp-txt3)",
           marginBottom: 8,
         }}
@@ -90,7 +89,7 @@ export default function CtaUnaAccion({
         <div
           style={{
             fontSize: 15,
-            fontWeight: 800,
+            fontWeight: 700,
             color: T.txt || "var(--fp-txt)",
             lineHeight: 1.35,
           }}
@@ -103,7 +102,7 @@ export default function CtaUnaAccion({
             style={{
               marginTop: 8,
               fontSize: 22,
-              fontWeight: 800,
+              fontWeight: 700,
               color: accent,
               fontVariantNumeric: "tabular-nums",
               letterSpacing: "-0.02em",
@@ -112,7 +111,7 @@ export default function CtaUnaAccion({
             {fm(accion.monto)}
             <span
               style={{
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
                 color: T.txt3 || "var(--fp-txt3)",
                 marginLeft: 6,
@@ -141,7 +140,7 @@ export default function CtaUnaAccion({
             display: "inline-flex",
             alignItems: "center",
             gap: 6,
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: 700,
             color: accent,
             background: accent + "18",
@@ -172,13 +171,13 @@ export default function CtaUnaAccion({
             color: T.bl || "#3b82f6",
             cursor: "pointer",
             padding: 0,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 600,
           }}
         >
           {showSupuestos ? "Ocultar" : "¿Por qué esta sugerencia?"}
         </button>
-        <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", lineHeight: 1.4 }}>
+        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", lineHeight: 1.4 }}>
           Estimación · no es asesoría financiera ni tributaria.
         </div>
       </div>
@@ -191,7 +190,7 @@ export default function CtaUnaAccion({
             borderRadius: 10,
             background: T.bg2 || "var(--fp-card)",
             border: "1px solid " + (T.border || "rgba(var(--fp-ink),0.06)"),
-            fontSize: 11,
+            fontSize: 12,
             color: T.txt3 || "var(--fp-txt3)",
             lineHeight: 1.55,
           }}

@@ -39,12 +39,12 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
   orange: "#fbbf24",
-  red: "#f87171",
+  red: "#ff7a3d",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
 };
@@ -243,11 +243,11 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
               marginBottom: 6,
             }}
           >
-            <span style={{ fontSize: 10, fontWeight: 800, color: C.purple, letterSpacing: 0.5 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, letterSpacing: 0.5 }}>
               💬 CHAT · AGENTE TRIBUTARIO IA
             </span>
           </div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
             Habla con tu contador IA
           </h2>
           <p style={{ fontSize: 13, color: C.txt2, marginTop: 6, lineHeight: 1.5 }}>
@@ -266,7 +266,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
               borderRadius: 10,
               cursor: "pointer",
               fontSize: 13,
-              fontWeight: 800,
+              fontWeight: 700,
               flexShrink: 0,
               whiteSpace: "nowrap",
             }}
@@ -281,7 +281,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
         <div
           style={{
             marginBottom: 12,
-            fontSize: 11,
+            fontSize: 12,
             color: remaining < 5 ? C.orange : C.txt3,
             textAlign: "right",
           }}
@@ -434,7 +434,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
             color: loading || !input.trim() ? C.txt3 : "#000",
             cursor: loading || !input.trim() ? "not-allowed" : "pointer",
             fontSize: 14,
-            fontWeight: 800,
+            fontWeight: 700,
             whiteSpace: "nowrap",
           }}
         >
@@ -447,7 +447,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
         style={{
           marginTop: 16,
           padding: "10px 14px",
-          fontSize: 11,
+          fontSize: 12,
           color: C.txt3,
           textAlign: "center",
           lineHeight: 1.5,

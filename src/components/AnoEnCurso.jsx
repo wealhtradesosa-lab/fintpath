@@ -80,7 +80,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   // supuesto y no como hecho.
   const Dato = ({ l, v, color, tenue }) => (
     <div>
-      <div style={{ fontSize: 10, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{l}</div>
+      <div style={{ fontSize: 11, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{l}</div>
       <div style={{ fontSize: tenue ? 15 : 17, fontWeight: tenue ? 700 : 800,
             color: color || T.tx, fontFamily: "monospace", marginTop: 2,
             opacity: tenue ? 0.82 : 1 }}>{fmt(v)}</div>
@@ -94,13 +94,12 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   const Grupo = ({ titulo, sub, children, proyectado }) => (
     <div style={{
       flex: "1 1 280px", minWidth: 0, padding: "10px 13px",
-      background: proyectado ? "rgba(34,197,94,0.05)" : "rgba(var(--fp-ink),0.03)",
-      border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
+      background: proyectado ? "rgba(0,200,5,0.05)" : "rgba(var(--fp-ink),0.03)",
+      border: `1px solid ${proyectado ? "rgba(0,200,5,0.18)" : T.border}`,
       borderRadius: 10,
     }}>
-      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.9,
-            textTransform: "uppercase", color: T.tx3 }}>{titulo}</div>
-      <div style={{ fontSize: 11, color: T.tx3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.9, color: T.tx3 }}>{titulo}</div>
+      <div style={{ fontSize: 12, color: T.tx3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
       <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginTop: 9 }}>{children}</div>
     </div>
   );
@@ -108,8 +107,8 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: T.tx }}>Cómo va {año}</div>
-        <div style={{ fontSize: 11, color: T.tx3, marginTop: 1, marginBottom: 11 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>Cómo va {año}</div>
+        <div style={{ fontSize: 12, color: T.tx3, marginTop: 1, marginBottom: 11 }}>
           {mesActual} {mesActual === 1 ? "mes cumplido" : "meses cumplidos"}
           {mesesRestantes > 0 && `, ${mesesRestantes} por delante`}
         </div>
@@ -117,17 +116,17 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <Grupo titulo="A la fecha"
                  sub={`Enero–${MESES_L[mesActual - 1].toLowerCase()} · ejecutado`}>
-            <Dato l="HA ENTRADO" v={entraYTD} color="#22c55e" />
-            <Dato l="HA SALIDO" v={saleYTD} color="#ef4444" />
-            <Dato l="TE HA QUEDADO" v={netoYTD} color={netoYTD >= 0 ? "#22c55e" : "#ef4444"} />
+            <Dato l="HA ENTRADO" v={entraYTD} color="#00c805" />
+            <Dato l="HA SALIDO" v={saleYTD} color="#ff5000" />
+            <Dato l="TE HA QUEDADO" v={netoYTD} color={netoYTD >= 0 ? "#00c805" : "#ff5000"} />
           </Grupo>
 
           {mesesRestantes > 0 && (
             <Grupo proyectado titulo={`Cierre de ${año}`}
                    sub="Año completo · proyectado con lo cargado">
-              <Dato tenue l="ENTRARÁ" v={entraAño} color="#22c55e" />
-              <Dato tenue l="SALDRÁ" v={saleAño} color="#ef4444" />
-              <Dato tenue l="QUEDARÁ" v={netoAño} color={netoAño >= 0 ? "#22c55e" : "#ef4444"} />
+              <Dato tenue l="ENTRARÁ" v={entraAño} color="#00c805" />
+              <Dato tenue l="SALDRÁ" v={saleAño} color="#ff5000" />
+              <Dato tenue l="QUEDARÁ" v={netoAño} color={netoAño >= 0 ? "#00c805" : "#ff5000"} />
             </Grupo>
           )}
         </div>
@@ -139,7 +138,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
         {meses.map((x) => {
           const alto = (Math.abs(x.neto) / maxAbs) * 100;
           const futuro = x.m > mesActual;
-          const c = x.neto >= 0 ? "#22c55e" : "#ef4444";
+          const c = x.neto >= 0 ? "#00c805" : "#ff5000";
           return (
             <div key={x.m} title={`${MESES_L[x.m - 1]}: ${fmt(x.neto)}${futuro ? " (proyectado)" : ""}`}
                  style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -156,13 +155,13 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
       </div>
       <div style={{ display: "flex", gap: 3, marginTop: 4 }}>
         {meses.map((x) => (
-          <div key={x.m} style={{ flex: 1, textAlign: "center", fontSize: 10, color: x.m === mesActual ? T.tx : T.tx3, fontWeight: x.m === mesActual ? 800 : 500 }}>
+          <div key={x.m} style={{ flex: 1, textAlign: "center", fontSize: 11, color: x.m === mesActual ? T.tx : T.tx3, fontWeight: x.m === mesActual ? 800 : 500 }}>
             {M[x.m - 1]}
           </div>
         ))}
       </div>
 
-      <div style={{ fontSize: 11, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 12, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
         {mesesRestantes > 0
           ? <>Las barras sólidas son meses cumplidos; las tenues, los {mesesRestantes} que faltan. El cierre proyectado supone que {mesesRestantes === 1 ? "ese mes se comporta" : "esos meses se comportan"} según los ingresos, gastos y cuotas que tienes cargados hoy.</>
           : <>El año está completo: las doce barras son meses cumplidos.</>}

@@ -28,7 +28,7 @@ const T = {
   txt: "var(--fp-txt)",
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
-  green: "#22c55e",
+  green: "#00c805",
 };
 
 const FONT = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -139,7 +139,7 @@ export default function PWAInstallPrompt() {
     return (
       <div style={{
         position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 440,
-        margin: "0 auto", background: "var(--fp-card)", border: "1px solid #22c55e",
+        margin: "0 auto", background: "var(--fp-card)", border: "1px solid #00c805",
         borderRadius: 14, padding: "14px 16px", zIndex: 9999,
         display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
         boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
@@ -153,7 +153,7 @@ export default function PWAInstallPrompt() {
           </div>
         </div>
         <button onClick={() => window.location.reload()} style={{
-          background: "#22c55e", color: "#000", border: "none", padding: "9px 18px",
+          background: "#00c805", color: "#000", border: "none", padding: "9px 18px",
           borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13, flexShrink: 0,
         }}>Recargar</button>
         <button onClick={() => setHayActualizacion(false)} style={{
@@ -205,7 +205,7 @@ export default function PWAInstallPrompt() {
               border: `1px solid ${T.border}`,
             }}
           >
-            <span style={{ color: T.green, fontSize: 24, fontWeight: 800 }}>F</span>
+            <span style={{ color: T.green, fontSize: 24, fontWeight: 700 }}>F</span>
           </div>
 
           {/* Texto + acción */}
@@ -213,7 +213,7 @@ export default function PWAInstallPrompt() {
             <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
               Instalar FINPATHIA
             </div>
-            <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.3 }}>
+            <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.3 }}>
               {isOnIOS ? "Tenela como app en tu iPhone" : "Acceso directo desde tu pantalla de inicio"}
             </div>
           </div>
@@ -305,7 +305,7 @@ export default function PWAInstallPrompt() {
                 ✕
               </button>
 
-              <div style={{ fontSize: 16, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
                 📱 Instalar en iPhone
               </div>
               <div style={{ fontSize: 12, color: T.txt2, marginBottom: 20, lineHeight: 1.5 }}>
@@ -336,7 +336,7 @@ export default function PWAInstallPrompt() {
                     <path d="M8 1L8 13M8 1L4 5M8 1L12 5" stroke="#3b82f6" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                     <path d="M2 9V17C2 18.1 2.9 19 4 19H12C13.1 19 14 18.1 14 17V9" stroke="#3b82f6" strokeWidth="1.6" strokeLinecap="round" />
                   </svg>
-                  <div style={{ fontSize: 11, color: T.txt3, textAlign: "left", lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 12, color: T.txt3, textAlign: "left", lineHeight: 1.4 }}>
                     Cuadrado con flecha<br/>hacia arriba
                   </div>
                 </div>
@@ -364,7 +364,7 @@ export default function PWAInstallPrompt() {
 
               <div
                 style={{
-                  fontSize: 11,
+                  fontSize: 12,
                   color: T.txt3,
                   background: "rgba(var(--fp-ink),0.04)",
                   padding: 12,

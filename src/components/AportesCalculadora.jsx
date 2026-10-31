@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader.jsx";
 const T = {
   bg2: "var(--fp-card)", bg3: "var(--fp-raised)", card: "var(--fp-card)",
   border: "rgba(var(--fp-ink),0.06)", txt: "var(--fp-txt)",
-  txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#22c55e",
+  txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805",
   blue: "#3b82f6", orange: "#f59e0b",
 };
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
@@ -64,7 +64,7 @@ export default function AportesCalculadora({ fmt }) {
             placeholder="Ej: 5,000,000"
             style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
           />
-          {sal > 0 && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Equivale a {(sal / 1750905).toFixed(1)} salarios mínimos</div>}
+          {sal > 0 && <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Equivale a {(sal / 1750905).toFixed(1)} salarios mínimos</div>}
         </div>}
       </Cd>
 
@@ -106,7 +106,7 @@ export default function AportesCalculadora({ fmt }) {
               placeholder="Ej: 25,000,000"
               style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
             />
-            {sal > 0 && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>IBC mínimo por ley: {ibcMinimo} SMMLV (40% de tu ingreso)</div>}
+            {sal > 0 && <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>IBC mínimo por ley: {ibcMinimo} SMMLV (40% de tu ingreso)</div>}
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -115,8 +115,8 @@ export default function AportesCalculadora({ fmt }) {
               min={1} max={25} step={1}
               style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
             />
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Equivale a {f(ibcCOP)}/mes. Tope máximo: 25 SMMLV</div>
-            {ibcSM < ibcMinimo && sal > 0 && <div style={{ fontSize: 11, color: T.orange, marginTop: 4 }}>⚠️ El mínimo legal para tu ingreso es {ibcMinimo} SMMLV</div>}
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Equivale a {f(ibcCOP)}/mes. Tope máximo: 25 SMMLV</div>
+            {ibcSM < ibcMinimo && sal > 0 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>⚠️ El mínimo legal para tu ingreso es {ibcMinimo} SMMLV</div>}
           </div>
 
           <div style={{ background: T.bg3, padding: "10px 14px", borderRadius: 8, marginBottom: 12, fontSize: 13, color: T.txt2 }}>
@@ -139,7 +139,7 @@ export default function AportesCalculadora({ fmt }) {
             Pensión obligatoria (parte trabajador): {f(ibcCOP * 0.04)}/mes = INCRNGO (Art. 55 ET)<br />
             Retención en la fuente honorarios: 11% = {f(sal * 0.11)}/mes si eres declarante
           </div>
-          <div style={{ marginTop: 12, background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.green, lineHeight: 1.6 }}>
+          <div style={{ marginTop: 12, background: "rgba(0,200,5,0.08)", border: "1px solid rgba(0,200,5,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.green, lineHeight: 1.6 }}>
             <strong>👉 Registre {f(indTotal)}/mes como egreso en Pensión y Salud</strong> para que el Simulador y el Plan Tributario lo consideren en el análisis y la respectiva deducción.
           </div>
         </Cd>

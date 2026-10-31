@@ -25,7 +25,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.08)",
   borderStrong: "rgba(var(--fp-ink),0.14)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -148,7 +148,7 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
           gap: 4,
         }}>
           <span style={{ color: T.txt }}>FINPATHIA</span>
-          <span style={{ color: T.txt3, fontSize: 11, fontWeight: 500 }}>™</span>
+          <span style={{ color: T.txt3, fontSize: 12, fontWeight: 500 }}>™</span>
         </div>
         <a href="/" style={{
           color: T.txt2,
@@ -183,7 +183,6 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
           fontWeight: 600,
           opacity: mounted ? 1 : 0,
           letterSpacing: "0.04em",
-          textTransform: "uppercase",
         }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: T.green, boxShadow: `0 0 10px ${T.green}` }} />
           Acceso por invitación · Cohorte Pioneros 2026
@@ -217,7 +216,7 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
         <h1 className={mounted ? "fade-up fade-up-2" : ""} style={{
           fontFamily: FONT_DISPLAY,
           fontSize: "clamp(2.5rem, 7vw, 5rem)",
-          fontWeight: 800,
+          fontWeight: 700,
           lineHeight: 0.95,
           letterSpacing: "-0.05em",
           margin: 0,
@@ -274,10 +273,9 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
 
           <div style={{ position: "relative" }}>
             <div style={{
-              fontSize: 11,
+              fontSize: 12,
               color: T.txt3,
               letterSpacing: "0.06em",
-              textTransform: "uppercase",
               fontWeight: 600,
               marginBottom: 12,
             }}>
@@ -297,7 +295,7 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
                 fontWeight: 700,
                 color: T.green,
                 letterSpacing: "0.04em",
-                background: "rgba(34, 197, 94, 0.08)",
+                background: "rgba(0,200,5, 0.08)",
                 border: `1px solid ${T.green}30`,
                 padding: "12px 20px",
                 borderRadius: 12,
@@ -390,10 +388,9 @@ export default function LandingPioneros({ onGetStarted = () => {} }) {
           opacity: mounted ? 1 : 0,
         }}>
           <div style={{
-            fontSize: 11,
+            fontSize: 12,
             color: T.txt3,
             letterSpacing: "0.06em",
-            textTransform: "uppercase",
             fontWeight: 600,
             marginBottom: 16,
           }}>

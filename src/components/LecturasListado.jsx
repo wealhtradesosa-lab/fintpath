@@ -13,11 +13,11 @@ export function CorteTrabajo({ r, T, fm }) {
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
       <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>{frase}</div>
       <div style={{ display: "flex", height: 12, borderRadius: 6, overflow: "hidden", background: T.bg3, margin: "10px 0 8px" }}>
-        <div style={{ width: pSin + "%", background: "#22c55e" }} />
+        <div style={{ width: pSin + "%", background: "#00c805" }} />
         <div style={{ width: pTrab + "%", background: "#3b82f6" }} />
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 20px", fontSize: 13, color: T.txt2 }}>
-        <span><span style={{ color: "#22c55e" }}>●</span> Sin trabajar (arriendos, intereses, dividendos, pensión): <b style={{ color: T.txt }}>{fm(r.sinTrabajo)}/mes</b></span>
+        <span><span style={{ color: "#00c805" }}>●</span> Sin trabajar (arriendos, intereses, dividendos, pensión): <b style={{ color: T.txt }}>{fm(r.sinTrabajo)}/mes</b></span>
         <span><span style={{ color: "#3b82f6" }}>●</span> De tu trabajo (sueldo, honorarios, negocio): <b style={{ color: T.txt }}>{fm(r.trabajo)}/mes</b></span>
       </div>
     </div>
@@ -29,7 +29,7 @@ export function MesVsPromedio({ r, T, fm, mesNombre }) {
   if (!r || r.totProm <= 0) return null;
   const sube = r.difTotal > 0;
   const enLinea = Math.abs(r.pctTotal) < 5;
-  const col = (d) => (d > 0 ? "#ef4444" : "#22c55e");
+  const col = (d) => (d > 0 ? "#ff5000" : "#00c805");
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
       <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>

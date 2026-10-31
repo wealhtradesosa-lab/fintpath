@@ -39,9 +39,9 @@ export const C = {
 
   // Acentos semánticos (4 colores con propósito claro)
   accent: "#3b82f6",  // azul — primary actions, info, selected state
-  ok:     "#22c55e",  // verde — success, savings, completed
+  ok:     "#00c805",  // verde — success, savings, completed
   warn:   "#f59e0b",  // naranja — warnings, gaps, partial
-  danger: "#ef4444",  // rojo — errors, taxes owed
+  danger: "#ff5000",  // rojo — errors, taxes owed
   purple: "#3b82f6",  // morado — solo para ganancias ocasionales (cédula especial)
 };
 
@@ -50,13 +50,13 @@ export const Cα = {
   accent08: "rgba(59,130,246,0.08)",
   accent15: "rgba(59,130,246,0.15)",
   accent25: "rgba(59,130,246,0.25)",
-  ok08:     "rgba(34,197,94,0.08)",
-  ok15:     "rgba(34,197,94,0.15)",
-  ok25:     "rgba(34,197,94,0.25)",
+  ok08:     "rgba(0,200,5,0.08)",
+  ok15:     "rgba(0,200,5,0.15)",
+  ok25:     "rgba(0,200,5,0.25)",
   warn08:   "rgba(245,158,11,0.08)",
   warn15:   "rgba(245,158,11,0.15)",
   warn25:   "rgba(245,158,11,0.25)",
-  danger08: "rgba(239,68,68,0.08)",
+  danger08: "rgba(255,80,0,0.08)",
 };
 
 // ─── TIPOGRAFÍA ─────────────────────────────────────────────────────────

@@ -341,7 +341,7 @@ export function calcularBase(d = {}, opts = {}) {
 // `umbral` dice contra qué se compara el ingreso pasivo: "esencial", "total", o
 // null cuando el escalón lo decide el flujo y no el ingreso pasivo.
 export const NIVELES = [
-  { id: 1, clave: "deficit", nombre: "Déficit", umbral: null, factor: 0, icon: "⚠️", color: "#ef4444",
+  { id: 1, clave: "deficit", nombre: "Déficit", umbral: null, factor: 0, icon: "⚠️", color: "#ff5000",
     desc: "Gastas más de lo que entra",
     detail: "Tu flujo del mes es negativo. Antes de pensar en ingreso pasivo, el primer paso es que lo que entra cubra lo que sale." },
   { id: 2, clave: "estabilidad", nombre: "Estabilidad", umbral: null, factor: 0, icon: "🛡️", color: "#3b82f6",

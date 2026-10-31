@@ -23,16 +23,16 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  cyan: "#94a3b8", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
+  cyan: "#94a3b8", green: "#00c805", red: "#ff5000", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const Field = ({ label, articulo, value, onChange, hint }) => (
   <div style={{ marginBottom: 14 }}>
     <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4, gap: 8, flexWrap: "wrap" }}>
-      <label style={{ fontSize: 11, fontWeight: 600, color: T.txt2, flex: 1 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, flex: 1 }}>
         {label}
       </label>
-      {articulo && <span style={{ fontSize: 9, color: T.txt3, fontFamily: "monospace", whiteSpace: "nowrap" }}>{articulo}</span>}
+      {articulo && <span style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace", whiteSpace: "nowrap" }}>{articulo}</span>}
     </div>
     <NumberInput
       value={value || ""}
@@ -43,7 +43,7 @@ const Field = ({ label, articulo, value, onChange, hint }) => (
         padding: "10px 12px", borderRadius: 8, fontSize: 13, fontFamily: "monospace", outline: "none",
       }}
     />
-    {hint && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
+    {hint && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
   </div>
 );
 
@@ -63,7 +63,7 @@ const Toggle = ({ label, value, onChange, hint }) => (
           border: "1px solid " + (value ? T.green : T.border),
           borderRadius: 6,
           cursor: "pointer",
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 700,
           minWidth: 50,
         }}
@@ -71,7 +71,7 @@ const Toggle = ({ label, value, onChange, hint }) => (
         {value ? "SÍ" : "NO"}
       </button>
     </div>
-    {hint && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
+    {hint && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
   </div>
 );
 
@@ -104,14 +104,14 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <span style={{ fontSize: 28 }}>⚙️</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.txt }}>Ajustes fiscales avanzados</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.txt }}>Ajustes fiscales avanzados</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
             {owner?.name} · Casos especiales que no entran en Ingresos ni en Egresos
           </div>
         </div>
       </div>
 
-      <div style={{ padding: 14, background: "rgba(148,163,184,0.06)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+      <div style={{ padding: 14, background: "rgba(148,163,184,0.06)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
         <div style={{ fontWeight: 700, color: T.cyan, marginBottom: 4 }}>💡 ¿Dónde están los demás aportes?</div>
         <strong>Pensión y salud obligatorias</strong> viven dentro del form de cada salario (módulo <em>Ingresos</em>) — prellenadas al 4%+4% y editables.
         <strong> Pensión Voluntaria, AFC y Salud prepagada</strong> viven como egresos con categoría <em>"Aporte tributario"</em> (módulo <em>Egresos</em>).
@@ -143,7 +143,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
         </button>
       </div>
 
-      <div style={{ marginTop: 20, padding: 12, background: T.bg3, borderRadius: 10, fontSize: 10, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
+      <div style={{ marginTop: 20, padding: 12, background: T.bg3, borderRadius: 10, fontSize: 11, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
         Estos ajustes afectan sólo el <strong>Simulador tributario</strong>. Si los dejas en los valores por default, el motor aplica las reglas estándar para la mayoría de usuarios.
       </div>
     </div>

@@ -17,8 +17,8 @@ const T = {
   txt: "var(--fp-txt)",
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
-  green: "#22c55e",
-  red: "#ef4444",
+  green: "#00c805",
+  red: "#ff5000",
   blue: "#3b82f6",
   orange: "#f59e0b",
 };
@@ -98,16 +98,15 @@ export default function PlanDeudasACero({
         <div>
           <div
             style={{
-              fontSize: 10,
+              fontSize: 11,
               color: T.txt3,
               fontWeight: 700,
               letterSpacing: 0.6,
-              textTransform: "uppercase",
             }}
           >
             Plan para quedar en cero
           </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginTop: 2 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginTop: 2 }}>
             ¿Cuándo quedas libre de deudas?
           </div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, maxWidth: 560, lineHeight: 1.45 }}>
@@ -139,8 +138,8 @@ export default function PlanDeudasACero({
         <div
           style={{
             padding: "14px 12px",
-            background: "rgba(34,197,94,0.06)",
-            border: "1px solid rgba(34,197,94,0.25)",
+            background: "rgba(0,200,5,0.06)",
+            border: "1px solid rgba(0,200,5,0.25)",
             borderRadius: 10,
             fontSize: 13,
             color: T.txt2,
@@ -178,7 +177,7 @@ export default function PlanDeudasACero({
               <span
                 style={{
                   fontSize: 20,
-                  fontWeight: 800,
+                  fontWeight: 700,
                   color: plan.sim?.converge ? T.green : T.orange,
                   fontVariantNumeric: "tabular-nums",
                 }}
@@ -188,7 +187,7 @@ export default function PlanDeudasACero({
               {plan.sim?.algunaNoAmortiza && (
                 <span
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     color: T.orange,
                     background: "rgba(245,158,11,0.12)",
@@ -224,12 +223,12 @@ export default function PlanDeudasACero({
                       width: 28,
                       height: 28,
                       borderRadius: 8,
-                      background: idx === 0 ? "rgba(239,68,68,0.15)" : T.card,
+                      background: idx === 0 ? "rgba(255,80,0,0.15)" : T.card,
                       color: idx === 0 ? T.red : T.txt2,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontWeight: 800,
+                      fontWeight: 700,
                       fontSize: 12,
                       flexShrink: 0,
                     }}
@@ -249,7 +248,7 @@ export default function PlanDeudasACero({
                     >
                       {d.nombre}
                     </div>
-                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
                       {fm(d.saldoCOP)}
                       {d.tasaEA > 0
                         ? ` @ ${Number(d.tasaEA).toLocaleString("es-CO", {
@@ -264,7 +263,7 @@ export default function PlanDeudasACero({
                   {d.noAmortiza && (
                     <span
                       style={{
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: 700,
                         color: T.orange,
                         background: "rgba(245,158,11,0.12)",
@@ -292,11 +291,10 @@ export default function PlanDeudasACero({
           >
             <div
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 color: T.blue,
                 fontWeight: 700,
                 letterSpacing: 0.5,
-                textTransform: "uppercase",
                 marginBottom: 6,
               }}
             >
@@ -363,7 +361,7 @@ export default function PlanDeudasACero({
             <div
               style={{
                 marginTop: 8,
-                fontSize: 11,
+                fontSize: 12,
                 color: T.txt3,
                 lineHeight: 1.55,
                 background: T.bg3,
@@ -406,8 +404,8 @@ export default function PlanDeudasACero({
 
 function chipStyle(active) {
   return {
-    background: active ? "rgba(34,197,94,0.15)" : T.bg3,
-    border: active ? "1px solid rgba(34,197,94,0.45)" : "1px solid " + T.border,
+    background: active ? "rgba(0,200,5,0.15)" : T.bg3,
+    border: active ? "1px solid rgba(0,200,5,0.45)" : "1px solid " + T.border,
     color: active ? T.green : T.txt2,
     padding: "6px 12px",
     borderRadius: 999,
@@ -429,10 +427,9 @@ function MiniCard({ label, value, sub, tone }) {
     >
       <div
         style={{
-          fontSize: 10,
+          fontSize: 11,
           color: T.txt3,
           fontWeight: 700,
-          textTransform: "uppercase",
           letterSpacing: 0.4,
         }}
       >
@@ -441,7 +438,7 @@ function MiniCard({ label, value, sub, tone }) {
       <div
         style={{
           fontSize: 16,
-          fontWeight: 800,
+          fontWeight: 700,
           color: tone || T.txt,
           marginTop: 4,
           fontVariantNumeric: "tabular-nums",
@@ -449,7 +446,7 @@ function MiniCard({ label, value, sub, tone }) {
       >
         {value}
       </div>
-      <div style={{ fontSize: 11, color: tone || T.txt3, marginTop: 2, fontWeight: 600 }}>
+      <div style={{ fontSize: 12, color: tone || T.txt3, marginTop: 2, fontWeight: 600 }}>
         {sub}
       </div>
     </div>

@@ -16,10 +16,10 @@ const T = {
   bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)",
   tx:"var(--fp-txt)",tx2:"var(--fp-txt2)",tx3:"var(--fp-txt3)",
-  gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",
-  rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",
+  gn:"#00c805",gnB:"rgba(0,200,5,0.08)",
+  rd:"#ff5000",rdB:"rgba(255,80,0,0.06)",
   bl:"#3b82f6",pr:"#3b82f6",or:"#f59e0b",cy:"#94a3b8",
-  ch:["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
+  ch:["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
 const fm = (n) => {
   if(n==null||isNaN(n)) return "$0";
@@ -32,9 +32,9 @@ const pct = (n) => ((n||0)).toFixed(1)+"%";
 
 const Kpi = ({l,v,sub,c}) => (
   <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 18px"}}>
-    <div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",letterSpacing:1,fontWeight:600}}>{l}</div>
+    <div style={{fontSize:11,color:T.tx3,letterSpacing:1,fontWeight:600}}>{l}</div>
     <div style={{fontSize:22,fontWeight:700,color:c||T.tx,marginTop:6}}>{v}</div>
-    {sub&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{sub}</div>}
+    {sub&&<div style={{fontSize:12,color:T.tx3,marginTop:2}}>{sub}</div>}
   </div>
 );
 const Card = ({children,s}) => (
@@ -64,7 +64,7 @@ function getNWPct(nw) {
 const LEVELS = [
   {name:"Security",     factor:0.65,c:"#3b82f6"},
   {name:"Vitality",     factor:0.825,c:"#94a3b8"},
-  {name:"Independence", factor:1.0, c:"#22c55e"},
+  {name:"Independence", factor:1.0, c:"#00c805"},
   {name:"Freedom",      factor:1.5, c:"#f59e0b"},
   {name:"Absolute",     factor:2.5, c:"#f59e0b"},
 ];
@@ -171,7 +171,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h1 style={{fontSize:28,fontWeight:800,letterSpacing:"-0.03em",margin:"0 0 6px"}}>
+          <h1 style={{fontSize:28,fontWeight:700,letterSpacing:"-0.03em",margin:"0 0 6px"}}>
             {greeting}{firstName?`, ${firstName}`:""}
           </h1>
           <p style={{color:T.tx2,fontSize:13,margin:0}}>Your financial snapshot</p>
@@ -190,27 +190,27 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
 
       {/* Net Worth hero + Health Score */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
-        <Card s={{padding:0,background:"radial-gradient(ellipse at 30% 0%,rgba(34,197,94,.06),transparent 60%)"}}>
+        <Card s={{padding:0,background:"radial-gradient(ellipse at 30% 0%,rgba(0,200,5,.06),transparent 60%)"}}>
           <div style={{padding:"28px"}}>
-            <div style={{fontSize:11,color:T.tx3,letterSpacing:2,fontWeight:600}}>NET WORTH</div>
-            <div style={{fontSize:"clamp(2rem,5vw,3rem)",fontWeight:800,letterSpacing:"-0.04em",marginTop:4}}>
+            <div style={{fontSize:12,color:T.tx3,letterSpacing:2,fontWeight:600}}>NET WORTH</div>
+            <div style={{fontSize:"clamp(2rem,5vw,3rem)",fontWeight:700,letterSpacing:"-0.04em",marginTop:4}}>
               {fm(netWorth)}
             </div>
             <div style={{display:"flex",gap:20,marginTop:16,flexWrap:"wrap"}}>
               {[{l:"Assets",v:fm(totalAssets),c:T.gn},{l:"Debt",v:fm(totalDebt),c:T.rd},{l:"D/A Ratio",v:pct(totalAssets>0?totalDebt/totalAssets*100:0),c:totalDebt/totalAssets<0.5?T.gn:T.rd}].map(k=>(
                 <div key={k.l}>
-                  <div style={{fontSize:10,color:T.tx3,letterSpacing:1}}>{k.l}</div>
+                  <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{k.l}</div>
                   <div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:2}}>{k.v}</div>
                 </div>
               ))}
             </div>
             {/* US Wealth percentile */}
             <div style={{marginTop:16,background:`${T.pr}10`,border:`1px solid ${T.pr}20`,borderRadius:10,padding:"10px 14px"}}>
-              <div style={{fontSize:10,color:T.pr,fontWeight:700}}>🇺🇸 US WEALTH POSITION (Fed Reserve SCF 2022)</div>
+              <div style={{fontSize:11,color:T.pr,fontWeight:700}}>🇺🇸 US WEALTH POSITION (Fed Reserve SCF 2022)</div>
               <div style={{fontSize:13,color:T.tx2,marginTop:4}}>
                 You're in the <strong style={{color:T.gn}}>top {100-nwPct}%</strong> of US households by net worth
               </div>
-              <div style={{fontSize:10,color:T.tx3,marginTop:2}}>
+              <div style={{fontSize:11,color:T.tx3,marginTop:2}}>
                 Median US household: $192,700 · Top 10%: $1.86M · Top 1%: $11.1M
               </div>
             </div>
@@ -218,10 +218,10 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         </Card>
         <Card s={{padding:"28px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",textAlign:"center"}}>
           <div style={{width:90,height:90,borderRadius:"50%",border:`4px solid ${scoreColor}`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12}}>
-            <div style={{fontSize:28,fontWeight:800,color:scoreColor}}>{score}</div>
+            <div style={{fontSize:28,fontWeight:700,color:scoreColor}}>{score}</div>
           </div>
           <div style={{fontSize:13,fontWeight:700,color:scoreColor}}>{scoreLabel}</div>
-          <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Financial Health Score</div>
+          <div style={{fontSize:12,color:T.tx3,marginTop:2}}>Financial Health Score</div>
         </Card>
       </div>
 
@@ -283,15 +283,15 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
             const reached = ratio>=l.factor;
             return(
               <div key={l.name} style={{flex:1,textAlign:"center"}}>
-                <div style={{fontSize:9,color:reached?l.c:T.tx3,fontWeight:reached?700:400}}>{l.name}</div>
-                <div style={{fontSize:11,color:reached?l.c:T.tx3,marginTop:2}}>{(l.factor*100).toFixed(0)}%</div>
+                <div style={{fontSize:11,color:reached?l.c:T.tx3,fontWeight:reached?700:400}}>{l.name}</div>
+                <div style={{fontSize:12,color:reached?l.c:T.tx3,marginTop:2}}>{(l.factor*100).toFixed(0)}%</div>
               </div>
             );
           })}
         </div>
         <div style={{height:12,background:T.bg3,borderRadius:6,overflow:"hidden",marginBottom:8}}>
           <div style={{height:"100%",width:Math.min(ratio/2.5*100,100)+"%",
-            background:"linear-gradient(90deg,#3b82f6,#94a3b8,#22c55e,#f59e0b,#f59e0b)",
+            background:"linear-gradient(90deg,#3b82f6,#94a3b8,#00c805,#f59e0b,#f59e0b)",
             borderRadius:6,transition:"width 0.4s"}}/>
         </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -300,7 +300,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
               ? <span style={{color:curLevel.c,fontWeight:700}}>Level: {curLevel.name} ({pct(ratio*100)} independence)</span>
               : <span style={{color:T.rd}}>Below Security level — need {fm(LEVELS[0].factor*t.te-t.ni)}/mo more</span>}
           </div>
-          {nextLevel&&<div style={{fontSize:11,color:T.tx3}}>
+          {nextLevel&&<div style={{fontSize:12,color:T.tx3}}>
             Next: {nextLevel.name} → need +{fm(Math.max(0,nextLevel.factor*t.te-t.ni))}/mo
           </div>}
         </div>
@@ -339,14 +339,14 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div style={{flex:1,fontSize:11}}>
+                <div style={{flex:1,fontSize:12}}>
                   {pie.map((p,i)=>(
                     <div key={p.name} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"3px 0",borderBottom:`1px solid ${T.border}`}}>
                       <div style={{display:"flex",alignItems:"center",gap:6}}>
                         <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                         <span style={{color:T.tx2}}>{p.name}</span>
                       </div>
-                      <span style={{fontWeight:600,color:T.tx3,fontSize:10}}>
+                      <span style={{fontWeight:600,color:T.tx3,fontSize:11}}>
                         {totalAssets>0?(p.value/totalAssets*100).toFixed(0):0}%
                       </span>
                     </div>
@@ -371,7 +371,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
                 <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:`1px solid ${T.border}`}}>
                   <div>
                     <div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div>
-                    <div style={{fontSize:10,color:T.tx3}}>{inc.categoria}</div>
+                    <div style={{fontSize:11,color:T.tx3}}>{inc.categoria}</div>
                   </div>
                   <div style={{fontWeight:700,color:T.gn}}>{fm(inc.mensual||0)}</div>
                 </div>
@@ -392,7 +392,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <span style={{fontWeight:700,color:T.rd}}>{fm(exp.value)}</span>
-                    <span style={{fontSize:10,color:T.tx3}}>{t.gfm>0?(exp.value/t.gfm*100).toFixed(0):0}%</span>
+                    <span style={{fontSize:11,color:T.tx3}}>{t.gfm>0?(exp.value/t.gfm*100).toFixed(0):0}%</span>
                   </div>
                 </div>
               ))
@@ -419,10 +419,10 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>🔥 FIRE Progress</div>
           <div style={{position:"relative",height:14,background:T.bg3,borderRadius:6,overflow:"hidden",marginBottom:8}}>
             <div style={{height:"100%",width:Math.min(firePct,100)+"%",
-              background:firePct>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#f59e0b)",
+              background:firePct>=100?"linear-gradient(90deg,#00c805,#3b82f6)":"linear-gradient(90deg,#ff5000,#f59e0b)",
               borderRadius:6,transition:"width 0.5s"}}/>
           </div>
-          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:T.tx3}}>
             <span>0%</span>
             <span style={{color:firePct>=100?T.gn:T.tx2,fontWeight:700}}>{firePct.toFixed(0)}%</span>
             <span>100%</span>
@@ -430,13 +430,13 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           <div style={{marginTop:12,fontSize:12,color:T.tx2}}>
             FIRE Number: <strong>{fm(fireNum)}</strong>
           </div>
-          <div style={{fontSize:11,color:T.tx3,marginTop:4}}>
+          <div style={{fontSize:12,color:T.tx3,marginTop:4}}>
             {firePct>=100
               ? <span style={{color:T.gn}}>🏆 Financially independent!</span>
               : `Need ${fm(Math.max(0,fireNum-netWorth))} more`}
           </div>
           {t.cf>0&&firePct<100&&(
-            <div style={{fontSize:11,color:T.tx3,marginTop:4}}>
+            <div style={{fontSize:12,color:T.tx3,marginTop:4}}>
               At current pace: ~{Math.ceil((fireNum-netWorth)/(t.cf*12))} years
             </div>
           )}
@@ -468,7 +468,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
               <span style={{fontSize:16,flexShrink:0}}>{a.t}</span>
               <div>
                 <div style={{fontSize:12,fontWeight:700,color:T.tx}}>{a.l}</div>
-                <div style={{fontSize:11,color:T.tx2,marginTop:2,lineHeight:1.5}}>{a.d}</div>
+                <div style={{fontSize:12,color:T.tx2,marginTop:2,lineHeight:1.5}}>{a.d}</div>
               </div>
             </div>
           ));

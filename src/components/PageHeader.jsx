@@ -64,7 +64,6 @@ export default function PageHeader({
               color: "rgba(var(--fp-ink),0.55)",
               fontWeight: 500,
               letterSpacing: "0.04em",
-              textTransform: "uppercase",
             }}>
               {label}
             </span>
@@ -75,7 +74,7 @@ export default function PageHeader({
         <h1 style={{
           fontFamily: FONT_DISPLAY,
           fontSize: titleSize,
-          fontWeight: 800,
+          fontWeight: 700,
           lineHeight: 1.0,
           letterSpacing: "-0.04em",
           margin: 0,
@@ -85,7 +84,7 @@ export default function PageHeader({
             <>
               {title.split(accent)[0]}
               <span style={{
-                background: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
+                background: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",

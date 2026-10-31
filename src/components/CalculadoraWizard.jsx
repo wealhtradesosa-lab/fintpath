@@ -78,7 +78,7 @@ function Stepper({ currentStep, onGotoStep }) {
               flex: "1 1 100px",
               minWidth: 0,
               padding: "8px 6px",
-              background: isActive ? "rgba(59,130,246,0.12)" : isDone ? "rgba(34,197,94,0.08)" : T.bg3,
+              background: isActive ? "rgba(59,130,246,0.12)" : isDone ? "rgba(0,200,5,0.08)" : T.bg3,
               border: "1px solid " + (isActive ? T.blue : isDone ? T.green : T.border),
               borderRadius: 8,
               color: isActive ? T.blue : isDone ? T.green : T.txt3,
@@ -88,10 +88,10 @@ function Stepper({ currentStep, onGotoStep }) {
               transition: "all 0.2s",
             }}
           >
-            <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {isDone ? "✓" : `${i + 1}`} · {s.titulo}
             </div>
-            <div style={{ fontSize: 9, color: isActive ? T.blue : T.txt3, lineHeight: 1.3, display: isActive ? "block" : "none" }}>
+            <div style={{ fontSize: 11, color: isActive ? T.blue : T.txt3, lineHeight: 1.3, display: isActive ? "block" : "none" }}>
               {s.descripcion}
             </div>
           </button>
@@ -282,7 +282,7 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
     <div>
       <div style={{ textAlign: "center", marginBottom: 18, padding: "0 20px" }}>
         <div style={{ fontSize: 36, marginBottom: 8 }}>🧑</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 6 }}>
+        <div style={{ fontSize: 20, fontWeight: 700, color: T.txt, marginBottom: 6 }}>
           ¿Para quién quieres calcular el impuesto?
         </div>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, maxWidth: 480, margin: "0 auto" }}>
@@ -292,12 +292,12 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
 
       {/* Progreso global */}
       {owners.length > 1 && (
-        <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, maxWidth: 520, margin: "0 auto 14px" }}>
+        <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, maxWidth: 520, margin: "0 auto 14px" }}>
           <div style={{ fontSize: 16 }}>📊</div>
           <div style={{ flex: 1, fontSize: 12, color: T.txt2 }}>
             <strong style={{ color: T.green }}>{ownersConfigurados}</strong> de <strong style={{ color: T.txt }}>{owners.length}</strong> propietarios configurados
           </div>
-          {ownersConfigurados === owners.length && <div style={{ fontSize: 11, color: T.green, fontWeight: 700 }}>✓ Completo</div>}
+          {ownersConfigurados === owners.length && <div style={{ fontSize: 12, color: T.green, fontWeight: 700 }}>✓ Completo</div>}
         </div>
       )}
 
@@ -317,7 +317,7 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
                 onClick={() => onSelect(o.id)}
                 style={{
                   padding: "14px 16px",
-                  background: selectedOwnerId === o.id ? "rgba(34,197,94,0.1)" : T.bg3,
+                  background: selectedOwnerId === o.id ? "rgba(0,200,5,0.1)" : T.bg3,
                   border: "2px solid " + (selectedOwnerId === o.id ? T.green : T.border),
                   borderRadius: 10,
                   cursor: "pointer",
@@ -330,9 +330,9 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{o.name}</div>
-                      {yaConfigurado && <span style={{ fontSize: 9, padding: "2px 6px", background: "rgba(34,197,94,0.15)", color: T.green, borderRadius: 3, fontWeight: 700 }}>✓ configurado</span>}
+                      {yaConfigurado && <span style={{ fontSize: 11, padding: "2px 6px", background: "rgba(0,200,5,0.15)", color: T.green, borderRadius: 3, fontWeight: 700 }}>✓ configurado</span>}
                     </div>
-                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+                    <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
                       {o.type === "juridica" ? "Persona jurídica" : "Persona natural"}
                       {o.regimen && o.regimen !== "ordinario" && ` · Régimen ${o.regimen}`}
                     </div>
@@ -516,7 +516,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
         </div>
       ) : (
         <div style={{ marginBottom: 18 }}>
-          <div style={{ ...F.caption, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, marginBottom: 10 }}>
+          <div style={{ ...F.caption, letterSpacing: 0.5, fontWeight: 600, marginBottom: 10 }}>
             Ingresos del año
           </div>
           <div style={{ background: T.bg3, borderRadius: 10, overflow: "hidden" }}>
@@ -533,14 +533,14 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
 
       {/* Nota discreta sobre items apagados — informativo, no alerta */}
       {ownerIngApagados.length > 0 && (
-        <div style={{ padding: "10px 14px", marginBottom: 18, fontSize: 11, color: T.txt3, lineHeight: 1.5, borderLeft: "2px solid " + T.border, paddingLeft: 12 }}>
+        <div style={{ padding: "10px 14px", marginBottom: 18, fontSize: 12, color: T.txt3, lineHeight: 1.5, borderLeft: "2px solid " + T.border, paddingLeft: 12 }}>
           <strong style={{ color: T.txt2 }}>Nota:</strong> {ownerIngApagados.length} ingreso{ownerIngApagados.length > 1 ? "s" : ""} apagado{ownerIngApagados.length > 1 ? "s" : ""} ({ownerIngApagados.map(i => i.nombre).join(", ")}) no aparecen acá porque están excluidos del cálculo. Puedes encenderlos en Ingresos si quieres incluirlos.
         </div>
       )}
 
       {dataGaps.length > 0 && (
         <div style={{ marginBottom: 18 }}>
-          <div style={{ ...F.caption, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, color: T.orange, marginBottom: 10 }}>
+          <div style={{ ...F.caption, letterSpacing: 0.5, fontWeight: 600, color: T.orange, marginBottom: 10 }}>
             Sugerencias para revisar — {dataGaps.length}
           </div>
           <div style={{ background: T.bg3, borderRadius: 10, overflow: "hidden" }}>
@@ -552,10 +552,10 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
                   <div style={{ ...F.caption, color: T.txt2 }}>{g.desc}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => dismissGap(g.id)} title="No aplica a mi situación" style={{ padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  <button onClick={() => dismissGap(g.id)} title="No aplica a mi situación" style={{ padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                     No aplica
                   </button>
-                  <button onClick={() => onNavigate?.(g.page)} style={{ padding: "6px 12px", background: T.bg2, border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  <button onClick={() => onNavigate?.(g.page)} style={{ padding: "6px 12px", background: T.bg2, border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                     Completar →
                   </button>
                 </div>
@@ -597,13 +597,13 @@ function PasoHeader({ owner, titulo, descripcion }) {
             {owner.type === "juridica" ? "🏢" : "🧑"}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, letterSpacing: 0.6, marginBottom: 2 }}>
               Calculando para
             </div>
             <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, lineHeight: 1.2, textTransform: "capitalize" }}>
               {owner.name}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
               {owner.type === "juridica" ? "Persona Jurídica" : "Persona Natural"}
               {owner.regimen && owner.regimen !== "ordinario" ? ` · Régimen ${owner.regimen}` : ""}
             </div>
@@ -622,7 +622,7 @@ function OwnerChip({ owner }) {
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 12 }}>
       <span style={{ fontSize: 12 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
-      <span style={{ fontSize: 10, fontWeight: 600, color: T.blue }}>{owner.name}</span>
+      <span style={{ fontSize: 11, fontWeight: 600, color: T.blue }}>{owner.name}</span>
     </div>
   );
 }
@@ -737,7 +737,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Régimen tributario
           </div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             Las tarifas y los descuentos disponibles dependen del régimen.
             <strong style={{ color: T.txt2 }}> Si no estás seguro, consulta tu RUT o tu contador.</strong>
           </div>
@@ -758,7 +758,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
                 textAlign: "left",
                 padding: "12px 14px",
                 background: sel ? "rgba(59,130,246,0.08)" : T.bg3,
-                border: "2px solid " + (sel ? T.purple : (noElegible ? "rgba(239,68,68,0.3)" : T.border)),
+                border: "2px solid " + (sel ? T.purple : (noElegible ? "rgba(255,80,0,0.3)" : T.border)),
                 borderRadius: 8,
                 cursor: "pointer",
                 color: T.txt,
@@ -772,12 +772,12 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
                 </span>
                 <span style={{ ...F.mono, fontSize: 12, color: sel ? T.purple : T.txt3 }}>{r.tarifa}</span>
               </div>
-              <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 2 }}>
+              <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4, marginBottom: 2 }}>
                 {r.descripcion}
               </div>
-              <div style={{ fontSize: 9, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
+              <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
               {noElegible && (
-                <div style={{ fontSize: 10, color: T.red, marginTop: 6, fontWeight: 600 }}>
+                <div style={{ fontSize: 11, color: T.red, marginTop: 6, fontWeight: 600 }}>
                   ⚠️ Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${fmtNumEs((TOPE_SIMPLE_UVT * UVT / 1_000_000), 0)}M COP). No eres elegible para Régimen Simple.
                 </div>
               )}
@@ -792,7 +792,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
           <div style={{ fontSize: 12, fontWeight: 700, color: T.txt, marginBottom: 8 }}>
             Grupo de actividad económica (Art. 908 ET)
           </div>
-          <div style={{ fontSize: 10, color: T.txt3, marginBottom: 12, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 11, color: T.txt3, marginBottom: 12, lineHeight: 1.4 }}>
             La tarifa del Régimen Simple depende del grupo de actividad principal de tu empresa.
             Elige el que mejor describa lo que hace tu negocio.
           </div>
@@ -807,20 +807,20 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
                   style={{
                     textAlign: "left",
                     padding: "10px 12px",
-                    background: sel ? "rgba(34,197,94,0.08)" : "transparent",
+                    background: sel ? "rgba(0,200,5,0.08)" : "transparent",
                     border: "1px solid " + (sel ? T.green : T.border),
                     borderRadius: 6,
                     cursor: "pointer",
                     color: T.txt,
                   }}
                 >
-                  <div style={{ fontSize: 11, fontWeight: 700, color: sel ? T.green : T.txt2, marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: sel ? T.green : T.txt2, marginBottom: 2 }}>
                     {sel ? "✓ " : "○ "}{grupo.label}
                   </div>
-                  <div style={{ fontSize: 9, color: T.txt3, lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.3 }}>
                     {grupo.descripcion}
                   </div>
-                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 3, fontFamily: "monospace" }}>
                     Tramos: {grupo.tramos.map(t => `${fmtPctEs((t.tarifa * 100), 1)}`).join(" → ")}
                   </div>
                 </button>
@@ -828,7 +828,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
             })}
           </div>
           {!grupoActual && (
-            <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, fontSize: 10, color: T.orange, lineHeight: 1.4 }}>
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, fontSize: 11, color: T.orange, lineHeight: 1.4 }}>
               ⚠️ Sin grupo seleccionado, el motor estimará 5% como fallback. Elige el grupo correcto para ver tu tarifa real.
             </div>
           )}
@@ -837,7 +837,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
 
       {/* Nota sobre régimen actual */}
       {regimenActual === "exenta" && (
-        <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+        <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
           <strong style={{ color: T.green }}>Régimen Exenta:</strong> el impuesto de renta es 0%, pero
           la entidad debe declarar igual y cumplir requisitos del Art. 356 ET (RTE) o el régimen aplicable.
         </div>
@@ -911,7 +911,7 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Descuentos tributarios disponibles
           </div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             Si tu empresa aplica alguno de estos descuentos legales, carga el monto. El motor calculará
             el ahorro real (con tope global del 25% del impuesto bruto, Art. 259 ET).
             <strong style={{ color: T.txt2 }}> Si no aplican o no quieres cargar, deja en blanco.</strong>
@@ -924,22 +924,22 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
           const valorActual = dt[d.id] || 0;
           const tieneValor = valorActual > 0;
           return (
-            <div key={d.id} style={{ background: tieneValor ? "rgba(34,197,94,0.05)" : "transparent", border: "1px solid " + (tieneValor ? "rgba(34,197,94,0.2)" : T.border), borderRadius: 8, padding: 12 }}>
+            <div key={d.id} style={{ background: tieneValor ? "rgba(0,200,5,0.05)" : "transparent", border: "1px solid " + (tieneValor ? "rgba(0,200,5,0.2)" : T.border), borderRadius: 8, padding: 12 }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: tieneValor ? T.green : T.txt2, marginBottom: 2 }}>
                     {d.label}
                   </div>
-                  <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4 }}>
                     <span style={{ fontWeight: 600 }}>{d.articulo}</span> · {d.descuentoPct}
                   </div>
-                  <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4 }}>
                     {d.descripcion}
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <label style={{ fontSize: 10, color: T.txt3, fontWeight: 600, whiteSpace: "nowrap" }}>
+                <label style={{ fontSize: 11, color: T.txt3, fontWeight: 600, whiteSpace: "nowrap" }}>
                   Monto anual COP:
                 </label>
                 <input
@@ -967,7 +967,7 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
                   <button
                     onClick={() => setCampo(d.id, 0)}
                     title="Limpiar este campo"
-                    style={{ padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                    style={{ padding: "6px 10px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
                   >
                     Limpiar
                   </button>
@@ -978,7 +978,7 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
         })}
       </div>
 
-      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
         <strong style={{ color: T.txt2 }}>⚖️ Tope global Art. 259 ET:</strong> el total de descuentos
         aplicados no puede exceder el 25% del impuesto bruto. Si excede, el motor lo ajusta automáticamente
         al límite legal.
@@ -1024,11 +1024,11 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
 
   // Color del banner según alerta
   const tono = alerta === "roja"
-    ? { bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.25)", text: T.red, icon: "🚨", label: "Riesgo alto de revisión DIAN" }
+    ? { bg: "rgba(255,80,0,0.06)", border: "rgba(255,80,0,0.25)", text: T.red, icon: "🚨", label: "Riesgo alto de revisión DIAN" }
     : alerta === "amarilla"
     ? { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.25)", text: T.orange, icon: "⚠️", label: "Zona de atención" }
     : gastosHon > 0
-    ? { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.20)", text: T.green, icon: "✓", label: "Estructura saludable" }
+    ? { bg: "rgba(0,200,5,0.06)", border: "rgba(0,200,5,0.20)", text: T.green, icon: "✓", label: "Estructura saludable" }
     : { bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.20)", text: T.blue, icon: "💡", label: "Sin gastos cargados" };
 
   // Categorías con monto > 0 para mostrar desglose
@@ -1054,7 +1054,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Honorarios y gastos de actividad (Art. 107 ET)
           </div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             Como persona natural con honorarios, los gastos legítimos de tu actividad
             (oficina, internet, viajes, etc.) reducen la base gravable.
             <strong style={{ color: T.txt2 }}> Carga los gastos en el módulo Egresos y márcalos como "actividad por honorarios".</strong>
@@ -1065,25 +1065,25 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
       {/* Header con cifras principales */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8, marginBottom: 12 }}>
         <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
-          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.4, marginBottom: 4 }}>
             Honorarios brutos
           </div>
           <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: T.txt }}>{fmtM(honorariosBruto)}</div>
         </div>
         <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
-          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.4, marginBottom: 4 }}>
             Gastos deducibles
           </div>
           <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: gastosHon > 0 ? T.green : T.txt3 }}>−{fmtM(gastosHon)}</div>
         </div>
         <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
-          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.4, marginBottom: 4 }}>
             Honorarios netos
           </div>
           <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: T.txt }}>{fmtM(honorariosNeto)}</div>
         </div>
         <div style={{ background: T.bg2, padding: 10, borderRadius: 8 }}>
-          <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.4, marginBottom: 4 }}>
             Ratio gastos
           </div>
           <div style={{ ...F.mono, fontSize: 14, fontWeight: 700, color: tono.text }}>{fmtPct(ratio)}</div>
@@ -1095,7 +1095,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
         <div style={{ fontSize: 12, fontWeight: 700, color: tono.text, marginBottom: 4 }}>
           {tono.icon} {tono.label}
         </div>
-        <div style={{ fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           {alerta === "roja" && (
             <>El ratio gastos/honorarios supera el 80%. Esto puede activar revisión DIAN. Asegúrate de tener documentación impecable de cada gasto (facturas, comprobantes, notas de causalidad).</>
           )}
@@ -1114,17 +1114,17 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
       {/* Desglose si hay gastos */}
       {itemsDesglose.length > 0 && (
         <details style={{ marginBottom: 12 }}>
-          <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt2, fontWeight: 700, padding: "6px 10px", background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + T.border, borderRadius: 6, listStyle: "none", userSelect: "none" }}>
+          <summary style={{ cursor: "pointer", fontSize: 12, color: T.txt2, fontWeight: 700, padding: "6px 10px", background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + T.border, borderRadius: 6, listStyle: "none", userSelect: "none" }}>
             ▾ Desglose por categoría ({itemsDesglose.length})
           </summary>
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {itemsDesglose.map((it) => (
               <div key={it.key} style={{ background: T.bg2, padding: "8px 10px", borderRadius: 6, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 }}>{it.label}</div>
-                  <div style={{ fontSize: 9, color: T.txt3 }}>{it.art}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2 }}>{it.label}</div>
+                  <div style={{ fontSize: 11, color: T.txt3 }}>{it.art}</div>
                   {it.bruto != null && it.bruto !== it.monto && (
-                    <div style={{ fontSize: 9, color: T.txt3, marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
                       Bruto: {fmtM(it.bruto)} · {it.tope ? `tope ${fmtM(it.tope)}` : "aplicado al 50%"}
                     </div>
                   )}
@@ -1140,7 +1140,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
 
       {/* Commit B1: warning si hay >1 vehículo registrado (solo uno es deducible — Art. 107 ET) */}
       {Number(desglose.vehiculosTotalRegistrados || 0) > 1 && (
-        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 11, color: T.orange, lineHeight: 1.5 }}>
+        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: T.orange, lineHeight: 1.5 }}>
           🚗 <strong>{desglose.vehiculosTotalRegistrados} vehículos registrados</strong> como gasto de actividad. <strong>Art. 107 ET</strong> exige causalidad: solo <strong>uno</strong> puede ser deducible (el de mayor monto). Los otros {desglose.vehiculosIgnorados} ({fmtM(desglose.vehiculoIgnoradoMonto || 0)}/año) <strong>NO</strong> se están deduciendo. Si efectivamente usas más de un vehículo para tu actividad profesional, marca los otros con otra categoría.
         </div>
       )}
@@ -1155,7 +1155,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
         </button>
       )}
 
-      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
         <strong style={{ color: T.txt2 }}>⚖️ Art. 107 ET:</strong> los gastos deben tener
         causalidad, necesidad y proporcionalidad con tu actividad. Mantén facturas y
         comprobantes para sustentar cada deducción si la DIAN los requiere.
@@ -1286,14 +1286,14 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   };
 
   return (
-    <div style={{ background: "rgba(34,197,94,0.04)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+    <div style={{ background: "rgba(0,200,5,0.04)", border: "1px solid rgba(0,200,5,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
         <span style={{ fontSize: 20 }}>📋</span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Deducciones aplicadas — qué detecté de tus datos
           </div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             Estas son las deducciones legales que el motor está aplicando o puede aplicar para ti.
             Cada una tiene un tope legal del Estatuto Tributario.
             <strong style={{ color: T.txt2 }}> Si una está en $0 te indico cuánto podrías ahorrar y dónde activarla.</strong>
@@ -1309,24 +1309,24 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
           //   $0:       borde + fondo naranja con header ⚠️, monto máximo, botón fuerte
           if (aplicada) {
             return (
-              <div key={it.key} style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, padding: 12 }}>
+              <div key={it.key} style={{ background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 8, padding: 12 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                   <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{it.icono}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap" }}>
                       <div>
                         <span style={{ fontSize: 12, fontWeight: 700, color: T.green }}>✓ {it.label}</span>
-                        <span style={{ fontSize: 9, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
+                        <span style={{ fontSize: 11, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
                       </div>
                       <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 700 }}>{fmt(it.valor)}</span>
                     </div>
-                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4, marginBottom: 6 }}>
                       {it.topeMensual}
                     </div>
                     <button
                       type="button"
                       onClick={() => handleAccion(it.accion)}
-                      style={{ background: "transparent", border: "none", color: T.blue, fontSize: 10, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
+                      style={{ background: "transparent", border: "none", color: T.blue, fontSize: 11, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" }}
                     >
                       {it.linkTexto}
                     </button>
@@ -1344,21 +1344,21 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", marginBottom: 4, flexWrap: "wrap" }}>
                     <div>
                       <span style={{ fontSize: 12, fontWeight: 700, color: T.txt2 }}>○ {it.label}</span>
-                      <span style={{ fontSize: 9, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
+                      <span style={{ fontSize: 11, color: T.txt3, marginLeft: 8 }}>{it.art}</span>
                     </div>
                     <span style={{ ...F.mono, fontSize: 12, color: T.txt3, fontWeight: 700 }}>$0</span>
                   </div>
-                  <div style={{ fontSize: 10, color: T.orange, fontWeight: 700, marginBottom: 6, lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6, lineHeight: 1.4 }}>
                     ⚠️ Esta deducción está disponible y no la estás aplicando
                   </div>
-                  <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
                     {it.montoMaximoTexto}
                   </div>
-                  {it.nota && <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4, marginBottom: 8 }}>{it.nota}</div>}
+                  {it.nota && <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4, marginBottom: 8 }}>{it.nota}</div>}
                   <button
                     type="button"
                     onClick={() => handleAccion(it.accion)}
-                    style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#fff", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+                    style={{ padding: "8px 14px", background: T.orange, border: "none", color: "#fff", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                   >
                     {it.ctaTexto}
                   </button>
@@ -1369,7 +1369,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
         })}
       </div>
 
-      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
         <strong style={{ color: T.txt2 }}>⚖️ Tope global Art. 336 #3 ET:</strong> el total de exenta 25%
         + deducciones del Art. 387 + AFC + PV no puede superar el <strong>40% de la renta neta</strong>.
         El motor lo respeta automáticamente y prioriza llenar primero las deducciones que no caben en la base laboral.
@@ -1548,18 +1548,18 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
     <div>
       <div style={{ textAlign: "center", marginBottom: 14 }}>
         <div style={{ fontSize: 36, marginBottom: 6 }}>🎯</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginBottom: 3 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 3 }}>
           Tu impuesto estimado para {selectedOwner?.name}
         </div>
-        <div style={{ fontSize: 11, color: T.txt3 }}>
+        <div style={{ fontSize: 12, color: T.txt3 }}>
           Año gravable {new Date().getFullYear()}
         </div>
       </div>
 
       {/* Banner de guardado automático */}
-      <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.08)", border: "1px solid rgba(0,200,5,0.25)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ fontSize: 16 }}>💾</div>
-        <div style={{ flex: 1, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ flex: 1, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           <strong style={{ color: T.green }}>Tu configuración se guardó automáticamente.</strong>
           {optimizacionesActivas.length > 0 && ` Aplicaste ${optimizacionesActivas.length} ajuste${optimizacionesActivas.length > 1 ? 's' : ''} para este propietario.`}
         </div>
@@ -1569,32 +1569,32 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       {ahorro > 100_000 ? (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 14 }}>
           <div style={{ padding: 16, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Tu impuesto hoy</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${fmtPctEs(((impActual / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
+            <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5, marginBottom: 6 }}>Tu impuesto hoy</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}</div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${fmtPctEs(((impActual / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
           </div>
-          <div style={{ padding: 16, background: "rgba(34,197,94,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.green, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Si aplicas PV/AFC al máximo</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${fmtPctEs(((impOpt / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
+          <div style={{ padding: 16, background: "rgba(0,200,5,0.08)", border: "2px solid " + T.green, borderRadius: 12, textAlign: "center" }}>
+            <div style={{ fontSize: 11, color: T.green, letterSpacing: 0.5, marginBottom: 6 }}>Si aplicas PV/AFC al máximo</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(impOpt)}</div>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>{det.ingreso > 0 ? `${fmtPctEs(((impOpt / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
           </div>
         </div>
       ) : (
         <div style={{ padding: 18, background: T.bg3, border: "2px solid " + T.border, borderRadius: 12, textAlign: "center", marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Tu impuesto estimado</div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: T.txt, fontFamily: "monospace" }}>{fm(impActual)}</div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 6 }}>{det.ingreso > 0 ? `${fmtPctEs(((impActual / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
-          <div style={{ fontSize: 11, color: T.txt2, marginTop: 14, lineHeight: 1.5, maxWidth: 480, margin: "14px auto 0", fontStyle: "italic" }}>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5, marginBottom: 8 }}>Tu impuesto estimado</div>
+          <div style={{ fontSize: 32, fontWeight: 700, color: T.txt, fontFamily: "monospace" }}>{fm(impActual)}</div>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>{det.ingreso > 0 ? `${fmtPctEs(((impActual / det.ingreso) * 100), 1)} de tus ingresos` : ""}</div>
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 14, lineHeight: 1.5, maxWidth: 480, margin: "14px auto 0", fontStyle: "italic" }}>
             Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos. Para reducir más, revisa el plan de acción abajo.
           </div>
         </div>
       )}
 
       {ahorro > 1_000_000 && (
-        <div style={{ padding: "12px 16px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 10, marginBottom: 14, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>Tu ahorro potencial máximo</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(ahorro)}/año</div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4, maxWidth: 440, margin: "4px auto 0" }}>
+        <div style={{ padding: "12px 16px", background: "rgba(0,200,5,0.1)", border: "1px solid rgba(0,200,5,0.3)", borderRadius: 10, marginBottom: 14, textAlign: "center" }}>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5 }}>Tu ahorro potencial máximo</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(ahorro)}/año</div>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4, maxWidth: 440, margin: "4px auto 0" }}>
             Este es el techo legal. Para capturarlo necesitas aportar a PV/AFC hasta el tope del 40% de tus ingresos.
           </div>
         </div>
@@ -1602,8 +1602,8 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
       {impGO > 0 && (
         <div style={{ padding: "10px 14px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, marginBottom: 4 }}>💸 Ganancias ocasionales (cédula separada)</div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: T.purple, fontWeight: 700, marginBottom: 4 }}>💸 Ganancias ocasionales (cédula separada)</div>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             Dentro del impuesto de arriba, hay <strong style={{ color: T.purple }}>{fm(impGO)}</strong> de ganancias ocasionales (herencia, venta de inmueble, lotería). Tarifa 15% / 20%.
           </div>
         </div>
@@ -1612,15 +1612,15 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       {/* Resumen de optimizaciones activas */}
       {optimizacionesActivas.length > 0 && (
         <div style={{ marginBottom: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, border: "1px solid " + T.border }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.txt2, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
             <span>✅</span> Ajustes aplicados ({optimizacionesActivas.length})
-            <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, padding: "3px 8px", fontSize: 10, cursor: "pointer" }}>
+            <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>
               Modificar
             </button>
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {optimizacionesActivas.map((it, i) => (
-              <div key={i} style={{ padding: "5px 10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 6, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 5 }}>
+              <div key={i} style={{ padding: "5px 10px", background: "rgba(0,200,5,0.08)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 6, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", gap: 5 }}>
                 <span>{it.icono}</span>
                 <span>{it.texto}</span>
               </div>
@@ -1629,12 +1629,12 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         </div>
       )}
       {optimizacionesActivas.length === 0 && (
-        <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ fontSize: 16 }}>💡</div>
           <div style={{ flex: 1, lineHeight: 1.5 }}>
             No aplicaste ningún ajuste. Puede haber deducciones legales que apliquen a tu caso — vuelve al Paso 3 o 4 y revisa las preguntas.
           </div>
-          <button onClick={() => onGotoStep?.(2)} style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+          <button onClick={() => onGotoStep?.(2)} style={{ padding: "5px 12px", background: "transparent", border: "1px solid " + T.orange, color: T.orange, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
             Revisar
           </button>
         </div>
@@ -1642,7 +1642,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
       {/* Acciones concretas */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 8 }}>
           ▶️ Próximos pasos recomendados
         </div>
         {acciones.map((a, i) => (
@@ -1651,9 +1651,9 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
               <div style={{ fontSize: 18 }}>{a.icono}</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: T.txt, marginBottom: 3 }}>{a.titulo}</div>
-                <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>{a.desc}</div>
+                <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>{a.desc}</div>
               </div>
-              <button onClick={() => onNavigate?.(a.page)} style={{ padding: "6px 12px", background: T.blue, border: "none", color: "white", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <button onClick={() => onNavigate?.(a.page)} style={{ padding: "6px 12px", background: T.blue, border: "none", color: "white", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                 {a.cta} →
               </button>
             </div>
@@ -1665,13 +1665,13 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
           Bug fixado en 9.5: antes el wizard empujaba automaticamente al siguiente owner
           y el usuario quedaba en loop sin poder salir. */}
       {owners.length > 1 && (
-        <div style={{ padding: "14px 18px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 12, marginBottom: 14 }}>
+        <div style={{ padding: "14px 18px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 12, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
                 {todosConfigurados ? "🎉 Configuraste todos tus propietarios" : `Este propietario ya está configurado (${ownersConfigurados} de ${owners.length} listos)`}
               </div>
-              <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
                 {todosConfigurados
                   ? "Vuelve a las fichas para ver el resumen consolidado."
                   : siguienteOwner
@@ -1688,7 +1688,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
           </div>
           {siguienteOwner && !todosConfigurados && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px dashed " + T.border, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 11, color: T.txt3, flex: 1, minWidth: 200 }}>
+              <div style={{ fontSize: 12, color: T.txt3, flex: 1, minWidth: 200 }}>
                 O si prefieres configurar ahora: <strong style={{ color: T.txt2 }}>{siguienteOwner.name}</strong> ({siguienteOwner.type === "juridica" ? "Jurídica" : "Natural"})
               </div>
               <button
@@ -1697,7 +1697,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
                   onSelectOwner?.(siguienteOwner.id);
                   onGotoStep?.(1);
                 }}
-                style={{ padding: "7px 14px", background: "transparent", border: "1px solid " + T.blue, color: T.blue, borderRadius: 6, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}
+                style={{ padding: "7px 14px", background: "transparent", border: "1px solid " + T.blue, color: T.blue, borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}
               >
                 Configurar {siguienteOwner.name.split(" ")[0]} →
               </button>
@@ -1708,21 +1708,21 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
       {/* Navegación inferior */}
       <div style={{ display: "flex", gap: 8, marginTop: 20, paddingTop: 18, borderTop: "1px solid " + T.border, flexWrap: "wrap", alignItems: "center" }}>
-        <button onClick={onBack} style={{ padding: "9px 14px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+        <button onClick={onBack} style={{ padding: "9px 14px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
           ← Modificar
         </button>
         <div style={{ flex: 1, minWidth: 0 }}/>
         {onVerResumen && (
-          <button onClick={onVerResumen} style={{ padding: "9px 14px", background: T.bg2, border: "1px solid " + T.blue, color: T.blue, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>
+          <button onClick={onVerResumen} style={{ padding: "9px 14px", background: T.bg2, border: "1px solid " + T.blue, color: T.blue, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>
             ← Volver a mis fichas
           </button>
         )}
         {owners.length > 1 && (
-          <button onClick={() => { onMarcarCompleto?.(); onGotoStep?.(0); }} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+          <button onClick={() => { onMarcarCompleto?.(); onGotoStep?.(0); }} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
             Elegir otro
           </button>
         )}
-        <button onClick={onReiniciar} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+        <button onClick={onReiniciar} style={{ padding: "9px 14px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
           ↻ De cero
         </button>
       </div>
@@ -1903,7 +1903,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
             - El usuario no clickeó "Cerrar" en esta sesión
           Desaparece naturalmente al elegir cualquier acción real. */}
       {!bannerCesantiasDismissed && ownersConSalarioSinCesantias.length > 0 && (
-        <div style={{ background: "rgba(34,197,94,0.06)", border: "1.5px solid rgba(34,197,94,0.3)", borderRadius: 12, padding: "16px 18px", marginBottom: 16, position: "relative" }}>
+        <div style={{ background: "rgba(0,200,5,0.06)", border: "1.5px solid rgba(0,200,5,0.3)", borderRadius: 12, padding: "16px 18px", marginBottom: 16, position: "relative" }}>
           <button
             onClick={dismissBannerCesantias}
             aria-label="Cerrar banner"
@@ -1912,10 +1912,10 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
             <span style={{ fontSize: 20, flexShrink: 0 }}>💵</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#22c55e", marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#00c805", marginBottom: 4 }}>
                 Detectamos {ownersConSalarioSinCesantias.length === 1 ? "un salario sin cesantías cargadas" : `${ownersConSalarioSinCesantias.length} salarios sin cesantías cargadas`}
               </div>
-              <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
                 Las cesantías son <strong>renta exenta del Art. 206 #4 ET</strong> con tope variable según salario. Muchos usuarios las olvidan y pagan más impuesto del que deben. Te ayudamos a cargarlas si aplica a tu caso.
               </div>
             </div>
@@ -1923,7 +1923,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
 
           {/* Lista de owners afectados (cuando son varios) */}
           {ownersConSalarioSinCesantias.length > 1 && (
-            <div style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, padding: "8px 10px", marginBottom: 10, fontSize: 11, color: T.txt2 }}>
+            <div style={{ background: T.bg3, border: "1px solid " + T.border, borderRadius: 6, padding: "8px 10px", marginBottom: 10, fontSize: 12, color: T.txt2 }}>
               <strong>Afectados:</strong> {ownersConSalarioSinCesantias.map(o => o.name).join(", ")}
             </div>
           )}
@@ -1932,25 +1932,25 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               onClick={accionAgregarCesantias}
-              style={{ background: "#22c55e", color: "#000", border: "none", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+              style={{ background: "#00c805", color: "#000", border: "none", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             >
               ✓ Sí, agregar cesantías estimadas
             </button>
             <button
               onClick={accionMarcarIntegral}
-              style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+              style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             >
               Tengo salario integral (ya incluidas)
             </button>
             <button
               onClick={accionMarcarNoAplica}
-              style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+              style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             >
               No aplica (honorarios / otro)
             </button>
           </div>
 
-          <div style={{ marginTop: 10, fontSize: 10, color: T.txt3, fontStyle: "italic", lineHeight: 1.4 }}>
+          <div style={{ marginTop: 10, fontSize: 11, color: T.txt3, fontStyle: "italic", lineHeight: 1.4 }}>
             💡 La estimación se basa en 1 mes de salario al año + 12% de intereses (1.12 sueldos anuales). Puedes modificar o eliminar el item después.
           </div>
         </div>
@@ -1977,7 +1977,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2, wordBreak: "break-word" }}>
                       {owner.name}
                     </div>
-                    <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, textTransform: "uppercase", letterSpacing: 0.3 }}>
+                    <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, letterSpacing: 0.3 }}>
                       {owner.type === "juridica" ? "Jurídica" : "Natural"}
                     </div>
                   </div>
@@ -1985,8 +1985,8 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
 
                 {/* Badge estado */}
                 <div style={{ display: "inline-flex", alignSelf: "flex-start", alignItems: "center", gap: 4, padding: "2px 7px", background: `${estadoColor}15`, border: `1px solid ${estadoColor}40`, borderRadius: 8 }}>
-                  <span style={{ fontSize: 9, color: estadoColor, fontWeight: 700 }}>{estadoIcono}</span>
-                  <span style={{ fontSize: 9, color: estadoColor, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.4 }}>{estadoLabel}</span>
+                  <span style={{ fontSize: 11, color: estadoColor, fontWeight: 700 }}>{estadoIcono}</span>
+                  <span style={{ fontSize: 11, color: estadoColor, fontWeight: 600, letterSpacing: 0.4 }}>{estadoLabel}</span>
                 </div>
 
                 {/* Camino A + Commit 2 (Tarea 3 revisada): cifras honestas con
@@ -2013,23 +2013,23 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     return (
                       <div style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                          <span style={{ fontSize: 10, color: T.txt3 }}>Tu impuesto hoy</span>
+                          <span style={{ fontSize: 11, color: T.txt3 }}>Tu impuesto hoy</span>
                           <span style={{ ...F.mono, fontSize: 12, color: T.red }}>{fm(impActual)}</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                          <span style={{ fontSize: 10, color: T.txt3 }}>Si aplicas PV/AFC</span>
+                          <span style={{ fontSize: 11, color: T.txt3 }}>Si aplicas PV/AFC</span>
                           <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(impOpt)}</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
-                          <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Ahorro potencial</span>
+                          <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>Ahorro potencial</span>
                           <span style={{ ...F.mono, fontSize: 13, color: T.green }}>+{fm(ahorro)}</span>
                         </div>
                         {muestraDesglose && (
                           <details style={{ marginTop: 6, paddingTop: 6, borderTop: "1px dashed " + T.border }}>
-                            <summary style={{ cursor: "pointer", fontSize: 9, color: T.blue, fontWeight: 600, listStyle: "none", letterSpacing: 0.3 }}>
+                            <summary style={{ cursor: "pointer", fontSize: 11, color: T.blue, fontWeight: 600, listStyle: "none", letterSpacing: 0.3 }}>
                               ▾ Saldo a pagar estimado
                             </summary>
-                            <div style={{ marginTop: 6, fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
+                            <div style={{ marginTop: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
                               <div style={{ display: "flex", justifyContent: "space-between" }}>
                                 <span>(−) Retenciones del año</span>
                                 <span style={F.mono}>−{fm(reteAnual)}</span>
@@ -2055,22 +2055,22 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   return (
                     <div style={{ background: T.bg2, borderRadius: 6, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>Tu impuesto estimado</span>
+                        <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>Tu impuesto estimado</span>
                         <span style={{ ...F.mono, fontSize: 14, color: T.txt }}>{fm(impActual)}</span>
                       </div>
                       {muestraDesglose && (
                         <>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 9, color: T.txt3 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 11, color: T.txt3 }}>
                             <span>(−) Retenciones del año</span>
                             <span style={F.mono}>−{fm(reteAnual)}</span>
                           </div>
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
-                            <span style={{ fontSize: 10, color: T.green, fontWeight: 700 }}>= Saldo a pagar estimado</span>
+                            <span style={{ fontSize: 11, color: T.green, fontWeight: 700 }}>= Saldo a pagar estimado</span>
                             <span style={{ ...F.mono, fontSize: 13, color: T.green, fontWeight: 700 }}>{fm(saldoPagar)}</span>
                           </div>
                         </>
                       )}
-                      <div style={{ fontSize: 9, color: T.txt3, lineHeight: 1.4, fontStyle: "italic" }}>
+                      <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4, fontStyle: "italic" }}>
                         {muestraDesglose
                           ? "Las retenciones del año ya las pagaste sin verlas. El saldo es lo que efectivamente desembolsas al presentar la declaración."
                           : "Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos."}
@@ -2078,7 +2078,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     </div>
                   );
                 })() : (
-                  <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic", padding: "4px 0" }}>
+                  <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic", padding: "4px 0" }}>
                     {estado === "sin_datos" ? "Sin ingresos registrados" : "Sin cálculo disponible"}
                   </div>
                 )}
@@ -2087,11 +2087,11 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                 {(() => {
                   const hint = getHintContextual(det, owner);
                   if (!hint) return null;
-                  const tonoBg = hint.tono === "ok" ? "rgba(34,197,94,0.06)" : "rgba(59,130,246,0.06)";
-                  const tonoBorder = hint.tono === "ok" ? "rgba(34,197,94,0.18)" : "rgba(59,130,246,0.18)";
+                  const tonoBg = hint.tono === "ok" ? "rgba(0,200,5,0.06)" : "rgba(59,130,246,0.06)";
+                  const tonoBorder = hint.tono === "ok" ? "rgba(0,200,5,0.18)" : "rgba(59,130,246,0.18)";
                   const tonoText = hint.tono === "ok" ? T.green : T.purple;
                   return (
-                    <div style={{ background: tonoBg, border: `1px solid ${tonoBorder}`, borderRadius: 8, padding: "8px 10px", display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, lineHeight: 1.4 }}>
+                    <div style={{ background: tonoBg, border: `1px solid ${tonoBorder}`, borderRadius: 8, padding: "8px 10px", display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, lineHeight: 1.4 }}>
                       <span style={{ flexShrink: 0, fontSize: 13, marginTop: 1 }}>{hint.icono}</span>
                       <span style={{ color: T.txt2 }}>
                         <strong style={{ color: tonoText }}>{hint.tono === "ok" ? "Listo:" : "Por qué:"}</strong> {hint.texto}
@@ -2114,22 +2114,22 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   const mejor = palancaSimple.datos?.mejorOpcion;
                   if (!mejor) return null;
                   return (
-                    <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(168,85,247,0.10))", border: "1.5px solid rgba(34,197,94,0.35)", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.10), rgba(168,85,247,0.10))", border: "1.5px solid rgba(0,200,5,0.35)", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 16 }}>⚡</span>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: T.green, letterSpacing: 0.3 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: T.green, letterSpacing: 0.3 }}>
                             POSIBLE CAMBIO DE RÉGIMEN
                           </span>
                         </div>
-                        <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 800 }}>
+                        <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 700 }}>
                           ~{fm(palancaSimple.impactoEstimado)}/año
                         </span>
                       </div>
-                      <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+                      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
                         Si <strong>{owner.name}</strong> cumple los criterios de actividad del grupo <strong>"{mejor.label}"</strong>, podría acogerse al <strong>Régimen Simple (Arts. 903-916 ET)</strong> y pagar <strong>{fm(mejor.impuestoSimple)}</strong> en lugar de <strong>{fm(mejor.impuestoOrdinario)}</strong> al año <span style={{ color: T.green, fontWeight: 700 }}>(ahorro ~{fmtPctEs(mejor.ahorroPct, 0)})</span>.
                       </div>
-                      <div style={{ background: "rgba(var(--fp-hundir),0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
+                      <div style={{ background: "rgba(var(--fp-hundir),0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
                         ⚠️ <strong>Esto es una sugerencia estratégica, no automática.</strong> Cambiar de régimen requiere validar el grupo CIIU exacto con tu contador, presentar formulario ante DIAN antes del 28 de febrero, y NO se puede deshacer hasta el siguiente año fiscal. Hay también exclusiones (Art. 906 ET) — no todas las actividades califican aunque cumplan el tope de ingresos.
                       </div>
                     </div>
@@ -2151,11 +2151,11 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   return (
                     <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: T.blue }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: T.blue }}>
                           💡 {recsOwner.length} oportunidad{recsOwner.length > 1 ? "es" : ""} de ahorro detectada{recsOwner.length > 1 ? "s" : ""}
                         </span>
                         {totalAhorroEstimado > 0 && (
-                          <span style={{ ...F.mono, fontSize: 11, color: T.green, fontWeight: 700 }}>
+                          <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 700 }}>
                             +{fm(totalAhorroEstimado)}/año
                           </span>
                         )}
@@ -2164,19 +2164,19 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                         {top.map((r, idx) => (
                           <div key={r.code || idx} style={{ background: T.bg2, borderRadius: 6, padding: "8px 10px", display: "flex", flexDirection: "column", gap: 3 }}>
                             <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
-                              <span style={{ fontSize: 11, fontWeight: 600, color: T.txt2, lineHeight: 1.3 }}>{r.titulo}</span>
+                              <span style={{ fontSize: 12, fontWeight: 600, color: T.txt2, lineHeight: 1.3 }}>{r.titulo}</span>
                               {Number(r.ahorroAnualEstimado) > 0 && (
-                                <span style={{ ...F.mono, fontSize: 10, color: T.green, whiteSpace: "nowrap", flexShrink: 0 }}>
+                                <span style={{ ...F.mono, fontSize: 11, color: T.green, whiteSpace: "nowrap", flexShrink: 0 }}>
                                   ~{fm(r.ahorroAnualEstimado)}/año
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4 }}>{r.descripcion}</div>
+                            <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4 }}>{r.descripcion}</div>
                           </div>
                         ))}
                       </div>
                       {recsOwner.length > 3 && (
-                        <div style={{ fontSize: 10, color: T.txt3, fontStyle: "italic" }}>
+                        <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic" }}>
                           + {recsOwner.length - 3} oportunidad{recsOwner.length - 3 > 1 ? "es" : ""} más al ver el desglose completo.
                         </div>
                       )}
@@ -2192,35 +2192,35 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                         <span style={{ fontSize: 14 }}>📊</span>
                         Ver desglose y plan de acción
                       </span>
-                      <span style={{ fontSize: 11, opacity: 0.7 }}>▼</span>
+                      <span style={{ fontSize: 12, opacity: 0.7 }}>▼</span>
                     </summary>
                     <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
                       {/* Desglose breve */}
-                      <div style={{ background: T.bg2, borderRadius: 6, padding: 10, fontSize: 11 }}>
-                        <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>Desglose fiscal</div>
+                      <div style={{ background: T.bg2, borderRadius: 6, padding: 10, fontSize: 12 }}>
+                        <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.4, marginBottom: 8 }}>Desglose fiscal</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                           {Number(det.ingreso || 0) > 0 && (
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span style={{ color: T.txt3 }}>Ingresos brutos</span>
-                              <span style={{ ...F.mono, fontSize: 11, color: T.txt2 }}>{fm(det.ingreso)}</span>
+                              <span style={{ ...F.mono, fontSize: 12, color: T.txt2 }}>{fm(det.ingreso)}</span>
                             </div>
                           )}
                           {Number(det.totalDeducciones || det.gastosDeduc || 0) > 0 && (
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span style={{ color: T.txt3 }}>(-) Deducciones aplicadas</span>
-                              <span style={{ ...F.mono, fontSize: 11, color: T.green }}>{fm(det.totalDeducciones || det.gastosDeduc)}</span>
+                              <span style={{ ...F.mono, fontSize: 12, color: T.green }}>{fm(det.totalDeducciones || det.gastosDeduc)}</span>
                             </div>
                           )}
                           {Number(det.retencionFuente || 0) > 0 && (
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span style={{ color: T.txt3 }}>(-) Retención en la fuente</span>
-                              <span style={{ ...F.mono, fontSize: 11, color: T.blue }}>−{fm(det.retencionFuente)}</span>
+                              <span style={{ ...F.mono, fontSize: 12, color: T.blue }}>−{fm(det.retencionFuente)}</span>
                             </div>
                           )}
                           {Number(det.rentaGravable || 0) > 0 && (
                             <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 4, borderTop: "1px dashed " + T.border }}>
                               <span style={{ color: T.txt2, fontWeight: 600 }}>Renta gravable</span>
-                              <span style={{ ...F.mono, fontSize: 11, color: T.txt }}>{fm(det.rentaGravable)}</span>
+                              <span style={{ ...F.mono, fontSize: 12, color: T.txt }}>{fm(det.rentaGravable)}</span>
                             </div>
                           )}
                         </div>
@@ -2232,7 +2232,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                         if (recs.length === 0) return null;
                         return (
                           <div>
-                            <div style={{ fontSize: 9, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>
+                            <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.4, marginBottom: 8 }}>
                               Plan de acción ({recs.length})
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2240,8 +2240,8 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                                 <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: 8, background: T.bg2, borderRadius: 6 }}>
                                   <span style={{ flexShrink: 0, fontSize: 14 }}>{r.icono}</span>
                                   <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: 11, fontWeight: 700, color: r.tono === "ok" ? T.green : T.txt2, marginBottom: 2 }}>{r.titulo}</div>
-                                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.4 }}>{r.desc}</div>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: r.tono === "ok" ? T.green : T.txt2, marginBottom: 2 }}>{r.titulo}</div>
+                                    <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4 }}>{r.desc}</div>
                                   </div>
                                 </div>
                               ))}
@@ -2259,14 +2259,14 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     <button
                       onClick={() => onMarcarCompletoOwner(owner.id)}
                       title="Si ya revisaste este responsable y no tiene más ajustes aplicables, márcalo como revisado."
-                      style={{ flex: 1, padding: "6px 8px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                      style={{ flex: 1, padding: "6px 8px", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}
                     >
                       ✓ Marcar revisado
                     </button>
                   )}
                   <button
                     onClick={() => onSelectOwner(owner.id)}
-                    style={{ flex: 1, padding: "6px 10px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                    style={{ flex: 1, padding: "6px 10px", background: estado === "completo" ? T.bg2 : T.blue, color: estado === "completo" ? T.txt2 : "#fff", border: estado === "completo" ? "1px solid " + T.border : "none", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
                   >
                     {estado === "completo" ? "Revisar →" : estado === "parcial" ? "Completar →" : "Empezar →"}
                   </button>
@@ -2280,11 +2280,11 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
             crece hasta 1 parte del espacio. En mobile pasa debajo (flex-wrap). */}
         <div style={{ flex: "1 1 280px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
           {cantCompletos > 0 && (
-            <div style={{ background: "rgba(34,197,94,0.05)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: 16 }}>
-              <div style={{ fontSize: 10, color: T.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+            <div style={{ background: "rgba(0,200,5,0.05)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 10, padding: 16 }}>
+              <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 12 }}>
                 Total consolidado
               </div>
-              <div style={{ fontSize: 10, color: T.txt3, marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginBottom: 14 }}>
                 {cantCompletos} de {owners.length} responsables
               </div>
 
@@ -2294,25 +2294,25 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                 {totales.ahorro > 100_000 ? (
                   <>
                     <div>
-                      <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Tu impuesto hoy</div>
+                      <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.4, marginBottom: 3 }}>Tu impuesto hoy</div>
                       <div style={{ ...F.mono, fontSize: 18, color: T.red }}>{fm(totales.impActual)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Si aplicas PV/AFC</div>
+                      <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.4, marginBottom: 3 }}>Si aplicas PV/AFC</div>
                       <div style={{ ...F.mono, fontSize: 18, color: T.green }}>{fm(totales.impOpt)}</div>
                     </div>
-                    <div style={{ paddingTop: 10, borderTop: "1px solid rgba(34,197,94,0.2)" }}>
-                      <div style={{ fontSize: 9, color: T.green, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3, fontWeight: 700 }}>Ahorro potencial</div>
+                    <div style={{ paddingTop: 10, borderTop: "1px solid rgba(0,200,5,0.2)" }}>
+                      <div style={{ fontSize: 11, color: T.green, letterSpacing: 0.4, marginBottom: 3, fontWeight: 700 }}>Ahorro potencial</div>
                       <div style={{ ...F.mono, fontSize: 22, color: T.green }}>+{fm(totales.ahorro)}</div>
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 3 }}>Tu impuesto estimado</div>
+                      <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.4, marginBottom: 3 }}>Tu impuesto estimado</div>
                       <div style={{ ...F.mono, fontSize: 22, color: T.txt }}>{fm(totales.impActual)}</div>
                     </div>
-                    <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.5, fontStyle: "italic", paddingTop: 6 }}>
+                    <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.5, fontStyle: "italic", paddingTop: 6 }}>
                       Ya con todas las deducciones automáticas que el motor pudo aplicar. Para reducir más, revisa el plan de acción de cada responsable.
                     </div>
                   </>
@@ -2469,7 +2469,7 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
             Paso {currentStep + 1} de {STEPS.length} — {STEPS[currentStep].titulo}
           </p>
         </div>
-        <button onClick={() => setVistaActiva("resumen")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+        <button onClick={() => setVistaActiva("resumen")} style={{ padding: "6px 12px", background: T.bg3, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
           ← Volver a mis fichas
         </button>
       </div>
@@ -2480,9 +2480,9 @@ export default function CalculadoraWizard({ user, trm, onNavigate, onUserUpdate 
       {/* Navegación rápida a módulos para cargar/editar datos sin perder progreso */}
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap", padding: "10px 14px", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8 }}>
         <span style={{ ...F.caption, fontWeight: 600, color: T.txt2 }}>¿Te falta cargar algo?</span>
-        <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Ingresos</button>
-        <button onClick={() => onNavigate?.("gas")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Egresos / Aportes</button>
-        <button onClick={() => onNavigate?.("deu")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Deudas</button>
+        <button onClick={() => onNavigate?.("ing")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Ingresos</button>
+        <button onClick={() => onNavigate?.("gas")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Egresos / Aportes</button>
+        <button onClick={() => onNavigate?.("deu")} style={{ padding: "5px 10px", background: T.bg2, border: "1px solid " + T.border, color: T.txt2, borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Deudas</button>
       </div>
 
       {/* Contenido del paso activo */}

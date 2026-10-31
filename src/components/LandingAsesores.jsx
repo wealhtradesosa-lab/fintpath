@@ -15,9 +15,9 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
-  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8", red: "#ef4444",
-  grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8", red: "#ff5000",
+  grad: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
 };
 
 // STRIPE PRICE IDs (Corporate plans)
@@ -199,9 +199,9 @@ export default function LandingAsesores({ onGetStarted }) {
 
       {/* ─── NAV ─── */}
       <nav style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
-        <a href="/" style={{ textDecoration: "none", fontSize: 22, fontWeight: 900, letterSpacing: "-0.04em", display: "flex", alignItems: "center", gap: 10 }}>
+        <a href="/" style={{ textDecoration: "none", fontSize: 22, fontWeight: 700, letterSpacing: "-0.04em", display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, padding: "3px 8px", border: `1px solid ${T.border}`, borderRadius: 6, letterSpacing: "0.06em" }}>ASESORES</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: T.txt3, padding: "3px 8px", border: `1px solid ${T.border}`, borderRadius: 6, letterSpacing: "0.06em" }}>ASESORES</span>
         </a>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <a href="/" style={{ color: T.txt3, textDecoration: "none", fontSize: 13, fontWeight: 500, padding: "8px 12px" }}>
@@ -220,7 +220,7 @@ export default function LandingAsesores({ onGetStarted }) {
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.green, display: "inline-block" }} />
             Para contadores, asesores tributarios y planificadores patrimoniales
           </div>
-          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 20, maxWidth: 900, margin: "0 auto 20px" }}>
+          <h1 style={{ fontSize: "clamp(2.5rem, 6vw, 4.5rem)", fontWeight: 700, lineHeight: 1.05, letterSpacing: "-0.04em", marginBottom: 20, maxWidth: 900, margin: "0 auto 20px" }}>
             Tu práctica profesional, potenciada por un{" "}
             <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>family office digital</span>
           </h1>
@@ -228,7 +228,7 @@ export default function LandingAsesores({ onGetStarted }) {
             Ofrece a tus clientes patrimoniales el mismo nivel de análisis que tiene la banca privada. Gestiona múltiples clientes desde un solo panel, con dashboards institucionales, cálculo tributario automatizado y reportes profesionales listos para entregar.
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={() => openInterest("professional")} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 800, letterSpacing: "-0.01em" }}>
+            <button onClick={() => openInterest("professional")} style={{ background: T.grad, color: "#000", border: "none", padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 700, letterSpacing: "-0.01em" }}>
               Reservar mi cupo Founding →
             </button>
             <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "16px 36px", borderRadius: 12, cursor: "pointer", fontSize: 16, fontWeight: 600 }}>
@@ -243,7 +243,7 @@ export default function LandingAsesores({ onGetStarted }) {
 
       {/* ─── PROBLEM BLOCK ─── */}
       <Section style={{ paddingBottom: 80, textAlign: "center" }}>
-        <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
+        <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
           Tus clientes pagan por{" "}
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>insight</span>. No por reportes en Excel.
         </h2>
@@ -256,7 +256,7 @@ export default function LandingAsesores({ onGetStarted }) {
       <div id="features" style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
         <Section>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Todo lo que necesitas para elevar tu práctica</h2>
+            <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 12 }}>Todo lo que necesitas para elevar tu práctica</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 640, margin: "0 auto" }}>
               La misma experiencia Pro que ofreces a tus clientes, más las herramientas de gestión que necesitas como asesor.
             </p>
@@ -290,7 +290,7 @@ export default function LandingAsesores({ onGetStarted }) {
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 999, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>
               💼 Planes corporativos
             </div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 12 }}>
               Elige el plan que{" "}
               <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>acompaña tu crecimiento</span>
             </h2>
@@ -326,27 +326,27 @@ export default function LandingAsesores({ onGetStarted }) {
                 key={p.key}
                 style={{
                   background: p.featured
-                    ? "linear-gradient(180deg, rgba(34,197,94,0.05) 0%, " + T.bg + " 40%)"
+                    ? "linear-gradient(180deg, rgba(0,200,5,0.05) 0%, " + T.bg + " 40%)"
                     : T.bg,
                   border: p.featured ? `2px solid ${T.green}` : `1px solid ${T.border}`,
                   borderRadius: 20,
                   overflow: "visible",
                   position: "relative",
                   transform: p.featured ? "translateY(-8px)" : "none",
-                  boxShadow: p.featured ? "0 20px 60px rgba(34,197,94,0.1)" : "none",
+                  boxShadow: p.featured ? "0 20px 60px rgba(0,200,5,0.1)" : "none",
                 }}
               >
                 {p.featured && (
-                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.grad, color: "#000", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 999, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.grad, color: "#000", fontSize: 12, fontWeight: 700, padding: "6px 14px", borderRadius: 999, letterSpacing: "0.04em" }}>
                     Más Popular
                   </div>
                 )}
                 <div style={{ padding: 32 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.1em", marginBottom: 8 }}>{p.name}</div>
                   <div style={{ fontSize: 13, color: T.txt3, marginBottom: 24, minHeight: 36, lineHeight: 1.5 }}>{p.tagline}</div>
 
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                    <span style={{ fontSize: 40, fontWeight: 900, letterSpacing: "-0.04em" }}>{p.price[billingCycle]}</span>
+                    <span style={{ fontSize: 40, fontWeight: 700, letterSpacing: "-0.04em" }}>{p.price[billingCycle]}</span>
                     <span style={{ color: T.txt3, fontSize: 15 }}>{p.priceSub[billingCycle]}</span>
                   </div>
                   {billingCycle === "anual" && (
@@ -361,9 +361,9 @@ export default function LandingAsesores({ onGetStarted }) {
                   </div>
 
                   {p.founding && (
-                    <div style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 12 }}>
+                    <div style={{ background: "rgba(0,200,5,0.1)", border: "1px solid rgba(0,200,5,0.25)", borderRadius: 10, padding: "12px 14px", marginBottom: 16, fontSize: 12 }}>
                       <div style={{ color: T.green, fontWeight: 700, marginBottom: 4 }}>{p.founding.label}</div>
-                      <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.5 }}>{p.founding.detail}</div>
+                      <div style={{ color: T.txt2, fontSize: 12, lineHeight: 1.5 }}>{p.founding.detail}</div>
                     </div>
                   )}
 
@@ -408,7 +408,7 @@ export default function LandingAsesores({ onGetStarted }) {
       <div style={{ background: T.bg2, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}`, padding: "80px 0" }}>
         <Section style={{ maxWidth: 800 }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em" }}>Preguntas frecuentes</h2>
+            <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em" }}>Preguntas frecuentes</h2>
           </div>
           <div>
             {faqs.map((item, idx) => (
@@ -444,7 +444,7 @@ export default function LandingAsesores({ onGetStarted }) {
 
       {/* ─── CTA FINAL ─── */}
       <Section style={{ padding: "100px 24px", textAlign: "center" }}>
-        <h2 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
+        <h2 style={{ fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.1, marginBottom: 20, maxWidth: 800, margin: "0 auto 20px" }}>
           10 cupos Founding Advisors.{" "}
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>El precio sube cuando se llenen.</span>
         </h2>
@@ -453,7 +453,7 @@ export default function LandingAsesores({ onGetStarted }) {
         </p>
         <button
           onClick={() => openInterest("professional")}
-          style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}
+          style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}
         >
           Reservar mi cupo Founding →
         </button>
@@ -464,16 +464,16 @@ export default function LandingAsesores({ onGetStarted }) {
 
       {/* ─── DISCLAIMER ─── */}
       <Section style={{ padding: "0 24px 32px" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, fontSize: 11, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, fontSize: 12, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
           <strong style={{ color: T.txt2 }}>Aviso legal:</strong> FINPATHIA es una herramienta de simulación y gestión patrimonial con fines informativos y educativos. No constituye asesoría financiera, tributaria ni legal profesional. Los asesores que contratan Finpathia PRO Corporativo son responsables de la asesoría profesional que ellos brindan a sus propios clientes.
         </div>
       </Section>
 
       {/* ─── FOOTER ─── */}
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: "32px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
-          <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, marginLeft: 10 }}>ASESORES</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: T.txt3, marginLeft: 10 }}>ASESORES</span>
         </div>
         <p style={{ fontSize: 12, color: T.txt3 }}>
           © 2026 FINPATHIA •{" "}
@@ -517,10 +517,10 @@ export default function LandingAsesores({ onGetStarted }) {
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: T.green, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: T.green, letterSpacing: "0.1em", marginBottom: 4 }}>
                       Plan {showInterestModal === "starter" ? "Starter" : showInterestModal === "professional" ? "Professional" : "Boutique"}
                     </div>
-                    <h3 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>
+                    <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>
                       Reserva tu cupo
                     </h3>
                   </div>
@@ -617,15 +617,15 @@ export default function LandingAsesores({ onGetStarted }) {
                   >
                     {sending ? "Enviando..." : "Reservar mi cupo →"}
                   </button>
-                  <p style={{ fontSize: 11, color: T.txt3, textAlign: "center", marginTop: 4 }}>
+                  <p style={{ fontSize: 12, color: T.txt3, textAlign: "center", marginTop: 4 }}>
                     No cobramos nada ahora. Te contactamos para agendar tu onboarding.
                   </p>
                 </form>
               </>
             ) : (
               <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
-                <h3 style={{ fontSize: 22, fontWeight: 800, marginBottom: 12 }}>¡Cupo reservado!</h3>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(0,200,5,0.15)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
+                <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>¡Cupo reservado!</h3>
                 <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, marginBottom: 24 }}>
                   Gracias {interestForm.name.split(" ")[0]}. Te escribiremos a <strong style={{ color: T.txt }}>{interestForm.email}</strong> en menos de 24 horas para agendar tu onboarding personal.
                 </p>

@@ -98,8 +98,8 @@ const T = {
   bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)", borderL:"rgba(var(--fp-ink),0.1)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
-  gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
-  rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
+  gn:"#00c805", gnB:"rgba(0,200,5,0.08)",
+  rd:"#ff5000", rdB:"rgba(255,80,0,0.06)",
   bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm  = (n) => `$${Math.round(n||0).toLocaleString("en-US")}`;
@@ -108,7 +108,7 @@ const pct = (n) => `${((n||0)).toFixed(1)}%`;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 const Label = ({c,children}) => (
-  <div style={{fontSize:10,fontWeight:700,color:c||T.tx3,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{children}</div>
+  <div style={{fontSize:11,fontWeight:700,color:c||T.tx3,letterSpacing:1,marginBottom:4}}>{children}</div>
 );
 const Field = ({l,value,onChange,type="number",placeholder,hint,options}) => (
   <div style={{marginBottom:14}}>
@@ -124,17 +124,17 @@ const Field = ({l,value,onChange,type="number",placeholder,hint,options}) => (
         :<input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||"0"}
            style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
     }
-    {hint&&<div style={{fontSize:10,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
+    {hint&&<div style={{fontSize:11,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
   </div>
 );
 const InfoBox = ({color=T.bl,children}) => (
-  <div style={{background:`${color}10`,border:`1px solid ${color}25`,borderRadius:8,padding:"10px 14px",fontSize:11,color:T.tx2,lineHeight:1.8,marginTop:8}}>{children}</div>
+  <div style={{background:`${color}10`,border:`1px solid ${color}25`,borderRadius:8,padding:"10px 14px",fontSize:12,color:T.tx2,lineHeight:1.8,marginTop:8}}>{children}</div>
 );
 const KPI = ({l,v,sub,c,onClick}) => (
   <div onClick={onClick} style={{background:T.bg3,borderRadius:12,padding:"14px 16px",cursor:onClick?"pointer":"default"}}>
-    <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-    <div style={{fontSize:20,fontWeight:800,color:c||T.tx,marginTop:4,fontFamily:"monospace"}}>{v}</div>
-    {sub&&<div style={{fontSize:10,color:T.tx3,marginTop:2}}>{sub}</div>}
+    <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{l}</div>
+    <div style={{fontSize:20,fontWeight:700,color:c||T.tx,marginTop:4,fontFamily:"monospace"}}>{v}</div>
+    {sub&&<div style={{fontSize:11,color:T.tx3,marginTop:2}}>{sub}</div>}
   </div>
 );
 const ProgressBar = ({value,max,color,height=8}) => {
@@ -299,7 +299,7 @@ export default function GoalsModuleUS({
   return (
     <div>
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>🎯 Goals & Financial Health</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🎯 Goals & Financial Health</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>Dashboard · Goal Tracker · 529 · Mortgage · Debt Payoff</p>
       </div>
 
@@ -319,11 +319,11 @@ export default function GoalsModuleUS({
       {tab==="dashboard" && (
         <div>
           {/* Wealth Score */}
-          <SectionCard style={{background:`radial-gradient(ellipse at 20% 0%,rgba(34,197,94,.05),transparent 60%)`}}>
+          <SectionCard style={{background:`radial-gradient(ellipse at 20% 0%,rgba(0,200,5,.05),transparent 60%)`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:16}}>
               <div>
-                <div style={{fontSize:11,color:T.tx3,fontWeight:700,letterSpacing:1}}>FINANCIAL HEALTH SCORE</div>
-                <div style={{fontSize:56,fontWeight:900,color:dash.scoreColor,lineHeight:1}}>{dash.score}</div>
+                <div style={{fontSize:12,color:T.tx3,fontWeight:700,letterSpacing:1}}>FINANCIAL HEALTH SCORE</div>
+                <div style={{fontSize:56,fontWeight:700,color:dash.scoreColor,lineHeight:1}}>{dash.score}</div>
                 <div style={{fontSize:16,fontWeight:700,color:dash.scoreColor}}>{dash.scoreLabel}</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,flex:1,maxWidth:500}}>
@@ -350,7 +350,7 @@ export default function GoalsModuleUS({
                 <div style={{position:"absolute",left:`${Math.min(dash.nwPct,99)}%`,top:"50%",transform:"translate(-50%,-50%)",
                   width:16,height:16,borderRadius:"50%",background:T.gn,border:`2px solid ${T.bg2}`}}/>
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:9,color:T.tx3,marginTop:4}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3,marginTop:4}}>
                 <span>$0 (0th)</span><span>$192K (50th)</span><span>$1.9M (90th)</span><span>$11.1M (99th)</span>
               </div>
             </div>
@@ -362,9 +362,9 @@ export default function GoalsModuleUS({
                 {l:"Top 1%",v:"$11,100,000",note:"99th percentile"},
               ].map(b=>(
                 <div key={b.l} style={{background:T.bg3,borderRadius:8,padding:"10px 12px"}}>
-                  <div style={{fontSize:9,color:T.tx3}}>{b.l}</div>
+                  <div style={{fontSize:11,color:T.tx3}}>{b.l}</div>
                   <div style={{fontSize:13,fontWeight:700,color:netWorth>=parseFloat(b.v.replace(/[$,M]/g,""))*(b.v.includes("M")?1e6:1)?T.gn:T.tx2}}>{b.v}</div>
-                  <div style={{fontSize:9,color:T.tx3}}>{b.note}</div>
+                  <div style={{fontSize:11,color:T.tx3}}>{b.note}</div>
                 </div>
               ))}
             </div>
@@ -419,14 +419,14 @@ export default function GoalsModuleUS({
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                   <div>
                     <div style={{fontSize:12,fontWeight:700,color:T.tx}}>{item.l}</div>
-                    <div style={{fontSize:10,color:T.tx3}}>Target: {item.target}</div>
+                    <div style={{fontSize:11,color:T.tx3}}>Target: {item.target}</div>
                   </div>
                   <div style={{textAlign:"right"}}>
                     <div style={{fontSize:13,fontWeight:700,color:item.color,fontFamily:"monospace"}}>{item.actual}</div>
-                    <div style={{fontSize:11,fontWeight:600,color:item.color}}>{item.status}</div>
+                    <div style={{fontSize:12,fontWeight:600,color:item.color}}>{item.status}</div>
                   </div>
                 </div>
-                <div style={{fontSize:10,color:T.tx3,lineHeight:1.5}}>{item.tip}</div>
+                <div style={{fontSize:11,color:T.tx3,lineHeight:1.5}}>{item.tip}</div>
               </div>
             ))}
           </SectionCard>
@@ -438,7 +438,7 @@ export default function GoalsModuleUS({
         <div>
           <div style={{display:"flex",justifyContent:"flex-end",marginBottom:16}}>
             <button onClick={()=>{setForm(EMPTY_GOAL);setEditing(null);setShowForm(true)}}
-              style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+              style={{background:`linear-gradient(135deg,${T.gn},#00a804)`,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
               + Add Goal
             </button>
           </div>
@@ -460,24 +460,24 @@ export default function GoalsModuleUS({
                        <div>
                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                            <span style={{fontSize:14,fontWeight:700}}>{g.name||info.l}</span>
-                           <span style={{fontSize:10,background:`${info.color}20`,color:info.color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.l}</span>
-                           {done&&<span style={{fontSize:10,background:`${T.gn}20`,color:T.gn,padding:"2px 8px",borderRadius:999,fontWeight:700}}>✅ ACHIEVED</span>}
+                           <span style={{fontSize:11,background:`${info.color}20`,color:info.color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.l}</span>
+                           {done&&<span style={{fontSize:11,background:`${T.gn}20`,color:T.gn,padding:"2px 8px",borderRadius:999,fontWeight:700}}>✅ ACHIEVED</span>}
                          </div>
-                         {g.notes&&<div style={{fontSize:11,color:T.tx3}}>{g.notes}</div>}
+                         {g.notes&&<div style={{fontSize:12,color:T.tx3}}>{g.notes}</div>}
                        </div>
                        <div style={{textAlign:"right"}}>
-                         <div style={{fontSize:16,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>{fm(g.saved||0)}</div>
-                         <div style={{fontSize:11,color:T.tx3}}>of {fm(g.target||0)}</div>
+                         <div style={{fontSize:16,fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(g.saved||0)}</div>
+                         <div style={{fontSize:12,color:T.tx3}}>of {fm(g.target||0)}</div>
                        </div>
                      </div>
                      <ProgressBar value={g.saved||0} max={g.target||1} color={done?T.gn:info.color} height={10} />
-                     <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3,marginTop:6,marginBottom:g.months?8:0}}>
+                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:T.tx3,marginTop:6,marginBottom:g.months?8:0}}>
                        <span>{g.pct_.toFixed(0)}% complete · {fm(g.remaining)} remaining</span>
                        {g.months&&<span>~{g.months} months at {fm(g.monthly)}/mo</span>}
                      </div>
                      {/* 529 extra */}
                      {g.type==="college_529"&&g.futureCost4yr&&(
-                       <div style={{background:T.bg3,borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:11,color:T.tx2}}>
+                       <div style={{background:T.bg3,borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:12,color:T.tx2}}>
                          Projected 4-yr cost: <strong style={{color:T.or}}>{fm(g.futureCost4yr)}</strong> · Projected balance: <strong style={{color:T.gn}}>{fm(g.projectedBal)}</strong>
                          {g.gap>0&&<span style={{color:T.rd}}> · Gap: {fm(g.gap)} (need +{fm(g.neededMonthly)}/mo)</span>}
                          {g.gap<=0&&<span style={{color:T.gn}}> · ✅ On track!</span>}
@@ -485,15 +485,15 @@ export default function GoalsModuleUS({
                      )}
                      {/* Debt payoff extra */}
                      {g.type==="debt_payoff"&&g.months&&(
-                       <div style={{background:T.bg3,borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:11,color:T.tx2}}>
+                       <div style={{background:T.bg3,borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:12,color:T.tx2}}>
                          Payoff in <strong style={{color:T.gn}}>{g.months} months</strong> · Total interest: <strong style={{color:T.rd}}>{fm(g.totalInterest)}</strong>
                        </div>
                      )}
                      <div style={{display:"flex",gap:8,marginTop:12}}>
                        <button onClick={()=>{setForm({...EMPTY_GOAL,...g});setEditing(i);setShowForm(true)}}
-                         style={{padding:"6px 14px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:11,fontWeight:600}}>✏️ Edit</button>
+                         style={{padding:"6px 14px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ Edit</button>
                        <button onClick={()=>remove(i)}
-                         style={{padding:"6px 14px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:11,fontWeight:600}}>🗑️ Remove</button>
+                         style={{padding:"6px 14px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑️ Remove</button>
                      </div>
                    </div>
                  );
@@ -651,7 +651,7 @@ export default function GoalsModuleUS({
         <div onClick={()=>setShowForm(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
           <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto",padding:32}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <h3 style={{fontSize:18,fontWeight:800,margin:0}}>{editing!==null?"Edit":"New"} Goal</h3>
+              <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"New"} Goal</h3>
               <button onClick={()=>setShowForm(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:16}}>
@@ -686,7 +686,7 @@ export default function GoalsModuleUS({
             </div>
             <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:20}}>
               <button onClick={()=>setShowForm(false)} style={{padding:"10px 20px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,color:T.tx2,cursor:"pointer",fontWeight:600}}>Cancel</button>
-              <button onClick={saveGoal} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#16a34a)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
+              <button onClick={saveGoal} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#00a804)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
                 {editing!==null?"Update":"Add Goal"}
               </button>
             </div>

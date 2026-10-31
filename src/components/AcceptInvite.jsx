@@ -22,8 +22,8 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   border: "rgba(var(--fp-ink),0.06)", borderL: "rgba(var(--fp-ink),0.1)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6", red: "#ef4444",
-  grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6", red: "#ff5000",
+  grad: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
   gradAdv: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)",
 };
 
@@ -198,7 +198,7 @@ export default function AcceptInvite({ token, onComplete }) {
       <div style={wrap}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}`}</style>
         <div style={{ ...card, textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 20 }}>FINPATHIA</div>
+          <div style={{ fontSize: 28, fontWeight: 700, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 20 }}>FINPATHIA</div>
           <div style={{ fontSize: 14, color: T.txt2 }}>Validando invitación...</div>
         </div>
       </div>
@@ -211,9 +211,9 @@ export default function AcceptInvite({ token, onComplete }) {
       <div style={wrap}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}`}</style>
         <div style={card}>
-          <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 28, textAlign: "center" }}>FINPATHIA</div>
-          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(239,68,68,0.12)", border: `2px solid ${T.red}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 20px" }}>!</div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, textAlign: "center", marginBottom: 10 }}>Invitación no válida</h1>
+          <div style={{ fontSize: 28, fontWeight: 700, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 28, textAlign: "center" }}>FINPATHIA</div>
+          <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(255,80,0,0.12)", border: `2px solid ${T.red}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 20px" }}>!</div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, textAlign: "center", marginBottom: 10 }}>Invitación no válida</h1>
           <p style={{ fontSize: 14, color: T.txt2, textAlign: "center", marginBottom: 24, lineHeight: 1.6 }}>{error}</p>
           <a href="/" style={{ display: "block", textAlign: "center", width: "100%", padding: "12px", borderRadius: 10, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, textDecoration: "none", fontWeight: 600, fontSize: 14 }}>
             Ir a Finpathia
@@ -229,7 +229,7 @@ export default function AcceptInvite({ token, onComplete }) {
       <div style={wrap}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}`}</style>
         <div style={{ ...card, textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 20 }}>FINPATHIA</div>
+          <div style={{ fontSize: 28, fontWeight: 700, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 20 }}>FINPATHIA</div>
           <div style={{ fontSize: 14, color: T.txt2 }}>Vinculando tu cuenta...</div>
         </div>
       </div>
@@ -243,9 +243,9 @@ export default function AcceptInvite({ token, onComplete }) {
       <div style={wrap}>
         <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}`}</style>
         <div style={{ ...card, textAlign: "center" }}>
-          <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 28 }}>FINPATHIA</div>
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 10 }}>¡Bienvenido!</h1>
+          <div style={{ fontSize: 28, fontWeight: 700, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 28 }}>FINPATHIA</div>
+          <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(0,200,5,0.12)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, margin: "0 auto 20px" }}>✓</div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 10 }}>¡Bienvenido!</h1>
           <p style={{ fontSize: 14, color: T.txt2, marginBottom: 20, lineHeight: 1.6 }}>
             {isFamily ? (
               <>
@@ -270,14 +270,14 @@ export default function AcceptInvite({ token, onComplete }) {
     <div style={wrap}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}input:focus{outline:none;border-color:#3b82f6 !important}`}</style>
       <div style={card}>
-        <div style={{ fontSize: 28, fontWeight: 900, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 24, textAlign: "center" }}>FINPATHIA</div>
+        <div style={{ fontSize: 28, fontWeight: 700, background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 24, textAlign: "center" }}>FINPATHIA</div>
 
         {/* Invitation banner */}
         {invitation?.type === "family" ? (
           <>
-            <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(59,130,246,0.08))", border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
-              <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>🎉 Invitación recibida</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: T.txt, marginBottom: 6, lineHeight: 1.35 }}>
+            <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.12), rgba(59,130,246,0.08))", border: `1px solid rgba(0,200,5,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.green, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 8 }}>🎉 Invitación recibida</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 6, lineHeight: 1.35 }}>
                 {invitation?.invited_by_name || "Alguien"} te invitó a <strong style={{ color: T.green }}>{nombreCuenta(invitation)}</strong> en Finpathia
                 {invitation?.invited_by_email && <div style={{ fontSize: 12, fontWeight: 500, color: T.txt3, marginTop: 4 }}>Enviada por {invitation.invited_by_email}{invitation?.email_invited ? <> · para {invitation.email_invited}</> : null}</div>}
               </div>
@@ -291,18 +291,18 @@ export default function AcceptInvite({ token, onComplete }) {
             </div>
             {/* Pasos 1-2-3: explicar qué va a pasar */}
             <div style={{ background: "rgba(var(--fp-ink),0.02)", border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-              <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 12 }}>Cómo funciona</div>
+              <div style={{ fontSize: 12, color: T.txt3, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 12 }}>Cómo funciona</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: 13, lineHeight: 1.5 }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>1</div>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,200,5,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.green }}>1</div>
                   <div style={{ color: T.txt2 }}>Acá abajo creas <strong style={{ color: T.txt }}>tu usuario y contraseña</strong> personales (gratis, sin elegir plan).</div>
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>2</div>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,200,5,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.green }}>2</div>
                   <div style={{ color: T.txt2 }}>Te <strong style={{ color: T.txt }}>vinculamos automáticamente</strong> a la cuenta de {invitation?.invited_by_name || "quien te invitó"}.</div>
                 </div>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(34,197,94,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.green }}>3</div>
+                  <div style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,200,5,0.15)", border: `1px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: T.green }}>3</div>
                   <div style={{ color: T.txt2 }}>Entras al dashboard y <strong style={{ color: T.txt }}>ves los datos compartidos</strong>.</div>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export default function AcceptInvite({ token, onComplete }) {
           </>
         ) : (
           <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.08))", border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-            <div style={{ fontSize: 11, color: T.blue, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación de tu asesor</div>
+            <div style={{ fontSize: 12, color: T.blue, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 6 }}>Invitación de tu asesor</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
               {invitation?.advisor_firm || "Tu asesor"}
             </div>
@@ -320,7 +320,7 @@ export default function AcceptInvite({ token, onComplete }) {
           </div>
         )}
 
-        <h1 style={{ fontSize: 22, fontWeight: 800, marginBottom: 6, letterSpacing: "-0.02em" }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6, letterSpacing: "-0.02em" }}>
           {invitation?.type === "family"
             ? (mode === "signup" ? "Crea tu usuario y contraseña" : "Inicia sesión con tu usuario")
             : (mode === "signup" ? "Crea tu cuenta" : "Inicia sesión")}
@@ -336,7 +336,7 @@ export default function AcceptInvite({ token, onComplete }) {
         <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {mode === "signup" && (
             <div>
-              <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>Nombre completo</label>
+              <label style={{ fontSize: 12, color: T.txt3, marginBottom: 4, display: "block", letterSpacing: "0.05em" }}>Nombre completo</label>
               <input
                 type="text"
                 value={form.name}
@@ -348,7 +348,7 @@ export default function AcceptInvite({ token, onComplete }) {
             </div>
           )}
           <div>
-            <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <label style={{ fontSize: 12, color: T.txt3, marginBottom: 4, display: "block", letterSpacing: "0.05em" }}>
               Email {invitation?.type === "family" && <span style={{ color: T.txt3, textTransform: "none", letterSpacing: 0 }}>· lo vas a usar para entrar</span>}
             </label>
             <input
@@ -360,13 +360,13 @@ export default function AcceptInvite({ token, onComplete }) {
               required
             />
             {invitation?.email_invited && form.email.trim().toLowerCase() !== invitation.email_invited.toLowerCase() && (
-              <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
+              <div style={{ fontSize: 12, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
                 ⚠️ La invitación se envió a <strong>{invitation.email_invited}</strong>. Tienes que usar ese mismo email — si usas otro, no vamos a poder vincularte.
               </div>
             )}
           </div>
           <div>
-            <label style={{ fontSize: 11, color: T.txt3, marginBottom: 4, display: "block", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <label style={{ fontSize: 12, color: T.txt3, marginBottom: 4, display: "block", letterSpacing: "0.05em" }}>
               Contraseña {invitation?.type === "family" && mode === "signup" && <span style={{ color: T.txt3, textTransform: "none", letterSpacing: 0 }}>· una que recuerdes</span>}
             </label>
             <input
@@ -379,14 +379,14 @@ export default function AcceptInvite({ token, onComplete }) {
               minLength={6}
             />
             {invitation?.type === "family" && mode === "signup" && (
-              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>
+              <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>
                 Es nueva, tú la eliges. La vas a necesitar cada vez que entres.
               </div>
             )}
           </div>
 
           {error && (
-            <div style={{ background: "rgba(239,68,68,0.08)", border: `1px solid ${T.red}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#fca5a5" }}>
+            <div style={{ background: "rgba(255,80,0,0.08)", border: `1px solid ${T.red}`, borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#fca5a5" }}>
               {error}
             </div>
           )}
@@ -434,7 +434,7 @@ export default function AcceptInvite({ token, onComplete }) {
           )}
         </div>
 
-        <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 24, paddingTop: 16, fontSize: 11, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
+        <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 24, paddingTop: 16, fontSize: 12, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
           {invitation?.type === "family" ? (
             <>
               ✓ Sin costo &nbsp;·&nbsp; ✓ Sin elegir plan &nbsp;·&nbsp; ✓ La cuenta es de {invitation?.invited_by_name || "quien te invitó"}

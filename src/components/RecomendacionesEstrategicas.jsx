@@ -24,11 +24,11 @@ const C = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "#fff", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "var(--fp-raised)",
-  green: "#4ade80", greenBg: "rgba(74,222,128,0.1)",
+  green: "#3ddc45", greenBg: "rgba(74,222,128,0.1)",
   blue: "#60a5fa", blueBg: "rgba(96,165,250,0.1)",
   orange: "#fbbf24", orangeBg: "rgba(251,146,60,0.1)",
   purple: "#3b82f6",
-  red: "#f87171",
+  red: "#ff7a3d",
 };
 
 const PRIORIDAD_META = {
@@ -82,7 +82,7 @@ function RecomendacionCard({ rec, indice }) {
           width: 32, height: 32, borderRadius: "50%",
           background: prio.bg, color: prio.color,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 14, fontWeight: 800, flexShrink: 0,
+          fontSize: 14, fontWeight: 700, flexShrink: 0,
         }}>
           {indice}
         </div>
@@ -93,7 +93,7 @@ function RecomendacionCard({ rec, indice }) {
               {rec.titulo}
             </span>
             <span style={{
-              fontSize: 10, padding: "2px 8px", borderRadius: 999,
+              fontSize: 11, padding: "2px 8px", borderRadius: 999,
               background: prio.bg, color: prio.color, fontWeight: 700,
             }}>
               {prio.label}
@@ -103,7 +103,7 @@ function RecomendacionCard({ rec, indice }) {
                 de Santiago sobre "compra de carro para persona natural". */}
             {rec.ejecutaEn && (
               <span style={{
-                fontSize: 10, padding: "2px 8px", borderRadius: 999,
+                fontSize: 11, padding: "2px 8px", borderRadius: 999,
                 background: rec.ejecutaEn === "sociedad" ? "rgba(168,85,247,0.15)" : "rgba(59,130,246,0.15)",
                 color: rec.ejecutaEn === "sociedad" ? "#a855f7" : "#3b82f6",
                 fontWeight: 700,
@@ -149,7 +149,7 @@ function RecomendacionCard({ rec, indice }) {
               padding: "10px 12px", background: C.blueBg,
               border: `1px solid ${C.blue}40`, borderRadius: 8,
             }}>
-              <div style={{ fontSize: 10, fontWeight: 700, color: C.blue, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 0.5, marginBottom: 4 }}>
                 🎯 Acción concreta
               </div>
               <div style={{ fontSize: 13, color: C.txt, fontWeight: 600 }}>
@@ -163,14 +163,14 @@ function RecomendacionCard({ rec, indice }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 8 }}>
               {inversionMonto > 0 && (
                 <div style={{ padding: "10px 12px", background: C.bg3, borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, color: C.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 11, color: C.txt3, fontWeight: 600, letterSpacing: 0.5 }}>
                     Inversión necesaria
                   </div>
                   <div style={{ fontSize: 16, color: C.txt, fontWeight: 700, marginTop: 2 }}>
                     {fm(inversionMonto)}
                   </div>
                   {rec.inversion?.descripcion && (
-                    <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
                       {rec.inversion.descripcion}
                     </div>
                   )}
@@ -178,14 +178,14 @@ function RecomendacionCard({ rec, indice }) {
               )}
               {ahorroMonto > 0 && (
                 <div style={{ padding: "10px 12px", background: C.greenBg, borderRadius: 8, border: `1px solid ${C.green}30` }}>
-                  <div style={{ fontSize: 10, color: C.green, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 11, color: C.green, fontWeight: 600, letterSpacing: 0.5 }}>
                     Ahorro anual estimado
                   </div>
                   <div style={{ fontSize: 16, color: C.green, fontWeight: 700, marginTop: 2 }}>
                     {fm(ahorroMonto)}
                   </div>
                   {rec.ahorroAnual?.calculoDetallado && (
-                    <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
                       {rec.ahorroAnual.calculoDetallado}
                     </div>
                   )}
@@ -193,14 +193,14 @@ function RecomendacionCard({ rec, indice }) {
               )}
               {roiPct > 0 && (
                 <div style={{ padding: "10px 12px", background: C.bg3, borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, color: C.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 11, color: C.txt3, fontWeight: 600, letterSpacing: 0.5 }}>
                     ROI fiscal
                   </div>
                   <div style={{ fontSize: 16, color: C.blue, fontWeight: 700, marginTop: 2 }}>
                     {fmtPctEs(roiPct, 1)}
                   </div>
                   {rec.roi?.descripcion && (
-                    <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
+                    <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
                       {rec.roi.descripcion}
                     </div>
                   )}
@@ -210,7 +210,7 @@ function RecomendacionCard({ rec, indice }) {
           )}
 
           {/* Base legal */}
-          <div style={{ fontSize: 11, color: C.txt3, fontStyle: "italic" }}>
+          <div style={{ fontSize: 12, color: C.txt3, fontStyle: "italic" }}>
             📚 Base legal: {rec.baseLegal}
           </div>
 
@@ -225,9 +225,9 @@ function RecomendacionCard({ rec, indice }) {
               {rec.caveat}
             </div>
           )}
-          {rec.tope && <div style={{ fontSize: 11, color: C.txt2 }}>{rec.tope}</div>}
-          {rec.nota && <div style={{ fontSize: 11, color: C.txt3, lineHeight: 1.4 }}>{rec.nota}</div>}
-          {rec.etiqueta && <div style={{ fontSize: 10, color: C.txt3 }}>{rec.etiqueta}</div>}
+          {rec.tope && <div style={{ fontSize: 12, color: C.txt2 }}>{rec.tope}</div>}
+          {rec.nota && <div style={{ fontSize: 12, color: C.txt3, lineHeight: 1.4 }}>{rec.nota}</div>}
+          {rec.etiqueta && <div style={{ fontSize: 11, color: C.txt3 }}>{rec.etiqueta}</div>}
         </div>
       )}
     </div>
@@ -254,7 +254,7 @@ export default function RecomendacionesEstrategicas({ recomendaciones }) {
         border: `1px solid ${C.green}40`,
         borderRadius: 10,
       }}>
-        <div style={{ fontSize: 12, color: C.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+        <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>
           💡 Estrategias del contador para ti
         </div>
         <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, marginBottom: 8 }}>
@@ -281,7 +281,7 @@ export default function RecomendacionesEstrategicas({ recomendaciones }) {
       <div style={{
         padding: "10px 14px", background: C.bg3,
         border: `1px solid ${C.border}`, borderRadius: 8,
-        fontSize: 11, color: C.txt3, lineHeight: 1.5,
+        fontSize: 12, color: C.txt3, lineHeight: 1.5,
       }}>
         <strong style={{ color: C.txt2 }}>Importante:</strong> Estas son sugerencias estratégicas
         basadas en tu perfil. La implementación real requiere asesoría profesional —

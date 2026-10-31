@@ -50,7 +50,7 @@ const T = {
   bg2:"var(--fp-card)", bg3:"var(--fp-raised)", card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
-  gn:"#22c55e", rd:"#ef4444", bl:"#3b82f6",
+  gn:"#00c805", rd:"#ff5000", bl:"#3b82f6",
   pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8", gd:"#f59e0b",
 };
 const fm = (n) => "$" + Math.round(Math.abs(n||0)).toLocaleString("en-US");
@@ -63,7 +63,7 @@ const LEVELS = [
   { id:2, name:"Vitality",      icon:"⚡",  color:"#94a3b8", factor:0.825,
     desc:"Security + half your lifestyle",
     detail:"Your income covers 82.5% of expenses. Beyond basics, you can maintain half your current lifestyle: some entertainment, modest travel, education." },
-  { id:3, name:"Independence",  icon:"🏆",  color:"#22c55e", factor:1.0,
+  { id:3, name:"Independence",  icon:"🏆",  color:"#00c805", factor:1.0,
     desc:"Income covers 100% of all expenses",
     detail:"The breakpoint! Your income covers ALL your current expenses. You no longer need a job to maintain your lifestyle. You could stop working today and live the same." },
   { id:4, name:"Freedom",       icon:"🚀",  color:"#f59e0b", factor:1.5,
@@ -84,11 +84,11 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
           pegados. Ahora el monto baja de línea cuando no cabe. */}
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:3,gap:8,flexWrap:"wrap",alignItems:"baseline"}}>
         <span style={{fontSize:12,color:T.tx2,fontWeight:500,minWidth:0,flex:"1 1 auto"}}>
-          {label} {sub && <span style={{fontSize:10,color:T.tx3}}>{sub}</span>}
+          {label} {sub && <span style={{fontSize:11,color:T.tx3}}>{sub}</span>}
         </span>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           {diff !== 0 && (
-            <span style={{fontSize:10,color:diff>0?T.gn:T.rd,fontWeight:600}}>
+            <span style={{fontSize:11,color:diff>0?T.gn:T.rd,fontWeight:600}}>
               {diff>0?"+":""}{fm(diff)}
             </span>
           )}
@@ -99,7 +99,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
         <input type="range" min="0" max={max} step={Math.max(Math.round(max*0.01),5)}
           value={value} onChange={e=>onChange(Number(e.target.value))}
           style={{flex:1,accentColor:color,height:4,cursor:"pointer"}}/>
-        <span style={{fontSize:10,color:T.tx3,minWidth:32,textAlign:"right"}}>
+        <span style={{fontSize:11,color:T.tx3,minWidth:32,textAlign:"right"}}>
           {base>0?Math.round(value/base*100):100}%
         </span>
       </div>
@@ -128,10 +128,10 @@ function FreedomBar({ ni, te }) {
           <p style={{fontSize:12,color:T.tx3,margin:"3px 0 0"}}>5 levels · Updates in real time</p>
         </div>
         <div style={{textAlign:"right"}}>
-          <div style={{fontSize:28,fontWeight:900,color:current?.color||T.tx3}}>
+          <div style={{fontSize:28,fontWeight:700,color:current?.color||T.tx3}}>
             {(ratio*100).toFixed(0)}%
           </div>
-          <div style={{fontSize:11,color:T.tx3}}>independence ratio</div>
+          <div style={{fontSize:12,color:T.tx3}}>independence ratio</div>
         </div>
       </div>
 
@@ -141,7 +141,7 @@ function FreedomBar({ ni, te }) {
           <div style={{
             height:"100%",
             width:Math.min(progress,100)+"%",
-            background:`linear-gradient(90deg,#3b82f6,#94a3b8,#22c55e,#f59e0b,#f59e0b)`,
+            background:`linear-gradient(90deg,#3b82f6,#94a3b8,#00c805,#f59e0b,#f59e0b)`,
             borderRadius:8,transition:"width 0.3s ease",
           }}/>
         </div>
@@ -154,7 +154,7 @@ function FreedomBar({ ni, te }) {
               <div key={l.id} onClick={()=>setExpanded(expanded===l.id?null:l.id)}
                 style={{cursor:"pointer",textAlign:"center",flex:1}}>
                 <div style={{fontSize:16,filter:reached?"none":"grayscale(1) opacity(0.4)"}}>{l.icon}</div>
-                <div style={{fontSize:9,color:reached?l.color:T.tx3,fontWeight:reached?700:400}}>{l.name}</div>
+                <div style={{fontSize:11,color:reached?l.color:T.tx3,fontWeight:reached?700:400}}>{l.name}</div>
               </div>
             );
           })}
@@ -172,12 +172,12 @@ function FreedomBar({ ni, te }) {
             <div style={{fontSize:13,fontWeight:700,color:current.color}}>
               {current.icon} Level {current.id}: {current.name}
             </div>
-            <div style={{fontSize:11,color:T.tx2,marginTop:4,lineHeight:1.6}}>{current.desc}</div>
+            <div style={{fontSize:12,color:T.tx2,marginTop:4,lineHeight:1.6}}>{current.desc}</div>
           </>
         ) : (
           <>
             <div style={{fontSize:13,fontWeight:700,color:T.tx3}}>⬇️ Below Security Level</div>
-            <div style={{fontSize:11,color:T.tx2,marginTop:4}}>
+            <div style={{fontSize:12,color:T.tx2,marginTop:4}}>
               Your income doesn't yet cover 65% of expenses. Need +{fm(LEVELS[0].factor*te - ni)}/mo more.
             </div>
           </>
@@ -188,10 +188,10 @@ function FreedomBar({ ni, te }) {
       {next && (
         <div style={{background:T.bg3,borderRadius:10,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontSize:11,color:T.tx3}}>Next level: {next.icon} {next.name}</div>
-            <div style={{fontSize:11,color:T.tx2,marginTop:2}}>Need +{fm(gap)}/month more income</div>
+            <div style={{fontSize:12,color:T.tx3}}>Next level: {next.icon} {next.name}</div>
+            <div style={{fontSize:12,color:T.tx2,marginTop:2}}>Need +{fm(gap)}/month more income</div>
           </div>
-          <div style={{fontSize:11,color:next.color,fontWeight:700}}>
+          <div style={{fontSize:12,color:next.color,fontWeight:700}}>
             {(next.factor*100).toFixed(0)}% target
           </div>
         </div>
@@ -199,7 +199,7 @@ function FreedomBar({ ni, te }) {
       {!next && ratio >= LEVELS[4].factor && (
         <div style={{background:`${T.gd}15`,border:`1px solid ${T.gd}40`,borderRadius:10,padding:"10px 14px",textAlign:"center"}}>
           <div style={{fontSize:14,fontWeight:700,color:T.gd}}>👑 Absolute Financial Freedom Achieved!</div>
-          <div style={{fontSize:11,color:T.tx2,marginTop:4}}>Your income is {(ratio*100).toFixed(0)}% of your expenses. Money is no longer a constraint.</div>
+          <div style={{fontSize:12,color:T.tx2,marginTop:4}}>Your income is {(ratio*100).toFixed(0)}% of your expenses. Money is no longer a constraint.</div>
         </div>
       )}
 
@@ -209,8 +209,8 @@ function FreedomBar({ ni, te }) {
           <div style={{fontSize:12,fontWeight:700,color:LEVELS[expanded-1].color,marginBottom:6}}>
             {LEVELS[expanded-1].icon} {LEVELS[expanded-1].name} — What this means
           </div>
-          <div style={{fontSize:11,color:T.tx2,lineHeight:1.7}}>{LEVELS[expanded-1].detail}</div>
-          <div style={{fontSize:11,color:T.tx3,marginTop:6}}>
+          <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{LEVELS[expanded-1].detail}</div>
+          <div style={{fontSize:12,color:T.tx3,marginTop:6}}>
             Target: income ≥ {fm(LEVELS[expanded-1].factor * te)}/month ({(LEVELS[expanded-1].factor*100).toFixed(0)}% of expenses)
           </div>
         </div>
@@ -324,7 +324,7 @@ export default function SimuladorUS({ user, totals }) {
   return (
     <div>
       <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>🖥️ Financial Freedom Simulator</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🖥️ Financial Freedom Simulator</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           Move the sliders to see how changes affect your financial independence in real time
         </p>
@@ -370,14 +370,14 @@ export default function SimuladorUS({ user, totals }) {
            sub:`of ${fm(fireNumber)}`},
         ].map(k=>(
           <div key={k.l} style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:"14px 16px"}}>
-            <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{k.l}</div>
-            <div style={{fontSize:18,fontWeight:800,color:k.c,marginTop:4,fontFamily:"monospace"}}>{k.v}</div>
+            <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{k.l}</div>
+            <div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4,fontFamily:"monospace"}}>{k.v}</div>
             {k.d && k.d !== "$0" && (
-              <div style={{fontSize:10,color:parseFloat(k.d)>0?T.gn:T.rd,marginTop:2}}>
+              <div style={{fontSize:11,color:parseFloat(k.d)>0?T.gn:T.rd,marginTop:2}}>
                 {parseFloat(k.d)>0?"+":""}{k.d} vs actual
               </div>
             )}
-            {k.sub && <div style={{fontSize:9,color:T.tx3,marginTop:2}}>{k.sub}</div>}
+            {k.sub && <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{k.sub}</div>}
           </div>
         ))}
       </div>
@@ -397,7 +397,7 @@ export default function SimuladorUS({ user, totals }) {
           <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:18}}>
             <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>
               💰 Income Sources
-              <span style={{fontSize:10,color:T.tx3,fontWeight:400,marginLeft:8}}>
+              <span style={{fontSize:11,color:T.tx3,fontWeight:400,marginLeft:8}}>
                 Total: {fm(simT.ni)}/mo
               </span>
             </div>
@@ -424,7 +424,7 @@ export default function SimuladorUS({ user, totals }) {
         <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:18}}>
           <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:12}}>
             💳 Expenses & Debt Payments
-            <span style={{fontSize:10,color:T.tx3,fontWeight:400,marginLeft:8}}>
+            <span style={{fontSize:11,color:T.tx3,fontWeight:400,marginLeft:8}}>
               Total: {fm(simT.te)}/mo
             </span>
           </div>
@@ -438,7 +438,7 @@ export default function SimuladorUS({ user, totals }) {
             }, {})
           ).map(([cat, items]) => (
             <div key={cat} style={{marginBottom:8}}>
-              <div style={{fontSize:10,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4,textTransform:"uppercase"}}>{cat}</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4}}>{cat}</div>
               {items.map(([k, info]) => (
                 <Slider key={k}
                   label={info.label}
@@ -455,7 +455,7 @@ export default function SimuladorUS({ user, totals }) {
           {/* Debt payments */}
           {Object.keys(baseDebt).length > 0 && (
             <div style={{marginTop:8}}>
-              <div style={{fontSize:10,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4,textTransform:"uppercase"}}>Debt Payments</div>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4}}>Debt Payments</div>
               {Object.entries(baseDebt).map(([k, info]) => (
                 <Slider key={k}
                   label={info.label}
@@ -472,7 +472,7 @@ export default function SimuladorUS({ user, totals }) {
           {/* Estimated taxes row — read only, not a slider */}
           {simT.taxes > 0 && (
             <div style={{marginTop:8}}>
-              <div style={{fontSize:10,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4,textTransform:"uppercase"}}>
+              <div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1,marginBottom:4}}>
                 Estimated Federal Taxes
               </div>
               <div style={{background:T.pr+"10",padding:"10px 12px",borderRadius:8,borderLeft:"3px solid "+T.pr}}>
@@ -482,7 +482,7 @@ export default function SimuladorUS({ user, totals }) {
                       Fed {fm(simT.taxBreakdown?.fed||0)} + FICA {fm(simT.taxBreakdown?.fica||0)}
                       {simT.taxBreakdown?.seTax>0&&` + SE ${fm(simT.taxBreakdown.seTax)}`}
                     </div>
-                    <div style={{fontSize:10,color:T.tx3,marginTop:2}}>
+                    <div style={{fontSize:11,color:T.tx3,marginTop:2}}>
                       Estimated · go to Tax Planning for full analysis
                     </div>
                   </div>
@@ -551,7 +551,7 @@ export default function SimuladorUS({ user, totals }) {
         <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:4}}>
           📈 5-Year Net Worth Projection
         </div>
-        <div style={{fontSize:11,color:T.tx3,marginBottom:14}}>
+        <div style={{fontSize:12,color:T.tx3,marginBottom:14}}>
           Cash flow {fm(simT.cf)}/month (income – expenses – debt – est. taxes) + 7% annual return
         </div>
         <ResponsiveContainer width="100%" height={180}>

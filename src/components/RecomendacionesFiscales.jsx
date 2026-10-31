@@ -16,13 +16,13 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", red: "#ff5000", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 
 function severityColors(sev) {
-  if (sev === "high")   return { color: T.green, bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.3)" };
+  if (sev === "high")   return { color: T.green, bg: "rgba(0,200,5,0.06)", border: "rgba(0,200,5,0.3)" };
   if (sev === "medium") return { color: T.orange, bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.3)" };
   if (sev === "low")    return { color: T.blue, bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.25)" };
   return { color: T.txt2, bg: T.bg2, border: T.border }; // info
@@ -44,21 +44,21 @@ function RecomendacionCard({ rec, onNavigate }) {
             {rec.descripcion}
           </div>
           {rec.base && (
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 6, fontFamily: "monospace" }}>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, fontFamily: "monospace" }}>
               📖 {rec.base}
             </div>
           )}
         </div>
         {!isInfo && rec.ahorroAnualEstimado > 0 && (
           <div style={{ textAlign: "right", minWidth: 140 }}>
-            <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>
+            <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5, marginBottom: 2 }}>
               Ahorro anual estimado
             </div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: colors.color, fontFamily: "monospace" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: colors.color, fontFamily: "monospace" }}>
               {fm(rec.ahorroAnualEstimado)}
             </div>
             {rec.aporteSugeridoMensual > 0 && (
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
                 aportando ~{fm(rec.aporteSugeridoMensual)}/mes
               </div>
             )}
@@ -68,11 +68,11 @@ function RecomendacionCard({ rec, onNavigate }) {
 
       {rec.cta && (
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button onClick={() => onNavigate?.(rec.cta.page)} style={{ padding: "7px 12px", background: "transparent", border: "1px solid " + colors.color, borderRadius: 6, color: colors.color, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => onNavigate?.(rec.cta.page)} style={{ padding: "7px 12px", background: "transparent", border: "1px solid " + colors.color, borderRadius: 6, color: colors.color, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
             {rec.cta.label} →
           </button>
           {rec.supuestos && (
-            <button onClick={() => setShowSupuestos(s => !s)} style={{ padding: "7px 12px", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.txt3, fontSize: 11, fontWeight: 500, cursor: "pointer" }}>
+            <button onClick={() => setShowSupuestos(s => !s)} style={{ padding: "7px 12px", background: "transparent", border: "1px solid " + T.border, borderRadius: 6, color: T.txt3, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
               {showSupuestos ? "Ocultar" : "Ver"} supuestos
             </button>
           )}
@@ -80,8 +80,8 @@ function RecomendacionCard({ rec, onNavigate }) {
       )}
 
       {showSupuestos && rec.supuestos && (
-        <div style={{ marginTop: 10, padding: "8px 12px", background: T.bg3, borderRadius: 6, fontSize: 10, color: T.txt3, lineHeight: 1.6 }}>
-          <div style={{ fontSize: 10, color: T.txt2, fontWeight: 600, marginBottom: 4 }}>Cómo se calcula:</div>
+        <div style={{ marginTop: 10, padding: "8px 12px", background: T.bg3, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 11, color: T.txt2, fontWeight: 600, marginBottom: 4 }}>Cómo se calcula:</div>
           {rec.supuestos.map((s, i) => (<div key={i}>• {s}</div>))}
         </div>
       )}
@@ -103,11 +103,11 @@ export default function RecomendacionesFiscales({ recomendaciones, ownerId, onNa
   return (
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5 }}>
           💡 Recomendaciones {accionables.length > 0 && <span style={{ color: T.green }}>({accionables.length})</span>}
         </div>
         {totalAhorro > 0 && (
-          <div style={{ fontSize: 11, color: T.txt2 }}>
+          <div style={{ fontSize: 12, color: T.txt2 }}>
             Ahorro potencial total: <strong style={{ color: T.green, fontFamily: "monospace" }}>{fm(totalAhorro)}/año</strong>
           </div>
         )}

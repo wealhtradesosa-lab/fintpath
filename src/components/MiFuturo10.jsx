@@ -10,9 +10,9 @@ import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
 
-const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#22c55e", rd: "#ef4444", am: "#f59e0b" };
+const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#00c805", rd: "#ff5000", am: "#f59e0b" };
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
-const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(34,197,94,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
+const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(0,200,5,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
 const inp = { width: "100%", boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 6, padding: "6px 8px", fontSize: 13 };
 // 25-oct-2026 (Santiago: "uno ve ese primer listado y cree que van a ser
 // tenidas en cuenta… no es intuitivo"). Cada cosa que tienes se revisa y se
@@ -118,7 +118,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <div style={card}>
           <h3 style={{ marginTop: 0, marginBottom: 4 }}>Lo que tienes: revisa y decide</h3>
           {/* 25-oct-2026 (Santiago: "deberíamos explicar que ahí se puede revisar y ajustar valores y rentabilidad de cada inversión"). */}
-          <div style={{ fontSize: 13, color: C.tx, background: "rgba(34,197,94,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
+          <div style={{ fontSize: 13, color: C.tx, background: "rgba(0,200,5,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>
             Todo lo que tienes, cosa por cosa. De cada inversión: <b>cuánto vale, cuánto renta y cuánto sube al año</b>, y si <b>sigue o se vende</b>. De cada ingreso: <b>cuánto te entra</b> y si <b>sigue o se acaba</b>. Lo tachado no cuenta en este escenario. Lo que corrijas solo cambia el plan; tus páginas no.
           </div>
           <Grid items={[
@@ -190,12 +190,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder="Ej.: negocio, CDT, finca" /></label>
                   <label style={lbl}>¿Cuándo?<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
                   <label style={lbl}>Rendimiento anual esperado (%)<InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
-                    <span style={{ fontSize: 11 }}>Si no sabes, usa {fmtPctEs(hint, 1)}.</span></label>
+                    <span style={{ fontSize: 12 }}>Si no sabes, usa {fmtPctEs(hint, 1)}.</span></label>
                   <label style={lbl}>Moneda<select style={inp} value={x.moneda || "COP"} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>
-                    {x.moneda === "USD" && <span style={{ fontSize: 11, color: C.am }}>En dólares, el resultado en pesos también depende de cómo se mueva la tasa de cambio.</span>}</label>
+                    {x.moneda === "USD" && <span style={{ fontSize: 12, color: C.am }}>En dólares, el resultado en pesos también depende de cómo se mueva la tasa de cambio.</span>}</label>
                   <label style={lbl}>De lo que rinde, ¿cuánto te llega?<select style={inp} value={x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{PARTES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select>
                     {(() => { const rend = (x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? hint : Number(x.rendimientoNomPct)) / 100; const p = (x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)) / 100; const mes = (Number(x.monto) || 0) * rend * p / 12;
-                      return <span style={{ fontSize: 11, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? `Te llegan ${plata(Math.round(mes))} al mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.` : "Todo se reinvierte: crece con interés compuesto."}</span>; })()}</label>
+                      return <span style={{ fontSize: 12, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? `Te llegan ${plata(Math.round(mes))} al mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.` : "Todo se reinvierte: crece con interés compuesto."}</span>; })()}</label>
                 </>}
                 <div><button style={btn(false)} onClick={() => set("nuevas", cfg.nuevas.filter((_, j) => j !== i))}>Quitar</button></div>
               </div>
@@ -331,19 +331,19 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
           debería verse muy bien"). Pasa a paso propio, con resumen arriba. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8, margin: "10px 0 14px" }}>
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
-          <div style={{ fontSize: 11, color: C.tx2 }}>Ingresos futuros</div>
+          <div style={{ fontSize: 12, color: C.tx2 }}>Ingresos futuros</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: totalIng > 0 ? C.gn : C.tx }}>{totalIng > 0 ? `${plata(totalIng)} al mes` : "Ninguno"}</div>
-          {fut.ingresos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.ingresos.length} {fut.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero {primerAnio === 1 ? "desde ya" : `en ${primerAnio - 1} año${primerAnio === 2 ? "" : "s"}`}</div>}
+          {fut.ingresos.length > 0 && <div style={{ fontSize: 12, color: C.tx2 }}>{fut.ingresos.length} {fut.ingresos.length === 1 ? "ingreso" : "ingresos"} · el primero {primerAnio === 1 ? "desde ya" : `en ${primerAnio - 1} año${primerAnio === 2 ? "" : "s"}`}</div>}
         </div>
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
-          <div style={{ fontSize: 11, color: C.tx2 }}>Compras y construcciones</div>
+          <div style={{ fontSize: 12, color: C.tx2 }}>Compras y construcciones</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{totalAct > 0 ? plata(totalAct) : "Ninguno"}</div>
-          {f.activos.length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
+          {f.activos.length > 0 && <div style={{ fontSize: 12, color: C.tx2 }}>{f.activos.length} {f.activos.length === 1 ? "activo" : "activos"}</div>}
         </div>
         <div style={{ background: C.bg, borderRadius: 8, padding: 10 }}>
-          <div style={{ fontSize: 11, color: C.tx2 }}>Gastos futuros</div>
+          <div style={{ fontSize: 12, color: C.tx2 }}>Gastos futuros</div>
           <div style={{ fontSize: 16, fontWeight: 700, color: totalGas > 0 ? C.am : C.tx }}>{totalGas > 0 ? `${plata(totalGas)} al año` : "Ninguno"}</div>
-          {(fut.gastos || []).length > 0 && <div style={{ fontSize: 11, color: C.tx2 }}>{fut.gastos.length} {fut.gastos.length === 1 ? "gasto" : "gastos"}</div>}
+          {(fut.gastos || []).length > 0 && <div style={{ fontSize: 12, color: C.tx2 }}>{fut.gastos.length} {fut.gastos.length === 1 ? "gasto" : "gastos"}</div>}
         </div>
       </div>
       <div style={{ fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>¿La renta sale de un activo que ya tienes? Elígelo en «¿De dónde sale?». Si además le vas a meter plata (construir la bodega en el lote), hazlo en el paso 3, Tu plata → «Invertir en lo que ya tienes»: ahí van la inversión y la renta juntas.</div>
@@ -352,10 +352,10 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
         <div key={i} style={g}>
           <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: pensión" onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>Al mes ($, pesos de hoy)<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
-            {!x.activoId && <span style={{ fontSize: 11 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span>}</label>
+            {!x.activoId && <span style={{ fontSize: 12 }}>Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.</span>}</label>
           <label style={lbl}>¿De dónde sale?<select style={inp} value={x.activoId || ""} onChange={(e) => upI(i, { activoId: e.target.value || null })}><option value="">No sale de un activo (pensión, honorarios…)</option>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>
           <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upI(i, { desde: v || 1 }))}</label>
-          {x.activoId && <label style={lbl}>¿Cuánto sube el valor de {(activos.find((y) => y.id === x.activoId) || {}).nombre || "ese activo"} al año? (%, opcional)<InputDecimalEs style={inp} placeholder="Ej.: 5" value={x.valorizacionNomPct ?? ""} onChange={(v) => upI(i, { valorizacionNomPct: v })} /><span style={{ fontSize: 11 }}>Es el valor del activo, no la renta. La renta sube cada año con la inflación.</span></label>}
+          {x.activoId && <label style={lbl}>¿Cuánto sube el valor de {(activos.find((y) => y.id === x.activoId) || {}).nombre || "ese activo"} al año? (%, opcional)<InputDecimalEs style={inp} placeholder="Ej.: 5" value={x.valorizacionNomPct ?? ""} onChange={(v) => upI(i, { valorizacionNomPct: v })} /><span style={{ fontSize: 12 }}>Es el valor del activo, no la renta. La renta sube cada año con la inflación.</span></label>}
           {/* 24-oct-2026 (Santiago, con la pensión puesta "termina año 7" sin querer:
               "no veo esa opción"). En el iPhone «Sigue» quedaba escondida arriba de la
               rueda. Ahora son dos botones y el año solo aparece si termina. */}
@@ -397,9 +397,9 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
             <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder={tipo === "vivienda" ? "Ej.: casa finca" : "Ej.: local comercial"} onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
             <label style={lbl}>¿Cuánto cuesta en total? ($)<NumberInput style={inp} value={x.valor ?? ""} onChange={(v) => upA(i, { valor: v })} /></label>
             <label style={lbl}>¿Cuánto vale cuando está lista? ($, opcional)<NumberInput style={inp} placeholder="Si vale más de lo que cuesta" value={x.valorAlTerminar ?? ""} onChange={(v) => upA(i, { valorAlTerminar: v })} />
-              <span style={{ fontSize: 11 }}>Una construcción suele valer más al terminarla. Desde ahí sube con el % de abajo.</span></label>
+              <span style={{ fontSize: 12 }}>Una construcción suele valer más al terminarla. Desde ahí sube con el % de abajo.</span></label>
             <label style={lbl}>¿Cuándo está lista?{selAnio(x.entrega || 1, (v) => upA(i, { entrega: v || 1, anioCuota: Math.min(Number(x.anioCuota) || 1, v || 1) }))}
-              <span style={{ fontSize: 11 }}>Cuando la recibes o terminas de construir.</span></label>
+              <span style={{ fontSize: 12 }}>Cuando la recibes o terminas de construir.</span></label>
             <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿De dónde sale la plata?
               {fps.map((fp, k) => <div key={k} style={{ display: "flex", gap: 6, marginTop: 4, alignItems: "center" }}>
                 <select style={{ ...inp, flex: 1 }} value={fp.id || ""} onChange={(e) => setFps(fps.map((z, j) => (j === k ? { ...z, id: e.target.value } : z)))}><option value="">Elige una inversión</option>{fuentes.map((y) => <option key={y.id} value={y.id}>{y.nombre}</option>)}</select>
@@ -407,17 +407,17 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
                 <button style={{ ...btn(false), padding: "6px 8px" }} onClick={() => setFps(fps.filter((_, j) => j !== k))}>✕</button>
               </div>)}
               <button style={{ ...btn(false), marginTop: 6 }} onClick={() => setFps([...fps, { id: "", monto: faltaF || "" }])}>+ {fps.length ? "Otra inversión" : "Sale de una inversión"}</button>
-              <span style={{ display: "block", fontSize: 11, marginTop: 4 }}>{fps.length === 0 ? "Si no eliges, sale de tus cuentas de hoy (ahorros y efectivo)." : faltaF > 0 ? `Faltan ${plata(faltaF)}: salen de tus cuentas de hoy.` : sumaFps > (Number(x.valor) || 0) ? "Sacas más de lo que cuesta." : "Completo. Si alguna no alcanza, lo que falta sale de tus cuentas de hoy."}</span>
+              <span style={{ display: "block", fontSize: 12, marginTop: 4 }}>{fps.length === 0 ? "Si no eliges, sale de tus cuentas de hoy (ahorros y efectivo)." : faltaF > 0 ? `Faltan ${plata(faltaF)}: salen de tus cuentas de hoy.` : sumaFps > (Number(x.valor) || 0) ? "Sacas más de lo que cuesta." : "Completo. Si alguna no alcanza, lo que falta sale de tus cuentas de hoy."}</span>
             </div>
             <label style={lbl}>¿Pagas una parte antes? ($, opcional)<NumberInput style={inp} value={x.cuotaInicial ?? ""} onChange={(v) => upA(i, { cuotaInicial: v })} />
-              <span style={{ fontSize: 11 }}>Un anticipo o la primera etapa de la obra. Si no, todo se paga cuando está lista.</span></label>
+              <span style={{ fontSize: 12 }}>Un anticipo o la primera etapa de la obra. Si no, todo se paga cuando está lista.</span></label>
             {antes > 0 && <label style={lbl}>¿Cuándo pagas esa parte?{selAnio(x.anioCuota || 1, (v) => upA(i, { anioCuota: Math.min(v || 1, Number(x.entrega) || 1) }))}</label>}
             {renta && <>
               <label style={lbl}>¿Cuánto renta al mes? ($, neto, opcional)<NumberInput style={inp} value={x.rentaMensual ?? ""} onChange={(v) => upA(i, { rentaMensual: v })} /></label>
               {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo renta?{selAnio(x.rentaDesde || x.entrega || 1, (v) => upA(i, { rentaDesde: v || 1 }))}</label>}
             </>}
             <label style={lbl}>¿Cuánto sube su valor al año? (%)<InputDecimalEs style={inp} placeholder={hintVal(tipo)} value={x.valorizacionNomPct ?? ""} onChange={(v) => upA(i, { valorizacionNomPct: v })} />
-              <span style={{ fontSize: 11 }}>Si no sabes, déjalo en {hintVal(tipo)}.</span></label>
+              <span style={{ fontSize: 12 }}>Si no sabes, déjalo en {hintVal(tipo)}.</span></label>
             {total > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>
               {antes > 0 ? `Pagas ${plata(antes)} ${cuando(Number(x.anioCuota) || 1)} y ${plata(total - antes)} ${cuando(Number(x.entrega) || 1)}` : `Pagas ${plata(total)} ${cuando(Number(x.entrega) || 1)}`}: {validas.length ? fuenteNom : "de tus cuentas de hoy"}.
               {renta && (Number(x.rentaMensual) || 0) > 0 ? ` Renta ${plata(Number(x.rentaMensual))} al mes ${cuando(Number(x.rentaDesde) || Number(x.entrega) || 1)}.` : ""}
@@ -439,7 +439,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
           <div key={i} style={g}>
             <label style={lbl}>Nombre<input style={inp} value={x.nombre || ""} placeholder="Ej.: universidad de los hijos" onChange={(e) => upG(i, { nombre: e.target.value })} /></label>
             <label style={lbl}>Al año ($, pesos de hoy)<NumberInput style={inp} value={x.anual ?? ""} onChange={(v) => upG(i, { anual: v })} />
-              <span style={{ fontSize: 11 }}>Sube cada año con la inflación.</span></label>
+              <span style={{ fontSize: 12 }}>Sube cada año con la inflación.</span></label>
             <label style={lbl}>Empieza{selAnio(x.desde || 1, (v) => upG(i, { desde: v || 1 }))}</label>
             <div style={lbl}>¿Cuántos años?
               <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -500,7 +500,7 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
 
 function Seccion({ n, titulo, sub }) {
   return <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10 }}>
-    <div style={{ flex: "0 0 auto", width: 28, height: 28, borderRadius: 999, background: "rgba(34,197,94,0.15)", color: C.gn, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{n}</div>
+    <div style={{ flex: "0 0 auto", width: 28, height: 28, borderRadius: 999, background: "rgba(0,200,5,0.15)", color: C.gn, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{n}</div>
     <div style={{ minWidth: 0 }}><h3 style={{ margin: "2px 0 2px" }}>{titulo}</h3><div style={{ color: C.tx2, fontSize: 12 }}>{sub}</div></div>
   </div>;
 }
@@ -526,7 +526,7 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
   const esInm = clase === "inmueble";
   const pct = (v) => fmtPctEs(v, 1);
   return (<>
-    <div style={{ fontSize: 11, color: C.tx2, marginBottom: 6 }}>{ETQ_TIPO[clase] || ETQ_TIPO.otro}</div>
+    <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>{ETQ_TIPO[clase] || ETQ_TIPO.otro}</div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
       {conActivo && <label style={lbl}>¿A cuál?<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
       <label style={lbl}>¿Cuánto le vas a invertir? ($)<NumberInput style={inp} placeholder="Ej.: 600.000.000" value={x.monto} onChange={(v) => up({ monto: v })} /></label>
@@ -535,19 +535,19 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
       {esInm ? <>
         <label style={lbl}>¿Va a dar renta? ($ al mes, opcional)<NumberInput style={inp} placeholder="Ej.: 8.500.000" value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
         {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>¿Desde cuándo renta?<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
-        <label style={lbl}>¿Cuánto queda valiendo al terminar? ($, opcional)<NumberInput style={inp} placeholder="Ej.: 1.500.000.000" value={x.valorAlTerminar ?? ""} onChange={(v) => up({ valorAlTerminar: v })} /><span style={{ fontSize: 11 }}>Si con la obra vale más que lo que tenías más lo que inviertes.</span></label>
-        <label style={lbl}>¿Cuánto se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={det && det.valorizacionPct != null ? pct(det.valorizacionPct) : ""} value={x.valorizacionNomPct ?? ""} onChange={(v) => up({ valorizacionNomPct: v })} /><span style={{ fontSize: 11 }}>Lo que sube el valor cada año{(Number(x.valorAlTerminar) || 0) > 0 ? ", desde que termina la obra" : ""}. Si no sabes, déjalo vacío.</span></label>
+        <label style={lbl}>¿Cuánto queda valiendo al terminar? ($, opcional)<NumberInput style={inp} placeholder="Ej.: 1.500.000.000" value={x.valorAlTerminar ?? ""} onChange={(v) => up({ valorAlTerminar: v })} /><span style={{ fontSize: 12 }}>Si con la obra vale más que lo que tenías más lo que inviertes.</span></label>
+        <label style={lbl}>¿Cuánto se valoriza al año? (%)<InputDecimalEs style={inp} placeholder={det && det.valorizacionPct != null ? pct(det.valorizacionPct) : ""} value={x.valorizacionNomPct ?? ""} onChange={(v) => up({ valorizacionNomPct: v })} /><span style={{ fontSize: 12 }}>Lo que sube el valor cada año{(Number(x.valorAlTerminar) || 0) > 0 ? ", desde que termina la obra" : ""}. Si no sabes, déjalo vacío.</span></label>
       </> : <>
-        <label style={lbl}>¿Cuánto rinde al año? (%)<InputDecimalEs style={inp} placeholder={det && det.rendimientoPct != null ? pct(det.rendimientoPct) : ""} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /><span style={{ fontSize: 11 }}>Lo que estimas que gana en un año, sobre todo lo que tiene.</span></label>
-        <label style={lbl}>De lo que rinde, ¿cuánto te llega?<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{PARTES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select><span style={{ fontSize: 11 }}>Lo que no te llega se reinvierte y crece con interés compuesto.</span></label>
+        <label style={lbl}>¿Cuánto rinde al año? (%)<InputDecimalEs style={inp} placeholder={det && det.rendimientoPct != null ? pct(det.rendimientoPct) : ""} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /><span style={{ fontSize: 12 }}>Lo que estimas que gana en un año, sobre todo lo que tiene.</span></label>
+        <label style={lbl}>De lo que rinde, ¿cuánto te llega?<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{PARTES.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select><span style={{ fontSize: 12 }}>Lo que no te llega se reinvierte y crece con interés compuesto.</span></label>
       </>}
     </div>
     {det && (det.aporte > 0 || det.rentaMensual > 0 || det.rindeAnual > 0) && <div style={{ marginTop: 8, background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-      <div><div style={{ fontSize: 11, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 11, color: C.tx2 }}>hoy {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}` : ""}</div></div>
-      {esInm && det.rentaMensual > 0 && <div><div style={{ fontSize: 11, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {pct(det.rentaPctAnual)} al año sobre el total</div></div>}
-      {esInm && det.valorizacionPct != null && <div><div style={{ fontSize: 11, color: C.tx2 }}>Se valoriza</div><div style={{ fontSize: 16, fontWeight: 700 }}>{pct(det.valorizacionPct)} al año</div><div style={{ fontSize: 11, color: C.tx2 }}>≈ {plata(det.total * det.valorizacionPct / 100)} el primer año</div></div>}
-      {!esInm && <div><div style={{ fontSize: 11, color: C.tx2 }}>Rinde al año</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.rindeAnual)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{pct(det.rendimientoPct)} sobre {plata(det.total)}</div></div>}
-      {!esInm && <div><div style={{ fontSize: 11, color: C.tx2 }}>Te llega al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: det.teLlegaMes > 0 ? C.gn : C.tx }}>{plata(det.teLlegaMes)}</div><div style={{ fontSize: 11, color: C.tx2 }}>{det.pctRecibe >= 100 ? "no se reinvierte nada" : `se reinvierten ${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} al año`}</div></div>}
+      <div><div style={{ fontSize: 12, color: C.tx2 }}>Queda valiendo</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 12, color: C.tx2 }}>hoy {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` en ${det.anio - 1} año${det.anio === 2 ? "" : "s"}` : ""}</div></div>
+      {esInm && det.rentaMensual > 0 && <div><div style={{ fontSize: 12, color: C.tx2 }}>Renta al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {pct(det.rentaPctAnual)} al año sobre el total</div></div>}
+      {esInm && det.valorizacionPct != null && <div><div style={{ fontSize: 12, color: C.tx2 }}>Se valoriza</div><div style={{ fontSize: 16, fontWeight: 700 }}>{pct(det.valorizacionPct)} al año</div><div style={{ fontSize: 12, color: C.tx2 }}>≈ {plata(det.total * det.valorizacionPct / 100)} el primer año</div></div>}
+      {!esInm && <div><div style={{ fontSize: 12, color: C.tx2 }}>Rinde al año</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.rindeAnual)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{pct(det.rendimientoPct)} sobre {plata(det.total)}</div></div>}
+      {!esInm && <div><div style={{ fontSize: 12, color: C.tx2 }}>Te llega al mes</div><div style={{ fontSize: 16, fontWeight: 700, color: det.teLlegaMes > 0 ? C.gn : C.tx }}>{plata(det.teLlegaMes)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{det.pctRecibe >= 100 ? "no se reinvierte nada" : `se reinvierten ${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} al año`}</div></div>}
       {(() => {
         const partes = [];
         if (det.deNuevo > 0) partes.push(`capital nuevo: ${plata(det.deNuevo)}`);
@@ -604,16 +604,16 @@ function Saldo({ r }) {
   ];
   const fila = ([l, val], col) => <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "3px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontFamily: "monospace" }}>{plata(Math.round(val))}</span></div>;
   return <div style={{ background: C.bg, borderRadius: 8, padding: 12 }}>
-    <div style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 10, background: v.ok ? "rgba(34,197,94,0.12)" : "rgba(239,68,68,0.14)", border: `1px solid ${v.ok ? C.gn : C.rd}` }}>
-      <div style={{ fontSize: 18, fontWeight: 800, color: v.ok ? C.gn : C.rd }}>{v.corto}</div>
+    <div style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 10, background: v.ok ? "rgba(0,200,5,0.12)" : "rgba(255,80,0,0.14)", border: `1px solid ${v.ok ? C.gn : C.rd}` }}>
+      <div style={{ fontSize: 18, fontWeight: 700, color: v.ok ? C.gn : C.rd }}>{v.corto}</div>
       <div style={{ fontSize: 12, color: C.tx }}>{v.largo}</div>
     </div>
-    {entra.length > 0 && <><div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1 }}>Entra</div>{entra.map((x) => fila(x, C.tx))}</>}
+    {entra.length > 0 && <><div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1 }}>Entra</div>{entra.map((x) => fila(x, C.tx))}</>}
     {(bd.excesoCubierto || 0) > 0.5 && fila(["Faltó: sale de tus cuentas de hoy", bd.excesoCubierto], C.rd)}
-    {sale.length > 0 && <><div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1, marginTop: 8 }}>Sale</div>{sale.map((x) => fila(x, C.tx2))}</>}
+    {sale.length > 0 && <><div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, marginTop: 8 }}>Sale</div>{sale.map((x) => fila(x, C.tx2))}</>}
     {(bd.usos || []).length > 0 && <details style={{ marginTop: 6 }}>
       <summary style={{ cursor: "pointer", fontSize: 12, color: C.tx }}>Ver cada inversión y de dónde sale su plata</summary>
-      <div style={{ fontSize: 11, color: C.tx2, margin: "4px 0" }}>Solo lo que sale «de lo que vendes» cambia lo que sobra. Lo que sale de tus cuentas, de plata nueva o en años siguientes no lo mueve.</div>
+      <div style={{ fontSize: 12, color: C.tx2, margin: "4px 0" }}>Solo lo que sale «de lo que vendes» cambia lo que sobra. Lo que sale de tus cuentas, de plata nueva o en años siguientes no lo mueve.</div>
       {bd.usos.map((u, k) => {
         const partes = [u.deVenta > 0.5 && `${plata(Math.round(u.deVenta))} de lo que vendes`, u.deCuentas > 0.5 && `${plata(Math.round(u.deCuentas))} de tus cuentas`, u.deNuevo > 0.5 && `${plata(Math.round(u.deNuevo))} plata nueva`].filter(Boolean);
         const resto = u.monto - u.deVenta - u.deCuentas - u.deNuevo;
@@ -637,7 +637,7 @@ function Saldo({ r }) {
 function SaldoFijo({ r, onVer }) {
   const v = veredictoSaldo(r);
   return <div onClick={onVer} style={{ position: "sticky", bottom: 8, zIndex: 5, margin: "8px 0", padding: "10px 14px", borderRadius: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, background: v.ok ? "rgba(15,42,26,0.97)" : "rgba(58,20,20,0.97)", border: `1px solid ${v.ok ? C.gn : C.rd}`, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
-    <span style={{ fontWeight: 800, color: v.ok ? C.gn : C.rd }}>{v.corto}</span>
+    <span style={{ fontWeight: 700, color: v.ok ? C.gn : C.rd }}>{v.corto}</span>
     <span style={{ fontSize: 12, color: C.tx2 }}>{v.ok ? "de lo que vendes" : "sale de tus cuentas"} · ver ↑</span>
   </div>;
 }
@@ -651,7 +651,7 @@ const dedupe = (as) => { const vistos = new Set(); return as.filter((a) => (vist
 
 function Grid({ items }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-    {items.map(([l, v]) => <div key={l} style={{ background: C.bg, borderRadius: 8, padding: 10 }}><div style={{ color: C.tx2, fontSize: 11 }}>{l}</div><div style={{ fontSize: 16, fontWeight: 600 }}>{v}</div></div>)}
+    {items.map(([l, v]) => <div key={l} style={{ background: C.bg, borderRadius: 8, padding: 10 }}><div style={{ color: C.tx2, fontSize: 12 }}>{l}</div><div style={{ fontSize: 16, fontWeight: 600 }}>{v}</div></div>)}
   </div>;
 }
 
@@ -694,7 +694,7 @@ function SeVaConVenta({ user, activoId, d, setD }) {
   return (
     <div style={{ marginTop: 8, padding: "8px 10px", border: `1px solid ${C.bd}`, borderRadius: 8 }}>
       <div style={{ fontSize: 13, fontWeight: 600 }}>¿Qué se va con la venta?</div>
-      <div style={{ fontSize: 11, color: C.tx2, marginBottom: 4 }}>Marca las rentas y gastos de este activo. Dejan de contar desde la venta.</div>
+      <div style={{ fontSize: 12, color: C.tx2, marginBottom: 4 }}>Marca las rentas y gastos de este activo. Dejan de contar desde la venta.</div>
       {auto.map((x) => fila(x, true, true))}
       {visibles.map((x) => fila(x, elegidos.has(x.key), false))}
       {auto.length + visibles.length === 0 && <div style={{ fontSize: 12, color: C.tx2 }}>No encontré rentas ni gastos con este nombre. Búscalos abajo.</div>}
@@ -777,11 +777,11 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
             {(x.ingresos.length > 0 || x.gastos.length > 0) && <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${C.bd}`, marginTop: 4, paddingTop: 4, color: C.tx }}><span>Renta neta según tus páginas</span><span>{plata(Math.round(x.neta))}/mes</span></div>}
             <label style={{ ...lbl, marginTop: 8 }}>¿Cuánto te deja al mes, neto? ($, opcional)
               <NumberInput style={inp} placeholder={x.neta > 0 ? fmtMilesEs(Math.round(x.neta)) : "Ej.: 57.500.000"} value={rh[x.id] ?? ""} onChange={(v) => setR(x.id, v)} />
-              <span style={{ fontSize: 11 }}>Si lo dejas vacío se usa la renta de tus páginas. {x.valor > 0 ? "Ej.: 21 % al año de " + plata(Math.round(x.valor)) + " = " + plata(Math.round(x.valor * 0.21 / 12)) + "/mes." : ""}</span></label>
+              <span style={{ fontSize: 12 }}>Si lo dejas vacío se usa la renta de tus páginas. {x.valor > 0 ? "Ej.: 21 % al año de " + plata(Math.round(x.valor)) + " = " + plata(Math.round(x.valor * 0.21 / 12)) + "/mes." : ""}</span></label>
             {rh[x.id] != null && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setR(x.id, null)}>Volver a la de mis páginas</button>}
             {x.crecDefaultPct != null && <label style={{ ...lbl, marginTop: 8 }}>¿Cuánto sube su valor al año? (%, opcional)
               <InputDecimalEs style={inp} placeholder={(Math.round(x.crecDefaultPct * 10) / 10).toLocaleString("es-CO")} value={ch[x.id] ?? ""} onChange={(v) => setC(x.id, v)} />
-              <span style={{ fontSize: 11 }}>{x.clase === "inmueble" ? "Valorización del inmueble." : x.usada > 0 ? "Aparte de la renta que te llega. Si la renta ya es todo lo que gana, déjalo en la inflación." : "Lo que gana al año y se queda invertido (interés compuesto)."} Si lo dejas vacío se usa el supuesto general: {(Math.round(x.crecDefaultPct * 10) / 10).toLocaleString("es-CO")} %.</span></label>}
+              <span style={{ fontSize: 12 }}>{x.clase === "inmueble" ? "Valorización del inmueble." : x.usada > 0 ? "Aparte de la renta que te llega. Si la renta ya es todo lo que gana, déjalo en la inflación." : "Lo que gana al año y se queda invertido (interés compuesto)."} Si lo dejas vacío se usa el supuesto general: {(Math.round(x.crecDefaultPct * 10) / 10).toLocaleString("es-CO")} %.</span></label>}
           </div>}
         </div>); })}
       <div style={{ ...fila, display: "flex", justifyContent: "space-between", fontWeight: 600 }}><span>Rentas de inversiones{invs.some((x) => x.vende) ? " (sin las que vendes)" : ""}</span><span>{plata(Math.round(totalInv))}/mes</span></div>
@@ -800,7 +800,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
             <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? `corregido (en Ingresos: ${plata(Math.round(x.enIngresos))})` : `${plata(Math.round(x.mensual))}/mes, de tu página Ingresos`}</span>
             {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setI(x.key, null)}>Quitar</button>}
           </div>
-          {x.nota && !x.corregido && <div style={{ fontSize: 11, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
+          {x.nota && !x.corregido && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
           {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
             <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>Sigue</button>
             <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>Se acaba</button>
@@ -829,15 +829,15 @@ function Ciclos({ lista, set, det, destinos = [] }) {
         <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "10px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
           <label style={lbl}>Nombre<input style={inp} placeholder="Ej.: Asociativos" value={x.nombre ?? ""} onChange={(e) => up(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>¿Cuánto capital pones? ($)<NumberInput style={inp} placeholder="1.350.000.000" value={x.capital ?? ""} onChange={(v) => up(i, { capital: v })} /></label>
-          <label style={lbl}>¿Cuánto recibes al final de cada ciclo? ($)<NumberInput style={inp} placeholder="1.900.000.000" value={x.valorFinal ?? ""} onChange={(v) => up(i, { valorFinal: v })} /><span style={{ fontSize: 11 }}>Lo que vale o en lo que vendes al terminar.</span></label>
+          <label style={lbl}>¿Cuánto recibes al final de cada ciclo? ($)<NumberInput style={inp} placeholder="1.900.000.000" value={x.valorFinal ?? ""} onChange={(v) => up(i, { valorFinal: v })} /><span style={{ fontSize: 12 }}>Lo que vale o en lo que vendes al terminar.</span></label>
           <label style={lbl}>¿Cuánto dura cada ciclo?<select style={inp} value={meses} onChange={(e) => up(i, { meses: Number(e.target.value) })}>{[6, 9, 12, 18, 24, 36].map((m) => <option key={m} value={m}>{m === 12 ? "1 año" : m === 24 ? "2 años" : m === 36 ? "3 años" : `${m} meses`}</option>)}</select></label>
-          <label style={lbl}>Otros costos sobre la ganancia (%, opcional)<InputDecimalEs style={inp} placeholder="0" value={x.costosPct ?? ""} onChange={(v) => up(i, { costosPct: v })} /><span style={{ fontSize: 11 }}>Comisiones, fiducia, escrituras.</span></label>
+          <label style={lbl}>Otros costos sobre la ganancia (%, opcional)<InputDecimalEs style={inp} placeholder="0" value={x.costosPct ?? ""} onChange={(v) => up(i, { costosPct: v })} /><span style={{ fontSize: 12 }}>Comisiones, fiducia, escrituras.</span></label>
           <div style={{ ...lbl, gridColumn: "1 / -1", border: `1px solid ${C.bd}`, borderRadius: 8, padding: 8 }}>Impuesto sobre la ganancia
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
               <select style={{ ...inp, flex: "1 1 220px", width: "auto" }} value={reg} onChange={(e) => up(i, { regimen: e.target.value, impuestoPct: "" })}>{Object.entries(TARIFA_CICLO).map(([k, t]) => <option key={k} value={k}>{t.nombre}{k !== "otro" ? ` · ${t.pct} %` : ""}</option>)}</select>
               <span style={{ display: "flex", alignItems: "center", gap: 4, width: 110 }}><InputDecimalEs style={inp} placeholder={String(TARIFA_CICLO[reg].pct)} value={x.impuestoPct ?? ""} onChange={(v) => up(i, { impuestoPct: v })} />%</span>
             </div>
-            <span style={{ fontSize: 11 }}>Sugerido: {TARIFA_CICLO[reg].pct} %. {TARIFA_CICLO[reg].nota} Puedes cambiar el %. Es una estimación, confírmala con tu contador.</span>
+            <span style={{ fontSize: 12 }}>Sugerido: {TARIFA_CICLO[reg].pct} %. {TARIFA_CICLO[reg].nota} Puedes cambiar el %. Es una estimación, confírmala con tu contador.</span>
             {cap > 0 && vf > cap && <span style={{ fontSize: 12, color: C.am }}>Impuesto estimado: {mm(imp)} por ciclo ({mm(imp * 12 / meses)} al año).</span>}
           </div>
           <label style={lbl}>¿Desde cuándo?<select style={inp} value={x.desde || 1} onChange={(e) => up(i, { desde: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
@@ -847,8 +847,8 @@ function Ciclos({ lista, set, det, destinos = [] }) {
               <button style={btn(!siempre)} onClick={() => up(i, { hasta: Math.max(Number(x.desde) || 1, 5) })}>Termina</button>
               {!siempre && <select style={{ ...inp, width: "auto" }} value={x.hasta} onChange={(e) => up(i, { hasta: Number(e.target.value) })}>{ANIOS.filter((y) => y >= (Number(x.desde) || 1)).map((y) => <option key={y} value={y}>Último ciclo en {anioCal(y)}</option>)}</select>}
             </div></div>
-          <label style={lbl}>¿De dónde sale el capital?<FuenteSel value={x.fuente} on={(v) => up(i, { fuente: v })} /><span style={{ fontSize: 11 }}>Sale una sola vez; después el mismo capital se vuelve a usar.</span></label>
-          <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿Qué haces con la ganancia de cada ciclo? <span style={{ fontSize: 11 }}>El capital vuelve a entrar al negocio; esto es solo lo que ganas.</span>
+          <label style={lbl}>¿De dónde sale el capital?<FuenteSel value={x.fuente} on={(v) => up(i, { fuente: v })} /><span style={{ fontSize: 12 }}>Sale una sola vez; después el mismo capital se vuelve a usar.</span></label>
+          <div style={{ ...lbl, gridColumn: "1 / -1" }}>¿Qué haces con la ganancia de cada ciclo? <span style={{ fontSize: 12 }}>El capital vuelve a entrar al negocio; esto es solo lo que ganas.</span>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button style={btn(x.destino !== "flujo")} onClick={() => up(i, { destino: "reinvierte" })}>La reinvierto</button>
               <button style={btn(x.destino === "flujo")} onClick={() => up(i, { destino: "flujo" })}>Me llega al mes</button>
@@ -858,7 +858,7 @@ function Ciclos({ lista, set, det, destinos = [] }) {
                 <option value="">En lo que sobra (se reparte como en E)</option>
                 {destinos.map((d) => <option key={d.id} value={d.id}>{d.nombre}</option>)}
               </select></label>
-            : <span style={{ fontSize: 11 }}>Entra a tu flujo como un ingreso.</span>}</div>
+            : <span style={{ fontSize: 12 }}>Entra a tu flujo como un ingreso.</span>}</div>
           {cap > 0 && vf > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 13, color: vf > cap ? C.gn : C.am }}>
             {vf > cap ? <>Pones {mm(cap)} y recibes {mm(vf)} cada {meses === 12 ? "año" : `${meses} meses`}: te quedan <b>{mm(gan)}</b> por ciclo después de impuestos ({mm(anual)} al año, {(Math.round(anual / cap * 1000) / 10).toLocaleString("es-CO")} % sobre el capital). {x.destino === "flujo" ? "Esa ganancia te llega" : `Esa ganancia se reinvierte en ${(destinos.find((d) => d.id === x.destinoId) || { nombre: "lo que sobra (E)" }).nombre}`} {siempre ? "todos los años" : `hasta ${anioCal(x.hasta)}`}{siempre ? "" : "; después el capital vuelve"}.</> : "Recibes menos de lo que pones: no hay ganancia."}
           </div>}
@@ -884,24 +884,24 @@ function SobraMensual({ r, cfg, set, destinos }) {
   const up = (i, v) => set("sobraDestinos", lista.map((y, j) => (j === i ? { ...y, ...v } : y)));
   const usado = lista.reduce((sm, x) => sm + (Number(x.pct) || 0), 0);
   const resto = Math.max(0, 100 - usado);
-  const fila = (nombre, v, col, nota) => <div key={nombre + v} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, padding: "2px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{nombre}{nota ? <span style={{ fontSize: 11 }}> · {nota}</span> : null}</span><span style={{ color: col, fontFamily: "monospace", whiteSpace: "nowrap" }}>{plata(Math.round(v))}</span></div>;
+  const fila = (nombre, v, col, nota) => <div key={nombre + v} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, padding: "2px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{nombre}{nota ? <span style={{ fontSize: 12 }}> · {nota}</span> : null}</span><span style={{ color: col, fontFamily: "monospace", whiteSpace: "nowrap" }}>{plata(Math.round(v))}</span></div>;
   return <div style={{ background: C.bg, borderRadius: 8, padding: 12 }}>
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
       <span style={{ fontWeight: 700 }}>Cada mes te {sobra >= 0 ? "sobran" : "faltan"}</span>
-      <span style={{ fontSize: 20, fontWeight: 800, color: sobra >= 0 ? C.gn : C.rd }}>{plata(Math.round(Math.abs(sobra)))}</span>
+      <span style={{ fontSize: 20, fontWeight: 700, color: sobra >= 0 ? C.gn : C.rd }}>{plata(Math.round(Math.abs(sobra)))}</span>
     </div>
     <div style={{ fontSize: 12, color: C.tx2 }}>En {anioCal(1)}: entra {plata(Math.round(tEntra))} y sale {plata(Math.round(tSale))}. {sobra < 0 ? "Lo que falta sale de tu liquidez." : ""}</div>
     <button style={{ ...btn(false), marginTop: 6, fontSize: 12, padding: "4px 10px" }} onClick={() => setVer(!ver)}>{ver ? "Ocultar" : "Ver"} de dónde sale cada peso</button>
     {ver && <div style={{ marginTop: 8 }}>
-      <div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1 }}>Entra cada mes</div>
+      <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1 }}>Entra cada mes</div>
       {entra.map((x) => fila(x.nombre, x.mensual, C.tx, x.nota))}
       <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 2 }}>{fila("Total que entra", tEntra, C.tx)}</div>
-      <div style={{ fontSize: 11, color: C.tx2, textTransform: "uppercase", letterSpacing: 1, marginTop: 6 }}>Sale cada mes</div>
+      <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, marginTop: 6 }}>Sale cada mes</div>
       {(d.sale || []).slice(0, 6).map((x) => fila(x.nombre, x.mensual, C.tx2))}
       {(d.sale || []).length > 6 && fila(`y ${(d.sale || []).length - 6} gastos más`, (d.sale || []).slice(6).reduce((sm, x) => sm + x.mensual, 0), C.tx2)}
       <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 2 }}>{fila("Total que sale", tSale, C.tx2)}</div>
       <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 2, fontWeight: 700 }}>{fila(sobra >= 0 ? "Te sobra al mes" : "Te falta al mes", Math.abs(sobra), sobra >= 0 ? C.gn : C.rd)}</div>
-      {(d.reinvierte || []).length > 0 && <div style={{ fontSize: 11, color: C.tx2, marginTop: 4 }}>No cuenta lo que rinden y no te llega ({(d.reinvierte || []).map((x) => x.nombre).join(", ")}): eso ya se reinvierte solo.</div>}
+      {(d.reinvierte || []).length > 0 && <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>No cuenta lo que rinden y no te llega ({(d.reinvierte || []).map((x) => x.nombre).join(", ")}): eso ya se reinvierte solo.</div>}
     </div>}
     {sobra > 0 && <div style={{ marginTop: 12 }}>
       <div style={{ fontWeight: 700 }}>¿En qué reinviertes lo que sobra cada mes?</div>

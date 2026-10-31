@@ -75,7 +75,7 @@ export default function AccountSwitcher({ memberships, activeAccountId, onSwitch
           borderRadius: 6,
           padding: "5px 10px",
           color: C.txt,
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 600,
           cursor: "pointer",
           display: "flex",
@@ -88,8 +88,8 @@ export default function AccountSwitcher({ memberships, activeAccountId, onSwitch
         }}
       >
         <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{activeName}</span>
-        <span style={{ color: C.txt3, fontSize: 10, fontWeight: 400 }}>· {activeRole}</span>
-        <span style={{ color: C.txt3, fontSize: 9 }}>▾</span>
+        <span style={{ color: C.txt3, fontSize: 11, fontWeight: 400 }}>· {activeRole}</span>
+        <span style={{ color: C.txt3, fontSize: 11 }}>▾</span>
       </button>
 
       {open && (
@@ -110,7 +110,7 @@ export default function AccountSwitcher({ memberships, activeAccountId, onSwitch
             overflow: "hidden",
           }}
         >
-          <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}`, fontSize: 10, color: C.txt3, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
+          <div style={{ padding: "8px 12px", borderBottom: `1px solid ${C.border}`, fontSize: 11, color: C.txt3, letterSpacing: "0.05em", fontWeight: 600 }}>
             Tus cuentas ({memberships.length})
           </div>
           {memberships.map(m => {
@@ -142,12 +142,12 @@ export default function AccountSwitcher({ memberships, activeAccountId, onSwitch
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
-                  <div style={{ color: C.txt2, fontSize: 11, marginTop: 2 }}>
+                  <div style={{ color: C.txt2, fontSize: 12, marginTop: 2 }}>
                     {m.role === "admin" ? "Administrador" : "Solo lectura"}
                   </div>
                 </div>
                 {isActive && (
-                  <span style={{ color: C.accent, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>● activa</span>
+                  <span style={{ color: C.accent, fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>● activa</span>
                 )}
               </button>
             );

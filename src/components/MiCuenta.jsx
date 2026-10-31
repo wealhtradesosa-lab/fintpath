@@ -30,9 +30,9 @@ const T = {
   card: "var(--fp-card)",
   border: "rgba(var(--fp-ink),0.06)", borderL: "rgba(var(--fp-ink),0.1)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", greenB: "rgba(34,197,94,0.1)",
+  green: "#00c805", greenB: "rgba(0,200,5,0.1)",
   blue: "#3b82f6", blueB: "rgba(59,130,246,0.1)",
-  red: "#ef4444", redB: "rgba(239,68,68,0.1)",
+  red: "#ff5000", redB: "rgba(255,80,0,0.1)",
   amber: "#f59e0b", amberB: "rgba(245,158,11,0.1)",
   purple: "#3b82f6",
 };
@@ -237,7 +237,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
               {displayName || "Mi cuenta"}
             </h3>
             <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <span style={{ background: T.blueB, color: T.blue, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
+              <span style={{ background: T.blueB, color: T.blue, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
                 Plan {PLAN_LABELS[plan] || plan}
               </span>
               <span style={{ color: T.txt2, fontSize: 13 }}>
@@ -246,7 +246,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                 · {contadores.length} de 3 contadores
               </span>
               {role === "reader" && (
-                <span style={{ background: T.amberB, color: T.amber, padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
+                <span style={{ background: T.amberB, color: T.amber, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
                   Vista de solo lectura
                 </span>
               )}
@@ -376,7 +376,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Personas de la cuenta ({familia.length})</div>
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>Ven y trabajan con la misma información. «Administrador» puede editar; «Solo lectura» solo mira.</div>
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Ven y trabajan con la misma información. «Administrador» puede editar; «Solo lectura» solo mira.</div>
         </div>
         <div>
           {familia.map((m, idx) => (
@@ -398,7 +398,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
         <div style={{ padding: "16px 20px", borderBottom: contadores.length ? `1px solid ${T.border}` : "none", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 260px" }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Tus contadores ({contadores.length} de 3)</div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Solo ven, sin poder cambiar nada: declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta (de las sociedades, todos sus gastos). No ven tus gastos del día a día, metas ni simulaciones. Queda registro de cada vez que entran, y les quitas el acceso cuando quieras.</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Solo ven, sin poder cambiar nada: declaraciones, ingresos, patrimonio, deudas y los gastos que cuentan para la renta (de las sociedades, todos sus gastos). No ven tus gastos del día a día, metas ni simulaciones. Queda registro de cada vez que entran, y les quitas el acceso cuando quieras.</div>
           </div>
           {isAdmin && (contadoresLibres > 0
             ? <button onClick={() => { setInviteContador(true); setShowInvite(true); }} style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.borderL}`, padding: "9px 14px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 12 }}>+ Invitar a mi contador</button>
@@ -416,7 +416,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>
               Invitaciones pendientes ({invitations.length})
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>
               Estas personas todavía no aceptaron. Puedes copiarles el link o revocar la invitación.
             </div>
           </div>
@@ -475,17 +475,17 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
       <div style={{ flex: "1 1 170px", minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
           <span>{member.display_name || member.email.split("@")[0]}</span>
-          {isMe && <span style={{ fontSize: 10, color: T.txt3, fontWeight: 400 }}>(tú)</span>}
-          {isOwner && <span style={{ background: T.greenB, color: T.green, padding: "1px 6px", borderRadius: 999, fontSize: 9, fontWeight: 700 }}>OWNER</span>}
+          {isMe && <span style={{ fontSize: 11, color: T.txt3, fontWeight: 400 }}>(tú)</span>}
+          {isOwner && <span style={{ background: T.greenB, color: T.green, padding: "1px 6px", borderRadius: 999, fontSize: 11, fontWeight: 700 }}>OWNER</span>}
         </div>
-        <div style={{ fontSize: 11, color: T.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div style={{ fontSize: 12, color: T.txt3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {member.email}
         </div>
       </div>
       <div style={{
         background: member.role === "admin" ? T.greenB : T.bg3,
         color: member.role === "admin" ? T.green : T.txt2,
-        padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600,
+        padding: "4px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600,
       }}>
         {ROLE_LABELS[member.role] || member.role}
       </div>
@@ -496,7 +496,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
             style={{
               background: T.bg3, border: `1px solid ${T.borderL}`,
               color: T.txt2, padding: "5px 10px", borderRadius: 8,
-              cursor: "pointer", fontSize: 11, fontWeight: 600,
+              cursor: "pointer", fontSize: 12, fontWeight: 600,
             }}
             title={member.role === "admin" ? "Bajar a solo lectura" : "Promover a administrador"}
           >
@@ -507,7 +507,7 @@ function MemberRow({ member, isLast, isAdmin, currentUserId, onRoleChange, onRem
             style={{
               background: T.redB, border: `1px solid ${T.red}`,
               color: T.red, padding: "5px 10px", borderRadius: 8,
-              cursor: "pointer", fontSize: 11, fontWeight: 600,
+              cursor: "pointer", fontSize: 12, fontWeight: 600,
             }}
             title="Expulsar miembro"
           >
@@ -547,7 +547,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {invitation.email}
         </div>
-        <div style={{ fontSize: 11, color: T.txt3 }}>
+        <div style={{ fontSize: 12, color: T.txt3 }}>
           Rol: {ROLE_LABELS[invitation.role]} · expira en {days} {days === 1 ? "día" : "días"}
         </div>
       </div>
@@ -558,7 +558,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
           border: `1px solid ${copied ? T.green : T.borderL}`,
           color: copied ? T.green : T.txt2,
           padding: "5px 12px", borderRadius: 8,
-          cursor: "pointer", fontSize: 11, fontWeight: 600,
+          cursor: "pointer", fontSize: 12, fontWeight: 600,
         }}
       >
         {copied ? "✓ Copiado" : "📋 Copiar link"}
@@ -568,7 +568,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
         style={{
           background: T.redB, border: `1px solid ${T.red}`,
           color: T.red, padding: "5px 10px", borderRadius: 8,
-          cursor: "pointer", fontSize: 11, fontWeight: 600,
+          cursor: "pointer", fontSize: 12, fontWeight: 600,
         }}
       >
         ✕ Revocar
@@ -712,7 +712,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
           >
             {copied ? "✓ Link copiado al portapapeles" : "📋 Copiar link"}
           </button>
-          <div style={{ fontSize: 11, color: T.txt3, textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: T.txt3, textAlign: "center" }}>
             Expira en 7 días.
           </div>
         </div>
@@ -736,7 +736,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
           <button onClick={onClose} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
         </div>
         <div>
-          <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.05em" }}>
             Email del invitado
           </label>
           <input
@@ -751,7 +751,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               borderRadius: 10, color: T.txt, fontSize: 13,
             }}
           />
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 6 }}>
             Tiene que ser el email exacto con el que la persona va a hacer login.
           </div>
         </div>
@@ -762,7 +762,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
           </div>
         ) : (
         <div style={{ marginTop: 18 }}>
-          <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.05em" }}>
             Rol
           </label>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>

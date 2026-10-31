@@ -62,8 +62,8 @@ const MES = ["enero","febrero","marzo","abril","mayo","junio","julio",
 const SANCION_MINIMA = 524000;
 
 const T = { bg2:"var(--fp-card)", bg3:"var(--fp-raised)", border:"rgba(var(--fp-ink),0.08)",
-  txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#22c55e",
-  orange:"#f59e0b", red:"#ef4444", blue:"#3b82f6" };
+  txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#00c805",
+  orange:"#f59e0b", red:"#ff5000", blue:"#3b82f6" };
 
 export default function TemporadaRenta({ onEmpezar }) {
   const [digitos, setDigitos] = useState("");
@@ -120,12 +120,12 @@ export default function TemporadaRenta({ onEmpezar }) {
       {/* NOTA PARA SANTIAGO: los textos de abajo son funcionales, escritos
           para que la herramienta se entienda. La voz de la marca es tuya --
           reemplaza lo que quieras sin tocar la lógica. */}
-      <div style={{ fontSize: 11, color: T.orange, fontWeight: 700,
-        letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: 8 }}>
+      <div style={{ fontSize: 12, color: T.orange, fontWeight: 700,
+        letterSpacing: "0.8px", marginBottom: 8 }}>
         Declaración de renta 2026
       </div>
 
-      <h3 style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.02em",
+      <h3 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-0.02em",
         margin: "0 0 8px", color: T.txt, lineHeight: 1.25 }}>
         ¿Cuándo te toca declarar?
       </h3>
@@ -140,7 +140,7 @@ export default function TemporadaRenta({ onEmpezar }) {
         inputMode="numeric"
         maxLength={2}
         placeholder="Ej: 47"
-        style={{ width: 130, fontSize: 32, fontWeight: 800, textAlign: "center",
+        style={{ width: 130, fontSize: 32, fontWeight: 700, textAlign: "center",
           padding: "12px 0", borderRadius: 12, background: T.bg3,
           border: `2px solid ${completo ? color : T.border}`, color: T.txt,
           letterSpacing: "4px", outline: "none" }}
@@ -151,7 +151,7 @@ export default function TemporadaRenta({ onEmpezar }) {
           borderRadius: 12, borderLeft: `3px solid ${color}` }}>
           {vencioEnAgosto ? (
             <>
-              <div style={{ fontSize: 18, fontWeight: 800, color: T.red, marginBottom: 6 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.red, marginBottom: 6 }}>
                 Tu plazo venció en agosto
               </div>
               <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6 }}>
@@ -166,7 +166,7 @@ export default function TemporadaRenta({ onEmpezar }) {
             </>
           ) : (
             <>
-              <div style={{ fontSize: 20, fontWeight: 800, color: T.txt, marginBottom: 4 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
                 {texto}
               </div>
               <div style={{ fontSize: 14, fontWeight: 700, color, marginBottom: 8 }}>
@@ -207,7 +207,7 @@ export default function TemporadaRenta({ onEmpezar }) {
               }}
               style={{ background: T.green, color: "#000", border: "none",
                 padding: "13px 26px", borderRadius: 999, cursor: "pointer",
-                fontWeight: 800, fontSize: 14 }}>
+                fontWeight: 700, fontSize: 14 }}>
               Crear mi cuenta en Finpathia
             </button>
           </div>
@@ -219,7 +219,7 @@ export default function TemporadaRenta({ onEmpezar }) {
           fecha de vencimiento y un monto de sanción. Alguien podría dejar de
           declarar confiando en lo que acá diga. El aviso tiene que ser
           explícito sobre quién responde por la decisión. */}
-      <div style={{ fontSize: 11, color: T.txt3, marginTop: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: T.txt3, marginTop: 16, lineHeight: 1.6 }}>
         <strong style={{ color: T.txt2 }}>Aviso.</strong> Fechas tomadas del calendario
         tributario de la DIAN para personas naturales, año gravable 2025. Esta herramienta
         es informativa y no constituye asesoría tributaria, contable ni legal. No verifica

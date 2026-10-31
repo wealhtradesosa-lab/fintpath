@@ -44,8 +44,8 @@ export default function AdminMetrics({ email, fmt, T }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.tx }}>📈 Cómo va el negocio</div>
-          <div style={{ fontSize: 11, color: T.tx3 }}>Solo tú ves esto · actualizado {fecha(d.generado)}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.tx }}>📈 Cómo va el negocio</div>
+          <div style={{ fontSize: 12, color: T.tx3 }}>Solo tú ves esto · actualizado {fecha(d.generado)}</div>
         </div>
         <button onClick={cargar} style={{ background: T.bg3, border: `1px solid ${T.border}`, color: T.tx2, padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>↻ Actualizar</button>
       </div>
@@ -59,14 +59,14 @@ export default function AdminMetrics({ email, fmt, T }) {
           <div style={{ background: ok ? T.gnB : T.rdB, border: `1px solid ${ok ? T.gn : T.rd}55`, borderRadius: 10, padding: "10px 14px" }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: ok ? T.gn : T.rd }}>{ok ? "🧾 Normas DIAN al día" : `🧾 ${pend.length} norma${pend.length > 1 ? "s" : ""} por actualizar`}</div>
             {pend.map((p) => <div key={p.id} style={{ fontSize: 12, color: T.tx2, marginTop: 4 }}><b style={{ color: T.tx }}>{p.titulo}.</b> {p.detalle}</div>)}
-            <div style={{ fontSize: 11, color: T.tx3, marginTop: 4 }}>Última revisión: {v.ultimaRevision} · UVT hasta {v.uvtHasta} · reajuste Art. 70 y tabla Art. 73 hasta {v.art70Hasta}</div>
+            <div style={{ fontSize: 12, color: T.tx3, marginTop: 4 }}>Última revisión: {v.ultimaRevision} · UVT hasta {v.uvtHasta} · reajuste Art. 70 y tabla Art. 73 hasta {v.art70Hasta}</div>
           </div>
         );
       })()}
 
       {/* Alerta si el registro se detuvo — el síntoma que costó 3 semanas detectar */}
       {diasSin !== null && diasSin >= 3 && (
-        <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.28)", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#fca5a5" }}>
+        <div style={{ background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.28)", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#fca5a5" }}>
           ⚠️ <strong>Hace {diasSin} días que no se registra nadie.</strong> Si estás pautando, revisa que el registro funcione antes de seguir gastando.
         </div>
       )}
@@ -75,14 +75,14 @@ export default function AdminMetrics({ email, fmt, T }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
         {[
           { l: "USUARIOS", v: num(d.total), c: T.tx, s: "total histórico" },
-          { l: "HOY (24H)", v: num(d.nuevos24h), c: d.nuevos24h > 0 ? "#22c55e" : T.tx3, s: "registros nuevos" },
-          { l: "ÚLTIMOS 7 DÍAS", v: num(d.nuevos7d), c: d.nuevos7d > 0 ? "#22c55e" : T.tx3, s: "registros" },
-          { l: "CON PLAN PAGO", v: num(d.diag?.conPlanPago), c: (d.diag?.conPlanPago || 0) > 0 ? "#22c55e" : T.tx3, s: "asignado — verificar en Stripe" },
+          { l: "HOY (24H)", v: num(d.nuevos24h), c: d.nuevos24h > 0 ? "#00c805" : T.tx3, s: "registros nuevos" },
+          { l: "ÚLTIMOS 7 DÍAS", v: num(d.nuevos7d), c: d.nuevos7d > 0 ? "#00c805" : T.tx3, s: "registros" },
+          { l: "CON PLAN PAGO", v: num(d.diag?.conPlanPago), c: (d.diag?.conPlanPago || 0) > 0 ? "#00c805" : T.tx3, s: "asignado — verificar en Stripe" },
         ].map((k) => (
           <div key={k.l} style={card}>
-            <div style={{ fontSize: 10, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{k.l}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: k.c, marginTop: 2 }}>{k.v}</div>
-            <div style={{ fontSize: 11, color: T.tx3 }}>{k.s}</div>
+            <div style={{ fontSize: 11, color: T.tx3, letterSpacing: 1, fontWeight: 700 }}>{k.l}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: k.c, marginTop: 2 }}>{k.v}</div>
+            <div style={{ fontSize: 12, color: T.tx3 }}>{k.s}</div>
           </div>
         ))}
       </div>
@@ -94,7 +94,7 @@ export default function AdminMetrics({ email, fmt, T }) {
           { l: "Se registran", v: d.total, base: d.total, c: "#3b82f6" },
           { l: "Cargan sus datos", v: d.activados, base: d.total, c: "#f59e0b", nota: "activación" },
           { l: "En trial (gratis 14 días)", v: d.trials ?? 0, base: d.total, c: "#3b82f6", nota: "no es plata" },
-          { l: "Con plan pago asignado", v: d.diag?.conPlanPago || 0, base: d.total, c: "#22c55e", nota: "no confirma ingreso" },
+          { l: "Con plan pago asignado", v: d.diag?.conPlanPago || 0, base: d.total, c: "#00c805", nota: "no confirma ingreso" },
         ].map((p, i) => {
           const w = p.base > 0 ? (p.v / p.base) * 100 : 0;
           return (
@@ -109,7 +109,7 @@ export default function AdminMetrics({ email, fmt, T }) {
             </div>
           );
         })}
-        <div style={{ fontSize: 11, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
           ⚠️ <strong>Los ingresos reales se confirman en Stripe</strong>, no acá: la base guarda el plan asignado, que también puede ponerse a mano. Para saber cuánto entró, mira <em>dashboard.stripe.com → Payments</em>.
           <br />Y ojo con el <strong>trial</strong>: al registrarse, la app le da a todos 14 días de Pro. Eso no es una venta.
           <br />La <strong>activación</strong> es el número que más manda hoy: quien se registra y no carga nada, no vuelve. Si es baja, el problema está en el arranque, no en el precio ni en la pauta.
@@ -122,11 +122,11 @@ export default function AdminMetrics({ email, fmt, T }) {
         <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 90 }}>
           {d.porDia.map((x, i) => (
             <div key={i} title={`${x.dia}: ${x.registros}`} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
-              <div style={{ height: Math.max((x.registros / maxDia) * 100, x.registros > 0 ? 8 : 2) + "%", background: x.registros > 0 ? "#22c55e" : T.bg3, borderRadius: 3 }} />
+              <div style={{ height: Math.max((x.registros / maxDia) * 100, x.registros > 0 ? 8 : 2) + "%", background: x.registros > 0 ? "#00c805" : T.bg3, borderRadius: 3 }} />
             </div>
           ))}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: T.tx3, marginTop: 6 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.tx3, marginTop: 6 }}>
           <span>{d.porDia[0]?.dia}</span><span>hoy</span>
         </div>
       </div>
@@ -141,8 +141,8 @@ export default function AdminMetrics({ email, fmt, T }) {
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none", fontSize: 12, gap: 8, flexWrap: "wrap" }}>
               <span style={{ color: T.tx2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}</span>
               <span style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
-                <span style={{ color: u.activado ? "#22c55e" : T.tx3, fontSize: 11 }}>{u.activado ? "✓ cargó datos" : "sin datos"}</span>
-                <span style={{ color: T.tx3, fontSize: 11 }}>{fecha(u.creado)}</span>
+                <span style={{ color: u.activado ? "#00c805" : T.tx3, fontSize: 12 }}>{u.activado ? "✓ cargó datos" : "sin datos"}</span>
+                <span style={{ color: T.tx3, fontSize: 12 }}>{fecha(u.creado)}</span>
               </span>
             </div>
           ))

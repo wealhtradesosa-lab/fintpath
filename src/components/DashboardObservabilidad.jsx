@@ -22,7 +22,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  cyan: "#94a3b8", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
+  cyan: "#94a3b8", green: "#00c805", red: "#ff5000", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const eventColor = (name) => {
@@ -66,7 +66,7 @@ export default function DashboardObservabilidad({ onClose }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
         <span style={{ fontSize: 28 }}>🔬</span>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.txt }}>Dashboard de observabilidad</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.txt }}>Dashboard de observabilidad</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
             {events.length} evento{events.length !== 1 ? "s" : ""} en buffer local · Se guarda últimos 50 · Refresco automático cada 2s
           </div>
@@ -81,7 +81,7 @@ export default function DashboardObservabilidad({ onClose }) {
       {/* Top events summary */}
       {topEvents.length > 0 && (
         <div style={{ marginBottom: 16, padding: 14, background: T.bg2, borderRadius: 10, border: "1px solid " + T.border }}>
-          <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={{ fontSize: 12, color: T.txt3, fontWeight: 700, marginBottom: 8, letterSpacing: 0.5 }}>
             Top eventos de la sesión
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -91,13 +91,13 @@ export default function DashboardObservabilidad({ onClose }) {
                 background: "rgba(var(--fp-ink),0.04)",
                 borderRadius: 6,
                 border: "1px solid " + T.border,
-                fontSize: 11,
+                fontSize: 12,
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
               }}>
                 <span style={{ color: eventColor(name), fontWeight: 700, fontFamily: "monospace" }}>{name}</span>
-                <span style={{ color: T.txt2, fontFamily: "monospace", fontSize: 10 }}>×{count}</span>
+                <span style={{ color: T.txt2, fontFamily: "monospace", fontSize: 11 }}>×{count}</span>
               </div>
             ))}
           </div>
@@ -115,13 +115,13 @@ export default function DashboardObservabilidad({ onClose }) {
         />
         <button
           onClick={() => setAutoRefresh(!autoRefresh)}
-          style={{ padding: "8px 12px", background: autoRefresh ? T.green : T.bg3, color: autoRefresh ? "#000" : T.txt2, border: "1px solid " + (autoRefresh ? T.green : T.border), borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}
+          style={{ padding: "8px 12px", background: autoRefresh ? T.green : T.bg3, color: autoRefresh ? "#000" : T.txt2, border: "1px solid " + (autoRefresh ? T.green : T.border), borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}
         >
           {autoRefresh ? "● Auto-refresh ON" : "○ Auto-refresh OFF"}
         </button>
         <button
           onClick={() => { clearRecentEvents(); setEvents([]); }}
-          style={{ padding: "8px 12px", background: T.bg3, color: T.red, border: "1px solid " + T.red + "55", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 600 }}
+          style={{ padding: "8px 12px", background: T.bg3, color: T.red, border: "1px solid " + T.red + "55", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 600 }}
         >
           🗑 Limpiar buffer
         </button>
@@ -135,13 +135,13 @@ export default function DashboardObservabilidad({ onClose }) {
           </div>
         ) : (
           filtered.map((e, i) => (
-            <div key={i} style={{ padding: "10px 14px", borderBottom: i < filtered.length - 1 ? "1px solid " + T.border : "none", fontSize: 11 }}>
+            <div key={i} style={{ padding: "10px 14px", borderBottom: i < filtered.length - 1 ? "1px solid " + T.border : "none", fontSize: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
                 <span style={{ color: eventColor(e.event), fontWeight: 700, fontFamily: "monospace" }}>{e.event}</span>
-                <span style={{ color: T.txt3, fontSize: 10, fontFamily: "monospace" }}>{fmtTime(e.ts)}</span>
+                <span style={{ color: T.txt3, fontSize: 11, fontFamily: "monospace" }}>{fmtTime(e.ts)}</span>
               </div>
               {e.payload && Object.keys(e.payload).length > 0 && (
-                <pre style={{ margin: "6px 0 0", padding: "6px 10px", background: T.bg3, borderRadius: 6, fontSize: 10, color: T.txt2, fontFamily: "monospace", overflow: "auto", maxWidth: "100%" }}>
+                <pre style={{ margin: "6px 0 0", padding: "6px 10px", background: T.bg3, borderRadius: 6, fontSize: 11, color: T.txt2, fontFamily: "monospace", overflow: "auto", maxWidth: "100%" }}>
                   {JSON.stringify(e.payload, null, 2)}
                 </pre>
               )}
@@ -150,7 +150,7 @@ export default function DashboardObservabilidad({ onClose }) {
         )}
       </div>
 
-      <div style={{ marginTop: 12, fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>
+      <div style={{ marginTop: 12, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
         Este panel solo refleja eventos de TU sesión actual (buffer en localStorage). Para datos agregados de todos los usuarios, ver GA4 → Reports → Events. Los mismos eventos se envían a GA4 en paralelo al buffer local.
       </div>
     </div>

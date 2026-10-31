@@ -39,7 +39,7 @@ const T = {
   bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)",
   tx:"var(--fp-txt)",tx2:"var(--fp-txt2)",tx3:"var(--fp-txt3)",
-  gn:"#22c55e",rd:"#ef4444",bl:"#3b82f6",pr:"#3b82f6",or:"#f59e0b",cy:"#94a3b8",
+  gn:"#00c805",rd:"#ff5000",bl:"#3b82f6",pr:"#3b82f6",or:"#f59e0b",cy:"#94a3b8",
 };
 const fm  = (n) => `$${Math.round(Math.abs(n||0)).toLocaleString("en-US")}`;
 const pct = (n) => `${((n||0)*100).toFixed(1)}%`;
@@ -51,8 +51,8 @@ const WRow = ({label,amount,note,color,bold,indent,irc}) => (
       <div style={{fontSize:bold?13:12,fontWeight:bold?700:400,color:bold?T.tx:T.tx2}}>
         {indent&&<span style={{color:T.tx3,marginRight:4}}>↳</span>}{label}
       </div>
-      {note&&<div style={{fontSize:10,color:T.tx3,marginTop:1,lineHeight:1.4}}>{note}</div>}
-      {irc &&<div style={{fontSize:9, color:T.tx3,fontStyle:"italic"}}>{irc}</div>}
+      {note&&<div style={{fontSize:11,color:T.tx3,marginTop:1,lineHeight:1.4}}>{note}</div>}
+      {irc &&<div style={{fontSize:11, color:T.tx3,fontStyle:"italic"}}>{irc}</div>}
     </div>
     <div style={{fontSize:bold?14:12,fontWeight:bold?800:600,color:color||T.tx2,
       fontFamily:"monospace",marginLeft:12,whiteSpace:"nowrap"}}>{amount}</div>
@@ -164,7 +164,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
     <div>
       {/* Header */}
       <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>🧾 US Tax Planning 2025</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🧾 US Tax Planning 2025</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>Federal + State estimate · IRS brackets 2025</p>
       </div>
 
@@ -177,7 +177,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
       <div style={{background:T.bg2,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:16,
         display:"flex",gap:16,alignItems:"flex-end",flexWrap:"wrap"}}>
         <div style={{flex:"1 1 200px"}}>
-          <label style={{fontSize:10,fontWeight:700,color:T.tx3,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:6}}>
+          <label style={{fontSize:11,fontWeight:700,color:T.tx3,letterSpacing:1,display:"block",marginBottom:6}}>
             Filing Status
           </label>
           <select
@@ -192,7 +192,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
           </select>
         </div>
         <div style={{flex:"1 1 200px"}}>
-          <label style={{fontSize:10,fontWeight:700,color:T.tx3,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:6}}>
+          <label style={{fontSize:11,fontWeight:700,color:T.tx3,letterSpacing:1,display:"block",marginBottom:6}}>
             State of Residence
           </label>
           <select
@@ -211,7 +211,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
           </select>
         </div>
         {A && (
-          <div style={{flex:"0 0 auto",fontSize:11,color:T.tx3,padding:"8px 0"}}>
+          <div style={{flex:"0 0 auto",fontSize:12,color:T.tx3,padding:"8px 0"}}>
             {A.stateType==="none" ? (
               <span style={{color:T.gn,fontWeight:700}}>✓ {A.stateName}: no state income tax</span>
             ) : (
@@ -229,43 +229,43 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
         {/* SIN estrategia */}
         <div style={{background:`${T.rd}10`,border:`2px solid ${T.rd}50`,
           borderRadius:16,padding:24,textAlign:"center"}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.rd,letterSpacing:1,marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.rd,letterSpacing:1,marginBottom:8}}>
             ❌ WITHOUT STRATEGY
           </div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:4}}>You pay today</div>
-          <div style={{fontSize:36,fontWeight:900,color:T.rd,fontFamily:"monospace",lineHeight:1}}>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:4}}>You pay today</div>
+          <div style={{fontSize:36,fontWeight:700,color:T.rd,fontFamily:"monospace",lineHeight:1}}>
             {fm(A?.total||0)}
           </div>
           <div style={{fontSize:12,color:T.tx2,marginTop:6}}>/year in taxes</div>
           <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${T.rd}30`}}>
-            <div style={{fontSize:11,color:T.tx3}}>Take-home</div>
+            <div style={{fontSize:12,color:T.tx3}}>Take-home</div>
             <div style={{fontSize:16,fontWeight:700,color:T.tx}}>{fm(A?.takeHome||0)}/yr</div>
-            <div style={{fontSize:11,color:T.tx3}}>{fm((A?.takeHome||0)/12)}/month</div>
+            <div style={{fontSize:12,color:T.tx3}}>{fm((A?.takeHome||0)/12)}/month</div>
           </div>
-          <div style={{marginTop:8,fontSize:11,color:T.or}}>
+          <div style={{marginTop:8,fontSize:12,color:T.or}}>
             Effective rate: {pct(A?.effRate||0)}
           </div>
-          <div style={{fontSize:11,color:T.tx3}}>Top bracket: {A?.mLabel}</div>
+          <div style={{fontSize:12,color:T.tx3}}>Top bracket: {A?.mLabel}</div>
         </div>
 
         {/* AHORRO */}
         <div style={{background:`${T.gn}10`,border:`2px solid ${T.gn}`,
           borderRadius:16,padding:24,textAlign:"center",
           boxShadow:`0 0 24px ${T.gn}20`}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.gn,letterSpacing:1,marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1,marginBottom:8}}>
             💡 YOU SAVE
           </div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:4}}>with adjustments</div>
-          <div style={{fontSize:36,fontWeight:900,color:T.gn,fontFamily:"monospace",lineHeight:1}}>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:4}}>with adjustments</div>
+          <div style={{fontSize:36,fontWeight:700,color:T.gn,fontFamily:"monospace",lineHeight:1}}>
             {fm(savings)}
           </div>
           <div style={{fontSize:12,color:T.tx2,marginTop:6}}>/year less in taxes</div>
           <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${T.gn}30`}}>
-            <div style={{fontSize:11,color:T.tx3}}>That's</div>
+            <div style={{fontSize:12,color:T.tx3}}>That's</div>
             <div style={{fontSize:16,fontWeight:700,color:T.gn}}>{fm(savings/12)}/month</div>
-            <div style={{fontSize:11,color:T.tx3}}>back in your pocket</div>
+            <div style={{fontSize:12,color:T.tx3}}>back in your pocket</div>
           </div>
-          <div style={{marginTop:8,fontSize:11,color:T.gn,fontWeight:700}}>
+          <div style={{marginTop:8,fontSize:12,color:T.gn,fontWeight:700}}>
             ↓ {A&&A.effRate>0?((1-B.effRate/A.effRate)*100).toFixed(0):"0"}% effective rate reduction
           </div>
         </div>
@@ -273,23 +273,23 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
         {/* CON estrategia */}
         <div style={{background:`${T.bl}10`,border:`2px solid ${T.bl}50`,
           borderRadius:16,padding:24,textAlign:"center"}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.bl,letterSpacing:1,marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:700,color:T.bl,letterSpacing:1,marginBottom:8}}>
             ✅ WITH STRATEGY
           </div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:4}}>You would pay</div>
-          <div style={{fontSize:36,fontWeight:900,color:T.bl,fontFamily:"monospace",lineHeight:1}}>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:4}}>You would pay</div>
+          <div style={{fontSize:36,fontWeight:700,color:T.bl,fontFamily:"monospace",lineHeight:1}}>
             {fm(B?.total||0)}
           </div>
           <div style={{fontSize:12,color:T.tx2,marginTop:6}}>/year in taxes</div>
           <div style={{marginTop:12,paddingTop:12,borderTop:`1px solid ${T.bl}30`}}>
-            <div style={{fontSize:11,color:T.tx3}}>Take-home</div>
+            <div style={{fontSize:12,color:T.tx3}}>Take-home</div>
             <div style={{fontSize:16,fontWeight:700,color:T.gn}}>{fm(B?.takeHome||0)}/yr</div>
-            <div style={{fontSize:11,color:T.gn}}>{fm((B?.takeHome||0)/12)}/month ↑</div>
+            <div style={{fontSize:12,color:T.gn}}>{fm((B?.takeHome||0)/12)}/month ↑</div>
           </div>
-          <div style={{marginTop:8,fontSize:11,color:T.cy}}>
+          <div style={{marginTop:8,fontSize:12,color:T.cy}}>
             Effective rate: {pct(B?.effRate||0)}
           </div>
-          <div style={{fontSize:11,color:T.tx3}}>Top bracket: {B?.mLabel}</div>
+          <div style={{fontSize:12,color:T.tx3}}>Top bracket: {B?.mLabel}</div>
         </div>
       </div>
 
@@ -321,7 +321,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
 
           {/* BEFORE */}
           <div style={{background:T.card,border:`1px solid ${T.rd}40`,borderRadius:14,padding:20}}>
-            <div style={{fontSize:13,fontWeight:800,color:T.rd,marginBottom:14,
+            <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:14,
               paddingBottom:10,borderBottom:`1px solid ${T.border}`}}>
               ❌ Without Strategy — how it's calculated
             </div>
@@ -329,7 +329,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             {A.halfSE>0&&<WRow label="½ SE Tax deduction" amount={`–${fm(A.halfSE)}`} color={T.tx3} indent irc="§ 164(f)"/>}
             <WRow label="Standard Deduction"    amount={`–${fm(STD_DED)}`} color={T.tx3} indent irc="§ 63"/>
             <WRow label="Taxable Income"         amount={fm(A.taxInc)} bold color={T.or}/>
-            <div style={{margin:"10px 0 6px",fontSize:10,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
+            <div style={{margin:"10px 0 6px",fontSize:11,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
             <WRow label="Federal Income Tax"     amount={fm(A.fed)}    color={T.rd} note={`${A.mLabel} bracket`}/>
             {A.state>0 ? (
               <WRow label={`${A.stateName} State Tax`} amount={fm(A.state)} color={T.rd}
@@ -341,7 +341,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             {A.seTax>0 &&<WRow label="Self-Employment Tax"  amount={fm(A.seTax)}  color={T.rd} note="15.3% on 1099"/>}
             {A.niit>0  &&<WRow label="NIIT Surtax 3.8%"     amount={fm(A.niit)}   color={T.rd} note="Investment income over $200K"/>}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
-              borderTop:`2px solid ${T.rd}40`,marginTop:4,fontWeight:800}}>
+              borderTop:`2px solid ${T.rd}40`,marginTop:4,fontWeight:700}}>
               <span style={{color:T.rd}}>TOTAL TAX / YEAR</span>
               <span style={{color:T.rd,fontFamily:"monospace",fontSize:16}}>{fm(A.total)}</span>
             </div>
@@ -349,7 +349,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
 
           {/* AFTER */}
           <div style={{background:T.card,border:`1px solid ${T.gn}60`,borderRadius:14,padding:20}}>
-            <div style={{fontSize:13,fontWeight:800,color:T.gn,marginBottom:14,
+            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:14,
               paddingBottom:10,borderBottom:`1px solid ${T.border}`}}>
               ✅ With Strategy — what changes
             </div>
@@ -364,7 +364,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             {B.qbi>0    &&<WRow label="QBI Deduction 20%"   amount={`–${fm(B.qbi)}`}   color={T.gn} indent note="Qualified Business Income" irc="§ 199A"/>}
             <WRow label="Taxable Income"          amount={fm(B.taxInc)} bold color={T.or}
               note={`${fm(A.taxInc-B.taxInc)} less than without adjustments`}/>
-            <div style={{margin:"10px 0 6px",fontSize:10,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
+            <div style={{margin:"10px 0 6px",fontSize:11,fontWeight:700,color:T.rd,letterSpacing:1}}>TAXES OWED</div>
             <WRow label="Federal Income Tax"      amount={fm(B.fed)}   color={T.rd} note={`${B.mLabel} bracket (was ${A.mLabel})`}/>
             {B.state>0 ? (
               <WRow label={`${B.stateName} State Tax`} amount={fm(B.state)} color={T.rd}
@@ -377,7 +377,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             {B.niit>0  &&<WRow label="NIIT Surtax 3.8%"     amount={fm(B.niit)}  color={T.rd}/>}
             {B.niit===0&&A?.niit>0&&<WRow label="NIIT Surtax" amount="✅ $0 — avoided" color={T.gn} note={`Saved ${fm(A.niit)} by lowering AGI`}/>}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
-              borderTop:`2px solid ${T.gn}40`,marginTop:4,fontWeight:800}}>
+              borderTop:`2px solid ${T.gn}40`,marginTop:4,fontWeight:700}}>
               <span style={{color:T.gn}}>TOTAL TAX / YEAR</span>
               <span style={{color:T.gn,fontFamily:"monospace",fontSize:16}}>{fm(B.total)}</span>
             </div>
@@ -409,10 +409,10 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
         ].filter(Boolean).map((item,i)=>(
           <div key={i} style={{background:T.bg3,borderRadius:10,padding:"11px 14px",marginBottom:8,borderLeft:`3px solid ${item.c}`}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-              <span style={{fontSize:11,fontWeight:700,color:item.c,flexShrink:0}}>{item.p}</span>
+              <span style={{fontSize:12,fontWeight:700,color:item.c,flexShrink:0}}>{item.p}</span>
               <span style={{fontSize:12,fontWeight:700,color:T.tx}}>{item.a}</span>
             </div>
-            <div style={{fontSize:11,color:T.tx2}}>{item.i}</div>
+            <div style={{fontSize:12,color:T.tx2}}>{item.i}</div>
           </div>
         ))}
       </div>
@@ -421,7 +421,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
       {B&&B.total>1000&&(
         <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:20,marginBottom:16}}>
           <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:4}}>📅 Quarterly Estimated Payments (Form 1040-ES)</div>
-          <div style={{fontSize:11,color:T.tx3,marginBottom:12}}>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:12}}>
             Required if you owe ≥$1,000 · Penalty ~8%/year if underpaid (IRC § 6654)
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
@@ -429,15 +429,15 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
               <div key={q} style={{background:T.bg3,borderRadius:10,padding:"12px 14px",
                 display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div><div style={{fontSize:12,fontWeight:700,color:T.or}}>{q}</div>
-                  <div style={{fontSize:10,color:T.tx3}}>{d}</div></div>
-                <div style={{fontSize:16,fontWeight:800,color:T.tx,fontFamily:"monospace"}}>{fm(B.total/4)}</div>
+                  <div style={{fontSize:11,color:T.tx3}}>{d}</div></div>
+                <div style={{fontSize:16,fontWeight:700,color:T.tx,fontFamily:"monospace"}}>{fm(B.total/4)}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <div style={{padding:12,background:T.bg3,borderRadius:8,fontSize:10,color:T.tx3,lineHeight:1.6}}>
+      <div style={{padding:12,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.6}}>
         <strong>Disclaimer:</strong> Estimates based on 2025 IRS single-filer rules. State taxes not included.
         Consult a licensed CPA or EA for your official return.
       </div>

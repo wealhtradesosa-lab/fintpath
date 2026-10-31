@@ -22,7 +22,7 @@ import { useId } from "react";
 // concepto tenga el MISMO color en el treemap y en la lista de abajo: antes
 // las dos paletas coincidían solo en los dos primeros colores, así que
 // "Vivienda" salía morada en el gráfico y naranja en la lista.
-const PALETA = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
+const PALETA = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
 
 /**
  * Reparte items en un rectángulo alternando cortes horizontales y verticales.
@@ -193,7 +193,7 @@ export default function TreemapPatrimonio({ datos = [], total = 0, fmt, T, altur
           {bloques.filter((b) => !(b.w > 42 && b.h > 34)).map((b, i) => {
             const idx = bloques.indexOf(b);
             return (
-              <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: T.tx3 }}>
+              <div key={b.name + i} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: T.tx3 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 3, background: COLORES[idx % COLORES.length], display: "inline-block" }} />
                 {b.name} · {fmtPctEs(((b.value / base) * 100), 1)}
               </div>

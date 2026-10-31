@@ -6,7 +6,7 @@ import { fmtPctEs } from "../lib/metrics.js";
  * rentabilidadActivos(). Barra por activo contra la línea de la inflación;
  * clic en un activo abre su edición para completar renta o valorización.
  */
-const COL = { gana: "#22c55e", bajo_inflacion: "#f59e0b", pierde: "#ef4444" };
+const COL = { gana: "#00c805", bajo_inflacion: "#f59e0b", pierde: "#ff5000" };
 const TXT = { gana: "le gana a la inflación", bajo_inflacion: "por debajo de la inflación", pierde: "pierde plata" };
 
 export default function RentabilidadActivos({ r, T, fm, nombre, onAbrir }) {
@@ -28,7 +28,7 @@ export default function RentabilidadActivos({ r, T, fm, nombre, onAbrir }) {
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "16px 16px 12px", marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 800, color: T.txt }}>¿Cuánto te rinde cada activo?</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>¿Cuánto te rinde cada activo?</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2, lineHeight: 1.4 }}>
             Al año: renta neta (lo que entra menos sus gastos) más valorización, sobre lo que vale hoy. La línea es la inflación ({fmtPctEs(r.inflacion, 1)}).
           </div>
@@ -45,7 +45,7 @@ export default function RentabilidadActivos({ r, T, fm, nombre, onAbrir }) {
             style={{ display: "grid", gridTemplateColumns: movil ? "minmax(0, 1fr) 56px" : "minmax(0, 38%) minmax(0, 1fr) 62px", gap: movil ? "4px 10px" : 10, alignItems: "center", background: "transparent", border: "none", padding: "6px 2px", cursor: "pointer", textAlign: "left", color: T.txt }}>
             <span style={{ fontSize: 13, gridColumn: movil ? "1 / -1" : undefined, whiteSpace: movil ? "normal" : "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {nombre(f.item)}
-              <span style={{ display: "block", fontSize: 11, color: T.txt3 }}>{fm(f.va)}{f.rentaNeta !== 0 ? ` · renta neta ${fm(f.rentaNeta / 12)}/mes` : ""}</span>
+              <span style={{ display: "block", fontSize: 12, color: T.txt3 }}>{fm(f.va)}{f.rentaNeta !== 0 ? ` · renta neta ${fm(f.rentaNeta / 12)}/mes` : ""}</span>
             </span>
             <span style={{ position: "relative", height: 10, background: T.bg3, borderRadius: 6 }}>
               <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pos(f.pct) + "%", background: COL[f.estado], borderRadius: 6, opacity: f.pct < 0 ? 0.55 : 1 }} />

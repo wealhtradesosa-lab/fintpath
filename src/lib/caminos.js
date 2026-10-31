@@ -490,7 +490,7 @@ export const CAMINOS_BASE = [
     canastas: { rentas: { min: 25 }, crecimiento: { max: 30 }, colchonMeses: 24, vivienda: "propia" },
     excedente: [{ canasta: "rentas", pct: 80 }, { canasta: "crecimiento", pct: 20 }],
     condiciones: ["no_vender_vivienda", "sin_deuda_cara", "no_apalancar"] },
-  { id: "balance", nombre: "Vivir de la renta", color: "#22c55e",
+  { id: "balance", nombre: "Vivir de la renta", color: "#00c805",
     tesis: "Que la plata te pague cada mes: la mayor parte en capital que deposita, un colchón razonable y una quinta parte creciendo.",
     objetivo: { proteccion: 20, rentas: 60, crecimiento: 20 },
     canastas: { rentas: { min: 45 }, crecimiento: { min: 10, max: 35 }, colchonMeses: 12, vivienda: "indiferente" },

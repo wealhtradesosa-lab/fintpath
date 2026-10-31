@@ -160,10 +160,9 @@ export default function ProyeccionPatrimonio({
   };
 
   const labelStyle = {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 600,
     color: T.txt3 || "var(--fp-txt3)",
-    textTransform: "uppercase",
     letterSpacing: 0.6,
     marginBottom: 4,
   };
@@ -177,7 +176,7 @@ export default function ProyeccionPatrimonio({
   const mezclaIgual = nominalMezcla != null && Math.abs(nominalMezcla - (Number(retornoPct) || 0)) < 0.15;
   return (
     <div style={{ background: T.card || "var(--fp-card)", border: "1px solid " + borde, borderRadius: 16, padding: "24px 24px 20px", marginTop: 20 }}>
-      <div style={{ fontSize: 16, fontWeight: 800, color: txt, lineHeight: 1.3 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: txt, lineHeight: 1.3 }}>
         ¿Tu patrimonio crece o se come en 3, 5 y 10 años?
       </div>
       <div style={{ fontSize: 13, color: sub, marginTop: 4, lineHeight: 1.5 }}>
@@ -187,13 +186,13 @@ export default function ProyeccionPatrimonio({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: 10, margin: "20px 0" }}>
         {proy.porHorizonte.map((h) => {
           const crece = h.veredicto === "crece";
-          const col = crece ? (T.gn || "#22c55e") : (T.rd || "#ef4444");
+          const col = crece ? (T.gn || "#00c805") : (T.rd || "#ff5000");
           return (
             <div key={h.horizonte} style={{ background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + borde, borderRadius: 14, padding: "12px 12px 10px", minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: sub2 }}>En {h.horizonte} años</div>
-              <div title={fm(h.patrimonioReal)} style={{ fontSize: 18, fontWeight: 800, color: txt, marginTop: 8, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmtPlataCortaEs(h.patrimonioReal)}</div>
+              <div title={fm(h.patrimonioReal)} style={{ fontSize: 18, fontWeight: 700, color: txt, marginTop: 8, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmtPlataCortaEs(h.patrimonioReal)}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: col, marginTop: 2 }}>{crece ? "▲ Crece" : "▼ Se come"}</div>
-              <div title={fm(h.patrimonio)} style={{ fontSize: 11, color: sub, marginTop: 6, lineHeight: 1.35 }}>{fmtPlataCortaEs(h.patrimonio)} con inflación</div>
+              <div title={fm(h.patrimonio)} style={{ fontSize: 12, color: sub, marginTop: 6, lineHeight: 1.35 }}>{fmtPlataCortaEs(h.patrimonio)} con inflación</div>
             </div>
           );
         })}
@@ -208,15 +207,15 @@ export default function ProyeccionPatrimonio({
           return (
             <button key={l} type="button" onClick={() => setCfOverride(f === 1 ? null : String(valor))}
               style={{ padding: "7px 14px", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 600,
-                background: activo ? "rgba(34,197,94,0.12)" : "transparent", color: activo ? (T.gn || "#22c55e") : sub2,
-                border: "1px solid " + (activo ? (T.gn || "#22c55e") : borde) }}>
+                background: activo ? "rgba(0,200,5,0.12)" : "transparent", color: activo ? (T.gn || "#00c805") : sub2,
+                border: "1px solid " + (activo ? (T.gn || "#00c805") : borde) }}>
               {l}
             </button>
           );
         })}
       </div>
 
-      <div style={{ fontSize: 11, fontWeight: 700, color: sub, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>Supuestos</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: sub, letterSpacing: 0.6, marginBottom: 8 }}>Supuestos</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: 12, alignItems: "start" }}>
         <label style={{ display: "block" }}>
           <div style={{ fontSize: 12, color: sub2, marginBottom: 4 }}>Lo que te queda al año</div>
@@ -229,17 +228,17 @@ export default function ProyeccionPatrimonio({
               if (!Number.isFinite(n)) setCfOverride(null); else setCfOverride(String(Math.round(n)));
             }}
             style={inputStyle} aria-label="Lo que te queda al año" />
-          <div style={{ fontSize: 11, color: sub, marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: sub, marginTop: 4 }}>
             Del simulador: {fm(cfAnualDefault)}{" "}
-            {cfOverride != null && <button type="button" onClick={() => setCfOverride(null)} style={{ background: "none", border: "none", color: T.bl || "#3b82f6", cursor: "pointer", padding: 0, fontSize: 11, fontWeight: 600 }}>· volver a ese</button>}
+            {cfOverride != null && <button type="button" onClick={() => setCfOverride(null)} style={{ background: "none", border: "none", color: T.bl || "#3b82f6", cursor: "pointer", padding: 0, fontSize: 12, fontWeight: 600 }}>· volver a ese</button>}
           </div>
         </label>
         <label style={{ display: "block" }}>
           <div style={{ fontSize: 12, color: sub2, marginBottom: 4 }}>Cuánto sube tu patrimonio al año (%)</div>
           <input type="number" step="0.1" value={retornoPct} onChange={(e) => setRetornoPct(e.target.value)} style={inputStyle} aria-label="Valorización anual del patrimonio" />
-          <div style={{ fontSize: 11, color: sub, marginTop: 4 }}>
+          <div style={{ fontSize: 12, color: sub, marginTop: 4 }}>
             {nominalMezcla != null && !mezclaIgual
-              ? <>Por lo que tienes, lo esperable es {fmtPctEs(nominalMezcla)}. <button type="button" onClick={() => setRetornoPct(String(nominalMezcla.toFixed(1)))} style={{ background: "none", border: "none", color: T.bl || "#3b82f6", cursor: "pointer", padding: 0, fontSize: 11, fontWeight: 600 }}>Usar {fmtPctEs(nominalMezcla)}</button></>
+              ? <>Por lo que tienes, lo esperable es {fmtPctEs(nominalMezcla)}. <button type="button" onClick={() => setRetornoPct(String(nominalMezcla.toFixed(1)))} style={{ background: "none", border: "none", color: T.bl || "#3b82f6", cursor: "pointer", padding: 0, fontSize: 12, fontWeight: 600 }}>Usar {fmtPctEs(nominalMezcla)}</button></>
               : "Sobre todo lo que tienes: inmuebles, inversiones, vehículos."}
           </div>
         </label>
@@ -254,7 +253,7 @@ export default function ProyeccionPatrimonio({
       {/* El título dice ahora la unidad del eje X. Sin eso, dos gráficas de
           área verdes seguidas parecen la misma: la de arriba va mes a mes
           dentro de un año, esta va año a año. */}
-      <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 || "var(--fp-txt2)", marginBottom: 8 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2 || "var(--fp-txt2)", marginBottom: 8 }}>
         Cómo crecería, año a año <span style={{ fontWeight: 400, color: T.txt3 || "var(--fp-txt3)" }}>· línea punteada: en plata de hoy</span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
@@ -317,7 +316,7 @@ export default function ProyeccionPatrimonio({
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {mezcla.detalle.filter((d) => d.peso >= 0.005).map((d) => (
                 <span key={d.clase} style={{ fontSize: 12, color: sub2, background: "rgba(var(--fp-ink),0.04)", borderRadius: 999, padding: "4px 10px" }}>
-                  {d.label} · {fmtPctEs(d.peso * 100, 0)} de lo tuyo · <span style={{ color: d.r < 0 ? (T.rd || "#ef4444") : sub2 }}>{d.r > 0 ? "+" : ""}{fmtPctEs(d.r * 100, 0)}</span>
+                  {d.label} · {fmtPctEs(d.peso * 100, 0)} de lo tuyo · <span style={{ color: d.r < 0 ? (T.rd || "#ff5000") : sub2 }}>{d.r > 0 ? "+" : ""}{fmtPctEs(d.r * 100, 0)}</span>
                 </span>
               ))}
             </div>

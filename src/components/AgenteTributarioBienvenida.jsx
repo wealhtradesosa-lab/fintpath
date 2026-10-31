@@ -38,13 +38,13 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",      // verde claro, alto contraste
+  green: "#3ddc45",      // verde claro, alto contraste
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",       // azul claro
   blueBg: "rgba(96,165,250,0.10)",
   orange: "#fbbf24",     // naranja claro
   orangeBg: "rgba(251,146,60,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
   gold: "#fbbf24",
@@ -140,11 +140,11 @@ export default function AgenteTributarioBienvenida({
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(196,181,253,0.4)", borderRadius: 999 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: "#c4b5fd", letterSpacing: 0.5 }}>2️⃣ PASO 2 · AUDITORÍA IA</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#c4b5fd", letterSpacing: 0.5 }}>2️⃣ PASO 2 · AUDITORÍA IA</span>
           </div>
           <span style={{ fontSize: 13, color: C.txt2 }}>{saludo} 👋</span>
         </div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
           {isJuridica ? `Auditoría de ${ownerName}` : `Auditoría de tu declaración`}
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, marginTop: 8, lineHeight: 1.5 }}>
@@ -181,13 +181,13 @@ export default function AgenteTributarioBienvenida({
               {isJuridica ? "🏢" : "👤"}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: isJuridica ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: isJuridica ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, marginBottom: 4 }}>
                 Auditando ahora · {isJuridica ? "Persona jurídica" : "Persona natural"}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: C.txt, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: C.txt, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {ownerName}
               </div>
-              <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ fontSize: 12, color: C.txt3, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {selectedOwner?.nit && <span>NIT/CC {selectedOwner.nit}</span>}
                 {selectedOwner?.regimen && <span>· Régimen {selectedOwner.regimen}</span>}
                 {isJuridica && !selectedOwner?.regimen && <span style={{ color: "#fbbf24" }}>· Régimen sin definir</span>}
@@ -200,7 +200,7 @@ export default function AgenteTributarioBienvenida({
         {/* Selector tabs si hay más de un owner */}
         {allOwners.length > 1 && (
           <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, letterSpacing: 0.5, marginBottom: 8 }}>
               Cambiar a otra persona fiscal:
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -244,12 +244,12 @@ export default function AgenteTributarioBienvenida({
         border: `1.5px solid ${saldoFinal > 0 ? C.orangeBg.replace("0.10", "0.40") : C.greenBg.replace("0.10", "0.40")}`,
         borderRadius: 16,
       }}>
-        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>
+        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 8, letterSpacing: 0.8 }}>
           {saldoFinal > 0 ? "💰 Lo que te toca pagar este año" : "✨ Estás al día"}
         </div>
         <div style={{
           fontSize: 56,
-          fontWeight: 800,
+          fontWeight: 700,
           color: saldoFinal > 0 ? C.orange : C.green,
           lineHeight: 1.0,
           marginBottom: 12,
@@ -368,10 +368,10 @@ export default function AgenteTributarioBienvenida({
           borderLeft: `4px solid ${C.green}`,
           borderRadius: 14,
         }}>
-          <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+          <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>
             💡 Detectamos deducciones y beneficios para revisar
           </div>
-          <h3 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "4px 0 6px 0" }}>
+          <h3 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: "4px 0 6px 0" }}>
             Podrías ahorrar hasta {fm(ahorroPotencial)}
           </h3>
           <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, marginBottom: 18 }}>
@@ -398,7 +398,7 @@ export default function AgenteTributarioBienvenida({
         border: `1px solid ${C.border}`,
         borderRadius: 14,
       }}>
-        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 16, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 16, letterSpacing: 0.5 }}>
           ¿Qué quieres hacer ahora?
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
@@ -535,14 +535,14 @@ function NumeroSimple({ label, subLabel, value, color, icon, prefix = "" }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <span style={{ fontSize: 18 }}>{icon}</span>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 0.5 }}>
           {label}
         </div>
       </div>
-      <div style={{ fontSize: 24, fontWeight: 800, color, lineHeight: 1.1, marginBottom: 4, fontFamily: "monospace" }}>
+      <div style={{ fontSize: 24, fontWeight: 700, color, lineHeight: 1.1, marginBottom: 4, fontFamily: "monospace" }}>
         {prefix}{fm(value)}
       </div>
-      <div style={{ fontSize: 11, color: C.txt3, lineHeight: 1.4 }}>
+      <div style={{ fontSize: 12, color: C.txt3, lineHeight: 1.4 }}>
         {subLabel}
       </div>
     </div>
@@ -574,7 +574,7 @@ function OportunidadCard({ rec, numero, onAplicar }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontWeight: 800,
+        fontWeight: 700,
         fontSize: 14,
       }}>
         {numero}
@@ -603,7 +603,7 @@ function OportunidadCard({ rec, numero, onAplicar }) {
               borderRadius: 6,
               color: "#000",
               fontSize: 12,
-              fontWeight: 800,
+              fontWeight: 700,
               cursor: "pointer",
             }}
           >

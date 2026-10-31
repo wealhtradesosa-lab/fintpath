@@ -18,7 +18,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.06)",
   borderStrong: "rgba(var(--fp-ink),0.12)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6",
   pink: "#64748b", cyan: "#94a3b8", orange: "#f59e0b",
 };
 
@@ -102,7 +102,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
         position: "relative",
         zIndex: 10,
       }}>
-        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em", fontFamily: FONT_DISPLAY }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.04em", fontFamily: FONT_DISPLAY }}>
           <span style={{
             background: `linear-gradient(135deg, ${T.green} 0%, ${T.blue} 50%, ${T.purple} 100%)`,
             WebkitBackgroundClip: "text",
@@ -154,7 +154,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
             color: "#fff",
             padding: "3px 10px",
             borderRadius: 999,
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: 0.3,
           }}>NUEVO</span>
@@ -165,7 +165,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
         <h1 className={mounted ? "fade-up fade-up-2" : ""} style={{
           fontFamily: FONT_DISPLAY,
           fontSize: "clamp(2.8rem, 8vw, 6.5rem)",
-          fontWeight: 800,
+          fontWeight: 700,
           lineHeight: 0.98,
           letterSpacing: "-0.055em",
           marginBottom: 28,

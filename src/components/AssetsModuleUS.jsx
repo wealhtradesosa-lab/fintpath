@@ -168,17 +168,17 @@ const T = {
   bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)", borderL:"rgba(var(--fp-ink),0.1)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
-  gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
-  rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
+  gn:"#00c805", gnB:"rgba(0,200,5,0.08)",
+  rd:"#ff5000", rdB:"rgba(255,80,0,0.06)",
   bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
-  ch:["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
+  ch:["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
 const fm  = (n) => `$${Math.round(n||0).toLocaleString("en-US")}`;
 const pct = (n) => `${((n||0)*100).toFixed(1)}%`;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 const Label = ({c,children}) => (
-  <div style={{fontSize:10,fontWeight:700,color:c||T.tx3,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{children}</div>
+  <div style={{fontSize:11,fontWeight:700,color:c||T.tx3,letterSpacing:1,marginBottom:4}}>{children}</div>
 );
 const Field = ({l, value, onChange, type="number", placeholder, hint, options}) => (
   <div style={{marginBottom:14}}>
@@ -194,17 +194,17 @@ const Field = ({l, value, onChange, type="number", placeholder, hint, options}) 
         : <input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||"0"}
             style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
     }
-    {hint && <div style={{fontSize:10,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
+    {hint && <div style={{fontSize:11,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
   </div>
 );
 const InfoBox = ({color=T.bl, children}) => (
   <div style={{background:`${color}10`,border:`1px solid ${color}25`,borderRadius:8,
-               padding:"10px 14px",fontSize:11,color:T.tx2,lineHeight:1.8,marginTop:8}}>
+               padding:"10px 14px",fontSize:12,color:T.tx2,lineHeight:1.8,marginTop:8}}>
     {children}
   </div>
 );
 const Pill = ({color,children}) => (
-  <span style={{background:`${color}20`,color,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:999,marginLeft:4}}>{children}</span>
+  <span style={{background:`${color}20`,color,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:999,marginLeft:4}}>{children}</span>
 );
 
 // ─── Depreciation Calculator ──────────────────────────────────────────────────
@@ -246,27 +246,27 @@ function AssetDetail({ asset }) {
     <div style={{borderTop:`1px solid ${T.border}`,padding:"16px 18px",background:T.bg2}}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:T.pr,marginBottom:6}}>📖 IRS Tax Treatment</div>
-          <div style={{fontSize:11,color:T.tx2,lineHeight:1.7}}>{info.taxNote}</div>
-          <div style={{fontSize:10,color:T.tx3,marginTop:4}}>Ref: <em>{info.irc}</em> | Form: <em>{info.form}</em></div>
+          <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:6}}>📖 IRS Tax Treatment</div>
+          <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.taxNote}</div>
+          <div style={{fontSize:11,color:T.tx3,marginTop:4}}>Ref: <em>{info.irc}</em> | Form: <em>{info.form}</em></div>
         </div>
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:T.gn,marginBottom:6}}>💡 Planning Opportunities</div>
-          <div style={{fontSize:11,color:T.tx2,lineHeight:1.7}}>{info.planning}</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:6}}>💡 Planning Opportunities</div>
+          <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.planning}</div>
         </div>
       </div>
 
       {/* Gain analysis */}
       {gain !== 0 && (
         <div style={{background:T.bg3,borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:10}}>📊 Gain / Loss Analysis</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:10}}>📊 Gain / Loss Analysis</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:8}}>
-            <div><div style={{fontSize:9,color:T.tx3}}>COST BASIS</div><div style={{fontSize:14,fontWeight:700,color:T.tx2}}>{fm(asset.vc||0)}</div></div>
-            <div><div style={{fontSize:9,color:T.tx3}}>CURRENT VALUE</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(asset.va||0)}</div></div>
-            <div><div style={{fontSize:9,color:T.tx3}}>UNREALIZED GAIN</div><div style={{fontSize:14,fontWeight:700,color:gain>=0?T.gn:T.rd}}>{fm(gain)}</div></div>
-            {totalDeprec > 0 && <div><div style={{fontSize:9,color:T.tx3}}>DEPREC. TAKEN</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(totalDeprec)}</div></div>}
-            {exclusion121 > 0 && <div><div style={{fontSize:9,color:T.tx3}}>§121 EXCLUSION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(exclusion121)}</div></div>}
-            {niit > 0 && <div><div style={{fontSize:9,color:T.rd}}>NIIT (3.8%)</div><div style={{fontSize:14,fontWeight:700,color:T.rd}}>{fm(niit)}</div></div>}
+            <div><div style={{fontSize:11,color:T.tx3}}>COST BASIS</div><div style={{fontSize:14,fontWeight:700,color:T.tx2}}>{fm(asset.vc||0)}</div></div>
+            <div><div style={{fontSize:11,color:T.tx3}}>CURRENT VALUE</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(asset.va||0)}</div></div>
+            <div><div style={{fontSize:11,color:T.tx3}}>UNREALIZED GAIN</div><div style={{fontSize:14,fontWeight:700,color:gain>=0?T.gn:T.rd}}>{fm(gain)}</div></div>
+            {totalDeprec > 0 && <div><div style={{fontSize:11,color:T.tx3}}>DEPREC. TAKEN</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(totalDeprec)}</div></div>}
+            {exclusion121 > 0 && <div><div style={{fontSize:11,color:T.tx3}}>§121 EXCLUSION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(exclusion121)}</div></div>}
+            {niit > 0 && <div><div style={{fontSize:11,color:T.rd}}>NIIT (3.8%)</div><div style={{fontSize:14,fontWeight:700,color:T.rd}}>{fm(niit)}</div></div>}
           </div>
 
           {info.deprec && totalDeprec > 0 && gain > 0 && (
@@ -289,12 +289,12 @@ function AssetDetail({ asset }) {
       {/* Depreciation schedule for rental */}
       {info.deprec && deprec && (
         <div style={{background:T.bg3,borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.cy,marginBottom:10}}>📅 Depreciation Schedule (IRC § 168)</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.cy,marginBottom:10}}>📅 Depreciation Schedule (IRC § 168)</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8}}>
-            <div><div style={{fontSize:9,color:T.tx3}}>DEPRECIABLE BASIS</div><div style={{fontSize:14,fontWeight:700,color:T.cy}}>{fm(deprec.depreciableBasis)}</div><div style={{fontSize:9,color:T.tx3}}>building value (excl. land)</div></div>
-            <div><div style={{fontSize:9,color:T.tx3}}>ANNUAL DEDUCTION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(deprec.annualDeprec)}/yr</div><div style={{fontSize:9,color:T.tx3}}>{info.deprecYears} yr straight-line</div></div>
-            <div><div style={{fontSize:9,color:T.tx3}}>MONTHLY DEDUCTION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(deprec.annualDeprec/12)}/mo</div></div>
-            {asset.yearsHeld > 0 && <div><div style={{fontSize:9,color:T.tx3}}>TOTAL DEPREC. TAKEN</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(totalDeprec)}</div><div style={{fontSize:9,color:T.tx3}}>({asset.yearsHeld} years)</div></div>}
+            <div><div style={{fontSize:11,color:T.tx3}}>DEPRECIABLE BASIS</div><div style={{fontSize:14,fontWeight:700,color:T.cy}}>{fm(deprec.depreciableBasis)}</div><div style={{fontSize:11,color:T.tx3}}>building value (excl. land)</div></div>
+            <div><div style={{fontSize:11,color:T.tx3}}>ANNUAL DEDUCTION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(deprec.annualDeprec)}/yr</div><div style={{fontSize:11,color:T.tx3}}>{info.deprecYears} yr straight-line</div></div>
+            <div><div style={{fontSize:11,color:T.tx3}}>MONTHLY DEDUCTION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(deprec.annualDeprec/12)}/mo</div></div>
+            {asset.yearsHeld > 0 && <div><div style={{fontSize:11,color:T.tx3}}>TOTAL DEPREC. TAKEN</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(totalDeprec)}</div><div style={{fontSize:11,color:T.tx3}}>({asset.yearsHeld} years)</div></div>}
           </div>
           <InfoBox color={T.cy}>
             <strong>Cost Segregation Study:</strong> Reclassify components to 5/7/15-year property for accelerated depreciation.
@@ -429,12 +429,12 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>🏦 Assets & Liabilities</h2>
+          <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🏦 Assets & Liabilities</h2>
           <p style={{color:T.tx3,fontSize:12,margin:0}}>Net Worth · Cost Basis · Depreciation · Tax Planning — 2025</p>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{setForm(EMPTY_ASSET);setEditing(null);setShowForm("asset")}}
-            style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#000",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            style={{background:`linear-gradient(135deg,${T.gn},#00a804)`,color:"#000",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             + Add Asset
           </button>
           <button onClick={()=>{setFormL(EMPTY_LIAB);setEditing(null);setShowForm("liab")}}
@@ -445,29 +445,29 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
               Liabilities van por separado porque son dos tablas distintas. */}
           <button onClick={()=>exportPatrimonioPDF(inversiones.filter(x=>x.sim!==false), [], 1, true)}
             title="Download net worth PDF"
-            style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            style={{background:"#e64800",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             📄 Assets PDF
           </button>
           <button onClick={()=>exportDeudasPDF(deudas.filter(x=>x.sim!==false), inversiones, [], 1, true)}
             title="Download debts PDF with suggested payoff order"
-            style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            style={{background:"#e64800",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             📄 Debts PDF
           </button>
           <button onClick={()=>exportInversionesExcel(inversiones.filter(x=>x.sim!==false), [], 1, true)}
             title="Download assets Excel"
-            style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             📊 Assets XLS
           </button>
           <button onClick={()=>exportDeudasExcel(deudas.filter(x=>x.sim!==false), inversiones, [], 1, true)}
             title="Download debts Excel"
-            style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+            style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
             📊 Debts XLS
           </button>
         </div>
       </div>
 
       {/* Net Worth Hero */}
-      <div style={{background:`radial-gradient(ellipse at 20% 0%,rgba(34,197,94,.06),transparent 60%)`,border:`1px solid ${T.border}`,borderRadius:16,padding:24,marginBottom:16}}>
+      <div style={{background:`radial-gradient(ellipse at 20% 0%,rgba(0,200,5,.06),transparent 60%)`,border:`1px solid ${T.border}`,borderRadius:16,padding:24,marginBottom:16}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12}}>
           {[
             {l:"Total Assets",     v:fm(totals.totalValue),   c:T.gn},
@@ -479,8 +479,8 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
              c:totals.totalValue>0&&liabTotals.total/totals.totalValue<0.3?T.gn:T.or},
           ].map(k=>(
             <div key={k.l} style={{textAlign:"center"}}>
-              <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{k.l}</div>
-              <div style={{fontSize:18,fontWeight:800,color:k.c,marginTop:4,fontFamily:"monospace"}}>{k.v}</div>
+              <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{k.l}</div>
+              <div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4,fontFamily:"monospace"}}>{k.v}</div>
             </div>
           ))}
         </div>
@@ -489,21 +489,21 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* Category breakdown */}
       {inversiones.length > 0 && (
         <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:16,marginBottom:16}}>
-          <div style={{fontSize:11,fontWeight:700,color:T.tx3,marginBottom:10}}>ALLOCATION BY CATEGORY</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.tx3,marginBottom:10}}>ALLOCATION BY CATEGORY</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {Object.entries(totals.byCategory).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{
               const pct_ = totals.totalValue>0?(val/totals.totalValue*100):0;
               const color = CAT_COLORS[cat]||T.tx3;
               return(
                 <div key={cat} style={{flex:1,minWidth:120}}>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:3}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
                     <span style={{color}}>{CAT_LABELS[cat]||cat}</span>
                     <span style={{color:T.tx3}}>{pct_.toFixed(0)}%</span>
                   </div>
                   <div style={{height:6,background:T.bg3,borderRadius:3,overflow:"hidden"}}>
                     <div style={{height:"100%",width:pct_+"%",background:color,borderRadius:3}}/>
                   </div>
-                  <div style={{fontSize:10,color:T.tx3,marginTop:2}}>{fm(val)}</div>
+                  <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{fm(val)}</div>
                 </div>
               );
             })}
@@ -555,7 +555,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 const datos = Object.entries(g).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
                 if (datos.length < 2) return null;
                 const tot = datos.reduce((s, d) => s + d.value, 0);
-                const PAL = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
+                const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
                 return (
                   <div style={{marginBottom:6}}>
                     <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
@@ -601,10 +601,10 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 return grupos.flatMap(gr => [
                   <div key={"h-" + gr.cat} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                         gap:10,flexWrap:"wrap",padding:"9px 14px",background:T.bg3,borderRadius:8,marginTop:4}}>
-                    <span style={{fontSize:12,fontWeight:800,color:T.tx2}}>
+                    <span style={{fontSize:12,fontWeight:700,color:T.tx2}}>
                       {gr.cat} <span style={{color:T.tx3,fontWeight:500}}>· {gr.items.length}</span>
                     </span>
-                    <span style={{fontSize:13,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>
+                    <span style={{fontSize:13,fontWeight:700,color:T.gn,fontFamily:"monospace"}}>
                       {fm(gr.sub)}
                       <span style={{color:T.tx3,fontWeight:500,marginLeft:6}}>
                         {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
@@ -624,14 +624,14 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                       <div style={{flex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                           <span style={{fontSize:14,fontWeight:700}}>{asset.n||info.l}</span>
-                          <span style={{fontSize:10,background:`${color}20`,color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{CAT_LABELS[info.cat]||info.cat}</span>
-                          <span style={{fontSize:10,color:T.tx3}}>{info.form}</span>
+                          <span style={{fontSize:11,background:`${color}20`,color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{CAT_LABELS[info.cat]||info.cat}</span>
+                          <span style={{fontSize:11,color:T.tx3}}>{info.form}</span>
                         </div>
-                        <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{info.l}</div>
+                        <div style={{fontSize:12,color:T.tx3,marginTop:2}}>{info.l}</div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
-                        <div style={{fontSize:16,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>{fm(asset.va||0)}</div>
-                        <div style={{fontSize:11,color:gain>=0?T.gn:T.rd,fontFamily:"monospace"}}>{gain>=0?"+":""}{fm(gain)}</div>
+                        <div style={{fontSize:16,fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(asset.va||0)}</div>
+                        <div style={{fontSize:12,color:gain>=0?T.gn:T.rd,fontFamily:"monospace"}}>{gain>=0?"+":""}{fm(gain)}</div>
                       </div>
                       <div style={{color:T.tx3,fontSize:12}}>{open?"▲":"▼"}</div>
                     </div>
@@ -687,10 +687,10 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 const datos = Object.entries(g).map(([name,value])=>({name,value})).filter(d=>d.value>0);
                 if (datos.length < 2) return null;
                 const tot = datos.reduce((s,d)=>s+d.value,0);
-                const PAL = ["#ef4444","#f59e0b","#64748b","#94a3b8","#475569","#b4bfcc","#7a8699"];
+                const PAL = ["#ff5000","#f59e0b","#64748b","#94a3b8","#475569","#b4bfcc","#7a8699"];
                 return (
                   <div style={{marginBottom:8}}>
-                    <div style={{fontSize:11,color:T.tx3,marginBottom:6,fontWeight:600}}>WHERE YOUR DEBT IS</div>
+                    <div style={{fontSize:12,color:T.tx3,marginBottom:6,fontWeight:600}}>WHERE YOUR DEBT IS</div>
                     <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
                     <div style={{display:"flex",flexWrap:"wrap",gap:"7px 16px",marginTop:8}}>
                       {[...datos].sort((a,b)=>b.value-a.value).map((d,i)=>(
@@ -717,27 +717,27 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                           {info.deductible==="conditional" && <Pill color={T.or}>COND. DEDUCTIBLE</Pill>}
                           {info.deductible===false && <Pill color={T.tx3}>NON-DEDUCTIBLE</Pill>}
                         </div>
-                        <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{info.l} · {liab.ts||0}% interest</div>
+                        <div style={{fontSize:12,color:T.tx3,marginTop:2}}>{info.l} · {liab.ts||0}% interest</div>
                       </div>
                       <div style={{textAlign:"right",flexShrink:0}}>
-                        <div style={{fontSize:16,fontWeight:800,color:T.rd,fontFamily:"monospace"}}>{fm(liab.mt||0)}</div>
-                        <div style={{fontSize:11,color:T.tx3}}>{fm(liab.pg||0)}/mo payment</div>
+                        <div style={{fontSize:16,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(liab.mt||0)}</div>
+                        <div style={{fontSize:12,color:T.tx3}}>{fm(liab.pg||0)}/mo payment</div>
                       </div>
                       <div style={{color:T.tx3,fontSize:12}}>{open?"▲":"▼"}</div>
                     </div>
                     {open && (
                       <div style={{borderTop:`1px solid ${T.border}`,padding:"16px 18px",background:T.bg2}}>
-                        <div style={{fontSize:11,color:T.tx2,lineHeight:1.7,marginBottom:12}}>
+                        <div style={{fontSize:12,color:T.tx2,lineHeight:1.7,marginBottom:12}}>
                           <strong style={{color:info.deductible?T.gn:T.or}}>{info.irc}</strong> — {info.note}
                         </div>
                         {/* Interest cost analysis */}
                         {(liab.ts||0) > 0 && (liab.mt||0) > 0 && (
                           <div style={{background:T.bg3,borderRadius:10,padding:12,marginBottom:12}}>
-                            <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:8}}>Annual Interest Cost</div>
+                            <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>Annual Interest Cost</div>
                             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-                              <div><div style={{fontSize:9,color:T.tx3}}>ANNUAL INTEREST</div><div style={{fontSize:14,fontWeight:700,color:T.rd}}>{fm((liab.mt||0)*(liab.ts||0)/100)}</div></div>
-                              <div><div style={{fontSize:9,color:T.tx3}}>MONTHLY PAYMENT</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(liab.pg||0)}</div></div>
-                              <div><div style={{fontSize:9,color:T.tx3}}>PAYOFF (est.)</div><div style={{fontSize:14,fontWeight:700,color:T.tx2}}>{liab.pg>0?Math.ceil((liab.mt||0)/(liab.pg||1))+" mo":"—"}</div></div>
+                              <div><div style={{fontSize:11,color:T.tx3}}>ANNUAL INTEREST</div><div style={{fontSize:14,fontWeight:700,color:T.rd}}>{fm((liab.mt||0)*(liab.ts||0)/100)}</div></div>
+                              <div><div style={{fontSize:11,color:T.tx3}}>MONTHLY PAYMENT</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(liab.pg||0)}</div></div>
+                              <div><div style={{fontSize:11,color:T.tx3}}>PAYOFF (est.)</div><div style={{fontSize:14,fontWeight:700,color:T.tx2}}>{liab.pg>0?Math.ceil((liab.mt||0)/(liab.pg||1))+" mo":"—"}</div></div>
                             </div>
                           </div>
                         )}
@@ -760,7 +760,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
         <div onClick={()=>setShowForm(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
           <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:660,maxHeight:"90vh",overflowY:"auto",padding:32}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <h3 style={{fontSize:18,fontWeight:800,margin:0}}>{editing!==null?"Edit":"Add"} Asset</h3>
+              <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"Add"} Asset</h3>
               <button onClick={()=>setShowForm(null)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>
             </div>
 
@@ -815,7 +815,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
 
             <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:24}}>
               <button onClick={()=>setShowForm(null)} style={{padding:"10px 20px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,color:T.tx2,cursor:"pointer",fontWeight:600}}>Cancel</button>
-              <button onClick={saveAsset} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#16a34a)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
+              <button onClick={saveAsset} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#00a804)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
                 {editing!==null?"Update":"Add Asset"}
               </button>
             </div>
@@ -828,7 +828,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
         <div onClick={()=>setShowForm(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
           <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto",padding:32}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-              <h3 style={{fontSize:18,fontWeight:800,margin:0}}>{editing!==null?"Edit":"Add"} Liability</h3>
+              <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"Add"} Liability</h3>
               <button onClick={()=>setShowForm(null)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>
             </div>
 
@@ -866,7 +866,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
 
             <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:24}}>
               <button onClick={()=>setShowForm(null)} style={{padding:"10px 20px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,color:T.tx2,cursor:"pointer",fontWeight:600}}>Cancel</button>
-              <button onClick={saveLiab} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#16a34a)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
+              <button onClick={saveLiab} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#00a804)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
                 {editing!==null?"Update":"Add Liability"}
               </button>
             </div>
@@ -874,7 +874,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
         </div>
       )}
 
-      <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:10,color:T.tx3,lineHeight:1.6}}>
+      <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.6}}>
         <strong>Disclaimer:</strong> Tax analysis is for planning purposes. Cost basis calculations assume you provide accurate figures. § 1250 recapture, NIIT, and exclusion eligibility depend on individual circumstances. Consult a licensed CPA, CFP, or tax attorney before any sale, exchange, or major tax event.
       </div>
     

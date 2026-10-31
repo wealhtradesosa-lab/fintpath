@@ -30,7 +30,7 @@ export default function ContrarianHomeCard({
       >
         <span style={{ fontSize: 18 }}>🧠</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: accent }}>{title}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: accent }}>{title}</div>
           <div style={{ fontSize: 12, color: T?.tx3 || "var(--fp-txt3)", marginTop: 2 }}>{mutedText}</div>
         </div>
       </div>
@@ -40,7 +40,7 @@ export default function ContrarianHomeCard({
   return (
     <div
       style={{
-        background: `linear-gradient(135deg,${bg},rgba(239,68,68,0.04))`,
+        background: `linear-gradient(135deg,${bg},rgba(255,80,0,0.04))`,
         border: `1px solid ${accent}33`,
         borderRadius: 14,
         padding: "14px 16px",
@@ -51,7 +51,7 @@ export default function ContrarianHomeCard({
         <div style={{ display: "flex", gap: 10, minWidth: 0, flex: "1 1 220px" }}>
           <span style={{ fontSize: 22, flexShrink: 0 }}>🧠</span>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: accent, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: accent, letterSpacing: "0.04em" }}>
               {title} · {subtitle}
             </div>
             <div style={{ fontSize: 13.5, fontWeight: 700, color: T?.tx || "var(--fp-txt)", marginTop: 6, lineHeight: 1.35 }}>

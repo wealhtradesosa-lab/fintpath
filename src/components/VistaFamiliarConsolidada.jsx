@@ -43,13 +43,13 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
   orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   redBg: "rgba(248,113,113,0.10)",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
@@ -176,7 +176,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
     return (
       <div style={{ padding: "32px 28px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 12, textAlign: "center" }}>
         <div style={{ fontSize: 48, marginBottom: 16 }}>👨‍👩‍👧‍👦</div>
-        <h3 style={{ fontSize: 20, fontWeight: 800, color: C.txt, marginBottom: 12 }}>
+        <h3 style={{ fontSize: 20, fontWeight: 700, color: C.txt, marginBottom: 12 }}>
           Vista Familiar Consolidada
         </h3>
         <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6, maxWidth: 520, margin: "0 auto" }}>
@@ -201,7 +201,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
           borderLeft: `4px solid ${C.purple}`,
           borderRadius: 12,
         }}>
-          <div style={{ fontSize: 12, color: C.purple, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>
             💡 Pro Familiar te permite mucho más
           </div>
           <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6, margin: 0 }}>
@@ -235,7 +235,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
         borderLeft: `4px solid ${C.purple}`,
         borderRadius: 14,
       }}>
-        <div style={{ fontSize: 12, color: C.purple, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, letterSpacing: 0.5, marginBottom: 14 }}>
           📊 Resumen consolidado del grupo
         </div>
 
@@ -284,13 +284,13 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
           }}>
             <span style={{ fontSize: 24 }}>💡</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: C.green, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase" }}>
+              <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                 Ahorro fiscal potencial detectado
               </div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: C.txt, marginTop: 2 }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.txt, marginTop: 2 }}>
                 {fm(consolidado.ahorroPotencialTotal)} / año
               </div>
-              <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>
                 Sumando palancas legales de todos los miembros del grupo. Mira las tarjetas debajo para detalles por persona.
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                       <button
                         onClick={(e) => { e.stopPropagation(); onSelectOwner?.(d.owner.id); }}
                         style={{
-                          fontSize: 10, padding: "3px 8px",
+                          fontSize: 11, padding: "3px 8px",
                           background: "transparent", color: C.txt3,
                           border: `1px solid ${C.border}`, borderRadius: 3,
                           cursor: "pointer", fontWeight: 600,
@@ -369,7 +369,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                     </div>
                     <ul style={{ margin: 0, paddingLeft: 16, display: "flex", flexDirection: "column", gap: 8 }}>
                       {(d.erroresLista || []).map((h, i) => (
-                        <li key={"e" + i} style={{ fontSize: 11, lineHeight: 1.4 }}>
+                        <li key={"e" + i} style={{ fontSize: 12, lineHeight: 1.4 }}>
                           <div style={{ color: C.red, fontWeight: 700 }}>
                             {h.titulo || h.mensaje || "Error sin título"}
                           </div>
@@ -384,7 +384,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                         </li>
                       ))}
                       {(d.advertenciasLista || []).map((h, i) => (
-                        <li key={"a" + i} style={{ fontSize: 11, lineHeight: 1.4 }}>
+                        <li key={"a" + i} style={{ fontSize: 12, lineHeight: 1.4 }}>
                           <div style={{ color: C.orange, fontWeight: 700 }}>
                             {h.titulo || h.mensaje || "Advertencia sin título"}
                           </div>
@@ -414,7 +414,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
 
       {/* Tarjetas por owner */}
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
           👥 Miembros del grupo ({owners.length})
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -452,15 +452,15 @@ function KPI({ label, value, subValue, color, icon }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
         <span style={{ fontSize: 14 }}>{icon}</span>
-        <span style={{ fontSize: 10, color: C.txt3, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>
+        <span style={{ fontSize: 11, color: C.txt3, fontWeight: 700, letterSpacing: 0.5 }}>
           {label}
         </span>
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: color, lineHeight: 1.1 }}>
+      <div style={{ fontSize: 22, fontWeight: 700, color: color, lineHeight: 1.1 }}>
         {value}
       </div>
       {subValue && (
-        <div style={{ fontSize: 11, color: C.txt3, marginTop: 4 }}>
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>
           {subValue}
         </div>
       )}
@@ -489,7 +489,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
       border: `1px solid ${C.border}`,
       borderRadius: 12,
     }}>
-      <div style={{ fontSize: 12, color: C.txt2, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div style={{ fontSize: 12, color: C.txt2, fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
         🥧 Distribución del patrimonio
       </div>
       {/* Barra de stack */}
@@ -516,8 +516,8 @@ function DistribucionPatrimonio({ ownersData, total }) {
                 alignItems: "center",
                 justifyContent: "center",
                 color: "#000",
-                fontSize: 10,
-                fontWeight: 800,
+                fontSize: 11,
+                fontWeight: 700,
                 overflow: "hidden",
                 whiteSpace: "nowrap",
               }}
@@ -533,7 +533,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
           if (d.patrimonioBruto <= 0) return null;
           const pct = (d.patrimonioBruto / total) * 100;
           return (
-            <div key={d.owner.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.txt2 }}>
+            <div key={d.owner.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.txt2 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: getColor(d.owner.type, i) }}></span>
               <span style={{ fontWeight: 700 }}>{d.owner.type === "juridica" ? "🏢" : "👤"} {d.owner.name}</span>
               <span style={{ color: C.txt3 }}>{fmtPctEs(pct, 1)}</span>
@@ -581,10 +581,10 @@ function OwnerCard({ data, consolidado, onSelectOwner }) {
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>{isJur ? "🏢" : "👤"}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: C.txt, lineHeight: 1.2 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.txt, lineHeight: 1.2 }}>
             {o.name}
           </div>
-          <div style={{ fontSize: 11, color: C.txt3, marginTop: 3, display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 12, color: C.txt3, marginTop: 3, display: "flex", gap: 6, flexWrap: "wrap" }}>
             <span>{isJur ? "Persona jurídica · F-110" : "Persona natural · F-210"}</span>
             {o.nit && <span>· NIT/CC {o.nit}</span>}
             {o.regimen && <span>· {o.regimen}</span>}
@@ -597,7 +597,7 @@ function OwnerCard({ data, consolidado, onSelectOwner }) {
             background: data.erroresAuditoria > 0 ? C.redBg : C.orangeBg,
             border: `1px solid ${data.erroresAuditoria > 0 ? C.red : C.orange}40`,
             borderRadius: 999,
-            fontSize: 11,
+            fontSize: 12,
             color: data.erroresAuditoria > 0 ? C.red : C.orange,
             fontWeight: 700,
             flexShrink: 0,
@@ -635,14 +635,14 @@ function CardMetric({ label, value, subValue, color = "#ffffff" }) {
       background: C.bg3,
       borderRadius: 8,
     }}>
-      <div style={{ fontSize: 9, color: C.txt3, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+      <div style={{ fontSize: 11, color: C.txt3, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
         {label}
       </div>
-      <div style={{ fontSize: 16, fontWeight: 800, color: color, lineHeight: 1.1 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: color, lineHeight: 1.1 }}>
         {value}
       </div>
       {subValue && (
-        <div style={{ fontSize: 10, color: C.txt3, marginTop: 2 }}>
+        <div style={{ fontSize: 11, color: C.txt3, marginTop: 2 }}>
           {subValue}
         </div>
       )}

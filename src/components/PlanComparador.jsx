@@ -20,7 +20,7 @@ import { resumenEscenario } from "../lib/futuro10.js";
 const card = { background: INF.panel, border: `1px solid ${INF.linea}`, borderRadius: 12, padding: 16, marginBottom: 14 };
 const h3 = { margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: INF.tx };
 const lead = { margin: "0 0 12px", fontSize: 12, color: INF.tx2, lineHeight: 1.5 };
-const eje = { tick: { fill: INF.tx2, fontSize: 11 }, axisLine: { stroke: INF.eje }, tickLine: { stroke: INF.eje } };
+const eje = { tick: { fill: INF.tx2, fontSize: 12 }, axisLine: { stroke: INF.eje }, tickLine: { stroke: INF.eje } };
 const grid = { strokeDasharray: "0", stroke: INF.grid, vertical: false };
 const th = { textAlign: "right", fontWeight: 600, color: INF.tx2, padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, whiteSpace: "nowrap" };
 const td = { textAlign: "right", padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, color: INF.tx, whiteSpace: "nowrap" };
@@ -80,7 +80,7 @@ function Reparto({ m }) {
                 style={{ flex: `${pct} 0 0`, minWidth: 3, background: g.color, opacity: sel && sel !== k ? 0.25 : 1, border: "none", borderRadius: 3, padding: 0, color: INF.sobreColor, fontSize: 12, fontWeight: 700, cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "clip" }}>
                 {pct >= 12 ? `${g.nombre.length > 14 ? g.nombre.slice(0, 13) + "…" : g.nombre} ${fmPct(pct, 0)}` : pct >= 4 ? fmPct(pct, 0) : ""}</button>; })}
           </div>
-          <div style={{ textAlign: "right", fontSize: 11, color: INF.tx2, marginTop: 2 }}>Total {fmM(totales[i])}</div>
+          <div style={{ textAlign: "right", fontSize: 12, color: INF.tx2, marginTop: 2 }}>Total {fmM(totales[i])}</div>
         </div>
       </div>)}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", fontSize: 12, color: INF.tx2, marginTop: 10 }}>
@@ -89,7 +89,7 @@ function Reparto({ m }) {
       {sel && <div style={{ marginTop: 12, borderTop: `1px solid ${INF.linea}`, paddingTop: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}><span style={{ display: "inline-block", width: 10, height: 10, background: grupos[sel].color, marginRight: 6, borderRadius: 3 }} />{grupos[sel].nombre}</div>
         {m.map((p, i) => { const g = porPlan[i][sel]; return <div key={p.k} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, padding: "3px 0" }}>
-          <span>{p.nombre}{g && g.items.length > 1 ? <span style={{ color: INF.tx2, fontSize: 11 }}> · {g.items.map((a) => `${a.nombre} ${fmM(a.valor)}`).join(", ")}</span> : null}</span>
+          <span>{p.nombre}{g && g.items.length > 1 ? <span style={{ color: INF.tx2, fontSize: 12 }}> · {g.items.map((a) => `${a.nombre} ${fmM(a.valor)}`).join(", ")}</span> : null}</span>
           <b style={{ whiteSpace: "nowrap" }}>{g ? `${fmM(g.valor)} · ${fmPct(totales[i] > 0 ? g.valor / totales[i] * 100 : 0, 0)}` : "—"}</b></div>; })}
       </div>}
     </div>
@@ -120,13 +120,13 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
           const letra = p.esHoy ? null : String.fromCharCode(65 + arr.filter((x) => !x.esHoy).indexOf(p));
           return <div key={p.k} role="button" tabIndex={0} onClick={() => onVer && onVer(p)} onKeyDown={(e) => { if (e.key === "Enter" && onVer) onVer(p); }}
             style={{ position: "relative", textAlign: "left", background: INF.panel, border: `1px solid ${p.recomendado ? INF.teja : INF.linea}`, borderTop: `3px solid ${p.color}`, borderRadius: 12, padding: "14px 14px 12px", color: INF.tx, cursor: onVer ? "pointer" : "default", display: "flex", flexDirection: "column", minHeight: 170 }}>
-            {p.recomendado && <span style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: INF.teja, color: INF.sobreColor, fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "1px 10px", whiteSpace: "nowrap" }}>Recomendado</span>}
-            <div style={{ fontSize: 11, color: INF.tx2, textTransform: "uppercase", letterSpacing: 0.6 }}>{p.esHoy ? "Punto de partida" : `Camino ${letra}`}</div>
+            {p.recomendado && <span style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: INF.teja, color: INF.sobreColor, fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "1px 10px", whiteSpace: "nowrap" }}>Recomendado</span>}
+            <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? "Punto de partida" : `Camino ${letra}`}</div>
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
             <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? "Si nada cambia" : p.descripcion || resumenEscenario(p.r)}</div>
             <div style={{ fontSize: 24, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
             <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.ok : INF.bad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
-            {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.teja : INF.tx2, fontSize: 11, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "★ Recomendado" : "☆ Marcar como recomendado"}</button>}
+            {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.teja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "★ Recomendado" : "☆ Marcar como recomendado"}</button>}
             {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}
             {!p.esHoy && (p.id ? (onEditar || onBorrar) : (onGuardarBorrador || onDescartarBorrador)) && <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {(p.id ? [["Editar", onEditar], ["Borrar", onBorrar]] : [["Guardar", onGuardarBorrador], ["Descartar", onDescartarBorrador]]).filter(([, fn]) => fn).map(([t, fn]) => (
@@ -165,7 +165,7 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
             <XAxis dataKey="c" {...eje} interval={0} />
             <YAxis {...eje} tickFormatter={fmEje} width={70} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} />} />
-            <Legend wrapperStyle={{ fontSize: 11, color: INF.tx2 }} />
+            <Legend wrapperStyle={{ fontSize: 12, color: INF.tx2 }} />
             {m.map((p) => <Bar key={p.k} dataKey={p.k} name={p.nombre} fill={p.color} />)}
           </BarChart>
         </ResponsiveContainer></div></div>
@@ -194,7 +194,7 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
           <span style={{ textAlign: "right", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nombre}</span>
           <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
             <span style={{ display: "flex", width: `${Math.max(2, p.med.empresa.factura / maxEmp * 72)}%`, height: 16 }}><span style={{ flex: p.med.empresa.gasto, background: INF.gris }} /><span style={{ flex: p.med.empresa.utilidad, background: p.color }} /></span>
-            <span style={{ whiteSpace: "nowrap" }}><b>{fmM(p.med.empresa.factura)}</b> <span style={{ color: INF.tx2, fontSize: 11 }}>{fmPct(p.med.empresa.pct, 1)} del patrimonio</span></span>
+            <span style={{ whiteSpace: "nowrap" }}><b>{fmM(p.med.empresa.factura)}</b> <span style={{ color: INF.tx2, fontSize: 12 }}>{fmPct(p.med.empresa.pct, 1)} del patrimonio</span></span>
           </span>
         </div>)}
       </div>

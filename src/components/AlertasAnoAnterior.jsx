@@ -32,7 +32,7 @@ import { track } from "../lib/analytics.js";
 const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  orange: "#f59e0b", red: "#ef4444", green: "#22c55e", cyan: "#94a3b8",
+  orange: "#f59e0b", red: "#ff5000", green: "#00c805", cyan: "#94a3b8",
 };
 
 const fmMoney = (v) => {
@@ -84,8 +84,8 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
   return (
     <div style={{
       marginTop: 14, marginBottom: 14,
-      background: critical.length > 0 ? "rgba(239,68,68,0.06)" : "rgba(245,158,11,0.06)",
-      border: "1px solid " + (critical.length > 0 ? "rgba(239,68,68,0.25)" : "rgba(245,158,11,0.25)"),
+      background: critical.length > 0 ? "rgba(255,80,0,0.06)" : "rgba(245,158,11,0.06)",
+      border: "1px solid " + (critical.length > 0 ? "rgba(255,80,0,0.25)" : "rgba(245,158,11,0.25)"),
       borderRadius: 12, padding: "14px 16px",
     }}>
       <div style={{
@@ -95,7 +95,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
       }}>
         {critical.length > 0 ? "🚨" : "⚠️"}
         Alertas de consistencia vs año {anoAnterior || "anterior"}
-        <span style={{ color: T.txt3, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>
+        <span style={{ color: T.txt3, fontWeight: 400, fontSize: 11, marginLeft: 4 }}>
           ({totalSenales} señal{totalSenales !== 1 ? "es" : ""})
         </span>
       </div>
@@ -110,7 +110,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               background: "rgba(var(--fp-ink),0.02)",
               borderRadius: 8,
               borderLeft: "2px solid " + color,
-              fontSize: 11,
+              fontSize: 12,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
                 <span style={{ color: T.txt, fontWeight: 600 }}>{a.label}</span>
@@ -118,11 +118,11 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
                   {icon} {fmtPctEs(a.deltaAbs, 0)}
                 </span>
               </div>
-              <div style={{ color: T.txt3, marginTop: 2, fontFamily: "monospace", fontSize: 10 }}>
+              <div style={{ color: T.txt3, marginTop: 2, fontFamily: "monospace", fontSize: 11 }}>
                 Año anterior: {fmMoney(a.anterior)} · Actual: {fmMoney(a.actual)} · Delta: {a.deltaPct > 0 ? "+" : ""}{fmMoney(a.actual - a.anterior)}
               </div>
               {a.sugerencia && (
-                <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
+                <div style={{ color: T.txt2, marginTop: 4, fontSize: 11, lineHeight: 1.4 }}>
                   → {a.sugerencia}
                 </div>
               )}
@@ -137,16 +137,16 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               background: "rgba(var(--fp-ink),0.02)",
               borderRadius: 8,
               borderLeft: "2px solid " + color,
-              fontSize: 11,
+              fontSize: 12,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
                 <span style={{ color: T.txt, fontWeight: 600 }}>🔀 {p.label}</span>
-                <span style={{ color: color, fontWeight: 700, fontSize: 9, textTransform: "uppercase" }}>
+                <span style={{ color: color, fontWeight: 700, fontSize: 11 }}>
                   Patrón cruzado
                 </span>
               </div>
               {p.sugerencia && (
-                <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
+                <div style={{ color: T.txt2, marginTop: 4, fontSize: 11, lineHeight: 1.4 }}>
                   → {p.sugerencia}
                 </div>
               )}
@@ -161,16 +161,16 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               background: "rgba(var(--fp-ink),0.02)",
               borderRadius: 8,
               borderLeft: "2px solid " + color,
-              fontSize: 11,
+              fontSize: 12,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
                 <span style={{ color: T.txt, fontWeight: 600 }}>📈 {t.label}</span>
-                <span style={{ color: color, fontWeight: 700, fontSize: 9, textTransform: "uppercase" }}>
+                <span style={{ color: color, fontWeight: 700, fontSize: 11 }}>
                   Tendencia histórica
                 </span>
               </div>
               {t.sugerencia && (
-                <div style={{ color: T.txt2, marginTop: 4, fontSize: 10, lineHeight: 1.4 }}>
+                <div style={{ color: T.txt2, marginTop: 4, fontSize: 11, lineHeight: 1.4 }}>
                   → {t.sugerencia}
                 </div>
               )}
@@ -179,7 +179,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
         })}
       </div>
 
-      <div style={{ fontSize: 10, color: T.txt3, marginTop: 8, lineHeight: 1.4 }}>
+      <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, lineHeight: 1.4 }}>
         Estas alertas son informativas — pueden ser cambios legítimos (aumento de ingresos, nuevas deducciones, etc.) o pueden indicar errores de captura. Revisa cada una antes de dar por final el cálculo.
       </div>
     </div>

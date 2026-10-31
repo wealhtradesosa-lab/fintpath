@@ -11,7 +11,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  cyan: "#94a3b8", green: "#22c55e", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
+  cyan: "#94a3b8", green: "#00c805", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const FAQ = [
@@ -23,15 +23,15 @@ const FAQ = [
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", borderLeft: "3px solid " + T.blue, borderRadius: 6 }}>
             <div style={{ color: T.blue, fontWeight: 700, fontSize: 12 }}>🎯 Simulador rápido (Plan Tributario)</div>
-            <div style={{ color: T.txt2, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>
+            <div style={{ color: T.txt2, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> saber cuánto vas a pagar de impuesto si sigues así. Sirve para planear: decidir si hacer aportes a pensión voluntaria, reinvertir utilidades, comprar vivienda, etc.<br/>
               <strong>Dato de entrada:</strong> tus ingresos, gastos, deudas e inversiones registrados en los módulos del día a día.<br/>
               <strong>Resultado:</strong> estimado automático.
             </div>
           </div>
-          <div style={{ padding: "10px 12px", background: "rgba(34,197,94,0.08)", borderLeft: "3px solid " + T.green, borderRadius: 6 }}>
+          <div style={{ padding: "10px 12px", background: "rgba(0,200,5,0.08)", borderLeft: "3px solid " + T.green, borderRadius: 6 }}>
             <div style={{ color: T.green, fontWeight: 700, fontSize: 12 }}>📄 Wizard F-210 / F-110</div>
-            <div style={{ color: T.txt2, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>
+            <div style={{ color: T.txt2, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> preparar la declaración oficial que vas a presentar a la DIAN. Te guía casilla por casilla, muestra los artículos del ET, y calcula el impuesto según la tabla Art. 241 / tarifa jurídica real.<br/>
               <strong>Dato de entrada:</strong> lo que realmente vas a declarar. Puede usar los valores del simulador como punto de partida.<br/>
               <strong>Resultado:</strong> borrador de declaración listo para transcribir al portal DIAN.
@@ -39,7 +39,7 @@ const FAQ = [
           </div>
           <div style={{ padding: "10px 12px", background: "rgba(148,163,184,0.08)", borderLeft: "3px solid " + T.cyan, borderRadius: 6 }}>
             <div style={{ color: T.cyan, fontWeight: 700, fontSize: 12 }}>📥 Importador año anterior</div>
-            <div style={{ color: T.txt2, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>
+            <div style={{ color: T.txt2, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> cargar lo que <em>ya declaraste</em> el año pasado, para usarlo como referencia comparativa al preparar el año en curso.<br/>
               <strong>Dato de entrada:</strong> tu declaración 2023/2024 (del portal DIAN). Capturas ~20 renglones principales, no todos.<br/>
               <strong>Resultado:</strong> al abrir el Wizard, cada casilla muestra "📥 Año 2024: $X" para comparar. También habilita las alertas cruzadas año a año (retenciones que bajaron, deducciones que desaparecieron, etc).
@@ -54,7 +54,7 @@ const FAQ = [
     a: (
       <>
         <p>El motor calcula <strong>con la data que tiene registrada</strong>. Si la data está incompleta, el impuesto sale alto. Los casos más frecuentes:</p>
-        <ol style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
+        <ol style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 12, lineHeight: 1.7 }}>
           <li><strong>No hay gastos registrados</strong> — si una empresa tiene $500M/año de ingresos y $0 en gastos, el motor asume que el 100% es utilidad.</li>
           <li><strong>Sin depreciación de inmuebles</strong> — verifica que los inmuebles del módulo Inversiones tengan asignado el dueño (campo owner).</li>
           <li><strong>Deudas sin tasa de interés</strong> — sin tasa, el motor no puede restar intereses como gasto deducible.</li>
@@ -69,7 +69,7 @@ const FAQ = [
     a: (
       <>
         <p>Hoy el Wizard y el Plan Tributario son <strong>herramientas independientes</strong>:</p>
-        <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
+        <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 12, lineHeight: 1.7 }}>
           <li>El Plan Tributario calcula desde ingresos/gastos/deudas/inversiones</li>
           <li>El Wizard captura renglones que pueden diferir (ej: puedes capturar un ingreso en el Wizard que no está en el módulo Ingresos)</li>
         </ul>
@@ -82,7 +82,7 @@ const FAQ = [
     a: (
       <>
         <p>Orden recomendado:</p>
-        <ol style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
+        <ol style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 12, lineHeight: 1.7 }}>
           <li><strong>Registra tus ingresos, gastos, deudas e inversiones</strong> en los módulos principales (día a día).</li>
           <li><strong>Asigna dueño</strong> (owner) a cada item si tienes varias personas/empresas.</li>
           <li><strong>Importa tu declaración del año anterior</strong> en la tarjeta del owner — esto habilita comparaciones automáticas.</li>
@@ -98,7 +98,7 @@ const FAQ = [
     a: (
       <>
         <p><strong>No.</strong> FINPATHIA te ayuda a entender tu situación fiscal, detectar errores y planear. Pero no reemplaza:</p>
-        <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
+        <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 12, lineHeight: 1.7 }}>
           <li>La revisión profesional de un contador antes de presentar a la DIAN</li>
           <li>El conocimiento específico de tu caso (contratos, régimen tributario especial, holding)</li>
           <li>La firma de tu contador cuando es obligatoria (grandes contribuyentes, ciertos regímenes)</li>
@@ -112,7 +112,7 @@ const FAQ = [
     a: (
       <>
         <p>El sistema detecta <strong>17 tipos de situaciones</strong> que requieren tu atención:</p>
-        <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
+        <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 12, lineHeight: 1.7 }}>
           <li><strong>⛔ Errores</strong> — algo que rompe el cálculo (ej: ingreso sin dueño asignado).</li>
           <li><strong>⚠️ Warnings</strong> — posibles pérdidas de dinero (ej: descuentos no capturados vs año pasado).</li>
           <li><strong>ℹ️ Info</strong> — el sistema infirió una clasificación, confirma o edita (ej: "asumí que este arriendo es de inmueble").</li>
@@ -137,7 +137,7 @@ export default function AyudaDeclaracion({ onClose }) {
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, flexWrap: "wrap" }}>
         <span style={{ fontSize: 28 }}>❓</span>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: T.txt }}>Ayuda: Sistema de declaración</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: T.txt }}>Ayuda: Sistema de declaración</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
             Guía práctica para usar el Simulador, el Wizard y el Importador
           </div>
@@ -182,7 +182,7 @@ export default function AyudaDeclaracion({ onClose }) {
         ))}
       </div>
 
-      <div style={{ marginTop: 24, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 11, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
+      <div style={{ marginTop: 24, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt3, textAlign: "center", lineHeight: 1.6 }}>
         ¿Tienes una pregunta que no está acá? Escribe a <strong style={{ color: T.cyan }}>soporte@finpathia.com</strong> y te respondemos.
       </div>
     </div>

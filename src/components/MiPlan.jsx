@@ -54,7 +54,7 @@ const card = { background: C.surface, border: `1px solid ${C.border}`, borderRad
 const sub = { background: C.raised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, minWidth: 0 };
 const inputS = { background: C.bg, border: `1px solid ${C.borderStrong}`, borderRadius: 8, color: C.text, padding: "8px 10px", fontSize: 13, width: "100%", boxSizing: "border-box" };
 const btn = (primary) => ({ background: primary ? C.accent : "transparent", color: primary ? "#fff" : C.text, border: `1px solid ${primary ? C.accent : C.borderStrong}`, borderRadius: 999, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" });
-const chip = (color) => ({ display: "inline-block", padding: "3px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600, color, background: `${color}20`, border: `1px solid ${color}40`, whiteSpace: "nowrap" });
+const chip = (color) => ({ display: "inline-block", padding: "3px 8px", borderRadius: 999, fontSize: 12, fontWeight: 600, color, background: `${color}20`, border: `1px solid ${color}40`, whiteSpace: "nowrap" });
 const th = { ...F.label, textAlign: "left", padding: "8px 6px", whiteSpace: "nowrap" };
 const td = { padding: "7px 6px 16px", color: C.text, fontSize: 12, verticalAlign: "middle" };
 const tdNum = { ...td, textAlign: "right", fontFamily: F.mono.fontFamily, whiteSpace: "nowrap" };
@@ -66,7 +66,7 @@ const tdNum = { ...td, textAlign: "right", fontFamily: F.mono.fontFamily, whiteS
 const Num = ({ value, onChange, step = 1, min, max, suffix, w }) => (
   <div style={{ position: "relative", width: w }}>
     <InputDecimalEs value={value ?? ""} onChange={(v) => onChange(v === "" ? "" : Math.min(max ?? Infinity, Math.max(min ?? -Infinity, v)))} style={{ ...inputS, paddingRight: suffix ? 26 : 10, textAlign: "right" }} />
-    {suffix && <span style={{ position: "absolute", right: 8, top: 9, fontSize: 11, color: C.subtle }}>{suffix}</span>}
+    {suffix && <span style={{ position: "absolute", right: 8, top: 9, fontSize: 12, color: C.subtle }}>{suffix}</span>}
   </div>
 );
 // Pesos completos con separador de miles (22.000.000). Guarda el número; muestra el formato.
@@ -91,7 +91,7 @@ const NumPesos = ({ value, onChange, w, placeholder }) => {
   return (
     <div style={{ width: w || "100%", position: "relative" }}>
       <input type="text" inputMode="numeric" value={txt} placeholder={placeholder || "0"} onChange={(e) => { const d = e.target.value.replace(/[^\d]/g, ""); onChange(d === "" ? "" : Number(d)); }} style={{ ...inputS, width: "100%", textAlign: "right", fontFamily: F.mono.fontFamily, fontWeight: 500, borderColor: duda ? C.danger : undefined }} />
-      {a >= 1e9 && <div style={{ position: "absolute", left: 0, right: 0, top: "100%", textAlign: "right", fontSize: 10, lineHeight: "13px", pointerEvents: "none", color: duda ? C.danger : C.subtle }}>{fmtPlataCortaEs(n)}{duda ? " · ¿tantos ceros?" : ""}</div>}
+      {a >= 1e9 && <div style={{ position: "absolute", left: 0, right: 0, top: "100%", textAlign: "right", fontSize: 11, lineHeight: "13px", pointerEvents: "none", color: duda ? C.danger : C.subtle }}>{fmtPlataCortaEs(n)}{duda ? " · ¿tantos ceros?" : ""}</div>}
     </div>
   );
 };
@@ -103,7 +103,7 @@ function Cuando({ mes, onChange, compacto }) {
   const inp = { ...inputS, padding: "4px 6px", fontSize: 12, width: 60, textAlign: "right" };
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 6, ...F.caption, flexWrap: "wrap" }}>
-      <select value={modo} onChange={(e) => setModo(e.target.value)} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: "auto" }}><option value="meses">en</option><option value="anio">año</option></select>
+      <select value={modo} onChange={(e) => setModo(e.target.value)} style={{ ...inputS, padding: "4px 6px", fontSize: 12, width: "auto" }}><option value="meses">en</option><option value="anio">año</option></select>
       {modo === "meses" ? <><input type="number" min={0} max={120} value={m} onChange={(e) => onChange(Math.max(0, Number(e.target.value) || 0))} style={inp} /><span>meses</span>{!compacto && m > 0 && <span style={{ color: C.subtle }}>(año {anioDe(m)}, mes {(m % 12) + 1})</span>}</>
         : <><input type="number" min={1} max={10} value={anioDe(m)} onChange={(e) => onChange((Math.max(1, Number(e.target.value) || 1) - 1) * 12 + (m % 12))} style={inp} /><span>mes</span><input type="number" min={1} max={12} value={(m % 12) + 1} onChange={(e) => onChange(Math.floor(m / 12) * 12 + Math.min(11, Math.max(0, (Number(e.target.value) || 1) - 1)))} style={inp} />{!compacto && <span style={{ color: C.subtle }}>(en {m} meses)</span>}</>}
     </div>
@@ -727,7 +727,7 @@ function FilaFlujo({ f, eventos, onChange }) {
     onChange([...otros, nuevo]);
   };
   const esIng = f.tipo === "ingreso";
-  const selS = { ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: estado === "sigue" ? C.ok : estado === "flujo_termina" ? C.danger : C.warn };
+  const selS = { ...inputS, padding: "4px 6px", fontSize: 12, width: 130, color: estado === "sigue" ? C.ok : estado === "flujo_termina" ? C.danger : C.warn };
   return (
     <tr style={{ borderTop: `1px solid ${C.border}`, opacity: estado === "flujo_termina" ? 0.75 : 1 }}>
       <td style={td}>{f.nombre}<div style={F.caption}>{esIng ? (f.trabajo ? "ingreso de trabajo" : f.posicionId ? "renta de un activo" : "ingreso") : "gasto"}</div></td>
@@ -999,7 +999,7 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
             como opción avanzada dentro del taller, para quien las quiera. */}
         <div style={F.h2}>Crear un escenario</div>
         <div style={{ ...F.caption, marginTop: 4 }}>Parte de lo que tienes hoy; tú decides qué vendes, a dónde va la plata y qué viene después.</div>
-        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onCrear({ id: null, nombre: `Escenario ${(todos || []).length + 1}`, tesis: "", color: [CHART.purple, "#f59e0b", "#22c55e", "#3b82f6", "#64748b"][(todos || []).length % 5], objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>+ Crear escenario →</button></div>
+        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onCrear({ id: null, nombre: `Escenario ${(todos || []).length + 1}`, tesis: "", color: [CHART.purple, "#f59e0b", "#00c805", "#3b82f6", "#64748b"][(todos || []).length % 5], objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>+ Crear escenario →</button></div>
       </div>
       {/* 22-oct-2026 (Santiago: "veo que se han creado muchos escenarios,
           ¿dónde los borra uno?", "¿dónde los compara?"). Borrar vivía al final
@@ -1192,7 +1192,7 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
       {/* 24-oct-2026 (Santiago: "hagámoslo práctico, intuitivo"). Ya no hay
           sub-pestañas: las cinco preguntas van de corrido, con el resultado
           vivo al lado. Esta tira es solo un índice para saltar. */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SUBS_IDX.map((x) => <button key={x.n} onClick={() => { try { document.getElementById(`esc-sec-${x.n}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* noop */ } }} style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }}>{x.t}</button>)}</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{SUBS_IDX.map((x) => <button key={x.n} onClick={() => { try { document.getElementById(`esc-sec-${x.n}`)?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* noop */ } }} style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }}>{x.t}</button>)}</div>
       <div style={{ display: "grid", gridTemplateColumns: dos ? "minmax(0, 1fr) 340px" : "minmax(0, 1fr)", gap: 14, alignItems: "start" }}>
         <div style={{ display: "grid", gap: 12 }}>
           {verNombre && (
@@ -1263,8 +1263,8 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
                         un chip fijo; ahora también es un menú, y cambia la
                         ficha del activo (vale para todos los escenarios). */}
                     <td style={td}>{d.destinoId
-                      ? <select value={posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta} onChange={(e) => { const c = e.target.value; if (onFicha) onFicha(d.destinoId, { canasta: c }); setD(d.id, { canasta: c }); }} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], borderColor: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
-                      : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 11, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
+                      ? <select value={posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta} onChange={(e) => { const c = e.target.value; if (onFicha) onFicha(d.destinoId, { canasta: c }); setD(d.id, { canasta: c }); }} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ ...inputS, padding: "4px 6px", fontSize: 12, width: 130, color: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], borderColor: CANASTA_COLOR[posDe(d.destinoId) ? canastaDe(posDe(d.destinoId)) : d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
+                      : <select value={d.canasta} onChange={(e) => setD(d.id, { canasta: e.target.value, pagaPct: e.target.value === "rentas" ? 100 : 0, tasa: e.target.value === "crecimiento" ? perfil.tasaCrecimiento : e.target.value === "rentas" ? perfil.tasaRentaEstable : 0, regla: e.target.value === "rentas" ? "Paga el 100% del rendimiento cada mes" : e.target.value === "crecimiento" ? "Todo se reinvierte" : "" })} style={{ ...inputS, padding: "4px 6px", fontSize: 12, width: 130, color: CANASTA_COLOR[d.canasta], borderColor: CANASTA_COLOR[d.canasta], fontWeight: 600 }}>{["rentas", "crecimiento", "proteccion", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>}</td>
                     <td style={tdNum}><NumPesos value={d.capital} onChange={(v) => setD(d.id, { capital: v || 0 })} w={150} /></td>
                     {/* 24-oct-2026 (Santiago: "IBKR, 20 % de retorno: ¿y cuánto se
                         valoriza? ¿y qué tasa pongo? Es confuso"). Cada canasta
@@ -1369,8 +1369,8 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
               <summary style={{ ...F.caption, cursor: "pointer" }}>Reglas que este escenario se obliga a cumplir (opcional)</summary>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 10 }}>
                 <span style={F.caption}>Cargar las reglas de un molde:</span>
-                {CAMINOS_BASE.map((c) => <button key={c.id} style={{ ...btn(false), padding: "4px 10px", fontSize: 11 }} onClick={() => upd({ canastas: { ...(c.canastas || {}), colchonMeses: esc.colchonMeses ?? c.canastas?.colchonMeses ?? 6 }, condiciones: c.condiciones || [], plantilla: c.id })}>{INTENCIONES[c.id]?.titulo || c.nombre}</button>)}
-                <button style={{ ...btn(false), padding: "4px 10px", fontSize: 11, color: C.subtle }} onClick={() => upd({ canastas: { colchonMeses: esc.colchonMeses ?? 6 }, condiciones: [], plantilla: null })}>Sin reglas</button>
+                {CAMINOS_BASE.map((c) => <button key={c.id} style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => upd({ canastas: { ...(c.canastas || {}), colchonMeses: esc.colchonMeses ?? c.canastas?.colchonMeses ?? 6 }, condiciones: c.condiciones || [], plantilla: c.id })}>{INTENCIONES[c.id]?.titulo || c.nombre}</button>)}
+                <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12, color: C.subtle }} onClick={() => upd({ canastas: { colchonMeses: esc.colchonMeses ?? 6 }, condiciones: [], plantilla: null })}>Sin reglas</button>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginTop: 10 }}>
                 <Campo l="Rentas mín."><Num value={esc.canastas?.rentas?.min ?? ""} onChange={(v) => upd({ canastas: { ...(esc.canastas || {}), rentas: { ...(esc.canastas?.rentas || {}), min: v === "" ? undefined : v } } })} suffix="%" /></Campo>
@@ -1462,7 +1462,7 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
             <Area type="stepAfter" dataKey={(x) => [Math.min(x.entra, x.sale), x.entra]} name="Sobra" stroke="none" fill={C.ok} fillOpacity={0.16} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="entra" name="Entra" stroke={r.color} strokeWidth={2} dot={false} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="sale" name="Sale" stroke={C.danger} strokeDasharray="5 4" strokeWidth={1.5} dot={false} isAnimationActive={false} />
-            {hitos.map((h) => <ReferenceLine key={h.mes} x={h.mes} stroke={C.borderStrong} strokeDasharray="3 3" label={{ value: angosto ? String(h.n) : h.texto.length > 28 ? h.texto.slice(0, 26) + "…" : h.texto, position: "top", fontSize: 10, fill: C.subtle }} />)}
+            {hitos.map((h) => <ReferenceLine key={h.mes} x={h.mes} stroke={C.borderStrong} strokeDasharray="3 3" label={{ value: angosto ? String(h.n) : h.texto.length > 28 ? h.texto.slice(0, 26) + "…" : h.texto, position: "top", fontSize: 11, fill: C.subtle }} />)}
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -1627,7 +1627,7 @@ function ActivoPorActivo({ r, base, onFicha }) {
                   un activo de hoy se cambia aquí mismo; vale para todos los
                   escenarios, igual que en el paso 1. */}
               <td style={td}>{!x.nuevo && onFicha
-                ? <select value={x.canasta} onChange={(e) => onFicha(x.id, { canasta: e.target.value })} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ background: "transparent", border: `1px solid ${CANASTA_COLOR[x.canasta]}55`, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 600, color: CANASTA_COLOR[x.canasta], cursor: "pointer", fontFamily: "inherit" }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
+                ? <select value={x.canasta} onChange={(e) => onFicha(x.id, { canasta: e.target.value })} title="Cambia la canasta de este activo (vale para todos los escenarios)" style={{ background: "transparent", border: `1px solid ${CANASTA_COLOR[x.canasta]}55`, borderRadius: 999, padding: "2px 8px", fontSize: 12, fontWeight: 600, color: CANASTA_COLOR[x.canasta], cursor: "pointer", fontFamily: "inherit" }}>{["proteccion", "rentas", "crecimiento", "uso"].map((o) => <option key={o} value={o}>{CANASTA_LABEL[o]}</option>)}</select>
                 : <span style={chip(CANASTA_COLOR[x.canasta])}>{CANASTA_LABEL[x.canasta]}</span>}</td>
               <td style={tdNum}>{x.hoy > 0 ? fmM(x.hoy) : x.entra ? <span style={F.caption}>entra año {x.entra.anio}<br />con {fmM(x.entra.capital)}</span> : "—"}</td>
               <td style={{ ...tdNum, color: x.fin > x.hoy ? C.ok : x.fin < x.hoy ? C.muted : C.text }}>{x.fin > 0 ? fmM(x.fin) : "—"}</td>
@@ -1670,7 +1670,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
             "el patrimonio pasa de $18,7 mil M a $3.542.514,1 mil M", "cobertura
             79554153%", "crece 221,0% real al ano". Un numero imposible no se
             marca en un sitio y se deja suelto en otros siete. */}
-        {vecesDe(p) > VECES_IMPOSIBLE && <div style={{ ...sub, marginTop: 12, borderColor: C.danger, background: "rgba(239,68,68,0.06)" }}>
+        {vecesDe(p) > VECES_IMPOSIBLE && <div style={{ ...sub, marginTop: 12, borderColor: C.danger, background: "rgba(255,80,0,0.06)" }}>
           <div style={{ ...F.h3, color: C.danger }}>✋ Hay un número con ceros de más</div>
           <div style={{ ...F.body, marginTop: 4, color: C.text }}>No es que el dato sea falso: está escrito mil veces más grande. Por eso este escenario multiplica tu patrimonio por <b>{Math.round(vecesDe(p)).toLocaleString("es-CO")}</b> en diez años —de {fmM(p.patrimonioInicial)} a {fmM(p.patrimonioFinal)}— y todo lo de abajo sale multiplicado con él.</div>
           {sospechosos(perfil, base).length > 0 && <>
@@ -1849,7 +1849,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
           <ResponsiveContainer>
             <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid {...gridProps} /><XAxis dataKey="anio" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : `año ${a}`)} /><YAxis {...axisProps} width={60} tickFormatter={(v) => fmM(v).replace("$", "")} />
-              <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} /><Legend wrapperStyle={{ fontSize: 11, color: CHART.txt2 }} />
+              <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} /><Legend wrapperStyle={{ fontSize: 12, color: CHART.txt2 }} />
               {res.map((r) => <Line key={r.id} type="monotone" dataKey={r.id} name={r.nombre} stroke={r.color} strokeWidth={r.id === activoId ? 3 : 1.5} dot={false} strokeOpacity={activoId && r.id !== activoId ? 0.55 : 1} />)}
             </LineChart>
           </ResponsiveContainer>

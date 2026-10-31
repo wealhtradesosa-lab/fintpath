@@ -44,10 +44,10 @@ class ErrorBoundary extends React.Component {
           React.createElement("h1", {style:{fontSize:22,fontWeight:700,marginBottom:8}}, "Algo salió mal"),
           React.createElement("p", {style:{color:"var(--fp-txt3)",fontSize:14,marginBottom:24}}, "Puedes recargar o borrar datos locales."),
           React.createElement("div", {style:{display:"flex",gap:10,justifyContent:"center"}},
-            React.createElement("button", {onClick:()=>window.location.reload(),style:{padding:"10px 20px",borderRadius:10,border:"none",background:"#22c55e",color:"#000",fontWeight:700,cursor:"pointer"}}, "Recargar"),
+            React.createElement("button", {onClick:()=>window.location.reload(),style:{padding:"10px 20px",borderRadius:10,border:"none",background:"#00c805",color:"#000",fontWeight:700,cursor:"pointer"}}, "Recargar"),
             React.createElement("button", {onClick:()=>{localStorage.removeItem("fp3");window.location.reload()},style:{padding:"10px 20px",borderRadius:10,border:"1px solid rgba(var(--fp-ink),0.1)",background:"transparent",color:"var(--fp-txt2)",cursor:"pointer"}}, "Borrar datos")
           ),
-          React.createElement("p", {style:{color:"var(--fp-line)",fontSize:11,marginTop:20}}, this.state.error?.message || "")
+          React.createElement("p", {style:{color:"var(--fp-line)",fontSize:12,marginTop:20}}, this.state.error?.message || "")
         )
       );
     }

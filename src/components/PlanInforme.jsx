@@ -25,7 +25,7 @@ import { INF, COLOR_CLASE, ETQ_CLASE, fmM, fmEje, fmPct } from "../lib/informeTh
 const card = { background: INF.panel, border: `1px solid ${INF.linea}`, borderRadius: 12, padding: 16, marginBottom: 14 };
 const h3 = { margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: INF.tx };
 const lead = { margin: "0 0 12px", fontSize: 12, color: INF.tx2, lineHeight: 1.5 };
-const eje = { tick: { fill: INF.tx2, fontSize: 11 }, axisLine: { stroke: INF.eje }, tickLine: { stroke: INF.eje } };
+const eje = { tick: { fill: INF.tx2, fontSize: 12 }, axisLine: { stroke: INF.eje }, tickLine: { stroke: INF.eje } };
 const grid = { strokeDasharray: "0", stroke: INF.grid, vertical: false };
 const th = { textAlign: "right", fontWeight: 600, color: INF.tx2, padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, whiteSpace: "nowrap" };
 const td = { textAlign: "right", padding: "6px 8px", borderBottom: `1px solid ${INF.linea}`, color: INF.tx, whiteSpace: "nowrap" };
@@ -137,9 +137,9 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
   </div>;
 
   const Ficha = ({ l, v, s, col }) => <div style={{ ...card, marginBottom: 0, padding: 14 }}>
-    <div style={{ fontSize: 11, color: INF.tx2 }}>{l}</div>
+    <div style={{ fontSize: 12, color: INF.tx2 }}>{l}</div>
     <div style={{ fontSize: 22, fontWeight: 600, color: col || INF.tx, fontFamily: "Georgia, 'Times New Roman', serif", margin: "4px 0" }}>{v}</div>
-    <div style={{ fontSize: 11, color: INF.tx2, lineHeight: 1.4 }}>{s}</div>
+    <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.4 }}>{s}</div>
   </div>;
 
   const finLabel = (key, txt, color) => (p) => (p.index === mes.length - 1 ? <text x={p.x + 6} y={p.y + 4} fill={color} fontSize={12} fontWeight={600}>{txt}</text> : null);
@@ -158,7 +158,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
       {(r.desglose?.reinvierte || []).length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
         <h3 style={h3}>Lo que rinde y no te llega al mes</h3>
         <p style={lead}>Estas inversiones producen, pero todo se reinvierte: hacen crecer el patrimonio y no suman a lo que entra cada mes. Si alguna te paga (una renta fija como BTG), cámbiala en el paso 3, Tu plata → «De lo que rinde, ¿cuánto te llega?».</p>
-        {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 11 }}>· {fmPct(x.pct, 1)} al año</span></span><b style={{ color: INF.dorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}/mes se reinvierte</b></div>)}
+        {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 12 }}>· {fmPct(x.pct, 1)} al año</span></span><b style={{ color: INF.dorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}/mes se reinvierte</b></div>)}
       </div>}
 
       <MesCompleto r={r} card={card} h3={h3} lead={lead} />
@@ -199,7 +199,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         <div style={card}>
           <h3 style={h3}>2 · Todo lo que tienes después del plan · {fmM(totTienes)}</h3>
           <p style={lead}>Lo que ya tenías y no se mueve, más la plata nueva del punto 1. {fin.deuda > 0 ? `Menos deudas (${fmM(f1.deuda)}) = patrimonio neto ${fmM(f1.patrimonio)}.` : ""}</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 11, color: INF.tx2, marginBottom: 8 }}>{[...new Set(tienes.map((a) => a.clase))].map((c) => <span key={c}><span style={{ display: "inline-block", width: 8, height: 8, background: COLOR_CLASE[c] || INF.gris, marginRight: 4 }} />{ETQ_CLASE[c] || c}</span>)}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2, marginBottom: 8 }}>{[...new Set(tienes.map((a) => a.clase))].map((c) => <span key={c}><span style={{ display: "inline-block", width: 8, height: 8, background: COLOR_CLASE[c] || INF.gris, marginRight: 4 }} />{ETQ_CLASE[c] || c}</span>)}</div>
           {tienes.map((a) => <div key={a.id} style={{ display: "grid", gridTemplateColumns: "minmax(90px,38%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 14, width: `${Math.max(1, a.valor / (tienes[0]?.valor || 1) * 70)}%`, background: COLOR_CLASE[a.clase] || INF.gris, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(a.valor)} · {fmPct(totTienes > 0 ? a.valor / totTienes * 100 : 0, 0)}</span></span>
@@ -225,7 +225,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
             <h3 style={h3}>{t} · {fmM(tot)}</h3>
             <p style={lead}>{l}</p>
             {lista.map((x, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(100px,42%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
-              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 11, color: INF.tx2 }}>{x.nota}</span>}</span>
+              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 12, color: INF.tx2 }}>{x.nota}</span>}</span>
               <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 12, width: `${Math.max(1, Math.abs(x.mensual) / mx * 60)}%`, background: x.mensual < 0 ? INF.gris : col, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(x.mensual)}</span></span>
             </div>)}
           </div>;
@@ -245,7 +245,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
             <Bar dataKey="r_otros" stackId="p" name={sR.resto.length ? "Resto de rentas (más pequeñas)" : "Ajuste (costos de inmuebles sin ligar)"} fill={INF.gris} />
             {sC.top.map((s, i) => <Bar key={"c" + s.id} dataKey={"c_" + s.id} stackId="p" name={`${s.nombre} (crece)`} fill={[INF.navy, INF.morado, INF.dorado, INF.serie[6]][i % 4]} />)}
             <Bar dataKey="c_otros" stackId="p" name="Otro crecimiento" fill={INF.serie[9]}>
-              <LabelList dataKey="total" position="top" formatter={(v) => fmM(v)} style={{ fill: INF.tx, fontSize: 11, fontWeight: 600 }} />
+              <LabelList dataKey="total" position="top" formatter={(v) => fmM(v)} style={{ fill: INF.tx, fontSize: 12, fontWeight: 600 }} />
             </Bar>
             <Line type="monotone" dataKey="sale" name="Lo que sale" stroke={INF.teja} strokeDasharray="4 3" strokeWidth={2} dot={{ r: 3, fill: INF.teja }} />
           </ComposedChart>
@@ -270,10 +270,10 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
               <YAxis {...eje} tickFormatter={fmEje} width={68} />
               <Tooltip content={<ChartTooltip formatter={tip} />} />
               <Bar dataKey="otros" stackId="v" name="Otros activos netos" fill={INF.gris} />
-              {sV.top.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sV.top.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 11 }} />}</Bar>)}
+              {sV.top.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sV.top.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 12 }} />}</Bar>)}
             </BarChart>
           </ResponsiveContainer></div></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 11, color: INF.tx2 }}>{[{ nombre: "Otros activos netos", color: INF.gris }, ...sV.top].map((s) => <span key={s.nombre}><span style={{ display: "inline-block", width: 8, height: 8, background: s.color, marginRight: 4 }} />{s.nombre}</span>)}</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2 }}>{[{ nombre: "Otros activos netos", color: INF.gris }, ...sV.top].map((s) => <span key={s.nombre}><span style={{ display: "inline-block", width: 8, height: 8, background: s.color, marginRight: 4 }} />{s.nombre}</span>)}</div>
         </div>
         <div style={card}>
           <h3 style={h3}>Cada inversión, año por año</h3>
@@ -302,10 +302,10 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
             <XAxis dataKey="anio" {...eje} />
             <YAxis {...eje} tickFormatter={(v) => `${Math.round(v)}%`} width={44} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmPct(v, 1)} />} />
-            <ReferenceLine y={inflacionPct} stroke={INF.tx2} strokeDasharray="5 4" label={{ value: `Inflación ${fmPct(inflacionPct, 1)}`, position: "right", fill: INF.tx2, fontSize: 11 }} />
+            <ReferenceLine y={inflacionPct} stroke={INF.tx2} strokeDasharray="5 4" label={{ value: `Inflación ${fmPct(inflacionPct, 1)}`, position: "right", fill: INF.tx2, fontSize: 12 }} />
             <Bar dataKey="g" name="Crece">
               {gana.map((x, i) => <Cell key={i} fill={x.g >= inflacionPct ? INF.oliva : INF.teja} />)}
-              <LabelList dataKey="realTxt" position="top" style={{ fill: INF.tx2, fontSize: 11 }} />
+              <LabelList dataKey="realTxt" position="top" style={{ fill: INF.tx2, fontSize: 12 }} />
             </Bar>
           </BarChart>
         </ResponsiveContainer></div></div>

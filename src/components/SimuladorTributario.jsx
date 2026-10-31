@@ -12,7 +12,7 @@ import { track } from "../lib/analytics.js";
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
   border: "rgba(var(--fp-ink),0.06)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", red: "#ef4444", blue: "#3b82f6", purple: "#3b82f6",
+  green: "#00c805", red: "#ff5000", blue: "#3b82f6", purple: "#3b82f6",
   orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const fm = (v) => {
@@ -35,9 +35,9 @@ const CAT_LABELS = { "Salario": "💼", "Honorarios": "📋", "Arriendo": "🏠"
 const Cd = ({ children, style: s }) => <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>;
 const Kpi = ({ label, value, sub, color, big }) => (
   <div style={{ padding: big ? "20px 16px" : "14px 16px", textAlign: "center" }}>
-    <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600 }}>{label}</div>
-    <div style={{ fontSize: big ? 28 : 20, fontWeight: 800, color: color || T.txt, marginTop: 4, fontFamily: "monospace" }}>{value}</div>
-    {sub && <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>{sub}</div>}
+    <div style={{ fontSize: 11, color: T.txt3, letterSpacing: "0.08em", fontWeight: 600 }}>{label}</div>
+    <div style={{ fontSize: big ? 28 : 20, fontWeight: 700, color: color || T.txt, marginTop: 4, fontFamily: "monospace" }}>{value}</div>
+    {sub && <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>{sub}</div>}
   </div>
 );
 
@@ -124,7 +124,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
     <Cd style={{ padding: 24, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <span style={{ fontSize: 20 }}>{isJ ? "🏢" : "👤"}</span>
-        <div><div style={{ fontSize: 16, fontWeight: 700 }}>{owner.name}</div><div style={{ fontSize: 11, color: T.txt3 }}>{isJ ? "Persona Jurídica" : "Persona Natural"}</div></div>
+        <div><div style={{ fontSize: 16, fontWeight: 700 }}>{owner.name}</div><div style={{ fontSize: 12, color: T.txt3 }}>{isJ ? "Persona Jurídica" : "Persona Natural"}</div></div>
       </div>
       <div style={{ padding: 20, textAlign: "center", color: T.txt3, fontSize: 13 }}>No hay ingresos asignados. Ve a <strong style={{ color: T.blue }}>💰 Ingresos</strong> y asigna <strong>{owner.name}</strong> como propietario.</div>
     </Cd>
@@ -149,9 +149,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           <span style={{ fontSize: 24 }}>{isJ ? "🏢" : "👤"}</span>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{owner.name}</div>
-            <div style={{ fontSize: 11, color: T.txt3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+            <div style={{ fontSize: 12, color: T.txt3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               <span>{isJ ? "Persona Jurídica" : "Persona Natural"}</span>
-              <span style={{ background: "rgba(59,130,246,0.12)", color: T.blue, padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 600 }}>
+              <span style={{ background: "rgba(59,130,246,0.12)", color: T.blue, padding: "2px 8px", borderRadius: 999, fontSize: 11, fontWeight: 600 }}>
                 {calc.regimen === "ordinario" ? (isJ ? "Ordinario 35%" : "Cédula General") :
                  calc.regimen === "simple" ? "Simple (RST)" :
                  calc.regimen === "zona_franca" ? "Zona Franca 20%" :
@@ -162,16 +162,16 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           </div>
         </div>
         {ahorro > 100000 && (
-          <div style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, padding: "8px 16px" }}>
-            <div style={{ fontSize: 10, color: T.green, fontWeight: 600 }}>AHORRO POTENCIAL</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: T.green }}>{fm(ahorro)}/año</div>
+          <div style={{ background: "rgba(0,200,5,0.08)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 10, padding: "8px 16px" }}>
+            <div style={{ fontSize: 11, color: T.green, fontWeight: 600 }}>AHORRO POTENCIAL</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: T.green }}>{fm(ahorro)}/año</div>
           </div>
         )}
       </div>
 
       {/* Banner de régimen */}
       {calc.regimenNota && (
-        <div style={{ padding: "10px 20px", borderBottom: "1px solid " + T.border, background: "rgba(59,130,246,0.04)", fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ padding: "10px 20px", borderBottom: "1px solid " + T.border, background: "rgba(59,130,246,0.04)", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           <span style={{ color: T.blue, fontWeight: 600 }}>ℹ️ {calc.regimenNota}</span>
         </div>
       )}
@@ -184,23 +184,23 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         const { saldoAPagar, saldoAFavor } = saldoResumen(calc, isJ);
         if (impBrutoVal <= 0) return null;
         return (
-          <div style={{ padding: mb ? "12px 16px" : "14px 24px", borderBottom: "1px solid " + T.border, background: "rgba(34,197,94,0.02)" }}>
+          <div style={{ padding: mb ? "12px 16px" : "14px 24px", borderBottom: "1px solid " + T.border, background: "rgba(0,200,5,0.02)" }}>
             <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: mb ? 8 : 12 }}>
               <div>
-                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Total bruto / año</div>
-                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: T.txt, fontFamily: "monospace" }}>{fm(impBrutoVal)}</div>
+                <div style={{ fontSize: 11, color: T.txt3, letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Total bruto / año</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 700, color: T.txt, fontFamily: "monospace" }}>{fm(impBrutoVal)}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>(−) Retención estimada</div>
-                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: T.blue, fontFamily: "monospace" }}>{retencionEstimada > 0 ? fm(retencionEstimada) : "$0"}</div>
+                <div style={{ fontSize: 11, color: T.txt3, letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>(−) Retención estimada</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 700, color: T.blue, fontFamily: "monospace" }}>{retencionEstimada > 0 ? fm(retencionEstimada) : "$0"}</div>
               </div>
               <div>
-                <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>{saldoAFavor > 0 ? "(=) Saldo a favor" : "(=) Saldo a pagar"}</div>
-                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 800, color: saldoAPagar > 0 ? T.orange : T.green, fontFamily: "monospace" }}>{saldoAFavor > 0 ? fm(saldoAFavor) : fm(saldoAPagar)}</div>
+                <div style={{ fontSize: 11, color: T.txt3, letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>{saldoAFavor > 0 ? "(=) Saldo a favor" : "(=) Saldo a pagar"}</div>
+                <div style={{ fontSize: mb ? 16 : 18, fontWeight: 700, color: saldoAPagar > 0 ? T.orange : T.green, fontFamily: "monospace" }}>{saldoAFavor > 0 ? fm(saldoAFavor) : fm(saldoAPagar)}</div>
               </div>
             </div>
-            <div style={{ marginTop: 6, fontSize: 9, color: T.txt3 }}>{etiquetaAG(calc)}</div>
-            <div style={{ marginTop: 8, fontSize: 9, color: T.txt3, lineHeight: 1.5, fontStyle: "italic" }}>
+            <div style={{ marginTop: 6, fontSize: 11, color: T.txt3 }}>{etiquetaAG(calc)}</div>
+            <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5, fontStyle: "italic" }}>
               Retención estimada según tarifas legales (Art. 383-401 ET) por tipo de ingreso: salario tabla progresiva Art. 383, honorarios 11% Art. 392, arriendo 3,5% Art. 401, rendimientos/dividendos 7% Art. 392-395. Verifica con tu certificado de retención del año.
             </div>
           </div>
@@ -272,14 +272,14 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               <div style={{ fontSize: 12, fontWeight: 700, color: T.orange, marginBottom: 6 }}>
                 💡 ¿Por qué este impuesto parece alto?
               </div>
-              <div style={{ fontSize: 11, color: T.txt2, marginBottom: 8, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: T.txt2, marginBottom: 8, lineHeight: 1.5 }}>
                 El motor calcula impuesto con la data registrada. Detectamos lo siguiente que puede estar haciéndolo más alto de lo real:
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {diagnos.map((d, i) => (
-                  <div key={i} style={{ padding: "8px 10px", background: "rgba(var(--fp-ink),0.02)", borderRadius: 6, borderLeft: "2px solid " + T.orange, fontSize: 11, lineHeight: 1.5 }}>
+                  <div key={i} style={{ padding: "8px 10px", background: "rgba(var(--fp-ink),0.02)", borderRadius: 6, borderLeft: "2px solid " + T.orange, fontSize: 12, lineHeight: 1.5 }}>
                     <div style={{ color: T.txt, fontWeight: 600 }}>{d.msg}</div>
-                    <div style={{ color: T.txt3, marginTop: 2, fontSize: 10 }}>→ {d.accion}</div>
+                    <div style={{ color: T.txt3, marginTop: 2, fontSize: 11 }}>→ {d.accion}</div>
                   </div>
                 ))}
               </div>
@@ -295,12 +295,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       {/* KPIs: Actual vs Estrategia */}
       <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr auto 1fr", gap: 0 }}>
         {/* Sin Estrategia */}
-        <div style={{ padding: "16px 20px", background: "rgba(239,68,68,0.03)" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.red, textTransform: "uppercase", marginBottom: 12 }}>📋 Situación Actual</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
+        <div style={{ padding: "16px 20px", background: "rgba(255,80,0,0.03)" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.red, marginBottom: 12 }}>📋 Situación Actual</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impActual / 12)}/mes • Tasa: {fmtPctEs((tasaActual || 0), 1)}</div>
 
-          <div style={{ marginTop: 16, fontSize: 11 }}>
+          <div style={{ marginTop: 16, fontSize: 12 }}>
             <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Desglose:</div>
             <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.txt2 }}><span>Ingresos brutos</span><span style={{ fontFamily: "monospace" }}>{fm(calc.ingAnual)}/año</span></div>
             {isJ ? <>
@@ -308,29 +308,29 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               
               {/* Desglose detallado de gastos */}
               {Object.entries(calc.gastosByCat).filter(([,v]) => v.deduc > 0).map(([cat, v]) => (
-                <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                   <span style={{ color: T.green }}>✅ {cat} ({Math.round(v.pct * 100)}%)</span>
                   <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc)}/mes</span>
                 </div>
               ))}
-              {calc.intereses > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+              {calc.intereses > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                 <span style={{ color: T.green }}>✅ Intereses de deudas</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.intereses)}/año</span>
               </div>}
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                 <span style={{ color: T.green }}>✅ GMF 4×1000 (50%)</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.ingAnual * 0.004 * 0.5)}/año</span>
               </div>
-              {calc.deprec > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+              {calc.deprec > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                 <span style={{ color: T.green }}>✅ Depreciación de activos</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deprec)}/año</span>
               </div>}
               
               {/* Gastos NO deducibles */}
               {Object.entries(calc.gastosByCat).filter(([,v]) => v.total > v.deduc).length > 0 && <>
-                <div style={{ fontSize: 10, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles:</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles:</div>
                 {Object.entries(calc.gastosByCat).filter(([,v]) => v.total > v.deduc).map(([cat, v]) => (
-                  <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                  <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                     <span style={{ color: T.txt3 }}>❌ {cat}</span>
                     <span style={{ fontFamily: "monospace", color: T.txt3 }}>{fm(v.total - v.deduc)}/mes</span>
                   </div>
@@ -339,12 +339,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta antes de compensación</span><span style={{ fontFamily: "monospace" }}>{fm(calc.utilidad)}</span></div>
               {calc.perdidasAplicadas > 0 && <>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.green }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.green }}>
                   <span>(-) Pérdidas fiscales compensadas (Art. 147 ET)</span>
                   <span style={{ fontFamily: "monospace" }}>-{fm(calc.perdidasAplicadas)}</span>
                 </div>
-                {calc.perdidasAcumuladas > calc.perdidasAplicadas && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16, marginBottom: 2 }}>Saldo pérdidas para próximo año: {fm(calc.perdidasAcumuladas - calc.perdidasAplicadas)}</div>}
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, fontWeight: 700 }}>
+                {calc.perdidasAcumuladas > calc.perdidasAplicadas && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16, marginBottom: 2 }}>Saldo pérdidas para próximo año: {fm(calc.perdidasAcumuladas - calc.perdidasAplicadas)}</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12, fontWeight: 700 }}>
                   <span>Renta gravable compensada</span>
                   <span style={{ fontFamily: "monospace" }}>{fm(calc.baseGravable)}</span>
                 </div>
@@ -353,37 +353,37 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: Math.min(calc.pctGastos || 0, 100) + "%", background: (calc.pctGastos || 0) >= 50 ? T.green : T.orange, borderRadius: 3 }} />
                 </div>
-                <span style={{ fontSize: 10, color: T.txt3, whiteSpace: "nowrap" }}>Gastos: {fmtPctEs((calc.pctGastos || 0), 0)}</span>
+                <span style={{ fontSize: 11, color: T.txt3, whiteSpace: "nowrap" }}>Gastos: {fmtPctEs((calc.pctGastos || 0), 0)}</span>
               </div>
               {calc.deduccionesAvanzadas > 0 && <>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.purple, fontWeight: 600 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.purple, fontWeight: 600 }}>
                   <span>(-) Deducciones avanzadas (palancas Art. 145 / 158-1 / Ley 361)</span>
                   <span style={{ fontFamily: "monospace" }}>-{fm(calc.deduccionesAvanzadas)}</span>
                 </div>
-                {calc.provisionCartera > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Provisión de cartera (Art. 145 ET): {fm(calc.provisionCartera)}</div>}
-                {calc.cti175Adicional > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• CT&I 75% adicional (Art. 158-1 ET): {fm(calc.cti175Adicional)} <span style={{ color: T.txt3 }}>(sobre inversión {fm(calc.inversionCTI)})</span></div>}
-                {calc.discapacidadAdicional > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Discapacidad 100% adicional (Ley 361/97 Art. 31): {fm(calc.discapacidadAdicional)} <span style={{ color: T.txt3 }}>(sobre nómina {fm(calc.salariosDiscapacidad)})</span></div>}
+                {calc.provisionCartera > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Provisión de cartera (Art. 145 ET): {fm(calc.provisionCartera)}</div>}
+                {calc.cti175Adicional > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• CT&I 75% adicional (Art. 158-1 ET): {fm(calc.cti175Adicional)} <span style={{ color: T.txt3 }}>(sobre inversión {fm(calc.inversionCTI)})</span></div>}
+                {calc.discapacidadAdicional > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Discapacidad 100% adicional (Ley 361/97 Art. 31): {fm(calc.discapacidadAdicional)} <span style={{ color: T.txt3 }}>(sobre nómina {fm(calc.salariosDiscapacidad)})</span></div>}
               </>}
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, fontWeight: 600, borderTop: "1px solid " + T.border, marginTop: 4 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12, fontWeight: 600, borderTop: "1px solid " + T.border, marginTop: 4 }}>
                 <span>Impuesto bruto ({fmtPctEs((calc.tarifa * 100), 0)})</span>
                 <span style={{ fontFamily: "monospace" }}>{fm(calc.impBruto)}</span>
               </div>
-              {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Descuento 50% ICA (Art. 115 ET)</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
+              {calc.descuentoICA > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.blue }}><span>(-) Descuento 50% ICA (Art. 115 ET)</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentoICA)}</span></div>}
               {calc.descuentosAplicados > 0 && <>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}>
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.blue }}>
                   <span>(-) Descuentos tributarios (Art. 256-259 ET)</span>
                   <span style={{ fontFamily: "monospace" }}>-{fm(calc.descuentosAplicados)}</span>
                 </div>
                 {calc.descuentosDesglose && <>
-                  {calc.descuentosDesglose.cti > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• CT&I (Art. 158-1): {fm(calc.descuentosDesglose.cti)}</div>}
-                  {calc.descuentosDesglose.empleo > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Empleo 1ra vez (Art. 108-5): {fm(calc.descuentosDesglose.empleo)}</div>}
-                  {calc.descuentosDesglose.exterior > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Impuestos exterior (Art. 254): {fm(calc.descuentosDesglose.exterior)}</div>}
-                  {calc.descuentosDesglose.donaciones > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Donaciones 25% (Art. 257): {fm(calc.descuentosDesglose.donaciones)}</div>}
-                  {calc.descuentosDesglose.otros > 0 && <div style={{ fontSize: 9, color: T.txt3, paddingLeft: 16 }}>• Otros descuentos: {fm(calc.descuentosDesglose.otros)}</div>}
+                  {calc.descuentosDesglose.cti > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• CT&I (Art. 158-1): {fm(calc.descuentosDesglose.cti)}</div>}
+                  {calc.descuentosDesglose.empleo > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Empleo 1ra vez (Art. 108-5): {fm(calc.descuentosDesglose.empleo)}</div>}
+                  {calc.descuentosDesglose.exterior > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Impuestos exterior (Art. 254): {fm(calc.descuentosDesglose.exterior)}</div>}
+                  {calc.descuentosDesglose.donaciones > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Donaciones 25% (Art. 257): {fm(calc.descuentosDesglose.donaciones)}</div>}
+                  {calc.descuentosDesglose.otros > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Otros descuentos: {fm(calc.descuentosDesglose.otros)}</div>}
                 </>}
-                {calc.descuentosSolicitados > calc.descuentosAplicados && <div style={{ fontSize: 9, color: T.orange, paddingLeft: 16 }}>⚠ Tope 25% aplicado (Art. 259 ET): {fm(calc.descuentosSolicitados - calc.descuentosAplicados)} exceden el límite y no se aplicaron este año.</div>}
+                {calc.descuentosSolicitados > calc.descuentosAplicados && <div style={{ fontSize: 11, color: T.orange, paddingLeft: 16 }}>⚠ Tope 25% aplicado (Art. 259 ET): {fm(calc.descuentosSolicitados - calc.descuentosAplicados)} exceden el límite y no se aplicaron este año.</div>}
               </>}
-              {calc.retefuenteCalc > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.retefuenteCalc)}</span></div>}
+              {calc.retefuenteCalc > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.retefuenteCalc)}</span></div>}
             </> : <>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.blue }}><span>(-) Pensión obligatoria (Art. 55 ET)</span><span style={{ fontFamily: "monospace" }}>{fm(calc.noConst)}</span></div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "3px 0", color: T.green }}><span>(-) Renta exenta 25%</span><span style={{ fontFamily: "monospace" }}>{fm(calc.exenta25)}</span></div>
@@ -391,25 +391,25 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               
               {/* Desglose detallado */}
               {calc.gastosDeducNat > 0 && Object.entries(calc.gastosByCat).filter(([,v]) => v.deduc > 0).map(([cat, v]) => (
-                <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                   <span style={{ color: T.green }}>✅ {cat} ({Math.round(v.pct * 100)}%){v.pct > 0 && v.deduc < v.total ? " — máx aplicado" : ""}</span>
                   <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc * 12)}/año</span>
                 </div>
               ))}
-              {calc.deducDep > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+              {calc.deducDep > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                 <span style={{ color: T.green }}>✅ Dependientes (10% ingreso)</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deducDep)}/año</span>
               </div>}
-              {calc.deducViv > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+              {calc.deducViv > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                 <span style={{ color: T.green }}>✅ Intereses vivienda</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deducViv)}/año</span>
               </div>}
               
               {/* Gastos NO deducibles para natural */}
               {Object.entries(calc.gastosByCat).filter(([cat]) => !(DEDUC_NAT[cat])).length > 0 && <>
-                <div style={{ fontSize: 10, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles (persona natural):</div>
+                <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles (persona natural):</div>
                 {Object.entries(calc.gastosByCat).filter(([cat]) => !(DEDUC_NAT[cat]) && calc.gastosByCat[cat].total > 0).slice(0, 5).map(([cat, v]) => (
-                  <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 10 }}>
+                  <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
                     <span style={{ color: T.txt3 }}>❌ {cat}</span>
                     <span style={{ fontFamily: "monospace", color: T.txt3 }}>{fm(v.total)}/mes</span>
                   </div>
@@ -418,12 +418,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700, borderTop: "1px solid " + T.border, marginTop: 6 }}><span>Renta gravable</span><span style={{ fontFamily: "monospace" }}>{fm(calc.rentaSin)}</span></div>
               {calc.componenteInflacExcluido > 0 && (
-                <div style={{ marginTop: 4, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 6, fontSize: 10, lineHeight: 1.5 }}>
+                <div style={{ marginTop: 4, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 6, fontSize: 11, lineHeight: 1.5 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                     <span style={{ color: T.blue, fontWeight: 600 }}>📉 Componente inflacionario {fmtPctEs(calc.pctComponenteInflac, 2)} (Art. 38-39 ET)</span>
                     <span style={{ fontFamily: "monospace", color: T.blue, fontWeight: 600 }}>−{fm(calc.componenteInflacExcluido)}</span>
                   </div>
-                  <div style={{ color: T.txt3, fontSize: 9, lineHeight: 1.5 }}>
+                  <div style={{ color: T.txt3, fontSize: 11, lineHeight: 1.5 }}>
                     Parte de tus rendimientos financieros (intereses bancarios + FIC) no constituye renta ni ganancia ocasional. Decreto 0771/2025 — año gravable 2024. Aplica a persona natural no obligada a llevar contabilidad. Ajustable en Configuración.
                   </div>
                 </div>
@@ -432,9 +432,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <div style={{ flex: 1, height: 6, background: T.bg3, borderRadius: 3, overflow: "hidden" }}>
                   <div style={{ height: "100%", width: Math.min(calc.pctUsado || 0, 100) + "%", background: (calc.pctUsado || 0) >= 90 ? T.green : T.orange, borderRadius: 3 }} />
                 </div>
-                <span style={{ fontSize: 10, color: T.txt3, whiteSpace: "nowrap" }}>Tope 40%: {fmtPctEs((calc.pctUsado || 0), 0)}</span>
+                <span style={{ fontSize: 11, color: T.txt3, whiteSpace: "nowrap" }}>Tope 40%: {fmtPctEs((calc.pctUsado || 0), 0)}</span>
               </div>
-              {calc.retefuenteNat > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 10, color: T.blue, marginTop: 4 }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.retefuenteNat)}</span></div>}
+              {calc.retefuenteNat > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.blue, marginTop: 4 }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.retefuenteNat)}</span></div>}
             </>}
           </div>
         </div>
@@ -443,9 +443,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         {!mb && <div style={{ display: "flex", alignItems: "center", padding: "0 12px", fontSize: 24, color: T.green }}>→</div>}
 
         {/* Con Estrategia */}
-        <div style={{ padding: "16px 20px", background: "rgba(34,197,94,0.03)" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: "uppercase", marginBottom: 12 }}>🎯 Con Estrategia</div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>{fm(impOptimo)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
+        <div style={{ padding: "16px 20px", background: "rgba(0,200,5,0.03)" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginBottom: 12 }}>🎯 Con Estrategia</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(impOptimo)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impOptimo / 12)}/mes • Tasa: {fmtPctEs((tasaOptima || 0), 1)}</div>
 
           {/* Diagnóstico cuando no hay diferencia entre actual y optimizado */}
@@ -475,10 +475,10 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               }
 
               return (
-                <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, fontSize: 11, lineHeight: 1.55 }}>
+                <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, fontSize: 12, lineHeight: 1.55 }}>
                   <div style={{ color: "#3b82f6", fontWeight: 700, marginBottom: 4 }}>💡 ¿Por qué no hay diferencia?</div>
                   <div style={{ color: T.txt2, fontWeight: 600, marginBottom: 4 }}>{titulo}</div>
-                  <div style={{ color: T.txt3, fontSize: 10 }}>{texto}</div>
+                  <div style={{ color: T.txt3, fontSize: 11 }}>{texto}</div>
                 </div>
               );
             } catch (e) {
@@ -487,7 +487,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             }
           })()}
 
-          <div style={{ marginTop: 16, fontSize: 11 }}>
+          <div style={{ marginTop: 16, fontSize: 12 }}>
             <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Deducciones automáticas aplicadas:</div>
             {isJ ? <>
               <div style={{ padding: "4px 0", color: T.green }}>✅ Gastos operativos registrados</div>
@@ -496,7 +496,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               <div style={{ padding: "4px 0", color: T.green }}>✅ GMF 4×1000 (50% deducible)</div>
               {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
               <div style={{ padding: "4px 0", color: T.blue }}>✅ Retención en la fuente descontada</div>
-              <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+              <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 6, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
                 ℹ️ <strong>El motor ahora aplica 3 palancas avanzadas si las cargas:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mira las recomendaciones abajo para ver cuáles aplican a tu empresa.
               </div>
             </> : <>
@@ -517,7 +517,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             <ResponsiveContainer width="100%" height={50}>
               <BarChart data={barData} layout="vertical" margin={{ left: 0, right: 0, top: 0, bottom: 0 }}>
                 <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" width={100} tick={{ fill: T.txt3, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" width={100} tick={{ fill: T.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={16}>
                   {barData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                 </Bar>
@@ -525,8 +525,8 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             </ResponsiveContainer>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 10, color: T.txt3 }}>{ahorro > 100000 ? "Reducción" : "Estado"}</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + fmtPctEs(impActual > 0 ? (ahorro / impActual * 100) : 0, 0) : "✅ Sin ajuste adicional"}</div>
+            <div style={{ fontSize: 11, color: T.txt3 }}>{ahorro > 100000 ? "Reducción" : "Estado"}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + fmtPctEs(impActual > 0 ? (ahorro / impActual * 100) : 0, 0) : "✅ Sin ajuste adicional"}</div>
           </div>
         </div>
       )}
@@ -536,9 +536,9 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         <div style={{ padding: "14px 20px", borderTop: "1px solid " + T.border, background: "rgba(59,130,246,0.04)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: T.blue }}>📋 Retención en la fuente estimada</span>
-            <span style={{ fontSize: 16, fontWeight: 800, color: T.blue, fontFamily: "monospace" }}>{fm(isJ ? calc.retefuenteCalc : calc.retefuenteNat)}/año</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: T.blue, fontFamily: "monospace" }}>{fm(isJ ? calc.retefuenteCalc : calc.retefuenteNat)}/año</span>
           </div>
-          <div style={{ fontSize: 10, color: T.txt3, lineHeight: 1.5 }}>Calculada automáticamente según tus ingresos: arriendos (3.5%), rendimientos (7%), honorarios (11%), salario (tabla Art. 383). Este valor se descuenta del impuesto. Verifica con tus certificados reales.</div>
+          <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>Calculada automáticamente según tus ingresos: arriendos (3.5%), rendimientos (7%), honorarios (11%), salario (tabla Art. 383). Este valor se descuenta del impuesto. Verifica con tus certificados reales.</div>
           {impActual <= 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>💰 Saldo a favor estimado: {fm(Math.abs(impActual))}</div>}
         </div>
       )}
@@ -550,7 +550,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
             <span style={{ fontSize: 18, flexShrink: 0 }}>⚖️</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginBottom: 4 }}>Qué modela el simulador — y qué no</div>
-              <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
                 <strong style={{ color: T.green }}>Sí se aplica automáticamente:</strong> tarifa del 35% sobre utilidad (Art. 240 ET), deducción de intereses y gastos operativos registrados, depreciación según tipo de activo, GMF 4×1000 al 50% (Art. 115 ET), descuento del 50% del ICA (Art. 115 ET), retención en la fuente por tipo de ingreso, pérdidas fiscales acumuladas (Art. 147 ET), y descuentos manuales (CT&I, empleo 1ra vez, exterior, donaciones).
                 <br /><br />
                 <strong style={{ color: T.purple }}>Palancas avanzadas si las cargas manualmente:</strong> provisión de cartera (Art. 145 ET), CT&I deducción 175% (Art. 158-1 ET), salarios a personas con discapacidad 200% (Ley 361/97 Art. 31). Estas son las palancas que tu contador suele aplicar — el motor ahora las acepta como input para que tu cálculo coincida con el suyo.
@@ -573,18 +573,18 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               <span style={{ fontSize: 18, flexShrink: 0 }}>{r.icon}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{r.title}</div>
-                <div style={{ fontSize: 11, color: T.txt2, marginTop: 2, lineHeight: 1.5 }}>{r.desc}</div>
-                {r.impact > 100000 && <div style={{ fontSize: 11, fontWeight: 700, color: T.green, marginTop: 4 }}>{r.impactTexto ? <>{fm(r.impact)} {r.impactTexto}</> : <>Ahorro estimado: {fm(r.impact)}/año ({fm(r.impact / 12)}/mes)</>}</div>}
-                {r.tope && <div style={{ fontSize: 10, color: T.txt2, marginTop: 4 }}>{r.tope}</div>}
-                {r.etiqueta && <div style={{ fontSize: 9, color: T.txt3, marginTop: 4 }}>{r.etiqueta}</div>}
-                {r.nota && <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{r.nota}</div>}
+                <div style={{ fontSize: 12, color: T.txt2, marginTop: 2, lineHeight: 1.5 }}>{r.desc}</div>
+                {r.impact > 100000 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 4 }}>{r.impactTexto ? <>{fm(r.impact)} {r.impactTexto}</> : <>Ahorro estimado: {fm(r.impact)}/año ({fm(r.impact / 12)}/mes)</>}</div>}
+                {r.tope && <div style={{ fontSize: 11, color: T.txt2, marginTop: 4 }}>{r.tope}</div>}
+                {r.etiqueta && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>{r.etiqueta}</div>}
+                {r.nota && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{r.nota}</div>}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <div style={{ padding: "8px 20px", borderTop: "1px solid " + T.border, fontSize: 9, color: T.txt3, textAlign: "center" }}>
+      <div style={{ padding: "8px 20px", borderTop: "1px solid " + T.border, fontSize: 11, color: T.txt3, textAlign: "center" }}>
         Estimación basada en datos registrados • Normativa DIAN vigente • Consulta tu contador para la declaración oficial
       </div>
     </Cd>
@@ -648,7 +648,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: mb ? 20 : 26, fontWeight: 800, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria</h1>
+        <h1 style={{ fontSize: mb ? 20 : 26, fontWeight: 700, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria</h1>
         <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Colombia 2026 • Estatuto Tributario • UVT: {fm(UVT)} • Ley 2277/2022</p>
       </div>
 
@@ -766,17 +766,17 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
           const esGrupo = w._grupo && w._count > 1;
 
           return (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(var(--fp-ink),0.02)", borderRadius: 8, fontSize: 11, borderLeft: "2px solid " + color }}>
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(var(--fp-ink),0.02)", borderRadius: 8, fontSize: 12, borderLeft: "2px solid " + color }}>
               <span style={{ fontSize: 14, marginTop: 1 }}>{icon}</span>
               <div style={{ flex: 1, lineHeight: 1.5, minWidth: 0 }}>
                 <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap", marginBottom: 2 }}>
                   <span style={{ color: T.txt, fontWeight: 700, fontSize: 12 }}>{itemLbl}</span>
-                  {monto && <span style={{ color: T.txt3, fontSize: 10 }}>· {monto}</span>}
-                  {w.itemOwnerName && !esGrupo && <span style={{ color: T.txt3, fontSize: 10 }}>· {w.itemOwnerName}</span>}
+                  {monto && <span style={{ color: T.txt3, fontSize: 11 }}>· {monto}</span>}
+                  {w.itemOwnerName && !esGrupo && <span style={{ color: T.txt3, fontSize: 11 }}>· {w.itemOwnerName}</span>}
                 </div>
-                <div style={{ color: color, fontSize: 11 }}>{w.message}</div>
+                <div style={{ color: color, fontSize: 12 }}>{w.message}</div>
                 {esGrupo && (
-                  <details style={{ marginTop: 4, fontSize: 10, color: T.txt3 }}>
+                  <details style={{ marginTop: 4, fontSize: 11, color: T.txt3 }}>
                     <summary style={{ cursor: "pointer", userSelect: "none" }}>Ver los {w._count} items</summary>
                     <ul style={{ margin: "4px 0 0 14px", padding: 0, lineHeight: 1.6 }}>
                       {w._grupo.map((sub, si) => (
@@ -789,17 +789,17 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
                     </ul>
                   </details>
                 )}
-                {w.accionSugerida && <div style={{ color: T.txt3, marginTop: 3, fontSize: 10 }}>→ {w.accionSugerida}</div>}
-                {w.articuloET && w.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 10, marginTop: 2, fontStyle: "italic" }}>{w.articuloET}</div>}
+                {w.accionSugerida && <div style={{ color: T.txt3, marginTop: 3, fontSize: 11 }}>→ {w.accionSugerida}</div>}
+                {w.articuloET && w.articuloET !== "—" && <div style={{ color: T.txt3, fontSize: 11, marginTop: 2, fontStyle: "italic" }}>{w.articuloET}</div>}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
                 {canApprove && (
-                  <button onClick={() => esGrupo ? aprobarGrupo(w._grupo) : aprobar(w)} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }} title={esGrupo ? `Aprobar ${w._count} items` : `Aprobar clasificación sugerida: ${w.fiscalCodeSugerido}`}>
+                  <button onClick={() => esGrupo ? aprobarGrupo(w._grupo) : aprobar(w)} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }} title={esGrupo ? `Aprobar ${w._count} items` : `Aprobar clasificación sugerida: ${w.fiscalCodeSugerido}`}>
                     ✓ Aprobar{esGrupo ? ` (${w._count})` : ""}
                   </button>
                 )}
                 {onNavigate && target && (
-                  <button onClick={() => onNavigate(target)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt2, padding: "4px 10px", borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  <button onClick={() => onNavigate(target)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt2, padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                     ✏️ {label}
                   </button>
                 )}
@@ -816,12 +816,12 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
                 <button onClick={() => {
                   if (!confirm(`Aprobar la clasificación sugerida para ${warns.filter(w => w.fiscalCodeSugerido).length} ítem(s)?\n\nSe persiste el fiscalCode inferido en cada item. Puedes revertir editando el item manualmente.`)) return;
                   aprobarGrupo(warns.filter(w => w.fiscalCodeSugerido));
-                }} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "5px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                }} style={{ background: T.green + "22", border: "1px solid " + T.green, color: T.green, padding: "5px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                   ✓ Aprobar todos ({warns.filter(w => w.fiscalCodeSugerido).length})
                 </button>
               )}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginBottom: 12, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginBottom: 12, lineHeight: 1.6 }}>
               {(() => {
                 const grupErrs = agruparWarnings(errs);
                 const grupWarnings = agruparWarnings(warnings);
@@ -844,10 +844,10 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
 
       {/* ═══ RESUMEN CONSOLIDADO ═══ */}
       {consolidado.items.length > 0 && (
-        <Cd style={{ marginBottom: 20, background: "linear-gradient(135deg, rgba(245,158,11,0.04), rgba(34,197,94,0.02))" }}>
+        <Cd style={{ marginBottom: 20, background: "linear-gradient(135deg, rgba(245,158,11,0.04), rgba(0,200,5,0.02))" }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid " + T.border }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>📊 Panorama Fiscal Consolidado</div>
-            <div style={{ fontSize: 11, color: T.txt3 }}>Todos los propietarios combinados</div>
+            <div style={{ fontSize: 12, color: T.txt3 }}>Todos los propietarios combinados</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 0 }}>
             <Kpi label="Ingresos totales" value={fm(consolidado.totalIngreso)} sub="/año" color={T.txt} />
@@ -868,7 +868,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
               ))}
             </div>
           </div>
-          <div style={{ padding: "10px 24px", borderTop: "1px solid " + T.border, fontSize: 11, color: T.txt3 }}>
+          <div style={{ padding: "10px 24px", borderTop: "1px solid " + T.border, fontSize: 12, color: T.txt3 }}>
             Tasa efectiva actual: <strong style={{ color: T.red }}>{fmtPctEs(consolidado.totalIngreso > 0 ? (consolidado.totalImpActual / consolidado.totalIngreso * 100) : 0, 1)}</strong> → Con estrategia: <strong style={{ color: T.green }}>{consolidado.totalIngreso > 0 ? (consolidado.totalImpOptimo / consolidado.totalIngreso * 100).toFixed(1) : 0}%</strong>
           </div>
         </Cd>
@@ -877,7 +877,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
       {/* ═══ CALENDARIO TRIBUTARIO ═══ */}
       <Cd style={{ marginBottom: 20, padding: "16px 20px" }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: T.cyan, marginBottom: 10 }}>📅 Fechas clave para revisar</div>
-        <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: 10, fontSize: 11 }}>
+        <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: 10, fontSize: 12 }}>
           <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px" }}>
             <div style={{ fontWeight: 700, color: T.orange }}>Antes de diciembre 31</div>
             <div style={{ color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>Aportes a pensión voluntaria y AFC. Donaciones deducibles. Compras de activos depreciables.</div>
@@ -901,7 +901,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         <OwnerPlan key={od.owner.id} owner={od.owner} ingresos={od.ing} gastos={od.gas} inv={od.inv} deu={od.deu} trm={trm} isJ={od.owner.type === "juridica"} mb={mb} componenteInflacionarioPct={user?.componenteInflacionarioPct != null ? user.componenteInflacionarioPct : 50.88} />
       ))}
 
-      <div style={{ fontSize: 10, color: T.txt3, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 11, color: T.txt3, textAlign: "center", marginTop: 16, lineHeight: 1.6 }}>
         Estimaciones basadas en la normativa tributaria colombiana vigente. UVT 2026: {fm(UVT)} (Resolución DIAN 000238). No constituye asesoría fiscal profesional.
       </div>
     </div>

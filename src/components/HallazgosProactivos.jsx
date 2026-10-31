@@ -21,7 +21,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
   const buenas = hallazgos?.buenas || [];
   if (!alertas.length && !buenas.length) return null;
 
-  const COLOR = { oportunidad: "#22c55e", riesgo: "#f59e0b", bueno: "#3b82f6" };
+  const COLOR = { oportunidad: "#00c805", riesgo: "#f59e0b", bueno: "#3b82f6" };
 
   const Tarjeta = ({ h, compacta }) => {
     const c = COLOR[h.tono] || T.tx2;
@@ -41,10 +41,10 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
       >
         {/* La cifra manda: es lo primero que el ojo agarra */}
         <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: compacta ? 24 : 30, fontWeight: 800, color: c, lineHeight: 1 }}>
+          <span style={{ fontSize: compacta ? 24 : 30, fontWeight: 700, color: c, lineHeight: 1 }}>
             {h.metrica ?? "\u2022"}
           </span>
-          <span style={{ fontSize: 11, color: T.tx3, fontWeight: 600 }}>{h.unidad}</span>
+          <span style={{ fontSize: 12, color: T.tx3, fontWeight: 600 }}>{h.unidad}</span>
         </div>
 
         <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, marginTop: 7, lineHeight: 1.3 }}>
@@ -54,7 +54,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
         {abierto && (
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 12, color: T.tx2, lineHeight: 1.55 }}>{h.detalle}</div>
-            <div style={{ fontSize: 11, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
               <strong style={{ color: T.tx2 }}>De dónde sale:</strong> {h.base}
             </div>
             <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
@@ -85,17 +85,17 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
         <span style={{ fontSize: 16 }}>&#129302;</span>
-        <div style={{ fontSize: 15, fontWeight: 800, color: T.tx }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>
           Tu family office analiz&oacute; tus n&uacute;meros
         </div>
       </div>
-      <div style={{ fontSize: 11, color: T.tx3, marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: T.tx3, marginBottom: 14 }}>
         Toc&aacute; cualquier tarjeta para ver el detalle
       </div>
 
       {alertas.length > 0 && (
         <>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.tx3, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.tx3, letterSpacing: 1, marginBottom: 8 }}>
             Para mirar
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, marginBottom: buenas.length ? 16 : 0 }}>
@@ -106,7 +106,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
 
       {buenas.length > 0 && (
         <>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.tx3, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.tx3, letterSpacing: 1, marginBottom: 8 }}>
             Vas bien ac&aacute;
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>

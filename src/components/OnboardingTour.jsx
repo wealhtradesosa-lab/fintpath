@@ -36,7 +36,7 @@ const T = {
   txt: "var(--fp-txt)",
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
-  green: "#22c55e",
+  green: "#00c805",
   blue: "#3b82f6",
   purple: "#3b82f6",
 };
@@ -115,12 +115,11 @@ function PathCard({ icon: Icon, iconColor, title, description, onClick, recommen
             right: 14,
             background: T.green,
             color: "#000",
-            fontSize: 10,
-            fontWeight: 800,
+            fontSize: 11,
+            fontWeight: 700,
             padding: "3px 10px",
             borderRadius: 999,
             letterSpacing: 0.5,
-            textTransform: "uppercase",
           }}
         >
           Recomendado
@@ -276,11 +275,11 @@ export default function OnboardingTour({
             plataforma, o simplemente llenas cada dato manualmente." */}
         <div style={{ textAlign: "center" }}>
           {isPioneros && (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.3)", padding: "6px 14px", borderRadius: 999, fontSize: 11, fontWeight: 700, color: T.green, marginBottom: 20, letterSpacing: 0.5, textTransform: "uppercase" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,200,5,0.1)", border: "1px solid rgba(0,200,5,0.3)", padding: "6px 14px", borderRadius: 999, fontSize: 12, fontWeight: 700, color: T.green, marginBottom: 20, letterSpacing: 0.5 }}>
               <IconSparkles size={14} color={T.green} /> Acceso Pioneros 2026
             </div>
           )}
-          <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(26px, 6vw, 34px)", fontWeight: 800, lineHeight: 1.1, margin: "0 0 10px 0", letterSpacing: -1, color: T.txt }}>
+          <h1 style={{ fontFamily: FONT_DISPLAY, fontSize: "clamp(26px, 6vw, 34px)", fontWeight: 700, lineHeight: 1.1, margin: "0 0 10px 0", letterSpacing: -1, color: T.txt }}>
             {greeting} Esto es muy fácil
           </h1>
           <p style={{ fontSize: 15, color: T.txt2, lineHeight: 1.6, maxWidth: 480, margin: "0 auto 20px" }}>

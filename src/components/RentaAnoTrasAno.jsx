@@ -149,7 +149,7 @@ export default function RentaAnoTrasAno({ declaraciones = [], detalleActual = nu
                 <div style={{ width: `${pctRet}%`, background: C.accent }} />
                 <div style={{ width: `${pctSaldo}%`, background: C.warn }} />
               </div>
-              <div style={{ ...F.caption, fontSize: 10, marginTop: 3, display: "flex", gap: 10 }}>
+              <div style={{ ...F.caption, fontSize: 11, marginTop: 3, display: "flex", gap: 10 }}>
                 <span><span style={{ display: "inline-block", width: 8, height: 8, background: C.accent, borderRadius: 3, marginRight: 4 }} />ya retenido</span>
                 <span><span style={{ display: "inline-block", width: 8, height: 8, background: C.warn, borderRadius: 3, marginRight: 4 }} />faltó pagar</span>
                 <span><span style={{ display: "inline-block", width: 8, height: 8, background: Cα.ok15, borderRadius: 3, marginRight: 4 }} />te quedó</span>
@@ -201,7 +201,7 @@ export default function RentaAnoTrasAno({ declaraciones = [], detalleActual = nu
                     if (i === 0) return <td key={f.ano} style={{ ...F.caption, textAlign: "right", padding: "5px 8px" }}>—</td>;
                     const prev = filas[i - 1], d = f.impuesto - prev.impuesto, dp = f.tasa - prev.tasa;
                     return (
-                      <td key={f.ano} style={{ ...F.mono, fontSize: 11, textAlign: "right", padding: "5px 8px", color: Math.abs(d) < 1 ? C.subtle : d < 0 ? C.ok : C.danger, whiteSpace: "nowrap" }}>
+                      <td key={f.ano} style={{ ...F.mono, fontSize: 12, textAlign: "right", padding: "5px 8px", color: Math.abs(d) < 1 ? C.subtle : d < 0 ? C.ok : C.danger, whiteSpace: "nowrap" }}>
                         {Math.abs(d) < 1 ? "=" : `${d < 0 ? "−" : "+"}${fmC(Math.abs(d))} · ${dp < 0 ? "−" : "+"}${Math.abs(dp).toFixed(1)} pts`}
                       </td>
                     );

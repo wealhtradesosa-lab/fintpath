@@ -7,9 +7,9 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
-  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8", red: "#ef4444",
-  grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8", red: "#ff5000",
+  grad: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
 };
 
 export default function LandingPage({ onGetStarted, onLogin }) {
@@ -135,7 +135,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
       {/* ─── FREEDOM LEVELS ─── */}
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Los 5 Niveles de Libertad Financiera</h2>
+          <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 12 }}>Los 5 Niveles de Libertad Financiera</h2>
           <p style={{ fontSize: 16, color: T.txt2 }}>FINPATHIA te muestra exactamente en qué nivel estás y cómo avanzar</p>
         </div>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
@@ -147,7 +147,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             { icon: "👑", name: "Absoluta", desc: "Sin límites", color: T.gold },
           ].map((l, i) => (
             <div key={l.name} style={{ background: T.bg2, border: `1px solid ${l.color}20`, borderRadius: 16, padding: "24px 20px", textAlign: "center", width: 180, position: "relative" }}>
-              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.bg, border: `1px solid ${l.color}30`, borderRadius: 999, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: l.color }}>{i + 1}</div>
+              <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.bg, border: `1px solid ${l.color}30`, borderRadius: 999, width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: l.color }}>{i + 1}</div>
               <div style={{ fontSize: 36, marginBottom: 8 }}>{l.icon}</div>
               <div style={{ fontSize: 15, fontWeight: 700, color: l.color, marginBottom: 4 }}>{l.name}</div>
               <div style={{ fontSize: 12, color: T.txt3 }}>{l.desc}</div>
@@ -164,10 +164,10 @@ export default function LandingPage({ onGetStarted, onLogin }) {
            que no pide nada, y esa contención es parte del mensaje. */}
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ maxWidth: 760, margin: "0 auto", textAlign: "center" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: T.gn, marginBottom: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.14em", color: T.gn, marginBottom: 14 }}>
             Nuestro propósito
           </div>
-          <h2 style={{ fontSize: "clamp(24px, 5vw, 34px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.25, marginBottom: 22 }}>
+          <h2 style={{ fontSize: "clamp(24px, 5vw, 34px)", fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.25, marginBottom: 22 }}>
             El bienestar financiero es un derecho,<br style={{ display: "block" }} /> no un privilegio
           </h2>
           <p style={{ fontSize: 16, lineHeight: 1.75, color: T.txt2, margin: "0 0 18px" }}>
@@ -187,7 +187,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
       {/* ─── TRUST ─── */}
       <Section style={{ padding: "80px 24px" }}>
         <div style={{ textAlign: "center", marginBottom: 40 }}>
-          <h2 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
+          <h2 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 10 }}>Tu privacidad es nuestra prioridad</h2>
           <p style={{ fontSize: 15, color: T.txt2, maxWidth: 480, margin: "0 auto" }}>Esto es lo que hacemos, y lo que no, con tus datos</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, maxWidth: 900, margin: "0 auto" }}>
@@ -198,7 +198,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             { i: "✊", t: "Tú mandas", d: "Exporta, borra o lleva tus datos cuando quieras. Sin contratos." },
           ].map((item) => (
             <div key={item.t} style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 16, padding: "28px 16px", textAlign: "center" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(34,197,94,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 14 }}>{item.i}</div>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(0,200,5,0.08)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 24, marginBottom: 14 }}>{item.i}</div>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6 }}>{item.t}</div>
               <div style={{ fontSize: 13, color: T.txt3, lineHeight: 1.5 }}>{item.d}</div>
             </div>
@@ -211,7 +211,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
         <Section>
           <div style={{ textAlign: "center", marginBottom: "clamp(28px, 6vw, 48px)" }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: T.bg3, border: "1px solid " + T.border, borderRadius: 999, padding: "6px 16px", marginBottom: 20, fontSize: 13, color: T.txt2 }}>💰 Un solo plan, todo incluido</div>
-            <h2 style={{ fontSize: "clamp(24px, 6vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
+            <h2 style={{ fontSize: "clamp(24px, 6vw, 36px)", fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 12 }}>Proyecta tu futuro financiero hoy</h2>
             <p style={{ fontSize: 16, color: T.txt2, maxWidth: 500, margin: "0 auto" }}>Pruébalo 14 días gratis con todo incluido, sin tarjeta</p>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", gap: 16, maxWidth: 1280, margin: "0 auto" }}>
@@ -225,14 +225,14 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                   <div style={{ fontSize: 12, color: T.txt3, marginBottom: 14, lineHeight: 1.4, minHeight: 32 }}>{p.tag}</div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4, flexWrap: "wrap" }}>
                     {p.advisor && <span style={{ fontSize: 14, color: T.txt3, fontWeight: 500, marginRight: 2 }}>Desde</span>}
-                    <span style={{ fontSize: p.comingSoon ? "clamp(22px, 5vw, 26px)" : "clamp(28px, 7vw, 40px)", fontWeight: 900, letterSpacing: "-0.04em", color: p.comingSoon ? T.txt3 : T.txt }}>{p.price}</span>
+                    <span style={{ fontSize: p.comingSoon ? "clamp(22px, 5vw, 26px)" : "clamp(28px, 7vw, 40px)", fontWeight: 700, letterSpacing: "-0.04em", color: p.comingSoon ? T.txt3 : T.txt }}>{p.price}</span>
                     {p.per && <span style={{ color: T.txt3, fontSize: 14 }}>{p.per}</span>}
                   </div>
                   {p.sub && <div style={{ fontSize: 12, color: p.advisor ? T.blue : T.green, fontWeight: 600, marginBottom: 4 }}>{p.sub}</div>}
-                  {p.copEquiv && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginBottom: 14 }}>{String(p.copEquiv).startsWith("o US") ? "🌎" : "🇨🇴"} {p.copEquiv}</div>}
+                  {p.copEquiv && <div style={{ fontSize: 12, color: T.txt3, fontWeight: 500, marginBottom: 14 }}>{String(p.copEquiv).startsWith("o US") ? "🌎" : "🇨🇴"} {p.copEquiv}</div>}
                   {!p.sub && !p.copEquiv && <div style={{ marginBottom: 14 }} />}
                   {!p.copEquiv && p.sub && <div style={{ marginBottom: 10 }} />}
-                  <div style={{ background: T.bg3, padding: "8px 12px", borderRadius: 8, fontSize: 11, color: T.txt2, marginBottom: 16, fontWeight: 600 }}>👤 {p.users}</div>
+                  <div style={{ background: T.bg3, padding: "8px 12px", borderRadius: 8, fontSize: 12, color: T.txt2, marginBottom: 16, fontWeight: 600 }}>👤 {p.users}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
                     {p.features.map((f) => (
                       <div key={f} style={{ fontSize: 12, color: T.txt2, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.5 }}>
@@ -263,34 +263,34 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             ))}
           </div>
           <p style={{ textAlign: "center", marginTop: 20, color: T.txt3, fontSize: 13 }}>🔒 Pagos seguros con Stripe • Cancela cuando quieras • Sin compromisos</p>
-          <p style={{ textAlign: "center", marginTop: 8, color: T.txt3, fontSize: 11 }}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD</p>
+          <p style={{ textAlign: "center", marginTop: 8, color: T.txt3, fontSize: 12 }}>🇨🇴 Conversión a TRM ≈ ${Math.round(trm).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD</p>
 
         </Section>
       </div>
 
       {/* ─── CTA FINAL ─── */}
       <Section style={{ padding: "80px 24px", textAlign: "center" }}>
-        <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12 }}>
+        <h2 style={{ fontSize: 36, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 12 }}>
           Tu patrimonio merece atención profesional. Es <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>gratis</span>.
         </h2>
         <p style={{ fontSize: 16, color: T.txt2, marginBottom: 32, maxWidth: 480, margin: "0 auto 32px" }}>
           Gestión patrimonial con inteligencia artificial. 14 días de prueba gratuita, sin tarjeta de crédito.
         </p>
-        <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 800, letterSpacing: "-0.01em" }}>
+        <button onClick={onGetStarted} style={{ background: T.grad, color: "#000", border: "none", padding: "18px 48px", borderRadius: 14, cursor: "pointer", fontSize: 18, fontWeight: 700, letterSpacing: "-0.01em" }}>
           Comenzar 14 días Pro gratis →
         </button>
       </Section>
 
       {/* ─── DISCLAIMER ─── */}
       <Section style={{ padding: "0 24px 32px" }}>
-        <div style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, fontSize: 11, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
+        <div style={{ maxWidth: 700, margin: "0 auto", padding: "20px 24px", background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, fontSize: 12, color: T.txt3, lineHeight: 1.7, textAlign: "center" }}>
           <strong style={{ color: T.txt2 }}>Aviso legal:</strong> FINPATHIA es una herramienta de simulación y gestión patrimonial con fines informativos y educativos. No constituye asesoría financiera, tributaria ni legal profesional. Las proyecciones, análisis y recomendaciones generadas por la plataforma y su agente de inteligencia artificial son estimaciones basadas en los datos proporcionados por el usuario y no garantizan resultados futuros. Cada persona es responsable de sus propias decisiones financieras. Consulte a un profesional certificado antes de tomar decisiones de inversión, tributarias o patrimoniales.
         </div>
       </Section>
 
       {/* ─── FOOTER ─── */}
       <footer style={{ borderTop: `1px solid ${T.border}`, padding: "32px 24px", textAlign: "center" }}>
-        <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
         </div>
         <p style={{ fontSize: 12, color: T.txt3 }}>

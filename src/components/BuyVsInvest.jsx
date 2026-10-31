@@ -14,7 +14,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { compararCompraVsInversion, valorizacionDeEquilibrio, BUY_VS_INVEST_DEFAULTS, BUY_VS_INVEST_DEFAULTS_US, EXCLUSION_121 } from "../lib/buyVsInvest.js";
 
 const T = { bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", border:"rgba(var(--fp-ink),0.06)",
-  txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#22c55e", red:"#ef4444",
+  txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#00c805", red:"#ff5000",
   blue:"#3b82f6", orange:"#f59e0b", gold:"#f59e0b" };
 
 let LOC = "es-CO";
@@ -39,10 +39,10 @@ const ACTIVOS = [
 function Campo({ label, children, ayuda }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase",
+      <div style={{ fontSize: 12, color: T.txt3,
         letterSpacing: "0.5px", marginBottom: 6, fontWeight: 600 }}>{label}</div>
       {children}
-      {ayuda && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{ayuda}</div>}
+      {ayuda && <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{ayuda}</div>}
     </div>
   );
 }
@@ -134,25 +134,25 @@ export default function BuyVsInvest({ isUS = false }) {
         padding: 24, marginBottom: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
           <div>
-            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>{isUS ? "🏠 Buy" : "🏠 Comprar"}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: ganaComprar ? T.green : T.txt, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>{isUS ? "🏠 Buy" : "🏠 Comprar"}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioComprar)}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>📈 Arrendar + {activoSel.l}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: !ganaComprar ? T.green : T.txt, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>📈 Arrendar + {activoSel.l}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: !ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioArrendar)}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.6px" }}>Diferencia</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: T.gold, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>Diferencia</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: T.gold, marginTop: 6 }}>
               {fm(Math.abs(r.diferencia))}
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>
               a favor de {ganaComprar ? "comprar" : "arrendar e invertir"}
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function BuyVsInvest({ isUS = false }) {
               La casa tendría que valorizarse <strong style={{ color: T.gold }}>{equilibrio}% al año</strong> para
               empatar con {activoSel.l} al {rendimiento}%. Hoy tienes puesto {valorizacionCasaAnual}%.
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 6 }}>
               Comparalo con lo que se ha valorizado la zona en los últimos 10 años. Si es menos, la respuesta ya está dada.
             </div>
           </div>
@@ -311,7 +311,7 @@ export default function BuyVsInvest({ isUS = false }) {
               dolares en el resultado, asi que no se puede asumir una. */}
           {isUS && exencion && (
             <div style={{ marginTop: 10 }}>
-              <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6 }}>Filing status</div>
+              <div style={{ fontSize: 12, color: T.txt3, marginBottom: 6 }}>Filing status</div>
               <div style={{ display: "flex", gap: 8 }}>
                 {[["single", "Single — $250K"], ["married", "Married joint — $500K"]].map(([v, l]) => (
                   <button key={v} onClick={() => setEstadoCivil(v)}
@@ -322,7 +322,7 @@ export default function BuyVsInvest({ isUS = false }) {
                       border: `1px solid ${estadoCivil === v ? T.blue : T.border}` }}>{l}</button>
                 ))}
               </div>
-              <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.45 }}>
+              <div style={{ fontSize: 12, color: T.txt3, marginTop: 6, lineHeight: 1.45 }}>
                 §121 excludes the first {estadoCivil === "married" ? "$500,000" : "$250,000"} of
                 gain if it was your primary home 2 of the last 5 years. Anything above that is taxed.
               </div>
@@ -334,14 +334,14 @@ export default function BuyVsInvest({ isUS = false }) {
       {/* ── GRÁFICO ────────────────────────────────────────────────────────── */}
       <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 4 }}>Cómo evoluciona tu patrimonio</div>
-        <div style={{ fontSize: 11, color: T.txt3, marginBottom: 16 }}>
+        <div style={{ fontSize: 12, color: T.txt3, marginBottom: 16 }}>
           Comprar = valor de la casa menos lo que debes al banco. Sin descontar aún impuestos ni gastos de venta.
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={datos}>
             <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" />
             <XAxis dataKey="anio" stroke="var(--fp-txt3)" fontSize={11}
-              label={{ value: "años", position: "insideBottomRight", fill: "var(--fp-txt3)", fontSize: 11 }} />
+              label={{ value: "años", position: "insideBottomRight", fill: "var(--fp-txt3)", fontSize: 12 }} />
             <YAxis stroke="var(--fp-txt3)" fontSize={11} tickFormatter={fmCorto} width={70} />
             <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(l) => `Año ${l}`} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />

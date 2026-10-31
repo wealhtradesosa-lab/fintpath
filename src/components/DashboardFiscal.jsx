@@ -66,17 +66,17 @@ function KPICard({ label, actual, declarado, fmt = fm, accent = T.blue }) {
   const color = !hasDecl ? T.txt2 : delta > 0 ? T.green : delta < 0 ? T.red : T.txt2;
   return (
     <div style={{ background: T.bg2, border: "1px solid " + T.border, borderLeft: "3px solid " + accent, borderRadius: 10, padding: "14px 16px" }}>
-      <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, fontFamily: "monospace" }}>{fmt(actual)}</div>
+      <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, fontFamily: "monospace" }}>{fmt(actual)}</div>
       {hasDecl ? (
-        <div style={{ fontSize: 10, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>
           Año anterior declarado: <span style={{ color: T.txt2, fontFamily: "monospace" }}>{fmt(declarado)}</span>
           <div style={{ color, fontWeight: 700, marginTop: 2 }}>
             {delta > 0 ? "▲" : delta < 0 ? "▼" : "="} {dPct}
           </div>
         </div>
       ) : (
-        <div style={{ fontSize: 10, color: T.txt3, marginTop: 6, fontStyle: "italic" }}>
+        <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, fontStyle: "italic" }}>
           Sin declaración previa para comparar
         </div>
       )}
@@ -97,7 +97,7 @@ function DiffRow({ label, actual, declarado, fmt = fm }) {
       <td style={{ padding: "8px 10px", fontSize: 12, fontFamily: "monospace", color, textAlign: "right", fontWeight: 700 }}>
         {diff >= 0 ? "+" : ""}{fmt(diff)}
       </td>
-      <td style={{ padding: "8px 10px", fontSize: 11, color, textAlign: "right", fontWeight: 700 }}>{deltaPct(a, d)}</td>
+      <td style={{ padding: "8px 10px", fontSize: 12, color, textAlign: "right", fontWeight: 700 }}>{deltaPct(a, d)}</td>
     </tr>
   );
 }
@@ -270,7 +270,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         <div style={{ background: T.bg2, border: "2px solid " + T.green, borderRadius: 12, padding: 16, marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>📤 Subir declaración (PDF)</div>
-            <button onClick={() => setShowUpload(false)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt3, padding: "4px 10px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}>Cerrar</button>
+            <button onClick={() => setShowUpload(false)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt3, padding: "4px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Cerrar</button>
           </div>
           <DeclaracionUpload
             user={user}
@@ -290,7 +290,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
 
       {/* Banner de estado de declaración */}
       {tieneDeclaracion ? (
-        <div style={{ padding: "10px 14px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 10, marginBottom: 14, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 10, marginBottom: 14, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
             ✅ Declaración {declarada.tipo} del año <strong style={{ color: T.green }}>{declarada.anoGravable}</strong> cargada.
             {declarada.capturadoEl && <span style={{ color: T.txt3 }}> · Capturada el {new Date(declarada.capturadoEl).toLocaleDateString("es-CO")}</span>}
@@ -298,7 +298,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           {/* Commit 5.5: selector de año si hay más de uno */}
           {declaraciones.length > 1 && (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>Comparar vs</span>
+              <span style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5 }}>Comparar vs</span>
               <select
                 value={selectedAno ?? declaraciones[0]?.anoGravable ?? ""}
                 onChange={(e) => setSelectedAno(Number(e.target.value))}
@@ -314,7 +314,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       ) : (
         <div style={{ padding: "14px 16px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 14 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📋 Sin declaración cargada</div>
-          <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
             Sube la declaración {selectedOwner?.type === "juridica" ? "F-110" : "F-210"} de {selectedOwner?.name} para ver comparaciones año-a-año y detectar deducciones perdidas automáticamente.
           </div>
           <button onClick={() => { if (onGoToUpload) { onGoToUpload(); } else { setShowUpload(true); } }} style={{ padding: "8px 14px", background: T.blue, border: "none", borderRadius: 8, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
@@ -338,10 +338,10 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
 
       {/* Bloque 1: KPIs */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 6 }}>
           Indicadores clave (estimación)
         </div>
-        <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 11, color: T.txt3, marginBottom: 10, lineHeight: 1.5 }}>
           {`Estimación orientativa (borrador · AG ${DEFAULT_AG} · UVT $${uvtForYear(DEFAULT_AG).toLocaleString("es-CO")}). Impuesto a cargo ≠ saldo a pagar: las retenciones suelen bajar lo que transfieres en mayo. No es la liquidación oficial ni asesoría tributaria.`}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
@@ -357,10 +357,10 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           Reduce confusión cuando el user ve "$190M impuesto" pero el saldo final es menor. */}
       {detalleActual?.retencionDesglose && detalleActual.retencionDesglose.total > 0 && (
         <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 10 }}>
             🏦 Retención en la fuente estimada
             {detalleActual.retencionDesglose.fuente === "override_global" && (
-              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 3, fontSize: 9, color: "#3b82f6" }}>
+              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 3, fontSize: 11, color: "#3b82f6" }}>
                 OVERRIDE MANUAL
               </span>
             )}
@@ -369,7 +369,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid " + T.border }}>
               <div>
                 <div style={{ fontSize: 13, color: T.txt2, marginBottom: 2 }}>Impuesto bruto</div>
-                <div style={{ fontSize: 11, color: T.txt3 }}>(antes de retenciones aplicadas)</div>
+                <div style={{ fontSize: 12, color: T.txt3 }}>(antes de retenciones aplicadas)</div>
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.red }}>
                 ${Math.round((detalleActual?.impBruto || 0) - (detalleActual?.descuentoICA || 0) - (detalleActual?.descuentosAplicados || 0)).toLocaleString("es-CO")}
@@ -379,7 +379,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", fontSize: 12 }}>
                 <div style={{ flex: 1 }}>
                   <span style={{ color: T.txt2 }}>{d.nombre}</span>
-                  <span style={{ marginLeft: 8, color: T.txt3, fontSize: 11 }}>· {fmtPctEs((d.tasa * 100), 1)}</span>
+                  <span style={{ marginLeft: 8, color: T.txt3, fontSize: 12 }}>· {fmtPctEs((d.tasa * 100), 1)}</span>
                 </div>
                 <div style={{ color: T.green, fontWeight: 600 }}>-${Math.round(d.anual).toLocaleString("es-CO")}</div>
               </div>
@@ -391,13 +391,13 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginTop: 12, paddingTop: 10, borderTop: "2px solid " + T.border }}>
               <div>
                 <div style={{ fontSize: 13, color: T.txt, fontWeight: 700, marginBottom: 2 }}>Saldo estimado a pagar (mayo)</div>
-                <div style={{ fontSize: 11, color: T.txt3 }}>= Impuesto a cargo − retenciones estimadas</div>
+                <div style={{ fontSize: 12, color: T.txt3 }}>= Impuesto a cargo − retenciones estimadas</div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.blue }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: T.blue }}>
                 ${Math.round(saldoActual).toLocaleString("es-CO")}
               </div>
             </div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 12, fontStyle: "italic", lineHeight: 1.4 }}>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 12, fontStyle: "italic", lineHeight: 1.4 }}>
               ℹ️ Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.
               Las retenciones son lo que el banco/inquilino te descuentan durante el año; en mayo ese monto
               ya fue pagado. Esta cifra es un borrador: el saldo real puede cambiar por exentas, deducciones,
@@ -410,18 +410,18 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       {/* Bloque 2: Diff año-a-año */}
       {tieneDeclaracion && (
         <div style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 10 }}>
             Diferencias año {declarada.anoGravable} vs actual
           </div>
           <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 10, overflow: "hidden" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: T.bg3 }}>
-                  <th style={{ padding: "10px", fontSize: 10, fontWeight: 700, color: T.txt3, textAlign: "left", textTransform: "uppercase", letterSpacing: 0.5 }}>Concepto</th>
-                  <th style={{ padding: "10px", fontSize: 10, fontWeight: 700, color: T.txt3, textAlign: "right", textTransform: "uppercase", letterSpacing: 0.5 }}>{declarada.anoGravable}</th>
-                  <th style={{ padding: "10px", fontSize: 10, fontWeight: 700, color: T.txt3, textAlign: "right", textTransform: "uppercase", letterSpacing: 0.5 }}>Actual</th>
-                  <th style={{ padding: "10px", fontSize: 10, fontWeight: 700, color: T.txt3, textAlign: "right", textTransform: "uppercase", letterSpacing: 0.5 }}>Δ</th>
-                  <th style={{ padding: "10px", fontSize: 10, fontWeight: 700, color: T.txt3, textAlign: "right", textTransform: "uppercase", letterSpacing: 0.5 }}>%</th>
+                  <th style={{ padding: "10px", fontSize: 11, fontWeight: 700, color: T.txt3, textAlign: "left", letterSpacing: 0.5 }}>Concepto</th>
+                  <th style={{ padding: "10px", fontSize: 11, fontWeight: 700, color: T.txt3, textAlign: "right", letterSpacing: 0.5 }}>{declarada.anoGravable}</th>
+                  <th style={{ padding: "10px", fontSize: 11, fontWeight: 700, color: T.txt3, textAlign: "right", letterSpacing: 0.5 }}>Actual</th>
+                  <th style={{ padding: "10px", fontSize: 11, fontWeight: 700, color: T.txt3, textAlign: "right", letterSpacing: 0.5 }}>Δ</th>
+                  <th style={{ padding: "10px", fontSize: 11, fontWeight: 700, color: T.txt3, textAlign: "right", letterSpacing: 0.5 }}>%</th>
                 </tr>
               </thead>
               <tbody>
@@ -442,7 +442,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               </tbody>
             </table>
           </div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 6, fontStyle: "italic" }}>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, fontStyle: "italic" }}>
             Nota: los valores "Actual" vienen del motor de FINPATHIA aplicado a tu situación de este año. No siempre son comparables directamente con los renglones oficiales (el motor aproxima; la declaración oficial puede tener ajustes contables puntuales).
           </div>
         </div>
@@ -450,14 +450,14 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
 
       {/* Bloque 3: Alertas visibles */}
       <div style={{ marginBottom: 18 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 10 }}>
           Alertas fiscales {alertasDelOwner.length > 0 && <span style={{ color: T.orange }}>({alertasDelOwner.length})</span>}
         </div>
         {alertasDelOwner.length === 0 ? (
-          <div style={{ padding: "20px", background: "rgba(34,197,94,0.04)", border: "1px dashed rgba(34,197,94,0.2)", borderRadius: 10, textAlign: "center" }}>
+          <div style={{ padding: "20px", background: "rgba(0,200,5,0.04)", border: "1px dashed rgba(0,200,5,0.2)", borderRadius: 10, textAlign: "center" }}>
             <div style={{ fontSize: 20, marginBottom: 6 }}>✅</div>
             <div style={{ fontSize: 12, color: T.txt2 }}>Sin alertas para {selectedOwner?.name}.</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
               El motor no detectó desajustes entre tu situación actual y la declaración anterior.
             </div>
           </div>
@@ -467,7 +467,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               const cta = ALERT_CTA[w.code];
               const severity = w.severity || "warning";
               const color = severity === "error" ? T.red : severity === "info" ? T.blue : T.orange;
-              const bg = severity === "error" ? "rgba(239,68,68,0.06)" : severity === "info" ? "rgba(59,130,246,0.06)" : "rgba(245,158,11,0.06)";
+              const bg = severity === "error" ? "rgba(255,80,0,0.06)" : severity === "info" ? "rgba(59,130,246,0.06)" : "rgba(245,158,11,0.06)";
               const icon = severity === "error" ? "❌" : severity === "info" ? "ℹ️" : "⚠️";
               return (
                 <div key={i} style={{ padding: "12px 14px", background: bg, border: "1px solid " + color + "33", borderLeft: "3px solid " + color, borderRadius: 8 }}>
@@ -476,10 +476,10 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, lineHeight: 1.4 }}>{w.message}</div>
                       {w.accionSugerida && (
-                        <div style={{ fontSize: 11, color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>{w.accionSugerida}</div>
+                        <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, lineHeight: 1.5 }}>{w.accionSugerida}</div>
                       )}
                       {cta && (
-                        <button onClick={() => onNavigate?.(cta.page)} style={{ marginTop: 8, padding: "5px 10px", background: "transparent", border: "1px solid " + color, borderRadius: 6, color, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                        <button onClick={() => onNavigate?.(cta.page)} style={{ marginTop: 8, padding: "5px 10px", background: "transparent", border: "1px solid " + color, borderRadius: 6, color, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                           {cta.label}
                         </button>
                       )}
@@ -525,7 +525,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                 Ninguna barra puede representar cinco órdenes de magnitud.
                 Ahora se muestran como pasos con la cifra grande y la variación
                 entre años, que es lo que de verdad se quiere leer. */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 10 }}>
               Tu evolución
             </div>
             <div style={{ background: T.bg2, border: "1px solid " + T.border, borderRadius: 12, padding: "16px 18px" }}>
@@ -534,7 +534,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                 { titulo: "Impuesto", campo: "impuesto", color: T.red },
               ].map((fila, fi) => (
                 <div key={fila.campo} style={{ marginBottom: fi === 0 ? 16 : 0 }}>
-                  <div style={{ fontSize: 10, color: T.txt3, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginBottom: 8, letterSpacing: 0.5 }}>
                     {fila.titulo}
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: `repeat(${puntos.length}, 1fr)`, gap: 10 }}>
@@ -552,19 +552,19 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                           border: "1px solid " + (esSim ? T.blue + "44" : T.border),
                           borderRadius: 10, padding: "10px 12px",
                         }}>
-                          <div style={{ fontSize: 10, color: esSim ? T.blue : T.txt3, fontWeight: 700, fontFamily: "monospace", marginBottom: 4 }}>
+                          <div style={{ fontSize: 11, color: esSim ? T.blue : T.txt3, fontWeight: 700, fontFamily: "monospace", marginBottom: 4 }}>
                             {p.ano}{esSim ? " · simulado" : ""}
                           </div>
-                          <div style={{ fontSize: 15, fontWeight: 800, color: esSim ? T.blue : fila.color, fontFamily: "monospace", lineHeight: 1.2, wordBreak: "break-all" }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: esSim ? T.blue : fila.color, fontFamily: "monospace", lineHeight: 1.2, wordBreak: "break-all" }}>
                             {fm(valor)}
                           </div>
                           {delta !== null && (
-                            <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>
+                            <div style={{ fontSize: 11, color: T.txt3, marginTop: 3 }}>
                               {delta >= 0 ? "▲" : "▼"} {Math.abs(delta) >= 1000 ? "×" + Math.round(valor / previo) : fmtPctEs(Math.abs(delta), 0)} vs {puntos[i - 1].ano}
                             </div>
                           )}
                           {previo === 0 && valor > 0 && (
-                            <div style={{ fontSize: 10, color: T.txt3, marginTop: 3 }}>sin base previa</div>
+                            <div style={{ fontSize: 11, color: T.txt3, marginTop: 3 }}>sin base previa</div>
                           )}
                         </div>
                       );
@@ -572,7 +572,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
                   </div>
                 </div>
               ))}
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 12, fontStyle: "italic", textAlign: "center" }}>
                 Últimas {declaraciones.length} declaraciones + simulación del año en curso (en azul).
               </div>
             </div>

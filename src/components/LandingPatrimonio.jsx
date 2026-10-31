@@ -8,7 +8,7 @@ import { track } from "../lib/analytics";
 
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", border: "rgba(var(--fp-ink),0.08)",
-  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#22c55e", blue: "#3b82f6",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805", blue: "#3b82f6",
 };
 const DISPLAY = "'Plus Jakarta Sans','Inter',system-ui,sans-serif";
 const BODY = "'Inter',system-ui,sans-serif";
@@ -38,19 +38,19 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
   const cta = (id) => onGetStarted(id);
 
   const wrap = { maxWidth: 1040, margin: "0 auto", padding: "0 20px" };
-  const btn = { background: T.green, color: "#000", border: "none", borderRadius: 12, padding: "16px 28px", fontWeight: 800, fontSize: 16, cursor: "pointer", fontFamily: BODY };
-  const h2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,4vw,34px)", fontWeight: 800, margin: "0 0 14px" };
+  const btn = { background: T.green, color: "#000", border: "none", borderRadius: 12, padding: "16px 28px", fontWeight: 700, fontSize: 16, cursor: "pointer", fontFamily: BODY };
+  const h2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,4vw,34px)", fontWeight: 700, margin: "0 0 14px" };
 
   return (
     <div style={{ background: T.bg, color: T.txt, minHeight: "100vh", fontFamily: BODY }}>
       <header style={{ ...wrap, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px" }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 900, background: "linear-gradient(135deg,#22c55e,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 700, background: "linear-gradient(135deg,#00c805,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</div>
         <button type="button" onClick={onLogin} style={{ background: "transparent", color: T.txt2, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 16px", cursor: "pointer", fontSize: 14, fontFamily: BODY }}>Iniciar sesión</button>
       </header>
 
       <main>
         <section style={{ ...wrap, textAlign: "center", padding: "48px 20px 32px" }}>
-          <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(34px,6vw,56px)", fontWeight: 900, lineHeight: 1.1, margin: "0 0 18px" }}>¿Cuánto vale todo lo que tienes?</h1>
+          <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(34px,6vw,56px)", fontWeight: 700, lineHeight: 1.1, margin: "0 0 18px" }}>¿Cuánto vale todo lo que tienes?</h1>
           <p style={{ fontSize: 18, color: T.txt2, maxWidth: 640, margin: "0 auto 28px", lineHeight: 1.5 }}>Cuentas, inversiones, propiedades y deudas en un solo lugar, con tu patrimonio neto a la vista.</p>
           <button type="button" style={btn} onClick={() => cta("hero")}>Ver mi patrimonio</button>
           <p style={{ fontSize: 13, color: T.txt3, margin: "12px 0 32px" }}>14 días Pro sin tarjeta. Después sigues gratis o eliges un plan.</p>
@@ -77,7 +77,7 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
           <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
             {PASOS.map((p, i) => (
               <li key={i} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: 20 }}>
-                <div style={{ color: T.green, fontWeight: 800, fontSize: 22, marginBottom: 6 }}>{i + 1}</div>
+                <div style={{ color: T.green, fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{i + 1}</div>
                 <div style={{ fontSize: 16, lineHeight: 1.45 }}>{p}</div>
               </li>
             ))}

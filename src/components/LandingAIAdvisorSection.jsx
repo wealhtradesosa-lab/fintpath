@@ -20,7 +20,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.06)",
   borderStrong: "rgba(var(--fp-ink),0.12)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6", cyan: "#94a3b8",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6", cyan: "#94a3b8",
   pink: "#64748b",
 };
 
@@ -116,7 +116,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
           <h2 style={{
             fontFamily: FONT_DISPLAY,
             fontSize: "clamp(2rem, 4vw, 3rem)",
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1.05,
             letterSpacing: "-0.04em",
             marginBottom: 20,
@@ -267,7 +267,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, fontFamily: FONT_DISPLAY }}>
                   Asesor FINPATHIA
                 </div>
-                <div style={{ fontSize: 11, color: T.green, display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{ fontSize: 12, color: T.green, display: "flex", alignItems: "center", gap: 4 }}>
                   <span style={{ width: 5, height: 5, borderRadius: "50%", background: T.green, animation: "pulseDot 2s ease-in-out infinite" }} />
                   En línea · Conoce tu patrimonio
                 </div>
@@ -322,7 +322,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
                         : part
                     )}
                   </div>
-                  <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, padding: "0 4px" }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, padding: "0 4px" }}>
                     {msg.time}
                   </div>
                 </div>

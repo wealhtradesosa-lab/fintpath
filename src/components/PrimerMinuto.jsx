@@ -61,12 +61,12 @@ export default function PrimerMinuto({ nombre, onListo, onDetallar, onExcel }) {
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", marginTop: 18 }}>
         <button type="button" disabled={!listo} onClick={() => onListo(f)}
-          style={{ background: listo ? C.ok : C.raised, color: listo ? "#000" : C.subtle, border: "none", padding: "12px 22px", borderRadius: R.lg, cursor: listo ? "pointer" : "default", fontWeight: 800, fontSize: 15 }}>
+          style={{ background: listo ? C.ok : C.raised, color: listo ? "#000" : C.subtle, border: "none", padding: "12px 22px", borderRadius: R.lg, cursor: listo ? "pointer" : "default", fontWeight: 700, fontSize: 15 }}>
           Ver dónde estoy →
         </button>
         <span style={F.caption}>
-          ¿Prefieres el detalle? <button type="button" onClick={onDetallar} style={{ background: "none", border: "none", padding: 0, color: C.accent, cursor: "pointer", fontSize: 11 }}>Cargar sección por sección</button>
-          {onExcel && <> o <button type="button" onClick={onExcel} style={{ background: "none", border: "none", padding: 0, color: C.accent, cursor: "pointer", fontSize: 11 }}>subir mi Excel</button></>}
+          ¿Prefieres el detalle? <button type="button" onClick={onDetallar} style={{ background: "none", border: "none", padding: 0, color: C.accent, cursor: "pointer", fontSize: 12 }}>Cargar sección por sección</button>
+          {onExcel && <> o <button type="button" onClick={onExcel} style={{ background: "none", border: "none", padding: 0, color: C.accent, cursor: "pointer", fontSize: 12 }}>subir mi Excel</button></>}
         </span>
       </div>
     </div>

@@ -32,7 +32,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.08)",
   borderStrong: "rgba(var(--fp-ink),0.14)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", amber: "#f59e0b", red: "#ef4444",
+  green: "#00c805", blue: "#3b82f6", amber: "#f59e0b", red: "#ff5000",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -44,7 +44,7 @@ const Section = ({ number, title, children }) => (
       style={{
         fontFamily: FONT_DISPLAY,
         fontSize: 22,
-        fontWeight: 800,
+        fontWeight: 700,
         color: T.txt,
         margin: "0 0 16px",
         letterSpacing: -0.5,
@@ -110,7 +110,7 @@ export default function LandingPrivacidad() {
       >
         <a
           href="/"
-          style={{ color: T.green, fontWeight: 800, fontSize: 20, textDecoration: "none", letterSpacing: -0.5 }}
+          style={{ color: T.green, fontWeight: 700, fontSize: 20, textDecoration: "none", letterSpacing: -0.5 }}
         >
           FINPATHIA
         </a>
@@ -125,11 +125,10 @@ export default function LandingPrivacidad() {
         <div style={{ marginBottom: 48 }}>
           <div
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               color: T.green,
               letterSpacing: 1.5,
-              textTransform: "uppercase",
               marginBottom: 12,
             }}
           >
@@ -139,7 +138,7 @@ export default function LandingPrivacidad() {
             style={{
               fontFamily: FONT_DISPLAY,
               fontSize: "clamp(28px, 7vw, 42px)",
-              fontWeight: 800,
+              fontWeight: 700,
               color: T.txt,
               margin: "0 0 12px",
               lineHeight: 1.1,
@@ -156,8 +155,8 @@ export default function LandingPrivacidad() {
         {/* Aviso destacado */}
         <div
           style={{
-            background: "rgba(34,197,94,0.06)",
-            border: `1px solid rgba(34,197,94,0.2)`,
+            background: "rgba(0,200,5,0.06)",
+            border: `1px solid rgba(0,200,5,0.2)`,
             borderRadius: 12,
             padding: 20,
             marginBottom: 40,
@@ -254,8 +253,8 @@ export default function LandingPrivacidad() {
             style={{
               marginTop: 16,
               padding: 16,
-              background: "rgba(239,68,68,0.06)",
-              border: "1px solid rgba(239,68,68,0.15)",
+              background: "rgba(255,80,0,0.06)",
+              border: "1px solid rgba(255,80,0,0.15)",
               borderRadius: 10,
               fontSize: 13,
               color: T.txt2,
@@ -326,7 +325,7 @@ export default function LandingPrivacidad() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{p.name}</div>
                   <div style={{ fontSize: 12, color: T.txt2 }}>{p.role}</div>
                 </div>
-                <div style={{ fontSize: 11, color: T.txt3, alignSelf: "center" }}>{p.cert}</div>
+                <div style={{ fontSize: 12, color: T.txt3, alignSelf: "center" }}>{p.cert}</div>
               </div>
             ))}
           </div>

@@ -21,7 +21,7 @@ import { fmtPlataCortaEs } from "../lib/formato.js";
 
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)",
-  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#22c55e", blue: "#3b82f6", red: "#ef4444",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805", blue: "#3b82f6", red: "#ff5000",
 };
 const DISPLAY = "'Plus Jakarta Sans','Inter',system-ui,sans-serif";
 const BODY = "'Inter',system-ui,sans-serif";
@@ -82,23 +82,23 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
   };
 
   const wrap = { maxWidth: 1040, margin: "0 auto", padding: "0 20px" };
-  const btn = { background: T.green, color: "#000", border: "none", borderRadius: 12, padding: "16px 28px", fontWeight: 800, fontSize: 16, cursor: "pointer", fontFamily: BODY };
-  const h2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,4vw,34px)", fontWeight: 800, margin: "0 0 14px", lineHeight: 1.2 };
+  const btn = { background: T.green, color: "#000", border: "none", borderRadius: 12, padding: "16px 28px", fontWeight: 700, fontSize: 16, cursor: "pointer", fontFamily: BODY };
+  const h2 = { fontFamily: DISPLAY, fontSize: "clamp(24px,4vw,34px)", fontWeight: 700, margin: "0 0 14px", lineHeight: 1.2 };
   const card = { background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 22 };
 
   return (
     <div style={{ background: T.bg, color: T.txt, minHeight: "100vh", fontFamily: BODY }}>
       <header style={{ ...wrap, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "18px 20px" }}>
-        <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 900, background: "linear-gradient(135deg,#22c55e,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</div>
+        <div style={{ fontFamily: DISPLAY, fontSize: 24, fontWeight: 700, background: "linear-gradient(135deg,#00c805,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</div>
         <button type="button" onClick={onLogin} style={{ background: "transparent", color: T.txt2, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 16px", cursor: "pointer", fontSize: 14, fontFamily: BODY }}>Iniciar sesión</button>
       </header>
 
       <main>
         {/* ── La promesa ── */}
         <section style={{ ...wrap, textAlign: "center", padding: "36px 20px 24px" }}>
-          <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,5.6vw,52px)", fontWeight: 900, lineHeight: 1.12, margin: "0 auto 16px", maxWidth: 820 }}>
+          <h1 style={{ fontFamily: DISPLAY, fontSize: "clamp(30px,5.6vw,52px)", fontWeight: 700, lineHeight: 1.12, margin: "0 auto 16px", maxWidth: 820 }}>
             La libertad financiera no es tener más.<br />
-            <span style={{ background: "linear-gradient(135deg,#22c55e,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Es saber exactamente cuánto te falta</span> — y qué mover hoy.
+            <span style={{ background: "linear-gradient(135deg,#00c805,#3b82f6)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Es saber exactamente cuánto te falta</span> — y qué mover hoy.
           </h1>
           <p style={{ fontSize: 18, color: T.txt2, maxWidth: 600, margin: "0 auto", lineHeight: 1.5 }}>
             Tres cifras y te decimos en qué nivel estás, cuántos meses de vida tienes cubiertos y cuánto falta para subir. Sin cuenta, sin tarjeta.
@@ -109,7 +109,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
         <section style={{ ...wrap, padding: "8px 20px 40px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, alignItems: "start" }}>
             <div style={card}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 14 }}>Tu situación hoy · al mes</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.6, marginBottom: 14 }}>Tu situación hoy · al mes</div>
               <div style={{ display: "grid", gap: 14 }}>
                 <Pesos label="¿Cuánto ganas?" hint="Lo que te queda en la cuenta cada mes por tu trabajo o negocio." value={f.ingresoTrabajo} onChange={set("ingresoTrabajo")} placeholder="6.000.000" />
                 <Pesos label="¿Cuánto gastas?" hint="Gastos de vida más cuotas de créditos, todo junto." value={f.gastos} onChange={set("gastos")} placeholder="4.500.000" />
@@ -155,13 +155,13 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
             {NIVELES.map((n) => (
               <li key={n.id} style={{ ...card, padding: 16, borderTop: `3px solid ${n.color}`, opacity: r && r.nivel === n.id ? 1 : 0.85, outline: r && r.nivel === n.id ? `2px solid ${n.color}` : "none" }}>
                 <div style={{ fontSize: 22 }}>{n.icon}</div>
-                <div style={{ fontWeight: 800, marginTop: 6 }}>{n.id}. {n.nombre}</div>
+                <div style={{ fontWeight: 700, marginTop: 6 }}>{n.id}. {n.nombre}</div>
                 <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{n.desc}</div>
-                {r && r.nivel === n.id && <div style={{ fontSize: 11, fontWeight: 700, color: n.color, marginTop: 8 }}>AQUÍ ESTÁS</div>}
+                {r && r.nivel === n.id && <div style={{ fontSize: 12, fontWeight: 700, color: n.color, marginTop: 8 }}>AQUÍ ESTÁS</div>}
                 {/* Sin el dato de lo esencial este escalón no se puede medir y
                     la escalera salta de 2 a 4. Se dice, no se disimula. */}
                 {r && n.clave === "seguridad" && !r.esencialDeclarado && (
-                  <button type="button" onClick={abrirEsencial} style={{ background: "transparent", border: "none", padding: 0, marginTop: 8, textAlign: "left", cursor: "pointer", fontFamily: BODY, color: n.color, fontSize: 11, fontWeight: 700, lineHeight: 1.4 }}>
+                  <button type="button" onClick={abrirEsencial} style={{ background: "transparent", border: "none", padding: 0, marginTop: 8, textAlign: "left", cursor: "pointer", fontFamily: BODY, color: n.color, fontSize: 12, fontWeight: 700, lineHeight: 1.4 }}>
                     Para medir este escalón falta un dato: cuánto de tus gastos no puedes apagar. →
                   </button>
                 )}
@@ -182,7 +182,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
             ].map(([i, t, d]) => (
               <div key={t} style={card}>
                 <div style={{ fontSize: 24 }}>{i}</div>
-                <div style={{ fontWeight: 800, marginTop: 8, fontSize: 16 }}>{t}</div>
+                <div style={{ fontWeight: 700, marginTop: 8, fontSize: 16 }}>{t}</div>
                 <div style={{ fontSize: 14, color: T.txt2, marginTop: 6, lineHeight: 1.5 }}>{d}</div>
               </div>
             ))}
@@ -195,7 +195,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
           <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14 }}>
             {["Escribe tres cifras y ves tu nivel. Sin cuenta.", "Guarda tu norte: creas tu cuenta gratis y tu nivel queda registrado.", "Cada semana ves qué moviste y cuánto te acercaste."].map((p, i) => (
               <li key={i} style={card}>
-                <div style={{ color: T.green, fontWeight: 800, fontSize: 22, marginBottom: 6 }}>{i + 1}</div>
+                <div style={{ color: T.green, fontWeight: 700, fontSize: 22, marginBottom: 6 }}>{i + 1}</div>
                 <div style={{ fontSize: 15, lineHeight: 1.5 }}>{p}</div>
               </li>
             ))}
@@ -237,11 +237,11 @@ function Resultado({ r, onGuardar, btn, onAfinar = () => {} }) {
   const deficit = r.fl < 0;
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.6 }}>Tu norte, hoy</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.6 }}>Tu norte, hoy</div>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
         <div style={{ fontSize: 40 }}>{n.icon}</div>
         <div>
-          <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 900, color: n.color, lineHeight: 1.1 }}>Nivel {r.nivel} de 5 · {r.nombre}</div>
+          <div style={{ fontFamily: DISPLAY, fontSize: 28, fontWeight: 700, color: n.color, lineHeight: 1.1 }}>Nivel {r.nivel} de 5 · {r.nombre}</div>
           <div style={{ fontSize: 13, color: T.txt2, marginTop: 4 }}>{n.desc}</div>
         </div>
       </div>
@@ -253,14 +253,14 @@ function Resultado({ r, onGuardar, btn, onAfinar = () => {} }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 16 }}>
         <div style={{ background: T.bg3, borderRadius: 12, padding: "10px 12px" }}>
-          <div style={{ fontSize: 11, color: T.txt3 }}>Meses de vida cubiertos</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>Meses de vida cubiertos</div>
           <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700 }}>{r.mesesCubiertos == null ? "—" : r.mesesCubiertos >= 120 ? "+10 años" : r.mesesCubiertos.toFixed(1).replace(".", ",")}</div>
-          <div style={{ fontSize: 11, color: T.txt3 }}>si hoy dejaras de ganar</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>si hoy dejaras de ganar</div>
         </div>
         <div style={{ background: T.bg3, borderRadius: 12, padding: "10px 12px" }}>
-          <div style={{ fontSize: 11, color: T.txt3 }}>Tus activos pagan</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>Tus activos pagan</div>
           <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700 }}>{Math.min(999, Math.round(r.cobertura))}%</div>
-          <div style={{ fontSize: 11, color: T.txt3 }}>de tus gastos{r.ipFuente === "estimado" ? ` (estimado al ${Math.round(r.retorno * 100)}%)` : ""}</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>de tus gastos{r.ipFuente === "estimado" ? ` (estimado al ${Math.round(r.retorno * 100)}%)` : ""}</div>
         </div>
       </div>
 
@@ -288,7 +288,7 @@ function Resultado({ r, onGuardar, btn, onAfinar = () => {} }) {
           <>Tus activos ya pagan tu vida. Lo que sigue es cuidarlo: diversificar, pagar lo justo de impuestos y proteger a tu familia.</>
         )}
       </div>
-      <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, lineHeight: 1.4 }}>
+      <div style={{ fontSize: 12, color: T.txt3, marginTop: 8, lineHeight: 1.4 }}>
         Supuesto: lo que inviertes rinde {Math.round(RETORNO_SUPUESTO * 100)}% anual. Es una estimación para orientarte, no una promesa.
       </div>
 

@@ -18,7 +18,7 @@ const T = {
   border: "rgba(var(--fp-ink),0.08)",
   borderStrong: "rgba(var(--fp-ink),0.14)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6",
+  green: "#00c805", blue: "#3b82f6",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -133,7 +133,7 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
           gap: 4,
         }}>
           <span style={{ color: T.txt }}>FINPATHIA</span>
-          <span style={{ color: T.txt3, fontSize: 11, fontWeight: 500 }}>™</span>
+          <span style={{ color: T.txt3, fontSize: 12, fontWeight: 500 }}>™</span>
         </div>
 
         {/* Links ocultos en mobile */}
@@ -230,7 +230,7 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
         <h1 className={mounted ? "fade-up fade-up-2" : ""} style={{
           fontFamily: FONT_DISPLAY,
           fontSize: "clamp(3.5rem, 11vw, 9rem)",
-          fontWeight: 800,
+          fontWeight: 700,
           lineHeight: 0.9,
           letterSpacing: "-0.06em",
           margin: 0,

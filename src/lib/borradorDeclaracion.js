@@ -336,9 +336,9 @@ export function aplicarOverride(renglones, numero, valor) {
  */
 export const SECCIONES_F110 = {
   patrimonio: { label: "Patrimonio", icon: "🏛️", color: "#3b82f6" },
-  ingresos: { label: "Ingresos", icon: "💰", color: "#22c55e" },
+  ingresos: { label: "Ingresos", icon: "💰", color: "#00c805" },
   costos: { label: "Costos y gastos deducibles", icon: "📋", color: "#f59e0b" },
   renta: { label: "Renta", icon: "📊", color: "#3b82f6" },
-  impuesto: { label: "Impuesto", icon: "🧾", color: "#ef4444" },
+  impuesto: { label: "Impuesto", icon: "🧾", color: "#ff5000" },
   liquidacion: { label: "Liquidación privada", icon: "💳", color: "#94a3b8" },
 };

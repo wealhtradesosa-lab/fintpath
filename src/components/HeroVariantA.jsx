@@ -17,8 +17,8 @@ const T = {
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   borderStrong: "rgba(var(--fp-ink),0.12)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
-  grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6",
+  grad: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
 };
 
 // Tipografía: Inter para todo, Plus Jakarta Sans para titulares premium
@@ -89,7 +89,7 @@ export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
         position: "relative",
         zIndex: 10,
       }}>
-        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.04em", fontFamily: FONT_DISPLAY }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.04em", fontFamily: FONT_DISPLAY }}>
           <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             FINPATHIA
           </span>
@@ -142,7 +142,7 @@ export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
           <h1 className={mounted ? "fade-up fade-up-2" : ""} style={{
             fontFamily: FONT_DISPLAY,
             fontSize: "clamp(2.5rem, 6.5vw, 5rem)",
-            fontWeight: 800,
+            fontWeight: 700,
             lineHeight: 1.02,
             letterSpacing: "-0.045em",
             marginBottom: 24,
@@ -241,9 +241,9 @@ export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
               background: T.bg,
             }}>
               <div style={{ display: "flex", gap: 6 }}>
-                <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#ef4444" }} />
+                <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#ff5000" }} />
                 <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#f59e0b" }} />
-                <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#22c55e" }} />
+                <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#00c805" }} />
               </div>
               <div style={{ marginLeft: 12, fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
                 finpathia.com / dashboard
@@ -303,13 +303,13 @@ function KPICard({ label, value, sub, color, highlight }) {
       border: `1px solid ${highlight ? color + "30" : T.border}`,
       borderRadius: 10,
     }}>
-      <div style={{ fontSize: 10, color: T.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>
+      <div style={{ fontSize: 11, color: T.txt3, fontWeight: 700, letterSpacing: 0.6, marginBottom: 6 }}>
         {label}
       </div>
       <div style={{ fontSize: 22, fontWeight: 700, color: highlight ? color : T.txt, fontFamily: FONT_DISPLAY, letterSpacing: "-0.02em" }}>
         {value}
       </div>
-      <div style={{ fontSize: 11, color: highlight ? color : T.txt3, marginTop: 4, fontWeight: 500 }}>
+      <div style={{ fontSize: 12, color: highlight ? color : T.txt3, marginTop: 4, fontWeight: 500 }}>
         {sub}
       </div>
     </div>

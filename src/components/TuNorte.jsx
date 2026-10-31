@@ -41,7 +41,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
   const card = T.card || "var(--fp-bg)";
   const bg3 = T.bg3 || "var(--fp-raised)";
   const border = T.border || "rgba(var(--fp-ink),0.06)";
-  const gn = T.gn || T.green || "#22c55e";
+  const gn = T.gn || T.green || "#00c805";
 
   const guardado = user?.norte || null;
   const [objetivo, setObjetivo] = useState(guardado?.objetivo || null);
@@ -61,7 +61,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
     totales,
   }), [user, objetivo, totales]);
 
-  const PAL_CANASTA = { proteccion: "#3b82f6", mercado: "#22c55e", aspiracion: "#f59e0b" };
+  const PAL_CANASTA = { proteccion: "#3b82f6", mercado: "#00c805", aspiracion: "#f59e0b" };
   const NOM_CANASTA = isEN
     ? { proteccion: "Protection", mercado: "Market", aspiracion: "Aspiration" }
     : { proteccion: "Protección", mercado: "Mercado", aspiracion: "Aspiración" };
@@ -81,7 +81,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px", color: tx }}>
+        <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px", color: tx }}>
           🧭 {isEN ? "Your North" : "Tu Norte"}
         </h2>
         <p style={{ color: tx3, fontSize: 12, margin: 0 }}>
@@ -102,12 +102,12 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           return (
             <div key={k} style={{ background: card, border: `1px solid ${border}`,
                   borderRadius: 12, padding: "14px 16px", borderTop: `3px solid ${PAL_CANASTA[k]}` }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: tx, marginBottom: 3 }}>{e.nombre}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: tx, marginBottom: 3 }}>{e.nombre}</div>
               <div style={{ fontSize: 12, color: PAL_CANASTA[k], fontWeight: 600, marginBottom: 7 }}>
                 {e.corto}
               </div>
-              <div style={{ fontSize: 11, color: tx3, lineHeight: 1.6, marginBottom: 8 }}>{e.largo}</div>
-              <div style={{ fontSize: 11, color: tx2, fontFamily: "monospace",
+              <div style={{ fontSize: 12, color: tx3, lineHeight: 1.6, marginBottom: 8 }}>{e.largo}</div>
+              <div style={{ fontSize: 12, color: tx2, fontFamily: "monospace",
                             paddingTop: 7, borderTop: `1px solid ${border}` }}>
                 {isEN ? "Assumed: " : "Se asume: "}{e.retorno}
               </div>
@@ -127,7 +127,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               const sel = objetivo === o.id;
               return (
                 <button key={o.id} onClick={() => setObjetivo(o.id)}
-                  style={{ background: sel ? "rgba(34,197,94,0.10)" : card,
+                  style={{ background: sel ? "rgba(0,200,5,0.10)" : card,
                     border: `1px solid ${sel ? gn : border}`, borderRadius: 12,
                     padding: "14px 16px", cursor: "pointer", textAlign: "left", color: tx }}>
                   <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
@@ -141,7 +141,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       <div key={c} style={{ flex: o.mix[c], background: PAL_CANASTA[c], opacity: sel ? 1 : 0.45 }} />
                     ))}
                   </div>
-                  <div style={{ fontSize: 10, color: tx3, marginTop: 5, fontFamily: "monospace" }}>
+                  <div style={{ fontSize: 11, color: tx3, marginTop: 5, fontFamily: "monospace" }}>
                     {o.mix.proteccion}% · {o.mix.mercado}% · {o.mix.aspiracion}%
                   </div>
                 </button>
@@ -157,7 +157,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
                 {[5, 10, 15, 20].map((h) => (
                   <button key={h} onClick={() => setHorizonte(h)}
-                    style={{ flex: "1 1 80px", background: horizonte === h ? "rgba(34,197,94,0.12)" : bg3,
+                    style={{ flex: "1 1 80px", background: horizonte === h ? "rgba(0,200,5,0.12)" : bg3,
                       border: `1px solid ${horizonte === h ? gn : border}`, borderRadius: 10,
                       padding: "10px 12px", cursor: "pointer", color: tx, fontWeight: 700, fontSize: 13 }}>
                     {h} {isEN ? "years" : "años"}
@@ -166,7 +166,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               </div>
               <button onClick={guardar}
                 style={{ background: gn, color: "#000", border: "none", padding: "11px 22px",
-                  borderRadius: 10, cursor: "pointer", fontWeight: 800, fontSize: 14 }}>
+                  borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
                 {isEN ? "Set my north" : "Fijar mi norte"}
               </button>
             </>
@@ -180,13 +180,13 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
               <div>
-                <div style={{ fontSize: 10, color: tx3, fontWeight: 700, letterSpacing: "0.08em" }}>
+                <div style={{ fontSize: 11, color: tx3, fontWeight: 700, letterSpacing: "0.08em" }}>
                   {isEN ? "YOUR NORTH" : "TU NORTE"}
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: tx, marginTop: 2 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: tx, marginTop: 2 }}>
                   {diag.objetivo.emoji} {diag.objetivo[L].nombre}
                 </div>
-                <div style={{ fontSize: 11, color: tx3, marginTop: 2 }}>
+                <div style={{ fontSize: 12, color: tx3, marginTop: 2 }}>
                   {isEN ? `${horizonte}-year horizon` : `Horizonte de ${horizonte} años`}
                 </div>
               </div>
@@ -196,14 +196,14 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                   // ve, por qué no lo ponemos verde"). Estaba en gris tenue sobre
                   // fondo oscuro: parecía deshabilitado. Es la acción principal de
                   // esa tarjeta —cambiar de objetivo— así que debe verse como tal.
-                  style={{ background: "rgba(34,197,94,0.12)", border: `1px solid ${gn}`, borderRadius: 8,
+                  style={{ background: "rgba(0,200,5,0.12)", border: `1px solid ${gn}`, borderRadius: 8,
                     padding: "7px 14px", cursor: "pointer", color: gn, fontSize: 12, fontWeight: 700 }}>
                   {isEN ? "Change" : "Cambiar"}
                 </button>
               )}
             </div>
 
-            <div style={{ fontSize: 11, color: tx3, marginBottom: 6, fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: tx3, marginBottom: 6, fontWeight: 600 }}>
               {isEN ? "WHERE YOU ARE TODAY" : "DÓNDE ESTÁS HOY"}
             </div>
             <BarraComposicion
@@ -216,14 +216,14 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                 a dónde debería ir? solo veo el actual"). Faltaba la barra del
                 OBJETIVO debajo de la actual: sin las dos juntas no se ve la
                 brecha, que es el punto de la sección. */}
-            <div style={{ fontSize: 11, color: tx3, margin: "14px 0 6px", fontWeight: 600 }}>
+            <div style={{ fontSize: 12, color: tx3, margin: "14px 0 6px", fontWeight: 600 }}>
               {isEN ? "WHERE YOU SHOULD BE" : "DÓNDE DEBERÍAS ESTAR"}
             </div>
             <div style={{ display: "flex", height: 44, borderRadius: 8, overflow: "hidden", gap: 2 }}>
               {["proteccion", "mercado", "aspiracion"].map((c) => (
                 <div key={c} style={{ flex: diag.objetivo.mix[c], background: PAL_CANASTA[c],
                       opacity: 0.55, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "var(--fp-bg)", fontFamily: "monospace" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--fp-bg)", fontFamily: "monospace" }}>
                     {diag.objetivo.mix[c]}%
                   </span>
                 </div>
@@ -249,7 +249,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                           Ahora es una pastilla con el color de la canasta y
                           dice que hace. */}
                       {items.length > 0 && (
-                        <span style={{ fontSize: 11, fontWeight: 600,
+                        <span style={{ fontSize: 12, fontWeight: 600,
                               color: abierta ? "#fff" : PAL_CANASTA[c],
                               background: abierta ? PAL_CANASTA[c] : `${PAL_CANASTA[c]}22`,
                               border: `1px solid ${PAL_CANASTA[c]}55`,
@@ -306,10 +306,10 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                               usuario no puede juzgar si la clasificacion esta
                               bien, y una mezcla mal clasificada se ve igual de
                               creible que una correcta. */}
-                          <div style={{ fontSize: 11, color: it.inferido ? "#f59e0b" : tx3,
+                          <div style={{ fontSize: 12, color: it.inferido ? "#f59e0b" : tx3,
                                 marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <span>{it.inferido ? "⚠️ " : ""}{it.motivo}</span>
-                            {it.manual && <span style={{ color: "#22c55e" }}>✓</span>}
+                            {it.manual && <span style={{ color: "#00c805" }}>✓</span>}
                           </div>
 
                           {/* Reclasificar. El mapa de tipos es una heuristica
@@ -323,7 +323,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                                   onClick={() => onReclasificar(it.id, dest === c ? null : dest)}
                                   disabled={dest === c}
                                   style={{
-                                    fontSize: 10, padding: "3px 9px", borderRadius: 999,
+                                    fontSize: 11, padding: "3px 9px", borderRadius: 999,
                                     cursor: dest === c ? "default" : "pointer",
                                     background: dest === c ? PAL_CANASTA[dest] : "transparent",
                                     color: dest === c ? "#fff" : tx3,
@@ -367,13 +367,13 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
 
             {guardado?.fotoInicial && (
               <div style={{ marginTop: 6, padding: "11px 13px", background: bg3, borderRadius: 10 }}>
-                <div style={{ fontSize: 11, color: tx3, marginBottom: 4 }}>
+                <div style={{ fontSize: 12, color: tx3, marginBottom: 4 }}>
                   {isEN ? "SINCE YOU SET YOUR NORTH" : "DESDE QUE FIJASTE TU NORTE"}
                 </div>
                 <div style={{ fontSize: 12, color: tx2, fontFamily: "monospace" }}>
                   {fm(guardado.fotoInicial.total)} → {fm(diag.total)}
                   {diag.total !== guardado.fotoInicial.total && (
-                    <span style={{ color: diag.total > guardado.fotoInicial.total ? gn : "#ef4444", marginLeft: 8, fontWeight: 700 }}>
+                    <span style={{ color: diag.total > guardado.fotoInicial.total ? gn : "#ff5000", marginLeft: 8, fontWeight: 700 }}>
                       {diag.total > guardado.fotoInicial.total ? "+" : ""}
                       {fmtPctEs((((diag.total - guardado.fotoInicial.total) / guardado.fotoInicial.total) * 100), 1)}
                     </span>
@@ -409,7 +409,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
         const proy = proyectar({ total: diag.total, mix: diag.objetivo.mix, anios: horizonte });
         const hoy = diag.total;
         const esc = [
-          { k: "adverso",   es: "Si sale mal",   en: "If it goes badly",  col: "#ef4444", v: proy.adverso.final },
+          { k: "adverso",   es: "Si sale mal",   en: "If it goes badly",  col: "#ff5000", v: proy.adverso.final },
           { k: "esperado",  es: "Escenario base", en: "Base case",         col: gn,        v: proy.esperado.final },
           { k: "favorable", es: "Si sale bien",  en: "If it goes well",   col: "#3b82f6", v: proy.favorable.final },
         ];
@@ -430,13 +430,13 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                 return (
                   <div key={e.k} style={{ background: bg3, borderRadius: 12, padding: "14px 16px",
                         borderTop: `3px solid ${e.col}` }}>
-                    <div style={{ fontSize: 11, color: tx3, fontWeight: 600, marginBottom: 5 }}>
+                    <div style={{ fontSize: 12, color: tx3, fontWeight: 600, marginBottom: 5 }}>
                       {isEN ? e.en : e.es}
                     </div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: e.col, fontFamily: "monospace" }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: e.col, fontFamily: "monospace" }}>
                       {fm(e.v)}
                     </div>
-                    <div style={{ fontSize: 11, color: tx3, marginTop: 3 }}>
+                    <div style={{ fontSize: 12, color: tx3, marginTop: 3 }}>
                       {veces >= 1 ? `${veces.toFixed(1)}× ${isEN ? "your wealth today" : "tu patrimonio de hoy"}`
                                   : `${fmtPctEs(((1 - veces) * 100), 0)} ${isEN ? "less than today" : "menos que hoy"}`}
                     </div>
@@ -445,8 +445,8 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               })}
             </div>
 
-            <div style={{ padding: "11px 13px", background: "rgba(239,68,68,0.06)",
-                          border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10 }}>
+            <div style={{ padding: "11px 13px", background: "rgba(255,80,0,0.06)",
+                          border: "1px solid rgba(255,80,0,0.2)", borderRadius: 10 }}>
               <div style={{ fontSize: 12, color: tx2, lineHeight: 1.6 }}>
                 {isEN ? (
                   <><strong style={{ color: tx }}>How this is calculated:</strong> each bucket has a reference annual return — protection 1.5%, market 7%, aspiration 12%, all after inflation. Your mix averages <strong style={{ color: tx }}>{fmtPctEs((proy.retornoEsperado * 100), 1)} a year</strong>.
@@ -488,14 +488,14 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               return (
                 <div key={cn} style={{ background: bg3, borderRadius: 12, padding: "14px 16px",
                       borderTop: `3px solid ${PAL_CANASTA[cn]}` }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: tx, marginBottom: 2 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: tx, marginBottom: 2 }}>
                     {NOM_CANASTA[cn]} · {diag.objetivo.mix[cn]}%
                   </div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: PAL_CANASTA[cn],
+                  <div style={{ fontSize: 15, fontWeight: 700, color: PAL_CANASTA[cn],
                                 fontFamily: "monospace", marginBottom: 3 }}>
                     {fm(montoCanasta)}
                   </div>
-                  <div style={{ fontSize: 11, color: tx3, marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, color: tx3, marginBottom: 10 }}>
                     {isEN ? "you have" : "tienes"} {fm(actual)}
                     <span style={{ color: Math.abs(dif) < diag.total * 0.05 ? tx3 : (dif > 0 ? "#f59e0b" : "#3b82f6"),
                                    fontWeight: 700, marginLeft: 5 }}>
@@ -504,7 +504,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                   </div>
                   {VEHICULOS[cn].map((v, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 8,
-                          flexWrap: "wrap", padding: "5px 0", fontSize: 11 }}>
+                          flexWrap: "wrap", padding: "5px 0", fontSize: 12 }}>
                       <span style={{ color: tx2, flex: "1 1 auto", minWidth: 0 }}>{v[L]}</span>
                       <span style={{ color: tx3, fontFamily: "monospace", flexShrink: 0 }}>
                         {fm(montoCanasta * (v.peso / 100))}
@@ -569,11 +569,11 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8,
                       flexWrap: "wrap", marginBottom: 8, paddingBottom: 6,
                       borderBottom: `1px solid ${border}` }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: colCan,
-                        letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: colCan,
+                        letterSpacing: "0.05em" }}>
                     {NOM_CANASTA[can] || can}
                   </span>
-                  <span style={{ fontSize: 11, color: tx3 }}>
+                  <span style={{ fontSize: 12, color: tx3 }}>
                     {grupo.length} {isEN ? (grupo.length === 1 ? "asset" : "assets") : (grupo.length === 1 ? "activo" : "activos")}
                   </span>
                   <span style={{ marginLeft: "auto", fontSize: 12, fontFamily: "monospace",
@@ -608,7 +608,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                         <span style={{ color: tx3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(a.peso, 0)}</span>
                       </span>
                     </div>
-                    <div style={{ fontSize: 11, color: tx3, marginTop: 4, lineHeight: 1.55 }}>{a.razon}</div>
+                    <div style={{ fontSize: 12, color: tx3, marginTop: 4, lineHeight: 1.55 }}>{a.razon}</div>
 
                     {/* 30-ago-2026 (Santiago: "uno no ve en cada porcentaje que
                         hay"). Esta lista mostraba los activos pero no a que
@@ -620,7 +620,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                         esta mirando, y se puede corregir en el mismo lugar. */}
                     <div style={{ display: "flex", alignItems: "center", gap: 6,
                           marginTop: 7, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10, color: tx3 }}>
+                      <span style={{ fontSize: 11, color: tx3 }}>
                         {isEN ? "Basket:" : "Canasta:"}
                       </span>
                       {["proteccion", "mercado", "aspiracion"].map((dest) => {
@@ -633,7 +633,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                               ? a.motivo
                               : (isEN ? `Move to ${NOM_CANASTA[dest]}` : `Mover a ${NOM_CANASTA[dest]}`)}
                             style={{
-                              fontSize: 10, padding: "3px 9px", borderRadius: 999,
+                              fontSize: 11, padding: "3px 9px", borderRadius: 999,
                               cursor: esActual || !onReclasificar ? "default" : "pointer",
                               background: esActual ? PAL_CANASTA[dest] : "transparent",
                               color: esActual ? "#fff" : tx3,
@@ -647,12 +647,12 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       {/* El aviso naranja marca donde la plataforma esta
                           adivinando: es justo donde el usuario debe mirar. */}
                       {a.inferido && (
-                        <span style={{ fontSize: 10, color: "#f59e0b" }}>
+                        <span style={{ fontSize: 11, color: "#f59e0b" }}>
                           {isEN ? "⚠️ we guessed this one" : "⚠️ lo asumimos nosotros"}
                         </span>
                       )}
                       {a.manual && (
-                        <span style={{ fontSize: 10, color: gn }}>
+                        <span style={{ fontSize: 11, color: gn }}>
                           {isEN ? "✓ your call" : "✓ lo definiste tú"}
                         </span>
                       )}
@@ -672,7 +672,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           puede ir a verificarlo. */}
       <div style={{ marginTop: 18, padding: "13px 15px", borderRadius: 10,
                     background: bg3, border: `1px solid ${border}` }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: tx3, letterSpacing: "0.06em", marginBottom: 5 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: tx3, letterSpacing: "0.06em", marginBottom: 5 }}>
           {isEN ? "ABOUT THIS METHODOLOGY" : "SOBRE ESTA METODOLOGÍA"}
         </div>
         <div style={{ fontSize: 12, color: tx2, lineHeight: 1.65 }}>

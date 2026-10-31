@@ -71,8 +71,8 @@ const T = {
   bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)", borderL:"rgba(var(--fp-ink),0.1)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
-  gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
-  rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
+  gn:"#00c805", gnB:"rgba(0,200,5,0.08)",
+  rd:"#ff5000", rdB:"rgba(255,80,0,0.06)",
   bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm  = (n) => `$${Math.round(n||0).toLocaleString("en-US")}`;
@@ -82,7 +82,7 @@ const age = (n) => `Age ${n}`;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const Label = ({c,children}) => (
-  <div style={{fontSize:10,fontWeight:700,color:c||T.tx3,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{children}</div>
+  <div style={{fontSize:11,fontWeight:700,color:c||T.tx3,letterSpacing:1,marginBottom:4}}>{children}</div>
 );
 const Field = ({l, value, onChange, type="number", placeholder, hint, options}) => (
   <div style={{marginBottom:14}}>
@@ -98,20 +98,20 @@ const Field = ({l, value, onChange, type="number", placeholder, hint, options}) 
         : <input type={type} value={value??""} onChange={e=>onChange(e.target.value)} placeholder={placeholder||"0"}
             style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
     }
-    {hint && <div style={{fontSize:10,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
+    {hint && <div style={{fontSize:11,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
   </div>
 );
 const InfoBox = ({color=T.bl, children}) => (
   <div style={{background:`${color}10`,border:`1px solid ${color}25`,borderRadius:8,
-               padding:"10px 14px",fontSize:11,color:T.tx2,lineHeight:1.8,marginTop:8}}>
+               padding:"10px 14px",fontSize:12,color:T.tx2,lineHeight:1.8,marginTop:8}}>
     {children}
   </div>
 );
 const KPI = ({l, v, sub, c}) => (
   <div style={{background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
-    <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{l}</div>
-    <div style={{fontSize:20,fontWeight:800,color:c||T.tx,marginTop:4,fontFamily:"monospace"}}>{v}</div>
-    {sub && <div style={{fontSize:10,color:T.tx3,marginTop:2}}>{sub}</div>}
+    <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{l}</div>
+    <div style={{fontSize:20,fontWeight:700,color:c||T.tx,marginTop:4,fontFamily:"monospace"}}>{v}</div>
+    {sub && <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{sub}</div>}
   </div>
 );
 const SectionCard = ({children, style={}}) => (
@@ -407,7 +407,7 @@ export default function RetirementModuleUS({ user = {} }) {
     <div>
       {/* Header */}
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>🏛️ Retirement Planning</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🏛️ Retirement Planning</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           401(k) · IRA · Roth · RMDs · Social Security · FIRE — SECURE 2.0 / Tax Year 2025
         </p>
@@ -477,7 +477,7 @@ export default function RetirementModuleUS({ user = {} }) {
                   <div style={{height:6,background:T.bg3,borderRadius:3,overflow:"hidden",marginBottom:3}}>
                     <div style={{height:"100%",width:(pct_*100)+"%",background:acc.c,borderRadius:3}}/>
                   </div>
-                  <div style={{fontSize:10,color:T.tx3}}>{acc.note}</div>
+                  <div style={{fontSize:11,color:T.tx3}}>{acc.note}</div>
                 </div>
               );
             })}
@@ -494,8 +494,8 @@ export default function RetirementModuleUS({ user = {} }) {
               ].map(a=>(
                 <div key={a.l} style={{background:T.bg3,borderRadius:10,padding:14}}>
                   <div style={{fontSize:12,fontWeight:700,color:a.c,marginBottom:8}}>{a.l}</div>
-                  {a.assets.map(x=><div key={x} style={{fontSize:11,color:T.tx2,marginBottom:3}}>✓ {x}</div>)}
-                  <div style={{fontSize:10,color:T.tx3,marginTop:8,lineHeight:1.5}}>{a.note}</div>
+                  {a.assets.map(x=><div key={x} style={{fontSize:12,color:T.tx2,marginBottom:3}}>✓ {x}</div>)}
+                  <div style={{fontSize:11,color:T.tx3,marginTop:8,lineHeight:1.5}}>{a.note}</div>
                 </div>
               ))}
             </div>
@@ -523,18 +523,18 @@ export default function RetirementModuleUS({ user = {} }) {
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
                     <div>
                       <div style={{fontSize:13,fontWeight:700,color:T.tx}}>{acc.l}</div>
-                      <div style={{fontSize:10,color:T.tx3}}>{acc.irc}</div>
+                      <div style={{fontSize:11,color:T.tx3}}>{acc.irc}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:12,color:T.tx2}}>{fm(acc.current)}<span style={{color:T.tx3}}> / {fm(acc.max)}</span></div>
-                      {gap > 0 && <div style={{fontSize:11,color:T.or,fontWeight:700}}>Gap: {fm(gap)}/yr</div>}
-                      {gap === 0 && <div style={{fontSize:11,color:T.gn,fontWeight:700}}>✅ Maxed!</div>}
+                      {gap > 0 && <div style={{fontSize:12,color:T.or,fontWeight:700}}>Gap: {fm(gap)}/yr</div>}
+                      {gap === 0 && <div style={{fontSize:12,color:T.gn,fontWeight:700}}>✅ Maxed!</div>}
                     </div>
                   </div>
                   <div style={{height:8,background:T.bg2,borderRadius:3,overflow:"hidden",marginBottom:6}}>
                     <div style={{height:"100%",width:(pct_*100)+"%",background:pct_>=1?T.gn:T.cy,borderRadius:3,transition:"width 0.3s"}}/>
                   </div>
-                  <div style={{fontSize:10,color:T.tx3,lineHeight:1.5}}>{acc.note}</div>
+                  <div style={{fontSize:11,color:T.tx3,lineHeight:1.5}}>{acc.note}</div>
                 </div>
               );
             })}
@@ -542,10 +542,10 @@ export default function RetirementModuleUS({ user = {} }) {
             <div style={{background:`${T.gn}10`,border:`1px solid ${T.gn}25`,borderRadius:12,padding:16}}>
               <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>💡 Annual Tax Savings Opportunity</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                <div><div style={{fontSize:10,color:T.tx3}}>TOTAL UNUSED SPACE</div><div style={{fontSize:20,fontWeight:800,color:T.or}}>{fm(contribOpt.totalGap)}/yr</div></div>
-                <div><div style={{fontSize:10,color:T.tx3}}>TAX SAVINGS IF MAXED</div><div style={{fontSize:20,fontWeight:800,color:T.gn}}>{fm(contribOpt.annualTaxSavings)}/yr</div></div>
+                <div><div style={{fontSize:11,color:T.tx3}}>TOTAL UNUSED SPACE</div><div style={{fontSize:20,fontWeight:700,color:T.or}}>{fm(contribOpt.totalGap)}/yr</div></div>
+                <div><div style={{fontSize:11,color:T.tx3}}>TAX SAVINGS IF MAXED</div><div style={{fontSize:20,fontWeight:700,color:T.gn}}>{fm(contribOpt.annualTaxSavings)}/yr</div></div>
               </div>
-              <div style={{fontSize:11,color:T.tx2,marginTop:10,lineHeight:1.7}}>
+              <div style={{fontSize:12,color:T.tx2,marginTop:10,lineHeight:1.7}}>
                 Every dollar in your 401(k) or HSA saves you {Math.round((p.annualIncome>103350?0.22:0.12)*100)}¢ in taxes today AND grows tax-deferred.
                 {contribOpt.gap401k > 0 && ` Increasing your 401(k) by ${fm(contribOpt.gap401k/12)}/month would max it out.`}
               </div>
@@ -594,9 +594,9 @@ export default function RetirementModuleUS({ user = {} }) {
                 const h = Math.max(10, Math.min(100, y.bal/projection.retirementBal*80));
                 return(
                   <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,minWidth:50}}>
-                    <div style={{fontSize:9,color:T.tx3,fontFamily:"monospace"}}>{fmK(y.bal)}</div>
+                    <div style={{fontSize:11,color:T.tx3,fontFamily:"monospace"}}>{fmK(y.bal)}</div>
                     <div style={{width:36,height:h,background:y.inRetirement?T.or:(y.bal>=projection.fireNumber?T.gn:T.bl),borderRadius:"4px 4px 0 0",minHeight:4}}/>
-                    <div style={{fontSize:9,color:y.inRetirement?T.or:T.tx3}}>{age(y.age)}</div>
+                    <div style={{fontSize:11,color:y.inRetirement?T.or:T.tx3}}>{age(y.age)}</div>
                   </div>
                 );
               })}
@@ -661,8 +661,8 @@ export default function RetirementModuleUS({ user = {} }) {
               {step:"Ongoing",    action:"New conversions fund year 5 from now. Perpetual tax-efficient income stream.",color:T.gn},
             ].map((r,i)=>(
               <div key={i} style={{display:"flex",gap:12,padding:"8px 0",borderBottom:`1px solid ${T.border}`}}>
-                <div style={{fontSize:11,fontWeight:700,color:r.color,minWidth:80,flexShrink:0}}>{r.step}</div>
-                <div style={{fontSize:11,color:T.tx2}}>{r.action}</div>
+                <div style={{fontSize:12,fontWeight:700,color:r.color,minWidth:80,flexShrink:0}}>{r.step}</div>
+                <div style={{fontSize:12,color:T.tx2}}>{r.action}</div>
               </div>
             ))}
             <InfoBox color={T.cy}>
@@ -717,7 +717,7 @@ export default function RetirementModuleUS({ user = {} }) {
             ].map((s,i)=>(
               <div key={i} style={{padding:"10px 0",borderBottom:`1px solid ${T.border}`}}>
                 <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:3}}>{s.s}</div>
-                <div style={{fontSize:11,color:T.tx2,lineHeight:1.6}}>{s.d}</div>
+                <div style={{fontSize:12,color:T.tx2,lineHeight:1.6}}>{s.d}</div>
               </div>
             ))}
           </SectionCard>
@@ -740,11 +740,11 @@ export default function RetirementModuleUS({ user = {} }) {
 
             {/* Benefits table */}
             <div style={{overflowX:"auto"}}>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:11}}>
+              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
                 <thead>
                   <tr>{["Claim Age","Monthly Benefit","By Age 80","By Age 85","By Age 90","vs Age 62"].map(h=>(
                     <th key={h} style={{padding:"8px 10px",textAlign:h==="Claim Age"?"left":"right",
-                      color:T.tx3,fontWeight:700,borderBottom:`1px solid ${T.border}`,fontSize:10,textTransform:"uppercase"}}>{h}</th>
+                      color:T.tx3,fontWeight:700,borderBottom:`1px solid ${T.border}`,fontSize:11}}>{h}</th>
                   ))}</tr>
                 </thead>
                 <tbody>
@@ -784,7 +784,7 @@ export default function RetirementModuleUS({ user = {} }) {
                 {l:"Combined income > $34K",    tax:"Up to 85% taxable", c:T.rd},
               ].map(t=>(
                 <div key={t.l} style={{background:T.bg3,borderRadius:10,padding:12,textAlign:"center"}}>
-                  <div style={{fontSize:10,color:T.tx3,lineHeight:1.4,marginBottom:6}}>{t.l}</div>
+                  <div style={{fontSize:11,color:T.tx3,lineHeight:1.4,marginBottom:6}}>{t.l}</div>
                   <div style={{fontSize:13,fontWeight:700,color:t.c}}>{t.tax}</div>
                 </div>
               ))}
@@ -847,9 +847,9 @@ export default function RetirementModuleUS({ user = {} }) {
                 {l:"Flexible Spending",      v:"Variable", note:"Spend less in down markets (-10%), more in up markets (+10%). Extends portfolio significantly.",c:T.pr},
               ].map(r=>(
                 <div key={r.l} style={{background:T.bg3,borderRadius:10,padding:14}}>
-                  <div style={{fontSize:11,fontWeight:700,color:r.c}}>{r.l}</div>
-                  <div style={{fontSize:18,fontWeight:800,color:T.tx,marginTop:4,fontFamily:"monospace"}}>{r.v}</div>
-                  <div style={{fontSize:10,color:T.tx3,marginTop:4,lineHeight:1.5}}>{r.note}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:r.c}}>{r.l}</div>
+                  <div style={{fontSize:18,fontWeight:700,color:T.tx,marginTop:4,fontFamily:"monospace"}}>{r.v}</div>
+                  <div style={{fontSize:11,color:T.tx3,marginTop:4,lineHeight:1.5}}>{r.note}</div>
                 </div>
               ))}
             </div>
@@ -862,7 +862,7 @@ export default function RetirementModuleUS({ user = {} }) {
         </div>
       )}
 
-      <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:10,color:T.tx3,lineHeight:1.6}}>
+      <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.6}}>
         <strong>Disclaimer:</strong> Retirement projections use historical return assumptions and are not guaranteed. Tax rules, contribution limits, and SS benefits are subject to change.
         Roth conversion decisions should be reviewed annually with a CPA. Past performance does not guarantee future results. Consult a licensed CFP and CPA for personalized retirement planning.
       </div>

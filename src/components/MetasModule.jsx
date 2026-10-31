@@ -15,11 +15,11 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
-  red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
+  green: "#00c805", greenDim: "rgba(0,200,5,0.1)",
+  red: "#ff5000", redDim: "rgba(255,80,0,0.08)",
   blue: "#3b82f6", purple: "#3b82f6", orange: "#f59e0b",
   gold: "#f59e0b", cyan: "#94a3b8",
-  ch: ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
+  ch: ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
 const _fm = (n) => {
   if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
@@ -189,7 +189,7 @@ export default function MetasModule({
         }}
       >
         <div>
-          <h2 style={{ fontSize: 22, fontWeight: 800, margin: "0 0 4px" }}>
+          <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>
             🎯 Metas fondeables
           </h2>
           <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>
@@ -244,11 +244,10 @@ export default function MetasModule({
           <div>
             <div
               style={{
-                fontSize: 10,
+                fontSize: 11,
                 color: T.txt3,
                 fontWeight: 700,
                 letterSpacing: 0.6,
-                textTransform: "uppercase",
               }}
             >
               CF disponible (post-cuotas)
@@ -256,7 +255,7 @@ export default function MetasModule({
             <div
               style={{
                 fontSize: 22,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: cfMensual >= 0 ? T.green : T.red,
                 marginTop: 4,
                 fontVariantNumeric: "tabular-nums",
@@ -267,7 +266,7 @@ export default function MetasModule({
                 /mes
               </span>
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
               {cfIsOverride ? "Override local" : "Del simulador / flujo"} · extra a
               deudas restadas del CF (P0.3)
             </div>
@@ -276,7 +275,7 @@ export default function MetasModule({
             <div>
               <label
                 style={{
-                  fontSize: 10,
+                  fontSize: 11,
                   color: T.txt3,
                   fontWeight: 600,
                   display: "block",
@@ -356,13 +355,13 @@ export default function MetasModule({
               padding: "14px 16px",
             }}
           >
-            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>
+            <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>
               TOTAL METAS
             </div>
             <div
               style={{
                 fontSize: 20,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: T.blue,
                 marginTop: 4,
               }}
@@ -378,13 +377,13 @@ export default function MetasModule({
               padding: "14px 16px",
             }}
           >
-            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>
+            <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>
               AHORRADO
             </div>
             <div
               style={{
                 fontSize: 20,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: T.green,
                 marginTop: 4,
               }}
@@ -400,13 +399,13 @@ export default function MetasModule({
               padding: "14px 16px",
             }}
           >
-            <div style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>
+            <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>
               FALTA
             </div>
             <div
               style={{
                 fontSize: 20,
-                fontWeight: 800,
+                fontWeight: 700,
                 color: T.orange,
                 marginTop: 4,
               }}
@@ -486,13 +485,13 @@ export default function MetasModule({
                       <div
                         style={{
                           fontSize: 16,
-                          fontWeight: 800,
+                          fontWeight: 700,
                           color: fondeo.done ? T.green : T.txt,
                         }}
                       >
                         {meta.nombre || "Meta"}
                       </div>
-                      <div style={{ fontSize: 11, color: T.txt3 }}>
+                      <div style={{ fontSize: 12, color: T.txt3 }}>
                         {meta.categoria}
                         <span
                           style={{
@@ -534,8 +533,8 @@ export default function MetasModule({
                             ? "no_alcanza"
                             : fondeo.veredicto
                         ),
-                        fontSize: 11,
-                        fontWeight: 800,
+                        fontSize: 12,
+                        fontWeight: 700,
                         padding: "4px 10px",
                         borderRadius: 999,
                         whiteSpace: "nowrap",
@@ -552,7 +551,7 @@ export default function MetasModule({
                         borderRadius: 6,
                         cursor: "pointer",
                         color: T.txt2,
-                        fontSize: 11,
+                        fontSize: 12,
                       }}
                     >
                       ✏️
@@ -570,7 +569,7 @@ export default function MetasModule({
                         borderRadius: 6,
                         cursor: "pointer",
                         color: T.red,
-                        fontSize: 11,
+                        fontSize: 12,
                       }}
                     >
                       🗑️
@@ -584,7 +583,7 @@ export default function MetasModule({
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
-                      fontSize: 11,
+                      fontSize: 12,
                       marginBottom: 4,
                     }}
                   >
@@ -689,30 +688,30 @@ export default function MetasModule({
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Objetivo</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>Objetivo</div>
                         <div style={{ fontSize: 15, fontWeight: 700 }}>{fm(fondeo.objetivoCOP)}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Acumulado</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>Acumulado</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: T.green }}>
                           {fm(fondeo.acumuladoCOP)}
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Restante</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>Restante</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: T.orange }}>
                           {fm(fondeo.restante)}
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Meses</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>Meses</div>
                         <div style={{ fontSize: 15, fontWeight: 700 }}>
                           {fondeo.mesesRestantes ?? "—"}
                           {fondeo.vencida ? " · vencida" : ""}
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Aporte /mes</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>Aporte /mes</div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: T.cyan }}>
                           {fondeo.aporteSugerido != null
                             ? fm(fondeo.aporteSugerido)
@@ -720,7 +719,7 @@ export default function MetasModule({
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>CF disp.</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>CF disp.</div>
                         <div
                           style={{
                             fontSize: 15,
@@ -732,7 +731,7 @@ export default function MetasModule({
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: T.txt3 }}>Gap</div>
+                        <div style={{ fontSize: 11, color: T.txt3 }}>Gap</div>
                         <div
                           style={{
                             fontSize: 15,
@@ -753,11 +752,10 @@ export default function MetasModule({
                       <div>
                         <div
                           style={{
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 700,
                             color: T.txt3,
                             letterSpacing: 0.5,
-                            textTransform: "uppercase",
                             marginBottom: 8,
                           }}
                         >
@@ -799,7 +797,7 @@ export default function MetasModule({
                                     style={{
                                       marginTop: 6,
                                       color: T.gold,
-                                      fontSize: 11,
+                                      fontSize: 12,
                                     }}
                                   >
                                     Meta marcada para posponer — sin cambio de
@@ -813,7 +811,7 @@ export default function MetasModule({
                                       style={{
                                         marginTop: 6,
                                         color: T.cyan,
-                                        fontSize: 11,
+                                        fontSize: 12,
                                       }}
                                     >
                                       Recálculo: {t.recalculo.meses} meses @{" "}
@@ -826,7 +824,7 @@ export default function MetasModule({
                                       style={{
                                         marginTop: 6,
                                         color: T.cyan,
-                                        fontSize: 11,
+                                        fontSize: 12,
                                       }}
                                     >
                                       Recálculo: objetivo fondeable{" "}
@@ -839,7 +837,7 @@ export default function MetasModule({
                                       style={{
                                         marginTop: 6,
                                         color: T.cyan,
-                                        fontSize: 11,
+                                        fontSize: 12,
                                       }}
                                     >
                                       Recálculo: con +{fm(t.recalculo.recorteMensual)}
@@ -994,10 +992,9 @@ export default function MetasModule({
               <div style={{ gridColumn: "1/-1" }}>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1026,10 +1023,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1062,10 +1058,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1096,10 +1091,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1129,10 +1123,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1166,10 +1159,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1201,10 +1193,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1236,10 +1227,9 @@ export default function MetasModule({
               <div>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1268,10 +1258,9 @@ export default function MetasModule({
               <div style={{ gridColumn: "1/-1" }}>
                 <label
                   style={{
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: 600,
                     color: T.txt3,
-                    textTransform: "uppercase",
                     display: "block",
                     marginBottom: 4,
                   }}
@@ -1352,7 +1341,7 @@ export default function MetasModule({
                     </div>
                     {preview.aporteSugerido != null && (
                       <div
-                        style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}
+                        style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}
                       >
                         Aporte {fm(preview.aporteSugerido)}/mes · CF{" "}
                         {fm(preview.cfDisponible)} · Gap{" "}

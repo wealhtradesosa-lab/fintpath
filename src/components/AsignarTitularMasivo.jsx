@@ -38,11 +38,11 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   redBg: "rgba(248,113,113,0.10)",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
@@ -227,10 +227,10 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
         }}>
           <span style={{ fontSize: 28 }}>{tipoLabel.emoji}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: C.purple, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+            <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
               {itemsAfectados.length} {itemsAfectados.length === 1 ? tipoLabel.sing : tipoLabel.plur} sin titular fiscal
             </div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.3 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.3 }}>
               ¿Qué quieres hacer con {itemsAfectados.length === 1 ? "este " + tipoLabel.sing : "estos " + tipoLabel.plur}?
             </h2>
           </div>
@@ -256,7 +256,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
         {/* Items con checkbox + info detallada */}
         <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.txt3, letterSpacing: 0.5 }}>
               Selecciona los items
               {seleccionados.size > 0 && <span style={{ color: C.green, marginLeft: 6 }}>· {seleccionados.size} de {itemsAfectados.length}</span>}
               {totalMonto > 0 && <span style={{ color: C.green, marginLeft: 6 }}>· Total {fm(totalMonto)}</span>}
@@ -295,12 +295,12 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
                     border: `1.5px solid ${sel ? C.green : C.border}`,
                     background: sel ? C.green : "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#000", fontSize: 12, fontWeight: 800, marginTop: 1,
+                    color: "#000", fontSize: 12, fontWeight: 700, marginTop: 1,
                   }}>{sel && "✓"}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ color: C.txt, fontWeight: 700, fontSize: 13 }}>{it.label}</div>
                     {it.infoExtra && (
-                      <div style={{ fontSize: 10, color: C.txt3, marginTop: 2, fontFamily: "ui-monospace, monospace", overflowWrap: "break-word" }}>
+                      <div style={{ fontSize: 11, color: C.txt3, marginTop: 2, fontFamily: "ui-monospace, monospace", overflowWrap: "break-word" }}>
                         {it.infoExtra}
                       </div>
                     )}
@@ -434,7 +434,7 @@ function ContenidoAsignar({ owners, ownerDestinoId, setOwnerDestinoId, crearNuev
                   <span style={{ fontSize: 18 }}>{o.type === "juridica" ? "🏢" : "👤"}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ color: C.txt, fontWeight: 700, fontSize: 14 }}>{o.name}</div>
-                    <div style={{ fontSize: 11, color: C.txt3, marginTop: 1 }}>
+                    <div style={{ fontSize: 12, color: C.txt3, marginTop: 1 }}>
                       {o.type === "juridica" ? "Persona jurídica" : "Persona natural"}
                       {o.nit && ` · NIT/CC ${o.nit}`}
                       {o.regimen && ` · ${o.regimen}`}
@@ -458,7 +458,7 @@ function ContenidoAsignar({ owners, ownerDestinoId, setOwnerDestinoId, crearNuev
       )}
       {crearNuevo && (
         <div style={{ background: C.bg3, padding: 16, borderRadius: 10, border: `1px solid ${C.border}` }}>
-          <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, marginBottom: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>Nueva persona fiscal</div>
+          <div style={{ fontSize: 12, color: C.blue, fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>Nueva persona fiscal</div>
           <div style={{ marginBottom: 12 }}>
             <label style={lblStyle}>Tipo</label>
             <div style={{ display: "flex", gap: 8 }}>
@@ -494,7 +494,7 @@ function ContenidoExterior({ jurisdiccion, setJurisdiccion, tipoLabel }) {
         padding: "14px 16px", background: C.blueBg, border: `1px solid ${C.blue}40`,
         borderLeft: `3px solid ${C.blue}`, borderRadius: 8, marginBottom: 16,
       }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: C.blue, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.blue, letterSpacing: 0.5, marginBottom: 6 }}>
           🌎 Marcar como exterior
         </div>
         <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.55 }}>
@@ -510,7 +510,7 @@ function ContenidoExterior({ jurisdiccion, setJurisdiccion, tipoLabel }) {
         <label style={lblStyle}>Jurisdicción donde tributan</label>
         <input type="text" value={jurisdiccion} onChange={(e) => setJurisdiccion(e.target.value)}
           placeholder="Ej: USA, España, Panamá" style={inputStyle} />
-        <div style={{ fontSize: 11, color: C.txt3, marginTop: 6, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 6, lineHeight: 1.4 }}>
           Solo se usa como etiqueta interna para que sepas dónde están reportados estos {tipoLabel.plur}.
         </div>
       </div>
@@ -518,7 +518,7 @@ function ContenidoExterior({ jurisdiccion, setJurisdiccion, tipoLabel }) {
         marginTop: 16, padding: "10px 14px",
         background: C.orangeBg, border: `1px solid ${C.orange}40`, borderRadius: 8,
       }}>
-        <div style={{ fontSize: 11, color: C.orange, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 4 }}>
+        <div style={{ fontSize: 12, color: C.orange, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
           ⚠ Recordatorio fiscal
         </div>
         <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
@@ -535,7 +535,7 @@ function ContenidoEliminar({ tipoLabel }) {
       padding: "14px 16px", background: C.redBg, border: `1px solid ${C.red}40`,
       borderLeft: `3px solid ${C.red}`, borderRadius: 8,
     }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: C.red, letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 6 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: C.red, letterSpacing: 0.5, marginBottom: 6 }}>
         🗑️ Eliminar definitivamente
       </div>
       <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.55, marginBottom: 8 }}>
@@ -570,11 +570,11 @@ function TabBtn({ activo, onClick, color, children }) {
   );
 }
 
-const btnPrimary = { padding: "10px 20px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 800 };
+const btnPrimary = { padding: "10px 20px", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700 };
 const btnSec = { padding: "10px 18px", background: "transparent", border: `1.5px solid ${C.border}`, borderRadius: 8, color: C.txt2, cursor: "pointer", fontSize: 13, fontWeight: 700 };
 const closeBtn = { background: "transparent", border: "none", color: C.txt3, fontSize: 22, cursor: "pointer", padding: 0, lineHeight: 1 };
-const miniBtn = { padding: "4px 10px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 6, color: C.txt2, fontSize: 11, fontWeight: 600, cursor: "pointer" };
-const lblStyle = { display: "block", fontSize: 11, fontWeight: 700, color: C.txt3, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 };
+const miniBtn = { padding: "4px 10px", background: C.bg3, border: `1px solid ${C.border}`, borderRadius: 6, color: C.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer" };
+const lblStyle = { display: "block", fontSize: 12, fontWeight: 700, color: C.txt3, marginBottom: 6, letterSpacing: 0.5 };
 const inputStyle = { width: "100%", padding: "10px 12px", background: C.bg3, border: `1.5px solid ${C.border}`, borderRadius: 6, color: C.txt, fontSize: 14, outline: "none", boxSizing: "border-box" };
 function pillBtn(activo) {
   return { flex: 1, padding: "10px", background: activo ? C.greenBg : C.bg3, border: `1.5px solid ${activo ? C.green : C.border}`, borderRadius: 6, color: C.txt, cursor: "pointer", fontSize: 13, fontWeight: 700 };

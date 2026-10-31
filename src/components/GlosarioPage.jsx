@@ -35,7 +35,7 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
@@ -252,7 +252,7 @@ export default function GlosarioPage({ onClose }) {
               color: C.txt2,
               padding: "5px 10px",
               borderRadius: 6,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 600,
               cursor: "pointer",
             }}
@@ -328,7 +328,7 @@ export default function GlosarioPage({ onClose }) {
           <strong style={{ color: C.txt }}>¿Falta algún término?</strong> El glosario crece según lo que pidan los users.
           Si encontraste una palabra que no entiendes mientras usas la app, escríbenos y la agregamos.
         </div>
-        <div style={{ marginTop: 12, fontSize: 11, color: C.txt3 }}>
+        <div style={{ marginTop: 12, fontSize: 12, color: C.txt3 }}>
           Las definiciones reflejan el Estatuto Tributario vigente en 2026 y la jurisprudencia DIAN actual.
           Para dudas específicas de tu caso, siempre conviene confirmar con tu contador.
         </div>
@@ -371,7 +371,7 @@ function SeccionCategoria({ categoria }) {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 22 }}>{categoria.icono}</span>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
               {categoria.titulo}
             </h2>
             {categoria.descripcion && (
@@ -404,7 +404,7 @@ function TarjetaTermino({ termino, color }) {
     }}>
       {/* Nombre del término */}
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-        <span style={{ fontSize: 16, fontWeight: 800, color: C.txt }}>
+        <span style={{ fontSize: 16, fontWeight: 700, color: C.txt }}>
           {termino.termino || termino.clave}
         </span>
         {termino.nombreCompleto && termino.nombreCompleto !== termino.termino && (

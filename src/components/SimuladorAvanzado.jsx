@@ -23,8 +23,8 @@ const T = {
   bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
-  rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
+  gn: "#00c805", gnD: "rgba(0,200,5,0.1)",
+  rd: "#ff5000", rdD: "rgba(255,80,0,0.08)",
   bl: "#3b82f6", pr: "#3b82f6", or: "#f59e0b", gd: "#f59e0b", cy: "#94a3b8",
 };
 // El signo va ANTES del peso: un flujo negativo salía "$-35.114.710".
@@ -148,10 +148,10 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
     <div style={{ marginBottom: 4, background: color + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + color }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
         <span style={{ fontSize: 12, color: T.txt2, fontWeight: 500 }}>
-          {label} {sub && <span style={{ fontSize: 10, color: T.txt3 }}>{sub}</span>}
+          {label} {sub && <span style={{ fontSize: 11, color: T.txt3 }}>{sub}</span>}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {diff !== 0 && <span style={{ fontSize: 10, color: diff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{diff > 0 ? "+" : ""}{fm(diff)}</span>}
+          {diff !== 0 && <span style={{ fontSize: 11, color: diff > 0 ? T.gn : T.rd, fontWeight: 600 }}>{diff > 0 ? "+" : ""}{fm(diff)}</span>}
           <span style={{ fontSize: 12, fontWeight: 700, color }}>{fm(value)}</span>
         </div>
       </div>
@@ -159,7 +159,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
         <input type="range" min="0" max={max} step={Math.max(Math.round(max * 0.01), 5)} value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           style={{ flex: 1, accentColor: color, height: 4, cursor: "pointer" }} />
-        <span style={{ fontSize: 10, color: T.txt3, minWidth: 32, textAlign: "right" }}>{perc}%</span>
+        <span style={{ fontSize: 11, color: T.txt3, minWidth: 32, textAlign: "right" }}>{perc}%</span>
       </div>
     </div>
   );
@@ -202,18 +202,18 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           </p>
         </div>
         {currentData && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: currentData.color + "15", border: "1px solid " + currentData.color + "25", borderRadius: 12, padding: "8px 16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(var(--fp-ink),0.04)", border: "1px solid " + T.border, borderRadius: 12, padding: "8px 16px" }}>
             <span style={{ fontSize: 20 }}>{currentData.icon}</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: currentData.color }}>{currentData.name}</div>
-              <div style={{ fontSize: 10, color: T.txt3 }}>Nivel {currentLevel}/5</div>
+              <div style={{ fontSize: 11, color: T.txt3 }}>Nivel {currentLevel}/5</div>
             </div>
           </div>
         )}
         {!currentData && (
           <div style={{ background: T.bg3, borderRadius: 12, padding: "8px 16px" }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.txt3 }}>Sin nivel aún</div>
-            <div style={{ fontSize: 10, color: T.txt3 }}>Agrega ingresos y gastos</div>
+            <div style={{ fontSize: 11, color: T.txt3 }}>Agrega ingresos y gastos</div>
           </div>
         )}
       </div>
@@ -222,15 +222,15 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           Abundancia y el cuadro de abajo «¡Independencia!». */}
       {vista && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: T.txt3, marginBottom: 4 }}>Tu nivel real, con tus datos guardados (los sliders y escenarios no lo cambian).</div>
-          {trmPendiente && <div style={{ fontSize: 10, color: T.gd, marginBottom: 4 }}>Tus montos en dólares quedan fuera de este nivel: pendiente de tasa. Se suman cuando cargue la TRM.</div>}
-          <div style={{ fontSize: 15, fontWeight: 800, color: currentData?.color || T.txt, lineHeight: 1.4 }}>{vista.titular}</div>
+          <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4 }}>Tu nivel real, con tus datos guardados (los sliders y escenarios no lo cambian).</div>
+          {trmPendiente && <div style={{ fontSize: 11, color: T.gd, marginBottom: 4 }}>Tus montos en dólares quedan fuera de este nivel: pendiente de tasa. Se suman cuando cargue la TRM.</div>}
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, lineHeight: 1.4, overflowWrap: "anywhere" }}>{vista.titular}</div>
           <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, overflowWrap: "anywhere" }}>
             Tu ingreso pasivo (bruto): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
           </div>
-          <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
+          <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
           {escenarioTxt && (
-            <div data-testid="nivel-escenario" style={{ marginTop: 8, fontSize: 11, color: T.txt2, border: "1px dashed " + T.border, borderRadius: 8, padding: "6px 8px" }}>🧪 {escenarioTxt}</div>
+            <div data-testid="nivel-escenario" style={{ marginTop: 8, fontSize: 12, color: T.txt2, border: "1px dashed " + T.border, borderRadius: 8, padding: "6px 8px" }}>🧪 {escenarioTxt}</div>
           )}
           {/* «Te faltan $X/mes» va solo en el cuadro «Siguiente» (QA #58). */}
         </div>
@@ -251,66 +251,42 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
 
       {/* Progress Bar */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ height: 36, background: T.bg3, borderRadius: 16, overflow: "hidden", position: "relative" }}>
+        <div style={{ height: 14, background: T.bg3, borderRadius: 8, overflow: "hidden", position: "relative", marginTop: 26 }}>
           {/* Level markers */}
           {LEVELS.filter((l) => l.porCobertura).map((l) => {
             return (
               <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", top: 0, bottom: 0, width: 2, background: "rgba(var(--fp-ink),0.1)", zIndex: 2 }}>
-                <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", fontSize: 16 }}>{l.icon}</div>
+                
               </div>
             );
           })}
           {/* Fill bar */}
           <div style={{
             width: overallProg + "%", height: "100%",
-            background: "linear-gradient(90deg, #3b82f6 0%, #94a3b8 20%, #22c55e 40%, #f59e0b 70%, #f59e0b 100%)",
+            background: currentLevel >= 4 ? "#00c805" : currentLevel === 3 ? "#3b82f6" : "#94a3b8", // 31-oct-2026: un solo color (antes arcoíris)
             borderRadius: 16, transition: "width 0.3s ease",
             display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 14,
             minWidth: overallProg > 3 ? 50 : 0,
           }}>
-            {overallProg > 8 && (
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{pctPiso(ip, ob)}%</span>
-            )}
+
           </div>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: T.txt3, marginTop: 4 }}>
-          <span>0%</span>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.txt3, marginTop: 4 }}>
+          <span style={{ fontWeight: 700, color: T.txt }}>{pctPiso(ip, ob)}% cubierto</span>
           {vista?.desborde
-            ? <span style={{ fontSize: 11, fontWeight: 800, color: currentData?.color || T.gd }}>{vista.desborde}</span>
+            ? <span style={{ fontSize: 12, fontWeight: 700, color: currentData?.color || T.gd }}>{vista.desborde}</span>
             : <span>100% = tus gastos cubiertos</span>}
         </div>
 
-        {/* Level labels */}
-        <div style={{ display: "flex", position: "relative", height: 32, marginTop: 6 }}>
-          {/* 0-25% no es un punto: es la franja donde estas en Deficit o en
-              Estabilidad segun tu flujo del mes. Antes se dibujaban como dos
-              marcas (0% y un 10% inventado) y la escala no cuadraba. */}
-          <div style={{ position: "absolute", left: (LEVELS[2] ? pos(LEVELS[2]) / 2 : 12.5) + "%", transform: "translateX(-50%)", textAlign: "center" }}>
-            <div style={{ fontSize: 9, fontWeight: currentLevel <= 2 ? 700 : 500, color: currentLevel === 1 ? LEVELS[0].color : currentLevel === 2 ? LEVELS[1].color : T.txt3 }}>
-              {currentLevel === 1 ? "Déficit" : currentLevel === 2 ? "Estabilidad" : "Déficit · Estabilidad"}
-            </div>
-          </div>
-          {LEVELS.filter((l) => l.porCobertura).map((l, idx, arr) => {
-            const est = estadoNivel(l.id, currentLevel);
-            // Si dos marcas caen casi en el mismo punto (p. ej. Seguridad e
-            // Independencia en 100% cuando no hay gastos esenciales aparte),
-            // la segunda baja una línea para no montarse (QA #58).
-            const choca = idx > 0 && Math.abs(pos(l) - pos(arr[idx - 1])) < 12;
-            return (
-              <div key={l.id} style={{ position: "absolute", top: choca ? 12 : 0, left: pos(l) + "%", transform: "translateX(-50%)", textAlign: "center", whiteSpace: "nowrap" }}>
-                <div style={{ fontSize: 9, fontWeight: est === "actual" ? 800 : 500, color: est === "actual" ? l.color : T.txt3 }}>{llevaCheck(l.id, currentLevel) ? "✓ " : ""}{l.name}</div>
-              </div>
-            );
-          })}
-        </div>
+        {/* 31-oct-2026: sin la fila de etiquetas debajo (se montaban y se salían); los niveles están en las tarjetas. */}
       </div>
 
       {/* Lo que el ojo ⬜ de Gastos/Ingresos dejó fuera de esta cuenta. Ocultar
           es un botón de VER (dice "Ocultar"/"Mostrar"), pero la plata oculta
           desaparecía del nivel sin que nada lo dijera. */}
       {ocultos && (ocultos.nGastos > 0 || ocultos.nIngresos > 0) && (
-        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "9px 14px", marginBottom: 12, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "9px 14px", marginBottom: 12, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           👁️ Esta cuenta <b>no incluye</b> lo que tienes oculto:
           {ocultos.nGastos > 0 && <> {ocultos.nGastos} gasto{ocultos.nGastos > 1 ? "s" : ""} por <b>{fm(ocultos.gastos)}/mes</b></>}
           {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
@@ -318,7 +294,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           . Si eso lo sigues pagando o cobrando, vuelve a mostrarlo en su sección para que el nivel sea real.
           {nombresIngresosOcultos.length > 0 && (
             <div style={{ marginTop: 6 }}>
-              <button onClick={() => setVerOcultos(!verOcultos)} style={{ background: "none", border: "none", padding: 0, color: T.gd, cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+              <button onClick={() => setVerOcultos(!verOcultos)} style={{ background: "none", border: "none", padding: 0, color: T.gd, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
                 {verOcultos ? "Ocultar la lista ▴" : `Ver cuáles son los ${nombresIngresosOcultos.length} ingresos ▾`}
               </button>
               {verOcultos && (
@@ -327,8 +303,8 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
                     {n.revisar && !confirmados.has(n.nombre) && (
                       <div style={{ marginTop: 3, color: T.gd }}>
                         Revisa: ¿es renta de una inversión?{" "}
-                        <button onClick={() => setConfirmados(new Set(confirmarRenta(n.nombre)))} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}>Sí, es renta</button>{" "}
-                        <button onClick={() => onNavigate && onNavigate("flujo")} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 10, padding: "1px 6px" }}>No, cambiar categoría</button>
+                        <button onClick={() => setConfirmados(new Set(confirmarRenta(n.nombre)))} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 11, padding: "1px 6px" }}>Sí, es renta</button>{" "}
+                        <button onClick={() => onNavigate && onNavigate("flujo")} style={{ background: "none", border: "1px solid " + T.border, borderRadius: 6, color: T.txt2, cursor: "pointer", fontSize: 11, padding: "1px 6px" }}>No, cambiar categoría</button>
                       </div>
                     )}
                     {n.revisar && confirmados.has(n.nombre) && <span style={{ color: T.txt3 }}> · confirmado como renta</span>}
@@ -350,24 +326,23 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           const needed = umbral(l);
           return (
             <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
-              background: current ? l.color + "12" : reached ? "rgba(var(--fp-ink),0.02)" : T.bg3,
-              border: "1px solid " + (current ? l.color + "40" : reached ? l.color + "20" : T.border),
-              borderRadius: 12, padding: "10px 10px", textAlign: "center", position: "relative", minWidth: 0, overflowWrap: "anywhere",
-              opacity: current ? 1 : pasado ? 0.6 : 0.5, cursor: "pointer", transition: "all 0.2s",
+              background: current ? "rgba(var(--fp-ink),0.05)" : "transparent",
+              border: "1px solid " + (current ? "rgba(var(--fp-ink),0.35)" : T.border),
+              borderRadius: 12, padding: "10px 10px", position: "relative", minWidth: 0, overflowWrap: "anywhere",
+              opacity: current ? 1 : 0.7, cursor: "pointer", transition: "all 0.2s", textAlign: "left",
             }}>
-              {current && <div style={{ position: "absolute", top: 5, right: 5, width: 6, height: 6, borderRadius: "50%", background: l.color }} />}
-              <div style={{ fontSize: 18, marginBottom: 4 }}>{l.icon}</div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: reached ? l.color : T.txt3, lineHeight: 1.2 }}>{llevaCheck(l.id, currentLevel) ? `✓ ${l.name} alcanzado` : l.name}</div>
+              {current && <div style={{ fontSize: 11, fontWeight: 700, color: "#00c805", marginBottom: 2 }}>Estás aquí</div>}
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, lineHeight: 1.25 }}>{llevaCheck(l.id, currentLevel) ? `✓ ${l.name}` : l.name}</div>
               {l.porCobertura ? (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(needed)}<span style={{ fontSize: 9 }}>/mes</span></span>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2, marginTop: 4 }}>
+                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(needed)}<span style={{ fontSize: 11 }}>/mes</span></span>
                   </div>
-                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     de ingreso pasivo<br />{l.def.umbral === "esencial" ? "paga lo esencial" : l.def.factor > 1 ? "paga todo, con margen" : "paga todo"}
                   </div>
                   {l.def.umbral === "esencial" && pistaSeguridad && (
-                    <div style={{ fontSize: 9, color: T.gd, marginTop: 3, lineHeight: 1.3 }}>{pistaSeguridad}</div>
+                    <div style={{ fontSize: 11, color: T.gd, marginTop: 3, lineHeight: 1.3 }}>{pistaSeguridad}</div>
                   )}
                 </>
               ) : (
@@ -382,25 +357,24 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
                 // partida y no tiene meta.
                 metaNivel(l.def) ? (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(0)}<span style={{ fontSize: 9 }}>/mes</span></span>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2, marginTop: 4 }}>
+                    <span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>Meta: {fm(0)}<span style={{ fontSize: 11 }}>/mes</span></span>
                   </div>
-                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     de flujo o más<br />hoy: {fm(fl)}/mes
                   </div>
                 </>
                 ) : (
                 <>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: reached ? l.color : T.txt2, fontFamily: "monospace", marginTop: 4 }}>
-                    {fm(fl)}<span style={{ fontSize: 9 }}>/mes</span>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.txt2, marginTop: 4 }}>
+                    {fm(fl)}<span style={{ fontSize: 11 }}>/mes</span>
                   </div>
-                  <div style={{ fontSize: 9, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
+                  <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.35, minHeight: 24 }}>
                     tu flujo del mes<br />en rojo = estás aquí
                   </div>
                 </>
                 )
               )}
-              <div style={{ fontSize: 9, color: T.txt3, marginTop: 3 }}>click para info ▾</div>
             </div>
           );
         })}
@@ -418,8 +392,8 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 8 }}>
                 <span style={{ fontSize: 24 }}>{l.icon}</span>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: l.color }}>{l.name}</div>
-                  <div style={{ fontSize: 11, color: T.txt3 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: l.color }}>{l.name}</div>
+                  <div style={{ fontSize: 12, color: T.txt3 }}>
                     Nivel {l.id}/5 — {l.porCobertura
                       ? <>Necesitas {fm(needed)}/mes de ingreso pasivo — {l.def.umbral === "esencial"
                           ? <>lo esencial de tu mes, dentro de {fm(te)} de gastos y cuotas</>
@@ -454,8 +428,8 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 9, color: T.txt3 }}>Te faltan</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: nextData.color, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(monthlyGap)}<span style={{ fontSize: 10 }}>/mes</span></div>
+              <div style={{ fontSize: 11, color: T.txt3 }}>Te faltan</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: nextData.color, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(monthlyGap)}<span style={{ fontSize: 11 }}>/mes</span></div>
             </div>
           </div>
         </div>
@@ -469,7 +443,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               26-oct-2026 — Se conserva ese nombre dinámico: el #58 lo volvía a
               fijar en "¡Abundancia!". De ahí se toma la segunda línea, que es
               la que evita repetir el porcentaje del titular de arriba. */}
-          <div style={{ fontSize: 18, fontWeight: 800, color: T.gd }}>¡{currentData?.name || "Abundancia"}!</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.gd }}>¡{currentData?.name || "Abundancia"}!</div>
           <div style={{ fontSize: 13, color: T.txt2 }}>Estás en el último nivel{vista?.desborde ? `: ${vista.desborde} de tus gastos y cuotas` : ""}.</div>
         </div>
       )}
@@ -1208,7 +1182,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 14 }}>
           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, marginBottom: 4 }}>
               📋 Escenario
             </div>
             <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
@@ -1251,7 +1225,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
                 const ingRows = ingMes.map(({ i, v }) => {
                 const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${fmtNumEs((i.capital/1e6), 0)}M × ${fmtTasaEs(i.tasa)}</span>` : "";
                 const monto = v > 0
-                  ? `<span style="font-weight:600;color:#16a34a">$${Math.round(v).toLocaleString("es-CO")}</span>`
+                  ? `<span style="font-weight:600;color:#00a804">$${Math.round(v).toLocaleString("es-CO")}</span>`
                   : `<span style="color:var(--fp-txt2);font-size:10px">no aplica en ${mesPdfL.toLowerCase()}</span>`;
                 return `<tr style="${v > 0 ? "" : "color:var(--fp-txt2)"}"><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right">${monto}</td><td>${cap}</td></tr>`;
               }).join("");
@@ -1266,7 +1240,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               }).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
               const gasRows = gasCats.map(g => {
                 const detail = g.items.slice(0,3).map(i=>i.c).join(", ");
-                return `<tr><td>${g.cat}</td><td style="color:#888;font-size:10px">${detail}</td><td style="text-align:right;font-weight:600;color:#dc2626">$${Math.round(g.total).toLocaleString("es-CO")}</td></tr>`;
+                return `<tr><td>${g.cat}</td><td style="color:#888;font-size:10px">${detail}</td><td style="text-align:right;font-weight:600;color:#e64800">$${Math.round(g.total).toLocaleString("es-CO")}</td></tr>`;
               }).join("");
               
               // Build debt rows — filtra apagadas y las que no tienen saldo
@@ -1282,17 +1256,17 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 :root{--fp-bg:#ffffff;--fp-card:#ffffff;--fp-raised:#f4f4f5;--fp-txt:#18181b;--fp-txt2:#52525b;--fp-txt3:#71717a;--fp-line:#d4d4d8;--fp-ink:0,0,0} /* ventana aparte: la paleta va aquí */
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,system-ui,sans-serif;font-size:11px;color:#222;padding:20px 28px;max-width:800px;margin:0 auto}
-h1{font-size:18px;font-weight:800;color:#16a34a;margin:0 0 2px}
+h1{font-size:18px;font-weight:800;color:#00a804;margin:0 0 2px}
 h2{font-size:13px;font-weight:700;color:#333;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:3px}
 .sub{font-size:10px;color:#888;margin-bottom:12px}
-.desc{background:#f9fafb;border-left:3px solid #16a34a;padding:10px 14px;margin:0 0 14px;font-size:11px;color:var(--fp-line);line-height:1.5;border-radius:0 6px 6px 0}
+.desc{background:#f9fafb;border-left:3px solid #00a804;padding:10px 14px;margin:0 0 14px;font-size:11px;color:var(--fp-line);line-height:1.5;border-radius:0 6px 6px 0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
 .kpi{background:#f8f8f8;border:1px solid var(--fp-txt);border-radius:6px;padding:8px 10px;text-align:center}
 .kpi .label{font-size:9px;color:#888;text-transform:uppercase;font-weight:600}
 .kpi .val{font-size:18px;font-weight:800;margin-top:2px}
-.gn{color:#16a34a}.rd{color:#dc2626}.bl{color:#2563eb}.or{color:#d97706}
+.gn{color:#00a804}.rd{color:#e64800}.bl{color:#2563eb}.or{color:#d97706}
 table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px}
 th{background:#f5f5f5;padding:4px 6px;text-align:left;font-size:9px;font-weight:600;color:#666;border-bottom:1px solid #ddd}
 td{padding:4px 6px;border-bottom:1px solid #f0f0f0}
@@ -1323,8 +1297,8 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
       <span style="color:#3b82f6;font-weight:500">−$${Math.round(expT.retencionMensual||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
-      <span style="color:#16a34a">= DISPONIBLE</span>
-      <span style="color:#16a34a">$${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")}</span>
+      <span style="color:#00a804">= DISPONIBLE</span>
+      <span style="color:#00a804">$${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")}</span>
     </div>
   </div>
 
@@ -1348,22 +1322,22 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
       <span style="color:#3b82f6">$${Math.round(expT.impuestoNeto||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
-      <span style="color:#dc2626">= EGRESOS TOTALES</span>
-      <span style="color:#dc2626">$${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</span>
+      <span style="color:#e64800">= EGRESOS TOTALES</span>
+      <span style="color:#e64800">$${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</span>
     </div>
   </div>
 </div>
 
 <!-- Cash Flow protagonista -->
-<div style="background:${expT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${expT.cf>=0?'#16a34a':'#dc2626'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+<div style="background:${expT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${expT.cf>=0?'#00a804':'#e64800'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
   <div>
-    <div style="font-size:10px;color:${expT.cf>=0?'#16a34a':'#dc2626'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${expT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
-    <div style="font-size:26px;font-weight:800;color:${expT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(expT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:var(--fp-txt2);font-weight:400">/mes</span></div>
+    <div style="font-size:10px;color:${expT.cf>=0?'#00a804':'#e64800'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${expT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
+    <div style="font-size:26px;font-weight:800;color:${expT.cf>=0?'#00a804':'#e64800'};margin-top:4px">$${Math.round(expT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:var(--fp-txt2);font-weight:400">/mes</span></div>
     <div style="font-size:10px;color:var(--fp-txt3);margin-top:3px">Disponible $${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")} − Egresos $${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</div>
   </div>
   <div style="display:flex;gap:22px;text-align:center">
-    <div><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
-    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#f59e0b'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
+    <div><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#00a804':'#e64800'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#00a804':'#f59e0b'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
     <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
   </div>
 </div>
@@ -1371,25 +1345,25 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 <h2>💰 Ingresos de ${mesPdfL}</h2>
 <table><thead><tr><th>Fuente</th><th>Categoría</th><th style="text-align:right">Monto</th><th>Detalle</th></tr></thead>
 <tbody>${ingRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #16a34a"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#16a34a">$${Math.round(expT.brutoTotal||expT.ni||0).toLocaleString("es-CO")}</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #00a804"><td colspan="2">TOTAL BRUTO</td><td style="text-align:right;color:#00a804">$${Math.round(expT.brutoTotal||expT.ni||0).toLocaleString("es-CO")}</td><td></td></tr></tfoot>
 </table>
 
 <h2>💳 Gastos de ${mesPdfL}</h2>
 <table><thead><tr><th>Categoría</th><th>Principales</th><th style="text-align:right">Total</th></tr></thead>
 <tbody>${gasRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#dc2626">$${Math.round(expT.gfm).toLocaleString("es-CO")}</td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #e64800"><td colspan="2">TOTAL GASTOS</td><td style="text-align:right;color:#e64800">$${Math.round(expT.gfm).toLocaleString("es-CO")}</td></tr></tfoot>
 </table>
 
 ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
 <table><thead><tr><th>Deuda</th><th style="text-align:right">Saldo</th><th style="text-align:right">Cuota</th><th style="text-align:right">Tasa</th></tr></thead>
 <tbody>${deuRows}</tbody>
-<tfoot><tr style="font-weight:700;border-top:2px solid #dc2626"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#dc2626">$${Math.round(expT.cuotasDeudas||0).toLocaleString("es-CO")}/mes</td><td></td></tr></tfoot>
+<tfoot><tr style="font-weight:700;border-top:2px solid #e64800"><td>TOTAL CUOTAS</td><td></td><td style="text-align:right;color:#e64800">$${Math.round(expT.cuotasDeudas||0).toLocaleString("es-CO")}/mes</td><td></td></tr></tfoot>
 </table>` : ""}
 
 <h2>📊 Resumen</h2>
 <div class="grid2">
   <div>
-    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(expT.ind,100)}%;background:${expT.ind>=100?"#16a34a":"#f59e0b"}"></div></div>
+    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(expT.ind,100)}%;background:${expT.ind>=100?"#00a804":"#f59e0b"}"></div></div>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${fmtPctEs((expT.ind||0), 0)}</span><span>100%</span></div>
   </div>
   <div class="diag">
@@ -1404,7 +1378,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               w.document.write(html);
               w.document.close();
               setTimeout(()=>w.print(), 500);
-            }} style={{background:"#22c55e",color:"#000",border:"none",padding:"9px 16px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0,display:"flex",alignItems:"center",gap:6}}>📄 PDF</button>
+            }} style={{background:"#00c805",color:"#000",border:"none",padding:"9px 16px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0,display:"flex",alignItems:"center",gap:6}}>📄 PDF</button>
           <button onClick={async()=>{
               // Dynamic import de SheetJS para no cargar 500KB en el bundle
               // inicial — solo se descarga cuando el user hace click en Excel.
@@ -1561,8 +1535,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               background: a ? sc.c + "10" : T.card, cursor: "pointer", textAlign: "center",
             }}>
               <div style={{ fontSize: 20 }}>{sc.i}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: a ? sc.c : T.txt2 }}>{sc.l}</div>
-              <div style={{ fontSize: 9, color: T.txt3 }}>{sc.d}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: a ? sc.c : T.txt2 }}>{sc.l}</div>
+              <div style={{ fontSize: 11, color: T.txt3 }}>{sc.d}</div>
             </button>
           );
         })}
@@ -1594,10 +1568,10 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
               <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase" }}>📅 Cómo se comporta tu año</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1.2 }}>📅 Cómo se comporta tu año</div>
                 <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Cash flow mes a mes · picos y valles del año {getMesActual().año}</div>
               </div>
-              <div style={{ fontSize: 11, color: T.gd, fontWeight: 700, whiteSpace: "nowrap" }}>Ver detalle completo →</div>
+              <div style={{ fontSize: 12, color: T.gd, fontWeight: 700, whiteSpace: "nowrap" }}>Ver detalle completo →</div>
             </div>
             {/* 14-sep-2026 (Santiago: "aquí es súper bueno ver cuánto ha
                 ingresado total en el año, cuánto ha salido y cuánto ha quedado,
@@ -1638,8 +1612,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               const quedaAño = entraAño - saleAño;
               const Celda = ({ etiqueta, valor, color, tenue }) => (
                 <div style={{ flex: "1 1 110px", minWidth: 0 }}>
-                  <div style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.4,
-                        textTransform: "uppercase", fontWeight: 700 }}>{etiqueta}</div>
+                  <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.4, fontWeight: 700 }}>{etiqueta}</div>
                   <div style={{ fontSize: tenue ? 13.5 : 15, fontWeight: tenue ? 700 : 800,
                         color, marginTop: 2, fontFamily: "monospace",
                         opacity: tenue ? 0.82 : 1 }}>
@@ -1649,12 +1622,11 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               );
               const Grupo = ({ titulo, sub, proyectado, children }) => (
                 <div style={{ flex: "1 1 265px", minWidth: 0, padding: "10px 13px",
-                      background: proyectado ? "rgba(34,197,94,0.05)" : T.bg3,
-                      border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
+                      background: proyectado ? "rgba(0,200,5,0.05)" : T.bg3,
+                      border: `1px solid ${proyectado ? "rgba(0,200,5,0.18)" : T.border}`,
                       borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.9,
-                        textTransform: "uppercase", color: T.txt3 }}>{titulo}</div>
-                  <div style={{ fontSize: 10, color: T.txt3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.9, color: T.txt3 }}>{titulo}</div>
+                  <div style={{ fontSize: 11, color: T.txt3, opacity: 0.8, marginTop: 1 }}>{sub}</div>
                   <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginTop: 8 }}>{children}</div>
                 </div>
               );
@@ -1708,14 +1680,14 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                       borderRadius: "3px 3px 0 0",
                       border: esActual ? `1.5px solid ${T.gd}` : "none",
                     }} title={`${m.mesLabel}: ${fm(m.cashFlow)}${esFuturo ? " (proyectado)" : ""}`} />
-                    <div style={{ fontSize: 9, color: esActual ? T.gd : T.txt3, marginTop: 3,
+                    <div style={{ fontSize: 11, color: esActual ? T.gd : T.txt3, marginTop: 3,
                           fontWeight: esActual ? 700 : 500, opacity: esFuturo ? 0.6 : 1 }}>{m.mesLabel}</div>
                   </div>
                 );
               })}
             </div>
             {mesActualNum < 12 && (
-              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 9, fontSize: 10, color: T.txt3 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 9, fontSize: 11, color: T.txt3 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                   <span style={{ width: 13, height: 8, background: T.gn, opacity: 0.7, borderRadius: 3 }} />
                   Ejecutado
@@ -1741,7 +1713,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
 
         {/* ─────────── CARD INGRESOS (Bruto → Retención → Disponible) ─────────── */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, marginBottom: 14 }}>
             💰 Ingresos mensuales
           </div>
 
@@ -1749,7 +1721,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 13, color: T.txt2 }}>Bruto Total</div>
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 1 }}>Lo que generan tus activos</div>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 1 }}>Lo que generan tus activos</div>
             </div>
             <div style={{ fontSize: 16, fontWeight: 600, color: T.txt, fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
               {fm(simT.brutoTotal || 0)}
@@ -1760,7 +1732,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, paddingLeft: 12, borderLeft: "2px solid rgba(var(--fp-ink),0.12)" }}>
             <div>
               <div style={{ fontSize: 12, color: T.txt3 }}>− Retención en la fuente</div>
-              <div style={{ fontSize: 10, color: "#3b82f6", marginTop: 1 }}>💳 Crédito recuperable en declaración</div>
+              <div style={{ fontSize: 11, color: "#3b82f6", marginTop: 1 }}>💳 Crédito recuperable en declaración</div>
             </div>
             <div style={{ fontSize: 14, fontWeight: 500, color: "#3b82f6", fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
               −{fm(simT.retencionMensual || 0)}
@@ -1772,14 +1744,14 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: T.gn, letterSpacing: 0.5 }}>= DISPONIBLE EN CUENTA</div>
-                <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Lo que efectivamente entra al banco</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Lo que efectivamente entra al banco</div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.gn, fontFamily: "'Plus Jakarta Sans',ui-monospace", letterSpacing: "-0.02em" }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: T.gn, fontFamily: "'Plus Jakarta Sans',ui-monospace", letterSpacing: "-0.02em" }}>
                 {fm(simT.disponibleCuenta || 0)}
               </div>
             </div>
             {baseT.disponibleCuenta != null && Math.abs((simT.disponibleCuenta || 0) - (baseT.disponibleCuenta || 0)) > 1 && (
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, textAlign: "right" }}>
                 Δ vs base: {(simT.disponibleCuenta || 0) - (baseT.disponibleCuenta || 0) >= 0 ? "+" : ""}{fm((simT.disponibleCuenta || 0) - (baseT.disponibleCuenta || 0))}
               </div>
             )}
@@ -1788,7 +1760,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
 
         {/* ─────────── CARD EGRESOS (4 líneas del desglose) ─────────── */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 14 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1.2, marginBottom: 14 }}>
             💸 Egresos mensuales
           </div>
 
@@ -1802,7 +1774,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, opacity: row.value > 0 ? 1 : 0.5 }}>
               <div>
                 <div style={{ fontSize: 12, color: T.txt2 }}>{row.label}</div>
-                <div style={{ fontSize: 10, color: T.txt3, marginTop: 1 }}>{row.sub}</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 1 }}>{row.sub}</div>
               </div>
               <div style={{ fontSize: 13, fontWeight: 500, color: row.color, fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
                 {fm(row.value)}
@@ -1815,14 +1787,14 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: T.rd, letterSpacing: 0.5 }}>= EGRESOS TOTALES</div>
-                <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>Todo lo que sale cada mes</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Todo lo que sale cada mes</div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: T.rd, fontFamily: "'Plus Jakarta Sans',ui-monospace", letterSpacing: "-0.02em" }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: T.rd, fontFamily: "'Plus Jakarta Sans',ui-monospace", letterSpacing: "-0.02em" }}>
                 {fm(simT.egresosTotales || 0)}
               </div>
             </div>
             {baseT.egresosTotales != null && Math.abs((simT.egresosTotales || 0) - (baseT.egresosTotales || 0)) > 1 && (
-              <div style={{ fontSize: 10, color: T.txt3, marginTop: 4, textAlign: "right" }}>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, textAlign: "right" }}>
                 Δ vs base: {(simT.egresosTotales || 0) - (baseT.egresosTotales || 0) >= 0 ? "+" : ""}{fm((simT.egresosTotales || 0) - (baseT.egresosTotales || 0))}
               </div>
             )}
@@ -1836,18 +1808,18 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           (promedio), subtítulo = contexto del mes actual con delta color.
           Dropdown discreto arriba-derecha permite explorar cualquier mes.
           ═══════════════════════════════════════════════════════════════════ */}
-      <div style={{ background: simTMes.cashFlowMes >= 0 ? "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(34,197,94,0.02))" : "linear-gradient(135deg, rgba(239,68,68,0.10), rgba(239,68,68,0.02))", border: "1px solid " + (simTMes.cashFlowMes >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16 }}>
+      <div style={{ background: simTMes.cashFlowMes >= 0 ? "linear-gradient(135deg, rgba(0,200,5,0.10), rgba(0,200,5,0.02))" : "linear-gradient(135deg, rgba(255,80,0,0.10), rgba(255,80,0,0.02))", border: "1px solid " + (simTMes.cashFlowMes >= 0 ? T.gn : T.rd) + "30", borderRadius: 16, padding: "22px 28px", marginBottom: 16 }}>
         {/* JERARQUÍA INVERTIDA (20-jul-2026, Santiago): "el cash flow por
             tanto cada mes es distinto" — el número protagonista es el del
             MES elegido (la realidad); el promedio del año pasa a secundario. */}
         {/* Fila superior: label izquierda + dropdown mes derecha */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ fontSize: 11, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase" }}>
+          <div style={{ fontSize: 12, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd, fontWeight: 700, letterSpacing: 1.5 }}>
             {simTMes.cashFlowMes >= 0 ? "💰 Cash Flow de" : "⚠️ Cash Flow de"} {MESES.find(m => m.v === mesVisualizado)?.l} {simTMes.añoActual}
           </div>
           {/* Dropdown de mes — gobierna TODO el simulador */}
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 10, color: T.txt3, letterSpacing: 0.5, textTransform: "uppercase" }}>📅 Cambiar mes:</span>
+            <span style={{ fontSize: 11, color: T.txt3, letterSpacing: 0.5 }}>📅 Cambiar mes:</span>
             <select
               value={mesVisualizado}
               onChange={(e) => setMesVisualizado(Number(e.target.value))}
@@ -1866,7 +1838,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 }}>
           <div style={{ minWidth: 0, flex: "1 1 auto" }}>
             {/* Número GRANDE: el cash flow REAL del mes elegido */}
-            <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 800, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", lineHeight: 1 }}>
+            <div style={{ fontSize: "clamp(2rem, 4.5vw, 3rem)", fontWeight: 700, color: simTMes.cashFlowMes >= 0 ? T.gn : T.rd, letterSpacing: "-0.03em", lineHeight: 1 }}>
               {fm(simTMes.cashFlowMes)}<span style={{ fontSize: 14, fontWeight: 400, color: T.txt3, marginLeft: 4 }}>este mes</span>
             </div>
             {/* Secundario: promedio del año + delta del mes vs promedio */}
@@ -1879,11 +1851,11 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               </span>
               {Math.abs(simTMes.deltaVsPromedio) > 100 && (
                 <span style={{
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 700,
                   padding: "2px 8px",
                   borderRadius: 10,
-                  background: simTMes.deltaVsPromedio >= 0 ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)",
+                  background: simTMes.deltaVsPromedio >= 0 ? "rgba(0,200,5,0.15)" : "rgba(245,158,11,0.15)",
                   color: simTMes.deltaVsPromedio >= 0 ? T.gn : "#f59e0b",
                   letterSpacing: 0.3,
                 }}>
@@ -1892,7 +1864,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               )}
             </div>
             {/* Micro-explicación con los números DEL MES */}
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 6 }}>
               Ingresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.disponibleMes || 0)}</span> − Egresos del mes <span style={{ color: T.txt2 }}>{fm(simTMes.egresosMes || 0)}</span>
             </div>
             {/* 💡 EL ITEM MÁS IMPORTANTE del cambio del resultado (20-jul-2026,
@@ -1949,12 +1921,12 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                         {d.monto === 0 && d.tipo === "gasto" ? (
                           <>
                             <span style={{ color: c, opacity: 0.85 }}>no se paga este mes: </span>
-                            <span style={{ color: c, fontWeight: 800, fontFamily: "monospace" }}>{fm(Math.abs(d.efecto))}</span>
+                            <span style={{ color: c, fontWeight: 700, fontFamily: "monospace" }}>{fm(Math.abs(d.efecto))}</span>
                             <span style={{ color: c, opacity: 0.85 }}> menos que un mes promedio</span>
                           </>
                         ) : (
                           <>
-                            <span style={{ color: c, fontWeight: 800, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
+                            <span style={{ color: c, fontWeight: 700, fontFamily: "monospace" }}>{d.efecto > 0 ? "+" : ""}{fm(d.efecto)}</span>
                             <span style={{ color: c, opacity: 0.85 }}>{sufijo(d)}</span>
                           </>
                         )}
@@ -1969,17 +1941,17 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           {/* Columna derecha: métricas secundarias */}
           <div style={{ display: "flex", gap: 24 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al año</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: simT.cf >= 0 ? T.gn : T.rd, marginTop: 2 }}>{fm(simT.cf * 12)}</div>
+              <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1 }}>Al año</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: simT.cf >= 0 ? T.gn : T.rd, marginTop: 2 }}>{fm(simT.cf * 12)}</div>
             </div>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Al día</div>
+              <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1 }}>Al día</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.txt2, marginTop: 2 }}>{fm(Math.round(simT.cf / 30))}</div>
             </div>
             <div style={{ textAlign: "center", borderLeft: `1px solid ${T.border}`, paddingLeft: 24 }}>
-              <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Independencia</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#f59e0b", marginTop: 2 }}>{pc(simT.ind)}</div>
-              <div style={{ fontSize: 9, color: T.txt3, marginTop: 2 }}>ingresos vs gastos hoy</div>
+              <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1 }}>Independencia</div>
+              <div style={{ fontSize: 22, fontWeight: 700, color: simT.ind >= 100 ? T.gn : "#f59e0b", marginTop: 2 }}>{pc(simT.ind)}</div>
+              <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>ingresos vs gastos hoy</div>
             </div>
           </div>
         </div>
@@ -2050,18 +2022,18 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               const ow = grp.owner;
               const isJ = ow.type === "juridica";
               const icon = ow.type === "juridica" ? "🏢" : ow.type === "na" ? "🌐" : "👤";
-              const color = ow.type === "juridica" ? "#3b82f6" : ow.type === "na" ? "var(--fp-txt3)" : "#22c55e";
+              const color = ow.type === "juridica" ? "#3b82f6" : ow.type === "na" ? "var(--fp-txt3)" : "#00c805";
               
               return (
                 <div key={ow.id} style={{ marginBottom: 20, background: color + "06", borderRadius: 14, border: "1px solid " + color + "15", overflow: "hidden" }}>
                   <div style={{ padding: "12px 16px", borderBottom: "1px solid " + color + "15", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div style={{ fontSize: 14, fontWeight: 700 }}>{icon} {ow.name}</div>
-                    <div style={{ fontSize: 11, color: T.txt3 }}>{isJ ? "Persona Jurídica" : ow.type === "na" ? "No calcula impuesto" : "Persona Natural"}</div>
+                    <div style={{ fontSize: 12, color: T.txt3 }}>{isJ ? "Persona Jurídica" : ow.type === "na" ? "No calcula impuesto" : "Persona Natural"}</div>
                   </div>
                   <div style={{ padding: "12px 16px" }}>
                     {/* Ingresos */}
                     {grp.ing.length > 0 && <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#94a3b8", margin: "4px 0 6px" }}>💰 Ingresos ({grp.ing.length})</div>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
                         const safeIdx = ing._idx != null ? ing._idx : ii;
@@ -2116,9 +2088,9 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           const esSuMesI = mesVisualizado === mesPagoI;
                           return (
                             <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.gn + "0A", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
+                              <span style={{ fontSize: 12, color: T.txt2, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria||""}</span></span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                                <span style={{ fontSize: 10, color: T.gn, fontWeight: 700, background: T.gn + "15", padding: "2px 8px", borderRadius: 10 }}>
+                                <span style={{ fontSize: 11, color: T.gn, fontWeight: 700, background: T.gn + "15", padding: "2px 8px", borderRadius: 10 }}>
                                   ✅ Recibido{esSuMesI ? " este mes" : ` · ${mesPagoIL}`}
                                 </span>
                                 <span style={{ fontSize: 12, fontWeight: 700, color: esSuMesI ? T.txt : T.txt3, fontFamily: "monospace", textDecoration: esSuMesI ? "none" : "line-through" }}>{fm(baseRenta)}</span>
@@ -2133,11 +2105,11 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           const esVigenciaI = razonI.includes("vigencia");
                           return (
                             <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: "rgba(var(--fp-ink),0.03)", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 11, color: T.txt3 }}>{ing.categoria||""}</span></span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                                <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>{razonI || "$0 este mes"}</span>
+                                <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{razonI || "$0 este mes"}</span>
                                 {!esVigenciaI && baseRenta > 0 && (
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, fontFamily: "monospace" }}>{fm(baseRenta)}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: T.txt3, fontFamily: "monospace" }}>{fm(baseRenta)}</span>
                                 )}
                               </span>
                             </div>
@@ -2149,31 +2121,31 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                               <div>
                                 <div style={{fontSize:13,fontWeight:700}}>{ing.nombre||"Ingreso"}</div>
-                                <div style={{fontSize:10,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+fmtTasaEs(simTasa)+" anual":""}</div>
+                                <div style={{fontSize:11,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+fmtTasaEs(simTasa)+" anual":""}</div>
                               </div>
                               <div style={{textAlign:"right"}}>
-                                <div style={{fontSize:16,fontWeight:800,color:"#94a3b8"}}>{fm(simRenta)}<span style={{fontSize:10,fontWeight:400,color:T.txt3}}>/mes</span></div>
-                                {rentDiff!==0&&<div style={{fontSize:10,color:rentDiff>0?T.gn:T.rd,fontWeight:600}}>{rentDiff>0?"+":""}{fm(rentDiff)}</div>}
+                                <div style={{fontSize:16,fontWeight:700,color:"#94a3b8"}}>{fm(simRenta)}<span style={{fontSize:11,fontWeight:400,color:T.txt3}}>/mes</span></div>
+                                {rentDiff!==0&&<div style={{fontSize:11,color:rentDiff>0?T.gn:T.rd,fontWeight:600}}>{rentDiff>0?"+":""}{fm(rentDiff)}</div>}
                               </div>
                             </div>
                             
                             {hasCap ? (<>
                               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
                                 <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:"6px 10px"}}>
-                                  <div style={{fontSize:9,color:T.txt3}}>Capital invertido</div>
+                                  <div style={{fontSize:11,color:T.txt3}}>Capital invertido</div>
                                   <div style={{fontSize:14,fontWeight:700}}>{fm(simCap)}</div>
-                                  {capDiff!==0&&<div style={{fontSize:10,color:capDiff>0?T.gn:T.rd,fontWeight:600}}>{capDiff>0?"+":""}{fm(capDiff)}</div>}
+                                  {capDiff!==0&&<div style={{fontSize:11,color:capDiff>0?T.gn:T.rd,fontWeight:600}}>{capDiff>0?"+":""}{fm(capDiff)}</div>}
                                 </div>
                                 <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:"6px 10px"}}>
-                                  <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({fmtTasaEs(simTasa)} anual)</div>
+                                  <div style={{fontSize:11,color:T.txt3}}>Renta mensual ({fmtTasaEs(simTasa)} anual)</div>
                                   <div style={{fontSize:14,fontWeight:700,color:"#94a3b8"}}>{fm(simRenta)}</div>
                                 </div>
                               </div>
                               <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
-                                <span style={{fontSize:10,color:T.txt3}}>Mover:</span>
+                                <span style={{fontSize:11,color:T.txt3}}>Mover:</span>
                                 {[["capital","Capital"],["renta","Renta"]].map(([k,l])=>(
                                   <button key={k} onClick={()=>{setVal("ingmodo_"+safeIdx,k);setVal("ingcap_"+safeIdx,baseCap);setVal("ing_"+safeIdx,baseRenta);}}
-                                    style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:999,cursor:"pointer",
+                                    style={{fontSize:11,fontWeight:700,padding:"2px 10px",borderRadius:999,cursor:"pointer",
                                       background:modo===k?"rgba(148,163,184,0.18)":"transparent",color:modo===k?"#94a3b8":T.txt3,
                                       border:"1px solid "+(modo===k?"#94a3b8":T.border)}}>{l}</button>
                                 ))}
@@ -2202,7 +2174,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     
                     {/* Gastos */}
                     {grp.gas.length > 0 && <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: T.rd, margin: "10px 0 6px", textTransform: "uppercase" }}>💳 Gastos ({grp.gas.length})</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.rd, margin: "10px 0 6px" }}>💳 Gastos ({grp.gas.length})</div>
                       {grp.gas.map((g, gi) => {
                         if (g.sim === false) return null;
                         const key = g._gkey || ("gf_"+g.cat+"_"+gi);
@@ -2229,10 +2201,10 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           return (
                             <div key={key} style={{ marginBottom: 4, background: T.gn + "0A", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.gn, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                               <span style={{ fontSize: 12, color: T.txt2, fontWeight: 500, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span>
+                                {g.c||g.cat} <span style={{ fontSize: 11, color: T.txt3 }}>{g.cat}</span>
                               </span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                                <span style={{ fontSize: 10, color: T.gn, fontWeight: 700, background: T.gn + "15", padding: "2px 8px", borderRadius: 10 }}>
+                                <span style={{ fontSize: 11, color: T.gn, fontWeight: 700, background: T.gn + "15", padding: "2px 8px", borderRadius: 10 }}>
                                   ✅ Pagado{esSuMes ? " este mes" : ` · ${mesPagoL}`}
                                 </span>
                                 <span style={{ fontSize: 12, fontWeight: 700, color: esSuMes ? T.txt : T.txt3, fontFamily: "monospace", textDecoration: esSuMes ? "none" : "line-through" }}>{fm(montoPeriodoG)}</span>
@@ -2248,11 +2220,11 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           const esVigencia = razon.includes("vigencia");
                           return (
                             <div key={key} style={{ marginBottom: 4, background: "rgba(var(--fp-ink),0.03)", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span></span>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 11, color: T.txt3 }}>{g.cat}</span></span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                                <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>{razon || "$0 este mes"}</span>
+                                <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{razon || "$0 este mes"}</span>
                                 {!esVigencia && montoPeriodoG > 0 && (
-                                  <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, fontFamily: "monospace" }}>{fm(montoPeriodoG)}</span>
+                                  <span style={{ fontSize: 12, fontWeight: 600, color: T.txt3, fontFamily: "monospace" }}>{fm(montoPeriodoG)}</span>
                                 )}
                               </span>
                             </div>
@@ -2262,7 +2234,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                         if (freqG === "variable") {
                           return (
                             <div key={key} style={{ marginBottom: 4, background: T.rd + "08", padding: "8px 12px", borderRadius: 8, borderLeft: "3px solid " + T.rd, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>📊 variable · se ajusta mes a mes en Egresos</span></span>
+                              <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 11, color: T.txt3 }}>📊 variable · se ajusta mes a mes en Egresos</span></span>
                               <span style={{ fontSize: 12, fontWeight: 700, color: T.rd, flexShrink: 0 }}>{fm(baseMesG)}</span>
                             </div>
                           );
@@ -2282,7 +2254,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     
                     {/* Deudas */}
                     {grp.deu.length > 0 && <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: T.pr, margin: "10px 0 6px", textTransform: "uppercase" }}>📋 Deudas ({grp.deu.length})</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.pr, margin: "10px 0 6px" }}>📋 Deudas ({grp.deu.length})</div>
                       {grp.deu.map((d, di) => {
                         if (d.sim === false) return null;
                         // 26-oct-2026 (Santiago: "si bajo el crédito de Sufi a cero no se mueve el cash flow"). Las deudas sin id
@@ -2303,10 +2275,10 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             <div key={"d_"+idx} style={{ marginBottom: 6, background: terminada ? T.gn + "0A" : "rgba(var(--fp-ink),0.03)", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + (terminada ? T.gn : T.txt3), display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: terminada ? 1 : 0.75 }}>
                               <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre||d.n||"Deuda"}</span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
-                                <span style={{ fontSize: 10, color: terminada ? T.gn : T.txt3, fontWeight: 700, background: terminada ? T.gn + "15" : "transparent", padding: terminada ? "2px 8px" : 0, borderRadius: 10 }}>
+                                <span style={{ fontSize: 11, color: terminada ? T.gn : T.txt3, fontWeight: 700, background: terminada ? T.gn + "15" : "transparent", padding: terminada ? "2px 8px" : 0, borderRadius: 10 }}>
                                   {terminada ? `✅ Terminada · última cuota ${mesRefL}` : `📅 empieza en ${mesRefL}`}
                                 </span>
-                                <span style={{ fontSize: 11, fontWeight: 600, color: T.txt3, fontFamily: "monospace", textDecoration: terminada ? "line-through" : "none" }}>{fm(cuota)}/mes</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: T.txt3, fontFamily: "monospace", textDecoration: terminada ? "line-through" : "none" }}>{fm(cuota)}/mes</span>
                               </span>
                             </div>
                           );
@@ -2316,7 +2288,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             <Slider label={d.nombre||d.n||""} value={simCuota} base={cuota}
                               max={Math.max(cuota*3,500)} color={T.pr}
                               onChange={(v)=>setVal("debt_"+safeDebtIdx,v)} sub="" />
-                            <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:10,color:T.txt3}}>
+                            <div style={{display:"flex",gap:8,paddingLeft:4,fontSize:11,color:T.txt3}}>
                               <span>Saldo: {fm(saldo)}</span>
                               <span>Cuota: {fm(simCuota)}/mes</span>
                             </div>
@@ -2328,7 +2300,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     {/* Impuestos */}
                     {grp.tax && <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase" }}>🧾 Impuesto de renta de {ow.name} {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : `· falta la declaración ${new Date().getFullYear() - 1}`}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#3b82f6" }}>🧾 Impuesto de renta de {ow.name} {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : `· falta la declaración ${new Date().getFullYear() - 1}`}</div>
                       </div>
                       {/* 29-oct-2026 (Santiago: "uno debe saber basado en qué se está calculando el impuesto") */}
                       <div style={{ fontSize: 12, color: T.txt2, background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, lineHeight: 1.45 }}>
@@ -2389,50 +2361,50 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           {/* Modo COMPARATIVO: solo cuando hay ahorro real > \$100K via PV/AFC */}
                           {mostrarComparativo && (
                             <div style={{display:"flex",gap:6,marginBottom:8}}>
-                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(var(--fp-ink),0.06)":"#3b82f6"),background:isOpt?"transparent":"rgba(59,130,246,0.1)",color:isOpt?T.txt3:"#3b82f6",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(var(--fp-ink),0.06)":"#3b82f6"),background:isOpt?"transparent":"rgba(59,130,246,0.1)",color:isOpt?T.txt3:"#3b82f6",cursor:"pointer",fontSize:11,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                                 <span>Tu impuesto hoy</span>
-                                <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
-                                <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
+                                <span style={{fontWeight:700,fontSize:12}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
+                                <span style={{fontSize:11,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
                               </button>
-                              <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(var(--fp-ink),0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#00c805":"rgba(var(--fp-ink),0.06)"),background:isOpt?"rgba(0,200,5,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:11,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                                 <span>Si aplicas PV/AFC</span>
-                                <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
-                                <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
+                                <span style={{fontWeight:700,fontSize:12}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
+                                <span style={{fontSize:11,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
                               </button>
                             </div>
                           )}
                           {/* Modo UNIFICADO: cuando no hay ahorro real adicional, mostrar SOLO
                               el escenario actual con texto explicativo de que ya esta optimizado. */}
                           {!mostrarComparativo && (
-                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:10,color:T.txt2,lineHeight:1.5}}>
-                              <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:4}}>📋 Tu impuesto estimado</div>
+                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:11,color:T.txt2,lineHeight:1.5}}>
+                              <div style={{fontSize:12,fontWeight:700,color:"#3b82f6",marginBottom:4}}>📋 Tu impuesto estimado</div>
                               <div style={{lineHeight:1.5}}>Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos {isJuridica ? "(35% utilidad, ICA, retenciones)" : "(Art. 119, 206, 387, 336 ET)"}. Las palancas estándar (PV/AFC) no aportan ahorro adicional en tu caso. Si quieres simular estrategias por fuera del modelo, usa el slider manual abajo.</div>
                             </div>
                           )}
-                          <div style={{background:isOptEffectivo?"rgba(34,197,94,0.06)":"rgba(59,130,246,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOptEffectivo?"rgba(34,197,94,0.15)":"rgba(59,130,246,0.15)"),marginBottom:8}}>
+                          <div style={{background:isOptEffectivo?"rgba(0,200,5,0.06)":"rgba(59,130,246,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOptEffectivo?"rgba(0,200,5,0.15)":"rgba(59,130,246,0.15)"),marginBottom:8}}>
                             {/* 3 líneas transparentes: Total / Retención / Saldo */}
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                                 <div>
-                                  <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{grp.tax.fuente === "declaracion_real" ? `🧾 Impuesto de la declaración ${new Date().getFullYear() - 1} (retenciones + saldo pagado)` : isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
-                                  <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{fmtPctEs(tasaEfectivaEff, 1)}{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {fmtPctEs(((grp.tax.baseGravable / grp.tax.ingreso) * 100), 0)}</span>}</div>
+                                  <div style={{fontSize:11,color:T.txt2,fontWeight:600}}>{grp.tax.fuente === "declaracion_real" ? `🧾 Impuesto de la declaración ${new Date().getFullYear() - 1} (retenciones + saldo pagado)` : isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
+                                  <div style={{fontSize:11,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{fmtPctEs(tasaEfectivaEff, 1)}{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {fmtPctEs(((grp.tax.baseGravable / grp.tax.ingreso) * 100), 0)}</span>}</div>
                                 </div>
-                                <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#3b82f6"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                <div style={{fontSize:18,fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:11,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
                               {reteNMes > 0 && <>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(var(--fp-ink),0.06)"}}>
-                                  <div style={{fontSize:10,color:T.txt2}}>{isJuridica ? "🏛️ ICA + retenciones descontables" : "🏛️ Retención en la fuente (ya pagada)"}</div>
-                                  <div style={{fontSize:14,fontWeight:600,color:T.txt2}}>−{fm(reteNMes*12)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                  <div style={{fontSize:11,color:T.txt2}}>{isJuridica ? "🏛️ ICA + retenciones descontables" : "🏛️ Retención en la fuente (ya pagada)"}</div>
+                                  <div style={{fontSize:14,fontWeight:600,color:T.txt2}}>−{fm(reteNMes*12)}<span style={{fontSize:11,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px solid rgba(var(--fp-ink),0.08)"}}>
-                                  <div style={{fontSize:11,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
-                                  <div style={{fontSize:16,fontWeight:800,color:saldoAnualEffectivo===0?T.gn:T.txt}}>{fm(saldoAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                  <div style={{fontSize:12,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
+                                  <div style={{fontSize:16,fontWeight:700,color:saldoAnualEffectivo===0?T.gn:T.txt}}>{fm(saldoAnualEffectivo)}<span style={{fontSize:11,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
-                                {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <div style={{fontSize:10,color:T.gn,fontWeight:600,marginTop:2}}>{grp.tax.fuente === "declaracion_real" ? "✅ Tus retenciones cubrieron el impuesto: al declarar no pagaste saldo." : "✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución."}</div>}
+                                {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0 && <div style={{fontSize:11,color:T.gn,fontWeight:600,marginTop:2}}>{grp.tax.fuente === "declaracion_real" ? "✅ Tus retenciones cubrieron el impuesto: al declarar no pagaste saldo." : "✅ Los descuentos ya cubren tu impuesto. Incluso podrías recibir devolución."}</div>}
                               </>}
                             </div>
                             {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
-                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(var(--fp-ink),0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC podría bajar tu impuesto estimado en {fm(ahorroOpt)}/año (estimación, confírmalo con tu contador) → activa el toggle para ver el impacto en cash flow</div>}
+                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(var(--fp-ink),0.05)",fontSize:11,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC podría bajar tu impuesto estimado en {fm(ahorroOpt)}/año (estimación, confírmalo con tu contador) → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
                           {/* Commit 10 Tarea 3: el slider ahora opera sobre el SALDO A PAGAR
                               (lo que el usuario efectivamente desembolsa), no sobre el impuesto
@@ -2456,24 +2428,24 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             };
                             return (
                               <div style={{background:(isOptEffectivo?T.gn:"#3b82f6")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#3b82f6")+"20",borderRadius:10,padding:"10px 12px"}}>
-                                <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — saldo a pagar</div>
-                                <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
+                                <div style={{fontSize:11,fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — saldo a pagar</div>
+                                <div style={{fontSize:11,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
                                   El slider arranca en tu <strong>saldo real</strong>. Muévelo hacia arriba para simular escenarios más conservadores, o si logras <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales) que cambien el saldo final.
                                 </div>
                                 <Slider label="" value={saldoMesEff} base={saldoMesBase}
                                   max={saldoMesMax} color={isOptEffectivo ? T.gn : "#3b82f6"}
                                   onChange={onChangeSaldo}
                                   sub="" />
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:11}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:12}}>
                                   <span style={{color:T.txt3}}>Saldo anual ajustado:</span>
-                                  <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6"}}>{fm(saldoMesEff*12)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(saldoMesEff)}/mes</span></span>
+                                  <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6"}}>{fm(saldoMesEff*12)}<span style={{fontSize:11,color:T.txt3,fontWeight:400}}> · {fm(saldoMesEff)}/mes</span></span>
                                 </div>
                                 {/* Diferencia respecto al saldo real (no al bruto) */}
                                 {(() => {
                                   const diffSaldoMes = saldoMesEff - saldoMesBase;
                                   if (Math.abs(diffSaldoMes) < 100) return null;
                                   return (
-                                    <div style={{marginTop:6,fontSize:10,color:diffSaldoMes>0?T.or:T.gn,fontWeight:600}}>
+                                    <div style={{marginTop:6,fontSize:11,color:diffSaldoMes>0?T.or:T.gn,fontWeight:600}}>
                                       {diffSaldoMes > 0
                                         ? `⚠️ Escenario más conservador: +${fm(diffSaldoMes*12)}/año de saldo`
                                         : `🎯 Ahorro adicional: ${fm(Math.abs(diffSaldoMes)*12)}/año menos de saldo`}
@@ -2483,7 +2455,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               </div>
                             );
                           })()}
-                          <div style={{marginTop:6,fontSize:9,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
+                          <div style={{marginTop:6,fontSize:11,color:T.txt3,fontStyle:"italic",paddingLeft:4,lineHeight:1.5}}>
                             {saldoAnualEffectivo === 0 && simImpAnualEffectivo > 0
                               ? "ℹ️ Tu saldo es $0 porque la retención ya cubre tu impuesto. Si subes el slider, simulas un escenario con menos retenciones del año (ej: cambio de empleador, freelance) o más impuesto causado."
                               : isJuridica
@@ -2580,7 +2552,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2 }}>
               Flujo de caja acumulado del año
             </div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, marginBottom: 10, lineHeight: 1.55 }}>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, marginBottom: 10, lineHeight: 1.55 }}>
               Cada punto es el acumulado desde enero hasta ese mes, con los montos
               reales de cada uno. Por eso puede no coincidir con el promedio
               mensual de las tarjetas de abajo: un año con ingresos concentrados
@@ -2597,8 +2569,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               return (
                 <div style={{ fontSize: 12, color: T.txt2, marginBottom: 12,
                       padding: "8px 11px", borderRadius: 10,
-                      background: neg ? "rgba(239,68,68,0.10)" : "rgba(34,197,94,0.10)",
-                      border: `1px solid ${neg ? "rgba(239,68,68,0.28)" : "rgba(34,197,94,0.28)"}` }}>
+                      background: neg ? "rgba(255,80,0,0.10)" : "rgba(0,200,5,0.10)",
+                      border: `1px solid ${neg ? "rgba(255,80,0,0.28)" : "rgba(0,200,5,0.28)"}` }}>
                   Acumulado a diciembre:{" "}
                   <strong style={{ color: neg ? T.rd : T.gn }}>
                     {neg ? "−" : "+"}${Math.abs(Math.round(cierre)).toLocaleString("es-CO")}
@@ -2648,22 +2620,22 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     ingresos grandes del último trimestre, como la renta que
                     arranca en octubre -- y la gráfica son los meses REALES ya
                     transcurridos. Sin decir cuál es cuál, parecen un error. */}
-                <div style={{ fontSize: 10, color: T.txt3 }}>CF Actual · promedio del año</div>
+                <div style={{ fontSize: 11, color: T.txt3 }}>CF Actual · promedio del año</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: baseT.cf >= 0 ? T.gn : T.rd }}>{fm(baseT.cf)}</div>
-                <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, lineHeight: 1.35 }}>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 3, lineHeight: 1.35 }}>
                   Promedio de los 12 meses, no lo de este mes
                 </div>
               </div>
               <div style={{ background: simT.cf >= 0 ? T.gnD : T.rdD, padding: 12, borderRadius: 10, textAlign: "center" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>CF Simulado · promedio del año</div>
+                <div style={{ fontSize: 11, color: T.txt3 }}>CF Simulado · promedio del año</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: simT.cf >= 0 ? T.gn : T.rd }}>{fm(simT.cf)}</div>
-                <div style={{ fontSize: 9, color: T.txt3, marginTop: 3, lineHeight: 1.35 }}>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 3, lineHeight: 1.35 }}>
                   Con los cambios del simulador
                 </div>
               </div>
               <div style={{ background: T.bg2, padding: 12, borderRadius: 10, textAlign: "center", gridColumn: "1/-1" }}>
-                <div style={{ fontSize: 10, color: T.txt3 }}>Impacto Anual</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: (simT.cf - baseT.cf) >= 0 ? T.gn : T.rd }}>
+                <div style={{ fontSize: 11, color: T.txt3 }}>Impacto Anual</div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: (simT.cf - baseT.cf) >= 0 ? T.gn : T.rd }}>
                   {(simT.cf - baseT.cf) >= 0 ? "+" : ""}{fm((simT.cf - baseT.cf) * 12)}/año
                 </div>
               </div>

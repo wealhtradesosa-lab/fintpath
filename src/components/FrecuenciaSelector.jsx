@@ -146,7 +146,7 @@ export default function FrecuenciaSelector({
       {/* Bloque de chips de frecuencia — oculto en templates simples */}
       {mostrarChipsFrecuencia && (
         <>
-          <label style={{ fontSize: 11, fontWeight: 600, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
             📅 Frecuencia de pago
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 6, marginBottom: showMes ? 10 : 6 }}>
@@ -163,7 +163,7 @@ export default function FrecuenciaSelector({
                     borderRadius: 8,
                     padding: "8px 6px",
                     color: active ? T.gn : T.txt2,
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: active ? 700 : 500,
                     cursor: "pointer",
                     transition: "all 0.15s ease",
@@ -183,7 +183,7 @@ export default function FrecuenciaSelector({
       {/* Selector de mes (solo si no es mensual y el padre lo permite) */}
       {showMes && mostrarSelectorMes && (
         <div style={{ marginBottom: 6 }}>
-          <label style={{ fontSize: 10, fontWeight: 500, color: T.txt3, display: "block", marginBottom: 4 }}>
+          <label style={{ fontSize: 11, fontWeight: 500, color: T.txt3, display: "block", marginBottom: 4 }}>
             {frecuencia === "trimestral" ? "Primer mes de pago" : frecuencia === "semestral" ? "Primer mes de pago" : "Mes en que se paga"}
           </label>
           <select
@@ -210,18 +210,18 @@ export default function FrecuenciaSelector({
       {(frecuencia === "mensual" || frecuencia === "variable") && mostrarVigencia && (
         <div style={{ marginBottom: 8, marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <label style={{ fontSize: 10, fontWeight: 500, color: T.txt3 }}>
+            <label style={{ fontSize: 11, fontWeight: 500, color: T.txt3 }}>
               📆 ¿Se recibe/paga todo el año?
             </label>
             <div style={{ display: "flex", gap: 4 }}>
               <button type="button"
                 onClick={() => { setModoLimitado(false); onChange({ desdeMes: 1, hastaMes: 12, vigenciaModo: "todo" }); }}
-                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${!vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: !vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
+                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${!vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: !vigenciaLimitada ? T.gn : T.txt2, fontSize: 11, fontWeight: !vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
                 Todo el año
               </button>
               <button type="button"
                 onClick={() => { setModoLimitado(true); onChange({ vigenciaModo: "limitada" }); }}
-                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
+                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: vigenciaLimitada ? T.gn : T.txt2, fontSize: 11, fontWeight: vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
                 Solo unos meses
               </button>
             </div>
@@ -229,7 +229,7 @@ export default function FrecuenciaSelector({
           {vigenciaLimitada && (
             <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 9, color: T.txt3, display: "block", marginBottom: 2 }}>Desde</label>
+                <label style={{ fontSize: 11, color: T.txt3, display: "block", marginBottom: 2 }}>Desde</label>
                 <select
                   value={desdeMes}
                   onChange={(e) => {
@@ -244,9 +244,9 @@ export default function FrecuenciaSelector({
                   {MESES.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
                 </select>
               </div>
-              <span style={{ color: T.txt3, fontSize: 10, marginTop: 14 }}>→</span>
+              <span style={{ color: T.txt3, fontSize: 11, marginTop: 14 }}>→</span>
               <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 9, color: T.txt3, display: "block", marginBottom: 2 }}>Hasta</label>
+                <label style={{ fontSize: 11, color: T.txt3, display: "block", marginBottom: 2 }}>Hasta</label>
                 <select
                   value={hastaMes}
                   onChange={(e) => onChange({ hastaMes: Number(e.target.value), vigenciaModo: "limitada" })}
@@ -262,12 +262,12 @@ export default function FrecuenciaSelector({
 
       {/* Explicación contextual para mensual con vigencia LIMITADA */}
       {frecuencia === "mensual" && rangoLimitado && (
-        <div style={{ fontSize: 11, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: 12, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           <div style={{ marginBottom: 4 }}>
             💡 <strong style={{ color: T.txt2 }}>{mesesActivos} {mesesActivos === 1 ? "mes" : "meses"} activos</strong>: {MESES.find(m => m.v === desdeMes)?.l} a {MESES.find(m => m.v === hastaMes)?.l}. El resto del año no pesa.
           </div>
           {montoNum > 0 && (
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
               <span>Por mes: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
               <span>Total período: <strong style={{ color: T.gn }}>{fm(montoNum * mesesActivos)}</strong></span>
               <span>Promedio anual: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
@@ -283,12 +283,12 @@ export default function FrecuenciaSelector({
           Cero ambigüedad — el user ve la conversión completa siempre.
           ═══════════════════════════════════════════════════════════════════ */}
       {frecuencia !== "mensual" && (
-        <div style={{ fontSize: 11, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: 12, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           {frecuencia === "trimestral" && (
             <>
               <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>4 pagos al año</strong> en {MESES.find(m=>m.v===Number(mesPago))?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+3)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+9)%12)+1)?.l}</div>
               {montoNum > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   <span>Por trimestre: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
                   <span>Total año: <strong style={{ color: T.gn }}>{fm(montoNum * 4)}</strong></span>
                   <span>Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
@@ -300,7 +300,7 @@ export default function FrecuenciaSelector({
             <>
               <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>2 pagos al año</strong>: {mesNombre} y {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}</div>
               {montoNum > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   <span>Por semestre: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
                   <span>Total año: <strong style={{ color: T.gn }}>{fm(montoNum * 2)}</strong></span>
                   <span>Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
@@ -312,7 +312,7 @@ export default function FrecuenciaSelector({
             <>
               <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>1 pago al año</strong> en {mesNombre}. El resto del año no pesa.</div>
               {montoNum > 0 && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   <span>Pago anual: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
                   <span>Promedio: <strong style={{ color: T.gn }}>{fm(promedioMes)}/mes</strong></span>
                 </div>
@@ -323,7 +323,7 @@ export default function FrecuenciaSelector({
             <>
               <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>Pago único</strong> en {mesNombre}. No se repite el próximo año.</div>
               {montoNum > 0 && (
-                <div style={{ fontSize: 10, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
+                <div style={{ fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   Monto del pago: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong>
                 </div>
               )}

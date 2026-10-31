@@ -41,13 +41,13 @@ const C = {
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
   borderActive: "rgba(var(--fp-ink),0.30)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
   orange: "#fbbf24",
   purple: "#c4b5fd",
-  red: "#f87171",
+  red: "#ff7a3d",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
@@ -189,10 +189,10 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>{isJur ? "🏢" : "👤"}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, color: isJur ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: isJur ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, marginBottom: 2 }}>
               Cargando datos para · {isJur ? "Persona jurídica · F-110" : "Persona natural · F-210"}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: C.txt, lineHeight: 1.2 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: C.txt, lineHeight: 1.2 }}>
               {ownerName}
             </div>
           </div>
@@ -201,7 +201,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
         {/* Selector de owners (solo si hay >1) */}
         {allOwners.length > 1 && onCambiarOwner && (
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: C.txt3, letterSpacing: 0.5, marginBottom: 6 }}>
               Cambiar a otra persona fiscal:
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -244,7 +244,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
       {/* Barra de progreso */}
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, alignItems: "center" }}>
-          <div style={{ fontSize: 12, color: C.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.6 }}>
+          <div style={{ fontSize: 12, color: C.txt3, fontWeight: 600, letterSpacing: 0.6 }}>
             Paso {posActual} de {totalVisible}
           </div>
           <button
@@ -332,7 +332,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
             ...btnStyle(canAdvance ? C.green : C.bg3, canAdvance ? "#000" : C.txt3),
             cursor: canAdvance ? "pointer" : "not-allowed",
             opacity: canAdvance ? 1 : 0.5,
-            fontWeight: 800,
+            fontWeight: 700,
             padding: "12px 28px",
           }}
         >
@@ -355,7 +355,7 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
   return (
     <div>
       <div style={{ fontSize: 48, marginBottom: 16, textAlign: "center" }}>{isJur ? "🏢" : "🤖"}</div>
-      <h2 style={{ fontSize: 24, fontWeight: 800, color: C.txt, margin: "0 0 14px 0", textAlign: "center", lineHeight: 1.3 }}>
+      <h2 style={{ fontSize: 24, fontWeight: 700, color: C.txt, margin: "0 0 14px 0", textAlign: "center", lineHeight: 1.3 }}>
         {tieneDatos ? (
           isJur
             ? <>Hola, vamos con la declaración de <span style={{ color: C.purple }}>{ownerName}</span> — ya tengo {cantidadPrecargados} datos cargados</>
@@ -418,7 +418,7 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
 function SingleSelectStep({ step, value, onChange }) {
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "0 0 10px 0", lineHeight: 1.3 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: "0 0 10px 0", lineHeight: 1.3 }}>
         {step.question}
       </h2>
       {step.helpText && (
@@ -463,7 +463,7 @@ function SingleSelectStep({ step, value, onChange }) {
 function NumberStep({ step, value, onChange, onSubmit }) {
   return (
     <div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "0 0 10px 0", lineHeight: 1.3 }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: "0 0 10px 0", lineHeight: 1.3 }}>
         {step.question}
       </h2>
       {step.helpText && (
@@ -599,7 +599,7 @@ function ReviewStep({ answers, ownerType, onEdit }) {
   return (
     <div>
       <div style={{ fontSize: 36, marginBottom: 12, textAlign: "center" }}>📋</div>
-      <h2 style={{ fontSize: 22, fontWeight: 800, color: C.txt, margin: "0 0 12px 0", lineHeight: 1.3, textAlign: "center" }}>
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: "0 0 12px 0", lineHeight: 1.3, textAlign: "center" }}>
         {ownerType === "juridica" ? "Revisemos los datos de la sociedad" : "Revisemos lo que me contaste"}
       </h2>
       <p style={{ fontSize: 13, color: C.txt2, textAlign: "center", margin: "0 0 24px 0" }}>
@@ -622,7 +622,7 @@ function ReviewStep({ answers, ownerType, onEdit }) {
             borderRadius: 10,
           }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 11, color: C.txt3, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <div style={{ fontSize: 12, color: C.txt3, fontWeight: 600, letterSpacing: 0.5 }}>
                 {item.label}
               </div>
               <div style={{ fontSize: 15, color: C.txt, fontWeight: 700, marginTop: 2 }}>
@@ -677,7 +677,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
       {/* Header celebratorio */}
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, color: C.txt, margin: "0 0 8px 0" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: C.txt, margin: "0 0 8px 0" }}>
           Listo, {ownerName !== "tú" ? ownerName : "ya"} terminamos
         </h1>
         <p style={{ fontSize: 15, color: C.txt2, margin: 0 }}>
@@ -693,12 +693,12 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
         borderRadius: 16,
         marginBottom: 20,
       }}>
-        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.8 }}>
+        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 8, letterSpacing: 0.8 }}>
           {saldoFinal > 0 ? "💰 Lo que te toca pagar" : "✨ Tu situación"}
         </div>
         <div style={{
           fontSize: 56,
-          fontWeight: 800,
+          fontWeight: 700,
           color: saldoFinal > 0 ? C.orange : C.green,
           lineHeight: 1.0,
           marginBottom: 12,
@@ -728,7 +728,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
         borderRadius: 14,
         marginBottom: 20,
       }}>
-        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 700, marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        <div style={{ fontSize: 13, color: C.txt2, fontWeight: 700, marginBottom: 14, letterSpacing: 0.5 }}>
           📊 Cómo llegamos a este número
         </div>
         <DesgloseRow label="Lo que ganaste en total" value={ingresoTotal} color={C.blue} />
@@ -743,7 +743,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
           alignItems: "center",
         }}>
           <div style={{ fontSize: 14, color: C.txt, fontWeight: 700 }}>Saldo final a pagar</div>
-          <div style={{ fontSize: 22, color: saldoFinal > 0 ? C.orange : C.green, fontWeight: 800, fontFamily: "monospace" }}>
+          <div style={{ fontSize: 22, color: saldoFinal > 0 ? C.orange : C.green, fontWeight: 700, fontFamily: "monospace" }}>
             {fm(saldoFinal)}
           </div>
         </div>

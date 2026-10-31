@@ -13,8 +13,8 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
-  bl: "#3b82f6", rd: "#ef4444",
+  gn: "#00c805", gnD: "rgba(0,200,5,0.1)",
+  bl: "#3b82f6", rd: "#ff5000",
 };
 
 const SUGGESTIONS = [
@@ -118,7 +118,7 @@ function renderMD(txt) {
     const l = linea.trimEnd();
     if (!l.trim()) return <div key={i} style={{ height: 8 }} />;
     if (/^#{1,6}\s/.test(l)) {
-      return <div key={i} style={{ fontSize: 14, fontWeight: 800, margin: "14px 0 6px", color: "inherit" }}>
+      return <div key={i} style={{ fontSize: 14, fontWeight: 700, margin: "14px 0 6px", color: "inherit" }}>
         {negritas(l.replace(/^#{1,6}\s*/, ""))}
       </div>;
     }
@@ -217,7 +217,7 @@ export default function AsesorIA({ user, totals, userId }) {
         title="Conversa con tu family office"
         subtitle="Análisis de tus datos encendidos y recomendaciones personalizadas con datos reales."
         rightSlot={<>
-          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"var(--fp-txt3)",background:"var(--fp-raised)",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
+          <span style={{fontSize:12,color:remaining<=5?"#ff5000":"var(--fp-txt3)",background:"var(--fp-raised)",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
           {msgs.length > 0 && (
             <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
           )}
@@ -277,7 +277,7 @@ export default function AsesorIA({ user, totals, userId }) {
           </div>
         )}
         {error && (
-          <div style={{ padding: "10px 16px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 10, fontSize: 12, color: T.rd, marginBottom: 10 }}>
+          <div style={{ padding: "10px 16px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.2)", borderRadius: 10, fontSize: 12, color: T.rd, marginBottom: 10 }}>
             ⚠ {error}
           </div>
         )}

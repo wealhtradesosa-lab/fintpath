@@ -72,7 +72,7 @@ export default function SankeyFlujo({
     ...(labels || {}),
   };
   push(L.retencion, retencion, "#f59e0b", L.retencionNota);
-  push(L.impuesto, impuesto, "#ef4444", L.impuestoNota);
+  push(L.impuesto, impuesto, "#ff5000", L.impuestoNota);
   push(L.aportes, aportes, "#f59e0b", L.aportesNota);
   push(L.cuotas, cuotas, "#64748b", L.cuotasNota);
 
@@ -83,7 +83,7 @@ export default function SankeyFlujo({
   }
   cats.forEach(([cat, v], i) => push(cat, v, COLOR_GASTO[i % COLOR_GASTO.length], "gasto"));
 
-  if (cashFlow > 0) push("Te queda (ahorro)", cashFlow, "#22c55e", "esto sí es tuyo");
+  if (cashFlow > 0) push("Te queda (ahorro)", cashFlow, "#00c805", "esto sí es tuyo");
   const deficit = cashFlow < 0 ? Math.abs(cashFlow) : 0;
 
   // ── Geometría
@@ -117,7 +117,7 @@ export default function SankeyFlujo({
           fijos en español, así que en la vista US salía "¿Por dónde se va tu
           plata?" seguido de "Where your money goes". Ahora vienen en `labels`
           como los demás rótulos. */}
-      <div style={{ fontSize: 15, fontWeight: 800, color: T.tx }}>{L.titulo}</div>
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>{L.titulo}</div>
       <div style={{ fontSize: 12, color: T.tx3, marginTop: 2, marginBottom: 12 }}>
         {subtitulo} {L.pie(fmt(Math.round(bruto)))}
       </div>
@@ -128,7 +128,7 @@ export default function SankeyFlujo({
         style={{ width: "100%", minWidth: 300, height: "auto" }}>
           {nF.map((n, i) => {
             const d = CINTA(xF + NODO_W, n.y, xHub, anclaIn, n.h); anclaIn += n.h;
-            return <path key={`lf${i}`} d={d} fill="#22c55e" opacity={hover === null || hover === `f${i}` ? 0.26 : 0.06}
+            return <path key={`lf${i}`} d={d} fill="#00c805" opacity={hover === null || hover === `f${i}` ? 0.26 : 0.06}
               onMouseEnter={() => setHover(`f${i}`)} onMouseLeave={() => setHover(null)} />;
           })}
           {nD.map((n, i) => {
@@ -139,7 +139,7 @@ export default function SankeyFlujo({
 
           {nF.map((n, i) => (
             <g key={`nf${i}`} onMouseEnter={() => setHover(`f${i}`)} onMouseLeave={() => setHover(null)}>
-              <rect x={xF} y={n.y} width={NODO_W} height={n.h} rx={2} fill="#22c55e" />
+              <rect x={xF} y={n.y} width={NODO_W} height={n.h} rx={2} fill="#00c805" />
               <text x={xF - 9} y={n.y + n.h / 2 - 1} textAnchor="end" fontSize="15" fontWeight="600" fill={T.tx}>
                 {n.nombre.length > 18 ? n.nombre.slice(0, 17) + "…" : n.nombre}
               </text>
@@ -170,7 +170,7 @@ export default function SankeyFlujo({
       </div>
 
       {deficit > 0 && (
-        <div style={{ marginTop: 10, fontSize: 12, color: "#fca5a5", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8, padding: "9px 12px" }}>
+        <div style={{ marginTop: 10, fontSize: 12, color: "#fca5a5", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.25)", borderRadius: 8, padding: "9px 12px" }}>
           ⚠️ Este mes sale más de lo que entra: faltan <strong>{fmt(Math.round(deficit))}</strong>. Esa diferencia se cubre con ahorros o con más deuda.
         </div>
       )}

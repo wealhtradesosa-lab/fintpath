@@ -41,7 +41,7 @@ const C = {
   txt2: "var(--fp-txt2)",
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.10)",
-  green: "#4ade80",
+  green: "#3ddc45",
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
@@ -49,7 +49,7 @@ const C = {
   purpleBg: "rgba(196,181,253,0.10)",
   orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
-  red: "#f87171",
+  red: "#ff7a3d",
   redBg: "rgba(248,113,113,0.10)",
 };
 
@@ -530,10 +530,10 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 999 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: C.green, letterSpacing: 0.5 }}>🎯 PLAN DE AHORRO TRIBUTARIO</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.green, letterSpacing: 0.5 }}>🎯 PLAN DE AHORRO TRIBUTARIO</span>
           </div>
         </div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: C.txt, margin: 0, lineHeight: 1.2 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
           {isJuridica ? "🏢" : "👤"} {ownerName}
         </h1>
         <p style={{ fontSize: 13, color: C.txt2, marginTop: 6, lineHeight: 1.5 }}>
@@ -555,10 +555,10 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
         alignItems: "center",
       }}>
         <div style={{ flex: "1 1 200px" }}>
-          <div style={{ fontSize: 11, color: C.txt3, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+          <div style={{ fontSize: 12, color: C.txt3, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
             Saldo a cargo actual
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: C.txt }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: C.txt }}>
             {fm(saldoACargoActual)}
           </div>
         </div>
@@ -566,10 +566,10 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
           <>
             <div style={{ fontSize: 24, color: C.txt3 }}>−</div>
             <div style={{ flex: "1 1 200px" }}>
-              <div style={{ fontSize: 11, color: C.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+              <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
                 💚 Ahorro detectado
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: C.green }}>
                 {fm(ahorroTotalEstimado)}
               </div>
             </div>
@@ -580,7 +580,7 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
             <div style={{ flex: 1, height: 6, background: C.bg3, borderRadius: 3, overflow: "hidden" }}>
               <div style={{ width: pctCompletado + "%", height: "100%", background: C.green, transition: "width 0.3s" }} />
             </div>
-            <span style={{ fontSize: 11, color: C.txt3, fontWeight: 600, whiteSpace: "nowrap" }}>
+            <span style={{ fontSize: 12, color: C.txt3, fontWeight: 600, whiteSpace: "nowrap" }}>
               {completadas} de {areas.length} áreas revisadas
             </span>
           </div>
@@ -614,7 +614,7 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
           textAlign: "center",
         }}>
           <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: C.txt, marginBottom: 6 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: C.txt, marginBottom: 6 }}>
             Plan completado
           </div>
           <p style={{ fontSize: 13, color: C.txt2, lineHeight: 1.5, margin: "0 0 14px" }}>
@@ -701,7 +701,7 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
           background: esAplicado ? C.green : esNoAplica ? C.bg3 : C.bg3,
           color: esAplicado ? "#000" : esNoAplica ? C.txt3 : C.txt2,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 15, fontWeight: 800,
+          fontSize: 15, fontWeight: 700,
           flexShrink: 0,
         }}>
           {esAplicado ? "✓" : esNoAplica ? "—" : index}
@@ -716,7 +716,7 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
             </span>
             {esAplicado && area.ahorroEstimado > 0 && (
               <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.greenBg, color: C.green, fontWeight: 700,
               }}>
                 💚 {fmShort(area.ahorroEstimado)} ahorrados
@@ -724,7 +724,7 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
             )}
             {esNoAplica && (
               <span style={{
-                fontSize: 11, padding: "2px 8px", borderRadius: 999,
+                fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.bg3, color: C.txt3, fontWeight: 600,
               }}>
                 No aplica
@@ -763,7 +763,7 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
               {area.explicacion}
             </div>
             {area.baseLegal && (
-              <div style={{ fontSize: 10, color: C.txt3, marginTop: 6, fontStyle: "italic" }}>
+              <div style={{ fontSize: 11, color: C.txt3, marginTop: 6, fontStyle: "italic" }}>
                 Base legal: {area.baseLegal}
               </div>
             )}
@@ -795,10 +795,10 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
             }}>
               <span style={{ fontSize: 18 }}>💚</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, color: C.green, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                   Ahorro estimado al confirmar
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: C.green, lineHeight: 1 }}>
+                <div style={{ fontSize: 18, fontWeight: 700, color: C.green, lineHeight: 1 }}>
                   {fm(ahorroPreview)}
                 </div>
               </div>
@@ -914,7 +914,7 @@ function InputInline({ input, value, onChange }) {
         />
       )}
       {input.helpText && (
-        <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 4, lineHeight: 1.4 }}>
           {input.helpText}
         </div>
       )}

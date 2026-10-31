@@ -5,7 +5,7 @@ import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.06)",txt:"var(--fp-txt)",txt2:"var(--fp-txt2)",txt3:"var(--fp-txt3)",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f59e0b",orangeDim:"rgba(245,158,11,0.1)",gold:"#f59e0b"};
+const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.06)",txt:"var(--fp-txt)",txt2:"var(--fp-txt2)",txt3:"var(--fp-txt3)",green:"#00c805",greenDim:"rgba(0,200,5,0.1)",red:"#ff5000",blue:"#3b82f6",orange:"#f59e0b",orangeDim:"rgba(245,158,11,0.1)",gold:"#f59e0b"};
 const SM=1750905; // SMMLV 2026 Decreto 1469
 const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B COP";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M COP";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K COP";return"$"+Math.round(v).toLocaleString("es-CO")+" COP"};
 // 26-jul-2026 (Santiago: "a veces no sé si estoy ingresando valores en pesos o
@@ -19,9 +19,9 @@ const fB=v=>v.toFixed(4)+" ₿";
 const pc=v=>fmtPctEs((v||0), 1);
 const TT={background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.15)",borderRadius:10,color:"var(--fp-txt)",fontSize:12};
 const Cd=({children,style:s,glow})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...(glow?{borderColor:glow+"30",boxShadow:`0 0 20px ${glow}10`}:{}),...s}}>{children}</div>;
-const MC=({l,v,sub,color})=><Cd><div style={{padding:"20px 24px"}}><div style={{fontSize:12,color:T.txt3,marginBottom:6}}>{l}</div><div style={{fontSize:28,fontWeight:800,color:color||T.txt,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:color||T.txt3,marginTop:3}}>{sub}</div>}</div></Cd>;
+const MC=({l,v,sub,color})=><Cd><div style={{padding:"20px 24px"}}><div style={{fontSize:12,color:T.txt3,marginBottom:6}}>{l}</div><div style={{fontSize:28,fontWeight:700,color:color||T.txt,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:color||T.txt3,marginTop:3}}>{sub}</div>}</div></Cd>;
 const Rw=({l,v,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"10px 16px",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:14,color:T.txt2}}>{l}</span><span style={{fontSize:14,fontWeight:bold?700:600,color:color||T.txt,fontFamily:"monospace"}}>{v}</span></div>;
-const Sl=({label,value,onChange,min,max,step,color,display,sub})=><div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:14,color:T.txt2}}>{label}: <strong style={{color:color||T.orange}}>{display}</strong></span></div><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(+e.target.value)} style={{width:"100%",height:8,borderRadius:3,cursor:"pointer",accentColor:color||T.orange}}/>{sub&&<div style={{fontSize:11,color:T.txt3,marginTop:4}}>{sub}</div>}</div>;
+const Sl=({label,value,onChange,min,max,step,color,display,sub})=><div style={{marginBottom:20}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:14,color:T.txt2}}>{label}: <strong style={{color:color||T.orange}}>{display}</strong></span></div><input type="range" min={min} max={max} step={step} value={value} onChange={e=>onChange(+e.target.value)} style={{width:"100%",height:8,borderRadius:3,cursor:"pointer",accentColor:color||T.orange}}/>{sub&&<div style={{fontSize:12,color:T.txt3,marginTop:4}}>{sub}</div>}</div>;
 
 export default function PensionBTC({trm:pTrm}){
   const[tab,setTab]=useState("resumen");
@@ -107,7 +107,7 @@ export default function PensionBTC({trm:pTrm}){
     {tab==="resumen"&&<div>
       {/* PASO A PASO - Lo que pasa con tu dinero */}
       <div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.06),rgba(245,158,11,0.02))",border:"1px solid "+T.orange+"20",borderRadius:16,padding:24,marginBottom:20}}>
-        <div style={{fontSize:16,fontWeight:800,color:T.orange,marginBottom:12}}>¿Cómo funciona esta estrategia?</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.orange,marginBottom:12}}>¿Cómo funciona esta estrategia?</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}}>
           <div style={{textAlign:"center"}}>
             <div style={{fontSize:28,marginBottom:6}}>💰</div>
@@ -132,7 +132,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd glow={T.blue} style={{padding:28,textAlign:"center"}}>
           <div style={{fontSize:14,fontWeight:700,color:T.blue,marginBottom:12}}>🏛️ PENSIÓN TRADICIONAL</div>
           <div style={{fontSize:12,color:T.txt3,marginBottom:4}}>Tu mesada mensual sería:</div>
-          <div style={{fontSize:36,fontWeight:800,color:T.blue}}>{fC(penMes)}</div>
+          <div style={{fontSize:36,fontWeight:700,color:T.blue}}>{fC(penMes)}</div>
           <div style={{fontSize:12,color:T.txt3,marginTop:4}}>COP por mes</div>
           <div style={{fontSize:12,color:T.txt3,marginTop:12,borderTop:"1px solid "+T.border,paddingTop:10}}>
             En {anios} años recibes: {fC(penTotal)}<br/>
@@ -142,7 +142,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd glow={T.orange} style={{padding:28,textAlign:"center"}}>
           <div style={{fontSize:14,fontWeight:700,color:T.orange,marginBottom:12}}>🟠 AHORRO EN BITCOIN</div>
           <div style={{fontSize:12,color:T.txt3,marginBottom:4}}>Tu retiro mensual sería:</div>
-          <div style={{fontSize:36,fontWeight:800,color:T.orange}}>{fC(btc.rMC)}</div>
+          <div style={{fontSize:36,fontWeight:700,color:T.orange}}>{fC(btc.rMC)}</div>
           <div style={{fontSize:12,color:T.txt3,marginTop:4}}>COP por mes ({regla}% anual de tu BTC)</div>
           <div style={{fontSize:12,color:T.txt3,marginTop:12,borderTop:"1px solid "+T.border,paddingTop:10}}>
             En {anios} años recibes: {fC(btcTotal)}<br/>
@@ -158,20 +158,20 @@ export default function PensionBTC({trm:pTrm}){
       {/* MULTIPLICADOR / COMPARACIÓN ILUSTRATIVA */}
       <Cd glow={T.green} style={{padding:28,textAlign:"center",marginBottom:20}}>
         <div style={{fontSize:14,color:T.txt2}}>Comparación ilustrativa bajo estos supuestos</div>
-        <div style={{fontSize:48,fontWeight:800,color:T.green,lineHeight:1}}>{mult.toFixed(1)}×</div>
+        <div style={{fontSize:48,fontWeight:700,color:T.green,lineHeight:1}}>{mult.toFixed(1)}×</div>
         <div style={{fontSize:15,color:T.txt2,marginTop:4}}>retiro BTC simulado vs mesada pensional (no es un rendimiento garantizado)</div>
         <div style={{fontSize:13,color:T.txt3,marginTop:12}}>{fC(btc.rMC)}/mes simulado con BTC vs {fC(penMes)}/mes pensión</div>
         <div style={{marginTop:16,padding:"12px 14px",background:T.bg3,borderRadius:12,border:"1px solid "+T.border,textAlign:"left"}}>
           <div style={{fontSize:12,fontWeight:700,color:T.orange,marginBottom:8}}>Estrés sobre el portafolio/ingreso proyectado</div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:T.txt2,marginBottom:6}}><span>Si el valor cae −50%</span><strong style={{color:T.orange,fontFamily:"monospace"}}>{fC(btc.rMC*0.5)}/mes</strong></div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:13,color:T.txt2}}><span>Si el valor cae −70%</span><strong style={{color:T.red,fontFamily:"monospace"}}>{fC(btc.rMC*0.3)}/mes</strong></div>
-          <div style={{fontSize:11,color:T.txt3,marginTop:8}}>Mismo % de retiro anual sobre un portafolio 50%/70% menor. BTC ha tenido drawdowns de ese orden.</div>
+          <div style={{fontSize:12,color:T.txt3,marginTop:8}}>Mismo % de retiro anual sobre un portafolio 50%/70% menor. BTC ha tenido drawdowns de ese orden.</div>
         </div>
       </Cd>
 
       {/* EXPLICACIÓN PASO A PASO */}
       <Cd style={{padding:28,marginBottom:20,border:"1px solid "+T.orange+"20"}}>
-        <div style={{fontSize:16,fontWeight:800,color:T.orange,marginBottom:16}}>📖 ¿Cómo funciona? — Explicado paso a paso</div>
+        <div style={{fontSize:16,fontWeight:700,color:T.orange,marginBottom:16}}>📖 ¿Cómo funciona? — Explicado paso a paso</div>
         <div style={{fontSize:14,color:T.txt2,lineHeight:2}}>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:10}}>
             <strong style={{color:T.green}}>1. Ahorras cada mes:</strong> De tu salario de {fC(salSM*SM)} mensuales, destinas {fC(apMes)} cada mes a comprar Bitcoin. Haces esto durante <strong>{anios} años</strong> ({anios*12} meses).
@@ -276,8 +276,8 @@ export default function PensionBTC({trm:pTrm}){
               y el monto en pesos se lee al lado del control. */}
           <div style={{marginBottom:18}}>
             <div style={{marginBottom:10}}>
-              <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>1 · TU APORTE</div>
-              <div style={{fontSize:11,color:T.txt3,marginTop:3}}>Cuánto y cada cuánto pones</div>
+              <div style={{fontSize:11,fontWeight:700,color:T.txt3,letterSpacing:"0.08em"}}>1 · TU APORTE</div>
+              <div style={{fontSize:12,color:T.txt3,marginTop:3}}>Cuánto y cada cuánto pones</div>
             </div>
             <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:8}}>💵 ¿Cómo vas a aportar?</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
@@ -298,7 +298,7 @@ export default function PensionBTC({trm:pTrm}){
               </div>
               {modoAporte==="libre" ? (
                 <div>
-                  <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE MENSUAL (COP)</div>
+                  <div style={{fontSize:12,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE MENSUAL (COP)</div>
                   <NumberInput value={montoLibre} onChange={v=>setMontoLibre(v===""?"":String(v))}
                 placeholder="500000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
@@ -334,7 +334,7 @@ export default function PensionBTC({trm:pTrm}){
             </>}
 
             {frecAporte==="anual" && <div>
-              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE UNA VEZ AL AÑO (COP)</div>
+              <div style={{fontSize:12,color:T.txt3,marginBottom:5,fontWeight:600}}>APORTE UNA VEZ AL AÑO (COP)</div>
               <NumberInput value={montoAnual} onChange={v=>setMontoAnual(v===""?"":String(v))}
                 placeholder="6000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
@@ -344,7 +344,7 @@ export default function PensionBTC({trm:pTrm}){
             </div>}
 
             {frecAporte==="unico" && <div>
-              <div style={{fontSize:11,color:T.txt3,marginBottom:5,fontWeight:600}}>COMPRAS HOY Y NO TOCAS MÁS (COP)</div>
+              <div style={{fontSize:12,color:T.txt3,marginBottom:5,fontWeight:600}}>COMPRAS HOY Y NO TOCAS MÁS (COP)</div>
               <NumberInput value={montoUnico} onChange={v=>setMontoUnico(v===""?"":String(v))}
                 placeholder="20000000"
                 style={{width:"100%",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,padding:"10px 12px",color:T.txt,fontSize:14}} />
@@ -354,13 +354,13 @@ export default function PensionBTC({trm:pTrm}){
             </div>}
           </div>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
-            <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>2 · TU HORIZONTE</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Cuánto tiempo dejas trabajar el dinero</div>
+            <div style={{fontSize:11,fontWeight:700,color:T.txt3,letterSpacing:"0.08em"}}>2 · TU HORIZONTE</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:3,marginBottom:2}}>Cuánto tiempo dejas trabajar el dinero</div>
           </div>
         <Sl label="⏰ ¿Cuántos años vas a ahorrar?" value={anios} onChange={setAnios} min={1} max={30} step={1} display={anios+" años"} color={T.green} sub={"En "+anios+" años habrás aportado "+fC(apMes*12*anios)+" en total ("+fC(apMes)+" x "+anios*12+" meses)"}/>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
-            <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>3 · SUPUESTOS DEL MERCADO</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Ajústalos si no coincides con los valores por defecto</div>
+            <div style={{fontSize:11,fontWeight:700,color:T.txt3,letterSpacing:"0.08em"}}>3 · SUPUESTOS DEL MERCADO</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:3,marginBottom:2}}>Ajústalos si no coincides con los valores por defecto</div>
           </div>
         <Sl label="📈 Crecimiento anual del Bitcoin (CAGR)" value={cagr} onChange={setCagr} min={5} max={80} step={0.1} display={pc(cagr)+" al año"} color={T.orange} sub="Supuesto de simulación, no un tip. Histórico ≠ default (hist. ~55–70%). Conservador / default Finanzas: ≤10%. Escenarios agresivos: solo a conciencia."/>
         {/* Advertencia de plausibilidad. No opina sobre si el Bitcoin subirá:
@@ -399,8 +399,8 @@ export default function PensionBTC({trm:pTrm}){
 
         <Sl label="💰 Precio actual de 1 Bitcoin (en dólares)" value={pBTC} onChange={setPBTC} min={10000} max={200000} step={1000} display={fU(pBTC)} color={T.gold} sub={"= "+fC(pBTC*trm)+" COP"}/>
           <div style={{marginTop:20,marginBottom:10,paddingTop:14,borderTop:"1px solid "+T.border}}>
-            <div style={{fontSize:10,fontWeight:800,color:T.txt3,letterSpacing:"0.08em"}}>4 · COMPARACIÓN CON LA PENSIÓN</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:3,marginBottom:2}}>Contra qué se mide tu ahorro en Bitcoin</div>
+            <div style={{fontSize:11,fontWeight:700,color:T.txt3,letterSpacing:"0.08em"}}>4 · COMPARACIÓN CON LA PENSIÓN</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:3,marginBottom:2}}>Contra qué se mide tu ahorro en Bitcoin</div>
           </div>
           {/* 03-ago-2026 (Santiago: "si estoy aportando una vez, tal vez esa
               opción debería desaparecer"). Tenía razón: el slider de salario
@@ -419,10 +419,10 @@ export default function PensionBTC({trm:pTrm}){
         <Sl label={"📊 Tasa de reemplazo pensional"} value={tasaR} onChange={setTasaR} min={30} max={80} step={1} display={tasaR+"%"} color={T.blue} sub={"Es el % de tu salario que recibirías como pensión. En Colombia varía entre 55% y 80% según semanas cotizadas."}/>
       </Cd>
       <Cd glow={T.orange} style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>Tu Resultado después de {anios} años</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-        <div><div style={{fontSize:12,color:T.txt3}}>{frecAporte==="unico"?"Invertiste una vez":frecAporte==="anual"?"Aporte anual":"Aporte mensual"}</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{frecAporte==="unico"?fC(Number(montoUnico)||0):frecAporte==="anual"?fC(Number(montoAnual)||0):fC(apMesEfectivo)+"/mes"}</div></div>
-        <div><div style={{fontSize:12,color:T.txt3}}>Valor BTC</div><div style={{fontSize:22,fontWeight:800,color:T.green,marginTop:4}}>{fU(btc.vf)}</div></div>
-        <div><div style={{fontSize:12,color:T.txt3}}>BTC Acumulado</div><div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fB(btc.ba)}</div></div>
-        <div><div style={{fontSize:12,color:T.txt3}}>Retorno total</div><div style={{fontSize:22,fontWeight:800,color:T.orange,marginTop:4}}>+{pc(btc.ret)}</div></div>
+        <div><div style={{fontSize:12,color:T.txt3}}>{frecAporte==="unico"?"Invertiste una vez":frecAporte==="anual"?"Aporte anual":"Aporte mensual"}</div><div style={{fontSize:22,fontWeight:700,marginTop:4}}>{frecAporte==="unico"?fC(Number(montoUnico)||0):frecAporte==="anual"?fC(Number(montoAnual)||0):fC(apMesEfectivo)+"/mes"}</div></div>
+        <div><div style={{fontSize:12,color:T.txt3}}>Valor BTC</div><div style={{fontSize:22,fontWeight:700,color:T.green,marginTop:4}}>{fU(btc.vf)}</div></div>
+        <div><div style={{fontSize:12,color:T.txt3}}>BTC Acumulado</div><div style={{fontSize:22,fontWeight:700,marginTop:4}}>{fB(btc.ba)}</div></div>
+        <div><div style={{fontSize:12,color:T.txt3}}>Retorno total</div><div style={{fontSize:22,fontWeight:700,color:T.orange,marginTop:4}}>+{pc(btc.ret)}</div></div>
       </div>
       <div style={{marginTop:16,padding:"16px 0",borderTop:"1px solid "+T.border}}>
         <div style={{fontSize:12,color:T.txt3,marginBottom:8}}>💸 <strong>¿Cuánto retiras por mes?</strong> — Elige qué porcentaje de tu portafolio retiras cada año para vivir:</div>
@@ -433,7 +433,7 @@ export default function PensionBTC({trm:pTrm}){
         <div style={{fontSize:12,color:T.txt3}}>Ratio ilustrativo {mult.toFixed(1)}× vs pensión ({fC(penMes)}/mes) — simulación, no tip ni garantía. Estrés −50%: {fC(btc.rMC*0.5)}/mes · −70%: {fC(btc.rMC*0.3)}/mes</div>
       </div>
     </Cd></div>
-      <Cd style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>📊 Proyección Año por Año</div><div style={{maxHeight:500,overflowY:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr>{["Año","Precio BTC","BTC","Valor USD"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:h==="Año"?"left":"right",color:T.txt3,fontWeight:600,fontSize:11,textTransform:"uppercase",borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,background:T.card}}>{h}</th>)}</tr></thead>
+      <Cd style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>📊 Proyección Año por Año</div><div style={{maxHeight:500,overflowY:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr>{["Año","Precio BTC","BTC","Valor USD"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:h==="Año"?"left":"right",color:T.txt3,fontWeight:600,fontSize:12,borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,background:T.card}}>{h}</th>)}</tr></thead>
         <tbody>{btc.yd.map(d=><tr key={d.anio} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"10px 12px",fontWeight:600}}>{d.anio}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.txt2}}>{fU(d.precioBTC)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.orange}}>{d.btcAcum.toFixed(4)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",fontWeight:700,color:T.green}}>{d.valorUSD>=1e6?"$"+fmtNumEs((d.valorUSD/1e6), 2)+"M":"$"+fmtNumEs((d.valorUSD/1e3), 0)+"K"}</td></tr>)}</tbody></table></div></Cd>
     </div>}
 
@@ -444,13 +444,13 @@ export default function PensionBTC({trm:pTrm}){
         <Cd glow={T.blue} style={{padding:28}}>
           <div style={{fontSize:15,fontWeight:700,color:T.blue,marginBottom:16}}>🏛️ Pensión Tradicional</div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:12}}>
-            <div style={{fontSize:11,color:T.txt3}}>Tu mesada mensual de pensión:</div>
-            <div style={{fontSize:28,fontWeight:800,color:T.blue,marginTop:4}}>{fC(penMes)}<span style={{fontSize:13,fontWeight:400,color:T.txt3}}>/mes</span></div>
+            <div style={{fontSize:12,color:T.txt3}}>Tu mesada mensual de pensión:</div>
+            <div style={{fontSize:28,fontWeight:700,color:T.blue,marginTop:4}}>{fC(penMes)}<span style={{fontSize:13,fontWeight:400,color:T.txt3}}>/mes</span></div>
           </div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:12}}>
-            <div style={{fontSize:11,color:T.txt3}}>Si vives {anios} años después de pensionarte, recibes en total:</div>
-            <div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fC(penTotal)}</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:2}}>({fC(penMes)} × {anios*12} meses)</div>
+            <div style={{fontSize:12,color:T.txt3}}>Si vives {anios} años después de pensionarte, recibes en total:</div>
+            <div style={{fontSize:22,fontWeight:700,marginTop:4}}>{fC(penTotal)}</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:2}}>({fC(penMes)} × {anios*12} meses)</div>
           </div>
           <div style={{fontSize:12,color:T.red,fontWeight:600}}>⚠ Al fallecer se pierde TODO. No es heredable.</div>
         </Cd>
@@ -459,19 +459,19 @@ export default function PensionBTC({trm:pTrm}){
         <Cd glow={T.green} style={{padding:28}}>
           <div style={{fontSize:15,fontWeight:700,color:T.green,marginBottom:16}}>🟠 Estrategia Bitcoin</div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:12}}>
-            <div style={{fontSize:11,color:T.txt3}}>Tu retiro mensual de Bitcoin:</div>
-            <div style={{fontSize:28,fontWeight:800,color:T.orange,marginTop:4}}>{fC(btc.rMC)}<span style={{fontSize:13,fontWeight:400,color:T.txt3}}>/mes</span></div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:2}}>(retiras {regla}% al año de tu portafolio)</div>
+            <div style={{fontSize:12,color:T.txt3}}>Tu retiro mensual de Bitcoin:</div>
+            <div style={{fontSize:28,fontWeight:700,color:T.orange,marginTop:4}}>{fC(btc.rMC)}<span style={{fontSize:13,fontWeight:400,color:T.txt3}}>/mes</span></div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:2}}>(retiras {regla}% al año de tu portafolio)</div>
           </div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:12}}>
-            <div style={{fontSize:11,color:T.txt3}}>Si retiras durante {anios} años, sacas en total:</div>
-            <div style={{fontSize:22,fontWeight:800,marginTop:4}}>{fC(btcTotal)}</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:2}}>({fC(btc.rMC)} × {anios*12} meses)</div>
+            <div style={{fontSize:12,color:T.txt3}}>Si retiras durante {anios} años, sacas en total:</div>
+            <div style={{fontSize:22,fontWeight:700,marginTop:4}}>{fC(btcTotal)}</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:2}}>({fC(btc.rMC)} × {anios*12} meses)</div>
           </div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:12}}>
-            <div style={{fontSize:11,color:T.txt3}}>Y ADEMÁS tu capital sigue ahí:</div>
-            <div style={{fontSize:22,fontWeight:800,color:T.green,marginTop:4}}>{fU(btc.vf)}</div>
-            <div style={{fontSize:11,color:T.txt3,marginTop:2}}>(= {fC(btc.vfC)} al cambio actual)</div>
+            <div style={{fontSize:12,color:T.txt3}}>Y ADEMÁS tu capital sigue ahí:</div>
+            <div style={{fontSize:22,fontWeight:700,color:T.green,marginTop:4}}>{fU(btc.vf)}</div>
+            <div style={{fontSize:12,color:T.txt3,marginTop:2}}>(= {fC(btc.vfC)} al cambio actual)</div>
           </div>
           <div style={{fontSize:12,color:T.green,fontWeight:600}}>✅ El capital es 100% heredable para tu familia.</div>
         </Cd>
@@ -484,9 +484,9 @@ export default function PensionBTC({trm:pTrm}){
         <MC l="BTC acumulados" v={fB(btc.ba)} color={T.orange}/>
         <MC l="Capital heredable (USD)" v={fU(btc.vf*(1-regla/100))} color={T.green}/>
       </div>
-      <Cd glow={T.green} style={{padding:40,textAlign:"center",background:"linear-gradient(135deg,rgba(34,197,94,0.05),rgba(34,197,94,0.02))"}}>
+      <Cd glow={T.green} style={{padding:40,textAlign:"center",background:"linear-gradient(135deg,rgba(0,200,5,0.05),rgba(0,200,5,0.02))"}}>
         <div style={{fontSize:16,color:T.txt2}}>Ratio ilustrativo (simulación, no garantía)</div>
-        <div style={{fontSize:56,fontWeight:800,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{mult.toFixed(1)}×</div>
+        <div style={{fontSize:56,fontWeight:700,background:"linear-gradient(135deg,#00c805,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>{mult.toFixed(1)}×</div>
         <div style={{fontSize:16,color:T.txt2}}>retiro BTC simulado vs mesada pensional</div>
         <div style={{fontSize:14,color:T.txt3,marginTop:8}}>Capital modelado como heredable · Estrés −50%: {fC(btc.rMC*0.5)}/mes · −70%: {fC(btc.rMC*0.3)}/mes</div>
       </Cd>
@@ -495,7 +495,7 @@ export default function PensionBTC({trm:pTrm}){
 
     {tab==="analisis"&&<div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-        <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>💸 Tu aporte obligatorio a pensión (mensual)</div><Rw l="Empleado (4%)" v={fC(empMes)} color={T.orange}/><Rw l="Empleador (12%)" v={fC(emrMes)} color={T.orange}/><Rw l={"Impuesto Renta ("+impR+"%)"} v={fC(impMes)} color={T.red}/><div style={{display:"flex",justifyContent:"space-between",padding:"14px 16px",background:T.bg3,borderRadius:10,marginTop:8}}><span style={{fontWeight:700}}>Total Mensual</span><span style={{fontSize:16,fontWeight:800,color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}</span></div></Cd>
+        <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>💸 Tu aporte obligatorio a pensión (mensual)</div><Rw l="Empleado (4%)" v={fC(empMes)} color={T.orange}/><Rw l="Empleador (12%)" v={fC(emrMes)} color={T.orange}/><Rw l={"Impuesto Renta ("+impR+"%)"} v={fC(impMes)} color={T.red}/><div style={{display:"flex",justifyContent:"space-between",padding:"14px 16px",background:T.bg3,borderRadius:10,marginTop:8}}><span style={{fontWeight:700}}>Total Mensual</span><span style={{fontSize:16,fontWeight:700,color:T.orange,fontFamily:"monospace"}}>{fC(apMes)}</span></div></Cd>
         <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>⚠ Riesgos y Consideraciones</div>{[{i:"🟠",t:"Volatilidad BTC",d:"Drawdowns históricos de -80%. Requiere horizonte largo.",c:T.orange},{i:"🏛️",t:"Riesgo Pensional",d:"Reformas, cambios de reglas, inflación, insolvencia de fondos.",c:T.blue},{i:"✓",t:"Ventajas BTC",d:"Auto-custodia, heredable, escasez absoluta de 21M, sin intermediarios.",c:T.green}].map(r=><div key={r.t} style={{display:"flex",gap:12,padding:"12px 14px",background:T.bg3,borderRadius:12,marginBottom:8,border:`1px solid ${r.c}15`}}><span style={{fontSize:18,flexShrink:0}}>{r.i}</span><div><div style={{fontSize:14,fontWeight:700,marginBottom:2}}>{r.t}</div><div style={{fontSize:12,color:T.txt3,lineHeight:1.5}}>{r.d}</div></div></div>)}</Cd>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
@@ -503,7 +503,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd glow={T.orange} style={{padding:28,display:"flex",flexDirection:"column",justifyContent:"center",textAlign:"center",background:"linear-gradient(135deg,rgba(245,158,11,0.05),rgba(245,158,11,0.02))"}}>
           <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>🎯 Conclusión</div>
           <div style={{fontSize:14,color:T.txt2}}>Invirtiendo <span style={{color:T.green,fontWeight:700}}>{fC(btc.ti)}</span> en BTC</div>
-          <div style={{fontSize:36,fontWeight:800,color:T.orange,margin:"12px 0"}}>{mult.toFixed(1)}× ratio ilustrativo</div>
+          <div style={{fontSize:36,fontWeight:700,color:T.orange,margin:"12px 0"}}>{mult.toFixed(1)}× ratio ilustrativo</div>
           <div style={{fontSize:14,color:T.txt2}}>{fC(btc.rMC)}/mes vs {fC(penMes)}/mes</div>
           {/* Decia "conservador" aunque el usuario hubiera subido el slider a 80%.
               El calificativo ahora depende del valor elegido, no es fijo. */}

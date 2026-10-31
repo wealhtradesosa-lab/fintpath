@@ -18,7 +18,7 @@
 //     value="$21.8B"
 //     sub="+8.3% YoY"
 //     subColor="positive"  // "positive" | "negative" | undefined
-//     accent="#22c55e"     // color del glow y accent line
+//     accent="#00c805"     // color del glow y accent line
 //     trend="up"           // "up" | "down" | undefined
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
@@ -29,8 +29,8 @@ const C = {
   txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
   borderStrong: "rgba(var(--fp-ink),0.14)",
-  green: "#22c55e",
-  red: "#ef4444",
+  green: "#00c805",
+  red: "#ff5000",
   fontDisplay: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
   fontMono: "'SF Mono', 'JetBrains Mono', 'Menlo', monospace",
 };
@@ -111,10 +111,9 @@ export default function StatCard({
         marginBottom: size === "sm" ? 6 : 8,
       }}>
         <div style={{
-          fontSize: 10,
+          fontSize: 11,
           fontWeight: 700,
           color: C.txt3,
-          textTransform: "uppercase",
           letterSpacing: "0.06em",
         }}>
           {label}
@@ -151,8 +150,8 @@ export default function StatCard({
           alignItems: "center",
           gap: 4,
         }}>
-          {trend === "up" && <span style={{ fontSize: 9 }}>▲</span>}
-          {trend === "down" && <span style={{ fontSize: 9 }}>▼</span>}
+          {trend === "up" && <span style={{ fontSize: 11 }}>▲</span>}
+          {trend === "down" && <span style={{ fontSize: 11 }}>▼</span>}
           {sub}
         </div>
       )}

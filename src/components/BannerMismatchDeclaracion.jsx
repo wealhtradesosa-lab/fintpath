@@ -123,12 +123,12 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                 <div style={{ fontSize: 13, fontWeight: 700, color: colors.txt }}>
                   {r.ownerName} · {r.tipoDeclaracion} {r.anoGravable}
                   {r.revisado && (
-                    <span style={{ marginLeft: 8, fontSize: 10, color: colors.tx3, fontWeight: 500 }}>
+                    <span style={{ marginLeft: 8, fontSize: 11, color: colors.tx3, fontWeight: 500 }}>
                       ✓ revisado
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 11, color: colors.tx3 }}>
+                <div style={{ fontSize: 12, color: colors.tx3 }}>
                   {r.mismatches.length} diferencia{r.mismatches.length > 1 ? "s" : ""} detectada{r.mismatches.length > 1 ? "s" : ""}
                 </div>
               </div>
@@ -140,7 +140,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                   color: colors.tx2,
                   padding: "4px 10px",
                   borderRadius: 6,
-                  fontSize: 11,
+                  fontSize: 12,
                   cursor: "pointer",
                   fontWeight: 600,
                 }}
@@ -167,7 +167,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                       {mm.campo}
                     </div>
                     <div style={{ color: colors.tx2, marginBottom: 6 }}>{mm.mensaje}</div>
-                    <div style={{ display: "flex", gap: 16, fontSize: 11, color: colors.tx3, marginBottom: 6 }}>
+                    <div style={{ display: "flex", gap: 16, fontSize: 12, color: colors.tx3, marginBottom: 6 }}>
                       <span>📋 Declarado: <strong style={{ color: colors.txt }}>{fmM(mm.declarado)}</strong></span>
                       <span>🔢 Calculado: <strong style={{ color: colors.txt }}>{fmM(mm.calculado)}</strong></span>
                       <span>📊 Diferencia: <strong style={{ color: mm.severidad === "warning" ? colors.warningText : colors.infoText }}>{fmtPctEs((mm.diferenciaPct * 100), 0)}</strong></span>
@@ -207,7 +207,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                     })()}
 
                     {mm.explicaciones.map((ex, j) => (
-                      <div key={j} style={{ fontSize: 11, color: colors.tx3, marginTop: 4, fontStyle: "italic" }}>
+                      <div key={j} style={{ fontSize: 12, color: colors.tx3, marginTop: 4, fontStyle: "italic" }}>
                         💡 {ex}
                       </div>
                     ))}
@@ -224,7 +224,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                         color: colors.tx2,
                         padding: "8px 14px",
                         borderRadius: 6,
-                        fontSize: 11,
+                        fontSize: 12,
                         cursor: "pointer",
                         fontWeight: 600,
                       }}
@@ -240,7 +240,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                         color: "#000",
                         padding: "8px 14px",
                         borderRadius: 6,
-                        fontSize: 11,
+                        fontSize: 12,
                         cursor: "pointer",
                         fontWeight: 700,
                       }}
@@ -259,7 +259,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
         <div
           onClick={() => setShowRevisados(true)}
           style={{
-            fontSize: 11,
+            fontSize: 12,
             color: colors.tx3,
             textAlign: "center",
             cursor: "pointer",
@@ -274,7 +274,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
         <div
           onClick={() => setShowRevisados(false)}
           style={{
-            fontSize: 11,
+            fontSize: 12,
             color: colors.tx3,
             textAlign: "center",
             cursor: "pointer",

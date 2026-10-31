@@ -49,8 +49,8 @@ const T = {
   bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)", borderL:"rgba(var(--fp-ink),0.1)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
-  gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
-  rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
+  gn:"#00c805", gnB:"rgba(0,200,5,0.08)",
+  rd:"#ff5000", rdB:"rgba(255,80,0,0.06)",
   bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm  = (n) => `$${Math.round(n||0).toLocaleString("en-US")}`;
@@ -58,7 +58,7 @@ const pct = (n) => `${((n||0)*100).toFixed(1)}%`;
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 const Label = ({c,children}) => (
-  <div style={{fontSize:10,fontWeight:700,color:c||T.tx3,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{children}</div>
+  <div style={{fontSize:11,fontWeight:700,color:c||T.tx3,letterSpacing:1,marginBottom:4}}>{children}</div>
 );
 const Field = ({l, value, onChange, type="number", placeholder, hint}) => (
   <div style={{marginBottom:14}}>
@@ -71,19 +71,19 @@ const Field = ({l, value, onChange, type="number", placeholder, hint}) => (
           style={{width:"100%",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,
                   padding:"10px 12px",color:T.tx,fontSize:13,outline:"none"}}/>
     }
-    {hint && <div style={{fontSize:10,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
+    {hint && <div style={{fontSize:11,color:T.tx3,marginTop:3,lineHeight:1.5}}>{hint}</div>}
   </div>
 );
 const InfoBox = ({color=T.bl, children}) => (
   <div style={{background:`${color}10`,border:`1px solid ${color}25`,borderRadius:8,
-               padding:"10px 14px",fontSize:11,color:T.tx2,lineHeight:1.8,marginTop:8}}>
+               padding:"10px 14px",fontSize:12,color:T.tx2,lineHeight:1.8,marginTop:8}}>
     {children}
   </div>
 );
 const SectionHeader = ({icon, title, subtitle, color}) => (
   <div style={{marginBottom:16}}>
-    <div style={{fontSize:14,fontWeight:800,color:color||T.tx2}}>{icon} {title}</div>
-    {subtitle && <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{subtitle}</div>}
+    <div style={{fontSize:14,fontWeight:700,color:color||T.tx2}}>{icon} {title}</div>
+    {subtitle && <div style={{fontSize:12,color:T.tx3,marginTop:2}}>{subtitle}</div>}
   </div>
 );
 const DeductRow = ({label, amount, irc, note, color}) => (
@@ -91,8 +91,8 @@ const DeductRow = ({label, amount, irc, note, color}) => (
                padding:"10px 0",borderBottom:`1px solid ${T.border}`}}>
     <div style={{flex:1}}>
       <div style={{fontSize:12,color:T.tx2,fontWeight:600}}>{label}</div>
-      {irc && <div style={{fontSize:10,color:T.tx3}}>Ref: <em>{irc}</em></div>}
-      {note && <div style={{fontSize:10,color:T.tx3,marginTop:2,lineHeight:1.5}}>{note}</div>}
+      {irc && <div style={{fontSize:11,color:T.tx3}}>Ref: <em>{irc}</em></div>}
+      {note && <div style={{fontSize:11,color:T.tx3,marginTop:2,lineHeight:1.5}}>{note}</div>}
     </div>
     <div style={{fontSize:14,fontWeight:700,color:color||(amount>0?T.gn:T.tx3),
                  fontFamily:"monospace",marginLeft:12,whiteSpace:"nowrap"}}>
@@ -286,19 +286,19 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
     <div>
       {/* Header */}
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>💳 Deductions & Expenses</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>💳 Deductions & Expenses</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           Schedule A · Schedule C · Above-the-line deductions · Tax Credits — Tax Year 2025
         </p>
         {/* 01-sep-2026: export que la version US no tenia. */}
         <button onClick={()=>exportGastosPDF(gastos, 1, true)}
           title="Download expenses PDF with fixed vs variable and category breakdown"
-          style={{marginTop:12,background:"#dc2626",color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+          style={{marginTop:12,background:"#e64800",color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
           📄 PDF
         </button>
         <button onClick={()=>exportGastosExcel(gastos, 1, true)}
           title="Download Excel with full expense detail"
-          style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
+          style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
           📊 Excel
         </button>
       </div>
@@ -318,7 +318,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
                           background:form.filingStatus===s.v?T.gnB:T.bg3,cursor:"pointer",textAlign:"left",
                           color:form.filingStatus===s.v?T.gn:T.tx2,fontSize:12,fontWeight:600}}>
                   {s.l}<br/>
-                  <span style={{fontSize:10,fontWeight:400,color:T.tx3}}>Std: {fm(s.std)}</span>
+                  <span style={{fontSize:11,fontWeight:400,color:T.tx3}}>Std: {fm(s.std)}</span>
                 </button>
               ))}
             </div>
@@ -332,9 +332,9 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {l:"Extra Benefit",v:useItemized?`+${fm(itemizedBonus)}`:"$0",c:useItemized?T.cy:T.tx3,badge:null},
           ].map(k=>(
             <div key={k.l} style={{background:T.bg3,borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
-              <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{k.l}</div>
-              <div style={{fontSize:18,fontWeight:800,color:k.c,marginTop:4}}>{k.v}</div>
-              {k.badge&&<div style={{fontSize:9,fontWeight:700,color:"#000",background:T.gn,borderRadius:999,padding:"2px 8px",marginTop:4,display:"inline-block"}}>{k.badge}</div>}
+              <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{k.l}</div>
+              <div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4}}>{k.v}</div>
+              {k.badge&&<div style={{fontSize:11,fontWeight:700,color:"#000",background:T.gn,borderRadius:999,padding:"2px 8px",marginTop:4,display:"inline-block"}}>{k.badge}</div>}
             </div>
           ))}
         </div>
@@ -360,7 +360,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
                     background:activeTab===tab.id?T.card:"transparent",
                     color:activeTab===tab.id?T.tx:T.tx3}}>
             {tab.l}
-            {tab.count && <span style={{marginLeft:6,fontSize:10,color:T.gn,fontWeight:700}}>{tab.count}</span>}
+            {tab.count && <span style={{marginLeft:6,fontSize:11,color:T.gn,fontWeight:700}}>{tab.count}</span>}
           </button>
         ))}
       </div>
@@ -404,11 +404,11 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {aboveLine.sep         > 0 && <DeductRow label="SEP-IRA"               amount={aboveLine.sep}         irc="§ 408(k)" />}
             {aboveLine.alimony     > 0 && <DeductRow label="Alimony Paid"          amount={aboveLine.alimony}     irc="§ 215" />}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
-                         fontWeight:800,fontSize:15,color:T.cy,borderTop:`2px solid ${T.border}`,marginTop:4}}>
+                         fontWeight:700,fontSize:15,color:T.cy,borderTop:`2px solid ${T.border}`,marginTop:4}}>
               <span>Total Above-the-Line</span>
               <span>–{fm(aboveLine.total)}</span>
             </div>
-            <div style={{fontSize:11,color:T.tx3}}>New AGI: {fm(agi)} – {fm(aboveLine.total)} = <strong style={{color:T.tx}}>{fm(agi - aboveLine.total)}</strong></div>
+            <div style={{fontSize:12,color:T.tx3}}>New AGI: {fm(agi)} – {fm(aboveLine.total)} = <strong style={{color:T.tx}}>{fm(agi - aboveLine.total)}</strong></div>
           </div>
           <InfoBox color={T.cy}>
             <strong>Why above-the-line deductions matter:</strong> They reduce AGI, which in turn reduces phase-outs for other deductions and credits.
@@ -519,11 +519,11 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {schedA.charitable> 0 && <DeductRow label="Charitable Contributions" amount={schedA.charitable} irc="§ 170" />}
             {schedA.casualty  > 0 && <DeductRow label="Casualty Loss"      amount={schedA.casualty}  irc="§ 165(h)" />}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
-                         fontWeight:800,fontSize:15,borderTop:`2px solid ${T.border}`,marginTop:4}}>
+                         fontWeight:700,fontSize:15,borderTop:`2px solid ${T.border}`,marginTop:4}}>
               <span style={{color:useItemized?T.gn:T.or}}>Total Itemized {useItemized?"✅ USE THIS":"(standard deduction wins)"}</span>
               <span style={{color:useItemized?T.gn:T.or,fontFamily:"monospace"}}>–{fm(schedA.total)}</span>
             </div>
-            <div style={{fontSize:11,color:T.tx3}}>
+            <div style={{fontSize:12,color:T.tx3}}>
               vs. Standard Deduction: {fm(stdDeduction)} → {useItemized?`Itemizing saves you ${fm(itemizedBonus)}`:`Standard saves you ${fm(stdDeduction-itemizedTotal)} more`}
             </div>
           </div>
@@ -565,7 +565,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {schedC.s179        > 0 && <DeductRow label="Section 179 Expensing"              amount={schedC.s179}          irc="§ 179" />}
             {schedC.profDev     > 0 && <DeductRow label="Professional Development"           amount={schedC.profDev}       irc="§ 162" />}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
-                         fontWeight:800,fontSize:15,color:T.or,borderTop:`2px solid ${T.border}`,marginTop:4}}>
+                         fontWeight:700,fontSize:15,color:T.or,borderTop:`2px solid ${T.border}`,marginTop:4}}>
               <span>Total Schedule C Deductions</span>
               <span>–{fm(schedC.total)}</span>
             </div>
@@ -610,7 +610,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {credits.child  > 0 && <DeductRow label={`Child Tax Credit (${form.childTaxCredit} children × $2,000)`} amount={credits.child} irc="§ 24" color={T.gn} />}
             {credits.care   > 0 && <DeductRow label="Child & Dependent Care" amount={credits.care} irc="§ 21" color={T.gn} />}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
-                         fontWeight:800,fontSize:15,color:T.gn,borderTop:`2px solid ${T.border}`,marginTop:4}}>
+                         fontWeight:700,fontSize:15,color:T.gn,borderTop:`2px solid ${T.border}`,marginTop:4}}>
               <span>Total Credits (direct tax reduction)</span>
               <span>–{fm(credits.total)}</span>
             </div>
@@ -647,7 +647,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               {l:"Total Deductions",    v:fm(aboveLine.total+schedC.total+deductionBenefit), c:T.gn},
             ].map(k=>(
               <div key={k.l} style={{background:T.bg3,borderRadius:10,padding:"12px 14px"}}>
-                <div style={{fontSize:9,color:T.tx3,textTransform:"uppercase",letterSpacing:1}}>{k.l}</div>
+                <div style={{fontSize:11,color:T.tx3,letterSpacing:1}}>{k.l}</div>
                 <div style={{fontSize:16,fontWeight:700,color:k.c,marginTop:4,fontFamily:"monospace"}}>{k.v}</div>
               </div>
             ))}

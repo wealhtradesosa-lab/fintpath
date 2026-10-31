@@ -47,20 +47,20 @@ const PRINT_STYLES = `
   .rf-report th.right { text-align: right; }
   .rf-report td { padding: 5px 8px; border-bottom: 1px solid #e5e7eb; font-size: 10px; }
   .rf-report td.right { text-align: right; font-family: "SF Mono", Monaco, monospace; }
-  .rf-report td.pos { color: #15803d; font-weight: 600; }
-  .rf-report td.neg { color: #b91c1c; font-weight: 600; }
+  .rf-report td.pos { color: #008f04; font-weight: 600; }
+  .rf-report td.neg { color: #cc4000; font-weight: 600; }
   .rf-report .rf-kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 8px 0; }
   .rf-report .rf-kpi { border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 4px; }
   .rf-report .rf-kpi-label { font-size: 9px; color: var(--fp-txt3); text-transform: uppercase; letter-spacing: 0.5px; }
   .rf-report .rf-kpi-value { font-size: 16px; font-weight: 800; color: #111; font-family: "SF Mono", Monaco, monospace; }
   .rf-report .rf-kpi-delta { font-size: 9px; color: var(--fp-txt3); margin-top: 2px; }
   .rf-report .rf-alert { padding: 8px 10px; margin: 4px 0; border-left: 3px solid #d97706; background: #fef3c7; font-size: 10px; border-radius: 3px; }
-  .rf-report .rf-alert.error { border-left-color: #dc2626; background: #fee2e2; }
+  .rf-report .rf-alert.error { border-left-color: #e64800; background: #fee2e2; }
   .rf-report .rf-alert.info { border-left-color: #2563eb; background: #dbeafe; }
   .rf-report .rf-rec { padding: 10px; margin: 6px 0; border: 1px solid #d1d5db; border-radius: 4px; }
   .rf-report .rf-rec-title { font-weight: 700; font-size: 11px; margin-bottom: 3px; color: #111; }
   .rf-report .rf-rec-desc { font-size: 10px; color: var(--fp-line); margin-bottom: 4px; }
-  .rf-report .rf-rec-ahorro { font-size: 14px; font-weight: 800; color: #15803d; font-family: "SF Mono", Monaco, monospace; }
+  .rf-report .rf-rec-ahorro { font-size: 14px; font-weight: 800; color: #008f04; font-family: "SF Mono", Monaco, monospace; }
   .rf-report .rf-rec-base { font-size: 9px; color: var(--fp-txt3); font-family: "SF Mono", Monaco, monospace; }
   .rf-report .rf-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #d1d5db; font-size: 9px; color: var(--fp-txt3); text-align: center; }
   .rf-report .rf-meta { font-size: 10px; color: var(--fp-txt3); margin-bottom: 6px; }
@@ -246,7 +246,7 @@ export default function ReporteFiscalPrint({
           <div>
             <h2>5. Recomendaciones para revisar</h2>
             <div className="rf-meta" style={{ marginBottom: 8 }}>
-              Ahorro potencial total estimado: <strong style={{ color: "#15803d" }}>{fm(totalAhorroPotencial)}/año</strong>
+              Ahorro potencial total estimado: <strong style={{ color: "#008f04" }}>{fm(totalAhorroPotencial)}/año</strong>
             </div>
             {accionables.map((rec, i) => (
               <div key={i} className="rf-rec rf-avoid-break">

@@ -21,9 +21,9 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)", borderL: "rgba(var(--fp-ink),0.1)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
-  orange: "#f59e0b", gold: "#f59e0b", red: "#ef4444",
-  grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
+  green: "#00c805", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", red: "#ff5000",
+  grad: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
   gradAdv: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)",
 };
 
@@ -125,10 +125,10 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
       <nav style={{ borderBottom: `1px solid ${T.border}`, padding: "16px 24px", background: "rgba(12,12,15,0.8)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ fontSize: 20, fontWeight: 900, letterSpacing: "-0.04em" }}>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.04em" }}>
               <span style={{ background: T.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>FINPATHIA</span>
             </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.blue, padding: "3px 8px", border: `1px solid rgba(59,130,246,0.3)`, borderRadius: 6, letterSpacing: "0.08em", background: "rgba(59,130,246,0.08)" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: T.blue, padding: "3px 8px", border: `1px solid rgba(59,130,246,0.3)`, borderRadius: 6, letterSpacing: "0.08em", background: "rgba(59,130,246,0.08)" }}>
               ASESOR
             </div>
           </div>
@@ -155,7 +155,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
           <div style={{ fontSize: 13, color: T.txt3, marginBottom: 4 }}>
             {profile.firm_name || profile.email || "Workspace de Asesor"}
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 16 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: "-0.03em", marginBottom: 16 }}>
             Mis Clientes
           </h1>
 
@@ -237,7 +237,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: T.gradAdv, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: T.gradAdv, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                       {name[0]?.toUpperCase() || "?"}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -247,8 +247,8 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
                   </div>
                   {summary.hasData ? (
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, color: T.txt3, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>Patrimonio neto</div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: T.txt, letterSpacing: "-0.02em" }}>{fmt(summary.nw)}</div>
+                      <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.08em", marginBottom: 4 }}>Patrimonio neto</div>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: T.txt, letterSpacing: "-0.02em" }}>{fmt(summary.nw)}</div>
                       <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>
                         {summary.invCount} {summary.invCount === 1 ? "inversión" : "inversiones"} · {c.jurisdiction || "CO"}
                       </div>
@@ -282,7 +282,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
                   <div>
-                    <h3 style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", marginBottom: 4 }}>Invitar cliente</h3>
+                    <h3 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", marginBottom: 4 }}>Invitar cliente</h3>
                     <p style={{ fontSize: 13, color: T.txt3 }}>Genera un link para que tu cliente cree su cuenta.</p>
                   </div>
                   <button onClick={closeInviteModal} style={{ background: "transparent", border: "none", color: T.txt3, fontSize: 24, cursor: "pointer", padding: 0, lineHeight: 1 }}>×</button>
@@ -332,8 +332,8 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
             ) : (
               <>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(34,197,94,0.12)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>✓</div>
-                  <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 8 }}>Invitación creada</h3>
+                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(0,200,5,0.12)", border: `2px solid ${T.green}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 16px" }}>✓</div>
+                  <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Invitación creada</h3>
                   <p style={{ fontSize: 14, color: T.txt2, marginBottom: 20 }}>Comparte este link con {inviteEmail}. Expira en 7 días.</p>
                 </div>
                 <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontSize: 12, color: T.txt2, wordBreak: "break-all", fontFamily: "monospace" }}>

@@ -28,7 +28,7 @@ import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx
 const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  red: "#ef4444", orange: "#f59e0b", green: "#22c55e", blue: "#3b82f6", cyan: "#94a3b8",
+  red: "#ff5000", orange: "#f59e0b", green: "#00c805", blue: "#3b82f6", cyan: "#94a3b8",
   card: "rgba(var(--fp-ink),0.02)",
 };
 
@@ -80,7 +80,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
     background: "var(--fp-raised)",
     border: "1px solid " + T.border,
     borderRadius: 8,
-    fontSize: 11,
+    fontSize: 12,
     padding: "6px 10px",
   };
 
@@ -97,7 +97,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
         marginBottom: 10, display: "flex", alignItems: "center", gap: 6,
       }}>
         📊 Evolución histórica
-        <span style={{ color: T.txt3, fontWeight: 400, fontSize: 10, marginLeft: 4 }}>
+        <span style={{ color: T.txt3, fontWeight: 400, fontSize: 11, marginLeft: 4 }}>
           ({puntos.length} año{puntos.length !== 1 ? "s" : ""})
         </span>
       </div>
@@ -109,7 +109,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
             <XAxis dataKey="ano" {...axisProps} />
             <YAxis tickFormatter={fmM} {...axisProps} width={55} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)}/>} />
-            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} iconType="circle"/>
+            <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle"/>
             <Line type="monotone" dataKey="ingresos" stroke={CHART.blue} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Ingresos" />
             <Line type="monotone" dataKey="impuesto" stroke={CHART.red} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Impuesto" />
             <Line type="monotone" dataKey="retenciones" stroke={CHART.cyan} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Retenciones" />
@@ -118,16 +118,16 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
       </div>
 
       {(proyImp || proyIng) && (
-        <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 8, fontSize: 11 }}>
+        <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 8, fontSize: 12 }}>
           <div style={{ color: T.green, fontWeight: 700, marginBottom: 4 }}>
             🔮 Proyección año siguiente
           </div>
-          <div style={{ color: T.txt2, fontSize: 10, lineHeight: 1.5 }}>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.5 }}>
             Basado en la pendiente histórica, el año que viene podría rondar:
             {proyImp && <div style={{ marginTop: 2 }}>· Impuesto: <strong style={{ color: T.txt }}>{fmM(proyImp.valor)}</strong> ({proyImp.pendientePct > 0 ? "+" : ""}{fmtPctEs(proyImp.pendientePct, 1)}/año promedio)</div>}
             {proyIng && <div style={{ marginTop: 2 }}>· Ingresos: <strong style={{ color: T.txt }}>{fmM(proyIng.valor)}</strong> ({proyIng.pendientePct > 0 ? "+" : ""}{fmtPctEs(proyIng.pendientePct, 1)}/año promedio)</div>}
           </div>
-          <div style={{ color: T.txt3, fontSize: 9, marginTop: 4, fontStyle: "italic" }}>
+          <div style={{ color: T.txt3, fontSize: 11, marginTop: 4, fontStyle: "italic" }}>
             Esto es solo una proyección estadística simple. Tu realidad dependerá de ingresos puntuales, cambios normativos y decisiones personales.
           </div>
         </div>

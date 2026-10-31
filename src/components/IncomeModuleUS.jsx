@@ -32,8 +32,8 @@ const T = {
   bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", card:"var(--fp-card)",
   border:"rgba(var(--fp-ink),0.06)", borderL:"rgba(var(--fp-ink),0.1)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
-  gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
-  rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
+  gn:"#00c805", gnB:"rgba(0,200,5,0.08)",
+  rd:"#ff5000", rdB:"rgba(255,80,0,0.06)",
   bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm = (n) => US.formatCurrency(n || 0);
@@ -150,7 +150,7 @@ const EMPTY = {
 
 // ─── Sub-components ────────────────────────────────────────────────────────
 const Label = ({children}) => (
-  <div style={{fontSize:10,fontWeight:700,color:T.tx3,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{children}</div>
+  <div style={{fontSize:11,fontWeight:700,color:T.tx3,letterSpacing:1,marginBottom:4}}>{children}</div>
 );
 const Field = ({l, value, onChange, type="text", options, placeholder}) => (
   <div style={{marginBottom:14}}>
@@ -169,12 +169,12 @@ const Field = ({l, value, onChange, type="text", options, placeholder}) => (
   </div>
 );
 const InfoBox = ({color, children}) => (
-  <div style={{background:`${color}10`,border:`1px solid ${color}30`,borderRadius:8,padding:"10px 14px",fontSize:11,color:T.tx2,lineHeight:1.7,marginTop:8}}>
+  <div style={{background:`${color}10`,border:`1px solid ${color}30`,borderRadius:8,padding:"10px 14px",fontSize:12,color:T.tx2,lineHeight:1.7,marginTop:8}}>
     {children}
   </div>
 );
 const Chip = ({children, color}) => (
-  <span style={{background:`${color}20`,color,fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:999,marginLeft:6}}>{children}</span>
+  <span style={{background:`${color}20`,color,fontSize:11,fontWeight:700,padding:"2px 8px",borderRadius:999,marginLeft:6}}>{children}</span>
 );
 
 // ─── Tax Calculator per income source ──────────────────────────────────────
@@ -255,7 +255,7 @@ function QuarterlyEstimates({ totalTax }) {
   return (
     <div>
       <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:4}}>📅 Form 1040-ES — Quarterly Estimated Payments</div>
-      <div style={{fontSize:11,color:T.tx3,marginBottom:12}}>
+      <div style={{fontSize:12,color:T.tx3,marginBottom:12}}>
         Required if you expect to owe ≥ $1,000 after withholding (IRC § 6654). 
         Safe harbor: pay 100% of prior year tax (110% if AGI &gt; $150K).
       </div>
@@ -264,9 +264,9 @@ function QuarterlyEstimates({ totalTax }) {
           <div key={q.q} style={{background:T.bg3,borderRadius:10,padding:"12px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div>
               <div style={{fontSize:12,fontWeight:700,color:T.or}}>{q.q}</div>
-              <div style={{fontSize:10,color:T.tx3}}>Due {q.due}</div>
+              <div style={{fontSize:11,color:T.tx3}}>Due {q.due}</div>
             </div>
-            <div style={{fontSize:16,fontWeight:800,color:T.tx,fontFamily:"monospace"}}>{fm(q.amount)}</div>
+            <div style={{fontSize:16,fontWeight:700,color:T.tx,fontFamily:"monospace"}}>{fm(q.amount)}</div>
           </div>
         ))}
       </div>
@@ -376,7 +376,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h2 style={{fontSize:22,fontWeight:800,margin:"0 0 4px"}}>💰 Income</h2>
+          <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>💰 Income</h2>
           <p style={{color:T.tx3,fontSize:12,margin:0}}>
             All income types per IRS classification — Tax Year 2025
           </p>
@@ -385,15 +385,15 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             que la version CO, en modo ingles. */}
         <button onClick={()=>exportIngresosPDF(ingresos.filter(x=>x.sim!==false), [], 1, true)}
           title="Download PDF with summary, detail and category breakdown"
-          style={{background:"#dc2626",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
+          style={{background:"#e64800",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
           📄 PDF
         </button>
         <button onClick={()=>exportIngresosExcel(ingresos.filter(x=>x.sim!==false), [], 1, true)}
           title="Download Excel with full detail and category summary"
-          style={{background:"#16a34a",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
+          style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
           📊 Excel
         </button>
-        <button onClick={openAdd} style={{background:`linear-gradient(135deg,${T.gn},#16a34a)`,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
+        <button onClick={openAdd} style={{background:`linear-gradient(135deg,${T.gn},#00a804)`,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
           + Add Income
         </button>
       </div>
@@ -409,9 +409,9 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             {l:"Monthly Take-Home",v:fm((totals.grossAnnual-totals.totalTax)/12),c:T.gn,sub:"/month net"},
           ].map(k=>(
             <div key={k.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 18px"}}>
-              <div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",letterSpacing:1,fontWeight:600}}>{k.l}</div>
+              <div style={{fontSize:11,color:T.tx3,letterSpacing:1,fontWeight:600}}>{k.l}</div>
               <div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4}}>{k.v}</div>
-              <div style={{fontSize:10,color:T.tx3,marginTop:2}}>{k.sub}</div>
+              <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{k.sub}</div>
             </div>
           ))}
         </div>
@@ -445,7 +445,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             const datos = Object.entries(g).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
             if (datos.length < 2) return null;
             const tot = datos.reduce((s, d) => s + d.value, 0);
-            const PAL = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
+            const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
             return (
               <div style={{marginBottom:4}}>
                 <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
@@ -486,10 +486,10 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             return grupos.flatMap(gr => [
               <div key={"h-" + gr.tipo} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
                     gap:10,flexWrap:"wrap",padding:"9px 14px",background:T.bg3,borderRadius:8,marginTop:4}}>
-                <span style={{fontSize:12,fontWeight:800,color:T.txt2}}>
+                <span style={{fontSize:12,fontWeight:700,color:T.txt2}}>
                   {gr.tipo} <span style={{color:T.txt3,fontWeight:500}}>· {gr.items.length}</span>
                 </span>
-                <span style={{fontSize:13,fontWeight:800,color:T.green,fontFamily:"monospace"}}>
+                <span style={{fontSize:13,fontWeight:700,color:T.green,fontFamily:"monospace"}}>
                   {fm(gr.sub)}/año
                   <span style={{color:T.txt3,fontWeight:500,marginLeft:6}}>
                     {tot > 0 ? ((gr.sub/tot)*100).toFixed(0) : 0}%
@@ -510,14 +510,14 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                   <div style={{flex:1}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                       <span style={{fontSize:14,fontWeight:700}}>{src.nombre||info.l}</span>
-                      <span style={{fontSize:10,background:`${T.bl}20`,color:T.bl,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.form}</span>
+                      <span style={{fontSize:11,background:`${T.bl}20`,color:T.bl,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.form}</span>
                       {calc?.chips?.map((ch,i)=><Chip key={i} color={ch.c}>{ch.l}</Chip>)}
                     </div>
-                    <div style={{fontSize:11,color:T.tx3,marginTop:3}}>{info.l} · {src.notes||info.desc.slice(0,60)+"…"}</div>
+                    <div style={{fontSize:12,color:T.tx3,marginTop:3}}>{info.l} · {src.notes||info.desc.slice(0,60)+"…"}</div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontSize:16,fontWeight:800,color:T.gn,fontFamily:"monospace"}}>{fm(src.mensual||0)}<span style={{fontSize:10,color:T.tx3,fontWeight:400}}>/mo</span></div>
-                    <div style={{fontSize:10,color:T.tx3}}>{fm(annual)}/yr</div>
+                    <div style={{fontSize:16,fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(src.mensual||0)}<span style={{fontSize:11,color:T.tx3,fontWeight:400}}>/mo</span></div>
+                    <div style={{fontSize:11,color:T.tx3}}>{fm(annual)}/yr</div>
                   </div>
                   <div style={{color:T.tx3,fontSize:12,marginLeft:4}}>{open?"▲":"▼"}</div>
                 </div>
@@ -528,28 +528,28 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                       {/* IRS Treatment */}
                       <div>
-                        <div style={{fontSize:11,fontWeight:700,color:T.pr,marginBottom:6}}>📖 IRS Tax Treatment</div>
-                        <div style={{fontSize:11,color:T.tx2,lineHeight:1.7}}>{info.taxed}</div>
-                        <div style={{fontSize:10,color:T.tx3,marginTop:4}}>Ref: <em>{info.irc}</em></div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:6}}>📖 IRS Tax Treatment</div>
+                        <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.taxed}</div>
+                        <div style={{fontSize:11,color:T.tx3,marginTop:4}}>Ref: <em>{info.irc}</em></div>
                       </div>
                       {/* Planning */}
                       <div>
-                        <div style={{fontSize:11,fontWeight:700,color:T.gn,marginBottom:6}}>💡 Planning Opportunities</div>
-                        <div style={{fontSize:11,color:T.tx2,lineHeight:1.7}}>{info.planning}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:6}}>💡 Planning Opportunities</div>
+                        <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.planning}</div>
                       </div>
                     </div>
 
                     {/* Calc breakdown */}
                     {calc && (
                       <div style={{marginTop:14,background:T.bg3,borderRadius:10,padding:"12px 14px"}}>
-                        <div style={{fontSize:11,fontWeight:700,color:T.tx2,marginBottom:8}}>🔢 Tax Calculation — {calc.label}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>🔢 Tax Calculation — {calc.label}</div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
-                          <div><div style={{fontSize:9,color:T.tx3}}>GROSS/YR</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(calc.grossAnnual)}</div></div>
-                          {calc.savings>0 && <div><div style={{fontSize:9,color:T.tx3}}>PRE-TAX SAVINGS</div><div style={{fontSize:14,fontWeight:700,color:T.cy}}>–{fm(calc.savings)}</div></div>}
-                          {calc.seTax>0   && <div><div style={{fontSize:9,color:T.tx3}}>SE TAX (15.3%)</div><div style={{fontSize:14,fontWeight:700,color:T.rd}}>+{fm(calc.seTax)}</div></div>}
-                          {calc.qbi>0     && <div><div style={{fontSize:9,color:T.tx3}}>QBI DEDUCTION §199A</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>–{fm(calc.qbi)}</div></div>}
-                          {calc.depreciation>0 && <div><div style={{fontSize:9,color:T.tx3}}>DEPRECIATION §168</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>–{fm(calc.depreciation)}</div></div>}
-                          <div><div style={{fontSize:9,color:T.tx3}}>TAXABLE/YR</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(calc.taxableAnnual)}</div></div>
+                          <div><div style={{fontSize:11,color:T.tx3}}>GROSS/YR</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(calc.grossAnnual)}</div></div>
+                          {calc.savings>0 && <div><div style={{fontSize:11,color:T.tx3}}>PRE-TAX SAVINGS</div><div style={{fontSize:14,fontWeight:700,color:T.cy}}>–{fm(calc.savings)}</div></div>}
+                          {calc.seTax>0   && <div><div style={{fontSize:11,color:T.tx3}}>SE TAX (15.3%)</div><div style={{fontSize:14,fontWeight:700,color:T.rd}}>+{fm(calc.seTax)}</div></div>}
+                          {calc.qbi>0     && <div><div style={{fontSize:11,color:T.tx3}}>QBI DEDUCTION §199A</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>–{fm(calc.qbi)}</div></div>}
+                          {calc.depreciation>0 && <div><div style={{fontSize:11,color:T.tx3}}>DEPRECIATION §168</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>–{fm(calc.depreciation)}</div></div>}
+                          <div><div style={{fontSize:11,color:T.tx3}}>TAXABLE/YR</div><div style={{fontSize:14,fontWeight:700,color:T.or}}>{fm(calc.taxableAnnual)}</div></div>
                         </div>
                       </div>
                     )}
@@ -593,7 +593,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
           <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:620,maxHeight:"90vh",overflowY:"auto",padding:32}}>
 
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-              <h3 style={{fontSize:18,fontWeight:800,margin:0}}>{editing!==null?"Edit":"Add"} Income Source</h3>
+              <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"Add"} Income Source</h3>
               <button onClick={()=>setShowForm(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>
             </div>
 
@@ -685,13 +685,13 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             )}
 
             {/* Planning tip */}
-            <div style={{marginTop:16,padding:12,background:`${T.pr}10`,border:`1px solid ${T.pr}30`,borderRadius:10,fontSize:11,color:T.tx2,lineHeight:1.7}}>
+            <div style={{marginTop:16,padding:12,background:`${T.pr}10`,border:`1px solid ${T.pr}30`,borderRadius:10,fontSize:12,color:T.tx2,lineHeight:1.7}}>
               <strong style={{color:T.pr}}>💡 CPA Planning:</strong> {selType.planning}
             </div>
 
             <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:24}}>
               <button onClick={()=>setShowForm(false)} style={{padding:"10px 20px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,color:T.tx2,cursor:"pointer",fontWeight:600}}>Cancel</button>
-              <button onClick={save} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#16a34a)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
+              <button onClick={save} style={{padding:"10px 24px",background:`linear-gradient(135deg,${T.gn},#00a804)`,border:"none",borderRadius:10,color:"#000",cursor:"pointer",fontWeight:700}}>
                 {editing!==null?"Update":"Add Income"}
               </button>
             </div>
@@ -701,7 +701,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
 
       {/* Bottom disclaimer */}
       {ingresos.length > 0 && (
-        <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:10,color:T.tx3,lineHeight:1.6}}>
+        <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.6}}>
           <strong>Disclaimer:</strong> Estimates based on 2025 IRS single-filer rules. State income taxes not included. 
           Consult a licensed CPA or EA for your official tax return. IRC references are provided for informational purposes.
         </div>
