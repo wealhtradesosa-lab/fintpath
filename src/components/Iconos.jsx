@@ -18,20 +18,24 @@ export function Interruptor({ on, size = 30 }) {
 }
 
 import {
-  LayoutGrid, PieChart, ArrowDownLeft, ArrowUpRight, CreditCard, ReceiptText, Users, History, Calculator, Send,
-  Briefcase, CalendarDays, TrendingUp, Activity, CalendarClock, Mountain, Compass, Target, CandlestickChart,
-  Armchair, Bitcoin, Home, Tag, HandCoins, MessageSquare, Gem, Settings, BookOpen, BarChart3, Circle, FileBarChart,
+  LayoutGrid, ChartColumnIncreasing, CircleDollarSign, ArrowUp, ArrowDown, Database, CircleAlert, FileText, Percent,
+  Users, History, Calculator, Briefcase, CalendarDays, RefreshCw, DollarSign, ChartSpline, CalendarClock, Sunrise,
+  Compass, Target, CandlestickChart, Armchair, Bitcoin, House, Tag, HandCoins, Bot, Gem, Settings, BookOpen,
+  BarChart3, Circle, FileBarChart,
 } from "lucide-react";
 
-// 31-oct-2026 (Santiago, con una referencia: íconos de línea con degradado
-// azul → verde). El degradado vive en <DefsIconos/>, montado una vez en la app.
+// 31-oct-2026 (Santiago, con dos referencias): íconos de línea con degradado
+// azul → verde; un ícono por concepto: $ con flecha arriba/abajo para
+// ingresos/egresos, pila con alerta para deudas, robot para el asesor,
+// amanecer para la libertad financiera. Base + insignia = ícono compuesto.
 const MENU = {
-  dash: LayoutGrid, inv: PieChart, ing: ArrowDownLeft, gas: ArrowUpRight, deu: CreditCard,
-  tax: ReceiptText, taxopt: ReceiptText, famtax: Users, prevtax: History, taxcalc: Calculator, taxinf: FileBarChart, contclientes: Briefcase,
-  anio: CalendarDays, flujo: TrendingUp, sim: Activity, simf: CalendarClock, f10: Mountain,
-  norte: Compass, met: Target, trd: CandlestickChart, calc: Calculator, pen: Armchair, btc: Bitcoin,
-  buyvsinvest: Home, gocasional: Tag, aportes: HandCoins, asesor: MessageSquare, coach: Users,
-  price: Gem, cuenta: Settings, glosario: BookOpen, metrics: BarChart3,
+  dash: [LayoutGrid], inv: [ChartColumnIncreasing], ing: [CircleDollarSign, ArrowUp], gas: [CircleDollarSign, ArrowDown],
+  deu: [Database, CircleAlert], tax: [FileText, Percent], taxopt: [FileText, Percent], famtax: [Users], prevtax: [History],
+  taxcalc: [Calculator], taxinf: [FileBarChart], contclientes: [Briefcase],
+  anio: [CalendarDays], flujo: [RefreshCw, DollarSign, "centro"], sim: [ChartSpline], simf: [CalendarClock], f10: [Sunrise],
+  norte: [Compass], met: [Target], trd: [CandlestickChart], calc: [Calculator], pen: [Armchair], btc: [Bitcoin],
+  buyvsinvest: [House], gocasional: [Tag], aportes: [HandCoins], asesor: [Bot], coach: [Users],
+  price: [Gem], cuenta: [Settings], glosario: [BookOpen], metrics: [BarChart3],
 };
 
 /** Degradado de los íconos (una sola vez en la página). */
@@ -50,7 +54,16 @@ export function DefsIconos() {
 }
 
 /** Ícono de línea del menú lateral, con el degradado de la marca. */
-export function IconoMenu({ id, size = 18 }) {
-  const I = MENU[id] || Circle;
-  return <I size={size} strokeWidth={1.75} stroke="url(#fp-grad-icono)" aria-hidden="true" style={{ flexShrink: 0 }} />;
+export function IconoMenu({ id, size = 20 }) {
+  const [Base, Insignia, modo] = MENU[id] || [Circle];
+  const p = { strokeWidth: 1.75, stroke: "url(#fp-grad-icono)", "aria-hidden": "true" };
+  if (!Insignia) return <Base size={size} {...p} style={{ flexShrink: 0 }} />;
+  const centro = modo === "centro";
+  const n = Math.round(size * (centro ? 0.42 : 0.5));
+  return (
+    <span style={{ position: "relative", width: size, height: size, display: "inline-block", flexShrink: 0 }}>
+      <Base size={size} {...p} style={centro ? undefined : { clipPath: "polygon(0 0,100% 0,100% 52%,52% 52%,52% 100%,0 100%)" }} />
+      <Insignia size={n} {...p} strokeWidth={2.2} style={{ position: "absolute", left: centro ? (size - n) / 2 : size - n + 1, top: centro ? (size - n) / 2 : size - n + 1 }} />
+    </span>
+  );
 }
