@@ -658,6 +658,10 @@ export default function FinPath(){
   const[showAyuda,setShowAyuda]=useState(false);
   const[ownerJumpFromFamilyView,setOwnerJumpFromFamilyView]=useState(null);
   const trmPendiente = useRef(null);
+  // 31-oct-2026 — La última TRM real que llegó. El demo (y cualquier dato que
+  // entre después sin tasa) la necesita: antes quedaba «pendiente de tasa» y el
+  // Dashboard y el Simulador mostraban niveles distintos (106 % vs 70 %).
+  const trmUltima = useRef(null);
   const[trmViva,setTrmViva]=useState(false);
   // Aplica la TRM que llegó antes de que existiera `u`. Sin esto, en la carga
   // normal (sesión más lenta que la petición) la tasa real se perdía.
@@ -669,6 +673,9 @@ export default function FinPath(){
       const { trm, trmSrc, trmFecha } = trmPendiente.current;
       trmPendiente.current = null;
       if (u.trm !== trm || u.trmSrc !== trmSrc) setU(p => p ? { ...p, trm, trmSrc, trmFecha } : p);
+    } else if (u && !trmReal(u) && trmUltima.current) {
+      const { trm, trmSrc, trmFecha } = trmUltima.current;
+      setU(p => p ? { ...p, trm, trmSrc, trmFecha } : p);
     }
   }, [u]);
 
@@ -687,7 +694,7 @@ export default function FinPath(){
       try {
         const j = await traerTrm();
         const real = trmDeApi(j);
-        if (vivo && real) { setTrmViva(true); setU(p => (p && p.trm !== real.trm) ? { ...p, ...real } : p); }
+        if (vivo && real) { trmUltima.current = real; setTrmViva(true); setU(p => (p && p.trm !== real.trm) ? { ...p, ...real } : p); }
       } catch {}
     };
     const id = setInterval(traer, 6 * 60 * 60 * 1000);
@@ -918,7 +925,7 @@ export default function FinPath(){
       // /api/trm devuelve {trm:4200,source:"default"} cuando falla: eso no es tasa.
       const real=trmDeApi(j);
       if(real){
-        trmPendiente.current=real;setTrmViva(true);
+        trmPendiente.current=real;trmUltima.current=real;setTrmViva(true);
         setU(p=>p?{...p,...real}:p);
       }
     }catch{}
