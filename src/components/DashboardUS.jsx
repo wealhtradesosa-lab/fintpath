@@ -13,9 +13,9 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip,
          ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
 
 const T = {
-  bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",
-  border:"rgba(255,255,255,0.06)",
-  tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",
+  bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",
+  border:"rgba(var(--fp-ink),0.06)",
+  tx:"var(--fp-txt)",tx2:"var(--fp-txt2)",tx3:"var(--fp-txt3)",
   gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",
   rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",
   bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",cy:"#06b6d4",
@@ -317,7 +317,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
               <CartesianGrid {...gridProps}/>
               <XAxis dataKey="name" {...axisProps}/>
               <YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/>
-              <Tooltip cursor={{fill:"rgba(255,255,255,0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/>
+              <Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/>
               <Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>
                 {cfData.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}
               </Bar>

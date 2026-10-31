@@ -150,6 +150,13 @@ desalineados = []
 for var_css, clave_js in PAREJAS:
     mc = re.search(re.escape(var_css) + r': *(#[0-9a-fA-F]{6})', raiz)
     mj = re.search(r'\b' + re.escape(clave_js) + r': *"(#[0-9a-fA-F]{6})"', tokens_js)
+    # 31-oct-2026 — modo claro: los neutros del JS son var(--fp-…) y su valor
+    # vive en src/tema.css. Alineado = el JS apunta a una variable definida ahí.
+    mv = re.search(r'\b' + re.escape(clave_js) + r': *"var\((--fp-[a-z0-9]+)\)"', tokens_js)
+    if mv:
+        if mv.group(1) not in open('src/tema.css').read():
+            desalineados.append(f"{clave_js}: {mv.group(1)} no está en src/tema.css")
+        continue
     if not mc or not mj:
         desalineados.append(f"{var_css}/{clave_js} no encontrado")
     elif mc.group(1).lower() != mj.group(1).lower():

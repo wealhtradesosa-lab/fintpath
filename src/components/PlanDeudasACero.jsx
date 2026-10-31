@@ -11,12 +11,12 @@ import {
 } from "../lib/planDeudas.js";
 
 const T = {
-  bg3: "#1e1e24",
-  card: "#141418",
-  border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa",
-  txt2: "#a1a1aa",
-  txt3: "#71717a",
+  bg3: "var(--fp-raised)",
+  card: "var(--fp-card)",
+  border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)",
+  txt2: "var(--fp-txt2)",
+  txt3: "var(--fp-txt3)",
   green: "#22c55e",
   red: "#ef4444",
   blue: "#3b82f6",

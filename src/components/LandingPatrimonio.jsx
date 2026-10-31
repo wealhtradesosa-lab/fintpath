@@ -7,8 +7,8 @@ import { getConsent, setConsent, loadTrackers, initConsent } from "../lib/consen
 import { track } from "../lib/analytics";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", border: "rgba(255,255,255,0.08)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", green: "#22c55e", blue: "#3b82f6",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", border: "rgba(var(--fp-ink),0.08)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#22c55e", blue: "#3b82f6",
 };
 const DISPLAY = "'Plus Jakarta Sans','Inter',system-ui,sans-serif";
 const BODY = "'Inter',system-ui,sans-serif";
@@ -112,7 +112,7 @@ export default function LandingPatrimonio({ onGetStarted = () => {}, onLogin = (
       </footer>
 
       {consent === null && (
-        <div role="dialog" aria-label="Cookies" style={{ position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 50, background: "#1e1e24", border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 18px", display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+        <div role="dialog" aria-label="Cookies" style={{ position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 50, background: "var(--fp-raised)", border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 18px", display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13, color: T.txt2, flex: "1 1 280px" }}>Usamos cookies de medición y publicidad solo si las aceptas. Más en la <a href="/privacidad" style={{ color: T.green }}>Política de Privacidad</a>.</span>
           <span style={{ display: "flex", gap: 8 }}>
             <button type="button" onClick={() => decidir("denied")} style={{ background: "transparent", color: T.txt2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 14px", cursor: "pointer" }}>Rechazar</button>

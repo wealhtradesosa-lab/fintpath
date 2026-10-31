@@ -33,9 +33,9 @@ import { ChartTooltip } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308",
@@ -597,7 +597,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               <CartesianGrid stroke={T.border} vertical={false} />
               <XAxis dataKey="mesLabel" stroke={T.txt3} fontSize={11} axisLine={{ stroke: T.border }} tickLine={false} />
               <YAxis stroke={T.txt3} fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmShort} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(var(--fp-ink),0.03)" }} />
               <ReferenceLine y={0} stroke={T.border} strokeDasharray="3 3" />
               <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: `Cash Flow promedio ${fmShort(highlights.promedio)}`, position: "insideTopRight", fill: T.txt3, fontSize: 10 }} />
               <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name={L.ingresos} />

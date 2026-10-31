@@ -52,10 +52,10 @@ const LIMITS_2025 = {
 };
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  border: "rgba(255,255,255,0.08)",
-  borderL: "rgba(255,255,255,0.14)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  border: "rgba(var(--fp-ink),0.08)",
+  borderL: "rgba(var(--fp-ink),0.14)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", red: "#ef4444", blue: "#3b82f6",
   amber: "#f59e0b", purple: "#a78bfa",
 };

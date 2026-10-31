@@ -26,10 +26,10 @@ import { track } from "../lib/analytics.js";
 import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
 const T = {
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
-  border: "rgba(255,255,255,0.08)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
+  border: "rgba(var(--fp-ink),0.08)",
   red: "#ef4444", orange: "#f59e0b", green: "#22c55e", blue: "#3b82f6", cyan: "#06b6d4",
-  card: "rgba(255,255,255,0.02)",
+  card: "rgba(var(--fp-ink),0.02)",
 };
 
 const fmM = (v) => {
@@ -77,7 +77,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
   const proyIng = proyectarSiguienteAno([...serie, { ingresos: valoresActuales?.ingresos }].filter(s => s.ingresos > 0), "ingresos");
 
   const tooltipStyle = {
-    background: "#1e1e24",
+    background: "var(--fp-raised)",
     border: "1px solid " + T.border,
     borderRadius: 8,
     fontSize: 11,

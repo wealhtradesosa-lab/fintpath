@@ -10,9 +10,9 @@ import PageHeader from "./PageHeader.jsx";
 import { contextoCompleto } from "../lib/contextoAsesor.js";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   bl: "#3b82f6", rd: "#ef4444",
 };
@@ -217,7 +217,7 @@ export default function AsesorIA({ user, totals, userId }) {
         title="Conversa con tu family office"
         subtitle="Análisis de tus datos encendidos y recomendaciones personalizadas con datos reales."
         rightSlot={<>
-          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"#71717a",background:"#1e1e24",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
+          <span style={{fontSize:11,color:remaining<=5?"#ef4444":"var(--fp-txt3)",background:"var(--fp-raised)",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
           {msgs.length > 0 && (
             <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
           )}

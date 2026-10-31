@@ -20,18 +20,22 @@ import { fmtPctEs, fmtNumEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Paleta premium (alineada con HeroVariantC)
+// Colores para atributos SVG de Recharts (no aceptan var(--…)): sirven en los dos modos.
+export const SVG_TXT = "#71717a";
+export const SVG_LINEA = "rgba(113,113,122,0.22)";
+
 export const CHART = {
   // Backgrounds
-  bg: "#09090b",
-  bg2: "#141418",
-  bg3: "#1e1e24",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
+  bg: "var(--fp-bg)",
+  bg2: "var(--fp-card)",
+  bg3: "var(--fp-raised)",
+  border: "rgba(var(--fp-ink),0.08)",
+  borderStrong: "rgba(var(--fp-ink),0.14)",
 
   // Texto
-  txt: "#fafafa",
-  txt2: "#a1a1aa",
-  txt3: "#71717a",
+  txt: "var(--fp-txt)",
+  txt2: "var(--fp-txt2)",
+  txt3: "var(--fp-txt3)",
 
   // Colores semánticos (alineados con landing)
   green: "#22c55e",
@@ -130,7 +134,7 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
 
   return (
     <div style={{
-      background: "rgba(20, 20, 24, 0.9)",
+      background: "var(--fp-card)",
       backdropFilter: "blur(12px)",
       WebkitBackdropFilter: "blur(12px)",
       border: `1px solid ${CHART.borderStrong}`,
@@ -195,13 +199,13 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
 // ─────────────────────────────────────────────────────────────────────────
 export const axisProps = {
   tick: {
-    fill: CHART.txt3,
+    fill: SVG_TXT, // atributo SVG: no acepta var(); gris que se lee en claro y en oscuro
     fontSize: 11,
     fontFamily: CHART.fontBody,
     fontWeight: 500,
   },
-  axisLine: { stroke: CHART.border },
-  tickLine: { stroke: CHART.border },
+  axisLine: { stroke: SVG_LINEA },
+  tickLine: { stroke: SVG_LINEA },
 };
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -210,7 +214,7 @@ export const axisProps = {
 // ─────────────────────────────────────────────────────────────────────────
 export const gridProps = {
   strokeDasharray: "3 3",
-  stroke: CHART.border,
+  stroke: SVG_LINEA,
   vertical: false,
 };
 
@@ -220,7 +224,7 @@ export const gridProps = {
 // ─────────────────────────────────────────────────────────────────────────
 export function chartCardStyle({ glow, padding = 24 } = {}) {
   return {
-    background: "rgba(255,255,255,0.02)",
+    background: "rgba(var(--fp-ink),0.02)",
     backdropFilter: "blur(20px)",
     WebkitBackdropFilter: "blur(20px)",
     border: `1px solid ${CHART.border}`,
@@ -241,7 +245,7 @@ export function chartCardStyle({ glow, padding = 24 } = {}) {
 // ─────────────────────────────────────────────────────────────────────────
 export function statCardStyle({ accent } = {}) {
   return {
-    background: "rgba(255,255,255,0.02)",
+    background: "rgba(var(--fp-ink),0.02)",
     border: `1px solid ${CHART.border}`,
     borderRadius: 14,
     padding: "16px 18px",

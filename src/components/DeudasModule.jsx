@@ -21,9 +21,9 @@ import BarraComposicion from "./BarraComposicion";
 import { MESES, costoCredito, montoPromedioMensual, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 
 const T = {
-  bg2: C.surface, bg3: "#1e1e24",
-  card: "#141418", border: C.border,
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg2: C.surface, bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: C.border,
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
@@ -236,12 +236,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           </button>}
           <button onClick={() => exportDeudasExcel(activos, inversiones, owners, trm)}
             title="Bajar Excel: detalle de deudas + vinculación con activos"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportDeudasPDF(activos, inversiones, owners, trm)}
             title="Bajar PDF: saldos, tasas y orden sugerido de pago"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
           <button onClick={() => { setEditId(null); setForm({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", desdeMes: 1, hastaMes: 12, vigenciaModo: undefined }); setShowForm(true); }}
@@ -394,16 +394,16 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 <tr><td colSpan={9} style={{ padding: 0 }}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
                       <div style={{fontSize:40,marginBottom:12}}>📋</div>
-                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"#fafafa"}}>Registra tus deudas y créditos</h3>
-                      <p style={{fontSize:13,color:"#71717a",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Hipotecas, préstamos, tarjetas de crédito, leasing. Incluye <strong style={{color:"#a1a1aa"}}>saldo pendiente, cuota mensual y tasa de interés</strong>. Puedes vincular cada deuda al activo que financia.</p>
+                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>Registra tus deudas y créditos</h3>
+                      <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Hipotecas, préstamos, tarjetas de crédito, leasing. Incluye <strong style={{color:"var(--fp-txt2)"}}>saldo pendiente, cuota mensual y tasa de interés</strong>. Puedes vincular cada deuda al activo que financia.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
                         <button onClick={()=>setShowForm(true)} style={{background:"#22c55e",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar deuda</button>
                         {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de deudas</button>}
                       </div>
-                      <div style={{background:"#1e1e24",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#71717a",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
-                        <table style={{width:"100%",fontSize:11,color:"#a1a1aa"}}>
-                          <thead><tr style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"#71717a"}}>Deuda</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Saldo</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Cuota/mes</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Tasa</th></tr></thead>
+                      <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <table style={{width:"100%",fontSize:11,color:"var(--fp-txt2)"}}>
+                          <thead><tr style={{borderBottom:"1px solid rgba(var(--fp-ink),0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"var(--fp-txt3)"}}>Deuda</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>Saldo</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>Cuota/mes</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>Tasa</th></tr></thead>
                           <tbody>
                             <tr><td style={{padding:"4px 8px"}}>Hipoteca apto</td><td style={{textAlign:"right",padding:"4px 8px"}}>$380M</td><td style={{textAlign:"right",padding:"4px 8px"}}>$4,800,000</td><td style={{textAlign:"right",padding:"4px 8px"}}>12%</td></tr>
                             <tr><td style={{padding:"4px 8px"}}>Préstamo vehículo</td><td style={{textAlign:"right",padding:"4px 8px"}}>$45M</td><td style={{textAlign:"right",padding:"4px 8px"}}>$1,200,000</td><td style={{textAlign:"right",padding:"4px 8px"}}>18%</td></tr>
@@ -458,10 +458,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       </div>
                       {(()=>{
                         if(!d.owner || d.owner==="") return null;
-                        if(d.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
-                        if(d.owner==="own_1") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>👤 Personal</div>;
+                        if(d.owner==="na") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
+                        if(d.owner==="own_1") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===d.owner);
-                        return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                        return ow ? <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                       })()}
                     </td>
                     <td style={{ padding: "10px 14px", textAlign: "right" }}>
@@ -610,7 +610,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               <div style={{background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
                 {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo extracto...</div> : <>
                   <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes el extracto o estado de cuenta?</div>
-                  <div style={{fontSize:10,color:"#71717a",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
+                  <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                 </>}
               </div>
               <In l="Nombre" value={form.n} onChange={(v) => setForm((p) => ({ ...p, n: v }))} placeholder="Hipoteca casa" />
@@ -813,7 +813,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   permite VERIFICAR la tasa contra el interés realmente cobrado.
                   La cuota se arma por SUMA (capital + interés), que es un dato,
                   no una identidad inventada como el auto-cálculo anterior. */}
-              <div style={{ gridColumn: "1/-1", background: "#141418", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px", display: form.tipoInteres === "sin_interes" ? "none" : undefined }}>
+              <div style={{ gridColumn: "1/-1", background: "var(--fp-card)", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "12px 14px", display: form.tipoInteres === "sin_interes" ? "none" : undefined }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: T.txt2, marginBottom: 2 }}>📄 Desglose del extracto <span style={{ fontWeight: 400, color: T.txt3 }}>(opcional)</span></div>
                 <div style={{ fontSize: 10, color: T.txt3, marginBottom: 10 }}>Copia los dos renglones tal cual salen en tu extracto. Con eso se arma la cuota y se verifica la tasa.</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
@@ -839,7 +839,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   const dif = tsForm > 0 ? Math.abs(eaImp - tsForm) : null;
                   return (
                     <div style={{ marginTop: 10, fontSize: 11, color: T.txt2 }}>
-                      Cuota = {fmt(c)} + {fmt(i)} = <strong style={{ color: "#fafafa" }}>{fmt(c + i)}/mes</strong>
+                      Cuota = {fmt(c)} + {fmt(i)} = <strong style={{ color: "var(--fp-txt)" }}>{fmt(c + i)}/mes</strong>
                       {previo > 0 && (
                         <div style={{ marginTop: 6, fontSize: 11, color: dif == null ? T.txt3 : dif <= 1.5 ? "#4ade80" : "#fca5a5" }}>
                           {dif == null
@@ -865,7 +865,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   monto={parseFloat(form.pg) || 0}
                   montosMensuales={form.montosMensuales}
                   onChange={(patch) => setForm((p) => ({ ...p, ...patch }))}
-                  tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", bg3: "#1e1e24", border: "rgba(255,255,255,0.08)" }}
+                  tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)" }}
                   mostrarChipsFrecuencia={true}
                   mostrarSelectorMes={false}
                   mostrarVigencia={true}
@@ -883,7 +883,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   <TablaMensual
                     values={form.montosMensuales}
                     onChange={(arr) => setForm(p => ({ ...p, montosMensuales: arr, frecuencia: "variable" }))}
-                    tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", bg3: "#1e1e24", border: "#3f3f46" }}
+                    tokens={{ gn: "#22c55e", rd: "#ef4444", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "var(--fp-line)" }}
                     desdeMes={Number(form.desdeMes) || 1}
                     hastaMes={Number(form.hastaMes) || 12}
                   />
@@ -897,22 +897,22 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </div>
                 );
                 return (
-                  <div style={{gridColumn:"1/-1",fontSize:11,color:"#a1a1aa",background:"#1e1e24",borderRadius:8,padding:"10px 12px"}}>
+                  <div style={{gridColumn:"1/-1",fontSize:11,color:"var(--fp-txt2)",background:"var(--fp-raised)",borderRadius:8,padding:"10px 12px"}}>
                     <div style={{display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:"4px 14px",marginBottom:8}}>
-                      <span style={{color:"#fafafa",fontWeight:700,fontSize:12}}>Cuota mes {fmt(+form.pg||0)}</span>
+                      <span style={{color:"var(--fp-txt)",fontWeight:700,fontSize:12}}>Cuota mes {fmt(+form.pg||0)}</span>
                       <span>Interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesMes))}</strong></span>
                       <span>Capital <strong style={{color:"#22c55e"}}>{fmt(Math.round(cc.capitalMes))}</strong></span>
                     </div>
-                    <div style={{display:"flex",height:8,borderRadius:999,overflow:"hidden",background:"#0c0c0f",marginBottom:6}}>
+                    <div style={{display:"flex",height:8,borderRadius:999,overflow:"hidden",background:"var(--fp-bg)",marginBottom:6}}>
                       <div style={{width:(100-cc.pctCapital)+"%",background:"#f59e0b"}} title="Intereses" />
                       <div style={{width:cc.pctCapital+"%",background:"#22c55e"}} title="Abono a capital" />
                     </div>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#71717a",marginBottom:8}}>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--fp-txt3)",marginBottom:8}}>
                       <span>🔶 Interés {Math.round(100-cc.pctCapital)}% — se lo queda el banco</span>
                       <span style={{color:"#4ade80"}}>🟩 Capital {Math.round(cc.pctCapital)}% — baja tu deuda</span>
                     </div>
-                    <div style={{borderTop:"1px solid #2a2a32",paddingTop:6}}>
-                      Se paga en <strong style={{color:"#fafafa"}}>{cc.meses!=null?Math.floor(cc.meses/12)+"a "+cc.meses%12+"m":"—"}</strong> · interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesAnual))}/año</strong>
+                    <div style={{borderTop:"1px solid var(--fp-raised)",paddingTop:6}}>
+                      Se paga en <strong style={{color:"var(--fp-txt)"}}>{cc.meses!=null?Math.floor(cc.meses/12)+"a "+cc.meses%12+"m":"—"}</strong> · interés <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesAnual))}/año</strong>
                       {cc.interesTotal>0&&<> · interés total restante <strong style={{color:"#f59e0b"}}>{fmt(Math.round(cc.interesTotal))}</strong></>}
                     </div>
                   </div>

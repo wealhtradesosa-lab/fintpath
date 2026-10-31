@@ -71,9 +71,9 @@ const TEXTOS = {
 
 export default function Disclaimer({ variante = "general", idioma = "es", T = {}, compacto = false }) {
   const txt = (TEXTOS[idioma] || TEXTOS.es)[variante] || TEXTOS.es.general;
-  const tx3 = T.txt3 || T.tx3 || "#71717a";
-  const tx2 = T.txt2 || T.tx2 || "#a1a1aa";
-  const border = T.border || "rgba(255,255,255,0.06)";
+  const tx3 = T.txt3 || T.tx3 || "var(--fp-txt3)";
+  const tx2 = T.txt2 || T.tx2 || "var(--fp-txt2)";
+  const border = T.border || "rgba(var(--fp-ink),0.06)";
 
   // Compacto: una línea al pie, para pantallas donde el bloque completo
   // interrumpiría la lectura. El texto largo sigue disponible al pasar el cursor.
@@ -90,7 +90,7 @@ export default function Disclaimer({ variante = "general", idioma = "es", T = {}
 
   return (
     <div style={{ marginTop: 16, padding: "13px 15px", borderRadius: 10,
-                  border: `1px dashed ${border}`, background: "rgba(255,255,255,0.015)" }}>
+                  border: `1px dashed ${border}`, background: "rgba(var(--fp-ink),0.015)" }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: tx2, marginBottom: 5 }}>
         ⚠️ {txt.t}
       </div>

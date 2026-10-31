@@ -13,11 +13,11 @@
 import { useState, useEffect } from "react";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "rgba(255,255,255,0.03)",
-  border: "rgba(255,255,255,0.06)",
-  borderStrong: "rgba(255,255,255,0.12)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "rgba(var(--fp-ink),0.03)",
+  border: "rgba(var(--fp-ink),0.06)",
+  borderStrong: "rgba(var(--fp-ink),0.12)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
   pink: "#ec4899", cyan: "#22d3ee", orange: "#f97316",
 };
@@ -115,7 +115,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
             padding: "9px 14px", cursor: "pointer", fontSize: 14, fontWeight: 500,
           }}>Iniciar sesión</button>
           <button onClick={onGetStarted} style={{
-            background: "rgba(255,255,255,0.08)",
+            background: "rgba(var(--fp-ink),0.08)",
             backdropFilter: "blur(12px)",
             border: `1px solid ${T.borderStrong}`,
             color: T.txt, padding: "9px 18px", borderRadius: 999,
@@ -138,7 +138,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
           display: "inline-flex",
           alignItems: "center",
           gap: 10,
-          background: "rgba(255,255,255,0.04)",
+          background: "rgba(var(--fp-ink),0.04)",
           backdropFilter: "blur(20px)",
           border: `1px solid ${T.borderStrong}`,
           borderRadius: 999,
@@ -210,22 +210,22 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
             fontSize: 15,
             fontWeight: 700,
             letterSpacing: "-0.005em",
-            boxShadow: `0 8px 32px ${T.green}50, 0 0 0 1px rgba(255,255,255,0.1) inset`,
+            boxShadow: `0 8px 32px ${T.green}50, 0 0 0 1px rgba(var(--fp-ink),0.1) inset`,
             transition: "transform 0.15s, box-shadow 0.15s",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = "translateY(-2px)";
-            e.currentTarget.style.boxShadow = `0 12px 40px ${T.green}70, 0 0 0 1px rgba(255,255,255,0.15) inset`;
+            e.currentTarget.style.boxShadow = `0 12px 40px ${T.green}70, 0 0 0 1px rgba(var(--fp-ink),0.15) inset`;
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "none";
-            e.currentTarget.style.boxShadow = `0 8px 32px ${T.green}50, 0 0 0 1px rgba(255,255,255,0.1) inset`;
+            e.currentTarget.style.boxShadow = `0 8px 32px ${T.green}50, 0 0 0 1px rgba(var(--fp-ink),0.1) inset`;
           }}
           >
             Comienza 14 días gratis →
           </button>
           <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} style={{
-            background: "rgba(255,255,255,0.04)",
+            background: "rgba(var(--fp-ink),0.04)",
             backdropFilter: "blur(20px)",
             color: T.txt,
             border: `1px solid ${T.borderStrong}`,
@@ -263,7 +263,7 @@ export default function HeroVariantB({ onGetStarted = () => {}, onLogin }) {
             { icon: "🔒", title: "Privacidad total", desc: "Tu información nunca sale de tu cuenta", color: T.cyan },
           ].map(f => (
             <div key={f.title} style={{
-              background: "rgba(255,255,255,0.03)",
+              background: "rgba(var(--fp-ink),0.03)",
               backdropFilter: "blur(20px)",
               border: `1px solid ${T.border}`,
               borderRadius: 14,

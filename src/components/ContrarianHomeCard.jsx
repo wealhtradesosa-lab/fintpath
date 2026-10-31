@@ -31,7 +31,7 @@ export default function ContrarianHomeCard({
         <span style={{ fontSize: 18 }}>🧠</span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: accent }}>{title}</div>
-          <div style={{ fontSize: 12, color: T?.tx3 || "#71717a", marginTop: 2 }}>{mutedText}</div>
+          <div style={{ fontSize: 12, color: T?.tx3 || "var(--fp-txt3)", marginTop: 2 }}>{mutedText}</div>
         </div>
       </div>
     );
@@ -54,7 +54,7 @@ export default function ContrarianHomeCard({
             <div style={{ fontSize: 11, fontWeight: 700, color: accent, letterSpacing: "0.04em", textTransform: "uppercase" }}>
               {title} · {subtitle}
             </div>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: T?.tx || "#fafafa", marginTop: 6, lineHeight: 1.35 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: T?.tx || "var(--fp-txt)", marginTop: 6, lineHeight: 1.35 }}>
               {alert.message}
             </div>
           </div>
@@ -65,7 +65,7 @@ export default function ContrarianHomeCard({
             onClick={onCta}
             style={{
               background: accent,
-              color: "#0a0a0b",
+              color: "var(--fp-bg)",
               border: "none",
               padding: "10px 14px",
               borderRadius: 8,

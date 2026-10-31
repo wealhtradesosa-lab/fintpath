@@ -2019,7 +2019,7 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
         {/* Lo único que no se mueve mientras bajas: qué escenario miras, en
             qué paso vas y la cifra. Antes el paso a paso se iba hacia arriba y
             uno quedaba perdido en medio de ocho fichas. */}
-        <div style={{ position: "sticky", top: 0, zIndex: 6, background: C.bg || "#0b0d12", paddingBottom: 8, display: "grid", gap: 8 }}>
+        <div style={{ position: "sticky", top: 0, zIndex: 6, background: C.bg || "var(--fp-bg)", paddingBottom: 8, display: "grid", gap: 8 }}>
           <BarraEscenario todos={todos} res={res} activoId={rActivo?.id} setActivoId={setActivoId} base={base} onNuevo={nuevo} onVerTodos={irALista} onBorrar={borrar} />
           <Stepper paso={paso} setPaso={ir} />
         </div>

@@ -20,8 +20,8 @@ import { NIVELES } from "../lib/metrics.js";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", border: "rgba(255,255,255,0.08)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", green: "#22c55e", blue: "#3b82f6", red: "#ef4444",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#22c55e", blue: "#3b82f6", red: "#ef4444",
 };
 const DISPLAY = "'Plus Jakarta Sans','Inter',system-ui,sans-serif";
 const BODY = "'Inter',system-ui,sans-serif";

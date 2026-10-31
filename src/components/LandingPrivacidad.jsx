@@ -28,10 +28,10 @@
 import { useEffect, useState } from "react";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)",
+  border: "rgba(var(--fp-ink),0.08)",
+  borderStrong: "rgba(var(--fp-ink),0.14)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", amber: "#f59e0b", red: "#ef4444",
 };
 

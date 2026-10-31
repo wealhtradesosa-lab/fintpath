@@ -30,8 +30,8 @@ import { useEffect } from "react";
 import { track } from "../lib/analytics.js";
 
 const T = {
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
-  border: "rgba(255,255,255,0.08)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
+  border: "rgba(var(--fp-ink),0.08)",
   orange: "#f59e0b", red: "#ef4444", green: "#22c55e", cyan: "#06b6d4",
 };
 
@@ -107,7 +107,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
           return (
             <div key={"d" + i} style={{
               padding: "8px 10px",
-              background: "rgba(255,255,255,0.02)",
+              background: "rgba(var(--fp-ink),0.02)",
               borderRadius: 8,
               borderLeft: "2px solid " + color,
               fontSize: 11,
@@ -134,7 +134,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
           return (
             <div key={"p" + i} style={{
               padding: "8px 10px",
-              background: "rgba(255,255,255,0.02)",
+              background: "rgba(var(--fp-ink),0.02)",
               borderRadius: 8,
               borderLeft: "2px solid " + color,
               fontSize: 11,
@@ -158,7 +158,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
           return (
             <div key={"t" + i} style={{
               padding: "8px 10px",
-              background: "rgba(255,255,255,0.02)",
+              background: "rgba(var(--fp-ink),0.02)",
               borderRadius: 8,
               borderLeft: "2px solid " + color,
               fontSize: 11,

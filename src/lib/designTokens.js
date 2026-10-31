@@ -24,18 +24,18 @@
 // ─── COLORES ────────────────────────────────────────────────────────────
 export const C = {
   // Backgrounds (3 niveles de profundidad)
-  bg:      "#0c0c0f",  // page background
-  surface: "#141418",  // cards y contenedores principales
-  raised:  "#1e1e24",  // hover, inputs, sub-cards
+  bg:      "var(--fp-bg)",  // page background
+  surface: "var(--fp-card)",  // cards y contenedores principales
+  raised:  "var(--fp-raised)",  // hover, inputs, sub-cards
 
   // Text (3 niveles de jerarquía)
-  text:    "#fafafa",  // primary content
-  muted:   "#a1a1aa",  // secondary, subtitles
-  subtle:  "#71717a",  // tertiary, captions, hints
+  text:    "var(--fp-txt)",  // primary content
+  muted:   "var(--fp-txt2)",  // secondary, subtitles
+  subtle:  "var(--fp-txt3)",  // tertiary, captions, hints
 
   // Borders & dividers
-  border:        "rgba(255,255,255,0.08)",
-  borderStrong:  "rgba(255,255,255,0.15)",  // hover state
+  border:        "rgba(var(--fp-ink),0.08)",
+  borderStrong:  "rgba(var(--fp-ink),0.15)",  // hover state
 
   // Acentos semánticos (4 colores con propósito claro)
   accent: "#3b82f6",  // azul — primary actions, info, selected state

@@ -1,0 +1,51 @@
+/* Variables de color de toda la app (las importa main.jsx, así llegan a
+   index.html y a las páginas de aterrizaje). */
+/* ═══ Modo claro / oscuro (31-oct-2026) ═══════════════════════════════
+   Santiago: "un botón día y noche para ver toda la plataforma clara o
+   negra"; "que en fondo claro se vea más descansado". Los colores
+   neutros del código son variables (--fp-bg, --fp-card, --fp-raised,
+   --fp-txt*, --fp-line) y los blancos translúcidos usan --fp-ink
+   (rgba(var(--fp-ink), a)): en claro esos mismos velos se vuelven
+   grises suaves. Los acentos (verde, azul, rojo) no cambian. */
+:root {
+  color-scheme: dark;
+  --fp-bg: #0c0c0f; --fp-surface: #141418; --fp-raised: #1e1e24;
+  --fp-text: #fafafa; --fp-muted: #a1a1aa; --fp-subtle: #71717a;
+  --fp-border: rgba(255,255,255,0.08); --fp-border-strong: rgba(255,255,255,0.15);
+  --fp-card: #141418;
+  --fp-txt: #fafafa; --fp-txt2: #a1a1aa; --fp-txt3: #71717a;
+  --fp-line: #3f3f46;
+  --fp-ink: 255,255,255;
+  --fp-sombra: none;
+}
+/* Solo dentro de la app (.fp-app): las páginas de aterrizaje están diseñadas
+   oscuras, sobre fotos, y se quedan así. */
+html[data-tema="claro"] .fp-app {
+  color-scheme: light;
+  --fp-bg: #f5f6f8;  --fp-surface: #ffffff; --fp-card: #ffffff; --fp-raised: #f1f3f6;
+  --fp-text: #111827; --fp-txt: #111827;
+  --fp-muted: #4b5563; --fp-txt2: #4b5563;
+  --fp-subtle: #6b7280; --fp-txt3: #6b7280;
+  --fp-line: #d1d5db;
+  --fp-ink: 17,24,39;
+  --fp-border: rgba(17,24,39,0.08); --fp-border-strong: rgba(17,24,39,0.15);
+  --fp-sombra: 0 1px 2px rgba(17,24,39,0.04), 0 4px 16px rgba(17,24,39,0.04);
+}
+html, body { background: var(--fp-bg); color: var(--fp-txt); }
+html[data-tema="claro"]:has(.fp-app), html[data-tema="claro"]:has(.fp-app) body { background: #f5f6f8; }
+html { transition: background-color .2s ease; }
+/* Recharts pinta ejes y rejilla como atributos SVG, que no aceptan var():
+   se fijan aquí por CSS para los dos modos. */
+.recharts-cartesian-axis-tick-value { fill: var(--fp-txt3); }
+.recharts-cartesian-grid line { stroke: rgba(var(--fp-ink),0.06); }
+/* En claro, los bloques blancos se separan del fondo con una sombra
+   mínima en vez de bordes duros: más aire, menos peso. */
+html[data-tema="claro"] .fp-app [style*="background: var(--fp-card)"],
+html[data-tema="claro"] .fp-app [style*="background:var(--fp-card)"] { box-shadow: var(--fp-sombra); }
+/* Los verdes y rojos de texto, un punto más oscuros sobre blanco para que se lean. */
+html[data-tema="claro"] .fp-app [style*="color: rgb(34, 197, 94)"] { color: #15803d !important; }
+html[data-tema="claro"] .fp-app [style*="color: rgb(239, 68, 68)"] { color: #dc2626 !important; }
+html[data-tema="claro"] .fp-app [style*="color: rgb(234, 179, 8)"] { color: #a16207 !important; }
+html[data-tema="claro"] .fp-app [style*="color: rgb(249, 115, 22)"] { color: #c2410c !important; }
+html[data-tema="claro"] .fp-app [style*="color: rgb(167, 139, 250)"] { color: #7c3aed !important; }
+html[data-tema="claro"] .fp-app [style*="color: rgb(59, 130, 246)"] { color: #2563eb !important; }

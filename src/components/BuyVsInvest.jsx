@@ -13,8 +13,8 @@ import Disclaimer from "./Disclaimer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { compararCompraVsInversion, valorizacionDeEquilibrio, BUY_VS_INVEST_DEFAULTS, BUY_VS_INVEST_DEFAULTS_US, EXCLUSION_121 } from "../lib/buyVsInvest.js";
 
-const T = { bg:"#0c0c0f", bg2:"#141418", bg3:"#1e1e24", border:"rgba(255,255,255,0.06)",
-  txt:"#fafafa", txt2:"#a1a1aa", txt3:"#71717a", green:"#22c55e", red:"#ef4444",
+const T = { bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", border:"rgba(var(--fp-ink),0.06)",
+  txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#22c55e", red:"#ef4444",
   blue:"#3b82f6", orange:"#f97316", gold:"#eab308" };
 
 let LOC = "es-CO";
@@ -339,10 +339,10 @@ export default function BuyVsInvest({ isUS = false }) {
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={datos}>
-            <CartesianGrid stroke="rgba(255,255,255,0.05)" />
-            <XAxis dataKey="anio" stroke="#71717a" fontSize={11}
-              label={{ value: "años", position: "insideBottomRight", fill: "#71717a", fontSize: 11 }} />
-            <YAxis stroke="#71717a" fontSize={11} tickFormatter={fmCorto} width={70} />
+            <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" />
+            <XAxis dataKey="anio" stroke="var(--fp-txt3)" fontSize={11}
+              label={{ value: "años", position: "insideBottomRight", fill: "var(--fp-txt3)", fontSize: 11 }} />
+            <YAxis stroke="var(--fp-txt3)" fontSize={11} tickFormatter={fmCorto} width={70} />
             <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(l) => `Año ${l}`} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Line type="monotone" dataKey="Comprar" stroke={T.orange} strokeWidth={2} dot={false} />

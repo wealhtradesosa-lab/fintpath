@@ -19,9 +19,9 @@ import { vaCOP, vcCOP, totalAnualItem } from "../lib/flowHelpers.js";
 import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, estiloSeccionPortafolio, estiloFilaPortafolio, estiloCeldaCompleta, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
 
 const T = {
-  bg2: C.surface, bg3: "#1e1e24",
-  card: "#141418", border: C.border,
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg2: C.surface, bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: C.border,
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
@@ -438,12 +438,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           </button>}
           <button onClick={() => exportInversionesExcel(activos, owners, trm)}
             title="Descarga XLSX con activos + resumen por tipo + resumen por propietario fiscal"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportPatrimonioPDF(activos, owners, trm)}
             title="Bajar PDF: valor, ganancia y concentración por tipo"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
           <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
@@ -587,16 +587,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 <tr style={estiloFilaPortafolio(angosto)}><td colSpan={7} style={estiloCeldaCompleta(angosto, { padding: 0 })}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
                       <div style={{fontSize:40,marginBottom:12}}>🏦</div>
-                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"#fafafa"}}>Agrega tu patrimonio</h3>
-                      <p style={{fontSize:13,color:"#71717a",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos, cuentas de ahorro. Incluye el <strong style={{color:"#a1a1aa"}}>valor actual</strong> de cada activo.</p>
+                      <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>Agrega tu patrimonio</h3>
+                      <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos, cuentas de ahorro. Incluye el <strong style={{color:"var(--fp-txt2)"}}>valor actual</strong> de cada activo.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
                         <button onClick={openAdd} style={{background:"#22c55e",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar activo</button>
                         {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de activos</button>}
                       </div>
-                      <div style={{background:"#1e1e24",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#71717a",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
-                        <table style={{width:"100%",fontSize:11,color:"#a1a1aa"}}>
-                          <thead><tr style={{borderBottom:"1px solid rgba(255,255,255,0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"#71717a"}}>Activo</th><th style={{textAlign:"right",padding:"4px 8px",color:"#71717a"}}>Valor actual</th><th style={{padding:"4px 8px",color:"#71717a"}}>Tipo</th></tr></thead>
+                      <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <table style={{width:"100%",fontSize:11,color:"var(--fp-txt2)"}}>
+                          <thead><tr style={{borderBottom:"1px solid rgba(var(--fp-ink),0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"var(--fp-txt3)"}}>Activo</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>Valor actual</th><th style={{padding:"4px 8px",color:"var(--fp-txt3)"}}>Tipo</th></tr></thead>
                           <tbody>
                             <tr><td style={{padding:"4px 8px"}}>Apto Bogotá</td><td style={{textAlign:"right",padding:"4px 8px"}}>$850,000,000</td><td style={{padding:"4px 8px"}}>Real Estate</td></tr>
                             <tr><td style={{padding:"4px 8px"}}>Fondo Bancolombia</td><td style={{textAlign:"right",padding:"4px 8px"}}>$120,000,000</td><td style={{padding:"4px 8px"}}>Fondo</td></tr>
@@ -649,10 +649,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <div style={{ fontSize: 11, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
-                        if(inv.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
-                        if(inv.owner==="own_1") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>👤 Personal</div>;
+                        if(inv.owner==="na") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
+                        if(inv.owner==="own_1") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===inv.owner);
-                        return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                        return ow ? <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                       })()}
                     </td>
                     {angosto ? (<>
@@ -729,10 +729,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     <option value="INV_INMUEBLE_COMERCIAL_PROPIO">Uso propio comercial (deprecia construcción)</option>
                     <option value="INV_INMUEBLE_VACANTE">Vacante — sin uso productivo (no deprecia)</option>
                   </select>
-                  <label style={{ fontSize: 10, fontWeight: 600, color: "#a1a1aa", display: "block", marginBottom: 4 }}>% del valor que es terreno (no depreciable)</label>
+                  <label style={{ fontSize: 10, fontWeight: 600, color: "var(--fp-txt2)", display: "block", marginBottom: 4 }}>% del valor que es terreno (no depreciable)</label>
                   <input type="number" min="0" max="100" value={form.pctTerreno ?? ""} onChange={(e) => setForm((p) => ({ ...p, pctTerreno: e.target.value }))} placeholder="Default: 30 (urbanos)"
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "8px 10px", borderRadius: 6, fontSize: 12, outline: "none" }} />
-                  <div style={{ fontSize: 10, color: "#71717a", marginTop: 4, lineHeight: 1.5 }}>Solo la construcción se deprecia fiscalmente (Art. 131 ET). El terreno no. Típico urbano: 30%. Si es una finca o lote con poca construcción, puede ser 80%+.</div>
+                  <div style={{ fontSize: 10, color: "var(--fp-txt3)", marginTop: 4, lineHeight: 1.5 }}>Solo la construcción se deprecia fiscalmente (Art. 131 ET). El terreno no. Típico urbano: 30%. Si es una finca o lote con poca construcción, puede ser 80%+.</div>
                 </div>
               )}
               <In l="Moneda del valor" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />

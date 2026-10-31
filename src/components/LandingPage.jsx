@@ -4,9 +4,9 @@ import HeroVariantC from "./HeroVariantC.jsx";
 import LandingAIAdvisorSection from "./LandingAIAdvisorSection.jsx";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
   orange: "#f97316", gold: "#eab308", cyan: "#22d3ee", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
@@ -34,7 +34,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
 
   return (
     <div style={{ background: T.bg, color: T.txt, fontFamily: "'Inter', system-ui, sans-serif", minHeight: "100vh", overflowX: "hidden" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}
 
 /* ── Banner del home (12-ago-2026) ──────────────────────────────────────────
    La imagen de dispositivos ocupa el ancho completo y el copy se superpone
@@ -60,7 +60,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
 /* El tope de 30px evita que en pantallas anchas la tipografía crezca más
    rápido que la columna disponible y quede una palabra por renglón. */
 .fp-showcase-copy h2{font-size:clamp(17px,2vw,30px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin:0 0 .55em}
-.fp-showcase-copy p{font-size:clamp(10px,1vw,15px);color:#a1a1aa;line-height:1.5;margin:0}
+.fp-showcase-copy p{font-size:clamp(10px,1vw,15px);color:var(--fp-txt2);line-height:1.5;margin:0}
 @media (max-width:820px){
   .fp-showcase-copy{position:static;inset:auto;display:block;background:none;padding:28px 24px 0}
   .fp-showcase-copy>div{width:auto}
@@ -295,9 +295,9 @@ export default function LandingPage({ onGetStarted, onLogin }) {
         </div>
         <p style={{ fontSize: 12, color: T.txt3 }}>
           © 2026 FINPATHIA · {" "}
-          <a href="/seguridad" style={{color:"#71717a", textDecoration:"none"}}>🔒 Seguridad</a> · {" "}
-          <a href="/privacidad" style={{color:"#71717a", textDecoration:"none"}}>Privacidad</a> · {" "}
-          <a href="/terminos" style={{color:"#71717a", textDecoration:"none"}}>Términos</a>
+          <a href="/seguridad" style={{color:"var(--fp-txt3)", textDecoration:"none"}}>🔒 Seguridad</a> · {" "}
+          <a href="/privacidad" style={{color:"var(--fp-txt3)", textDecoration:"none"}}>Privacidad</a> · {" "}
+          <a href="/terminos" style={{color:"var(--fp-txt3)", textDecoration:"none"}}>Términos</a>
         </p>
       </footer>
     </div>

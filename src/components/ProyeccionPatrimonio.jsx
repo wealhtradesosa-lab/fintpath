@@ -149,11 +149,11 @@ export default function ProyeccionPatrimonio({
 
   const inputStyle = {
     width: "100%",
-    background: T.bg2 || "#18181b",
-    border: `1px solid ${T.border || "rgba(255,255,255,0.06)"}`,
+    background: T.bg2 || "var(--fp-card)",
+    border: `1px solid ${T.border || "rgba(var(--fp-ink),0.06)"}`,
     borderRadius: 10,
     padding: "8px 12px",
-    color: T.txt || "#fafafa",
+    color: T.txt || "var(--fp-txt)",
     fontSize: 13,
     outline: "none",
     fontVariantNumeric: "tabular-nums",
@@ -162,7 +162,7 @@ export default function ProyeccionPatrimonio({
   const labelStyle = {
     fontSize: 10,
     fontWeight: 600,
-    color: T.txt3 || "#71717a",
+    color: T.txt3 || "var(--fp-txt3)",
     textTransform: "uppercase",
     letterSpacing: 0.6,
     marginBottom: 4,
@@ -171,8 +171,8 @@ export default function ProyeccionPatrimonio({
   return (
     <div
       style={{
-        background: T.card || "#111113",
-        border: "1px solid " + (T.border || "rgba(255,255,255,0.06)"),
+        background: T.card || "var(--fp-bg)",
+        border: "1px solid " + (T.border || "rgba(var(--fp-ink),0.06)"),
         borderRadius: 16,
         padding: 20,
         marginTop: 14,
@@ -183,7 +183,7 @@ export default function ProyeccionPatrimonio({
           style={{
             fontSize: 13,
             fontWeight: 700,
-            color: T.txt || "#fafafa",
+            color: T.txt || "var(--fp-txt)",
             lineHeight: 1.35,
           }}
         >
@@ -194,30 +194,30 @@ export default function ProyeccionPatrimonio({
             implementación, no lo que el usuario está viendo. Se reemplaza por
             los tres supuestos que de verdad mueven el resultado, en el orden en
             que uno los necesita entender. */}
-        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 6, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", marginTop: 6, lineHeight: 1.6 }}>
           La proyección combina tres factores por año:
         </div>
-        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 6, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", marginTop: 6, lineHeight: 1.6 }}>
           <div style={{ marginBottom: 3 }}>
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>1. Se valoriza.</strong>{" "}
+            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>1. Se valoriza.</strong>{" "}
             El patrimonio actual crece al porcentaje anual que definas abajo.
           </div>
           <div style={{ marginBottom: 3 }}>
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>2. Se suma el flujo de caja.</strong>{" "}
+            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>2. Se suma el flujo de caja.</strong>{" "}
             El excedente anual (ingresos menos gastos, cuotas e impuestos) se incorpora al patrimonio.
           </div>
           <div>
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>3. La inflación reduce su valor.</strong>{" "}
+            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>3. La inflación reduce su valor.</strong>{" "}
             De ahí las dos cifras por horizonte: la nominal y la{" "}
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>real</strong>, expresada
+            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>real</strong>, expresada
             en poder adquisitivo de hoy. La real es la relevante para decidir.
           </div>
         </div>
-        <div style={{ fontSize: 11, color: T.txt3 || "#71717a", marginTop: 8, lineHeight: 1.5,
-             paddingTop: 8, borderTop: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
-          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Crece</strong>: el patrimonio real
+        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", marginTop: 8, lineHeight: 1.5,
+             paddingTop: 8, borderTop: `1px solid ${T.border || "rgba(var(--fp-ink),0.08)"}` }}>
+          <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>Crece</strong>: el patrimonio real
           a ese horizonte supera el actual.{" "}
-          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Se come</strong>: el flujo de caja
+          <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>Se come</strong>: el flujo de caja
           no compensa la pérdida por inflación.
         </div>
       </div>
@@ -251,7 +251,7 @@ export default function ProyeccionPatrimonio({
             style={inputStyle}
             aria-label="Cash flow anual override"
           />
-          <div style={{ fontSize: 9, color: T.txt3 || "#71717a", marginTop: 3 }}>
+          <div style={{ fontSize: 9, color: T.txt3 || "var(--fp-txt3)", marginTop: 3 }}>
             Default = CF simulado × 12 ({fm(cfAnualDefault)}).{" "}
             {cfOverride != null && (
               <button
@@ -289,7 +289,7 @@ export default function ProyeccionPatrimonio({
               etiqueta decía una cosa y el cálculo hacía otra. Si el propio
               autor de la plataforma duda, un usuario no tiene ninguna
               posibilidad. Se renombra al comportamiento real y se explica. */}
-          <div style={{ fontSize: 9, color: T.txt3 || "#71717a", marginTop: 3, lineHeight: 1.45 }}>
+          <div style={{ fontSize: 9, color: T.txt3 || "var(--fp-txt3)", marginTop: 3, lineHeight: 1.45 }}>
             Se aplica sobre el total del patrimonio (inmuebles, inversiones,
             vehículos), no sobre el excedente de caja.
           </div>
@@ -307,14 +307,14 @@ export default function ProyeccionPatrimonio({
             const igual = Math.abs(nominal - actual) < 0.15;
             return (
               <div style={{ marginTop: 8, padding: "9px 11px", borderRadius: 10,
-                    background: T.bg2 || "#18181b",
-                    border: `1px solid ${T.border || "rgba(255,255,255,0.08)"}` }}>
-                <div style={{ fontSize: 11, color: T.txt3 || "#71717a", lineHeight: 1.5 }}>
+                    background: T.bg2 || "var(--fp-card)",
+                    border: `1px solid ${T.border || "rgba(var(--fp-ink),0.08)"}` }}>
+                <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", lineHeight: 1.5 }}>
                   Según la composición de tu patrimonio, la valorización esperada es{" "}
-                  <strong style={{ color: T.txt2 || "#a1a1aa" }}>{fmtPctEs(nominal)}</strong>{" "}
+                  <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>{fmtPctEs(nominal)}</strong>{" "}
                   nominal ({fmtPctEs(mezcla.tasaReal * 100)} real).
                 </div>
-                <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 5, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", marginTop: 5, lineHeight: 1.6 }}>
                   {mezcla.detalle.map((d) => (
                     <span key={d.clase} style={{ marginRight: 10, whiteSpace: "nowrap" }}>
                       {d.label} {fmtPctEs((d.peso * 100), 0)}
@@ -385,15 +385,15 @@ export default function ProyeccionPatrimonio({
                   padding: "7px 13px", borderRadius: 999, cursor: "pointer",
                   fontSize: 12, fontWeight: 700,
                   background: activo ? (T.green || "#22c55e") : "transparent",
-                  color: activo ? "#0a0a0a" : (T.txt2 || "#a1a1aa"),
-                  border: `1px solid ${activo ? (T.green || "#22c55e") : (T.border || "rgba(255,255,255,0.12)")}`,
+                  color: activo ? "var(--fp-bg)" : (T.txt2 || "var(--fp-txt2)"),
+                  border: `1px solid ${activo ? (T.green || "#22c55e") : (T.border || "rgba(var(--fp-ink),0.12)")}`,
                 }}>
                 {l}
               </button>
             );
           })}
         </div>
-        <div style={{ fontSize: 10, color: T.txt3 || "#71717a", marginTop: 6 }}>
+        <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", marginTop: 6 }}>
           Calculado sobre el flujo de caja simulado de {fm(cfAnualDefault)} anuales.
           También puedes ingresar una cifra exacta abajo.
         </div>
@@ -428,7 +428,7 @@ export default function ProyeccionPatrimonio({
                   fontWeight: 700,
                   letterSpacing: 0.8,
                   textTransform: "uppercase",
-                  color: T.txt3 || "#71717a",
+                  color: T.txt3 || "var(--fp-txt3)",
                 }}
               >
                 {h.horizonte} años
@@ -447,7 +447,7 @@ export default function ProyeccionPatrimonio({
                 style={{
                   fontSize: 15,
                   fontWeight: 700,
-                  color: T.txt || "#fafafa",
+                  color: T.txt || "var(--fp-txt)",
                   marginTop: 6,
                   fontVariantNumeric: "tabular-nums",
                 }}
@@ -464,7 +464,7 @@ export default function ProyeccionPatrimonio({
                 {h.delta >= 0 ? "+" : ""}
                 {fm(h.delta)} nominal
               </div>
-              <div style={{ fontSize: 9, color: T.txt3 || "#71717a", marginTop: 2 }}>
+              <div style={{ fontSize: 9, color: T.txt3 || "var(--fp-txt3)", marginTop: 2 }}>
                 Real: {fm(h.patrimonioReal)}
               </div>
             </div>
@@ -476,8 +476,8 @@ export default function ProyeccionPatrimonio({
       {/* El título dice ahora la unidad del eje X. Sin eso, dos gráficas de
           área verdes seguidas parecen la misma: la de arriba va mes a mes
           dentro de un año, esta va año a año. */}
-      <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 || "#a1a1aa", marginBottom: 8 }}>
-        Patrimonio proyectado <span style={{ fontWeight: 400, color: T.txt3 || "#71717a" }}>· año a año</span>
+      <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 || "var(--fp-txt2)", marginBottom: 8 }}>
+        Patrimonio proyectado <span style={{ fontWeight: 400, color: T.txt3 || "var(--fp-txt3)" }}>· año a año</span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={chartData}>
@@ -530,11 +530,11 @@ export default function ProyeccionPatrimonio({
             width: "100%",
             borderCollapse: "collapse",
             fontSize: 11,
-            color: T.txt2 || "#a1a1aa",
+            color: T.txt2 || "var(--fp-txt2)",
           }}
         >
           <thead>
-            <tr style={{ textAlign: "left", color: T.txt3 || "#71717a" }}>
+            <tr style={{ textAlign: "left", color: T.txt3 || "var(--fp-txt3)" }}>
               <th style={{ padding: "6px 4px", fontWeight: 600 }}>Año</th>
               <th style={{ padding: "6px 4px", fontWeight: 600 }}>Patrimonio</th>
               <th style={{ padding: "6px 4px", fontWeight: 600 }}>Real</th>
@@ -548,9 +548,9 @@ export default function ProyeccionPatrimonio({
               .map((s) => (
                 <tr
                   key={s.año}
-                  style={{ borderTop: `1px solid ${T.border || "rgba(255,255,255,0.06)"}` }}
+                  style={{ borderTop: `1px solid ${T.border || "rgba(var(--fp-ink),0.06)"}` }}
                 >
-                  <td style={{ padding: "7px 4px", color: T.txt || "#fafafa", fontWeight: 600 }}>
+                  <td style={{ padding: "7px 4px", color: T.txt || "var(--fp-txt)", fontWeight: 600 }}>
                     {s.label}
                   </td>
                   <td style={{ padding: "7px 4px", fontVariantNumeric: "tabular-nums" }}>
@@ -576,14 +576,14 @@ export default function ProyeccionPatrimonio({
         style={{
           marginTop: 14,
           padding: 12,
-          background: T.bg2 || "#18181b",
+          background: T.bg2 || "var(--fp-card)",
           borderRadius: 10,
           fontSize: 10,
-          color: T.txt3 || "#71717a",
+          color: T.txt3 || "var(--fp-txt3)",
           lineHeight: 1.55,
         }}
       >
-        <div style={{ fontWeight: 700, color: T.txt2 || "#a1a1aa", marginBottom: 4 }}>
+        <div style={{ fontWeight: 700, color: T.txt2 || "var(--fp-txt2)", marginBottom: 4 }}>
           Supuestos (editables arriba)
         </div>
         <div>

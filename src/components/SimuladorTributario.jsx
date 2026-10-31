@@ -10,8 +10,8 @@ import { calcImpRenta as calcImpRentaCore } from "../lib/tablaArt241.js";
 import { track } from "../lib/analytics.js";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24", bg4: "#252530",
-  border: "rgba(255,255,255,0.06)", txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
+  border: "rgba(var(--fp-ink),0.06)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", red: "#ef4444", blue: "#3b82f6", purple: "#a78bfa",
   orange: "#f97316", gold: "#eab308", cyan: "#22d3ee",
 };
@@ -277,7 +277,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {diagnos.map((d, i) => (
-                  <div key={i} style={{ padding: "8px 10px", background: "rgba(255,255,255,0.02)", borderRadius: 6, borderLeft: "2px solid " + T.orange, fontSize: 11, lineHeight: 1.5 }}>
+                  <div key={i} style={{ padding: "8px 10px", background: "rgba(var(--fp-ink),0.02)", borderRadius: 6, borderLeft: "2px solid " + T.orange, fontSize: 11, lineHeight: 1.5 }}>
                     <div style={{ color: T.txt, fontWeight: 600 }}>{d.msg}</div>
                     <div style={{ color: T.txt3, marginTop: 2, fontSize: 10 }}>→ {d.accion}</div>
                   </div>
@@ -766,7 +766,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
           const esGrupo = w._grupo && w._count > 1;
 
           return (
-            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 8, fontSize: 11, borderLeft: "2px solid " + color }}>
+            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", background: "rgba(var(--fp-ink),0.02)", borderRadius: 8, fontSize: 11, borderLeft: "2px solid " + color }}>
               <span style={{ fontSize: 14, marginTop: 1 }}>{icon}</span>
               <div style={{ flex: 1, lineHeight: 1.5, minWidth: 0 }}>
                 <div style={{ display: "flex", gap: 6, alignItems: "baseline", flexWrap: "wrap", marginBottom: 2 }}>

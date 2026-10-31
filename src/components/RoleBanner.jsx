@@ -21,9 +21,9 @@
 const C = {
   bg: "rgba(59,130,246,0.08)",      // azul muy tenue
   border: "rgba(59,130,246,0.2)",
-  txt: "#fafafa",
+  txt: "var(--fp-txt)",
   accent: "#3b82f6",
-  txt2: "#a1a1aa",
+  txt2: "var(--fp-txt2)",
 };
 
 export default function RoleBanner({ accountName, onLearnMore }) {

@@ -12,9 +12,9 @@ import {
 } from "../lib/metaFondeo.js";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
   blue: "#3b82f6", purple: "#a78bfa", orange: "#f97316",
@@ -780,7 +780,7 @@ export default function MetasModule({
                                   textAlign: "left",
                                   background: active
                                     ? "rgba(34,211,238,0.12)"
-                                    : "rgba(255,255,255,0.03)",
+                                    : "rgba(var(--fp-ink),0.03)",
                                   border:
                                     "1px solid " +
                                     (active ? T.cyan + "66" : T.border),

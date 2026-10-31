@@ -18,9 +18,9 @@ import { fetchAuth } from "../lib/apiFetch";
 // ═══════════════════════════════════════════════════════════════════
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "#141418", border: "rgba(255,255,255,0.06)", borderL: "rgba(255,255,255,0.1)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)", borderL: "rgba(var(--fp-ink),0.1)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
   orange: "#f97316", gold: "#eab308", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
@@ -119,7 +119,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.txt, fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}`}</style>
 
       {/* ─── NAV ─── */}
       <nav style={{ borderBottom: `1px solid ${T.border}`, padding: "16px 24px", background: "rgba(12,12,15,0.8)", backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 50 }}>

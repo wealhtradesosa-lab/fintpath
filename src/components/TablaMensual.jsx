@@ -161,7 +161,7 @@ export default function TablaMensual({
           if (!enR) {
             return (
               <div key={mes.v} style={{
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(var(--fp-ink),0.02)",
                 border: `1px dashed ${T.border}`,
                 borderRadius: 8,
                 padding: "6px 8px",

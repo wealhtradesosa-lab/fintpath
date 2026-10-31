@@ -58,12 +58,12 @@ function aporteSaludPorSmmlv(nSmmlv) {
   return Math.round(nSmmlv * SMMLV_2026 * 0.04);
 }
 
-// Commit 9.9: tokens unificados. Antes bg2 era #18181b (distinto del resto del app
-// que usa #141418). Esa diferencia de 4 pixeles en luminosidad creaba la sensación
+// Commit 9.9: tokens unificados. Antes bg2 era var(--fp-card) (distinto del resto del app
+// que usa var(--fp-card)). Esa diferencia de 4 pixeles en luminosidad creaba la sensación
 // de "diseño inconsistente" entre módulos.
 const T = {
   bg2: C.surface, bg3: C.raised,
-  card: "#141418", border: C.border,
+  card: "var(--fp-card)", border: C.border,
   txt: C.text, txt2: C.muted, txt3: C.subtle,
   green: C.ok, greenDim: "rgba(34,197,94,0.1)",
   red: C.danger, redDim: "rgba(239,68,68,0.08)",
@@ -719,12 +719,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           </button>}
           <button onClick={() => exportIngresosExcel(activos, owners, trm)}
             title="Bajar Excel: detalle + resumen por categoría"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar Excel
           </button>
           <button onClick={() => exportIngresosPDF(activos, owners, trm)}
             title="Bajar PDF: resumen, detalle y desglose por categoría"
-            style={{ background: "transparent", color: "#e4e4e7", border: "1px solid rgba(255,255,255,0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
+            style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             ⬇️ Bajar PDF
           </button>
           <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true); }}
@@ -964,10 +964,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       </div>
                       {(()=>{
                         if(!item.owner || item.owner==="") return null;
-                        if(item.owner==="na") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>🌐 N/A</div>;
-                        if(item.owner==="own_1") return <div style={{fontSize:9,color:"#71717a",marginTop:2}}>👤 Personal</div>;
+                        if(item.owner==="na") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
+                        if(item.owner==="own_1") return <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===item.owner);
-                        return ow ? <div style={{fontSize:9,color:"#71717a",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                        return ow ? <div style={{fontSize:9,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
                       })()}
                     </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 11, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.categoria}</span></td>
@@ -983,7 +983,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         {debeSugerirPrimaBono(item) && <div data-testid="sugerir-prima-bono" style={{ fontSize: 9, color: "#f97316", fontWeight: 600, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
                           <span>⚠️ {MARCA_SUGERIR_PRIMA}</span>
                           <button type="button" data-testid="sugerir-prima-editar" onClick={(e) => { e.stopPropagation(); handleEdit(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid #f97316", background: "transparent", color: "#f97316", cursor: "pointer" }}>Revisar</button>
-                          <button type="button" data-testid="sugerir-prima-descartar" onClick={(e) => { e.stopPropagation(); descartarSugerenciaPrima(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#a1a1aa", cursor: "pointer" }}>Es mensual, dejarlo así</button>
+                          <button type="button" data-testid="sugerir-prima-descartar" onClick={(e) => { e.stopPropagation(); descartarSugerenciaPrima(item); }} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(var(--fp-ink),0.15)", background: "transparent", color: "var(--fp-txt2)", cursor: "pointer" }}>Es mensual, dejarlo así</button>
                         </div>}
                         {item.moneda==="USD" && <span style={{fontSize:9,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
                       </div>
@@ -1124,7 +1124,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <div style={{gridColumn:"1/-1",background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
                 {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo documento...</div> : <>
                   <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes un extracto, certificado o recibo?</div>
-                  <div style={{fontSize:10,color:"#71717a",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
+                  <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                 </>}
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Rapicredit fondeo, Salario, Arriendo casa" /></div>
@@ -1132,7 +1132,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               {/* UX Opción A (18-jul-2026 noche): Clasificación tributaria PLANA
                   y compacta al pie. Sin accordion, separador discreto arriba,
                   campos directos, sin explicación redundante. */}
-              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10, marginTop: 6 }}>
+              <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(var(--fp-ink),0.06)", paddingTop: 10, marginTop: 6 }}>
                 <div style={{fontSize:11,fontWeight:600,color:T.txt3,marginBottom:8,letterSpacing:"0.03em"}}>
                   🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
                 </div>
@@ -1195,7 +1195,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   >
                     {FISCAL_SUBOPTIONS[form.categoria].options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
                   </select>
-                  <div style={{ fontSize: 10, color: "#a1a1aa", marginTop: 6, lineHeight: 1.5 }}>{FISCAL_SUBOPTIONS[form.categoria].help}</div>
+                  <div style={{ fontSize: 10, color: "var(--fp-txt2)", marginTop: 6, lineHeight: 1.5 }}>{FISCAL_SUBOPTIONS[form.categoria].help}</div>
                 </div>
               )}
 
@@ -1237,7 +1237,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         }
                         setModoIngreso("porPago");
                       }}
-                      style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                      style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                       💵 Mensual<br/>
                       <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>Lo que llega cada mes</span>
                     </button>
@@ -1251,7 +1251,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         }
                         setModoIngreso("anual");
                       }}
-                      style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                      style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                       📊 Total del año<br/>
                       <span style={{fontSize:10,opacity:0.7,fontWeight:500}}>La suma anual</span>
                     </button>
@@ -1275,7 +1275,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         }
                         setModoIngreso("porPago");
                       }}
-                      style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                       Por pago<br/>
                       <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(lo que llega cada vez)</span>
                     </button>
@@ -1288,7 +1288,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         }
                         setModoIngreso("anual");
                       }}
-                      style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(255,255,255,0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
+                      style={{ flex: 1, padding: "8px 10px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #22c55e" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(34,197,94,0.08)" : "transparent", color: modoIngreso === "anual" ? "#22c55e" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
                       Total anual<br/>
                       <span style={{fontSize:9,opacity:0.7,fontWeight:500}}>(ingreso del año)</span>
                     </button>
@@ -1348,7 +1348,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               })()} />
               )}
               {form.categoria === "Prima/Bono" && (
-                <div data-testid="ayuda-prima-bono" style={{ gridColumn: "1/-1", width: "100%", display: "block", fontSize: 11, color: "#a1a1aa", marginTop: 4, lineHeight: 1.4 }}>{ayudaPrimaBono(form.mensual, fm)}</div>
+                <div data-testid="ayuda-prima-bono" style={{ gridColumn: "1/-1", width: "100%", display: "block", fontSize: 11, color: "var(--fp-txt2)", marginTop: 4, lineHeight: 1.4 }}>{ayudaPrimaBono(form.mensual, fm)}</div>
               )}
               {/* Fix 25-may-2026: el campo Capital invertido aparecía solo para
                   Rendimiento/Dividendos/Arriendo/Inversión. Pero CDT (Intereses

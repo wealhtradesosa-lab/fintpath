@@ -22,7 +22,7 @@ export default function AvisoCambioNivel({ T = {} }) {
     setVisible(false);
   };
   return (
-    <div role="status" data-testid="aviso-cambio-nivel" style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 12, lineHeight: 1.5, color: T.tx2 || "#d4d4d8" }}>
+    <div role="status" data-testid="aviso-cambio-nivel" style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, padding: "10px 12px", marginBottom: 14, fontSize: 12, lineHeight: 1.5, color: T.tx2 || "var(--fp-txt)" }}>
       <span style={{ flex: 1 }}>{AVISO_NIVEL_TEXTO}</span>
       <button type="button" onClick={cerrar} aria-label="Cerrar aviso" style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", fontSize: 14, lineHeight: 1 }}>✕</button>
     </div>

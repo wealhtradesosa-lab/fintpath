@@ -39,7 +39,7 @@ const STYLES = {
   },
   tooltip: {
     position: "absolute",
-    background: "#1f1f24",
+    background: "var(--fp-raised)",
     border: "1.5px solid rgba(196,181,253,0.40)",
     borderRadius: 12,
     padding: "14px 16px",
@@ -65,11 +65,11 @@ const STYLES = {
   },
   nombreCompleto: {
     fontSize: 11,
-    color: "#a1a1aa",
+    color: "var(--fp-txt2)",
     fontStyle: "italic",
   },
   explicacion: {
-    color: "#e4e4e7",
+    color: "var(--fp-txt)",
     fontSize: 13,
     marginBottom: 6,
   },
@@ -79,7 +79,7 @@ const STYLES = {
     borderRadius: 6,
     padding: "6px 10px",
     fontSize: 12,
-    color: "#d4d4d8",
+    color: "var(--fp-txt)",
     marginTop: 8,
   },
   ejemploLabel: {
@@ -94,7 +94,7 @@ const STYLES = {
     marginLeft: "auto",
     background: "transparent",
     border: "none",
-    color: "#a1a1aa",
+    color: "var(--fp-txt2)",
     cursor: "pointer",
     fontSize: 14,
     padding: 0,

@@ -20,9 +20,9 @@ import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
 const tasa = (u) => trmUsable(u?.trm) ?? TRM_PROVISIONAL;
 
 const T = {
-  bg2: "#141418", bg3: "#1e1e24", bg4: "#2a2a32",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
   bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
@@ -255,7 +255,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           {/* Level markers */}
           {LEVELS.filter((l) => l.porCobertura).map((l) => {
             return (
-              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", top: 0, bottom: 0, width: 2, background: "rgba(255,255,255,0.1)", zIndex: 2 }}>
+              <div key={l.id} style={{ position: "absolute", left: pos(l) + "%", top: 0, bottom: 0, width: 2, background: "rgba(var(--fp-ink),0.1)", zIndex: 2 }}>
                 <div style={{ position: "absolute", top: -22, left: "50%", transform: "translateX(-50%)", fontSize: 16 }}>{l.icon}</div>
               </div>
             );
@@ -350,7 +350,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           const needed = umbral(l);
           return (
             <div key={l.id} onClick={() => setExpandedLvl(expandedLvl === l.id ? null : l.id)} style={{
-              background: current ? l.color + "12" : reached ? "rgba(255,255,255,0.02)" : T.bg3,
+              background: current ? l.color + "12" : reached ? "rgba(var(--fp-ink),0.02)" : T.bg3,
               border: "1px solid " + (current ? l.color + "40" : reached ? l.color + "20" : T.border),
               borderRadius: 12, padding: "10px 10px", textAlign: "center", position: "relative", minWidth: 0, overflowWrap: "anywhere",
               opacity: current ? 1 : pasado ? 0.6 : 0.5, cursor: "pointer", transition: "all 0.2s",
@@ -433,7 +433,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               <button onClick={() => setExpandedLvl(null)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 14 }}>✕</button>
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>{l.detail}</div>
-            <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 10, fontSize: 12 }}>
+            <div style={{ marginTop: 12, padding: "10px 14px", background: "rgba(var(--fp-ink),0.03)", borderRadius: 10, fontSize: 12 }}>
               {!l.porCobertura
                 ? <span style={{ color: T.txt3 }}>📊 Este nivel no se mide con ingreso pasivo sino con tu flujo del mes. Tu ingreso pasivo actual: {fm(ni)}/mes.</span>
                 : reached
@@ -1252,8 +1252,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
                 const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${fmtNumEs((i.capital/1e6), 0)}M × ${fmtTasaEs(i.tasa)}</span>` : "";
                 const monto = v > 0
                   ? `<span style="font-weight:600;color:#16a34a">$${Math.round(v).toLocaleString("es-CO")}</span>`
-                  : `<span style="color:#9ca3af;font-size:10px">no aplica en ${mesPdfL.toLowerCase()}</span>`;
-                return `<tr style="${v > 0 ? "" : "color:#9ca3af"}"><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right">${monto}</td><td>${cap}</td></tr>`;
+                  : `<span style="color:var(--fp-txt2);font-size:10px">no aplica en ${mesPdfL.toLowerCase()}</span>`;
+                return `<tr style="${v > 0 ? "" : "color:var(--fp-txt2)"}"><td>${i.nombre||""}</td><td style="color:#888">${i.categoria||""}</td><td style="text-align:right">${monto}</td><td>${cap}</td></tr>`;
               }).join("");
               
               // Build expense rows by category — filtra items apagados dentro
@@ -1273,22 +1273,23 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               const deuRows = (user.deudas||[]).map((d, di) => {
                 if (d.sim === false || (d.mt||0) <= 0) return "";
                 const cuota = cuotaDeudaDelMes(d, getVal("debt_"+di, d.pago || d.pg || 0), añoPdf, mesVisualizado, trmPdf);
-                const cuotaTxt = cuota > 0 ? `$${Math.round(cuota).toLocaleString("es-CO")}/mes` : `<span style="color:#9ca3af;font-size:10px">sin cuota en ${mesPdfL.toLowerCase()}</span>`;
+                const cuotaTxt = cuota > 0 ? `$${Math.round(cuota).toLocaleString("es-CO")}/mes` : `<span style="color:var(--fp-txt2);font-size:10px">sin cuota en ${mesPdfL.toLowerCase()}</span>`;
                 return `<tr><td>${d.n||d.nombre||""}</td><td style="text-align:right">$${Math.round(d.mt||0).toLocaleString("es-CO")}</td><td style="text-align:right">${cuotaTxt}</td><td style="text-align:right">${d.ts||0}%</td></tr>`;
               }).join("");
               
               const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>FINPATHIA — ${scenarioName}</title>
 <style>
+:root{--fp-bg:#ffffff;--fp-card:#ffffff;--fp-raised:#f4f4f5;--fp-txt:#18181b;--fp-txt2:#52525b;--fp-txt3:#71717a;--fp-line:#d4d4d8;--fp-ink:0,0,0} /* ventana aparte: la paleta va aquí */
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,system-ui,sans-serif;font-size:11px;color:#222;padding:20px 28px;max-width:800px;margin:0 auto}
 h1{font-size:18px;font-weight:800;color:#16a34a;margin:0 0 2px}
 h2{font-size:13px;font-weight:700;color:#333;margin:16px 0 6px;border-bottom:1px solid #ddd;padding-bottom:3px}
 .sub{font-size:10px;color:#888;margin-bottom:12px}
-.desc{background:#f9fafb;border-left:3px solid #16a34a;padding:10px 14px;margin:0 0 14px;font-size:11px;color:#374151;line-height:1.5;border-radius:0 6px 6px 0}
+.desc{background:#f9fafb;border-left:3px solid #16a34a;padding:10px 14px;margin:0 0 14px;font-size:11px;color:var(--fp-line);line-height:1.5;border-radius:0 6px 6px 0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
 .grid4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:10px}
-.kpi{background:#f8f8f8;border:1px solid #e5e5e5;border-radius:6px;padding:8px 10px;text-align:center}
+.kpi{background:#f8f8f8;border:1px solid var(--fp-txt);border-radius:6px;padding:8px 10px;text-align:center}
 .kpi .label{font-size:9px;color:#888;text-transform:uppercase;font-weight:600}
 .kpi .val{font-size:18px;font-weight:800;margin-top:2px}
 .gn{color:#16a34a}.rd{color:#dc2626}.bl{color:#2563eb}.or{color:#d97706}
@@ -1312,13 +1313,13 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 
   <!-- Card Ingresos -->
   <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
-    <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos de ${mesPdfL} ${añoPdf}</div>
+    <div style="font-size:9px;color:var(--fp-txt3);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💰 Ingresos de ${mesPdfL} ${añoPdf}</div>
     <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px">
-      <span style="color:#374151">Bruto Total <span style="color:#9ca3af;font-size:9px">(genera activos)</span></span>
+      <span style="color:var(--fp-line)">Bruto Total <span style="color:var(--fp-txt2);font-size:9px">(genera activos)</span></span>
       <span style="font-weight:500">$${Math.round(expT.brutoTotal||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;padding-left:8px;border-left:2px solid #e5e7eb">
-      <span style="color:#8b5cf6">− Retención <span style="color:#9ca3af;font-size:9px">(recuperable)</span></span>
+      <span style="color:#8b5cf6">− Retención <span style="color:var(--fp-txt2);font-size:9px">(recuperable)</span></span>
       <span style="color:#8b5cf6;font-weight:500">−$${Math.round(expT.retencionMensual||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
@@ -1329,17 +1330,17 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 
   <!-- Card Egresos -->
   <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:14px">
-    <div style="font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💸 Egresos Mensuales</div>
+    <div style="font-size:9px;color:var(--fp-txt3);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:10px">💸 Egresos Mensuales</div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
       <span style="color:#f59e0b">A. Aportes obligatorios</span>
       <span style="color:#f59e0b">$${Math.round(expT.aportesObligatorios||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
-      <span style="color:#374151">B. Gastos familiares</span>
+      <span style="color:var(--fp-line)">B. Gastos familiares</span>
       <span>$${Math.round(expT.gastosFamiliares||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
-      <span style="color:#374151">C. Cuotas de deudas</span>
+      <span style="color:var(--fp-line)">C. Cuotas de deudas</span>
       <span>$${Math.round(expT.cuotasDeudas||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">
@@ -1357,13 +1358,13 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
 <div style="background:${expT.cf>=0?'#f0fdf4':'#fef2f2'};border:2px solid ${expT.cf>=0?'#16a34a':'#dc2626'};border-radius:10px;padding:14px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
   <div>
     <div style="font-size:10px;color:${expT.cf>=0?'#16a34a':'#dc2626'};font-weight:700;letter-spacing:1.5px;text-transform:uppercase">${expT.cf>=0?'💰 CASH FLOW · Para ahorrar / invertir':'⚠️ CASH FLOW NEGATIVO'}</div>
-    <div style="font-size:26px;font-weight:800;color:${expT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(expT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:#9ca3af;font-weight:400">/mes</span></div>
-    <div style="font-size:10px;color:#6b7280;margin-top:3px">Disponible $${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")} − Egresos $${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</div>
+    <div style="font-size:26px;font-weight:800;color:${expT.cf>=0?'#16a34a':'#dc2626'};margin-top:4px">$${Math.round(expT.cf).toLocaleString("es-CO")}<span style="font-size:11px;color:var(--fp-txt2);font-weight:400">/mes</span></div>
+    <div style="font-size:10px;color:var(--fp-txt3);margin-top:3px">Disponible $${Math.round(expT.disponibleCuenta||0).toLocaleString("es-CO")} − Egresos $${Math.round(expT.egresosTotales||expT.te||0).toLocaleString("es-CO")}</div>
   </div>
   <div style="display:flex;gap:22px;text-align:center">
-    <div><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
-    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#eab308'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
-    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:#6b7280;letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
+    <div><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#eab308'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
   </div>
 </div>
 
@@ -1756,7 +1757,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           </div>
 
           {/* Fila 2: Retención (crédito recuperable) */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, paddingLeft: 12, borderLeft: `2px solid ${T.txt3}20` }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, paddingLeft: 12, borderLeft: "2px solid rgba(var(--fp-ink),0.12)" }}>
             <div>
               <div style={{ fontSize: 12, color: T.txt3 }}>− Retención en la fuente</div>
               <div style={{ fontSize: 10, color: "#a78bfa", marginTop: 1 }}>💳 Crédito recuperable en declaración</div>
@@ -1923,7 +1924,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                 return d.efecto > 0 ? " (ingreso · más que lo habitual)" : " (ingreso · menos que lo habitual)";
               };
               return (
-                <div style={{ fontSize: 12, color: T.txt2, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.bd}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.7, marginTop: 10 }}>
+                <div style={{ fontSize: 12, color: T.txt2, background: "rgba(var(--fp-ink),0.03)", border: `1px solid ${T.bd}`, borderRadius: 8, padding: "7px 11px", lineHeight: 1.7, marginTop: 10 }}>
                   💡 <strong style={{ color: T.txt }}>Por qué este mes se movió</strong> <span style={{ opacity: 0.75 }}>(vs mes promedio):</span>{" "}
                   {top3.map((d, i) => {
                     const c = d.efecto > 0 ? T.gn : T.rd;
@@ -2049,7 +2050,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
               const ow = grp.owner;
               const isJ = ow.type === "juridica";
               const icon = ow.type === "juridica" ? "🏢" : ow.type === "na" ? "🌐" : "👤";
-              const color = ow.type === "juridica" ? "#3b82f6" : ow.type === "na" ? "#71717a" : "#22c55e";
+              const color = ow.type === "juridica" ? "#3b82f6" : ow.type === "na" ? "var(--fp-txt3)" : "#22c55e";
               
               return (
                 <div key={ow.id} style={{ marginBottom: 20, background: color + "06", borderRadius: 14, border: "1px solid " + color + "15", overflow: "hidden" }}>
@@ -2131,7 +2132,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           const razonI = razonMonto0(ing, añoNowI, mesVisualizado);
                           const esVigenciaI = razonI.includes("vigencia");
                           return (
-                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
+                            <div key={"ing_"+safeIdx} style={{ marginBottom: 4, background: "rgba(var(--fp-ink),0.03)", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
                               <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ing.nombre||"Ingreso"} <span style={{ fontSize: 10, color: T.txt3 }}>{ing.categoria||""}</span></span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
                                 <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>{razonI || "$0 este mes"}</span>
@@ -2158,12 +2159,12 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                             
                             {hasCap ? (<>
                               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:6}}>
-                                <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
+                                <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:"6px 10px"}}>
                                   <div style={{fontSize:9,color:T.txt3}}>Capital invertido</div>
                                   <div style={{fontSize:14,fontWeight:700}}>{fm(simCap)}</div>
                                   {capDiff!==0&&<div style={{fontSize:10,color:capDiff>0?T.gn:T.rd,fontWeight:600}}>{capDiff>0?"+":""}{fm(capDiff)}</div>}
                                 </div>
-                                <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:"6px 10px"}}>
+                                <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:"6px 10px"}}>
                                   <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({fmtTasaEs(simTasa)} anual)</div>
                                   <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
                                 </div>
@@ -2246,7 +2247,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           const razon = razonMonto0(g, añoNow, mesVisualizado);
                           const esVigencia = razon.includes("vigencia");
                           return (
-                            <div key={key} style={{ marginBottom: 4, background: T.txt3 + "08", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
+                            <div key={key} style={{ marginBottom: 4, background: "rgba(var(--fp-ink),0.03)", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + T.txt3, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: 0.75 }}>
                               <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.c||g.cat} <span style={{ fontSize: 10, color: T.txt3 }}>{g.cat}</span></span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
                                 <span style={{ fontSize: 10, color: T.txt3, fontWeight: 600 }}>{razon || "$0 este mes"}</span>
@@ -2299,7 +2300,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           const terminada = mesVisualizado > hastaD;
                           const mesRefL = MESES.find(m => m.v === (terminada ? hastaD : desdeD))?.l || "";
                           return (
-                            <div key={"d_"+idx} style={{ marginBottom: 6, background: terminada ? T.gn + "0A" : T.txt3 + "08", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + (terminada ? T.gn : T.txt3), display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: terminada ? 1 : 0.75 }}>
+                            <div key={"d_"+idx} style={{ marginBottom: 6, background: terminada ? T.gn + "0A" : "rgba(var(--fp-ink),0.03)", padding: "9px 12px", borderRadius: 8, borderLeft: "3px solid " + (terminada ? T.gn : T.txt3), display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: terminada ? 1 : 0.75 }}>
                               <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.nombre||d.n||"Deuda"}</span>
                               <span style={{ display: "flex", alignItems: "baseline", gap: 8, flexShrink: 0 }}>
                                 <span style={{ fontSize: 10, color: terminada ? T.gn : T.txt3, fontWeight: 700, background: terminada ? T.gn + "15" : "transparent", padding: terminada ? "2px 8px" : 0, borderRadius: 10 }}>
@@ -2388,12 +2389,12 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           {/* Modo COMPARATIVO: solo cuando hay ahorro real > \$100K via PV/AFC */}
                           {mostrarComparativo && (
                             <div style={{display:"flex",gap:6,marginBottom:8}}>
-                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(255,255,255,0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(var(--fp-ink),0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                                 <span>Tu impuesto hoy</span>
                                 <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
                                 <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
                               </button>
-                              <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(255,255,255,0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <button onClick={toggleOpt} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"#22c55e":"rgba(var(--fp-ink),0.06)"),background:isOpt?"rgba(34,197,94,0.1)":"transparent",color:isOpt?T.gn:T.txt3,cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                                 <span>Si aplicas PV/AFC</span>
                                 <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoOptAnualToggle)}/año</span>
                                 <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoOptMes*12)}/año</span>
@@ -2419,11 +2420,11 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                 <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
                               {reteNMes > 0 && <>
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(255,255,255,0.06)"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(var(--fp-ink),0.06)"}}>
                                   <div style={{fontSize:10,color:T.txt2}}>{isJuridica ? "🏛️ ICA + retenciones descontables" : "🏛️ Retención en la fuente (ya pagada)"}</div>
                                   <div style={{fontSize:14,fontWeight:600,color:T.txt2}}>−{fm(reteNMes*12)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
-                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px solid rgba(255,255,255,0.08)"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px solid rgba(var(--fp-ink),0.08)"}}>
                                   <div style={{fontSize:11,color:T.txt,fontWeight:700}}>📋 Saldo a pagar en declaración</div>
                                   <div style={{fontSize:16,fontWeight:800,color:saldoAnualEffectivo===0?T.gn:T.txt}}>{fm(saldoAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                                 </div>
@@ -2431,7 +2432,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               </>}
                             </div>
                             {/* Hint solo aplica en modo comparativo cuando el usuario esta en Actual y hay ahorro real disponible */}
-                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(255,255,255,0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC podría bajar tu impuesto estimado en {fm(ahorroOpt)}/año (estimación, confírmalo con tu contador) → activa el toggle para ver el impacto en cash flow</div>}
+                            {mostrarComparativo && ahorroOpt > 0 && !isOpt && <div style={{marginTop:10,paddingTop:8,borderTop:"1px solid rgba(var(--fp-ink),0.05)",fontSize:10,color:T.gn,fontWeight:600}}>💡 Aplicar PV/AFC podría bajar tu impuesto estimado en {fm(ahorroOpt)}/año (estimación, confírmalo con tu contador) → activa el toggle para ver el impacto en cash flow</div>}
                           </div>
                           {/* Commit 10 Tarea 3: el slider ahora opera sobre el SALDO A PAGAR
                               (lo que el usuario efectivamente desembolsa), no sobre el impuesto

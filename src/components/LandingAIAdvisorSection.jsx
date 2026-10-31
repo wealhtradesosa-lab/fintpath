@@ -16,10 +16,10 @@
 import { useState, useEffect } from "react";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  border: "rgba(255,255,255,0.06)",
-  borderStrong: "rgba(255,255,255,0.12)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  border: "rgba(var(--fp-ink),0.06)",
+  borderStrong: "rgba(var(--fp-ink),0.12)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa", cyan: "#22d3ee",
   pink: "#ec4899",
 };
@@ -304,7 +304,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
                   <div style={{
                     background: msg.from === "user"
                       ? `linear-gradient(135deg, ${T.blue}, ${T.purple})`
-                      : "rgba(255,255,255,0.05)",
+                      : "rgba(var(--fp-ink),0.05)",
                     color: msg.from === "user" ? "#fff" : T.txt,
                     border: msg.from === "user" ? "none" : `1px solid ${T.border}`,
                     padding: "10px 14px",
@@ -332,7 +332,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
               {visibleMessages > 0 && visibleMessages < CHAT.length && CHAT[visibleMessages].from === "ai" && (
                 <div style={{
                   alignSelf: "flex-start",
-                  background: "rgba(255,255,255,0.05)",
+                  background: "rgba(var(--fp-ink),0.05)",
                   border: `1px solid ${T.border}`,
                   padding: "10px 14px",
                   borderRadius: 16,
@@ -357,7 +357,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
             }}>
               <div style={{
                 flex: 1,
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(var(--fp-ink),0.04)",
                 border: `1px solid ${T.border}`,
                 borderRadius: 999,
                 padding: "8px 16px",

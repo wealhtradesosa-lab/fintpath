@@ -24,9 +24,9 @@ import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { UVT } from "../lib/taxCO.js";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
-  border: "rgba(255,255,255,0.06)",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
+  border: "rgba(var(--fp-ink),0.06)",
   green: "#22c55e", red: "#ef4444", orange: "#f97316", blue: "#3b82f6", purple: "#a78bfa",
 };
 

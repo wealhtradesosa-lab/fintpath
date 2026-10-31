@@ -24,9 +24,9 @@ import Disclaimer from "./Disclaimer";
  */
 
 const C = {
-  bg2: "#141418", bg3: "#1e1e24", card: "#141418",
-  border: "rgba(255,255,255,0.06)",
-  tx: "#fafafa", tx2: "#a1a1aa", tx3: "#71717a",
+  bg2: "var(--fp-card)", bg3: "var(--fp-raised)", card: "var(--fp-card)",
+  border: "rgba(var(--fp-ink),0.06)",
+  tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", tx3: "var(--fp-txt3)",
   gn: "#22c55e", rd: "#ef4444", or: "#f97316", bl: "#3b82f6", gold: "#eab308",
 };
 

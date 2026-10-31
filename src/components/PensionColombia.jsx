@@ -5,7 +5,7 @@ import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.06)",txt:"#fafafa",txt2:"#a1a1aa",txt3:"#71717a",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f97316",orangeDim:"rgba(249,115,22,0.1)",gold:"#eab308"};
+const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.06)",txt:"var(--fp-txt)",txt2:"var(--fp-txt2)",txt3:"var(--fp-txt3)",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f97316",orangeDim:"rgba(249,115,22,0.1)",gold:"#eab308"};
 const SM=1750905; // SMMLV 2026 Decreto 1469
 const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B COP";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M COP";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K COP";return"$"+Math.round(v).toLocaleString("es-CO")+" COP"};
 // 26-jul-2026 (Santiago: "a veces no sé si estoy ingresando valores en pesos o
@@ -17,7 +17,7 @@ const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B COP";if(Math.ab
 const fU=v=>"USD $"+Math.round(v).toLocaleString("en-US");
 const fB=v=>v.toFixed(4)+" ₿";
 const pc=v=>fmtPctEs((v||0), 1);
-const TT={background:"#1e1e24",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,color:"#fafafa",fontSize:12};
+const TT={background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.15)",borderRadius:10,color:"var(--fp-txt)",fontSize:12};
 const Cd=({children,style:s,glow})=><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...(glow?{borderColor:glow+"30",boxShadow:`0 0 20px ${glow}10`}:{}),...s}}>{children}</div>;
 const MC=({l,v,sub,color})=><Cd><div style={{padding:"20px 24px"}}><div style={{fontSize:12,color:T.txt3,marginBottom:6}}>{l}</div><div style={{fontSize:28,fontWeight:800,color:color||T.txt,letterSpacing:"-0.03em"}}>{v}</div>{sub&&<div style={{fontSize:12,color:color||T.txt3,marginTop:3}}>{sub}</div>}</div></Cd>;
 const Rw=({l,v,color,bold})=><div style={{display:"flex",justifyContent:"space-between",padding:"10px 16px",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:14,color:T.txt2}}>{l}</span><span style={{fontSize:14,fontWeight:bold?700:600,color:color||T.txt,fontFamily:"monospace"}}>{v}</span></div>;
@@ -199,7 +199,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd style={{padding:24}}>
           <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>₿ Tu BTC crece así (USD)</div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+fmtNumEs((v/1e6), 1)+"M"}/><Tooltip cursor={{fill:"rgba(255,255,255,0.03)"}} content={<ChartTooltip formatter={v=>fU(v)}/>}/><Bar dataKey="valorUSD" radius={[8,8,0,0]} maxBarSize={48}>{btc.yd.map((_,i)=><Cell key={i} fill={CHART.orange}/>)}</Bar></BarChart>
+            <BarChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+fmtNumEs((v/1e6), 1)+"M"}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fU(v)}/>}/><Bar dataKey="valorUSD" radius={[8,8,0,0]} maxBarSize={48}>{btc.yd.map((_,i)=><Cell key={i} fill={CHART.orange}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         <Cd style={{padding:24}}>

@@ -21,14 +21,14 @@
 import { useState, useRef, useEffect } from "react";
 
 const C = {
-  bg: "rgba(255,255,255,0.04)",
-  bgHover: "rgba(255,255,255,0.06)",
-  border: "rgba(255,255,255,0.1)",
-  txt: "#fafafa",
-  txt2: "#a1a1aa",
-  txt3: "#71717a",
+  bg: "rgba(var(--fp-ink),0.04)",
+  bgHover: "rgba(var(--fp-ink),0.06)",
+  border: "rgba(var(--fp-ink),0.1)",
+  txt: "var(--fp-txt)",
+  txt2: "var(--fp-txt2)",
+  txt3: "var(--fp-txt3)",
   accent: "#3b82f6",
-  panelBg: "#1a1a1d",
+  panelBg: "var(--fp-card)",
 };
 
 export default function AccountSwitcher({ memberships, activeAccountId, onSwitch }) {

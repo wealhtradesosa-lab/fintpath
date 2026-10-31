@@ -1114,7 +1114,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
       {/* Desglose si hay gastos */}
       {itemsDesglose.length > 0 && (
         <details style={{ marginBottom: 12 }}>
-          <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt2, fontWeight: 700, padding: "6px 10px", background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, borderRadius: 6, listStyle: "none", userSelect: "none" }}>
+          <summary style={{ cursor: "pointer", fontSize: 11, color: T.txt2, fontWeight: 700, padding: "6px 10px", background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + T.border, borderRadius: 6, listStyle: "none", userSelect: "none" }}>
             ▾ Desglose por categoría ({itemsDesglose.length})
           </summary>
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>

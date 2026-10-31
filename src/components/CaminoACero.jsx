@@ -8,7 +8,7 @@ import { ChartTooltip } from "../lib/chartTheme.jsx";
  * libre y lo que pagas en intereses; con y sin abono extra. Antes era una
  * cifra ("Cero en 138 meses") y un campo "Override".
  */
-const V = { txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a", bg3: "#1e1e24", border: "rgba(255,255,255,0.08)", green: "#22c55e", red: "#ef4444", orange: "#f97316" };
+const V = { txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", green: "#22c55e", red: "#ef4444", orange: "#f97316" };
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 export const fechaEnMeses = (n, hoy = new Date()) => {
@@ -100,7 +100,7 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
         <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
               <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: V.txt3, fontSize: 11 }} width={56} tickFormatter={(v) => fm(v).replace("$", "")} axisLine={false} tickLine={false} />
               <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />

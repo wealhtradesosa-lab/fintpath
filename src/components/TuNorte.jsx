@@ -35,12 +35,12 @@ const fm = (v) => {
 
 export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onReclasificar, isEN = false }) {
   const L = isEN ? "en" : "es";
-  const tx = T.txt || T.tx || "#fafafa";
-  const tx2 = T.txt2 || T.tx2 || "#a1a1aa";
-  const tx3 = T.txt3 || T.tx3 || "#71717a";
-  const card = T.card || "#111113";
-  const bg3 = T.bg3 || "#27272a";
-  const border = T.border || "rgba(255,255,255,0.06)";
+  const tx = T.txt || T.tx || "var(--fp-txt)";
+  const tx2 = T.txt2 || T.tx2 || "var(--fp-txt2)";
+  const tx3 = T.txt3 || T.tx3 || "var(--fp-txt3)";
+  const card = T.card || "var(--fp-bg)";
+  const bg3 = T.bg3 || "var(--fp-raised)";
+  const border = T.border || "rgba(var(--fp-ink),0.06)";
   const gn = T.gn || T.green || "#22c55e";
 
   const guardado = user?.norte || null;
@@ -223,7 +223,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               {["proteccion", "mercado", "aspiracion"].map((c) => (
                 <div key={c} style={{ flex: diag.objetivo.mix[c], background: PAL_CANASTA[c],
                       opacity: 0.55, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "#0a0a0a", fontFamily: "monospace" }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "var(--fp-bg)", fontFamily: "monospace" }}>
                     {diag.objetivo.mix[c]}%
                   </span>
                 </div>

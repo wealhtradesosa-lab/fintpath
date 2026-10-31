@@ -94,7 +94,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   const Grupo = ({ titulo, sub, children, proyectado }) => (
     <div style={{
       flex: "1 1 280px", minWidth: 0, padding: "10px 13px",
-      background: proyectado ? "rgba(34,197,94,0.05)" : "rgba(255,255,255,0.03)",
+      background: proyectado ? "rgba(34,197,94,0.05)" : "rgba(var(--fp-ink),0.03)",
       border: `1px solid ${proyectado ? "rgba(34,197,94,0.18)" : T.border}`,
       borderRadius: 10,
     }}>

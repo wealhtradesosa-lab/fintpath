@@ -216,12 +216,12 @@ export default function FrecuenciaSelector({
             <div style={{ display: "flex", gap: 4 }}>
               <button type="button"
                 onClick={() => { setModoLimitado(false); onChange({ desdeMes: 1, hastaMes: 12, vigenciaModo: "todo" }); }}
-                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${!vigenciaLimitada ? T.gn : (T.txt3 + "80")}`, borderRadius: 6, padding: "4px 12px", color: !vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
+                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${!vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: !vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: !vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
                 Todo el año
               </button>
               <button type="button"
                 onClick={() => { setModoLimitado(true); onChange({ vigenciaModo: "limitada" }); }}
-                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${vigenciaLimitada ? T.gn : (T.txt3 + "80")}`, borderRadius: 6, padding: "4px 12px", color: vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
+                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: vigenciaLimitada ? T.gn : T.txt2, fontSize: 10, fontWeight: vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
                 Solo unos meses
               </button>
             </div>
@@ -262,7 +262,7 @@ export default function FrecuenciaSelector({
 
       {/* Explicación contextual para mensual con vigencia LIMITADA */}
       {frecuencia === "mensual" && rangoLimitado && (
-        <div style={{ fontSize: 11, color: T.txt3, background: T.bg3 + "80", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: 11, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           <div style={{ marginBottom: 4 }}>
             💡 <strong style={{ color: T.txt2 }}>{mesesActivos} {mesesActivos === 1 ? "mes" : "meses"} activos</strong>: {MESES.find(m => m.v === desdeMes)?.l} a {MESES.find(m => m.v === hastaMes)?.l}. El resto del año no pesa.
           </div>
@@ -283,7 +283,7 @@ export default function FrecuenciaSelector({
           Cero ambigüedad — el user ve la conversión completa siempre.
           ═══════════════════════════════════════════════════════════════════ */}
       {frecuencia !== "mensual" && (
-        <div style={{ fontSize: 11, color: T.txt3, background: T.bg3 + "80", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: 11, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           {frecuencia === "trimestral" && (
             <>
               <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>4 pagos al año</strong> en {MESES.find(m=>m.v===Number(mesPago))?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+3)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+9)%12)+1)?.l}</div>

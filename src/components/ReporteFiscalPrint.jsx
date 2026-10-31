@@ -51,20 +51,20 @@ const PRINT_STYLES = `
   .rf-report td.neg { color: #b91c1c; font-weight: 600; }
   .rf-report .rf-kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 8px 0; }
   .rf-report .rf-kpi { border: 1px solid #d1d5db; padding: 8px 10px; border-radius: 4px; }
-  .rf-report .rf-kpi-label { font-size: 9px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rf-report .rf-kpi-label { font-size: 9px; color: var(--fp-txt3); text-transform: uppercase; letter-spacing: 0.5px; }
   .rf-report .rf-kpi-value { font-size: 16px; font-weight: 800; color: #111; font-family: "SF Mono", Monaco, monospace; }
-  .rf-report .rf-kpi-delta { font-size: 9px; color: #6b7280; margin-top: 2px; }
+  .rf-report .rf-kpi-delta { font-size: 9px; color: var(--fp-txt3); margin-top: 2px; }
   .rf-report .rf-alert { padding: 8px 10px; margin: 4px 0; border-left: 3px solid #d97706; background: #fef3c7; font-size: 10px; border-radius: 3px; }
   .rf-report .rf-alert.error { border-left-color: #dc2626; background: #fee2e2; }
   .rf-report .rf-alert.info { border-left-color: #2563eb; background: #dbeafe; }
   .rf-report .rf-rec { padding: 10px; margin: 6px 0; border: 1px solid #d1d5db; border-radius: 4px; }
   .rf-report .rf-rec-title { font-weight: 700; font-size: 11px; margin-bottom: 3px; color: #111; }
-  .rf-report .rf-rec-desc { font-size: 10px; color: #374151; margin-bottom: 4px; }
+  .rf-report .rf-rec-desc { font-size: 10px; color: var(--fp-line); margin-bottom: 4px; }
   .rf-report .rf-rec-ahorro { font-size: 14px; font-weight: 800; color: #15803d; font-family: "SF Mono", Monaco, monospace; }
-  .rf-report .rf-rec-base { font-size: 9px; color: #6b7280; font-family: "SF Mono", Monaco, monospace; }
-  .rf-report .rf-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #d1d5db; font-size: 9px; color: #6b7280; text-align: center; }
-  .rf-report .rf-meta { font-size: 10px; color: #6b7280; margin-bottom: 6px; }
-  .rf-report .rf-disclaimer { background: #f9fafb; padding: 10px; border-radius: 4px; font-size: 9px; color: #6b7280; line-height: 1.5; margin-top: 12px; border-left: 3px solid #9ca3af; }
+  .rf-report .rf-rec-base { font-size: 9px; color: var(--fp-txt3); font-family: "SF Mono", Monaco, monospace; }
+  .rf-report .rf-footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #d1d5db; font-size: 9px; color: var(--fp-txt3); text-align: center; }
+  .rf-report .rf-meta { font-size: 10px; color: var(--fp-txt3); margin-bottom: 6px; }
+  .rf-report .rf-disclaimer { background: #f9fafb; padding: 10px; border-radius: 4px; font-size: 9px; color: var(--fp-txt3); line-height: 1.5; margin-top: 12px; border-left: 3px solid var(--fp-txt2); }
 `;
 
 export default function ReporteFiscalPrint({
@@ -118,7 +118,7 @@ export default function ReporteFiscalPrint({
           <button onClick={() => window.print()} style={{ padding: "8px 14px", background: "#3b82f6", border: "none", borderRadius: 6, color: "white", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             🖨️ Imprimir / Guardar PDF
           </button>
-          <button onClick={onClose} style={{ padding: "8px 14px", background: "#27272a", border: "1px solid #3f3f46", borderRadius: 6, color: "#fafafa", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={onClose} style={{ padding: "8px 14px", background: "var(--fp-raised)", border: "1px solid var(--fp-line)", borderRadius: 6, color: "var(--fp-txt)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
             ← Volver
           </button>
         </div>
@@ -139,7 +139,7 @@ export default function ReporteFiscalPrint({
             </div>
             <div className="rf-meta">Generado el {fechaHoy}</div>
           </div>
-          <div style={{ textAlign: "right", fontSize: 10, color: "#6b7280" }}>
+          <div style={{ textAlign: "right", fontSize: 10, color: "var(--fp-txt3)" }}>
             <div style={{ fontWeight: 800, fontSize: 14, color: "#111" }}>FINPATHIA</div>
             <div>finpathia.com</div>
           </div>
@@ -235,7 +235,7 @@ export default function ReporteFiscalPrint({
             {alertas.map((w, i) => (
               <div key={i} className={"rf-alert " + (w.severity === "error" ? "error" : w.severity === "info" ? "info" : "")}>
                 <strong>{w.message}</strong>
-                {w.accionSugerida && <div style={{ marginTop: 4, color: "#374151" }}>💡 {w.accionSugerida}</div>}
+                {w.accionSugerida && <div style={{ marginTop: 4, color: "var(--fp-line)" }}>💡 {w.accionSugerida}</div>}
               </div>
             ))}
           </div>
@@ -258,10 +258,10 @@ export default function ReporteFiscalPrint({
                   </div>
                   {rec.ahorroAnualEstimado > 0 && (
                     <div style={{ textAlign: "right", minWidth: 100 }}>
-                      <div style={{ fontSize: 9, color: "#6b7280", textTransform: "uppercase" }}>Ahorro/año</div>
+                      <div style={{ fontSize: 9, color: "var(--fp-txt3)", textTransform: "uppercase" }}>Ahorro/año</div>
                       <div className="rf-rec-ahorro">{fm(rec.ahorroAnualEstimado)}</div>
                       {rec.aporteSugeridoMensual > 0 && (
-                        <div style={{ fontSize: 9, color: "#6b7280", marginTop: 2 }}>
+                        <div style={{ fontSize: 9, color: "var(--fp-txt3)", marginTop: 2 }}>
                           aportando {fm(rec.aporteSugeridoMensual)}/mes
                         </div>
                       )}

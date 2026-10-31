@@ -23,11 +23,11 @@ const STORAGE_KEY = "fp3_pwa_dismissed_until";
 const VISIT_COUNT_KEY = "fp3_visit_count";
 
 const T = {
-  bg: "#141418",
-  border: "rgba(255,255,255,0.14)",
-  txt: "#fafafa",
-  txt2: "#a1a1aa",
-  txt3: "#71717a",
+  bg: "var(--fp-card)",
+  border: "rgba(var(--fp-ink),0.14)",
+  txt: "var(--fp-txt)",
+  txt2: "var(--fp-txt2)",
+  txt3: "var(--fp-txt3)",
   green: "#22c55e",
 };
 
@@ -139,16 +139,16 @@ export default function PWAInstallPrompt() {
     return (
       <div style={{
         position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 440,
-        margin: "0 auto", background: "#141418", border: "1px solid #22c55e",
+        margin: "0 auto", background: "var(--fp-card)", border: "1px solid #22c55e",
         borderRadius: 14, padding: "14px 16px", zIndex: 9999,
         display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
         boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
       }}>
         <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "#fafafa" }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--fp-txt)" }}>
             Hay una versión nueva
           </div>
-          <div style={{ fontSize: 12, color: "#a1a1aa", marginTop: 2, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: "var(--fp-txt2)", marginTop: 2, lineHeight: 1.5 }}>
             Recarga para verla. Tus datos están guardados.
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function PWAInstallPrompt() {
           borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13, flexShrink: 0,
         }}>Recargar</button>
         <button onClick={() => setHayActualizacion(false)} style={{
-          background: "transparent", color: "#71717a", border: "none",
+          background: "transparent", color: "var(--fp-txt3)", border: "none",
           cursor: "pointer", fontSize: 12, flexShrink: 0,
         }}>Después</button>
       </div>
@@ -196,7 +196,7 @@ export default function PWAInstallPrompt() {
             style={{
               width: 44,
               height: 44,
-              background: "#0c0c0f",
+              background: "var(--fp-bg)",
               borderRadius: 10,
               display: "flex",
               alignItems: "center",
@@ -366,7 +366,7 @@ export default function PWAInstallPrompt() {
                 style={{
                   fontSize: 11,
                   color: T.txt3,
-                  background: "rgba(255,255,255,0.04)",
+                  background: "rgba(var(--fp-ink),0.04)",
                   padding: 12,
                   borderRadius: 8,
                   lineHeight: 1.5,

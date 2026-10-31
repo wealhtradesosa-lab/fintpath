@@ -31,7 +31,7 @@ import { uvtForYear, DEFAULT_AG } from "../lib/taxCO.js";
 import { C } from "../lib/designTokens.js";
 
 // Tokens unificados (Commit 9.9). Antes este archivo tenía colores
-// LIGERAMENTE distintos al resto (txt: #e8eaed vs #fafafa, orange amber vs naranja).
+// LIGERAMENTE distintos al resto (txt: #e8eaed vs var(--fp-txt), orange amber vs naranja).
 // Esa diferencia sutil es lo que hacía sentir el sitio "amateur" — incoherente.
 const T = {
   bg: C.bg, bg2: C.surface, bg3: C.raised,

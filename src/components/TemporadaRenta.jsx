@@ -61,8 +61,8 @@ const MES = ["enero","febrero","marzo","abril","mayo","junio","julio",
 // que es la parte que casi nadie sabe.
 const SANCION_MINIMA = 524000;
 
-const T = { bg2:"#141418", bg3:"#1e1e24", border:"rgba(255,255,255,0.08)",
-  txt:"#fafafa", txt2:"#a1a1aa", txt3:"#71717a", green:"#22c55e",
+const T = { bg2:"var(--fp-card)", bg3:"var(--fp-raised)", border:"rgba(var(--fp-ink),0.08)",
+  txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#22c55e",
   orange:"#f97316", red:"#ef4444", blue:"#3b82f6" };
 
 export default function TemporadaRenta({ onEmpezar }) {

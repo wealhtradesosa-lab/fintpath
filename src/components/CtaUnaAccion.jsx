@@ -59,8 +59,8 @@ export default function CtaUnaAccion({
     <div
       data-testid="cta-una-accion"
       style={{
-        background: T.card || "#111113",
-        border: "1px solid " + (T.border || "rgba(255,255,255,0.06)"),
+        background: T.card || "var(--fp-bg)",
+        border: "1px solid " + (T.border || "rgba(var(--fp-ink),0.06)"),
         borderRadius: 16,
         padding: 20,
         marginTop: 14,
@@ -72,7 +72,7 @@ export default function CtaUnaAccion({
           fontWeight: 700,
           letterSpacing: 0.8,
           textTransform: "uppercase",
-          color: T.txt3 || "#71717a",
+          color: T.txt3 || "var(--fp-txt3)",
           marginBottom: 8,
         }}
       >
@@ -91,7 +91,7 @@ export default function CtaUnaAccion({
           style={{
             fontSize: 15,
             fontWeight: 800,
-            color: T.txt || "#fafafa",
+            color: T.txt || "var(--fp-txt)",
             lineHeight: 1.35,
           }}
         >
@@ -114,7 +114,7 @@ export default function CtaUnaAccion({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: T.txt3 || "#71717a",
+                color: T.txt3 || "var(--fp-txt3)",
                 marginLeft: 6,
               }}
             >
@@ -127,11 +127,11 @@ export default function CtaUnaAccion({
           style={{
             marginTop: 8,
             fontSize: 12,
-            color: T.txt2 || "#a1a1aa",
+            color: T.txt2 || "var(--fp-txt2)",
             lineHeight: 1.5,
           }}
         >
-          <strong style={{ color: T.txt2 || "#a1a1aa" }}>Por qué · </strong>
+          <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>Por qué · </strong>
           {accion.porQue}
         </div>
 
@@ -178,7 +178,7 @@ export default function CtaUnaAccion({
         >
           {showSupuestos ? "Ocultar supuestos" : "Ver supuestos"}
         </button>
-        <div style={{ fontSize: 10, color: T.txt3 || "#71717a", lineHeight: 1.4 }}>
+        <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", lineHeight: 1.4 }}>
           Estimación · no es asesoría financiera ni tributaria.
         </div>
       </div>
@@ -189,16 +189,16 @@ export default function CtaUnaAccion({
             marginTop: 10,
             padding: 12,
             borderRadius: 10,
-            background: T.bg2 || "#18181b",
-            border: "1px solid " + (T.border || "rgba(255,255,255,0.06)"),
+            background: T.bg2 || "var(--fp-card)",
+            border: "1px solid " + (T.border || "rgba(var(--fp-ink),0.06)"),
             fontSize: 11,
-            color: T.txt3 || "#71717a",
+            color: T.txt3 || "var(--fp-txt3)",
             lineHeight: 1.55,
           }}
         >
           <div>
             CF simulado del período:{" "}
-            <strong style={{ color: T.txt2 || "#a1a1aa" }}>
+            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>
               {fm(cfMensualSimulado)}
             </strong>
             /mes.

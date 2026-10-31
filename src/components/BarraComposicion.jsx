@@ -51,7 +51,7 @@ export default function BarraComposicion({ datos = [], total = 0, paleta = [], T
             }}
           >
             {cabe && (
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#0a0a0a", fontFamily: "monospace" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: "var(--fp-bg)", fontFamily: "monospace" }}>
                 {fmtPctEs(pct, 0)}
               </span>
             )}

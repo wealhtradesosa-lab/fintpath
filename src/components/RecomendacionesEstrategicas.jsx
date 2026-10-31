@@ -21,9 +21,9 @@ import { useState } from "react";
 
 // Paleta consistente con DeclaracionFlow
 const C = {
-  bg: "#0a0a0a", bg2: "#141418", bg3: "#1e1e24",
-  txt: "#fff", txt2: "#a1a1aa", txt3: "#71717a",
-  border: "#262626",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  txt: "#fff", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
+  border: "var(--fp-raised)",
   green: "#4ade80", greenBg: "rgba(74,222,128,0.1)",
   blue: "#60a5fa", blueBg: "rgba(96,165,250,0.1)",
   orange: "#fb923c", orangeBg: "rgba(251,146,60,0.1)",

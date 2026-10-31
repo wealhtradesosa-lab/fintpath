@@ -12,9 +12,9 @@ import { useState } from "react";
 // ═══════════════════════════════════════════════════════════════════
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
   orange: "#f97316", gold: "#eab308", cyan: "#22d3ee", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
@@ -189,13 +189,13 @@ export default function LandingAsesores({ onGetStarted }) {
       fontFamily: "'Inter', system-ui, sans-serif",
       minHeight: "100vh",
       overflowX: "hidden",
-      backgroundImage: "linear-gradient(to bottom, rgba(12,12,15,0.4) 0%, rgba(12,12,15,0.6) 40%, rgba(12,12,15,0.85) 70%, #09090b 100%), url(/hero-bg.png)",
+      backgroundImage: "linear-gradient(to bottom, rgba(12,12,15,0.4) 0%, rgba(12,12,15,0.6) 40%, rgba(12,12,15,0.85) 70%, var(--fp-bg) 100%), url(/hero-bg.png)",
       backgroundSize: "cover, cover",
       backgroundPosition: "center, center top",
       backgroundRepeat: "no-repeat",
       backgroundAttachment: "scroll, fixed",
     }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}`}</style>
 
       {/* ─── NAV ─── */}
       <nav style={{ padding: "16px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 1100, margin: "0 auto" }}>
@@ -477,9 +477,9 @@ export default function LandingAsesores({ onGetStarted }) {
         </div>
         <p style={{ fontSize: 12, color: T.txt3 }}>
           © 2026 FINPATHIA •{" "}
-          <a href="/" style={{ color: "#71717a" }}>Para personas</a>
+          <a href="/" style={{ color: "var(--fp-txt3)" }}>Para personas</a>
           {" • "}
-          <a href="/privacidad" style={{ color: "#71717a" }}>Política de Privacidad</a>
+          <a href="/privacidad" style={{ color: "var(--fp-txt3)" }}>Política de Privacidad</a>
         </p>
       </footer>
 

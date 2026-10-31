@@ -24,11 +24,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 const C = {
-  txt: "#fafafa",
-  txt2: "#a1a1aa",
-  txt3: "#71717a",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
+  txt: "var(--fp-txt)",
+  txt2: "var(--fp-txt2)",
+  txt3: "var(--fp-txt3)",
+  border: "rgba(var(--fp-ink),0.08)",
+  borderStrong: "rgba(var(--fp-ink),0.14)",
   green: "#22c55e",
   red: "#ef4444",
   fontDisplay: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",
@@ -61,7 +61,7 @@ export default function StatCard({
     <div
       onClick={onClick}
       style={{
-        background: "rgba(255,255,255,0.02)",
+        background: "rgba(var(--fp-ink),0.02)",
         // Glow radial sutil del accent en esquina sup-izq
         backgroundImage: accent
           ? `radial-gradient(circle at 0% 0%, ${accent}12 0%, transparent 60%)`

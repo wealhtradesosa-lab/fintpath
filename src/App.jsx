@@ -105,6 +105,7 @@ import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte, RETORNO_SUPUESTO } from "./lib/norteUnMinuto.js";
 import PrimerMinuto from "./components/PrimerMinuto.jsx";
+import BotonTema from "./components/BotonTema.jsx";
 import { TRM_PROVISIONAL } from "./lib/trm.js";
 import { registrarMes, resumenHistoria, etiquetaMes, fotoPatrimonio } from "./lib/historiaPatrimonio.js";
 import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
@@ -122,10 +123,10 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 // designTokens.js y de :root, que es lo que producía el efecto de "cada
 // pantalla se ve distinta":
 //
-//   bg      #09090b → #0c0c0f   (--fp-bg)
-//   bg2     #18181b → #141418   (--fp-surface)
-//   card    #111113 → #141418   (--fp-surface)  · era el mismo rol que bg2
-//   bg3     #27272a → #1e1e24   (--fp-raised)
+//   bg      var(--fp-bg) → var(--fp-bg)   (--fp-bg)
+//   bg2     var(--fp-card) → var(--fp-card)   (--fp-surface)
+//   card    var(--fp-bg) → var(--fp-card)   (--fp-surface)  · era el mismo rol que bg2
+//   bg3     var(--fp-raised) → var(--fp-raised)   (--fp-raised)
 //   border  0.06    → 0.08      (--fp-border)
 //   borderL 0.1     → 0.15      (--fp-border-strong)
 //   or      #f59e0b → #f97316   (--fp-warn)
@@ -133,7 +134,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 // NO se tocan, y no son deriva:
 //   · gd #eab308 — acento dorado; sin token propio todavía. Sin uso en este
 //     archivo, pero los hijos lo reciben por prop.
-//   · Los grises claros (#e5e7eb, #f9fafb, #374151, #d1d5db…) viven dentro de
+//   · Los grises claros (#e5e7eb, #f9fafb, var(--fp-line), #d1d5db…) viven dentro de
 //     las plantillas HTML de impresión y PDF, que son un lienzo CLARO aparte.
 //     Contarlos como deriva del tema oscuro fue un error de mi medición.
 //   · #25d366 es el verde de marca de WhatsApp.
@@ -141,7 +142,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 // ═══════════════════════════════════════════════════════════════════════════
 // Link de pago de Mercado Pago para pioneros (Santiago, 25-oct-2026). Cambiar aquí precio o link.
 const PIONEROS_MP={url:"https://mpago.li/1EhDTCo"};
-const T={bg:"#0c0c0f",bg2:"#141418",bg3:"#1e1e24",card:"#141418",border:"rgba(255,255,255,0.08)",borderL:"rgba(255,255,255,0.15)",tx:"#fafafa",tx2:"#a1a1aa",tx3:"#71717a",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
+const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.08)",borderL:"rgba(var(--fp-ink),0.15)",tx:"var(--fp-txt)",tx2:"var(--fp-txt2)",tx3:"var(--fp-txt3)",gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",bl:"#3b82f6",pr:"#a78bfa",or:"#f97316",gd:"#eab308",ch:["#22c55e","#3b82f6","#f97316","#a78bfa","#ec4899","#06b6d4","#eab308"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
 const pc=n=>fmtPctEs(n);
 const SK="fp3";
@@ -197,11 +198,11 @@ export const AvisoNoSincronizado=({onReintentar,cargando})=><div role="alert" st
 // setLd(false) siempre se ejecute; este splash nunca debería quedarse
 // visible por más de 1-2 segundos en condiciones normales.
 function LoadingScreen(){
-  return <div style={{background:"#0c0c0f",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}>
+  return <div style={{background:"var(--fp-bg)",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui"}}>
     <div style={{textAlign:"center"}}>
       <div style={{fontSize:32,fontWeight:900,background:"linear-gradient(135deg,#22c55e,#3b82f6)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>FINPATHIA</div>
       <div style={{width:40,height:3,background:"linear-gradient(90deg,#22c55e,#3b82f6)",borderRadius:3,margin:"16px auto",animation:"pulse 1.5s infinite"}}/>
-      <div style={{color:"#6b7280",fontSize:12}}>Cargando tu patrimonio...</div>
+      <div style={{color:"var(--fp-txt3)",fontSize:12}}>Cargando tu patrimonio...</div>
     </div>
   </div>;
 }
@@ -604,7 +605,7 @@ export const NOTA_TRM_DECLARACION="Tus montos en dólares de este borrador todav
 export const NotaTrmDeclaracion=({u})=>tieneUSD(u)?<div role="note" style={{margin:"0 0 12px",padding:"10px 14px",borderRadius:10,background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.25)",fontSize:12,color:"#bfdbfe"}}>💱 {NOTA_TRM_DECLARACION}</div>:null;
 export const AvisoTasa=({est,t,fm})=>{
   if(est.modo==="pendiente")return<div role="status" style={{background:"rgba(234,179,8,0.1)",borderBottom:"1px solid rgba(234,179,8,0.3)",padding:"8px 20px",fontSize:12,color:"#facc15"}}>⚠️ No pudimos obtener la TRM; vuelve a intentar. Tus totales, flujo y nivel quedan <strong>pendientes de tasa</strong>: tus montos en USD se muestran en dólares. Patrimonio {fm?fm(t?.nw||0):""} <em>sin tus montos en USD</em>.</div>;
-  if(est.modo==="guardada"&&est.fecha)return<div role="status" style={{padding:"4px 20px",fontSize:11,color:"#a1a1aa"}}>Tasa usada: TRM del {est.fecha}</div>;
+  if(est.modo==="guardada"&&est.fecha)return<div role="status" style={{padding:"4px 20px",fontSize:11,color:"var(--fp-txt2)"}}>Tasa usada: TRM del {est.fecha}</div>;
   return null;
 };
 export { sS as _sS, sL as _sL, sanitize as _sanitize };
@@ -1636,13 +1637,13 @@ export default function FinPath(){
     // Bloque desglose family office (nuevo Fase 4)
     const desgloseFlujo="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0 18px'>"
       +"<div style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px'>"
-        +"<div style='font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px'>💰 Ingresos Mensuales</div>"
-        +"<div style='display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px'><span style='color:#374151'>Bruto Total</span><span style='font-weight:500'>"+fm(brutoTotal)+"</span></div>"
+        +"<div style='font-size:9px;color:var(--fp-txt3);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px'>💰 Ingresos Mensuales</div>"
+        +"<div style='display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px'><span style='color:var(--fp-line)'>Bruto Total</span><span style='font-weight:500'>"+fm(brutoTotal)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:8px;padding-left:8px;border-left:2px solid #e5e7eb'><span style='color:#8b5cf6'>− Retención (recuperable)</span><span style='color:#8b5cf6'>−"+fm(retencionMensual)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding-top:7px;border-top:1px solid #d1d5db;color:#16a34a'><span>= DISPONIBLE</span><span>"+fm(disponibleCuenta)+"</span></div>"
       +"</div>"
       +"<div style='background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px'>"
-        +"<div style='font-size:9px;color:#6b7280;letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px'>💸 Egresos Mensuales</div>"
+        +"<div style='font-size:9px;color:var(--fp-txt3);letter-spacing:1.2px;text-transform:uppercase;font-weight:700;margin-bottom:8px'>💸 Egresos Mensuales</div>"
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span style='color:#f59e0b'>A. Aportes obligatorios</span><span style='color:#f59e0b'>"+fm(aportesObligatorios)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span>B. Gastos familiares</span><span>"+fm(gastosFamiliares)+"</span></div>"
         +"<div style='display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px'><span>C. Cuotas deudas</span><span>"+fm(totalCuotas)+"</span></div>"
@@ -1650,7 +1651,7 @@ export default function FinPath(){
         +"<div style='display:flex;justify-content:space-between;font-size:13px;font-weight:800;padding-top:7px;border-top:1px solid #d1d5db;color:#dc2626'><span>= EGRESOS TOTALES</span><span>"+fm(egresosTotales)+"</span></div>"
       +"</div>"
     +"</div>";
-    const html="<!DOCTYPE html><html><head><title>Reporte FINPATHIA</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;color:#1a1a1a;padding:32px 40px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}h1{font-size:22px;font-weight:800}h2{font-size:15px;font-weight:700;margin:24px 0 8px;padding-bottom:4px;border-bottom:2px solid #22c55e}.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #22c55e}.logo{font-size:18px;font-weight:800;color:#22c55e}.dt{font-size:11px;color:#888}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:10px 0}.k{background:#f8f8f8;border-radius:8px;padding:10px;border-left:3px solid #22c55e}.kr{border-left-color:#ef4444}.kl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px}.kv{font-size:18px;font-weight:700;margin-top:2px}.ks{font-size:9px;color:#888;margin-top:2px}table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}th{text-align:left;padding:5px 8px;background:#f0f0f0;font-weight:600;font-size:9px;text-transform:uppercase;color:#666}td{padding:5px 8px;border-bottom:1px solid #eee}.r{text-align:right}.lb{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;text-align:center;margin:10px 0}.lt{font-size:18px;font-weight:700;color:#16a34a}.ft{margin-top:28px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#aaa;text-align:center}.ds{font-size:8px;color:#ccc;margin-top:16px;text-align:center;line-height:1.4}@media print{body{padding:20px}@page{size:letter;margin:12mm}}</style></head><body>"
+    const html="<!DOCTYPE html><html><head><title>Reporte FINPATHIA</title><style>:root{--fp-bg:#ffffff;--fp-card:#ffffff;--fp-raised:#f4f4f5;--fp-txt:#18181b;--fp-txt2:#52525b;--fp-txt3:#71717a;--fp-line:#d4d4d8;--fp-ink:0,0,0}*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;color:var(--fp-card);padding:32px 40px;max-width:800px;margin:0 auto;font-size:13px;line-height:1.6}h1{font-size:22px;font-weight:800}h2{font-size:15px;font-weight:700;margin:24px 0 8px;padding-bottom:4px;border-bottom:2px solid #22c55e}.hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:14px;border-bottom:3px solid #22c55e}.logo{font-size:18px;font-weight:800;color:#22c55e}.dt{font-size:11px;color:#888}.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:10px 0}.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin:10px 0}.k{background:#f8f8f8;border-radius:8px;padding:10px;border-left:3px solid #22c55e}.kr{border-left-color:#ef4444}.kl{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px}.kv{font-size:18px;font-weight:700;margin-top:2px}.ks{font-size:9px;color:#888;margin-top:2px}table{width:100%;border-collapse:collapse;margin:8px 0;font-size:11px}th{text-align:left;padding:5px 8px;background:#f0f0f0;font-weight:600;font-size:9px;text-transform:uppercase;color:#666}td{padding:5px 8px;border-bottom:1px solid #eee}.r{text-align:right}.lb{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;text-align:center;margin:10px 0}.lt{font-size:18px;font-weight:700;color:#16a34a}.ft{margin-top:28px;padding-top:10px;border-top:1px solid #ddd;font-size:9px;color:#aaa;text-align:center}.ds{font-size:8px;color:#ccc;margin-top:16px;text-align:center;line-height:1.4}@media print{body{padding:20px}@page{size:letter;margin:12mm}}</style></head><body>"
     +"<div class=hd><div><div class=logo>FINPATHIA</div><h1>Reporte Financiero Personal</h1></div><div style=text-align:right><div class=dt>"+fecha+"</div><div class=dt>"+(u?.p?.name||"Usuario")+"</div></div></div>"
     +"<div class=lb><div style=font-size:11px;color:#666>NIVEL DE LIBERTAD FINANCIERA</div><div class=lt>"+level+"</div><div style=font-size:13px;color:#333;margin-top:4px>Índice: "+fmtPctEs(ind, 1)+"</div></div>"
     +desgloseFlujo
@@ -1886,7 +1887,7 @@ export default function FinPath(){
     return<><LandingPage onLogin={()=>{sAM("login");track("login_modal_opened",{from:"home"});setShowAuth(true)}} onGetStarted={(meta)=>{const from=meta?.source||"home";sAM("signup");track("signup_modal_opened",{from,...(meta?.dias_restantes!=null?{dias_restantes:meta.dias_restantes}:{})});setShowAuth(true)}}/><PWAInstallPrompt/></>;
   }
   if(!u)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Inter',system-ui",color:T.tx}}>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:#0c0c0f}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:var(--fp-bg)}input:focus,select:focus{border-color:#22c55e!important;outline:none}`}</style>
     {/* Modal SOLICITAR recuperación: el usuario escribe su email acá */}
     {showRecoveryRequest&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}>
       <div style={{background:T.bg2,border:`1px solid ${T.borderL||T.border}`,borderRadius:20,width:"100%",maxWidth:460,padding:"clamp(20px, 5vw, 32px)",position:"relative"}}>
@@ -2550,7 +2551,7 @@ export default function FinPath(){
           Patrimonio neto y salud financiera. El número que resume todo. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:14,marginBottom:14}}>
         <div style={{
-          background:"rgba(255,255,255,0.02)",
+          background:"rgba(var(--fp-ink),0.02)",
           border:`1px solid ${CHART.border}`,
           borderRadius:14,
           padding:0,
@@ -2579,7 +2580,7 @@ export default function FinPath(){
                   Tus rentas cubren el <b style={{color:col}}>{fmtPctEs(pct,0)}</b> de tus gastos y cuotas
                   <span style={{color:CHART.txt3}}> · {ok?"sobran ":"faltan "}<b style={{color:ok?CHART.green:CHART.txt}}>{fm(Math.abs(dif))}</b> de rentas al mes</span>
                 </div>
-                <div style={{height:6,background:"rgba(255,255,255,0.06)",borderRadius:3,marginTop:8,overflow:"hidden"}}>
+                <div style={{height:6,background:"rgba(var(--fp-ink),0.06)",borderRadius:3,marginTop:8,overflow:"hidden"}}>
                   <div style={{height:"100%",width:Math.min(pct,100)+"%",background:col,borderRadius:3}}/>
                 </div>
                 <div style={{fontSize:11,color:CHART.txt3,marginTop:6}}>
@@ -2592,7 +2593,7 @@ export default function FinPath(){
           </div>
         </div>
         <div style={{
-          background:"rgba(255,255,255,0.02)",
+          background:"rgba(var(--fp-ink),0.02)",
           border:`1px solid ${CHART.border}`,
           borderRadius:14,
           padding:"28px",
@@ -2752,7 +2753,7 @@ export default function FinPath(){
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>Flujo de Caja Mensual</div>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={fd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip cursor={{fill:"rgba(255,255,255,0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
+            <BarChart data={fd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         {/* Tax Estimate */}
@@ -2986,7 +2987,7 @@ export default function FinPath(){
                   <div style={{fontSize:10,color:T.tx3}}>necesitas en total</div>
                 </div>
               </div>
-              <div style={{height:12,background:"rgba(255,255,255,0.05)",borderRadius:8,overflow:"hidden",marginBottom:8}}>
+              <div style={{height:12,background:"rgba(var(--fp-ink),0.05)",borderRadius:8,overflow:"hidden",marginBottom:8}}>
                 <div style={{height:"100%",width:Math.min(fireProgress,100)+"%",background:fireProgress>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#eab308,#f97316)",borderRadius:8,transition:"width 0.5s"}}/>
               </div>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:T.tx3}}>
@@ -3030,21 +3031,21 @@ export default function FinPath(){
                     </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
-                    <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:12}}>
+                    <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:12}}>
                       <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>🏔️ Estrategia Avalancha (ahorra más intereses)</div>
                       <div style={{fontSize:10,color:T.tx3,marginBottom:8}}>Paga primero la de mayor tasa de interés</div>
                       {avalancha.slice(0,4).map((d,i) => (
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                           <span style={{color:i===0?T.rd:T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
                           <span style={{color:T.tx3,fontFamily:"monospace"}}>{fmtTasaEs(d.ts||0)} → {fm(d.pg)}/mes</span>
                         </div>
                       ))}
                     </div>
-                    <div style={{background:"rgba(255,255,255,0.03)",borderRadius:8,padding:12}}>
+                    <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:12}}>
                       <div style={{fontSize:11,fontWeight:700,color:"#eab308",marginBottom:8}}>⛄ Estrategia Bola de Nieve (motivación rápida)</div>
                       <div style={{fontSize:10,color:T.tx3,marginBottom:8}}>Paga primero la más pequeña</div>
                       {bolaNieve.slice(0,4).map((d,i) => (
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"3px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                           <span style={{color:i===0?"#eab308":T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
                           <span style={{color:T.tx3,fontFamily:"monospace"}}>{fm(d.mt)} saldo</span>
                         </div>
@@ -3091,7 +3092,7 @@ export default function FinPath(){
                           <span style={{color:done?T.gn:T.tx2,fontWeight:done?700:400}}>{h.name}</span>
                           <span style={{color:done?T.gn:T.tx3}}>{done?"✅ Logrado":fm(h.target)}</span>
                         </div>
-                        <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                        <div style={{height:6,background:"rgba(var(--fp-ink),0.05)",borderRadius:3,overflow:"hidden"}}>
                           <div style={{height:"100%",width:prog+"%",background:done?T.gn:prog>50?"#eab308":"#ef4444",borderRadius:3}}/>
                         </div>
                       </div>
@@ -3134,7 +3135,7 @@ export default function FinPath(){
                                 <span style={{color:risk?T.rd:T.tx2}}>{risk?"⚠ ":""}{a.name}</span>
                                 <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{fmtPctEs(pct)} — {fm(a.value)}</span>
                               </div>
-                              <div style={{height:6,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                              <div style={{height:6,background:"rgba(var(--fp-ink),0.05)",borderRadius:3,overflow:"hidden"}}>
                                 <div style={{height:"100%",width:pct+"%",background:pct>40?T.rd:pct>25?"#eab308":T.gn,borderRadius:3}}/>
                               </div>
                             </div>
@@ -3146,7 +3147,7 @@ export default function FinPath(){
                         {typeArr.map(([type,val],i) => {
                           const pct = (val / totalA * 100);
                           return (
-                            <div key={type} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                            <div key={type} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                               <div style={{display:"flex",alignItems:"center",gap:6}}>
                                 <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                                 <span style={{color:T.tx2}}>{type}</span>
@@ -3202,7 +3203,7 @@ export default function FinPath(){
                           <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
                           <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{fmtPctEs(b.pct)}</span>
                         </div>
-                        <div style={{height:8,background:"rgba(255,255,255,0.05)",borderRadius:3,overflow:"hidden"}}>
+                        <div style={{height:8,background:"rgba(var(--fp-ink),0.05)",borderRadius:3,overflow:"hidden"}}>
                           <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:3,opacity:i<2?1:0.6}}/>
                         </div>
                       </div>
@@ -3214,7 +3215,7 @@ export default function FinPath(){
                       }
                       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
                         <label style={{fontSize:10,color:T.tx3}} htmlFor="inflacion-global">Inflación que usa la app (% anual):</label>
-                        <InputDecimalEs id="inflacion-global" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={v=>upd("inflacionPct",v)} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
+                        <InputDecimalEs id="inflacion-global" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={v=>upd("inflacionPct",v)} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(var(--fp-ink),0.1)",borderRadius:6,padding:"3px 6px",fontSize:11}}/>
                         <span style={{fontSize:10,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
                       </div>
                       <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{fmtPctEs(gainPct)}) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({fmtPctEs(incomeYield)} · {t.rentaYield.etiqueta})
@@ -3232,7 +3233,7 @@ export default function FinPath(){
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto estimado a cargo por propietario</div>
-                  {tx.detalle.map((d,i)=>{const aCargo=d.impuestoACargo??d.impBruto??d.impuesto??0;return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  {tx.detalle.map((d,i)=>{const aCargo=d.impuestoACargo??d.impBruto??d.impuesto??0;return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                     <div>
                       <div style={{fontSize:12,fontWeight:600,color:T.tx2}}>{d.type==="juridica"?"🏢":"👤"} {d.name}</div>
                       <div style={{fontSize:10,color:T.tx3}}>{d.type==="juridica"?"Tarifa 35%":"Tabla Art. 241 ET"} • Ingreso: {fm(d.ingreso)}/año</div>
@@ -3261,19 +3262,19 @@ export default function FinPath(){
                 </div>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:T.pr,marginBottom:8}}>Resumen fiscal</div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                     <span style={{color:T.tx2}}>Ingreso bruto total</span>
                     <span style={{fontFamily:"monospace",color:T.tx2}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0))}/año</span>
                   </div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                     <span style={{color:T.tx2}}>Impuesto estimado a cargo</span>
                     <span style={{fontFamily:"monospace",color:T.rd}}>{fm(tx.total)}/año</span>
                   </div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                     <span style={{color:T.tx2}}>Tasa efectiva global</span>
                     <span style={{fontFamily:"monospace",color:T.rd}}>{fmtPctEs((tx.detalle.reduce((s,d)=>s+d.ingreso,0)>0?(tx.total/tx.detalle.reduce((s,d)=>s+d.ingreso,0)*100):0), 1)}</span>
                   </div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,0.04)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                     <span style={{color:T.tx2}}>Neto después de impuestos</span>
                     <span style={{fontFamily:"monospace",color:T.gn}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0)-tx.total)}/año</span>
                   </div>
@@ -3355,7 +3356,7 @@ export default function FinPath(){
                 if (actions.length === 0) actions.push({pri:"🟢",text:"¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.",cat:"General"});
                 
                 return actions.map((a,i) => (
-                  <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<actions.length-1?"1px solid rgba(255,255,255,0.04)":"none"}}>
+                  <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<actions.length-1?"1px solid rgba(var(--fp-ink),0.04)":"none"}}>
                     <span style={{fontSize:14}}>{a.pri}</span>
                     <div>
                       <span style={{fontSize:10,color:T.tx3,fontWeight:600}}>{a.cat}</span>
@@ -3650,7 +3651,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
     case"metrics":return isAdmin?<AdminMetrics email={u?.p?.email} fmt={fm} T={T}/>:<div style={{padding:40,textAlign:"center",color:T.tx3}}>No disponible.</div>;
-    case"pat":{const bc={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+vaCOP(i,trm)});if(ib.tv>0)bc.Trading=ib.tv*trm/*💱 26-jul-2026: ib.tv está en USD porque las posiciones se cargan en dólares, pero se sumaba tal cual a una distribución donde todo lo demás pasó por vaCOP y está en pesos. Categoría en dólares mezclada entre categorías en pesos, y ~3.262 veces más chica de lo real.*/;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><PageHeader label="Patrimonio" title="Tus activos" subtitle="Distribución y rendimiento real."/><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14,marginBottom:18}}><StatCard label="ACTIVOS TOTALES" value={fm(gr)} accent={CHART.green}/><StatCard label="PASIVOS" value={fm(t.td)} accent={CHART.red}/><StatCard label="PATRIMONIO NETO" value={fm(t.nw)} accent={CHART.blue} highlight/></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><div style={{background:"rgba(255,255,255,0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24,backgroundImage:`radial-gradient(circle at 0% 0%, ${CHART.green}08 0%, transparent 50%)`}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={240}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={56} outerRadius={92} paddingAngle={3} stroke="none">{pie.map((_,i)=><Cell key={i} fill={CHART.series[i%CHART.series.length]}/>)}</Pie><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/></PieChart></ResponsiveContainer>:<div style={{height:240,display:"flex",alignItems:"center",justifyContent:"center",color:CHART.txt3}}>Agrega datos</div>}</div><div style={{background:"rgba(255,255,255,0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Desglose por categoría</div>{pie.map((a,i)=>{const pct=(a.value/gr)*100;return<div key={a.name} style={{padding:"10px 0",borderBottom:i<pie.length-1?`1px solid ${CHART.border}`:"none"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:10,height:10,borderRadius:3,background:CHART.series[i%CHART.series.length],boxShadow:`0 0 8px ${CHART.series[i%CHART.series.length]}40`}}/><span style={{fontSize:13,fontWeight:500,color:CHART.txt}}>{a.name}</span></div><div style={{fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums",display:"flex",alignItems:"baseline",gap:8}}><span style={{fontWeight:700,fontSize:13,color:CHART.txt}}>{fm(a.value)}</span><span style={{fontSize:11,color:CHART.txt3,minWidth:42,textAlign:"right"}}>{fmtPctEs(pct, 1)}</span></div></div><div style={{height:3,background:CHART.border,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:CHART.series[i%CHART.series.length],borderRadius:999,transition:"width 0.4s"}}/></div></div>})}</div></div></div>}
+    case"pat":{const bc={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+vaCOP(i,trm)});if(ib.tv>0)bc.Trading=ib.tv*trm/*💱 26-jul-2026: ib.tv está en USD porque las posiciones se cargan en dólares, pero se sumaba tal cual a una distribución donde todo lo demás pasó por vaCOP y está en pesos. Categoría en dólares mezclada entre categorías en pesos, y ~3.262 veces más chica de lo real.*/;const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);const gr=t.ab+ib.tv;return<div><PageHeader label="Patrimonio" title="Tus activos" subtitle="Distribución y rendimiento real."/><div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14,marginBottom:18}}><StatCard label="ACTIVOS TOTALES" value={fm(gr)} accent={CHART.green}/><StatCard label="PASIVOS" value={fm(t.td)} accent={CHART.red}/><StatCard label="PATRIMONIO NETO" value={fm(t.nw)} accent={CHART.blue} highlight/></div><div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14}}><div style={{background:"rgba(var(--fp-ink),0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24,backgroundImage:`radial-gradient(circle at 0% 0%, ${CHART.green}08 0%, transparent 50%)`}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Distribución</div>{pie.length>0?<ResponsiveContainer width="100%" height={240}><PieChart><Pie data={pie} dataKey="value" cx="50%" cy="50%" innerRadius={56} outerRadius={92} paddingAngle={3} stroke="none">{pie.map((_,i)=><Cell key={i} fill={CHART.series[i%CHART.series.length]}/>)}</Pie><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/></PieChart></ResponsiveContainer>:<div style={{height:240,display:"flex",alignItems:"center",justifyContent:"center",color:CHART.txt3}}>Agrega datos</div>}</div><div style={{background:"rgba(var(--fp-ink),0.02)",border:`1px solid ${CHART.border}`,borderRadius:16,padding:24}}><div style={{fontSize:11,fontWeight:700,color:CHART.txt3,marginBottom:14,letterSpacing:"0.06em",textTransform:"uppercase"}}>Desglose por categoría</div>{pie.map((a,i)=>{const pct=(a.value/gr)*100;return<div key={a.name} style={{padding:"10px 0",borderBottom:i<pie.length-1?`1px solid ${CHART.border}`:"none"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{width:10,height:10,borderRadius:3,background:CHART.series[i%CHART.series.length],boxShadow:`0 0 8px ${CHART.series[i%CHART.series.length]}40`}}/><span style={{fontSize:13,fontWeight:500,color:CHART.txt}}>{a.name}</span></div><div style={{fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums",display:"flex",alignItems:"baseline",gap:8}}><span style={{fontWeight:700,fontSize:13,color:CHART.txt}}>{fm(a.value)}</span><span style={{fontSize:11,color:CHART.txt3,minWidth:42,textAlign:"right"}}>{fmtPctEs(pct, 1)}</span></div></div><div style={{height:3,background:CHART.border,borderRadius:999,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:CHART.series[i%CHART.series.length],borderRadius:999,transition:"width 0.4s"}}/></div></div>})}</div></div></div>}
     case"pen":return isUS?<RetirementModuleUS user={u}/>:gated("pen","Básico",<PensionesColpensiones trm={trm}/>);
     case"tax":{
       if(isUS)return<TaxPlanningUS user={u} fmt={fm} onUpdateUser={setU}/>;
@@ -4306,7 +4307,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil}/>;}
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
-  return <RoleProvider value={{role,isLegacy,accountId}}><div style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
+  return <RoleProvider value={{role,isLegacy,accountId}}><div className="fp-app" style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}>
     <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:${T.bg};overflow-x:hidden}input:focus,select:focus{border-color:${T.gn}!important;outline:none}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.bg3};border-radius:3px}::selection{background:${T.gn}30}
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -4358,7 +4359,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
                   // pero nunca se mostraba: no había forma de saber con qué tasa
                   // se estaba convirtiendo. Ahora va en el title del botón.
                   title={estTrm.trm ? `TRM $${Math.round(estTrm.trm).toLocaleString("es-CO")}${u?.trmSrc?` — ${u.trmSrc}`:""}` : "No pudimos obtener la TRM; vuelve a intentar"}
-                  >{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button>{!mb&&<button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fafafa",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>}{!mb&&u.trm&&<span style={{fontSize:10,color:T.tx3}}>TRM: ${Math.round(u.trm).toLocaleString("es-CO")}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&!mb&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:"22px 20px",maxWidth:1600,width:"100%"}}>
+                  >{cur==="USD"?"🇺🇸 USD":"🇨🇴 COP"}</button><BotonTema/>{!mb&&<button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(var(--fp-ink),0.08)",border:"1px solid rgba(var(--fp-ink),0.15)",color:"var(--fp-txt)",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:11}} title="Toggle language">{isEN?"🇺🇸 EN":"🇨🇴 ES"}</button>}{!mb&&u.trm&&<span style={{fontSize:10,color:T.tx3}}>TRM: ${Math.round(u.trm).toLocaleString("es-CO")}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:11}}>{masked?"👁️":"🙈"}</button>{plan==="free"&&!mb&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?14:"22px 20px",maxWidth:1600,width:"100%"}}>
       {/* Suspense: los módulos pesados se cargan bajo demanda (25-jul-2026).
           El respaldo es sobrio a propósito — aparece por fracciones de segundo
           al entrar a una sección por primera vez, y un spinner llamativo se

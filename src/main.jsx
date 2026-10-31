@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import "./tema.css";
 
 // 28-oct-2026 — "Algo salió mal" al cambiar de sección. Cada publicación
 // cambia el nombre de los archivos de cada sección; una pestaña abierta desde
@@ -33,20 +34,20 @@ class ErrorBoundary extends React.Component {
   }
   render() {
     if (this.state.hasError && this.state.actualizando) {
-      return React.createElement("div", {style:{background:"#09090b",color:"#a1a1aa",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui",fontSize:14}},
+      return React.createElement("div", {style:{background:"var(--fp-bg)",color:"var(--fp-txt2)",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui",fontSize:14}},
         "Actualizando FINPATHIA a la versión nueva…");
     }
     if (this.state.hasError) {
-      return React.createElement("div", {style:{background:"#09090b",color:"#fafafa",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui"}},
+      return React.createElement("div", {style:{background:"var(--fp-bg)",color:"var(--fp-txt)",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui"}},
         React.createElement("div", {style:{textAlign:"center",maxWidth:400,padding:32}},
           React.createElement("div", {style:{fontSize:48,marginBottom:16}}, "😵"),
           React.createElement("h1", {style:{fontSize:22,fontWeight:700,marginBottom:8}}, "Algo salió mal"),
-          React.createElement("p", {style:{color:"#71717a",fontSize:14,marginBottom:24}}, "Puedes recargar o borrar datos locales."),
+          React.createElement("p", {style:{color:"var(--fp-txt3)",fontSize:14,marginBottom:24}}, "Puedes recargar o borrar datos locales."),
           React.createElement("div", {style:{display:"flex",gap:10,justifyContent:"center"}},
             React.createElement("button", {onClick:()=>window.location.reload(),style:{padding:"10px 20px",borderRadius:10,border:"none",background:"#22c55e",color:"#000",fontWeight:700,cursor:"pointer"}}, "Recargar"),
-            React.createElement("button", {onClick:()=>{localStorage.removeItem("fp3");window.location.reload()},style:{padding:"10px 20px",borderRadius:10,border:"1px solid rgba(255,255,255,0.1)",background:"transparent",color:"#a1a1aa",cursor:"pointer"}}, "Borrar datos")
+            React.createElement("button", {onClick:()=>{localStorage.removeItem("fp3");window.location.reload()},style:{padding:"10px 20px",borderRadius:10,border:"1px solid rgba(var(--fp-ink),0.1)",background:"transparent",color:"var(--fp-txt2)",cursor:"pointer"}}, "Borrar datos")
           ),
-          React.createElement("p", {style:{color:"#3f3f46",fontSize:11,marginTop:20}}, this.state.error?.message || "")
+          React.createElement("p", {style:{color:"var(--fp-line)",fontSize:11,marginTop:20}}, this.state.error?.message || "")
         )
       );
     }
@@ -76,11 +77,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       mostrado = true;
       const b = document.createElement("div");
       b.setAttribute("role", "status");
-      b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;background:#141418;color:#fafafa;border:1px solid rgba(59,130,246,0.4);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;font:600 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,0.4)";
+      b.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:9999;background:var(--fp-card);color:var(--fp-txt);border:1px solid rgba(59,130,246,0.4);border-radius:12px;padding:10px 14px;display:flex;gap:12px;align-items:center;font:600 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,0.4)";
       b.innerHTML = '<span>Hay una versión nueva de FINPATHIA</span>';
       const btn = document.createElement("button");
       btn.textContent = "Actualizar";
-      btn.style.cssText = "background:#3b82f6;color:#fafafa;border:none;border-radius:8px;padding:7px 12px;font:700 13px system-ui;cursor:pointer";
+      btn.style.cssText = "background:#3b82f6;color:var(--fp-txt);border:none;border-radius:8px;padding:7px 12px;font:700 13px system-ui;cursor:pointer";
       btn.onclick = () => window.location.reload();
       b.appendChild(btn);
       document.body.appendChild(b);

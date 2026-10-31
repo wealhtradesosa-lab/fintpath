@@ -114,7 +114,7 @@ export const TEMPLATES = [
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
     camposVisibles: ["monto", "frecuencia", "vigencia", "mesPago", "modoIngreso"],
     modoIngresoDefault: "porPago",
-    color: "#71717a",
+    color: "var(--fp-txt3)",
   },
 ];
 

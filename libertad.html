@@ -28,7 +28,8 @@
 
     <!-- Sin Meta Pixel, GA4 ni Google Ads en este HTML: se cargan desde
          src/lib/consent.js solo después de que la persona acepta cookies. -->
-  </head>
+    <script>try{if(localStorage.getItem("fp3_tema")==="claro")document.documentElement.setAttribute("data-tema","claro")}catch(e){}</script>
+</head>
   <body>
     <div id="root"><div style="background:#0c0c0f;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui"><div style="text-align:center"><div style="font-size:28px;font-weight:900;color:#22c55e;margin-bottom:8px">FINPATHIA</div><div style="color:#71717a;font-size:13px">Calculando tu norte...</div></div></div></div>
     <!-- 6-oct-2026 — Autocuración de la copia instalada. Santiago abrió la app

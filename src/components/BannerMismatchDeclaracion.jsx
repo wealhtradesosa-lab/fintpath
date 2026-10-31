@@ -27,12 +27,12 @@ const colors = {
   infoBg: "rgba(59, 130, 246, 0.06)",
   infoBorder: "rgba(59, 130, 246, 0.20)",
   infoText: "#3b82f6",
-  txt: "#fafafa",
-  tx2: "#a1a1aa",
-  tx3: "#71717a",
-  bg2: "#141418",
-  bg3: "#1e1e24",
-  border: "rgba(255,255,255,0.08)",
+  txt: "var(--fp-txt)",
+  tx2: "var(--fp-txt2)",
+  tx3: "var(--fp-txt3)",
+  bg2: "var(--fp-card)",
+  bg3: "var(--fp-raised)",
+  border: "rgba(var(--fp-ink),0.08)",
 };
 
 function fmM(v) {

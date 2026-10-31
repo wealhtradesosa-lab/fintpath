@@ -56,12 +56,12 @@ export default function PageHeader({
             <span style={{
               width: compact ? 24 : 32,
               height: 1,
-              background: "rgba(255,255,255,0.3)",
+              background: "rgba(var(--fp-ink),0.3)",
               display: "inline-block",
             }} />
             <span style={{
               fontSize: 12,
-              color: "rgba(255,255,255,0.55)",
+              color: "rgba(var(--fp-ink),0.55)",
               fontWeight: 500,
               letterSpacing: "0.04em",
               textTransform: "uppercase",
@@ -79,7 +79,7 @@ export default function PageHeader({
           lineHeight: 1.0,
           letterSpacing: "-0.04em",
           margin: 0,
-          color: "#fafafa",
+          color: "var(--fp-txt)",
         }}>
           {accent ? (
             <>
@@ -102,7 +102,7 @@ export default function PageHeader({
           <p style={{
             marginTop: 12,
             fontSize: compact ? 14 : 16,
-            color: "rgba(255,255,255,0.65)",
+            color: "rgba(var(--fp-ink),0.65)",
             lineHeight: 1.5,
             maxWidth: 640,
             margin: "12px 0 0",

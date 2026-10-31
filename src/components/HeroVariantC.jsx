@@ -14,10 +14,10 @@
 import { useState, useEffect } from "react";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418",
-  border: "rgba(255,255,255,0.08)",
-  borderStrong: "rgba(255,255,255,0.14)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)",
+  border: "rgba(var(--fp-ink),0.08)",
+  borderStrong: "rgba(var(--fp-ink),0.14)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6",
 };
 
@@ -90,7 +90,7 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
         //   3. Capa global oscura sutil para asegurar contraste universal
         background: `
           linear-gradient(90deg, rgba(12,12,15,0.85) 0%, rgba(12,12,15,0.65) 35%, rgba(12,12,15,0.4) 65%, rgba(12,12,15,0.55) 100%),
-          linear-gradient(180deg, rgba(12,12,15,0.3) 0%, rgba(12,12,15,0.5) 60%, #09090b 100%),
+          linear-gradient(180deg, rgba(12,12,15,0.3) 0%, rgba(12,12,15,0.5) 60%, var(--fp-bg) 100%),
           linear-gradient(rgba(12,12,15,0.25), rgba(12,12,15,0.25))
         `,
       }} />
@@ -295,7 +295,7 @@ export default function HeroVariantC({ onGetStarted = () => {}, onLogin }) {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-2px)";
-              e.currentTarget.style.boxShadow = "0 10px 30px rgba(255,255,255,0.15)";
+              e.currentTarget.style.boxShadow = "0 10px 30px rgba(var(--fp-ink),0.15)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "none";

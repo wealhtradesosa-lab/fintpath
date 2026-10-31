@@ -13,10 +13,10 @@
 import { useState, useEffect } from "react";
 
 const T = {
-  bg: "#0c0c0f", bg2: "#141418", bg3: "#1e1e24",
-  card: "#141418", border: "rgba(255,255,255,0.06)",
-  borderStrong: "rgba(255,255,255,0.12)",
-  txt: "#fafafa", txt2: "#a1a1aa", txt3: "#71717a",
+  bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
+  card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
+  borderStrong: "rgba(var(--fp-ink),0.12)",
+  txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
 };
@@ -124,7 +124,7 @@ export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            background: "rgba(255,255,255,0.03)",
+            background: "rgba(var(--fp-ink),0.03)",
             border: `1px solid ${T.borderStrong}`,
             borderRadius: 999,
             padding: "6px 14px",
@@ -299,7 +299,7 @@ function KPICard({ label, value, sub, color, highlight }) {
   return (
     <div style={{
       padding: "14px 16px",
-      background: highlight ? `${color}10` : "rgba(255,255,255,0.02)",
+      background: highlight ? `${color}10` : "rgba(var(--fp-ink),0.02)",
       border: `1px solid ${highlight ? color + "30" : T.border}`,
       borderRadius: 10,
     }}>
