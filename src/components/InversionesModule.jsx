@@ -51,6 +51,21 @@ const getType = (i) => {
   if (/green|puerto|orlando|miami|backswing|district/i.test(nm)) return "Real Estate";
   return "Otro";
 };
+// 31-oct-2026 (Santiago: "el listado de patrimonio es difícil encontrar los ítems; ¿por qué
+// no clasificar por tipo de inversión? inmobiliaria, acciones…"). Los tipos finos (Real
+// Estate, Local, Bodega…) se agrupan en clases que se entienden de un vistazo.
+const CLASES = [
+  { id: "inmuebles", nombre: "Inmuebles", icono: "🏠", tipos: ["Real Estate", "Local Comercial", "Bodega"] },
+  { id: "fondos", nombre: "Fondos y renta fija", icono: "💼", tipos: ["Fondo de Inversión", "CDT", "Renta Fija"] },
+  { id: "bolsa", nombre: "Acciones y bolsa", icono: "📈", tipos: ["Acciones"] },
+  { id: "cripto", nombre: "Cripto", icono: "₿", tipos: ["Crypto"] },
+  { id: "liquidez", nombre: "Efectivo y cuentas", icono: "💵", tipos: ["Cash"] },
+  { id: "negocios", nombre: "Negocios y participaciones", icono: "🏢", tipos: ["Negocio"] },
+  { id: "vehiculos", nombre: "Vehículos", icono: "🚗", tipos: ["Vehículo"] },
+  { id: "otros", nombre: "Otros", icono: "📦", tipos: [] },
+];
+const claseDe = (i) => CLASES.find((c) => c.tipos.includes(getType(i))) || CLASES[CLASES.length - 1];
+
 // 26-jul-2026: getVA devolvía el valor CRUDO, sin convertir moneda. Un activo
 // cargado en USD se mostraba y se sumaba como si fueran pesos: el portafolio
 // de USD 33.266 aparecía como $33.266 COP junto a inmuebles de miles de
@@ -185,6 +200,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   const { role } = useRole();
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
+  const [busca, setBusca] = useState("");
+  const [titularFiltro, setTitularFiltro] = useState("");
+  const [cerrados, setCerrados] = useState({});
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState({ nombre: "", ubicacion: "", tipo: "Real Estate", va: "", vc: "", tasa: "", valorizacionPct: "", owner: "", moneda: "COP" });
 
@@ -206,18 +224,26 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // Acá el criterio es el TIPO DE ACTIVO y el subtotal es el VALOR: la
   // pregunta en patrimonio es en qué está puesta la plata — la misma que
   // responde la alerta de concentración del dashboard.
+  const coincide = (i) => {
+    if (titularFiltro && (i.owner || "") !== titularFiltro) return false;
+    const q = busca.trim().toLowerCase();
+    if (!q) return true;
+    return [getName(i), getLoc(i), getType(i), claseDe(i).nombre].join(" ").toLowerCase().includes(q);
+  };
+  const filtrando = !!busca.trim() || !!titularFiltro;
   const conEncabezados = (lista) => {
-    const porTipo = {};
-    lista.forEach(i => { const k = getType(i) || "Sin tipo"; (porTipo[k] = porTipo[k] || []).push(i); });
-    const grupos = Object.entries(porTipo)
-      .map(([tipo, its]) => ({ tipo, items: its,
+    const porClase = {};
+    lista.filter(coincide).forEach(i => { const c = claseDe(i); (porClase[c.id] = porClase[c.id] || { c, items: [] }).items.push(i); });
+    const grupos = Object.values(porClase)
+      .map(({ c, items: its }) => ({ c, items: [...its].sort((a, b) => getVA(b, trm) - getVA(a, trm)),
         sub: its.filter(i => i.sim !== false).reduce((s, i) => s + getVA(i, trm), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
-      { __cat: gr.tipo, __sub: gr.sub, __n: gr.items.length,
-        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.tipo },
-      ...gr.items,
+      { __cat: `${gr.c.icono} ${gr.c.nombre}`, __clase: gr.c.id, __sub: gr.sub, __n: gr.items.length,
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.c.id },
+      // Buscando, todo abierto; si no, respeta lo que el usuario cerró.
+      ...(!filtrando && cerrados[gr.c.id] ? [] : gr.items),
     ]);
   };
   const totalValor = activos.reduce((s, i) => s + getVA(i, trm), 0)
@@ -489,7 +515,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           esa advertencia. */}
       {(() => {
         const grupos = {};
-        activos.forEach(i => { const k = getType(i) || "Sin tipo"; grupos[k] = (grupos[k] || 0) + getVA(i, trm); });
+        activos.forEach(i => { const c = claseDe(i); const k = c.nombre; grupos[k] = (grupos[k] || 0) + getVA(i, trm); });
         const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
         if (datos.length < 2) return null;
         const tot = datos.reduce((s, d) => s + d.value, 0);
@@ -518,10 +544,31 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           </div>
         );
       })()}
+      {/* 31-oct-2026: buscar y filtrar por titular para encontrar un activo rápido */}
+      {items.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 }}>
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="🔍 Buscar activo, ciudad o tipo…"
+            style={{ flex: "1 1 220px", minWidth: 0, background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, padding: "9px 12px", fontSize: 13, outline: "none" }} />
+          {(owners || []).length > 1 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {[{ id: "", name: "Todos" }, ...(owners || [])].map((o) => {
+                const on = titularFiltro === o.id;
+                return <button key={o.id || "todos"} type="button" onClick={() => setTitularFiltro(o.id)} style={{ padding: "7px 12px", borderRadius: 999, border: `1px solid ${on ? T.green : T.border}`, background: on ? "rgba(34,197,94,0.12)" : "transparent", color: on ? T.green : T.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{o.type === "juridica" ? "🏢 " : o.id ? "👤 " : ""}{o.name}</button>;
+              })}
+            </div>
+          )}
+          {!filtrando && (
+            <button type="button" onClick={() => { const todos = Object.values(cerrados).filter(Boolean).length > 0; setCerrados(todos ? {} : Object.fromEntries(CLASES.map((c) => [c.id, true]))); }}
+              style={{ padding: "7px 12px", borderRadius: 999, border: `1px solid ${T.border}`, background: "transparent", color: T.txt2, fontSize: 12, cursor: "pointer" }}>
+              {Object.values(cerrados).filter(Boolean).length > 0 ? "Abrir todo" : "Ver solo totales"}
+            </button>
+          )}
+        </div>
+      )}
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={estiloTablaPortafolio(angosto)}>
+          <table style={{ ...estiloTablaPortafolio(angosto), color: T.txt }}>
             <thead style={estiloSeccionPortafolio(angosto)}>
               <tr style={estiloFilaPortafolio(angosto)}>
                 {columnasPortafolio(angosto).map((h) => (
@@ -555,10 +602,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   </td></tr>
               ) : conEncabezados(itemsVisibles).map((inv) => {
                 if (inv.__cat) return (
-                  <tr key={inv.id} style={estiloFilaPortafolio(angosto, { background: T.bg2 })}>
-                    <td colSpan={columnasPortafolio(angosto).length} style={estiloCeldaCompleta(angosto, { padding: angosto ? "9px 6px" : "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` })}>
+                  <tr key={inv.id} onClick={() => !filtrando && setCerrados((c) => ({ ...c, [inv.__clase]: !c[inv.__clase] }))} style={estiloFilaPortafolio(angosto, { background: T.bg2, cursor: filtrando ? "default" : "pointer" })} title={filtrando ? "" : cerrados[inv.__clase] ? "Ver los activos" : "Ocultar los activos"}>
+                    <td colSpan={columnasPortafolio(angosto).length} style={estiloCeldaCompleta(angosto, { padding: angosto ? "10px 6px" : "10px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` })}>
                       <div style={estiloEncabezadoGrupo()}>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: T.txt }}>
+                          {!filtrando && <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[inv.__clase] ? "▸" : "▾"}</span>}
                           {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
                         </span>
                         <span style={{ fontSize: 13, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>

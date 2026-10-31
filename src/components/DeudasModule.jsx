@@ -119,6 +119,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     input.click();
   };
   const [editId, setEditId] = useState(null);
+  const [cerrados, setCerrados] = useState({}); // 31-oct-2026: grupos colapsables
   const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", frecuencia: "mensual", montosMensuales: new Array(12).fill(0) });
   // Commit 5 Tarea 3: confirmaciones del Art. 119 ET cuando el usuario marca
   // una deuda como vivienda habitacional. Es solo UI — no se persiste al item
@@ -152,7 +153,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     return grupos.flatMap(gr => [
       { __cat: gr.tipo, __sub: gr.sub, __n: gr.items.length,
         __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.tipo },
-      ...gr.items,
+      ...((false) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? gr.items : []),
     ]);
   };
   const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
@@ -372,7 +373,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
             <thead>
               <tr>
                 {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Interés/año", "Activo", "On/Off", ""].map((h) => (
@@ -405,11 +406,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                   </td></tr>
               ) : conEncabezados(separarPorLimite(items, plan).visibles).map((d) => {
                   if (d.__cat) return (
-                    <tr key={d.id} style={{ background: T.bg3 }}>
+                    <tr key={d.id} onClick={() => setCerrados((c) => ({ ...c, [d.id]: !c[d.id] }))} title={cerrados[d.id] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
                       <td colSpan={10} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
-                            {d.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {d.__n}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: T.txt }}>
+                            <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[d.id] ? "▸" : "▾"}</span>{d.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {d.__n}</span>
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: T.red, fontFamily: "monospace" }}>
                             {fm(d.__sub)}

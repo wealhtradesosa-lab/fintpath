@@ -349,6 +349,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     return templateElegido.camposVisibles.includes(campo);
   };
   const [busqueda, setBusqueda] = useState("");
+  const [cerrados, setCerrados] = useState({}); // 31-oct-2026: grupos colapsables
   // Commit 11 Tarea 3: feedback visible para el usuario sobre lo que paso
   // con la auto-creacion de cesantias (creada / saltada / no aplica). El silencio
   // del Commit 4 confundia a usuarios que no veian si el sistema actuo o no.
@@ -383,7 +384,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     return grupos.flatMap(gr => [
       { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
         __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.cat },
-      ...gr.items,
+      ...((!!(busqueda || "").trim()) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? gr.items : []),
     ]);
   };
   const activos = items.filter((i) => i.sim !== false);
@@ -843,7 +844,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             })()}
             <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
               total={items.length} filtrados={allItems.length} />
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
               <thead><tr>
                 {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", "On/Off", ""].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: h === "Mensual" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 10, textTransform: "uppercase", borderBottom: `1px solid ${T.border}` }}>{h}</th>
@@ -875,11 +876,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   </td></tr>
                 ) : conEncabezados(separarPorLimite(allItems, plan).visibles).map((item) => (
                   item.__cat ? (
-                    <tr key={item.id} style={{ background: T.bg3 }}>
+                    <tr key={item.id} onClick={() => setCerrados((c) => ({ ...c, [item.id]: !c[item.id] }))} title={cerrados[item.id] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
                       <td colSpan={8} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 12, fontWeight: 800, color: T.txt2 }}>
-                            {item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: T.txt }}>
+                            <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.id] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: T.green, fontFamily: "monospace" }}>
                             {fm(item.__sub)}/mes
