@@ -47,9 +47,9 @@ export default function RentabilidadActivos({ r, T, fm, nombre, onAbrir }) {
               {nombre(f.item)}
               <span style={{ display: "block", fontSize: 11, color: T.txt3 }}>{fm(f.va)}{f.rentaNeta !== 0 ? ` · renta neta ${fm(f.rentaNeta / 12)}/mes` : ""}</span>
             </span>
-            <span style={{ position: "relative", height: 10, background: T.bg3, borderRadius: 5 }}>
-              <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pos(f.pct) + "%", background: COL[f.estado], borderRadius: 5, opacity: f.pct < 0 ? 0.55 : 1 }} />
-              <span style={{ position: "absolute", top: -3, bottom: -3, left: pos(r.inflacion) + "%", width: 2, background: T.txt2, borderRadius: 1 }} />
+            <span style={{ position: "relative", height: 10, background: T.bg3, borderRadius: 6 }}>
+              <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: pos(f.pct) + "%", background: COL[f.estado], borderRadius: 6, opacity: f.pct < 0 ? 0.55 : 1 }} />
+              <span style={{ position: "absolute", top: -3, bottom: -3, left: pos(r.inflacion) + "%", width: 2, background: T.txt2 }} />
             </span>
             <span style={{ fontSize: 13, fontWeight: 700, textAlign: "right", fontFamily: "monospace", color: COL[f.estado] }}>{fmtPctEs(f.pct, 1)}</span>
           </button>
