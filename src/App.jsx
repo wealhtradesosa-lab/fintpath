@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react"; // arriba: en desarrollo Vite convierte este import en const (los lazy() de abajo lo necesitan ya)
 import AvisoVersion from "./components/AvisoVersion";
 import InputDecimalEs from "./components/InputDecimalEs.jsx";
 import { fmtTasaEs, fmtAniosEs } from "./lib/formato.js";
@@ -92,7 +93,6 @@ import { montoPromedioMensual, añosParaMeta, ingresoInversionAnual, mesesLibreD
 import { calcularMetricas, saludFinanciera, rentaYYield, gananciaVsInflacion, inflacionGlobal, fmtPctEs, fmtMeses, umbralNivel } from "./lib/metrics.js";
 import RetirementModuleUS from "./components/RetirementModuleUS";
 import GoalsModuleUS from "./components/GoalsModuleUS";
-import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense} from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase";
 import { esDemo, leerCache, guardarReal, datosAlSalir } from "./lib/modoDemo";
 import { AVISO_NO_SINCRONIZADO, datosNoSincronizados, marcarNoSincronizados, alCambiarSincronizacion, leerUserData } from "./lib/sincronizacion";
