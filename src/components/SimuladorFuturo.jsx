@@ -407,11 +407,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   // crecimiento del patrimonio con ese sobrante o pérdida cada mes").
   const anual = useMemo(() => {
     const sum = (k) => porMes.reduce((a, m) => a + m[k], 0);
-    return { ingresos: sum("ingresos"), gastos: sum("gastos"), cuotas: sum("cuotas"), impuestos: sum("impuesto") + sum("retencion"), queda: sum("queda"), positivos: porMes.filter((m) => m.queda >= 0).length };
+    return { ingresos: sum("ingresos"), gastos: sum("gastos"), cuotas: sum("cuotas"), impuestos: sum("impuesto") + sum("retencion"), ret: sum("retencion"), decl: sum("impuesto"), queda: sum("queda"), positivos: porMes.filter((m) => m.queda >= 0).length };
   }, [porMes]);
   const anualHoy = useMemo(() => {
     const sum = (k) => porMesHoy.reduce((a, m) => a + m[k], 0);
-    return { ingresos: sum("ingresos"), gastos: sum("gastos"), cuotas: sum("cuotas"), impuestos: sum("impuesto") + sum("retencion"), queda: sum("queda") };
+    return { ingresos: sum("ingresos"), gastos: sum("gastos"), cuotas: sum("cuotas"), impuestos: sum("impuesto") + sum("retencion"), ret: sum("retencion"), decl: sum("impuesto"), queda: sum("queda") };
   }, [porMesHoy]);
   const snap = useMemo(() => snapshotPatrimonio(user), [user]);
   const amortMes = useMemo(() => estimarAmortizacionAnual(user.deudas, user.trm) / 12, [user]);
@@ -977,13 +977,23 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               ["Gastos del año", anual.gastos, anualHoy.gastos, C.danger, false],
               ["Cuotas del año", anual.cuotas, anualHoy.cuotas, C.warn, false],
               ["Impuestos del año", anual.impuestos, anualHoy.impuestos, C.purple, false],
-              [anual.queda >= 0 ? "Saldo a favor del año" : "Faltante del año", anual.queda, anualHoy.queda, anual.queda >= 0 ? C.ok : C.danger, true],
+              [anual.queda >= 0 ? "Te queda en el año" : "Te falta en el año", anual.queda, anualHoy.queda, anual.queda >= 0 ? C.ok : C.danger, true],
             ].map(([t, v, vh, col, masEsMejor]) => {
               const d = v - vh, bueno = masEsMejor ? d >= 0 : d <= 0;
               return (
                 <div key={t} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, padding: "10px 12px" }}>
                   <div style={F.label}>{t}</div>
                   <div style={{ ...F.mono, fontSize: 18, color: col }}>{fm(v)}</div>
+                  {/* 31-oct-2026 (Santiago: "me confunde… ¿120 MM?"). Son dos cosas
+                      distintas: la retención ya te la descuentan al pagarte; la
+                      declaración sí sale de tu bolsillo. Se dicen por separado. */}
+                  {t === "Impuestos del año" && (
+                    <div style={{ ...F.caption, color: C.muted, margin: "2px 0 4px", lineHeight: 1.45 }}>
+                      {fm(anual.ret)} de retención (ya te la descuentan al pagarte)<br />
+                      + {fm(anual.decl)} de declaraciones (sale de tu bolsillo)
+                      <div style={{ color: C.subtle }}>Hoy: {fm(anualHoy.ret)} de retención + {fm(anualHoy.decl)} de declaraciones</div>
+                    </div>
+                  )}
                   <div style={{ ...F.caption, color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>
                     {Math.abs(d) < 1 ? "igual que hoy" : `${d > 0 ? "+" : "−"}${fm(Math.abs(d))} vs hoy (${fm(vh)})`}
                   </div>
