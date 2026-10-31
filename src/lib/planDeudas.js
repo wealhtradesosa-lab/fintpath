@@ -172,6 +172,10 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
 
   const algunaNoAmortiza = state.some((d) => d.noAmortiza);
   let months = 0;
+  // 31-oct-2026 — Para la gráfica de Deudas: saldo total mes a mes e intereses
+  // pagados en todo el camino.
+  let interesTotal = 0;
+  const serie = [Math.round(state.reduce((s, d) => s + d.saldo, 0))];
 
   while (months < CAP_MESES) {
     if (state.every((d) => d.saldo <= 0.5)) break;
@@ -182,6 +186,7 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
     for (const d of state) {
       if (d.saldo <= 0) continue;
       const interes = d.saldo * d.rMes;
+      interesTotal += interes;
       d.saldo += interes;
       const pagoMin = Math.min(d.cuota, d.saldo);
       d.saldo -= pagoMin;
@@ -206,6 +211,7 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
         if (d.mesCero == null) d.mesCero = months;
       }
     }
+    serie.push(Math.round(state.reduce((s, d) => s + Math.max(0, d.saldo), 0)));
   }
 
   const saldoFinal = Math.round(state.reduce((s, d) => s + d.saldo, 0));
@@ -250,6 +256,8 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
     })),
     algunaNoAmortiza,
     saldoFinal,
+    interesTotal: Math.round(interesTotal),
+    serie,
   };
 }
 

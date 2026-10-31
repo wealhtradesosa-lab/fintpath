@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import NumberInput from "./NumberInput";
 import Disclaimer from "./Disclaimer";
+import CaminoACero from "./CaminoACero";
 import {
   calcularPlanDeudas,
+  simularPlanACero,
   FUENTE_CF_PLAN,
   COPY_CF_NO_POSITIVO,
   CHIP_NO_AMORTIZA,
@@ -67,7 +69,11 @@ export default function PlanDeudasACero({
     }
   }, [plan.vacio, plan.extraADeudas, onExtraADeudasChange]);
 
-  const extraIsOverride = extraOverride != null && extraOverride !== "";
+  // 31-oct-2026 — El mismo plan sin abono extra, para comparar en la gráfica.
+  const base = useMemo(
+    () => (plan.vacio ? null : simularPlanACero(plan.ordenadas, 0)),
+    [plan]
+  );
 
   return (
     <div
@@ -99,15 +105,13 @@ export default function PlanDeudasACero({
               textTransform: "uppercase",
             }}
           >
-            Plan a cero
+            Plan para quedar en cero
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.txt, marginTop: 2 }}>
-            Orden + meses + trade-off vs patrimonio
+            ¿Cuándo quedas libre de deudas?
           </div>
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, maxWidth: 520 }}>
-            El monto extra sale de tu flujo de caja disponible, ya descontadas las
-            cuotas que pagas hoy. La comparación a 3 años asume una valorización
-            antes de impuestos; es una comparación, no una recomendación de inversión.
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, maxWidth: 560, lineHeight: 1.45 }}>
+            Con las cuotas que pagas hoy, y qué cambia si abonas algo extra cada mes. Cuando terminas una deuda, su cuota pasa a la siguiente.
           </div>
         </div>
 
@@ -116,7 +120,7 @@ export default function PlanDeudasACero({
             type="button"
             onClick={() => setMetodo("avalanche")}
             style={chipStyle(metodo === "avalanche")}
-            title="Mayor tasa primero"
+            title="Primero la deuda con la tasa más alta: pagas menos intereses"
           >
             Avalancha
           </button>
@@ -124,7 +128,7 @@ export default function PlanDeudasACero({
             type="button"
             onClick={() => setMetodo("snowball")}
             style={chipStyle(metodo === "snowball")}
-            title="Menor saldo primero"
+            title="Primero la deuda más pequeña: terminas deudas más rápido"
           >
             Bola de nieve
           </button>
@@ -148,123 +152,8 @@ export default function PlanDeudasACero({
         </div>
       ) : (
         <>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-              padding: 12,
-              background: T.bg3,
-              borderRadius: 12,
-              marginBottom: 12,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: T.txt3,
-                  fontWeight: 700,
-                  letterSpacing: 0.6,
-                  textTransform: "uppercase",
-                }}
-              >
-                Extra mensual al plan
-              </div>
-              <div
-                style={{
-                  fontSize: 22,
-                  fontWeight: 800,
-                  color: plan.extra > 0 ? T.green : T.orange,
-                  marginTop: 4,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {fm(plan.extra)}
-                <span style={{ fontSize: 12, color: T.txt3, fontWeight: 600 }}>
-                  /mes
-                </span>
-              </div>
-              <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                {extraIsOverride
-                  ? "Override local"
-                  : "Default = max(0, CF post-cuotas)"}
-                {" · "}CF {fm(cfDefault)}/mes
-              </div>
-              {plan.cfSinPositivo && (
-                <div
-                  style={{
-                    marginTop: 6,
-                    fontSize: 12,
-                    color: T.orange,
-                    background: "rgba(249,115,22,0.08)",
-                    borderRadius: 8,
-                    padding: "6px 8px",
-                  }}
-                >
-                  {COPY_CF_NO_POSITIVO}
-                </div>
-              )}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    fontSize: 10,
-                    color: T.txt3,
-                    fontWeight: 600,
-                    display: "block",
-                    marginBottom: 4,
-                  }}
-                >
-                  Override extra /mes
-                </label>
-                <NumberInput
-                  value={extraOverride == null ? "" : extraOverride}
-                  onChange={(v) =>
-                    setExtraOverride(v === "" || v == null ? null : String(v))
-                  }
-                  placeholder={String(Math.round(plan.extraDefault || 0))}
-                  style={{
-                    width: 140,
-                    background: T.card,
-                    border: "1px solid " + T.border,
-                    borderRadius: 8,
-                    padding: "8px 10px",
-                    color: T.txt,
-                    fontSize: 13,
-                    outline: "none",
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => setExtraOverride(null)}
-                style={{
-                  background: T.card,
-                  border: "1px solid " + T.border,
-                  color: T.txt2,
-                  padding: "8px 12px",
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontWeight: 600,
-                  fontSize: 12,
-                  marginTop: 14,
-                }}
-              >
-                Usar del CF
-              </button>
-            </div>
-          </div>
+          <CaminoACero plan={plan} base={base} fm={fm} cf={cfDefault}
+            extraOverride={extraOverride} setExtraOverride={setExtraOverride} />
 
           <div
             style={{
