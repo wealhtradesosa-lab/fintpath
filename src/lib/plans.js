@@ -116,7 +116,7 @@ export const PLAN_BASE = [
       "Ahorro BTC",
         "Plan Tributario",
       "Asesor IA",
-      "Coaches IA",
+      "Equipo de 5 asesores",
       "Lectura de facturas IA",
     ],
   },
@@ -142,7 +142,7 @@ export const PLAN_BASE = [
       "📥 Importa Excel/CSV con IA",
       "📸 Lectura de facturas con IA",
     ].filter(Boolean),
-    notFeatures: ["Asesor IA", "5 Coaches IA", "Plan Tributario completo", "Multi-usuario"],
+    notFeatures: ["Asesor IA", "Equipo de 5 asesores", "Plan Tributario completo", "Multi-usuario"],
   },
   {
     name: "Pro",
@@ -166,7 +166,7 @@ export const PLAN_BASE = [
         : "🏛️ Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
       "🤖 Asesor IA que analiza tus números reales",
-      "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
+      "🧠 Tu equipo de 5 asesores: tus rentas, tu libertad, tus riesgos, tus inversiones y una segunda opinión",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, estimates)",
@@ -197,7 +197,7 @@ export const PLAN_BASE = [
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
       "🎯 Simula escenarios para alcanzar tu libertad financiera",
       "🤖 Asesor IA que analiza el patrimonio consolidado",
-      "🧠 5 Coaches IA: Cashflowista, Estratega, Auditor, Fundamentalista, Contrarian",
+      "🧠 Tu equipo de 5 asesores: tus rentas, tu libertad, tus riesgos, tus inversiones y una segunda opinión",
       isCO
         ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
         : "🧾 Tax Planning US (federal + state, deductions, estimates)",

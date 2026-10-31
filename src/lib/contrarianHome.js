@@ -94,7 +94,7 @@ export function getTopContrarianAlert(user, totales, trm) {
       id: "work_dependency",
       message: `${(100 - pctPasivo).toFixed(0)}% depende de trabajo — si te enfermas, pierdes casi todo.`,
       ctaPage: "coach",
-      ctaLabel: "Ver Estratega",
+      ctaLabel: "Ver tu nivel",
       advId: "estratega",
     });
   }

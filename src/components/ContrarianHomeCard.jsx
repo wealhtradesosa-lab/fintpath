@@ -3,8 +3,8 @@
  * Copy corto en español. Sin “consulta un asesor”.
  */
 export default function ContrarianHomeCard({
-  title = "Contrarian",
-  subtitle = "Lo que NO hacer",
+  title = "Segunda opinión",
+  subtitle = "Lo que te conviene no hacer",
   alert,
   muted = false,
   mutedText = "Sin alertas graves",

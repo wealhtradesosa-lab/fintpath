@@ -10,8 +10,8 @@ export const RECORRIDOS = {
     { ids: ["f10"], go: "f10", l: "10 años", s: "tus escenarios" },
   ] },
   ia: { titulo: "Asesor IA", pasos: [
-    { ids: ["asesor"], go: "asesor", l: "Pregúntale", s: "chat con tu asesor" },
-    { ids: ["coach"], go: "coach", l: "Coaches", s: "5 miradas especializadas" },
+    { ids: ["asesor"], go: "asesor", l: "Pregúntale", s: "lo que quieras, en un chat" },
+    { ids: ["coach"], go: "coach", l: "Tu equipo de asesores", s: "cinco miradas a tu plata" },
   ] },
 };
 
