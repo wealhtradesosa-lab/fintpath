@@ -67,3 +67,36 @@ export function IconoMenu({ id, size = 20 }) {
     </span>
   );
 }
+
+import { useEffect, useRef, useState } from "react";
+import { MoreHorizontal, Pencil as Lapiz, Trash2 as Caneca } from "lucide-react";
+
+/**
+ * Menú «⋯» de una fila (crítica de diseño: lápiz y caneca a la vista en cada
+ * fila = ruido). Un botón discreto; al tocarlo, «Editar» y «Eliminar».
+ */
+export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar" }) {
+  const [abierto, setAbierto] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!abierto) return;
+    const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    document.addEventListener("mousedown", fuera);
+    return () => document.removeEventListener("mousedown", fuera);
+  }, [abierto]);
+  const item = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", color: "var(--fp-txt)", borderRadius: 6 };
+  return (
+    <span ref={ref} style={{ position: "relative", display: "inline-block" }}>
+      <button type="button" aria-label="Más opciones" aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
+        style={{ background: "transparent", border: "1px solid transparent", borderRadius: 8, padding: "4px 6px", cursor: "pointer", color: "var(--fp-txt3)", display: "inline-flex" }}>
+        <MoreHorizontal size={18} strokeWidth={1.75} />
+      </button>
+      {abierto && (
+        <div role="menu" style={{ position: "absolute", right: 0, top: "100%", zIndex: 30, minWidth: 150, background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.12)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+          {onEditar && <button role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); onEditar(); }}><Lapiz size={15} strokeWidth={1.75} /> {editarTitulo}</button>}
+          {onEliminar && <button role="menuitem" type="button" style={{ ...item, color: "#ff5000" }} onClick={() => { setAbierto(false); onEliminar(); }}><Caneca size={15} strokeWidth={1.75} /> Eliminar</button>}
+        </div>
+      )}
+    </span>
+  );
+}

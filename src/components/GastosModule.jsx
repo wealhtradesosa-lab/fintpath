@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Interruptor, Pencil, Trash2 } from "./Iconos.jsx";
+import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
 import { CLASES_GASTO, claseGasto, esDelTitular } from "../lib/clasesListado.js";
 import { mesVsPromedio } from "../lib/lecturasListado.js";
@@ -817,9 +817,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}><Interruptor on={item.sim!==false} /></button>
-                  <button onClick={() => openEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}><Pencil size={14} strokeWidth={1.75} /></button>
-                  <button onClick={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }}
-                    style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
+                  <MenuFila onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
                 </td>
               </tr>
               )

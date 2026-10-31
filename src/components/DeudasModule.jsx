@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Interruptor, Pencil, Trash2 } from "./Iconos.jsx";
+import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
 import BuscadorLista, { filtrarPorTexto as filtrarDeudas } from "./BuscadorLista";
 import { esDelTitular } from "../lib/clasesListado.js";
@@ -556,9 +556,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                             color: T.txt2, fontSize: 12, fontWeight: 600,
                             whiteSpace: "nowrap" }}>Marcar pagada</button>
                       )}
-                      <button onClick={() => openEdit(d)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}><Pencil size={14} strokeWidth={1.75} /></button>
-                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== d.id)); }}
-                        style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
+                      <MenuFila onEditar={() => openEdit(d)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== d.id)); }} />
                     </td>
                   </tr>
                 );

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Interruptor, Pencil, Trash2 } from "./Iconos.jsx";
+import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import { fmtTasaEs } from "../lib/formato.js";
 import { fmtPctEs, inflacionGlobal } from "../lib/metrics.js";
 import { rentabilidadActivos } from "../lib/rentabilidadActivo.js";
@@ -616,7 +616,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                           {!filtrando && <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[inv.__clase] ? "▸" : "▾"}</span>}
                           {inv.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {inv.__n}</span>
                         </span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                           {fm(inv.__sub)}
                           <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(inv.__pct, 0)}</span>
                         </span>
@@ -664,9 +664,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <td style={{ padding: pad, textAlign: "right", whiteSpace: "nowrap", fontSize: 12, color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: pad }}><div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
-                      <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12 }}><Pencil size={14} strokeWidth={1.75} /></button>
-                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
-                        style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
+                      <MenuFila onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
                     </div></td>
                     </>) : (<>
                       <td style={{ padding: "12px 14px", fontSize: 12, color: T.txt3 }}>{tipo}</td>
@@ -677,9 +675,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
                       </td>
                       <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                        <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12 }}><Pencil size={14} strokeWidth={1.75} /></button>
-                        <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
-                          style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
+                        <MenuFila onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
                       </div></td>
                     </>)}
                   </tr>

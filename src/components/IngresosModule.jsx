@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Interruptor, Trash2 } from "./Iconos.jsx";
+import { Interruptor, Trash2, MenuFila } from "./Iconos.jsx";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
@@ -1039,8 +1039,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.desdePatrimonio ? <span style={{ color: T.blue }}>viene de Patrimonio</span> : item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " +fmtTasaEs(item.tasa)+"" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={item.sim!==false} /></button>
-                      <button onClick={() => { if (item.desdePatrimonio) { if (onIrAPatrimonio) { onIrAPatrimonio(item.activoId); return; } alert("Este ingreso nace de un activo: edítalo en Patrimonio (cuánto vale, cuánto paga y cuándo)."); return; } handleEdit(item); }} title={item.desdePatrimonio ? "Se edita en Patrimonio" : "Editar"} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}>{item.desdePatrimonio ? "" : ""}</button>
-                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button></div>
+                      <MenuFila onEditar={() => { if (item.desdePatrimonio) { if (onIrAPatrimonio) { onIrAPatrimonio(item.activoId); return; } alert("Este ingreso nace de un activo: edítalo en Patrimonio (cuánto vale, cuánto paga y cuándo)."); return; } handleEdit(item); }} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} editarTitulo={item.desdePatrimonio ? "Editar en Patrimonio" : "Editar"} /></div>
                     </td>
                   </tr>
                   )
