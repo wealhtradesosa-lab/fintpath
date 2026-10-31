@@ -1,6 +1,8 @@
 import { useState } from "react";
 import FiltroListado from "./FiltroListado";
 import { CLASES_GASTO, claseGasto, esDelTitular } from "../lib/clasesListado.js";
+import { mesVsPromedio } from "../lib/lecturasListado.js";
+import { MesVsPromedio } from "./LecturasListado";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { valorOpcion, etiquetaOpcion } from "../lib/patrimonioUI.js";
 import { fetchAuth } from "../lib/apiFetch";
@@ -353,7 +355,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
   };
-  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0)
+  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g) * (g.moneda === "USD" ? (trm || 4200) : 1), 0)
   // 26-jul-2026 — mismo caso que Ingresos: "Total Mensual" mostraba un PROMEDIO
   // ANUAL. Un gasto que solo cae de oct a dic aparecía prorrateado, cuando lo
   // que se quiere saber al abrir la sección es qué sale ESTE mes.
@@ -622,6 +624,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         ))}
       </div>
 
+      {/* 31-oct-2026 — Este mes contra el promedio, por la misma clase de la lista. */}
+      <MesVsPromedio T={T} fm={fm} mesNombre={_MESES_L[_mesHoy - 1]}
+        r={mesVsPromedio(activos, claseGasto, { trm, año: _añoHoy, mes: _mesHoy })} />
+
       {/* Table with checkboxes */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         {/* 26-jul-2026 (Santiago: "sería muy genial una barra o gráfico que
@@ -633,7 +639,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             en la barra es exactamente lo que se lee en la tabla. */}
         {(() => {
           const grupos = {};
-          activos.forEach(g => { grupos[g.cat] = (grupos[g.cat] || 0) + montoPromedioMensual(g); });
+          activos.forEach(g => { const c = claseGasto(g); const k = c.icono + " " + c.nombre; grupos[k] = (grupos[k] || 0) + montoPromedioMensual(g) * (g.moneda === "USD" ? (trm || 4200) : 1); });
           const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
           if (datos.length < 2) return null;   // con una sola categoría no dice nada
           const tot = datos.reduce((s, d) => s + d.value, 0);

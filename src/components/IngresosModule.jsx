@@ -16,6 +16,8 @@ import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
 import FiltroListado from "./FiltroListado";
 import { CLASES_INGRESO, claseIngreso, esDelTitular } from "../lib/clasesListado.js";
+import { corteTrabajo } from "../lib/lecturasListado.js";
+import { CorteTrabajo } from "./LecturasListado";
 import { textoRevisarPrima, MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -811,6 +813,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
         ))}
       </div>
 
+      {/* 31-oct-2026 — Lo que depende de tu trabajo contra lo que no. */}
+      <CorteTrabajo T={T} fm={fm} r={corteTrabajo(activos, trm)} />
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
         {/* Table with checkboxes */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
@@ -821,7 +826,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             {(() => {
               const grupos = {};
               activos.forEach(i => {
-                const k = labelCategoria(i.categoria) || i.tipo || "Sin categoría";
+                const c = claseIngreso(i); const k = c.icono + " " + c.nombre; // misma agrupación que la lista
                 grupos[k] = (grupos[k] || 0) + montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1);
               });
               const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
