@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { fmtTasaEs } from "../lib/formato.js";
-import { fmtPctEs } from "../lib/metrics.js";
+import { fmtPctEs, inflacionGlobal } from "../lib/metrics.js";
+import { rentabilidadActivos } from "../lib/rentabilidadActivo.js";
+import RentabilidadActivos from "./RentabilidadActivos";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
@@ -535,6 +537,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           </div>
         );
       })()}
+
+      {/* 31-oct-2026 — Cuánto rinde cada activo, contra la inflación. */}
+      <RentabilidadActivos T={T} fm={fm} nombre={getName} onAbrir={openEdit}
+        r={rentabilidadActivos(activos, { valor: (i) => getVA(i, trm), rentaAnual: rentaPorActivo, gastoAnual: gastoPorActivo, inflacion: inflacionGlobal(user?.inflacionPct) })} />
       {(() => {
         const ds = deudasSinActivo(deudas, activos);
         if (ds.n === 0) return null;
