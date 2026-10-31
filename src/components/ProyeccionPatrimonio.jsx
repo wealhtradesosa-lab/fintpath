@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import InputDecimalEs from "./InputDecimalEs.jsx";
-import { fmtNumEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPlataCortaEs } from "../lib/formato.js";
 import { fmtPctEs } from "../lib/metrics.js";
 import {
   AreaChart,
@@ -168,316 +168,94 @@ export default function ProyeccionPatrimonio({
     marginBottom: 4,
   };
 
+  // 31-oct-2026 (Santiago: «pésima diagramación aquí»). Primero la respuesta
+  // (tres tarjetas, cifra en plata de hoy), luego «¿y si te quedara más?», luego
+  // los supuestos en una fila; la explicación, la tabla y la fórmula se pliegan.
+  const sub = T.txt3 || "var(--fp-txt3)", sub2 = T.txt2 || "var(--fp-txt2)", txt = T.txt || "var(--fp-txt)";
+  const borde = T.border || "rgba(var(--fp-ink),0.08)";
+  const nominalMezcla = mezcla ? ((1 + mezcla.tasaReal) * (1 + (Number(inflacionPct) || 0) / 100) - 1) * 100 : null;
+  const mezclaIgual = nominalMezcla != null && Math.abs(nominalMezcla - (Number(retornoPct) || 0)) < 0.15;
   return (
-    <div
-      style={{
-        background: T.card || "var(--fp-bg)",
-        border: "1px solid " + (T.border || "rgba(var(--fp-ink),0.06)"),
-        borderRadius: 16,
-        padding: 20,
-        marginTop: 14,
-      }}
-    >
-      <div style={{ marginBottom: 14 }}>
-        <div
-          style={{
-            fontSize: 13,
-            fontWeight: 700,
-            color: T.txt || "var(--fp-txt)",
-            lineHeight: 1.35,
-          }}
-        >
-          Si sostengo este cash flow, ¿el patrimonio a 3 / 5 / 10 años crece o se come?
-        </div>
-        {/* 14-sep-2026 — El texto anterior era jerga: "CF anual neto",
-            "debt service", "post-rete", "impuesto a cargo". Describía la
-            implementación, no lo que el usuario está viendo. Se reemplaza por
-            los tres supuestos que de verdad mueven el resultado, en el orden en
-            que uno los necesita entender. */}
-        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", marginTop: 6, lineHeight: 1.6 }}>
-          La proyección combina tres factores por año:
-        </div>
-        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", marginTop: 6, lineHeight: 1.6 }}>
-          <div style={{ marginBottom: 3 }}>
-            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>1. Se valoriza.</strong>{" "}
-            El patrimonio actual crece al porcentaje anual que definas abajo.
-          </div>
-          <div style={{ marginBottom: 3 }}>
-            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>2. Se suma el flujo de caja.</strong>{" "}
-            El excedente anual (ingresos menos gastos, cuotas e impuestos) se incorpora al patrimonio.
-          </div>
-          <div>
-            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>3. La inflación reduce su valor.</strong>{" "}
-            De ahí las dos cifras por horizonte: la nominal y la{" "}
-            <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>real</strong>, expresada
-            en poder adquisitivo de hoy. La real es la relevante para decidir.
-          </div>
-        </div>
-        <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", marginTop: 8, lineHeight: 1.5,
-             paddingTop: 8, borderTop: `1px solid ${T.border || "rgba(var(--fp-ink),0.08)"}` }}>
-          <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>Crece</strong>: el patrimonio real
-          a ese horizonte supera el actual.{" "}
-          <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>Se come</strong>: el flujo de caja
-          no compensa la pérdida por inflación.
-        </div>
+    <div style={{ background: T.card || "var(--fp-card)", border: "1px solid " + borde, borderRadius: 16, padding: "24px 24px 20px", marginTop: 20 }}>
+      <div style={{ fontSize: 16, fontWeight: 800, color: txt, lineHeight: 1.3 }}>
+        ¿Tu patrimonio crece o se come en 3, 5 y 10 años?
+      </div>
+      <div style={{ fontSize: 13, color: sub, marginTop: 4, lineHeight: 1.5 }}>
+        Si cada año te queda lo mismo que hoy. La cifra grande está en plata de hoy (ya sin inflación).
       </div>
 
-      {/* Controles */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 10,
-          marginBottom: 14,
-        }}
-      >
-        <div>
-          <div style={labelStyle}>CF anual (override)</div>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={
-              cfOverride != null
-                ? cfOverride
-                : Math.round(cfAnualDefault).toLocaleString("es-CO")
-            }
-            onChange={(e) => setCfOverride(e.target.value)}
-            onBlur={() => {
-              if (cfOverride == null || cfOverride === "") return;
-              const n = Number(String(cfOverride).replace(/[^0-9.-]/g, ""));
-              if (!Number.isFinite(n)) setCfOverride(null);
-              else setCfOverride(String(Math.round(n)));
-            }}
-            style={inputStyle}
-            aria-label="Cash flow anual override"
-          />
-          <div style={{ fontSize: 9, color: T.txt3 || "var(--fp-txt3)", marginTop: 3 }}>
-            Default = CF simulado × 12 ({fm(cfAnualDefault)}).{" "}
-            {cfOverride != null && (
-              <button
-                type="button"
-                onClick={() => setCfOverride(null)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: T.bl || "#3b82f6",
-                  cursor: "pointer",
-                  padding: 0,
-                  fontSize: 9,
-                  fontWeight: 600,
-                }}
-              >
-                Usar del simulador
-              </button>
-            )}
-          </div>
-        </div>
-        <div>
-          <div style={labelStyle}>Valorización anual del patrimonio %</div>
-          <input
-            type="number"
-            step="0.1"
-            value={retornoPct}
-            onChange={(e) => setRetornoPct(e.target.value)}
-            style={inputStyle}
-            aria-label="Valorización anual del patrimonio"
-          />
-          {/* 14-sep-2026 (Santiago: "eso de retorno del excedente no lo
-              entiendo bien, ¿es retorno de la plata que me queda de cash
-              flow?"). No: el motor hace activos × (1 + r) + cfAnual, o sea
-              aplica r sobre TODO el patrimonio, no sobre el excedente. La
-              etiqueta decía una cosa y el cálculo hacía otra. Si el propio
-              autor de la plataforma duda, un usuario no tiene ninguna
-              posibilidad. Se renombra al comportamiento real y se explica. */}
-          <div style={{ fontSize: 9, color: T.txt3 || "var(--fp-txt3)", marginTop: 3, lineHeight: 1.45 }}>
-            Se aplica sobre el total del patrimonio (inmuebles, inversiones,
-            vehículos), no sobre el excedente de caja.
-          </div>
-
-          {/* 14-sep-2026 — Sugerencia derivada de la composición real.
-              Se OFRECE, no se impone: cambiar el default en silencio movería
-              cifras que el usuario ya vio y comparó. Que el número salga de sus
-              propios activos es información; sustituirlo sin avisar sería otra
-              suposición, solo que mejor disfrazada. */}
-          {mezcla && (() => {
-            // El campo está en términos NOMINALES y la tabla de clases está en
-            // REALES. La conversión es compuesta, no una suma.
-            const nominal = ((1 + mezcla.tasaReal) * (1 + (Number(inflacionPct) || 0) / 100) - 1) * 100;
-            const actual = Number(retornoPct) || 0;
-            const igual = Math.abs(nominal - actual) < 0.15;
-            return (
-              <div style={{ marginTop: 8, padding: "9px 11px", borderRadius: 10,
-                    background: T.bg2 || "var(--fp-card)",
-                    border: `1px solid ${T.border || "rgba(var(--fp-ink),0.08)"}` }}>
-                <div style={{ fontSize: 11, color: T.txt3 || "var(--fp-txt3)", lineHeight: 1.5 }}>
-                  Según la composición de tu patrimonio, la valorización esperada es{" "}
-                  <strong style={{ color: T.txt2 || "var(--fp-txt2)" }}>{fmtPctEs(nominal)}</strong>{" "}
-                  nominal ({fmtPctEs(mezcla.tasaReal * 100)} real).
-                </div>
-                <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", marginTop: 5, lineHeight: 1.6 }}>
-                  {mezcla.detalle.map((d) => (
-                    <span key={d.clase} style={{ marginRight: 10, whiteSpace: "nowrap" }}>
-                      {d.label} {fmtPctEs((d.peso * 100), 0)}
-                      <span style={{ color: d.r < 0 ? "#ef4444" : T.txt3, marginLeft: 3 }}>
-                        ({d.r > 0 ? "+" : ""}{fmtPctEs((d.r * 100), 0)})
-                      </span>
-                    </span>
-                  ))}
-                </div>
-                {!igual && (
-                  <button type="button"
-                    onClick={() => setRetornoPct(String(nominal.toFixed(1)))}
-                    style={{ marginTop: 7, padding: "5px 10px", borderRadius: 6,
-                      background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 700,
-                      color: T.green || "#22c55e",
-                      border: `1px solid ${T.green || "#22c55e"}` }}>
-                    Usar {fmtPctEs(nominal)}
-                  </button>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-        <div>
-          <div style={labelStyle}>Inflación %</div>
-          <InputDecimalEs
-            value={inflacionPct}
-            onChange={(v) => setInflacionPct(v)}
-            style={inputStyle}
-            aria-label="Inflación anual"
-          />
-        </div>
-      </div>
-
-      {/* Veredictos 3 / 5 / 10 */}
-      {/* 14-sep-2026 (Santiago: "lo que quiero es darle la posibilidad al
-          usuario de que proyecte, que mire presente, futuro 3, 5, 10 años, si
-          aumenta cash flow, eso es todo").
-          La pieza ya estaba -- override de CF y tarjetas a 3/5/10 años -- pero
-          para usarla había que ESCRIBIR una cifra anual a mano. Nadie calcula
-          mentalmente "mi CF más 25%" y lo teclea; el resultado era que la
-          función existía y no se tocaba.
-          Estos botones responden la pregunta tal como se la hace uno: ¿y si
-          aumento el cash flow? Un clic y las tres tarjetas se recalculan. */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ ...labelStyle, marginBottom: 6 }}>Escenarios de flujo de caja</div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {[
-            { l: "Actual", f: 1 },
-            { l: "+10%", f: 1.1 },
-            { l: "+25%", f: 1.25 },
-            { l: "+50%", f: 1.5 },
-            { l: "+100%", f: 2 },
-          ].map(({ l, f }) => {
-            const valor = Math.round(cfAnualDefault * f);
-            // "Como hoy" se marca activo cuando no hay override, que es el
-            // estado inicial: así el grupo siempre refleja lo que se está viendo.
-            const activo = f === 1
-              ? cfOverride == null
-              : cfOverride != null &&
-                Math.abs(Number(String(cfOverride).replace(/[^0-9.-]/g, "")) - valor) < 2;
-            return (
-              <button
-                key={l}
-                type="button"
-                onClick={() => setCfOverride(f === 1 ? null : String(valor))}
-                style={{
-                  padding: "7px 13px", borderRadius: 999, cursor: "pointer",
-                  fontSize: 12, fontWeight: 700,
-                  background: activo ? (T.green || "#22c55e") : "transparent",
-                  color: activo ? "var(--fp-bg)" : (T.txt2 || "var(--fp-txt2)"),
-                  border: `1px solid ${activo ? (T.green || "#22c55e") : (T.border || "rgba(var(--fp-ink),0.12)")}`,
-                }}>
-                {l}
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ fontSize: 10, color: T.txt3 || "var(--fp-txt3)", marginTop: 6 }}>
-          Calculado sobre el flujo de caja simulado de {fm(cfAnualDefault)} anuales.
-          También puedes ingresar una cifra exacta abajo.
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 8,
-          marginBottom: 14,
-        }}
-      >
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 120px), 1fr))", gap: 10, margin: "20px 0" }}>
         {proy.porHorizonte.map((h) => {
           const crece = h.veredicto === "crece";
+          const col = crece ? (T.gn || "#22c55e") : (T.rd || "#ef4444");
           return (
-            <div
-              key={h.horizonte}
-              style={{
-                background: crece
-                  ? T.gnD || "rgba(34,197,94,0.1)"
-                  : T.rdD || "rgba(239,68,68,0.08)",
-                border: `1px solid ${(crece ? T.gn : T.rd) || (crece ? "#22c55e" : "#ef4444")}33`,
-                borderRadius: 12,
-                padding: "12px 10px",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: 0.8,
-                  textTransform: "uppercase",
-                  color: T.txt3 || "var(--fp-txt3)",
-                }}
-              >
-                {h.horizonte} años
-              </div>
-              <div
-                style={{
-                  fontSize: 14,
-                  fontWeight: 800,
-                  marginTop: 4,
-                  color: crece ? T.gn || "#22c55e" : T.rd || "#ef4444",
-                }}
-              >
-                {crece ? "Crece" : "Se come"}
-              </div>
-              <div
-                style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: T.txt || "var(--fp-txt)",
-                  marginTop: 6,
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                {fm(h.patrimonio)}
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  color: crece ? T.gn || "#22c55e" : T.rd || "#ef4444",
-                  marginTop: 2,
-                }}
-              >
-                {h.delta >= 0 ? "+" : ""}
-                {fm(h.delta)} nominal
-              </div>
-              <div style={{ fontSize: 9, color: T.txt3 || "var(--fp-txt3)", marginTop: 2 }}>
-                Real: {fm(h.patrimonioReal)}
-              </div>
+            <div key={h.horizonte} style={{ background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + borde, borderRadius: 14, padding: "12px 12px 10px", minWidth: 0, overflow: "hidden" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: sub2 }}>En {h.horizonte} años</div>
+              <div title={fm(h.patrimonioReal)} style={{ fontSize: 18, fontWeight: 800, color: txt, marginTop: 8, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmtPlataCortaEs(h.patrimonioReal)}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: col, marginTop: 2 }}>{crece ? "▲ Crece" : "▼ Se come"}</div>
+              <div title={fm(h.patrimonio)} style={{ fontSize: 11, color: sub, marginTop: 6, lineHeight: 1.35 }}>{fmtPlataCortaEs(h.patrimonio)} con inflación</div>
             </div>
           );
         })}
       </div>
+
+      <div style={{ fontSize: 13, fontWeight: 700, color: txt, marginBottom: 8 }}>¿Y si cada año te quedara más?</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 22 }}>
+        {[{ l: "Como hoy", f: 1 }, { l: "+10 %", f: 1.1 }, { l: "+25 %", f: 1.25 }, { l: "+50 %", f: 1.5 }, { l: "El doble", f: 2 }].map(({ l, f }) => {
+          const valor = Math.round(cfAnualDefault * f);
+          const activo = f === 1 ? cfOverride == null
+            : cfOverride != null && Math.abs(Number(String(cfOverride).replace(/[^0-9.-]/g, "")) - valor) < 2;
+          return (
+            <button key={l} type="button" onClick={() => setCfOverride(f === 1 ? null : String(valor))}
+              style={{ padding: "7px 14px", borderRadius: 999, cursor: "pointer", fontSize: 13, fontWeight: 600,
+                background: activo ? "rgba(34,197,94,0.12)" : "transparent", color: activo ? (T.gn || "#22c55e") : sub2,
+                border: "1px solid " + (activo ? (T.gn || "#22c55e") : borde) }}>
+              {l}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: 11, fontWeight: 700, color: sub, textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 8 }}>Supuestos</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: 12, alignItems: "start" }}>
+        <label style={{ display: "block" }}>
+          <div style={{ fontSize: 12, color: sub2, marginBottom: 4 }}>Lo que te queda al año</div>
+          <input type="text" inputMode="numeric"
+            value={cfOverride != null ? cfOverride : Math.round(cfAnualDefault).toLocaleString("es-CO")}
+            onChange={(e) => setCfOverride(e.target.value)}
+            onBlur={() => {
+              if (cfOverride == null || cfOverride === "") return;
+              const n = Number(String(cfOverride).replace(/[^0-9.-]/g, ""));
+              if (!Number.isFinite(n)) setCfOverride(null); else setCfOverride(String(Math.round(n)));
+            }}
+            style={inputStyle} aria-label="Lo que te queda al año" />
+          <div style={{ fontSize: 11, color: sub, marginTop: 4 }}>
+            Del simulador: {fm(cfAnualDefault)}{" "}
+            {cfOverride != null && <button type="button" onClick={() => setCfOverride(null)} style={{ background: "none", border: "none", color: T.bl || "#3b82f6", cursor: "pointer", padding: 0, fontSize: 11, fontWeight: 600 }}>· volver a ese</button>}
+          </div>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={{ fontSize: 12, color: sub2, marginBottom: 4 }}>Cuánto sube tu patrimonio al año (%)</div>
+          <input type="number" step="0.1" value={retornoPct} onChange={(e) => setRetornoPct(e.target.value)} style={inputStyle} aria-label="Valorización anual del patrimonio" />
+          <div style={{ fontSize: 11, color: sub, marginTop: 4 }}>
+            {nominalMezcla != null && !mezclaIgual
+              ? <>Por lo que tienes, lo esperable es {fmtPctEs(nominalMezcla)}. <button type="button" onClick={() => setRetornoPct(String(nominalMezcla.toFixed(1)))} style={{ background: "none", border: "none", color: T.bl || "#3b82f6", cursor: "pointer", padding: 0, fontSize: 11, fontWeight: 600 }}>Usar {fmtPctEs(nominalMezcla)}</button></>
+              : "Sobre todo lo que tienes: inmuebles, inversiones, vehículos."}
+          </div>
+        </label>
+        <label style={{ display: "block" }}>
+          <div style={{ fontSize: 12, color: sub2, marginBottom: 4 }}>Inflación al año (%)</div>
+          <InputDecimalEs value={inflacionPct} onChange={(v) => setInflacionPct(v)} style={inputStyle} aria-label="Inflación anual" />
+        </label>
+      </div>
+      <div style={{ height: 24 }} />
 
       {/* Chart */}
       {/* El título dice ahora la unidad del eje X. Sin eso, dos gráficas de
           área verdes seguidas parecen la misma: la de arriba va mes a mes
           dentro de un año, esta va año a año. */}
       <div style={{ fontSize: 11, fontWeight: 600, color: T.txt2 || "var(--fp-txt2)", marginBottom: 8 }}>
-        Patrimonio proyectado <span style={{ fontWeight: 400, color: T.txt3 || "var(--fp-txt3)" }}>· año a año</span>
+        Cómo crecería, año a año <span style={{ fontWeight: 400, color: T.txt3 || "var(--fp-txt3)" }}>· línea punteada: en plata de hoy</span>
       </div>
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={chartData}>
@@ -509,7 +287,7 @@ export default function ProyeccionPatrimonio({
             stroke={CHART.blue}
             fill="url(#gradBlue)"
             strokeWidth={2.5}
-            name="Nominal"
+            name="Con inflación"
           />
           <Area
             type="monotone"
@@ -518,11 +296,20 @@ export default function ProyeccionPatrimonio({
             fill="transparent"
             strokeDasharray="5 5"
             strokeWidth={1.5}
-            name="Real (deflactado)"
+            name="En plata de hoy"
           />
         </AreaChart>
       </ResponsiveContainer>
 
+      <details style={{ marginTop: 16 }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, color: sub2, fontWeight: 600 }}>¿Cómo se calcula? Ver tabla y supuestos</summary>
+        <div style={{ fontSize: 12, color: sub, lineHeight: 1.6, margin: "10px 0 12px" }}>
+          Cada año: <strong style={{ color: sub2 }}>1)</strong> lo que tienes sube al porcentaje de arriba;{" "}
+          <strong style={{ color: sub2 }}>2)</strong> se suma lo que te queda (ingresos menos gastos, cuotas e impuestos);{" "}
+          <strong style={{ color: sub2 }}>3)</strong> se descuenta la inflación para verlo en plata de hoy.
+          «Crece» quiere decir que en plata de hoy tendrás más que ahora; «se come», que lo que te queda no alcanza a cubrir la inflación.
+          {mezcla && <div style={{ marginTop: 6 }}>Lo esperable por lo que tienes: {mezcla.detalle.map((d) => `${d.label} ${fmtPctEs(d.peso * 100, 0)} (${d.r > 0 ? "+" : ""}${fmtPctEs(d.r * 100, 0)})`).join(" · ")}.</div>}
+        </div>
       {/* Tabla resumen */}
       <div style={{ overflowX: "auto", marginTop: 12 }}>
         <table
@@ -584,15 +371,15 @@ export default function ProyeccionPatrimonio({
         }}
       >
         <div style={{ fontWeight: 700, color: T.txt2 || "var(--fp-txt2)", marginBottom: 4 }}>
-          Supuestos (editables arriba)
+          Con qué números se calculó
         </div>
         <div>
           Patrimonio hoy: <strong style={{ color: T.txt2 }}>{fm(snap.patrimonioNeto)}</strong>
           {" · "}Activos {fm(snap.activos)} − Deudas {fm(snap.deudasTotales)}
         </div>
         <div>
-          CF anual usado: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
-          {cfOverride == null ? " (del simulador)" : " (override)"}
+          Lo que te queda al año: <strong style={{ color: T.txt2 }}>{fm(cfAnual)}</strong>
+          {cfOverride == null ? " (del simulador)" : " (escrito por ti)"}
           {" · "}Valorización patrimonio {Number(retornoPct) || 0}%
           {" · "}Inflación {(Number(inflacionPct) || 0).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
         </div>
@@ -600,10 +387,12 @@ export default function ProyeccionPatrimonio({
           Amortización de capital estimada: {fm(amortAnual)}/año (reduce pasivo; no se resta del CF).
         </div>
         <div style={{ marginTop: 4 }}>
-          Fórmula: activos × (1 + valorización) + CF anual reinvertido; deudas bajan por
+          Fórmula: activos × (1 + valorización) + lo que te queda cada año; deudas bajan por
           amortización estimada. Veredicto “crece / se come” usa patrimonio <em>real</em> (deflactado).
         </div>
       </div>
+
+      </details>
 
       <div style={{ marginTop: 10 }}>
         <Disclaimer variante="proyeccion" idioma="es" T={T} compacto />
