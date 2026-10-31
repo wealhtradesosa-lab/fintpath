@@ -103,7 +103,8 @@ import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
-import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte } from "./lib/norteUnMinuto.js";
+import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte, RETORNO_SUPUESTO } from "./lib/norteUnMinuto.js";
+import PrimerMinuto from "./components/PrimerMinuto.jsx";
 import { TRM_PROVISIONAL } from "./lib/trm.js";
 import { registrarMes, resumenHistoria, etiquetaMes, fotoPatrimonio } from "./lib/historiaPatrimonio.js";
 import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
@@ -632,6 +633,7 @@ export default function FinPath(){
   const[mb,sMb]=useState(false);
   const[simS,sSimS]=useState("actual");
   const[showImport,setShowImport]=useState(false);
+  const[pmDetalle,setPmDetalle]=useState(false); // primer minuto: eligió cargar sección por sección
   const[cur,setCur]=useState(()=>localStorage.getItem("fp3_cur")||"COP");
   const[showAuth,setShowAuth]=useState(false);
   const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});
@@ -2480,11 +2482,24 @@ export default function FinPath(){
           <button onClick={()=>{track("bienvenida_accion",{pg:acc.pg});setPg(acc.pg)}} style={{marginTop:12,background:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:800,fontSize:14}}>{acc.b} →</button>
         </div>;
       })()}
+      {/* 31-oct-2026 — Primer minuto: tres cifras en vez de un Dashboard vacío. */}
+      {sinDatos&&!pmDetalle&&!isUS&&!esDemo(u)&&<PrimerMinuto nombre={(u?.p?.name&&u.p.name!=="Usuario")?u.p.name.split(" ")[0]:""}
+        onDetallar={()=>{track("primer_minuto_detalle");setPmDetalle(true)}}
+        onExcel={()=>{track("primer_minuto_excel");setShowImport(true)}}
+        onListo={(e)=>{
+          const ownerId=(u?.owners&&u.owners[0]?.id)||"own_1";
+          const it=itemsDesdeNorte(e,ownerId);
+          it.inv=it.inv.map(i=>({...i,n:"Lo que tengo (estimado)",tp:"Otros"}));
+          track("primer_minuto_listo",{pasivo:Number(e.ingresoPasivo)>0,deudas:Number(e.deudas)>0});
+          setU(p=>p?{...p,owners:(p.owners&&p.owners.length)?p.owners:[{id:ownerId,name:(p.p&&p.p.name)||"Yo",type:"natural"}],ingresos:it.ingresos,gas:it.gas,inv:it.inv,deu:it.deu}:p);
+          try{window.scrollTo({top:0,behavior:"smooth"})}catch{}
+        }}/>}
       {(()=>{
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
         const hasGas=Object.keys((u&&u.gas)||{}).length>0;
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasDeu=((u&&u.deu)||[]).length>0;
+        if(sinDatos&&!pmDetalle&&!isUS&&!esDemo(u))return null; // el primer minuto va primero
         // 25-oct-2026: orden y texto de Santiago — activos, ingresos, gastos y deudas.
         const steps=[
           {id:"inv",done:hasInv,icon:"🏦",title:"Tus activos",desc:"Lo que tienes: cuentas, CDTs, fondos, acciones, propiedades, cripto, vehículos",action:"Activos cargados",tip:"Cada uno con su valor de hoy"},
@@ -2569,6 +2584,7 @@ export default function FinPath(){
                 </div>
                 <div style={{fontSize:11,color:CHART.txt3,marginTop:6}}>
                   Cuentas de este mes: rentas (lo que te dejan tus activos sin trabajar) {fm(t.ingresoPasivo||0)} · gastos y cuotas {fm(t.ob||0)}.
+                  {!ok&&<span> · Para cubrirlo con rentas necesitarías unos <b style={{color:CHART.txt}}>{fm(Math.abs(dif)*12/RETORNO_SUPUESTO)}</b> más invertidos al {fmtPctEs(RETORNO_SUPUESTO*100,0)} anual.</span>}
                   {hs.mes&&<span> · Patrimonio {hs.mes.cambio>=0?"▲ +":"▼ "}{fm(hs.mes.cambio)} vs {etiquetaMes(hs.mes.desde)}.</span>}
                 </div>
               </div>;
@@ -2715,7 +2731,7 @@ export default function FinPath(){
           {l:"Gastos/mes",v:fm(t.gfm+t.tg),c:T.rd,i:"💳"},
           {l:"Deudas/mes",v:fm(t.tc),c:"#f97316",i:"🏦"},
           {l:"Cash Flow",v:fm(t.cf)+"/mes",c:t.cf>=0?T.gn:T.rd,i:"📊"},
-          {l:"Independencia",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"🏆":"📈"},
+          {l:"Rentas cubren",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"🏆":"📈"},
         ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:10,color:T.tx3,textTransform:"uppercase",fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div></div><div style={{fontSize:22}}>{k.i}</div></div></Cd>)}
       </div>
 
@@ -2928,7 +2944,7 @@ export default function FinPath(){
             </div>
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:14}}>
               {[
-                {l:"Ingreso pasivo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#eab308":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:"🔄"},
+                {l:"Ingreso que no es trabajo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#eab308":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:"🔄"},
                 {l:t.rentaYield.etiqueta,v:t.rentaYield.yield==null?"—":pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#eab308":T.rd,tip:"Renta neta anual ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"costo de adquisición")+" de los activos que rentan.",i:"📈"},
                 {l:"Concentración",v:pc(concRisk),c:concRisk<=30?T.gn:concRisk<=50?"#eab308":T.rd,tip:concRisk>30?"⚠ "+maxAsset.n+" es "+pc(concRisk)+" de tu patrimonio":"Ningún activo supera el 30%. Bien diversificado.",i:"⚠️"},
                 {l:"FIRE progress",v:pc(fireProgress),c:fireProgress>=100?T.gn:fireProgress>=50?"#eab308":T.rd,tip:"Patrimonio ÷ (gastos×25 años). 100% = nunca más necesitas trabajar.",i:"🔥"},
