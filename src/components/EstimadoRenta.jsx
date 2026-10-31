@@ -155,8 +155,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
         subtitle="Partimos de la última declaración que hizo tu contador y solo te preguntamos qué cambió. Así el cálculo conserva todo lo que él ya aplicó." />
 
       {(() => { const y = new Date().getFullYear(); return (
-        <div style={{ ...card, background: Cα.accent08, borderColor: Cα.accent25, display: "grid", gap: 6 }}>
-          <div style={F.h3}>Para qué sirve este cálculo</div>
+        <div style={{ display: "grid", gap: 4, marginTop: -6 }}>{/* 31-oct-2026: párrafo gris, sin caja azul */}
           <div style={{ ...F.body, color: C.text }}>
             Aquí calculas la <b>renta de {y}</b> (lo que estás ganando este año), que <b>se declara y se paga en {y + 1}</b>.
             {" "}Ese resultado es el que usa el <button type="button" onClick={() => onNavigate?.("simf")} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Simulador {y + 1}</button> para proyectar tu flujo de caja de ese año.

@@ -118,7 +118,7 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
     if (formatter) return formatter(v, name, entry);
     if (typeof v === "number") {
       // Formato moneda colombiana por defecto
-      if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+"M";
+      if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
       if (Math.abs(v) >= 1e3) return "$" + fmtNumEs((v / 1e3), 1)+"K";
       return "$" + v.toLocaleString("es-CO");
     }

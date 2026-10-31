@@ -37,8 +37,8 @@ const colors = {
 
 function fmM(v) {
   const m = (Number(v) || 0) / 1e6;
-  if (Math.abs(m) >= 1000) return "$" + fmtNumEs((m / 1000), 1)+"B";
-  if (Math.abs(m) >= 1) return "$" + fmtNumEs(m, 0)+"M";
+  if (Math.abs(m) >= 1000) return "$" + fmtNumEs(m, 0)+" MM";
+  if (Math.abs(m) >= 1) return "$" + fmtNumEs(m, 0)+" MM";
   return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 }
 

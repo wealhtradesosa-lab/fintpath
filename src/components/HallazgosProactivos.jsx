@@ -84,7 +84,6 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-        <span style={{ fontSize: 16 }}>&#129302;</span>
         <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>
           Tu family office analiz&oacute; tus n&uacute;meros
         </div>

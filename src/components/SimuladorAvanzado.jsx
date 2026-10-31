@@ -165,7 +165,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
   );
 }
 
-const fmCorto = (n) => { const a = Math.abs(Number(n) || 0); return "$" + (a >= 1e6 ? (a / 1e6).toLocaleString("es-CO", { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + " M" : Math.round(a).toLocaleString("es-CO")); };
+const fmCorto = (n) => { const a = Math.abs(Number(n) || 0); return "$" + (a >= 1e6 ? (a / 1e6).toLocaleString("es-CO", { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + " MM" : Math.round(a).toLocaleString("es-CO")); };
 
 // ─── FREEDOM BAR (inline, reactive) ───
 function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null }) {
@@ -2539,7 +2539,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
                 <ChartGradients/>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="m" {...axisProps} />
-                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+fmtNumEs((v/1e9), 1)+"B";if(Math.abs(v)>=1e6)return"$"+fmtNumEs((v/1e6), 0)+"M";if(Math.abs(v)>=1e3)return"$"+fmtNumEs((v/1e3), 0)+"K";return"$"+v}} />
+                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+fmtNumEs((v / 1e6), 0)+" MM";if(Math.abs(v)>=1e6)return"$"+fmtNumEs((v/1e6), 0)+" MM";if(Math.abs(v)>=1e3)return"$"+fmtNumEs((v/1e3), 0)+"K";return"$"+v}} />
                 {/* 14-sep-2026 — Tercera pasada sobre lo mismo (Santiago:
                     "por eso explique mejor"). El encabezado del tooltip decía
                     solo "DIC", y al lado una cifra: se lee como el dato DE

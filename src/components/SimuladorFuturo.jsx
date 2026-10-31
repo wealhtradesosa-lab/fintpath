@@ -451,7 +451,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const Interruptor = ({ on, onClick, titulo }) => (
     <button type="button" onClick={onClick} title={titulo} aria-pressed={on}
       style={{ width: 34, height: 20, borderRadius: 999, border: "none", cursor: "pointer", padding: 2, flexShrink: 0, background: on ? C.ok : C.border, display: "flex", justifyContent: on ? "flex-end" : "flex-start", transition: "all .15s" }}>
-      <span style={{ width: 16, height: 16, borderRadius: 999, background: C.text, display: "block" }} />
+      <span style={{ width: 16, height: 16, borderRadius: 999, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,.3)", display: "block" }} />
     </button>
   );
   const motivoExcluido = (f) => activos[f.key] === false ? `apagado en este escenario`

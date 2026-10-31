@@ -25,8 +25,8 @@ export function Panel({ titulo, sub, children, style }) {
 export function Bienvenida({ titulo, potencial = [], pasos = [], accion }) {
   const listo = pasos.length && pasos.every((p) => p.hecho);
   return (
-    <section style={{ ...card, background: Cα.accent08, borderColor: Cα.accent25 }}>
-      <div style={{ ...F.h3, color: C.accent, marginBottom: 6 }}>{listo ? "✓ Todo listo" : "Cómo funciona"}</div>
+    <section style={{ ...card }}>
+      <div style={{ ...F.h3, color: C.muted, marginBottom: 6 }}>{listo ? "✓ Todo listo" : "Cómo funciona"}</div>
       {!listo && titulo && <div style={{ ...F.h2, marginBottom: 8 }}>{titulo}</div>}
       {!listo && potencial.length > 0 && (
         <ul style={{ ...F.body, margin: "0 0 12px", paddingLeft: 18, display: "grid", gap: 4 }}>
@@ -71,9 +71,9 @@ export function SelectorTitular({ owners, value, onChange, conGrupo = true }) {
 
 export function Kpi({ k, v, d, color }) {
   return (
-    <div style={{ background: C.raised, borderRadius: R.lg, padding: "12px 14px", display: "grid", gap: 3 }}>
-      <span style={{ ...F.caption, fontWeight: 600, color: C.muted }}>{k}</span>
-      <span style={{ fontFamily: mono, fontWeight: 700, fontSize: 20, color: color || C.text }}>{v}</span>
+    <div style={{ background: C.raised, borderRadius: R.lg, padding: "12px 14px", display: "grid", gap: 3, alignContent: "start", gridTemplateRows: "auto auto 1fr" }}>
+      <span style={{ ...F.caption, fontWeight: 500, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k}</span>
+      <span style={{ fontWeight: 600, fontSize: 20, color: color || C.text, fontVariantNumeric: "tabular-nums" }}>{v}</span>
       {d && <span style={F.caption}>{d}</span>}
     </div>
   );

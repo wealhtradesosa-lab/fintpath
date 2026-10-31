@@ -16,8 +16,8 @@ const T = {
   orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const fm = (v) => {
-  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 2)+"B";
-  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+"M";
+  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
+  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
   return "$" + Math.round(v).toLocaleString("es-CO");
 };
 // Tabla Art. 241 y cálculo centralizado en src/lib/tablaArt241.js.
@@ -669,7 +669,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         // Helper: formateo de moneda compacto para el panel.
         const fmM = (v) => {
           const n = Math.round(Number(v) || 0);
-          if (n >= 1000000) return "$" + fmtNumEs((n / 1000000), 1)+"M";
+          if (n >= 1000000) return "$" + fmtNumEs((n / 1000000), 1)+" MM";
           if (n >= 1000) return "$" + fmtNumEs((n / 1000), 0)+"K";
           return "$" + n.toLocaleString("es-CO");
         };

@@ -39,8 +39,8 @@ const PRIORIDAD_META = {
 
 function fmShort(n) {
   if (!n) return "$0";
-  if (n >= 1_000_000_000) return "$" + fmtNumEs((n / 1_000_000_000), 1)+"B";
-  if (n >= 1_000_000) return "$" + fmtNumEs((n / 1_000_000), 1)+"M";
+  if (n >= 1_000_000_000) return "$" + fmtNumEs((n / 1_000_000), 0)+" MM";
+  if (n >= 1_000_000) return "$" + fmtNumEs((n / 1_000_000), 1)+" MM";
   if (n >= 1_000) return "$" + fmtNumEs((n / 1_000), 0)+"K";
   return "$" + Math.round(n).toLocaleString("es-CO");
 }

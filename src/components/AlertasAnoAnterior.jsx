@@ -37,8 +37,8 @@ const T = {
 
 const fmMoney = (v) => {
   const n = Math.round(Number(v) || 0);
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 2)+"B";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + n.toLocaleString("es-CO");
 };

@@ -46,8 +46,8 @@ const F = F_CENTRAL;
 
 const fm = (v) => {
   const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 2)+"B";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
 

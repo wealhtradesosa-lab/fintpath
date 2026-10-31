@@ -23,8 +23,8 @@ const T = {
   ch: ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
 const _fm = (n) => {
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
 const ICONS = ["","","","","","","","","","","",""];

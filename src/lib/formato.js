@@ -46,9 +46,9 @@ export function fmtPlataCortaEs(n) {
   const v = Math.round(Number(n) || 0), a = Math.abs(v), sg = v < 0 ? "−" : "";
   const q = (x, dec) => x.toLocaleString(ES, { minimumFractionDigits: 0, maximumFractionDigits: dec });
   if (a >= 1e12) return sg + "$" + q(a / 1e12, 1) + (a < 2e12 ? " billón" : " billones");
-  if (a >= 1e9) return sg + "$" + q(a / 1e6, 0) + " M"; // 31-oct-2026: todo en millones ($16.400 M)
-  if (a >= 1e7) return sg + "$" + q(a / 1e6, 0) + " M";
-  if (a >= 1e6) return sg + "$" + q(a / 1e6, 1) + " M";
+  if (a >= 1e9) return sg + "$" + q(a / 1e6, 0) + " MM"; // 31-oct-2026: todo en millones, «MM» como se escribe en Colombia ($16.400 M)
+  if (a >= 1e7) return sg + "$" + q(a / 1e6, 0) + " MM";
+  if (a >= 1e6) return sg + "$" + q(a / 1e6, 1) + " MM";
   if (a >= 1e3) return sg + "$" + q(a / 1e3, 0) + " K";
   return sg + "$" + q(a, 0);
 }

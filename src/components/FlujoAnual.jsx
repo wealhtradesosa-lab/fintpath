@@ -44,8 +44,8 @@ const T = {
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
 const fmShort = (n) => {
   const abs = Math.abs(n || 0);
-  if (abs >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
-  if (abs >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (abs >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
+  if (abs >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   if (abs >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n || 0).toString();
 };

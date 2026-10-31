@@ -27,8 +27,8 @@ import Disclaimer from "./Disclaimer";
 
 const fm = (v) => {
   const n = Math.round(Number(v) || 0);
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
+  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   if (Math.abs(n) >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + n.toLocaleString("es-CO");
 };

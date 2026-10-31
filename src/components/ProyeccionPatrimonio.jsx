@@ -264,8 +264,8 @@ export default function ProyeccionPatrimonio({
           <YAxis
             {...axisProps}
             tickFormatter={(v) => {
-              if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 1)+"B";
-              if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 0)+"M";
+              if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
+              if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
               if (Math.abs(v) >= 1e3) return "$" + fmtNumEs((v / 1e3), 0)+"K";
               return "$" + v;
             }}

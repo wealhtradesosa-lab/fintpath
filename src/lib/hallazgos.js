@@ -105,7 +105,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
 
   return {
     id: "deuda_cara_vs_ahorro",
-    metrica: "$" + Math.round(impacto / 1e6) + "M",
+    metrica: "$" + Math.round(impacto / 1e6).toLocaleString("es-CO") + " MM",
     unidad: L.deudaCara.unidad,
     titulo: L.deudaCara.titulo(cara.nombre, cara.tasa),
     detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto),
@@ -162,7 +162,7 @@ function flujoNegativo(t, L = textos("es")) {
   if (deficit < (enUSD ? 100_000 / 4200 : 100_000)) return null; // ruido de redondeo
   return {
     id: "flujo_negativo",
-    metrica: "-" + Math.round(deficit / 1e6) + "M",
+    metrica: "−$" + Math.round(deficit / 1e6).toLocaleString("es-CO") + " MM",
     unidad: "por mes",
     titulo: L.flujoNegativo.titulo,
     detalle: L.flujoNegativo.detalle(deficit),

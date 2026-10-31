@@ -199,7 +199,7 @@ export default function PensionBTC({trm:pTrm}){
         <Cd style={{padding:24}}>
           <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>₿ Tu BTC crece así (USD)</div>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+fmtNumEs((v/1e6), 1)+"M"}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fU(v)}/>}/><Bar dataKey="valorUSD" radius={[8,8,0,0]} maxBarSize={48}>{btc.yd.map((_,i)=><Cell key={i} fill={CHART.orange}/>)}</Bar></BarChart>
+            <BarChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+fmtNumEs((v/1e6), 1)+" MM"}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fU(v)}/>}/><Bar dataKey="valorUSD" radius={[8,8,0,0]} maxBarSize={48}>{btc.yd.map((_,i)=><Cell key={i} fill={CHART.orange}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         <Cd style={{padding:24}}>
@@ -434,7 +434,7 @@ export default function PensionBTC({trm:pTrm}){
       </div>
     </Cd></div>
       <Cd style={{padding:24}}><div style={{fontSize:16,fontWeight:700,marginBottom:16}}>Proyección Año por Año</div><div style={{maxHeight:500,overflowY:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:13}}><thead><tr>{["Año","Precio BTC","BTC","Valor USD"].map(h=><th key={h} style={{padding:"10px 12px",textAlign:h==="Año"?"left":"right",color:T.txt3,fontWeight:600,fontSize:12,borderBottom:`1px solid ${T.border}`,position:"sticky",top:0,background:T.card}}>{h}</th>)}</tr></thead>
-        <tbody>{btc.yd.map(d=><tr key={d.anio} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"10px 12px",fontWeight:600}}>{d.anio}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.txt2}}>{fU(d.precioBTC)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.orange}}>{d.btcAcum.toFixed(4)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",fontWeight:700,color:T.green}}>{d.valorUSD>=1e6?"$"+fmtNumEs((d.valorUSD/1e6), 2)+"M":"$"+fmtNumEs((d.valorUSD/1e3), 0)+"K"}</td></tr>)}</tbody></table></div></Cd>
+        <tbody>{btc.yd.map(d=><tr key={d.anio} style={{borderBottom:`1px solid ${T.border}`}}><td style={{padding:"10px 12px",fontWeight:600}}>{d.anio}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.txt2}}>{fU(d.precioBTC)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",color:T.orange}}>{d.btcAcum.toFixed(4)}</td><td style={{padding:"10px 12px",textAlign:"right",fontFamily:"monospace",fontWeight:700,color:T.green}}>{d.valorUSD>=1e6?"$"+fmtNumEs((d.valorUSD/1e6), 2)+" MM":"$"+fmtNumEs((d.valorUSD/1e3), 0)+"K"}</td></tr>)}</tbody></table></div></Cd>
     </div>}
 
     {tab==="proyeccion"&&<div>
@@ -490,7 +490,7 @@ export default function PensionBTC({trm:pTrm}){
         <div style={{fontSize:16,color:T.txt2}}>retiro BTC simulado vs mesada pensional</div>
         <div style={{fontSize:14,color:T.txt3,marginTop:8}}>Capital modelado como heredable · Estrés −50%: {fC(btc.rMC*0.5)}/mes · −70%: {fC(btc.rMC*0.3)}/mes</div>
       </Cd>
-      <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+fmtNumEs((v/1e6), 1)+"M"}/><Tooltip content={<ChartTooltip formatter={v=>fU(v)}/>}/><Area type="monotone" dataKey="valorUSD" stroke={CHART.orange} fill="url(#gradOrange)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
+      <Cd style={{padding:24,marginTop:20}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Crecimiento Portafolio BTC</div><ResponsiveContainer width="100%" height={250}><AreaChart data={btc.yd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="anio" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>"$"+fmtNumEs((v/1e6), 1)+" MM"}/><Tooltip content={<ChartTooltip formatter={v=>fU(v)}/>}/><Area type="monotone" dataKey="valorUSD" stroke={CHART.orange} fill="url(#gradOrange)" strokeWidth={2.5}/></AreaChart></ResponsiveContainer></Cd>
     </div>}
 
     {tab==="analisis"&&<div>

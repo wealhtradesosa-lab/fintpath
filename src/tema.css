@@ -78,11 +78,12 @@ html[data-tema="claro"] .fp-app { --fp-pos: #00873c; --fp-neg: #d9480f; --fp-ale
 .fp-app [style*="color: rgb(255, 80, 0)"] { color: var(--fp-neg) !important; }
 .fp-app [style*="color: rgb(245, 158, 11)"] { color: var(--fp-alerta) !important; }
 /* botones de acción: verdes o azules sólidos → botón principal neutro */
-.fp-app button[style*="background: rgb(0, 200, 5)"],
-.fp-app button[style*="background: rgb(59, 130, 246)"],
-.fp-app button[style*="background: rgb(37, 99, 235)"],
-.fp-app button[style*="background: linear-gradient(135deg, rgb(59, 130, 246)"],
-.fp-app button[style*="background: linear-gradient(135deg, rgb(0, 200, 5)"] {
+/* (los interruptores —aria-pressed / role=switch— conservan su verde: es lo que dice «prendido») */
+.fp-app button:not([aria-pressed]):not([role="switch"])[style*="background: rgb(0, 200, 5)"],
+.fp-app button:not([aria-pressed]):not([role="switch"])[style*="background: rgb(59, 130, 246)"],
+.fp-app button:not([aria-pressed]):not([role="switch"])[style*="background: rgb(37, 99, 235)"],
+.fp-app button:not([aria-pressed]):not([role="switch"])[style*="background: linear-gradient(135deg, rgb(59, 130, 246)"],
+.fp-app button:not([aria-pressed]):not([role="switch"])[style*="background: linear-gradient(135deg, rgb(0, 200, 5)"] {
   background: var(--fp-txt) !important; color: var(--fp-bg) !important; border-color: transparent !important;
 }
 /* botones con fondo azul claro (secundarios) → contorno neutro */
@@ -99,4 +100,9 @@ html[data-tema="claro"] .fp-app { --fp-pos: #00873c; --fp-neg: #d9480f; --fp-ale
 .fp-app span[style*="border-radius: 999px"][style*="padding: 2px"],
 .fp-app span[style*="border-radius: 6px"][style*="padding: 2px 8px"] {
   background: rgba(var(--fp-ink),0.05) !important; color: var(--fp-txt2) !important; border-color: transparent !important; font-weight: 500 !important;
+}
+/* Cajas informativas azules → neutras (sin azul en la interfaz). */
+.fp-app div[style*="background: rgba(59, 130, 246, 0.0"], .fp-app section[style*="background: rgba(59, 130, 246, 0.0"],
+.fp-app div[style*="background: rgba(59, 130, 246, 0.1"] {
+  background: rgba(var(--fp-ink),0.03) !important; border-color: rgba(var(--fp-ink),0.08) !important;
 }

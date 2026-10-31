@@ -15,8 +15,8 @@ describe("la plata abreviada SIEMPRE lleva separador de miles", () => {
 
   it("miles de millones se escriben en millones con puntos (31-oct-2026: $16.400 M)", () => {
     expect(fmtPlataCortaEs(1234.5e9)).toBe("$1,2 billón");
-    expect(fmtPlataCortaEs(999e9)).toBe("$999.000 M");
-    expect(fmtPlataCortaEs(456.78e6)).toBe("$457 M");   // M y K nunca pasan de 999
+    expect(fmtPlataCortaEs(999e9)).toBe("$999.000 MM");
+    expect(fmtPlataCortaEs(456.78e6)).toBe("$457 MM");   // M y K nunca pasan de 999
     expect(fmtPlataCortaEs(123456)).toBe("$123 K");
   });
 
@@ -29,14 +29,14 @@ describe("la plata abreviada SIEMPRE lleva separador de miles", () => {
   });
 
   it("las escalas chicas no cambiaron", () => {
-    expect(fmtPlataCortaEs(28.5e6)).toBe("$29 M");   // de 10 M para arriba, entero
-    expect(fmtPlataCortaEs(2.5e6)).toBe("$2,5 M");
+    expect(fmtPlataCortaEs(28.5e6)).toBe("$29 MM");   // de 10 M para arriba, entero
+    expect(fmtPlataCortaEs(2.5e6)).toBe("$2,5 MM");
     expect(fmtPlataCortaEs(850e3)).toBe("$850 K");
     expect(fmtPlataCortaEs(0)).toBe("$0");
   });
 
   it("los negativos llevan su signo y su separador", () => {
     expect(fmtPlataCortaEs(-1234.5e9)).toBe("−$1,2 billón");
-    expect(fmtPlataCortaEs(-456.78e6)).toBe("−$457 M");
+    expect(fmtPlataCortaEs(-456.78e6)).toBe("−$457 MM");
   });
 });

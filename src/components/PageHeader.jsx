@@ -83,12 +83,7 @@ export default function PageHeader({
           {accent ? (
             <>
               {title.split(accent)[0]}
-              <span style={{
-                background: "linear-gradient(135deg, #00c805 0%, #3b82f6 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}>
+              <span>{/* 31-oct-2026: sin degradado en el título (crítica de diseño) */}
                 {accent}
               </span>
               {title.split(accent)[1]}

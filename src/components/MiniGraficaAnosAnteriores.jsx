@@ -34,8 +34,8 @@ const T = {
 
 const fmM = (v) => {
   const n = Number(v) || 0;
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
+  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
+  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };

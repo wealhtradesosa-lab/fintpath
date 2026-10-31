@@ -22,8 +22,8 @@ const T = {
 };
 const SM_2026 = 1_750_905;
 const fCOP = (v) => {
-  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 2)+"B";
-  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+"M";
+  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
+  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
   return "$" + Math.round(v).toLocaleString("es-CO");
 };
 const fUSD = (v, trm) => "$" + Math.round(v / (trm || 4200)).toLocaleString("en-US") + " USD";
