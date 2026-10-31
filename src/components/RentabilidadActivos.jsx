@@ -25,7 +25,7 @@ export default function RentabilidadActivos({ r, T, fm, nombre, onAbrir }) {
       : "Todos los activos con datos le ganan a la inflación.";
 
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "16px 16px 12px", marginBottom: 16 }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 16px 12px", marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>¿Cuánto te rinde cada activo?</div>

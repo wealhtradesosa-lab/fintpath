@@ -18,6 +18,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { fmtPctEs, fmtNumEs } from "../lib/formato.js";
+import { Trash2 } from "./Iconos.jsx";
 import { useState, useMemo } from "react";
 import SmartNumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -64,8 +65,8 @@ function SwitchRow({ label, descripcion, baseLegal, impactoTexto, value, onChang
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: T.txt, lineHeight: 1.4 }}>{label}</div>
           {descripcion && <div style={{ fontSize: 12, color: T.txt2, marginTop: 3, lineHeight: 1.5 }}>{descripcion}</div>}
-          {baseLegal && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, fontFamily: "monospace" }}>📖 {baseLegal}</div>}
-          {impactoTexto && value && <div style={{ fontSize: 11, color: T.green, marginTop: 4, fontWeight: 600 }}>💚 {impactoTexto}</div>}
+          {baseLegal && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, fontFamily: "monospace" }}>{baseLegal}</div>}
+          {impactoTexto && value && <div style={{ fontSize: 11, color: T.green, marginTop: 4, fontWeight: 600 }}>{impactoTexto}</div>}
           {value && children && <div style={{ marginTop: 10 }}>{children}</div>}
         </div>
       </div>
@@ -197,7 +198,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
       {/* Header del módulo */}
       <div style={{ marginBottom: 14, padding: "12px 14px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 4 }}>
-          ⚙️ Ajustes fiscales personalizados {totalActivos > 0 && <span style={{ color: T.green }}>({totalActivos} activos)</span>}
+          Ajustes fiscales personalizados {totalActivos > 0 && <span style={{ color: T.green }}>({totalActivos} activos)</span>}
         </div>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           Un contador senior te haría estas preguntas para estimar tu impuesto con más precisión. Contesta solo las que apliquen a ti — el resto quedan vacías y no afectan el cálculo.
@@ -207,7 +208,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
       {/* ═══════════════ GRUPO A — Personal ═══════════════ */}
       {showGrupoA && esNatural && (
         <Collapsible
-          icono="👨‍👩‍👧"
+          icono=""
           titulo="Familia y auxilios laborales"
           descripcion="Dependientes económicos y beneficios laborales exentos"
           total={5}
@@ -262,7 +263,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
               hint="Si la deuda es compartida 50/50 con tu pareja, escribe 50. Si es 100% tuya, deja este toggle apagado."
             />
             <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: 6, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-              <strong style={{ color: T.txt }}>⚖️ Por qué importa:</strong> el Art. 119 ET permite
+              <strong style={{ color: T.txt }}>Por qué importa:</strong> el Art. 119 ET permite
               deducir intereses solo en proporción a tu responsabilidad legal. Si declaras 100% sin
               serlo, la DIAN puede cuestionar la deducción.
             </div>
@@ -304,18 +305,18 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           configurarlo sin tocar JSON. */}
       {showGrupoSocios && esNatural && (
         <Collapsible
-          icono="🏢"
+          icono=""
           titulo="Soy socio de una empresa"
           descripcion="Si eres accionista o dueño de una jurídica, los dividendos se calculan automáticamente"
           total={socios.length}
         >
           <div style={{ marginBottom: 12, padding: "10px 12px", background: "rgba(59,130,246,0.05)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-            ℹ️ Si eres socio de una empresa que tienes cargada como owner jurídica, declara tu participación. El motor calculará automáticamente los dividendos que te corresponden y los aplicará a tu impuesto (Art. 49 #3 + Art. 242 ET) — sin que tengas que cargarlos manualmente como ingreso.
+            Si eres socio de una empresa que tienes cargada como owner jurídica, declara tu participación. El motor calculará automáticamente los dividendos que te corresponden y los aplicará a tu impuesto (Art. 49 #3 + Art. 242 ET) — sin que tengas que cargarlos manualmente como ingreso.
           </div>
 
           {juridicasDisponibles.length === 0 ? (
             <div style={{ padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-              ⚠️ No tienes owners jurídicos cargados todavía. Primero crea la empresa como owner jurídica desde la pantalla principal de la calculadora; después puedes vincular tu participación acá.
+              No tienes owners jurídicos cargados todavía. Primero crea la empresa como owner jurídica desde la pantalla principal de la calculadora; después puedes vincular tu participación acá.
             </div>
           ) : (
             <>
@@ -346,9 +347,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
                       onClick={() => updateProfile({ socios: socios.filter((_, i) => i !== idx) })}
                       style={{ background: "transparent", border: "1px solid rgba(255,80,0,0.3)", color: "#ff5000", padding: "4px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer" }}
                       title="Quitar esta participación"
-                    >
-                      🗑️
-                    </button>
+                    ><Trash2 size={14} strokeWidth={1.75} /></button>
                   </div>
                 );
               })}
@@ -403,7 +402,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
       {/* ═══════════════ GRUPO B — Eventos del año ═══════════════ */}
       {showGrupoB && esNatural && (
         <Collapsible
-          icono="📅"
+          icono=""
           titulo="Eventos del año gravable"
           descripcion="Hechos que generan ganancias ocasionales (tarifa 15% / 20%)"
           cantActivos={cantGrupoB}
@@ -465,7 +464,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
       {/* ═══════════════ GRUPO C1 (personal) — Estatus del contribuyente ═══════════════ */}
       {(filterGroup === "all" || filterGroup === "personal") && esNatural && (
         <Collapsible
-          icono="⚖️"
+          icono=""
           titulo="Estatus del contribuyente"
           descripcion="Cómo tributas cambia según tu situación como persona"
           cantActivos={(profile.obligadoContabilidad ? 1 : 0) + (profile.honorariosConPersonal ? 1 : 0)}
@@ -496,7 +495,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
       {/* ═══════════════ GRUPO C2 (eventos) — Beneficios especiales ═══════════════ */}
       {(filterGroup === "all" || filterGroup === "eventos") && (
         <Collapsible
-          icono="🎁"
+          icono=""
           titulo="Beneficios y descuentos tributarios"
           descripcion="Donaciones, inversiones en programas certificados y regímenes especiales"
           cantActivos={((profile.donaciones?.monto || 0) > 0 ? 1 : 0) + ((profile.inversionesCTI?.monto || 0) > 0 ? 1 : 0) + (profile.regimenEspecial ? 1 : 0)}

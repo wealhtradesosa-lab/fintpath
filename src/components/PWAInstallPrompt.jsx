@@ -140,7 +140,7 @@ export default function PWAInstallPrompt() {
       <div style={{
         position: "fixed", bottom: 16, left: 16, right: 16, maxWidth: 440,
         margin: "0 auto", background: "var(--fp-card)", border: "1px solid #00c805",
-        borderRadius: 14, padding: "14px 16px", zIndex: 9999,
+        borderRadius: 12, padding: "14px 16px", zIndex: 9999,
         display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
         boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
       }}>
@@ -178,7 +178,7 @@ export default function PWAInstallPrompt() {
             margin: "0 auto",
             background: T.bg,
             border: `1px solid ${T.border}`,
-            borderRadius: 14,
+            borderRadius: 12,
             padding: 14,
             boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
             zIndex: 9999,
@@ -278,7 +278,7 @@ export default function PWAInstallPrompt() {
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: T.bg,
-                borderRadius: 16,
+                borderRadius: 12,
                 padding: 24,
                 maxWidth: 380,
                 width: "100%",
@@ -306,7 +306,7 @@ export default function PWAInstallPrompt() {
               </button>
 
               <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
-                📱 Instalar en iPhone
+                Instalar en iPhone
               </div>
               <div style={{ fontSize: 12, color: T.txt2, marginBottom: 20, lineHeight: 1.5 }}>
                 Hace falta hacer 3 pasos manuales en Safari (Apple no lo permite automático).
@@ -373,7 +373,7 @@ export default function PWAInstallPrompt() {
                   marginBottom: 16,
                 }}
               >
-                💡 ¿No ves la barra inferior de Safari? Desliza un poco hacia abajo en la página y aparece.
+                ¿No ves la barra inferior de Safari? Desliza un poco hacia abajo en la página y aparece.
               </div>
 
               <button

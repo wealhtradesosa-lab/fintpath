@@ -74,7 +74,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
   const bgColor = tieneWarnings ? colors.warningBg : colors.infoBg;
   const borderColor = tieneWarnings ? colors.warningBorder : colors.infoBorder;
   const headerColor = tieneWarnings ? colors.warningText : colors.infoText;
-  const headerEmoji = tieneWarnings ? "⚠️" : "ℹ️";
+  const headerEmoji = tieneWarnings ? "" : "";
   const headerTitle = tieneWarnings
     ? "Hay diferencias entre tu declaración y los datos cargados"
     : "Diferencias menores entre tu declaración y los datos";
@@ -118,7 +118,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 14 }}>{r.tipo === "juridica" ? "🏢" : "👤"}</span>
+              <span style={{ fontSize: 14 }}>{r.tipo === "juridica" ? "" : ""}</span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: colors.txt }}>
                   {r.ownerName} · {r.tipoDeclaracion} {r.anoGravable}
@@ -168,9 +168,9 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
                     </div>
                     <div style={{ color: colors.tx2, marginBottom: 6 }}>{mm.mensaje}</div>
                     <div style={{ display: "flex", gap: 16, fontSize: 12, color: colors.tx3, marginBottom: 6 }}>
-                      <span>📋 Declarado: <strong style={{ color: colors.txt }}>{fmM(mm.declarado)}</strong></span>
-                      <span>🔢 Calculado: <strong style={{ color: colors.txt }}>{fmM(mm.calculado)}</strong></span>
-                      <span>📊 Diferencia: <strong style={{ color: mm.severidad === "warning" ? colors.warningText : colors.infoText }}>{fmtPctEs((mm.diferenciaPct * 100), 0)}</strong></span>
+                      <span>Declarado: <strong style={{ color: colors.txt }}>{fmM(mm.declarado)}</strong></span>
+                      <span>Calculado: <strong style={{ color: colors.txt }}>{fmM(mm.calculado)}</strong></span>
+                      <span>Diferencia: <strong style={{ color: mm.severidad === "warning" ? colors.warningText : colors.infoText }}>{fmtPctEs((mm.diferenciaPct * 100), 0)}</strong></span>
                     </div>
                     {/* 05-sep-2026 (Santiago: "seria ideal darle la posibilidad
                         de editar esos mismatch"). Hasta hoy la unica accion era
@@ -208,7 +208,7 @@ export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onU
 
                     {mm.explicaciones.map((ex, j) => (
                       <div key={j} style={{ fontSize: 12, color: colors.tx3, marginTop: 4, fontStyle: "italic" }}>
-                        💡 {ex}
+                        {ex}
                       </div>
                     ))}
                   </div>

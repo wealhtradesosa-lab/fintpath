@@ -108,14 +108,14 @@ function RecomendacionCard({ rec, indice }) {
                 color: rec.ejecutaEn === "sociedad" ? "#a855f7" : "#3b82f6",
                 fontWeight: 700,
               }}>
-                {rec.ejecutaEn === "sociedad" ? "🏢 Vía tu sociedad" : "👤 Acción personal"}
+                {rec.ejecutaEn === "sociedad" ? "Vía tu sociedad" : "Acción personal"}
               </span>
             )}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4, flexWrap: "wrap" }}>
             {ahorroMonto > 0 && (
               <span style={{ fontSize: 13, color: C.green, fontWeight: 700 }}>
-                💚 Ahorro: {fmShort(ahorroMonto)}/año
+                Ahorro: {fmShort(ahorroMonto)}/año
               </span>
             )}
             {inversionMonto > 0 && (
@@ -150,7 +150,7 @@ function RecomendacionCard({ rec, indice }) {
               border: `1px solid ${C.blue}40`, borderRadius: 8,
             }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.blue, letterSpacing: 0.5, marginBottom: 4 }}>
-                🎯 Acción concreta
+                Acción concreta
               </div>
               <div style={{ fontSize: 13, color: C.txt, fontWeight: 600 }}>
                 {rec.accion}
@@ -211,7 +211,7 @@ function RecomendacionCard({ rec, indice }) {
 
           {/* Base legal */}
           <div style={{ fontSize: 12, color: C.txt3, fontStyle: "italic" }}>
-            📚 Base legal: {rec.baseLegal}
+            Base legal: {rec.baseLegal}
           </div>
 
           {/* Caveat */}
@@ -221,7 +221,7 @@ function RecomendacionCard({ rec, indice }) {
               border: `1px solid ${C.orange}30`, borderRadius: 8,
               fontSize: 12, color: C.txt2, lineHeight: 1.5,
             }}>
-              <strong style={{ color: C.orange }}>⚠️ Importante: </strong>
+              <strong style={{ color: C.orange }}>Importante: </strong>
               {rec.caveat}
             </div>
           )}
@@ -255,7 +255,7 @@ export default function RecomendacionesEstrategicas({ recomendaciones }) {
         borderRadius: 10,
       }}>
         <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>
-          💡 Estrategias del contador para ti
+          Estrategias del contador para ti
         </div>
         <div style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, marginBottom: 8 }}>
           Estas son <strong style={{ color: C.txt }}>acciones futuras</strong> que puedes considerar para reducir tu impuesto.

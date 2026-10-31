@@ -28,7 +28,7 @@ export default function AdminMetrics({ email, fmt, T }) {
   };
   useEffect(cargar, [email]);
 
-  const card = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 16px" };
+  const card = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px" };
   const num = (v) => (v || 0).toLocaleString("es-CO");
   const pct = (v) => fmtPctEs((v || 0), 1);
   const fecha = (s) => (s ? new Date(s).toLocaleString("es-CO", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
@@ -44,7 +44,7 @@ export default function AdminMetrics({ email, fmt, T }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: T.tx }}>📈 Cómo va el negocio</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: T.tx }}>Cómo va el negocio</div>
           <div style={{ fontSize: 12, color: T.tx3 }}>Solo tú ves esto · actualizado {fecha(d.generado)}</div>
         </div>
         <button onClick={cargar} style={{ background: T.bg3, border: `1px solid ${T.border}`, color: T.tx2, padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontSize: 12 }}>↻ Actualizar</button>
@@ -57,7 +57,7 @@ export default function AdminMetrics({ email, fmt, T }) {
         const ok = pend.length === 0;
         return (
           <div style={{ background: ok ? T.gnB : T.rdB, border: `1px solid ${ok ? T.gn : T.rd}55`, borderRadius: 10, padding: "10px 14px" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: ok ? T.gn : T.rd }}>{ok ? "🧾 Normas DIAN al día" : `🧾 ${pend.length} norma${pend.length > 1 ? "s" : ""} por actualizar`}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: ok ? T.gn : T.rd }}>{ok ? "Normas DIAN al día" : `${pend.length} norma${pend.length > 1 ? "s" : ""} por actualizar`}</div>
             {pend.map((p) => <div key={p.id} style={{ fontSize: 12, color: T.tx2, marginTop: 4 }}><b style={{ color: T.tx }}>{p.titulo}.</b> {p.detalle}</div>)}
             <div style={{ fontSize: 12, color: T.tx3, marginTop: 4 }}>Última revisión: {v.ultimaRevision} · UVT hasta {v.uvtHasta} · reajuste Art. 70 y tabla Art. 73 hasta {v.art70Hasta}</div>
           </div>
@@ -67,7 +67,7 @@ export default function AdminMetrics({ email, fmt, T }) {
       {/* Alerta si el registro se detuvo — el síntoma que costó 3 semanas detectar */}
       {diasSin !== null && diasSin >= 3 && (
         <div style={{ background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.28)", borderRadius: 12, padding: "12px 14px", fontSize: 13, color: "#fca5a5" }}>
-          ⚠️ <strong>Hace {diasSin} días que no se registra nadie.</strong> Si estás pautando, revisa que el registro funcione antes de seguir gastando.
+          <strong>Hace {diasSin} días que no se registra nadie.</strong> Si estás pautando, revisa que el registro funcione antes de seguir gastando.
         </div>
       )}
 
@@ -110,7 +110,7 @@ export default function AdminMetrics({ email, fmt, T }) {
           );
         })}
         <div style={{ fontSize: 12, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
-          ⚠️ <strong>Los ingresos reales se confirman en Stripe</strong>, no acá: la base guarda el plan asignado, que también puede ponerse a mano. Para saber cuánto entró, mira <em>dashboard.stripe.com → Payments</em>.
+          <strong>Los ingresos reales se confirman en Stripe</strong>, no acá: la base guarda el plan asignado, que también puede ponerse a mano. Para saber cuánto entró, mira <em>dashboard.stripe.com → Payments</em>.
           <br />Y ojo con el <strong>trial</strong>: al registrarse, la app le da a todos 14 días de Pro. Eso no es una venta.
           <br />La <strong>activación</strong> es el número que más manda hoy: quien se registra y no carga nada, no vuelve. Si es baja, el problema está en el arranque, no en el precio ni en la pauta.
         </div>

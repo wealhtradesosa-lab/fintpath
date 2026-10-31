@@ -56,25 +56,25 @@ const C = {
 // ─── Asset Types ──────────────────────────────────────────────────────────────
 const ASSET_TYPES = [
   // Real Estate
-  {v:"primary_home",   l:"🏠 Primary Residence",      cat:"real_estate",
+  {v:"primary_home",   l:"Primary Residence",      cat:"real_estate",
    irc:"IRC § 121",    form:"Schedule D",
    desc:"Your main home. Eligible for gain exclusion on sale.",
    taxNote:"Up to $250K gain excluded (single) / $500K (MFJ) if owned & used 2 of last 5 years.",
    planning:"Track cost basis (purchase price + improvements). Keep records of all capital improvements — they increase basis. Consider exclusion timing strategy if married.",
    deprec:false},
-  {v:"rental_res",     l:"🏘️ Rental Property (Residential)", cat:"real_estate",
+  {v:"rental_res",     l:"Rental Property (Residential)", cat:"real_estate",
    irc:"IRC §§ 168, 469, 1031", form:"Schedule E",
    desc:"Residential rental property. Depreciate over 27.5 years.",
    taxNote:"Net rental income taxed as ordinary. Passive activity limits apply (§ 469). Depreciation deduction reduces taxable income annually.",
    planning:"Cost segregation study for accelerated depreciation. 1031 exchange to defer capital gains on sale. Real Estate Professional status (750+ hrs/yr) removes passive limits.",
    deprec:true, deprecYears:27.5},
-  {v:"rental_com",     l:"🏢 Commercial Property",    cat:"real_estate",
+  {v:"rental_com",     l:"Commercial Property",    cat:"real_estate",
    irc:"IRC §§ 168, 1031, 1250", form:"Schedule E",
    desc:"Commercial real estate. Depreciate over 39 years.",
    taxNote:"Depreciation over 39 years. Unrecaptured § 1250 gain taxed at max 25% on sale. 1031 exchange available.",
    planning:"Triple-net (NNN) leases reduce management burden. Delaware Statutory Trust (DST) for passive 1031 replacement property. QOZ for gain deferral.",
    deprec:true, deprecYears:39},
-  {v:"land",           l:"🌿 Raw Land / Lot",          cat:"real_estate",
+  {v:"land",           l:"Raw Land / Lot",          cat:"real_estate",
    irc:"IRC §§ 1221, 1231", form:"Schedule D",
    desc:"Land held for investment. No depreciation allowed.",
    taxNote:"Long-term capital gain rates if held 12+ months. No depreciation. IRC § 1231 asset if held in trade/business.",
@@ -82,13 +82,13 @@ const ASSET_TYPES = [
    deprec:false},
 
   // Equities
-  {v:"stocks_etf",     l:"📈 Stocks / ETFs",           cat:"equity",
+  {v:"stocks_etf",     l:"Stocks / ETFs",           cat:"equity",
    irc:"IRC §§ 1221, 1222, 1091", form:"Schedule D / Form 8949",
    desc:"Individual stocks, ETFs, mutual funds in taxable accounts.",
    taxNote:"LTCG rates (0/15/20%) if held 12+ months. STCG as ordinary income. Each lot has its own holding period and basis.",
    planning:"Tax-loss harvesting — offset gains with losses (watch 30-day wash sale rule). Specific ID cost basis (highest cost first to minimize gains). Hold 12+ months for preferential rates. Donate appreciated shares to charity.",
    deprec:false},
-  {v:"qsbs",           l:"🚀 QSBS (Startup Equity)",   cat:"equity",
+  {v:"qsbs",           l:"QSBS (Startup Equity)",   cat:"equity",
    irc:"IRC § 1202",  form:"Schedule D",
    desc:"Qualified Small Business Stock. Up to 100% gain exclusion.",
    taxNote:"100% of gain excluded from federal tax (up to $10M or 10× basis) if acquired after 9/27/2010, held 5+ years, C-Corp with ≤ $50M assets at issuance.",
@@ -102,19 +102,19 @@ const ASSET_TYPES = [
    deprec:false},
 
   // Retirement
-  {v:"401k_trad",      l:"🏛️ Traditional 401(k)",       cat:"retirement",
+  {v:"401k_trad",      l:"Traditional 401(k)",       cat:"retirement",
    irc:"IRC § 401(k)", form:"Form 1099-R on distribution",
    desc:"Employer-sponsored pre-tax retirement plan.",
    taxNote:"Contributions pre-tax. Growth tax-deferred. Distributions taxed as ordinary income. 10% penalty if withdrawn before 59½ (exceptions exist). RMDs at age 73.",
    planning:"Maximize contributions ($23,500 in 2025; $31,000 if 50+). Mega backdoor Roth if plan allows after-tax contributions. Roth conversions in low-income years.",
    deprec:false},
-  {v:"roth_ira",       l:"💚 Roth IRA / Roth 401(k)",   cat:"retirement",
+  {v:"roth_ira",       l:"Roth IRA / Roth 401(k)",   cat:"retirement",
    irc:"IRC § 408A",   form:"Form 5498",
    desc:"After-tax retirement account. Tax-free growth and withdrawals.",
    taxNote:"Contributions are after-tax (not deductible). Qualified distributions are completely tax-free. No RMDs for Roth IRA. Roth 401(k) has RMDs (roll to Roth IRA to avoid).",
    planning:"Backdoor Roth IRA if income too high for direct contribution ($161K–$176K single for 2025). Roth conversions in low-income years. Best account for high-growth assets.",
    deprec:false},
-  {v:"hsa",            l:"🏥 Health Savings Account",    cat:"retirement",
+  {v:"hsa",            l:"Health Savings Account",    cat:"retirement",
    irc:"IRC § 223",    form:"Form 8889",
    desc:"Triple tax-advantaged account for medical expenses.",
    taxNote:"Contributions deductible. Growth tax-free. Qualified medical withdrawals tax-free. After 65: non-medical withdrawals taxed as ordinary income (no penalty).",
@@ -122,7 +122,7 @@ const ASSET_TYPES = [
    deprec:false},
 
   // Business
-  {v:"business",       l:"🏢 Business Interest",         cat:"business",
+  {v:"business",       l:"Business Interest",         cat:"business",
    irc:"IRC §§ 702, 1014, 1202", form:"Schedule K-1",
    desc:"Ownership in LLC, S-Corp, C-Corp, or partnership.",
    taxNote:"Pass-through: income/loss flows to personal return. C-Corp: double taxation on dividends. QSBS exclusion for qualifying C-Corp shares.",
@@ -130,13 +130,13 @@ const ASSET_TYPES = [
    deprec:false},
 
   // Other
-  {v:"cash_equiv",     l:"💵 Cash / Money Market",       cat:"cash",
+  {v:"cash_equiv",     l:"Cash / Money Market",       cat:"cash",
    irc:"IRC § 61(a)(4)", form:"1099-INT",
    desc:"Savings accounts, CDs, money market funds, T-bills.",
    taxNote:"Interest taxed as ordinary income. Treasury/US Govt interest is state-exempt. Municipal bond interest is federal-exempt.",
    planning:"High-Yield Savings or T-bills for short-term. I-Bonds for inflation hedge (defer tax up to 30 years). Consider tax-exempt municipal bonds if in 24%+ bracket.",
    deprec:false},
-  {v:"other_asset",    l:"📦 Other Asset",               cat:"other",
+  {v:"other_asset",    l:"Other Asset",               cat:"other",
    irc:"IRC § 1221",   form:"Schedule D",
    desc:"Collectibles, vehicles, other personal property.",
    taxNote:"Collectibles: max 28% LTCG rate (coins, art, wine, antiques). Vehicles depreciate — not an investment. Personal property losses are non-deductible.",
@@ -145,21 +145,21 @@ const ASSET_TYPES = [
 ];
 
 const LIAB_TYPES = [
-  {v:"mortgage",       l:"🏠 Mortgage (Primary/Secondary)", deductible:true,
+  {v:"mortgage",       l:"Mortgage (Primary/Secondary)", deductible:true,
    irc:"IRC § 163(h)", note:"Interest deductible on first $750K of acquisition debt (post-12/15/2017 loans). Deduct via Schedule A if itemizing."},
-  {v:"heloc",          l:"🔧 HELOC / Home Equity Loan",     deductible:"conditional",
+  {v:"heloc",          l:"HELOC / Home Equity Loan",     deductible:"conditional",
    irc:"IRC § 163(h)(3)", note:"ONLY deductible if funds used to buy, build, or substantially improve the home. NOT deductible for debt consolidation, cars, or personal expenses."},
-  {v:"student_loan",   l:"🎓 Student Loan",                 deductible:true,
+  {v:"student_loan",   l:"Student Loan",                 deductible:true,
    irc:"IRC § 221",    note:"Up to $2,500/yr above-the-line deduction. Phases out $75K–$90K AGI (single). No deduction if claimed as dependent or MFS."},
-  {v:"investment_margin",l:"📈 Investment Margin Loan",     deductible:true,
+  {v:"investment_margin",l:"Investment Margin Loan",     deductible:true,
    irc:"IRC § 163(d)", note:"Investment interest expense deductible up to net investment income. Excess carries forward. File Form 4952. NOT deductible against LTCG/qualified dividends."},
-  {v:"business_loan",  l:"🏢 Business Loan",               deductible:true,
+  {v:"business_loan",  l:"Business Loan",               deductible:true,
    irc:"IRC § 163(j)", note:"Business interest generally deductible (subject to § 163(j) 30% ATI limitation for large businesses). Deduct on Schedule C."},
-  {v:"auto",           l:"🚗 Auto Loan",                    deductible:false,
+  {v:"auto",           l:"Auto Loan",                    deductible:false,
    irc:"IRC § 163(h)(2)(A)", note:"Personal auto loan interest is NOT deductible. Business use portion deductible via actual expense method or mileage on Schedule C."},
-  {v:"credit_card",    l:"💳 Credit Card",                  deductible:false,
+  {v:"credit_card",    l:"Credit Card",                  deductible:false,
    irc:"IRC § 163(h)(2)(A)", note:"Consumer/personal credit card interest is NOT deductible (since 1986 Tax Reform Act). Business credit card interest deductible on Schedule C."},
-  {v:"other_debt",     l:"📋 Other Personal Debt",          deductible:false,
+  {v:"other_debt",     l:"Other Personal Debt",          deductible:false,
    irc:"IRC § 163(h)",       note:"Personal interest is not deductible."},
 ];
 
@@ -246,12 +246,12 @@ function AssetDetail({ asset }) {
     <div style={{borderTop:`1px solid ${T.border}`,padding:"16px 18px",background:T.bg2}}>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
         <div>
-          <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:6}}>📖 IRS Tax Treatment</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:6}}>IRS Tax Treatment</div>
           <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.taxNote}</div>
           <div style={{fontSize:11,color:T.tx3,marginTop:4}}>Ref: <em>{info.irc}</em> | Form: <em>{info.form}</em></div>
         </div>
         <div>
-          <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:6}}>💡 Planning Opportunities</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:6}}>Planning Opportunities</div>
           <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.planning}</div>
         </div>
       </div>
@@ -259,7 +259,7 @@ function AssetDetail({ asset }) {
       {/* Gain analysis */}
       {gain !== 0 && (
         <div style={{background:T.bg3,borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:10}}>📊 Gain / Loss Analysis</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:10}}>Gain / Loss Analysis</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:8}}>
             <div><div style={{fontSize:11,color:T.tx3}}>COST BASIS</div><div style={{fontSize:14,fontWeight:700,color:T.tx2}}>{fm(asset.vc||0)}</div></div>
             <div><div style={{fontSize:11,color:T.tx3}}>CURRENT VALUE</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(asset.va||0)}</div></div>
@@ -271,14 +271,14 @@ function AssetDetail({ asset }) {
 
           {info.deprec && totalDeprec > 0 && gain > 0 && (
             <InfoBox color={T.or}>
-              <strong>⚠ § 1250 Unrecaptured Depreciation:</strong> {fm(recaptureGain)} of your gain is taxed at max 25% (unrecaptured § 1250 gain).
+              <strong>§ 1250 Unrecaptured Depreciation:</strong> {fm(recaptureGain)} of your gain is taxed at max 25% (unrecaptured § 1250 gain).
               The remaining {fm(preferentialGain)} qualifies for preferential LTCG rates (0/15/20%).
               Consider § 1031 exchange to defer BOTH the recapture AND the capital gain.
             </InfoBox>
           )}
           {exclusion121 > 0 && (
             <InfoBox color={T.gn}>
-              <strong>✅ § 121 Exclusion:</strong> Up to {fm(exclusion121)} of gain is excluded from tax.
+              <strong>§ 121 Exclusion:</strong> Up to {fm(exclusion121)} of gain is excluded from tax.
               {gain > exclusion121 ? ` Taxable gain: ${fm(gain - exclusion121)}.` : " Entire gain is excluded."}
               Requirements: owned and used as primary residence for 2 of last 5 years.
             </InfoBox>
@@ -289,7 +289,7 @@ function AssetDetail({ asset }) {
       {/* Depreciation schedule for rental */}
       {info.deprec && deprec && (
         <div style={{background:T.bg3,borderRadius:10,padding:14,marginBottom:12}}>
-          <div style={{fontSize:12,fontWeight:700,color:T.cy,marginBottom:10}}>📅 Depreciation Schedule (IRC § 168)</div>
+          <div style={{fontSize:12,fontWeight:700,color:T.cy,marginBottom:10}}>Depreciation Schedule (IRC § 168)</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:8}}>
             <div><div style={{fontSize:11,color:T.tx3}}>DEPRECIABLE BASIS</div><div style={{fontSize:14,fontWeight:700,color:T.cy}}>{fm(deprec.depreciableBasis)}</div><div style={{fontSize:11,color:T.tx3}}>building value (excl. land)</div></div>
             <div><div style={{fontSize:11,color:T.tx3}}>ANNUAL DEDUCTION</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(deprec.annualDeprec)}/yr</div><div style={{fontSize:11,color:T.tx3}}>{info.deprecYears} yr straight-line</div></div>
@@ -307,7 +307,7 @@ function AssetDetail({ asset }) {
       {/* Crypto specific */}
       {asset.tp === "crypto" && (
         <InfoBox color={T.or}>
-          <strong>🔑 Crypto Tax Rules (IRS Notice 2014-21):</strong><br/>
+          <strong>Crypto Tax Rules (IRS Notice 2014-21):</strong><br/>
           • Every sale, swap, or use to purchase is a taxable event (report on Form 8949)<br/>
           • Staking/mining rewards: ordinary income at FMV when received, then new basis<br/>
           • Hard forks & airdrops: ordinary income at FMV on receipt (Rev. Rul. 2023-14)<br/>
@@ -320,7 +320,7 @@ function AssetDetail({ asset }) {
       {/* QSBS */}
       {asset.tp === "qsbs" && (
         <InfoBox color={T.gn}>
-          <strong>✅ QSBS § 1202 Checklist:</strong><br/>
+          <strong>QSBS § 1202 Checklist:</strong><br/>
           • Acquired from original issuance (not secondary market)<br/>
           • Held for 5+ years (clock starts at acquisition)<br/>
           • C-Corporation (not S-Corp, LLC, or partnership)<br/>
@@ -429,7 +429,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🏦 Assets & Liabilities</h2>
+          <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Assets & Liabilities</h2>
           <p style={{color:T.tx3,fontSize:12,margin:0}}>Net Worth · Cost Basis · Depreciation · Tax Planning — 2025</p>
         </div>
         <div style={{display:"flex",gap:8}}>
@@ -446,28 +446,28 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
           <button onClick={()=>exportPatrimonioPDF(inversiones.filter(x=>x.sim!==false), [], 1, true)}
             title="Download net worth PDF"
             style={{background:"#e64800",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
-            📄 Assets PDF
+            Assets PDF
           </button>
           <button onClick={()=>exportDeudasPDF(deudas.filter(x=>x.sim!==false), inversiones, [], 1, true)}
             title="Download debts PDF with suggested payoff order"
             style={{background:"#e64800",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
-            📄 Debts PDF
+            Debts PDF
           </button>
           <button onClick={()=>exportInversionesExcel(inversiones.filter(x=>x.sim!==false), [], 1, true)}
             title="Download assets Excel"
             style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
-            📊 Assets XLS
+            Assets XLS
           </button>
           <button onClick={()=>exportDeudasExcel(deudas.filter(x=>x.sim!==false), inversiones, [], 1, true)}
             title="Download debts Excel"
             style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
-            📊 Debts XLS
+            Debts XLS
           </button>
         </div>
       </div>
 
       {/* Net Worth Hero */}
-      <div style={{background:`radial-gradient(ellipse at 20% 0%,rgba(0,200,5,.06),transparent 60%)`,border:`1px solid ${T.border}`,borderRadius:16,padding:24,marginBottom:16}}>
+      <div style={{background:`radial-gradient(ellipse at 20% 0%,rgba(0,200,5,.06),transparent 60%)`,border:`1px solid ${T.border}`,borderRadius:12,padding:24,marginBottom:16}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12}}>
           {[
             {l:"Total Assets",     v:fm(totals.totalValue),   c:T.gn},
@@ -488,7 +488,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
 
       {/* Category breakdown */}
       {inversiones.length > 0 && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:16,marginBottom:16}}>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:16,marginBottom:16}}>
           <div style={{fontSize:12,fontWeight:700,color:T.tx3,marginBottom:10}}>ALLOCATION BY CATEGORY</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
             {Object.entries(totals.byCategory).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{
@@ -513,7 +513,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
             const max = Object.entries(totals.byCategory).sort((a,b)=>b[1]-a[1])[0];
             if(max && totals.totalValue>0 && max[1]/totals.totalValue > 0.50) return(
               <InfoBox color={T.or}>
-                <strong>⚠ Concentration Risk:</strong> {CAT_LABELS[max[0]]||max[0]} represents {(max[1]/totals.totalValue*100).toFixed(0)}% of your portfolio.
+                <strong>Concentration Risk:</strong> {CAT_LABELS[max[0]]||max[0]} represents {(max[1]/totals.totalValue*100).toFixed(0)}% of your portfolio.
                 A diversified wealth plan targets no single asset class above 40–50%.
                 Consider rebalancing via tax-efficient strategies (§ 1031 exchange for real estate, tax-loss harvesting for equities).
               </InfoBox>
@@ -537,8 +537,8 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* ════ ASSETS ════ */}
       {tab === "assets" && (
         inversiones.length === 0
-          ? <div style={{padding:48,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:16}}>
-              <div style={{fontSize:36,marginBottom:12}}>🏦</div>
+          ? <div style={{padding:48,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:12}}>
+              <div style={{fontSize:36,marginBottom:12}}></div>
               <div style={{fontSize:15,fontWeight:700,color:T.tx2,marginBottom:6}}>No assets yet</div>
               <div style={{fontSize:13,marginBottom:20}}>Add real estate, stocks, retirement accounts, crypto, and other assets with full IRS tax analysis.</div>
               <button onClick={()=>{setForm(EMPTY_ASSET);setShowForm("asset")}} style={{background:T.gn,color:"#000",border:"none",padding:"12px 28px",borderRadius:10,cursor:"pointer",fontWeight:700}}>+ Add First Asset</button>
@@ -618,7 +618,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 const open = expanded===`a${idx}`;
                 const color = CAT_COLORS[info.cat]||T.tx3;
                 return(
-                  <div key={idx} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden"}}>
+                  <div key={idx} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",cursor:"pointer"}}
                          onClick={()=>setExpanded(open?null:`a${idx}`)}>
                       <div style={{flex:1}}>
@@ -640,9 +640,9 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                         <AssetDetail asset={asset}/>
                         <div style={{padding:"12px 18px",borderTop:`1px solid ${T.border}`,display:"flex",gap:8}}>
                           <button onClick={()=>{setForm({...EMPTY_ASSET,...asset});setEditing(idx);setShowForm("asset")}}
-                            style={{padding:"8px 16px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ Edit</button>
+                            style={{padding:"8px 16px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>Edit</button>
                           <button onClick={()=>removeAsset(idx)}
-                            style={{padding:"8px 16px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑️ Remove</button>
+                            style={{padding:"8px 16px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>
                         </div>
                       </>
                     )}
@@ -666,8 +666,8 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* ════ LIABILITIES ════ */}
       {tab === "liabilities" && (
         deudas.length === 0
-          ? <div style={{padding:48,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:16}}>
-              <div style={{fontSize:36,marginBottom:12}}>📋</div>
+          ? <div style={{padding:48,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:12}}>
+              <div style={{fontSize:36,marginBottom:12}}></div>
               <div style={{fontSize:15,fontWeight:700,color:T.tx2,marginBottom:6}}>No liabilities yet</div>
               <button onClick={()=>{setFormL(EMPTY_LIAB);setShowForm("liab")}} style={{background:T.gn,color:"#000",border:"none",padding:"12px 28px",borderRadius:10,cursor:"pointer",fontWeight:700}}>+ Add First Liability</button>
             </div>
@@ -707,7 +707,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                 const info = liabInfo(liab.tp);
                 const open = expanded===`l${idx}`;
                 return(
-                  <div key={idx} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden"}}>
+                  <div key={idx} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                     <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",cursor:"pointer"}}
                          onClick={()=>setExpanded(open?null:`l${idx}`)}>
                       <div style={{flex:1}}>
@@ -743,9 +743,9 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
                         )}
                         <div style={{display:"flex",gap:8}}>
                           <button onClick={()=>{setFormL({...EMPTY_LIAB,...liab});setEditing(idx);setShowForm("liab")}}
-                            style={{padding:"8px 16px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ Edit</button>
+                            style={{padding:"8px 16px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>Edit</button>
                           <button onClick={()=>removeLiab(idx)}
-                            style={{padding:"8px 16px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑️ Remove</button>
+                            style={{padding:"8px 16px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>
                         </div>
                       </div>
                     )}
@@ -758,7 +758,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* ════ ASSET FORM MODAL ════ */}
       {showForm === "asset" && (
         <div onClick={()=>setShowForm(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:660,maxHeight:"90vh",overflowY:"auto",padding:32}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:12,width:"100%",maxWidth:660,maxHeight:"90vh",overflowY:"auto",padding:32}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"Add"} Asset</h3>
               <button onClick={()=>setShowForm(null)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>
@@ -810,7 +810,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
             </div>
 
             <InfoBox color={T.pr}>
-              <strong>💡 CPA Planning:</strong> {selType.planning}
+              <strong>CPA Planning:</strong> {selType.planning}
             </InfoBox>
 
             <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:24}}>
@@ -826,7 +826,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       {/* ════ LIABILITY FORM MODAL ════ */}
       {showForm === "liab" && (
         <div onClick={()=>setShowForm(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto",padding:32}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:12,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto",padding:32}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"Add"} Liability</h3>
               <button onClick={()=>setShowForm(null)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>

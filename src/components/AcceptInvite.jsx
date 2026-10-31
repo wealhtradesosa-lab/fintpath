@@ -186,7 +186,7 @@ export default function AcceptInvite({ token, onComplete }) {
   const card = {
     background: T.bg2,
     border: `1px solid ${T.border}`,
-    borderRadius: 20,
+    borderRadius: 12,
     padding: 36,
     maxWidth: 460,
     width: "100%",
@@ -275,8 +275,8 @@ export default function AcceptInvite({ token, onComplete }) {
         {/* Invitation banner */}
         {invitation?.type === "family" ? (
           <>
-            <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.12), rgba(59,130,246,0.08))", border: `1px solid rgba(0,200,5,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
-              <div style={{ fontSize: 12, color: T.green, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 8 }}>🎉 Invitación recibida</div>
+            <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.12), rgba(59,130,246,0.08))", border: `1px solid rgba(0,200,5,0.3)`, borderRadius: 12, padding: 18, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.green, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 8 }}>Invitación recibida</div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 6, lineHeight: 1.35 }}>
                 {invitation?.invited_by_name || "Alguien"} te invitó a <strong style={{ color: T.green }}>{nombreCuenta(invitation)}</strong> en Finpathia
                 {invitation?.invited_by_email && <div style={{ fontSize: 12, fontWeight: 500, color: T.txt3, marginTop: 4 }}>Enviada por {invitation.invited_by_email}{invitation?.email_invited ? <> · para {invitation.email_invited}</> : null}</div>}
@@ -361,7 +361,7 @@ export default function AcceptInvite({ token, onComplete }) {
             />
             {invitation?.email_invited && form.email.trim().toLowerCase() !== invitation.email_invited.toLowerCase() && (
               <div style={{ fontSize: 12, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
-                ⚠️ La invitación se envió a <strong>{invitation.email_invited}</strong>. Tienes que usar ese mismo email — si usas otro, no vamos a poder vincularte.
+                La invitación se envió a <strong>{invitation.email_invited}</strong>. Tienes que usar ese mismo email — si usas otro, no vamos a poder vincularte.
               </div>
             )}
           </div>
@@ -438,10 +438,10 @@ export default function AcceptInvite({ token, onComplete }) {
           {invitation?.type === "family" ? (
             <>
               ✓ Sin costo &nbsp;·&nbsp; ✓ Sin elegir plan &nbsp;·&nbsp; ✓ La cuenta es de {invitation?.invited_by_name || "quien te invitó"}
-              <br />🔒 Tus datos viajan y se guardan cifrados.
+              <br />Tus datos viajan y se guardan cifrados.
             </>
           ) : (
-            <>🔒 Tus datos viajan y se guardan cifrados. Tu asesor solo ve lo que la invitación le permite.</>
+            <>Tus datos viajan y se guardan cifrados. Tu asesor solo ve lo que la invitación le permite.</>
           )}
         </div>
       </div>

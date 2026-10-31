@@ -61,7 +61,7 @@ export default function CtaUnaAccion({
       style={{
         background: T.card || "var(--fp-bg)",
         border: "1px solid " + (T.border || "rgba(var(--fp-ink),0.06)"),
-        borderRadius: 16,
+        borderRadius: 12,
         padding: 20,
         marginTop: 14,
       }}

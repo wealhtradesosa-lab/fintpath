@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Interruptor, Trash2 } from "./Iconos.jsx";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
@@ -71,13 +72,13 @@ const T = {
   ch: [C.ok, C.accent, C.warn, C.purple, "#64748b", "#94a3b8", "#f59e0b"],
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
-export const CATS = [{v:"Salario",l:"💼 Salario / Nómina"},{v:"Cesantías",l:"💵 Cesantías / Intereses cesantías"},{v:"Prima/Bono",l:"🎁 Prima o bonificación laboral"},{v:"Honorarios",l:"📋 Honorarios / Servicios"},{v:"Arriendo",l:"🏠 Arrendamiento"},{v:"Intereses bancarios",l:"🏦 Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"📈 Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"💰 Rendimientos financieros (otros)"},{v:"Dividendos",l:"📊 Dividendos"},{v:"Inversión",l:"🏦 Inversión / Venta activos"},{v:"Pensión",l:"🏛️ Pensión"},{v:"Negocio",l:"🏢 Ingresos de negocio"},{v:"Otro",l:"📝 Otros ingresos"}];
+export const CATS = [{v:"Salario",l:"Salario / Nómina"},{v:"Cesantías",l:"Cesantías / Intereses cesantías"},{v:"Prima/Bono",l:"Prima o bonificación laboral"},{v:"Honorarios",l:"Honorarios / Servicios"},{v:"Arriendo",l:"Arrendamiento"},{v:"Intereses bancarios",l:"Intereses bancarios / CDT"},{v:"Utilidad FIC",l:"Utilidad de fondo (FIC)"},{v:"Rendimiento",l:"Rendimientos financieros (otros)"},{v:"Dividendos",l:"Dividendos"},{v:"Inversión",l:"Inversión / Venta activos"},{v:"Pensión",l:"Pensión"},{v:"Negocio",l:"Ingresos de negocio"},{v:"Otro",l:"Otros ingresos"}];
 
 // Sub-opciones de fiscalCode por categoría ambigua. Si la categoría no está
 // aquí, el fiscalCode se deriva automáticamente vía normalize.js (no pregunta).
 const FISCAL_SUBOPTIONS = {
   "Honorarios": {
-    question: "🧾 ¿Tienes 2+ empleados contratados ≥ 83% del año? (Art. 206 #10 ET)",
+    question: "¿Tienes 2+ empleados contratados ≥ 83% del año? (Art. 206 #10 ET)",
     help: "Define si aplica renta exenta 25%. Consulta con tu contador si tienes duda.",
     options: [
       { v: "LAB_HONORARIOS_SIN_EMPLEADOS", l: "No — tributo como cédula de trabajo SIN exenta 25%" },
@@ -85,7 +86,7 @@ const FISCAL_SUBOPTIONS = {
     ],
   },
   "Arriendo": {
-    question: "🏠 ¿Qué arriendas?",
+    question: "¿Qué arriendas?",
     help: "Inmueble (casa, bodega, local) va a cédula NO laboral con gastos deducibles. Mueble (equipos, maquinaria) va a cédula de capital.",
     options: [
       { v: "NOL_ARRIENDO_INMUEBLE", l: "Inmueble (casa, bodega, local, oficina)" },
@@ -93,7 +94,7 @@ const FISCAL_SUBOPTIONS = {
     ],
   },
   "Dividendos": {
-    question: "📊 ¿Qué tipo de dividendos?",
+    question: "¿Qué tipo de dividendos?",
     help: "Cada tipo tributa diferente según Art. 48/49/242/254 ET.",
     options: [
       { v: "DIV_ART49_GRAVADOS", l: "Sociedad nacional — parte gravada (Art. 49)" },
@@ -103,7 +104,7 @@ const FISCAL_SUBOPTIONS = {
     ],
   },
   "Inversión": {
-    question: "🏦 ¿La venta del activo cumple >2 años de tenencia?",
+    question: "¿La venta del activo cumple >2 años de tenencia?",
     help: "Activos >2 años van a ganancia ocasional (tarifa 15%). <2 años son renta ordinaria.",
     options: [
       { v: "CAP_VENTA_ACTIVOS", l: "No, <2 años — renta ordinaria" },
@@ -312,9 +313,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               tasa: d.tasa ? String(d.tasa) : p.tasa,
             }));
             setShowForm(true);
-            alert("✅ Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": $" + (d.mensual || 0).toLocaleString("es-CO") + " — " + (d.categoria || ""));
+            alert("Documento leído" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.nombre || "") + ": $" + (d.mensual || 0).toLocaleString("es-CO") + " — " + (d.categoria || ""));
           } else {
-            alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
+            alert("No se pudo leer la imagen. Intenta con una foto más clara.");
           }
           setScanning(false);
         };
@@ -575,24 +576,24 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           // Feedback visible: confirmar al usuario que se creo
           setCesantiasNotif({
             tipo: "creada",
-            mensaje: `✅ Se creó automáticamente "Cesantías + intereses (estimadas)" por ${fm(cesantiasMensual)}/mes para que la exenta del Art. 206 #4 ET se aplique.`
+            mensaje: `Se creó automáticamente "Cesantías + intereses (estimadas)" por ${fm(cesantiasMensual)}/mes para que la exenta del Art. 206 #4 ET se aplique.`
           });
         } else {
           // Feedback visible: explicar por que NO se creo (evita confusion del usuario)
           setCesantiasNotif({
             tipo: "saltada",
-            mensaje: `ℹ️ No se creó cesantía nueva: el owner ya tiene una cargada. Si quieres actualizar el monto, edita manualmente el item de cesantías existente.`
+            mensaje: `No se creó cesantía nueva: el owner ya tiene una cargada. Si quieres actualizar el monto, edita manualmente el item de cesantías existente.`
           });
         }
       } else if (isSalario && form.tipoVinculacion === "integral") {
         setCesantiasNotif({
           tipo: "saltada",
-          mensaje: `ℹ️ Salario integral: no se cargan cesantías por separado (Art. 132 CST — ya están incluidas en el monto pactado).`
+          mensaje: `Salario integral: no se cargan cesantías por separado (Art. 132 CST — ya están incluidas en el monto pactado).`
         });
       } else if (isSalario && form.tipoVinculacion === "no_aplica") {
         setCesantiasNotif({
           tipo: "saltada",
-          mensaje: `ℹ️ Sin cesantías: este caso no genera prestaciones laborales. Recuerda que si tu vinculación cambia, puedes agregar cesantías manualmente como ingreso aparte.`
+          mensaje: `Sin cesantías: este caso no genera prestaciones laborales. Recuerda que si tu vinculación cambia, puedes agregar cesantías manualmente como ingreso aparte.`
         });
       }
     }
@@ -715,17 +716,17 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           {onImport && <button onClick={onImport}
             title="Cargar ingresos desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-            ⬆️ Subir Excel
+            Subir Excel
           </button>}
           <button onClick={() => exportIngresosExcel(activos, owners, trm)}
             title="Bajar Excel: detalle + resumen por categoría"
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            ⬇️ Bajar Excel
+            Bajar Excel
           </button>
           <button onClick={() => exportIngresosPDF(activos, owners, trm)}
             title="Bajar PDF: resumen, detalle y desglose por categoría"
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            ⬇️ Bajar PDF
+            Bajar PDF
           </button>
           <button onClick={() => { setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true); }}
             style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
@@ -738,7 +739,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       {fiscalWarnings.length > 0 && (
         <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14 }}></span>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
               {fiscalWarnings.length} ingreso{fiscalWarnings.length !== 1 ? "s" : ""} con clasificación fiscal pendiente
             </div>
@@ -806,7 +807,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           { l: "Promedio mensual del año", v: fm(totalMes), c: T.blue },
           { l: "Total del año", v: fm(totalMes * 12), c: T.blue },
           { l: "Fijos", v: fm(fijos), c: T.txt }].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
+          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
           </div>
@@ -818,7 +819,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16 }}>
         {/* Table with checkboxes */}
-        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
             {/* 26-jul-2026 (Santiago): misma barra del dashboard, agrupando por
                 categoría DIAN — que es como el motor fiscal ya piensa los
@@ -861,12 +862,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 {allItems.length === 0 ? (
                   <tr><td colSpan={8} style={{ padding: 0 }}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
-                      <div style={{fontSize:40,marginBottom:12}}>💰</div>
+                      <div style={{fontSize:40,marginBottom:12}}></div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:T.txt}}>Agrega tus ingresos mensuales</h3>
                       <p style={{fontSize:13,color:T.txt3,maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Registra todo lo que recibes cada mes: salario, arriendos, rendimientos, dividendos, freelance. <strong style={{color:T.txt2}}>No incluyas cuotas de créditos</strong> — esas van en Deudas.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
                         <button onClick={()=>{setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true);}} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de ingresos</button>}
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>Subir tabla Excel de ingresos</button>}
                       </div>
                       <div style={{background:T.bg3,borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
                         <div style={{fontSize:12,fontWeight:700,color:T.txt3,marginBottom:8,letterSpacing:1}}>Ejemplo de Excel para importar</div>
@@ -908,7 +909,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                               onClick={() => handleEdit(item)}
                               title={ws.map(w => "• " + (w.message || w.accionSugerida)).join("\n")}
                               style={{ fontSize: 13, cursor: "pointer", color: hasError ? "#ff5000" : "#f59e0b", flexShrink: 0 }}
-                            >⚠️</span>
+                            ></span>
                           );
                         })()}
                         <span>{item.nombre}</span>
@@ -958,16 +959,16 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                               userSelect: "none",
                             }}
                           >
-                            {estaPagadoEnAño(item, añoActual) ? `✅ Recibido ${añoActual}` : `⏳ Pendiente ${añoActual}`}
+                            {estaPagadoEnAño(item, añoActual) ? `Recibido ${añoActual}` : `Pendiente ${añoActual}`}
                           </span>
                         )}
                       </div>
                       {(()=>{
                         if(!item.owner || item.owner==="") return null;
-                        if(item.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
-                        if(item.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
+                        if(item.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>N/A</div>;
+                        if(item.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===item.owner);
-                        return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                        return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"":""} {ow.name}</div> : null;
                       })()}
                     </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.categoria}</span></td>
@@ -979,9 +980,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             esa frecuencia y confundía la lectura). */}
                         {esPrimaBono(item) ? fm(item.moneda==="USD" ? mensualPrimaBono(item)*(trm||4200) : mensualPrimaBono(item)) : fm(item.moneda==="USD" ? promedioMesActivo(item)*(trm||4200) : promedioMesActivo(item))}
                         {esPrimaBono(item) && <div data-testid="nota-prima-bono" style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>{notaPrimaBono(item)}</div>}
-                        {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>⚠️ {textoRevisarPrima(item)}</div>}
+                        {esPrimaBono(item) && item.revisarFrecuencia && <div data-testid="revisar-prima-bono" style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600 }}>{textoRevisarPrima(item)}</div>}
                         {debeSugerirPrimaBono(item) && <div data-testid="sugerir-prima-bono" style={{ fontSize: 11, color: "#f59e0b", fontWeight: 600, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-                          <span>⚠️ {MARCA_SUGERIR_PRIMA}</span>
+                          <span>{MARCA_SUGERIR_PRIMA}</span>
                           <button type="button" data-testid="sugerir-prima-editar" onClick={(e) => { e.stopPropagation(); handleEdit(item); }} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid #f59e0b", background: "transparent", color: "#f59e0b", cursor: "pointer" }}>Revisar</button>
                           <button type="button" data-testid="sugerir-prima-descartar" onClick={(e) => { e.stopPropagation(); descartarSugerenciaPrima(item); }} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(var(--fp-ink),0.15)", background: "transparent", color: "var(--fp-txt2)", cursor: "pointer" }}>Es mensual, dejarlo así</button>
                         </div>}
@@ -1023,18 +1024,18 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                                 en $0 — y se avisa, para que sea decisión y no sorpresa. */}
                             {vacios > 0 && (
                               <div style={{ color: "#f59e0b", marginTop: 1 }}>
-                                ⚠ {vacios} {vacios === 1 ? "mes sin monto va" : "meses sin monto van"} en $0
+                                {vacios} {vacios === 1 ? "mes sin monto va" : "meses sin monto van"} en $0
                               </div>
                             )}
                           </div>
                         );
                       })()}
                     </td>
-                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.desdePatrimonio ? <span style={{ color: T.blue }}>🏦 viene de Patrimonio</span> : item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " +fmtTasaEs(item.tasa)+"" : "") : item.fuente || "—"}</td>
+                    <td style={{ padding: "10px 14px", color: T.txt3, fontSize: 12 }}>{item.desdePatrimonio ? <span style={{ color: T.blue }}>viene de Patrimonio</span> : item.capital > 0 ? "$" + Math.round(item.capital).toLocaleString("es-CO") + (item.tasa ? " • " +fmtTasaEs(item.tasa)+"" : "") : item.fuente || "—"}</td>
                     <td style={{ padding: "10px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                      <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{item.sim===false?"⬜":"✅"}</button>
-                      <button onClick={() => { if (item.desdePatrimonio) { if (onIrAPatrimonio) { onIrAPatrimonio(item.activoId); return; } alert("Este ingreso nace de un activo: edítalo en Patrimonio (cuánto vale, cuánto paga y cuándo)."); return; } handleEdit(item); }} title={item.desdePatrimonio ? "Se edita en Patrimonio" : "Editar"} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}>{item.desdePatrimonio ? "🏦" : "✏️"}</button>
-                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}>🗑️</button></div>
+                      <button onClick={() => { if (!guardEdit(role)) return; const upd = items.map(x => x.id === item.id ? {...x, sim: !(item.sim!==false)} : x); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={item.sim!==false} /></button>
+                      <button onClick={() => { if (item.desdePatrimonio) { if (onIrAPatrimonio) { onIrAPatrimonio(item.activoId); return; } alert("Este ingreso nace de un activo: edítalo en Patrimonio (cuánto vale, cuánto paga y cuándo)."); return; } handleEdit(item); }} title={item.desdePatrimonio ? "Se edita en Patrimonio" : "Editar"} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}>{item.desdePatrimonio ? "" : ""}</button>
+                      <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar este registro?")) onUpdate(items.filter((i) => i.id !== item.id)); }} style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button></div>
                     </td>
                   </tr>
                   )
@@ -1058,7 +1059,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       {/* Form Modal */}
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: 32 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Ingreso" : "Agregar Ingreso"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
@@ -1122,8 +1123,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Photo scan option */}
               <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.06)",border:"1px dashed rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:4,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
-                {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>🔄 Leyendo documento...</div> : <>
-                  <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>📸 ¿Tienes un extracto, certificado o recibo?</div>
+                {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>Leyendo documento...</div> : <>
+                  <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>¿Tienes un extracto, certificado o recibo?</div>
                   <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                 </>}
               </div>
@@ -1134,7 +1135,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   campos directos, sin explicación redundante. */}
               <div style={{ gridColumn: "1/-1", borderTop: "1px solid rgba(var(--fp-ink),0.06)", paddingTop: 10, marginTop: 6 }}>
                 <div style={{fontSize:12,fontWeight:600,color:T.txt3,marginBottom:8,letterSpacing:"0.03em"}}>
-                  🧾 Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
+                  Clasificación tributaria <span style={{color:T.txt3,fontWeight:400,opacity:0.7}}>(opcional)</span>
                 </div>
               </div>
 
@@ -1200,7 +1201,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
 
-              <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} /></div>
+              <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"Personal"},{v:"na",l:"N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"":"")+o.name}))]} /></div>
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 
               {/* Fase Variable (18-jul-2026 noche): tabla de 12 meses cuando el
@@ -1224,7 +1225,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               {mostrarCampo("modoIngresoSimple") && !["Salario","Honorarios","Prima/Bono"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                    💵 ¿El monto que vas a poner es...?
+                    ¿El monto que vas a poner es...?
                   </label>
                   <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
                     <button type="button"
@@ -1238,7 +1239,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         setModoIngreso("porPago");
                       }}
                       style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
-                      💵 Mensual<br/>
+                      Mensual<br/>
                       <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>Lo que llega cada mes</span>
                     </button>
                     <button type="button"
@@ -1252,7 +1253,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         setModoIngreso("anual");
                       }}
                       style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "anual" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
-                      📊 Total del año<br/>
+                      Total del año<br/>
                       <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>La suma anual</span>
                     </button>
                   </div>
@@ -1263,7 +1264,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && !["Salario","Honorarios","Prima/Bono"].includes(form.categoria) && (
                 <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                   <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                    💵 ¿Cómo conoces el monto?
+                    ¿Cómo conoces el monto?
                   </label>
                   <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
                     <button type="button"
@@ -1306,17 +1307,17 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 //  - Salario/Honorarios: preserva label BRUTO (fiscal crítico)
                 //  - Modo avanzado con freq no-mensual: mantiene labelMontoSegunFrecuencia
                 const isSalarioLike = ["Salario","Honorarios"].includes(form.categoria);
-                if (isSalarioLike) return "💵 Monto BRUTO mensual (antes de descuentos)";
+                if (isSalarioLike) return "Monto BRUTO mensual (antes de descuentos)";
                 if (form.categoria === "Prima/Bono") return "Total que recibes en el año";
                 const freq = form.frecuencia || "mensual";
                 // Modo avanzado con freq no-mensual: mostrar label específico
                 const esAvanzado = templateElegido?.id === "avanzado";
                 if (esAvanzado && freq !== "mensual") {
-                  if (modoIngreso === "anual") return "💵 🎯 Total del año";
-                  return `💵 ${labelMontoSegunFrecuencia(freq)}`;
+                  if (modoIngreso === "anual") return "Total del año";
+                  return `${labelMontoSegunFrecuencia(freq)}`;
                 }
                 // Templates simples: solo "Monto" (el toggle explica el modo)
-                return "💵 Monto";
+                return "Monto";
               })()} value={form.mensual} onChange={(v) => {
                 const nf = { mensual: v };
                 const m = Number(v) || 0;
@@ -1360,10 +1361,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   {/* 21-oct-2026 — Un solo origen: la inversión se registra en Patrimonio
                       (qué es, cuánto vale, cuánto paga y cuándo) y el ingreso nace allá.
                       Este bloque queda para arriendos sueltos y casos viejos. */}
-                  <div style={{fontSize:12,color:T.blue,marginBottom:8,lineHeight:1.5}}>🏦 ¿Este ingreso sale de una inversión tuya (CDT, fondo, préstamo, inmueble)? Regístrala en <strong>Patrimonio</strong>: allá dices cuánto vale, cuánto te paga y cuándo, y el ingreso se crea solo y queda vinculado.{onIrAPatrimonio && <> <button type="button" onClick={() => onIrAPatrimonio(null)} style={{ marginLeft: 6, background: "transparent", border: `1px solid ${T.blue}`, color: T.blue, borderRadius: 999, padding: "2px 10px", fontSize: 12, cursor: "pointer" }}>Ir a Patrimonio</button></>}</div>
-                  <div style={{fontSize:12,color:T.txt3,marginBottom:10}}>📊 Con 2 de 3 valores se calcula el tercero automáticamente</div>
+                  <div style={{fontSize:12,color:T.blue,marginBottom:8,lineHeight:1.5}}>¿Este ingreso sale de una inversión tuya (CDT, fondo, préstamo, inmueble)? Regístrala en <strong>Patrimonio</strong>: allá dices cuánto vale, cuánto te paga y cuándo, y el ingreso se crea solo y queda vinculado.{onIrAPatrimonio && <> <button type="button" onClick={() => onIrAPatrimonio(null)} style={{ marginLeft: 6, background: "transparent", border: `1px solid ${T.blue}`, color: T.blue, borderRadius: 999, padding: "2px 10px", fontSize: 12, cursor: "pointer" }}>Ir a Patrimonio</button></>}</div>
+                  <div style={{fontSize:12,color:T.txt3,marginBottom:10}}>Con 2 de 3 valores se calcula el tercero automáticamente</div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
-                    <In l="💼 Capital invertido" value={form.capital} onChange={(v) => {
+                    <In l="Capital invertido" value={form.capital} onChange={(v) => {
                       const nf = { capital: v };
                       const cap = Number(v) || 0;
                       const m = Number(form.mensual) || 0;
@@ -1380,7 +1381,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       }
                       setForm(p => ({ ...p, ...nf }));
                     }} type="number" placeholder="Valor del activo" />
-                    <In l={form.tasaModo === "mensual" ? "📈 % Rentabilidad mensual" : "📈 % Rentabilidad anual"} value={form.tasa} onChange={(v) => {
+                    <In l={form.tasaModo === "mensual" ? "% Rentabilidad mensual" : "% Rentabilidad anual"} value={form.tasa} onChange={(v) => {
                       const nf = { tasa: v };
                       const tas = Number(v) || 0;
                       const cap = Number(form.capital) || 0;
@@ -1408,16 +1409,16 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       aplicarTasaSiVariable(nf, form, cap, tas, v);
                     }
                     setForm(p => ({ ...p, ...nf }));
-                  }} options={[{ v: "anual", l: "📅 Anual (ej: 24% al año)" }, { v: "mensual", l: "📅 Mensual (ej: 1% al mes)" }]} />
+                  }} options={[{ v: "anual", l: "Anual (ej: 24% al año)" }, { v: "mensual", l: "Mensual (ej: 1% al mes)" }]} />
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && Number(form.mensual) > 0 && (
                     <div style={{marginTop:4,padding:"10px 12px",background:"rgba(0,200,5,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.6}}>
-                      💰 Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
+                      Capital {"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = {"$" + Math.round(form.tasaModo === "mensual" ? Number(form.capital) * Number(form.tasa) / 100 : Number(form.capital) * Number(form.tasa) / 100 / 12).toLocaleString("es-CO")}/mes
                     </div>
                   )}
                   {/* Fix: warning si el capital guardado es sospechosamente bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
                     <div style={{marginTop:10,padding:"10px 12px",background:"rgba(255,80,0,0.08)",border:"1px solid rgba(255,80,0,0.3)",borderRadius:8,fontSize:12,color:T.red,lineHeight:1.5}}>
-                      ⚠️ El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignora este aviso.
+                      El capital invertido es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Un capital típico de inversión es &gt;$100.000. Si el valor es correcto, ignora este aviso.
                     </div>
                   )}
                   {/* Commit E: validacion de tasa absurda (warning, no bloqueo) */}
@@ -1432,14 +1433,14 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     if (altoRojo) {
                       return (
                         <div style={{marginTop:10,padding:"10px 12px",background:"rgba(255,80,0,0.08)",border:"1px solid rgba(255,80,0,0.3)",borderRadius:8,fontSize:12,color:T.red,lineHeight:1.5}}>
-                          ⚠️ Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
+                          Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
                         </div>
                       );
                     }
                     if (altoNaranja) {
                       return (
                         <div style={{marginTop:10,padding:"10px 12px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.25)",borderRadius:8,fontSize:12,color:T.orange,lineHeight:1.5}}>
-                          🟠 Rentabilidad alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
+                          Rentabilidad alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta. Rentabilidades de mercado típicas: 8-20% anual.
                         </div>
                       );
                     }
@@ -1487,7 +1488,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               {form.categoria === "Salario" && !editId && (
                 <div style={{gridColumn:"1/-1",background:"rgba(0,200,5,0.04)",border:"1px solid rgba(0,200,5,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4,marginBottom:4}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#00c805",marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-                    💵 ¿Tu vinculación incluye cesantías por separado?
+                    ¿Tu vinculación incluye cesantías por separado?
                   </div>
                   <div style={{fontSize:11,color:T.txt3,lineHeight:1.5,marginBottom:10}}>
                     Las cesantías son <strong>renta exenta Art. 206 #4 ET</strong> con tope variable según salario. Muchos usuarios las olvidan y pagan más impuesto del que deben.
@@ -1532,7 +1533,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               {form.categoria === "Salario" && (
                 <div style={{gridColumn:"1/-1",background:"rgba(168,85,247,0.04)",border:"1px solid rgba(168,85,247,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4,marginBottom:4}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#a855f7",marginBottom:2,display:"flex",alignItems:"center",gap:6}}>
-                    🛡️ Aportes obligatorios · Pensión y Salud
+                    Aportes obligatorios · Pensión y Salud
                   </div>
                   <div style={{fontSize:11,color:T.txt3,lineHeight:1.4,marginBottom:10}}>
                     Por defecto 4%+4% del bruto. Cambia a "# SMMLV" si cotizas sobre IBC distinto.
@@ -1544,7 +1545,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <div style={{background:T.bg3,borderRadius:8,padding:6,display:"flex",gap:4,marginBottom:8}}>
                       <button type="button" onClick={() => setForm(p => ({ ...p, aportePensionModo: "valor" }))}
                         style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aportePensionModo!=="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aportePensionModo!=="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aportePensionModo!=="smmlv"?"#a855f7":T.txt3,fontSize:12,fontWeight:form.aportePensionModo!=="smmlv"?700:500,cursor:"pointer"}}>
-                        💵 Valor fijo
+                        Valor fijo
                       </button>
                       <button type="button" onClick={() => {
                         // Al cambiar a SMMLV: si no hay # cargado, sugiere uno equivalente al valor actual
@@ -1560,7 +1561,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         });
                       }}
                         style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aportePensionModo==="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aportePensionModo==="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aportePensionModo==="smmlv"?"#a855f7":T.txt3,fontSize:12,fontWeight:form.aportePensionModo==="smmlv"?700:500,cursor:"pointer"}}>
-                        📊 # SMMLV
+                        # SMMLV
                       </button>
                     </div>
                     {form.aportePensionModo === "smmlv" ? (
@@ -1582,7 +1583,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           const supera = n > TOPE_IBC_SMMLV;
                           return (
                             <div style={{marginTop:6,padding:"8px 10px",background:supera?"rgba(255,80,0,0.06)":"rgba(168,85,247,0.06)",borderRadius:6,fontSize:11,color:supera?T.red:T.txt2,lineHeight:1.5}}>
-                              {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100). El sistema lo cuenta como ingresaste pero verifica que sea correcto.</strong> : <>
+                              {supera ? <strong>Excede tope IBC (25 SMMLV — Art. 18 Ley 100). El sistema lo cuenta como ingresaste pero verifica que sea correcto.</strong> : <>
                                 {n} SMMLV × {fm(SMMLV_2026)} = IBC <strong>{fm(ibc)}</strong>/mes<br/>
                                 Aporte: 4% {fs > 0 && `+ ${fmtPctEs((fs*100), 1)} (Fondo Solidaridad)`} = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
                               </>}
@@ -1601,7 +1602,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     <div style={{background:T.bg3,borderRadius:8,padding:6,display:"flex",gap:4,marginBottom:8}}>
                       <button type="button" onClick={() => setForm(p => ({ ...p, aporteSaludModo: "valor" }))}
                         style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aporteSaludModo!=="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aporteSaludModo!=="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aporteSaludModo!=="smmlv"?"#a855f7":T.txt3,fontSize:12,fontWeight:form.aporteSaludModo!=="smmlv"?700:500,cursor:"pointer"}}>
-                        💵 Valor fijo
+                        Valor fijo
                       </button>
                       <button type="button" onClick={() => {
                         setForm(p => {
@@ -1616,7 +1617,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         });
                       }}
                         style={{flex:1,padding:"6px 8px",borderRadius:6,border:form.aporteSaludModo==="smmlv"?"1.5px solid #a855f7":"1px solid transparent",background:form.aporteSaludModo==="smmlv"?"rgba(168,85,247,0.1)":"transparent",color:form.aporteSaludModo==="smmlv"?"#a855f7":T.txt3,fontSize:12,fontWeight:form.aporteSaludModo==="smmlv"?700:500,cursor:"pointer"}}>
-                        📊 # SMMLV
+                        # SMMLV
                       </button>
                     </div>
                     {form.aporteSaludModo === "smmlv" ? (
@@ -1637,7 +1638,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           const supera = n > TOPE_IBC_SMMLV;
                           return (
                             <div style={{marginTop:6,padding:"8px 10px",background:supera?"rgba(255,80,0,0.06)":"rgba(168,85,247,0.06)",borderRadius:6,fontSize:11,color:supera?T.red:T.txt2,lineHeight:1.5}}>
-                              {supera ? <strong>⚠️ Excede tope IBC (25 SMMLV — Art. 18 Ley 100).</strong> : <>
+                              {supera ? <strong>Excede tope IBC (25 SMMLV — Art. 18 Ley 100).</strong> : <>
                                 {n} SMMLV × {fm(SMMLV_2026)} = IBC <strong>{fm(ibc)}</strong>/mes<br/>
                                 Aporte: 4% = <strong style={{color:"#a855f7"}}>{fm(valor)}</strong>/mes
                               </>}
@@ -1659,7 +1660,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     const gravable = Math.max(0, bruto - ap - asl);
                     return (
                       <div style={{marginTop:10,padding:"10px 12px",background:"rgba(0,200,5,0.06)",borderRadius:8,fontSize:12,color:T.green,lineHeight:1.5}}>
-                        💰 Salario gravable = <strong>{fm(gravable)}</strong> / mes · <span style={{color:T.txt2}}>{fm(gravable * 12)}</span> anual
+                        Salario gravable = <strong>{fm(gravable)}</strong> / mes · <span style={{color:T.txt2}}>{fm(gravable * 12)}</span> anual
                         <div style={{fontSize:11,color:T.txt3,marginTop:4,fontWeight:400}}>
                           Bruto {fm(bruto)} − aportes {fm(ap + asl)}
                         </div>
@@ -1690,7 +1691,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 return (
                   <div style={{ gridColumn: "1/-1", marginTop: 4, padding: "14px 16px", background: "rgba(168,85,247,0.05)", border: "1px solid rgba(168,85,247,0.18)", borderRadius: 10 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: "#3b82f6", letterSpacing: "0.06em", marginBottom: 8 }}>
-                      🏦 Retención en la fuente
+                      Retención en la fuente
                     </div>
                     {!info ? (
                       <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>
@@ -1704,7 +1705,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         </div>
                         {info.advertencia && (
                           <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 10, lineHeight: 1.5 }}>
-                            ⚠️ {info.advertencia}
+                            {info.advertencia}
                           </div>
                         )}
                         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
@@ -1746,12 +1747,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                         {monto > 0 && (
                           <div style={{ fontSize: 12, color: form.retencionAplica === false ? T.txt3 : "#00c805", fontWeight: 600, marginTop: 4 }}>
                             {form.retencionAplica === false
-                              ? "🚫 No se calculará retención para este ingreso."
-                              : `💰 Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString("es-CO")}/año (${fmtPctEs((tasaUsada * 100), 1)} de ${"$" + Math.round(monto * 12).toLocaleString("es-CO")})`}
+                              ? "No se calculará retención para este ingreso."
+                              : `Retención estimada: ${"$" + Math.round(retencionAnual).toLocaleString("es-CO")}/año (${fmtPctEs((tasaUsada * 100), 1)} de ${"$" + Math.round(monto * 12).toLocaleString("es-CO")})`}
                           </div>
                         )}
                         <div style={{ fontSize: 11, color: T.txt3, marginTop: 8, lineHeight: 1.4, fontStyle: "italic" }}>
-                          ℹ️ Marca "No aplicar" si quien te paga NO retiene (ej: inquilino persona natural no declarante). Usa tasa custom si tu certificado de retención muestra una tasa distinta.
+                          Marca "No aplicar" si quien te paga NO retiene (ej: inquilino persona natural no declarante). Usa tasa custom si tu certificado de retención muestra una tasa distinta.
                         </div>
                       </>
                     )}

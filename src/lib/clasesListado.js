@@ -7,24 +7,24 @@
 const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export const CLASES_INGRESO = [
-  { id: "trabajo", nombre: "Trabajo", icono: "💼", re: /salario|sueldo|honorario|comision|freelance|prima|bono|bonific|cesantia|nomina|servicio/ },
-  { id: "arriendos", nombre: "Arriendos", icono: "🏠", re: /arriendo|alquiler|renta inmueble|airbnb/ },
-  { id: "financieras", nombre: "Rentas financieras", icono: "💰", re: /interes|rendimiento|dividendo|cdt|inversion|capital|fondo/ },
-  { id: "negocios", nombre: "Negocios", icono: "🏢", re: /negocio|utilidad|empresa|venta/ },
-  { id: "pensiones", nombre: "Pensiones", icono: "👴", re: /pension/ },
-  { id: "otros", nombre: "Otros", icono: "📦", re: null },
+  { id: "trabajo", nombre: "Trabajo", icono: "", re: /salario|sueldo|honorario|comision|freelance|prima|bono|bonific|cesantia|nomina|servicio/ },
+  { id: "arriendos", nombre: "Arriendos", icono: "", re: /arriendo|alquiler|renta inmueble|airbnb/ },
+  { id: "financieras", nombre: "Rentas financieras", icono: "", re: /interes|rendimiento|dividendo|cdt|inversion|capital|fondo/ },
+  { id: "negocios", nombre: "Negocios", icono: "", re: /negocio|utilidad|empresa|venta/ },
+  { id: "pensiones", nombre: "Pensiones", icono: "", re: /pension/ },
+  { id: "otros", nombre: "Otros", icono: "", re: null },
 ];
 
 export const CLASES_GASTO = [
-  { id: "vivienda", nombre: "Vivienda y hogar", icono: "🏠", re: /vivienda|hogar|servicio|mantenimiento|nomina|empleada|administracion|alimenta|mercado/ },
-  { id: "familia", nombre: "Familia y educación", icono: "🎓", re: /educacion|colegio|universidad|familia|hijo|mascota/ },
-  { id: "salud", nombre: "Salud y seguros", icono: "🩺", re: /salud|medic|seguro|seguridad social|obligatorio/ },
-  { id: "transporte", nombre: "Transporte", icono: "🚗", re: /transporte|vehiculo|carro|gasolina|combustible|parqueadero/ },
-  { id: "impuestos", nombre: "Impuestos y aportes", icono: "🧾", re: /impuesto|aporte|predial|retencion/ },
-  { id: "inmuebles", nombre: "Inmuebles que arriendas y negocio", icono: "🏢", re: /inmueble arrendado|honorario|representacion|negocio|oficina/ },
-  { id: "estilo", nombre: "Estilo de vida", icono: "🎉", re: /entretenimiento|restaurante|viaje|ropa|personal|suscrip|deporte|club/ },
-  { id: "deudas", nombre: "Cuotas y créditos", icono: "💳", re: /credito|cuota|tarjeta|deuda|prestamo/ },
-  { id: "otros", nombre: "Otros", icono: "📦", re: null },
+  { id: "vivienda", nombre: "Vivienda y hogar", icono: "", re: /vivienda|hogar|servicio|mantenimiento|nomina|empleada|administracion|alimenta|mercado/ },
+  { id: "familia", nombre: "Familia y educación", icono: "", re: /educacion|colegio|universidad|familia|hijo|mascota/ },
+  { id: "salud", nombre: "Salud y seguros", icono: "", re: /salud|medic|seguro|seguridad social|obligatorio/ },
+  { id: "transporte", nombre: "Transporte", icono: "", re: /transporte|vehiculo|carro|gasolina|combustible|parqueadero/ },
+  { id: "impuestos", nombre: "Impuestos y aportes", icono: "", re: /impuesto|aporte|predial|retencion/ },
+  { id: "inmuebles", nombre: "Inmuebles que arriendas y negocio", icono: "", re: /inmueble arrendado|honorario|representacion|negocio|oficina/ },
+  { id: "estilo", nombre: "Estilo de vida", icono: "", re: /entretenimiento|restaurante|viaje|ropa|personal|suscrip|deporte|club/ },
+  { id: "deudas", nombre: "Cuotas y créditos", icono: "", re: /credito|cuota|tarjeta|deuda|prestamo/ },
+  { id: "otros", nombre: "Otros", icono: "", re: null },
 ];
 
 export function claseDeTexto(clases, ...textos) {

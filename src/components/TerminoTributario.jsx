@@ -3,7 +3,7 @@
 //
 // PROPÓSITO:
 //   Componente inline que muestra un término técnico tributario con un
-//   ícono ❓ que despliega su explicación al hover/click.
+//   ícono que despliega su explicación al hover/click.
 //
 // USO:
 //   <TerminoTributario clave="uvt">UVT</TerminoTributario>

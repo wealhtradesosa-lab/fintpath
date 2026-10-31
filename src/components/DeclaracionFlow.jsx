@@ -26,9 +26,9 @@
 //   ETAPA 3 · Tu declaración casi lista
 //     "Esto es lo que te queda después de optimizar"
 //     Saldo original vs optimizado + cambios + vista F-110/F-210
-//     [📄 Descargar PDF para mi contador]
+//     [Descargar PDF para mi contador]
 //     [✓ Aplicar como mi declaración definitiva]
-//     [🔮 Probar en el simulador]
+//     [Probar en el simulador]
 //
 // FILOSOFÍA:
 //   - Scroll natural de arriba abajo, sin tabs
@@ -93,7 +93,7 @@ function fmShort(v) {
 const AREAS_JURIDICA = [
   {
     id: "cartera",
-    icono: "📋",
+    icono: "",
     titulo: "Cartera por cobrar vencida",
     pregunta: "¿Tu sociedad tiene clientes que le deben dinero hace más de 90 días?",
     explicacion: "Si tienes cuentas por cobrar a clientes que llevan más de 90 días sin pagar, puedes deducir hasta el 33% como provisión. Es plata que entra al cálculo como gasto y baja tu impuesto.",
@@ -136,7 +136,7 @@ const AREAS_JURIDICA = [
   },
   {
     id: "donaciones",
-    icono: "❤️",
+    icono: "",
     titulo: "Donaciones a fundaciones",
     pregunta: "¿Tu sociedad donó a alguna fundación, ONG o ESAL en 2025?",
     explicacion: "Las donaciones a ESAL registradas ante DIAN dan DESCUENTO directo del 25% sobre el impuesto (no sobre la base, sobre el impuesto final).",
@@ -178,7 +178,7 @@ const AREAS_JURIDICA = [
   },
   {
     id: "ica",
-    icono: "🏛️",
+    icono: "",
     titulo: "ICA pagado durante el año",
     pregunta: "¿Tu sociedad pagó ICA (Industria y Comercio) en 2025?",
     explicacion: "El ICA pagado a las alcaldías es 100% deducible. Si lo pagaste pero no lo cargaste, estás pagando impuesto sobre algo que ya pagaste.",
@@ -220,7 +220,7 @@ const AREAS_JURIDICA = [
   },
   {
     id: "perdidas",
-    icono: "📉",
+    icono: "",
     titulo: "Pérdidas fiscales acumuladas",
     pregunta: "¿Tu sociedad tuvo pérdidas en algún año entre 2017 y 2024?",
     explicacion: "Las pérdidas fiscales declaradas se compensan contra utilidades futuras hasta 12 años. Si las tienes, bajan tu base gravable este año.",
@@ -259,7 +259,7 @@ const AREAS_JURIDICA = [
   },
   {
     id: "iva_capital",
-    icono: "🏗️",
+    icono: "",
     titulo: "IVA en activos productivos",
     pregunta: "¿Compraste maquinaria, equipo, vehículos o inmuebles productivos en 2025?",
     explicacion: "El IVA pagado al comprar bienes de capital se descuenta directamente del impuesto. No es gasto: es un crédito tributario peso a peso.",
@@ -305,7 +305,7 @@ const AREAS_JURIDICA = [
 const AREAS_NATURAL = [
   {
     id: "dependientes",
-    icono: "👨‍👩‍👧",
+    icono: "",
     titulo: "Personas que dependen de ti",
     pregunta: "¿Tienes cónyuge sin ingresos, hijos menores de 23 o padres dependientes?",
     explicacion: "Si mantienes económicamente a alguien, puedes deducir el 10% de tu salario (tope ~$20M/año).",
@@ -369,7 +369,7 @@ const AREAS_NATURAL = [
   },
   {
     id: "salud",
-    icono: "🏥",
+    icono: "",
     titulo: "Medicina prepagada o seguro de salud",
     pregunta: "¿Pagas Colsanitas, Sura, Medplus u otra medicina prepagada?",
     explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes).",
@@ -467,7 +467,7 @@ const AREAS_NATURAL = [
   },
   {
     id: "pv_afc",
-    icono: "💼",
+    icono: "",
     titulo: "Aportes a Pensión Voluntaria o AFC",
     pregunta: "¿Aportas (o quieres empezar a aportar) a PV o AFC?",
     explicacion: "Estos aportes son exentos (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La palanca más potente para salarios altos.",
@@ -587,7 +587,7 @@ const AREAS_NATURAL = [
   },
   {
     id: "vivienda",
-    icono: "🏠",
+    icono: "",
     titulo: "Intereses de vivienda habitacional",
     pregunta: "¿Pagas cuotas de un crédito hipotecario sobre tu vivienda principal?",
     explicacion: "Los intereses de hipoteca de tu vivienda son deducibles hasta 1.200 UVT/año (tope 1.200 UVT/año).",
@@ -671,7 +671,7 @@ const AREAS_NATURAL = [
 
   {
     id: "costos_arriendo",
-    icono: "🔧",
+    icono: "",
     titulo: "Costos asociados a tus arriendos",
     pregunta: "¿Tienes gastos asociados a tus inmuebles arrendados (mantenimiento, predial, comisiones, intereses bancarios)?",
     explicacion: "Los gastos directamente asociados al arriendo se RESTAN del ingreso bruto. Esto incluye: depreciación (~10% del valor del inmueble), intereses del crédito hipotecario, comisiones a inmobiliarias, mantenimiento, predial, seguros, y cualquier gasto relacionado. Es la palanca más impactante para personas con rentas de arriendo.",
@@ -695,9 +695,9 @@ const AREAS_NATURAL = [
         return o?.name || "otra sociedad";
       }))];
       if (nombresOtros.length > 0) {
-        return `⚠️ Esta estrategia NO va a generar ahorro acá: no tienes ingresos de arriendo a tu nombre como persona natural. Tus arriendos están bajo ${nombresOtros.map(n => `🏢 ${n}`).join(" y ")}. Para deducir estos gastos: aplica la estrategia en el flow de esa sociedad, o revisa el "Propietario fiscal" de tus ingresos de arriendo si en realidad son tuyos.`;
+        return `Esta estrategia NO va a generar ahorro acá: no tienes ingresos de arriendo a tu nombre como persona natural. Tus arriendos están bajo ${nombresOtros.map(n => `${n}`).join(" y ")}. Para deducir estos gastos: aplica la estrategia en el flow de esa sociedad, o revisa el "Propietario fiscal" de tus ingresos de arriendo si en realidad son tuyos.`;
       }
-      return `⚠️ Esta estrategia no va a generar ahorro: no tienes ingresos de arriendo registrados a tu nombre. Si tienes inmuebles arrendados, primero registra el ingreso en 💰 Ingresos con categoría "Arrendamiento" y propietario fiscal correcto.`;
+      return `Esta estrategia no va a generar ahorro: no tienes ingresos de arriendo registrados a tu nombre. Si tienes inmuebles arrendados, primero registra el ingreso en Ingresos con categoría "Arrendamiento" y propietario fiscal correcto.`;
     },
     estimarAhorro: (data, det) => {
       const monto = Number(data.gastosAnuales) || 0;
@@ -752,7 +752,7 @@ const AREAS_NATURAL = [
 
   {
     id: "dividendos_no_gravados",
-    icono: "💎",
+    icono: "",
     titulo: "Dividendos NO gravados (Art. 49 ET)",
     pregunta: "¿Parte de tus dividendos vienen de utilidades que YA pagaron impuesto en la sociedad?",
     explicacion: "Cuando una sociedad ya pagó impuesto sobre sus utilidades, los dividendos que distribuye al accionista NO se gravan otra vez (Art. 49 ET). Pídele a tu contador o al revisor fiscal de la sociedad que te diga cuánto del dividendo recibido es gravado y cuánto NO. Solo la parte gravada paga impuesto al 15%.",
@@ -813,7 +813,7 @@ const AREAS_NATURAL = [
 
   {
     id: "impuestos_exterior",
-    icono: "🌍",
+    icono: "",
     titulo: "Impuestos pagados en el exterior",
     pregunta: "¿Pagaste impuestos en otro país sobre ingresos que también declaras en Colombia (ej: arriendos en USA, dividendos extranjeros)?",
     explicacion: "Si una propiedad o inversión está en otro país y allá ya pagas impuesto, puedes DESCONTAR ese impuesto del impuesto colombiano peso a peso (Art. 254 ET). El descuento está topado al impuesto que pagarías en Colombia sobre ese mismo ingreso. Es típico para personas con propiedades en USA bajo LLC personal.",
@@ -867,7 +867,7 @@ const AREAS_NATURAL = [
 
   {
     id: "retenciones_reales",
-    icono: "🧾",
+    icono: "",
     titulo: "Retenciones reales del año (avanzado, opcional)",
     pregunta: "¿Quieres cargar las retenciones REALES que te aplicaron en lugar de la estimación automática?",
     explicacion: "Por defecto la app estima las retenciones según el tipo de ingreso (3.5% arriendos, 7% dividendos, etc.). Si tus pagadores te aplicaron un porcentaje distinto (autoretenciones, retención especial por arrendamientos comerciales, retenciones del exterior), carga acá el monto real consolidado del año y reemplaza la estimación.",
@@ -881,9 +881,9 @@ const AREAS_NATURAL = [
       const reteAuto = Number(detSinPlan?.retefuenteNat) || 0;
       const fmtCO = (n) => "$" + Math.round(n).toLocaleString("es-CO");
       if (reteAuto > 0) {
-        return `ℹ️ Palanca de PRECISIÓN, no de ahorro. La app estima automáticamente ${fmtCO(reteAuto)}/año de retenciones según tus ingresos. Si cargas un monto MENOR que ese, tu saldo a pagar va a SUBIR — no es un error: estás corrigiendo el dato hacia tu realidad, y ese es el número correcto para la DIAN. Solo baja si te retuvieron MÁS de lo estimado.`;
+        return `Palanca de PRECISIÓN, no de ahorro. La app estima automáticamente ${fmtCO(reteAuto)}/año de retenciones según tus ingresos. Si cargas un monto MENOR que ese, tu saldo a pagar va a SUBIR — no es un error: estás corrigiendo el dato hacia tu realidad, y ese es el número correcto para la DIAN. Solo baja si te retuvieron MÁS de lo estimado.`;
       }
-      return `ℹ️ Palanca de PRECISIÓN, no de ahorro: reemplaza la estimación automática con tu dato real. El saldo puede subir o bajar según cuánto te retuvieron realmente.`;
+      return `Palanca de PRECISIÓN, no de ahorro: reemplaza la estimación automática con tu dato real. El saldo puede subir o bajar según cuánto te retuvieron realmente.`;
     },
     estimarAhorro: (data, det) => {
       const monto = Number(data.retencionAnual) || 0;
@@ -1094,7 +1094,7 @@ export default function DeclaracionFlow({
   if (!selectedOwner) {
     return (
       <div style={{ padding: "40px 28px", textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🧾</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}></div>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginBottom: 8 }}>
           Empieza tu declaración
         </h1>
@@ -1149,7 +1149,7 @@ export default function DeclaracionFlow({
           >
             {allOwners.map(o => (
               <option key={o.id} value={o.id}>
-                {o.type === "juridica" ? "🏢" : "👤"}  {o.name}
+                {o.type === "juridica" ? "" : ""}  {o.name}
               </option>
             ))}
           </select>
@@ -1177,7 +1177,7 @@ export default function DeclaracionFlow({
             {saldoActual > 0 ? (
               <>{isJuridica ? `Saldo estimado a pagar · ${ownerName}` : "Saldo estimado a pagar"}:</>
             ) : (
-              <span style={{ color: C.green }}>✅ {isJuridica ? `Saldo estimado ~$0 · ${ownerName}` : "Saldo estimado ~$0"} · las retenciones cubrirían el a cargo</span>
+              <span style={{ color: C.green }}>{isJuridica ? `Saldo estimado ~$0 · ${ownerName}` : "Saldo estimado ~$0"} · las retenciones cubrirían el a cargo</span>
             )}
           </div>
           <div style={{
@@ -1196,27 +1196,27 @@ export default function DeclaracionFlow({
         {/* Desglose en 4 cards pequeños */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8, marginBottom: 14 }}>
           <MiniCard
-            icono="💰"
+            icono=""
             label={isJuridica ? "Ingresó la empresa" : "Ganaste"}
             valor={fmShort(ingresoAnual)}
             color={C.green}
           />
           <MiniCard
-            icono="🧾"
+            icono=""
             label="Impuesto del año"
             valor={fmShort(impuestoBruto)}
             color={C.orange}
             sub={ingresoAnual > 0 ? `${fmtPctEs((impuestoBruto / ingresoAnual * 100), 1)} de lo que ganaste` : ""}
           />
           <MiniCard
-            icono="✅"
+            icono=""
             label="Ya retenido"
             valor={fmShort(retenciones)}
             color={C.blue}
             sub="te lo descontaron en el año"
           />
           <MiniCard
-            icono="📅"
+            icono=""
             label={saldoFinal < 0 ? "Te devuelven" : "Te falta pagar"}
             valor={fmShort(Math.abs(saldoFinal))}
             color={saldoFinal < 0 ? C.green : C.purple}
@@ -1282,7 +1282,7 @@ export default function DeclaracionFlow({
                 gap: 12,
                 flexWrap: "wrap",
               }}>
-                <span style={{ fontSize: 24 }}>💚</span>
+                <span style={{ fontSize: 24 }}></span>
                 <div style={{ flex: 1, minWidth: 200 }}>
                   <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                     Ahorro detectado hasta ahora
@@ -1401,7 +1401,7 @@ export default function DeclaracionFlow({
                   fontWeight: 700,
                   textAlign: "center",
                 }}>
-                  💚 Ahorraste {fm(ahorroTotal)} de manera legal
+                  Ahorraste {fm(ahorroTotal)} de manera legal
                 </div>
               )}
             </div>
@@ -1443,7 +1443,7 @@ export default function DeclaracionFlow({
                 duplicamos aquí (feedback Santiago 1-may-2026). */}
             <div style={{ marginBottom: 16 }}>
               <BotonAccion
-                icono="📄"
+                icono=""
                 titulo="Descargar PDF"
                 subtitulo="Para enviar a tu contador"
                 color={C.purple}
@@ -1480,7 +1480,7 @@ function SeccionEtapa({ numero, titulo, subtitulo, activa, completa, children })
       padding: "20px 22px",
       background: C.bg2,
       border: `1.5px solid ${activa ? C.purple : C.border}`,
-      borderRadius: 14,
+      borderRadius: 12,
       opacity: completa ? 0.85 : 1,
       transition: "all 0.3s",
     }}>
@@ -1635,7 +1635,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
                 fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.greenBg, color: C.green, fontWeight: 700,
               }}>
-                💚 {fmShort(respuesta.ahorro)}
+                {fmShort(respuesta.ahorro)}
               </span>
             )}
             {yaConfigurado && (
@@ -1698,7 +1698,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
           }}
           title="Modificar este dato"
         >
-          ✏️ Editar
+          Editar
         </button>
       )}
       </div>
@@ -1730,7 +1730,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
               lineHeight: 1.5,
             }}>
               <strong style={{ color: avisoEspecial.tipo === "warning" ? C.orange : C.blue }}>
-                {avisoEspecial.tipo === "warning" ? "⚠️ Atención: " : "ℹ️ Importante: "}
+                {avisoEspecial.tipo === "warning" ? "Atención: " : "Importante: "}
               </strong>
               {avisoEspecial.mensaje}
             </div>
@@ -1776,7 +1776,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
               color: C.green,
               fontWeight: 700,
             }}>
-              💚 Ahorro estimado al confirmar: <strong>{fm(ahorroPreview)}</strong>
+              Ahorro estimado al confirmar: <strong>{fm(ahorroPreview)}</strong>
             </div>
           )}
 
@@ -1794,7 +1794,7 @@ function AreaCheck({ area, index, expandida, respuesta, onExpandir, onAplicar, o
               color: C.txt2,
               lineHeight: 1.4,
             }}>
-              ℹ️ El motor no detecta ahorro inmediato (puede que falte cargar tu salario
+              El motor no detecta ahorro inmediato (puede que falte cargar tu salario
               o las retenciones ya cubran todo). Igual <strong style={{ color: C.txt }}>el dato queda guardado</strong> en
               tu perfil para próximos cálculos.
             </div>
@@ -1967,7 +1967,7 @@ class DetalleFormularioErrorBoundary extends Component {
           lineHeight: 1.5,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 18 }}>⚠️</span>
+            <span style={{ fontSize: 18 }}></span>
             <strong style={{ color: C.red, fontSize: 14 }}>
               No pudimos generar el detalle del formulario
             </strong>
@@ -2091,7 +2091,7 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
           gap: 10,
         }}
       >
-        <span style={{ fontSize: 18 }}>📋</span>
+        <span style={{ fontSize: 18 }}></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>
             Ver el detalle del formulario {isJuridica ? "F-110" : "F-210"}

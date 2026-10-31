@@ -81,7 +81,7 @@ export default function Disclaimer({ variante = "general", idioma = "es", T = {}
     return (
       <div title={txt.p} style={{ fontSize: 12, color: tx3, marginTop: 12,
                                   lineHeight: 1.5, fontStyle: "italic" }}>
-        ⚠️ {txt.t}. {idioma === "en"
+        {txt.t}. {idioma === "en"
           ? "Not financial, tax or legal advice."
           : "No constituye asesoría financiera, tributaria ni legal."}
       </div>
@@ -92,7 +92,7 @@ export default function Disclaimer({ variante = "general", idioma = "es", T = {}
     <div style={{ marginTop: 16, padding: "13px 15px", borderRadius: 10,
                   border: `1px dashed ${border}`, background: "rgba(var(--fp-ink),0.015)" }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: tx2, marginBottom: 5 }}>
-        ⚠️ {txt.t}
+        {txt.t}
       </div>
       <div style={{ fontSize: 12, color: tx3, lineHeight: 1.65 }}>
         {txt.p}

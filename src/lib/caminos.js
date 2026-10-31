@@ -351,7 +351,7 @@ export function baseDesdeUsuario(user = {}, perfil = PERFIL_DEFAULT, fichas = {}
   // universo que el plan. Si no, el encabezado cuenta un patrimonio que la
   // lista ya no tiene y los gastos de un activo quitado siguen pesando.
   // Se filtra desde los arreglos crudos, no desde los ya filtrados por `sim`,
-  // para no romper el conteo de ocultos (el ojo ⬜ de las listas).
+  // para no romper el conteo de ocultos (el ojo de las listas).
   const gastosVivos = {};
   Object.entries(user.gas || user.gastos || {}).forEach(([cat, items]) => { gastosVivos[cat] = (items || []).filter((g) => !(g?.activoId && estaFuera(g.activoId))); });
   const base = calcularBase({

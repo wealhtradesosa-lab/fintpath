@@ -5,16 +5,16 @@
 //   Modal con 3 modos de operación para items huérfanos detectados por
 //   el auditor:
 //
-//   1. 👤 ASIGNAR A UN TITULAR FISCAL
+//   1. ASIGNAR A UN TITULAR FISCAL
 //      Para items que SÍ deben tributar en Colombia bajo un owner.
 //      Soporta crear owner nuevo inline.
 //
-//   2. 🌎 MARCAR COMO EXTERIOR (no declara en Colombia)
+//   2. MARCAR COMO EXTERIOR (no declara en Colombia)
 //      Para items que tributan en otra jurisdicción (ej: inversiones
 //      en USA). Los marca con excluirDeclaracion=true. El auditor no
 //      los vuelve a marcar como huérfanos. El motor no los procesa.
 //
-//   3. 🗑️ ELIMINAR ITEMS
+//   3. ELIMINAR ITEMS
 //      Para duplicados o items viejos que ya no aplican. Por ejemplo:
 //      cargué un arriendo $6.2M que era basura, luego el correcto fue
 //      cargado como $6.4M; el viejo es duplicado eliminable.
@@ -63,8 +63,8 @@ function infoItem(item, tipo) {
   if (item.tipo && tipo === "asignar_owner_inversiones") partes.push(item.tipo);
   if (item.subtipo) partes.push(item.subtipo);
   if (item.moneda && item.moneda !== "COP") partes.push(item.moneda);
-  if (item._wizard) partes.push("⚡ wizard");
-  if (item._opportunity) partes.push("⚡ aplicada");
+  if (item._wizard) partes.push("wizard");
+  if (item._opportunity) partes.push("aplicada");
   return partes.join(" · ");
 }
 
@@ -128,11 +128,11 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
 
   const tipoLabel = useMemo(() => {
     switch (tipo) {
-      case "asignar_owner_ingresos": return { sing: "ingreso", plur: "ingresos", emoji: "💰" };
-      case "asignar_owner_deudas": return { sing: "deuda", plur: "deudas", emoji: "📉" };
-      case "asignar_owner_inversiones": return { sing: "inversión", plur: "inversiones", emoji: "📊" };
-      case "asignar_owner_gastos": return { sing: "gasto", plur: "gastos", emoji: "🧾" };
-      default: return { sing: "item", plur: "items", emoji: "📄" };
+      case "asignar_owner_ingresos": return { sing: "ingreso", plur: "ingresos", emoji: "" };
+      case "asignar_owner_deudas": return { sing: "deuda", plur: "deudas", emoji: "" };
+      case "asignar_owner_inversiones": return { sing: "inversión", plur: "inversiones", emoji: "" };
+      case "asignar_owner_gastos": return { sing: "gasto", plur: "gastos", emoji: "" };
+      default: return { sing: "item", plur: "items", emoji: "" };
     }
   }, [tipo]);
 
@@ -213,7 +213,7 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
       <div
         style={{
           background: C.bg2, border: `1px solid ${C.border}`,
-          borderRadius: 14, maxWidth: 720, width: "100%",
+          borderRadius: 12, maxWidth: 720, width: "100%",
           maxHeight: "92vh", overflowY: "auto",
           boxShadow: "0 20px 60px rgba(0,0,0,0.6)",
         }}
@@ -243,13 +243,13 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
           display: "flex", gap: 8, flexWrap: "wrap",
         }}>
           <TabBtn activo={modo === "asignar"} onClick={() => setModo("asignar")} color={C.green}>
-            👤 Asignar a un titular
+            Asignar a un titular
           </TabBtn>
           <TabBtn activo={modo === "exterior"} onClick={() => setModo("exterior")} color={C.blue}>
-            🌎 Marcar como exterior
+            Marcar como exterior
           </TabBtn>
           <TabBtn activo={modo === "eliminar"} onClick={() => setModo("eliminar")} color={C.red}>
-            🗑️ Eliminar (duplicados/viejos)
+            Eliminar (duplicados/viejos)
           </TabBtn>
         </div>
 
@@ -350,8 +350,8 @@ export default function AsignarTitularMasivo({ hallazgo, user, onUpdateUser, onC
             opacity: !puedeAplicar ? 0.5 : 1,
           }}>
             {modo === "asignar" && `✓ Asignar ${seleccionados.size} ${seleccionados.size === 1 ? tipoLabel.sing : tipoLabel.plur}`}
-            {modo === "exterior" && `🌎 Marcar ${seleccionados.size} como exterior`}
-            {modo === "eliminar" && `🗑️ Eliminar ${seleccionados.size} ${seleccionados.size === 1 ? tipoLabel.sing : tipoLabel.plur}`}
+            {modo === "exterior" && `Marcar ${seleccionados.size} como exterior`}
+            {modo === "eliminar" && `Eliminar ${seleccionados.size} ${seleccionados.size === 1 ? tipoLabel.sing : tipoLabel.plur}`}
           </button>
         </div>
       </div>
@@ -431,7 +431,7 @@ function ContenidoAsignar({ owners, ownerDestinoId, setOwnerDestinoId, crearNuev
                     display: "flex", alignItems: "center", gap: 12,
                   }}
                 >
-                  <span style={{ fontSize: 18 }}>{o.type === "juridica" ? "🏢" : "👤"}</span>
+                  <span style={{ fontSize: 18 }}>{o.type === "juridica" ? "" : ""}</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ color: C.txt, fontWeight: 700, fontSize: 14 }}>{o.name}</div>
                     <div style={{ fontSize: 12, color: C.txt3, marginTop: 1 }}>
@@ -462,8 +462,8 @@ function ContenidoAsignar({ owners, ownerDestinoId, setOwnerDestinoId, crearNuev
           <div style={{ marginBottom: 12 }}>
             <label style={lblStyle}>Tipo</label>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setNuevoType("natural")} style={pillBtn(nuevoType === "natural")}>👤 Persona natural</button>
-              <button onClick={() => setNuevoType("juridica")} style={pillBtn(nuevoType === "juridica")}>🏢 Persona jurídica</button>
+              <button onClick={() => setNuevoType("natural")} style={pillBtn(nuevoType === "natural")}>Persona natural</button>
+              <button onClick={() => setNuevoType("juridica")} style={pillBtn(nuevoType === "juridica")}>Persona jurídica</button>
             </div>
           </div>
           <div style={{ marginBottom: 12 }}>
@@ -495,7 +495,7 @@ function ContenidoExterior({ jurisdiccion, setJurisdiccion, tipoLabel }) {
         borderLeft: `3px solid ${C.blue}`, borderRadius: 8, marginBottom: 16,
       }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: C.blue, letterSpacing: 0.5, marginBottom: 6 }}>
-          🌎 Marcar como exterior
+          Marcar como exterior
         </div>
         <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.55 }}>
           Estos {tipoLabel.plur} <strong style={{ color: C.txt }}>tributan en otra jurisdicción</strong> (ej: USA) y no aplican a la declaración de renta colombiana.
@@ -519,7 +519,7 @@ function ContenidoExterior({ jurisdiccion, setJurisdiccion, tipoLabel }) {
         background: C.orangeBg, border: `1px solid ${C.orange}40`, borderRadius: 8,
       }}>
         <div style={{ fontSize: 12, color: C.orange, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
-          ⚠ Recordatorio fiscal
+          Recordatorio fiscal
         </div>
         <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
           Si eres residente fiscal colombiano (&gt;183 días en el país), Colombia te grava por <strong>renta mundial</strong> con descuento por impuestos pagados afuera (Art. 254 ET). Marcar como exterior es válido si NO eres residente fiscal o si vas a manejar el cruce con tu contador. <strong>No exime de declarar.</strong>
@@ -536,7 +536,7 @@ function ContenidoEliminar({ tipoLabel }) {
       borderLeft: `3px solid ${C.red}`, borderRadius: 8,
     }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: C.red, letterSpacing: 0.5, marginBottom: 6 }}>
-        🗑️ Eliminar definitivamente
+        Eliminar definitivamente
       </div>
       <div style={{ fontSize: 13, color: C.txt2, lineHeight: 1.55, marginBottom: 8 }}>
         Usa esto si los {tipoLabel.plur} de arriba son:
@@ -547,7 +547,7 @@ function ContenidoEliminar({ tipoLabel }) {
         <li><strong style={{ color: C.txt }}>Datos basura</strong> que llegaron por error</li>
       </ul>
       <div style={{ fontSize: 12, color: C.red, marginTop: 12, fontWeight: 700 }}>
-        ⚠ Esta acción NO se puede deshacer.
+        Esta acción NO se puede deshacer.
       </div>
     </div>
   );

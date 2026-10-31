@@ -130,18 +130,18 @@ export default function BuyVsInvest({ isUS = false }) {
       />
 
       {/* ── RESULTADO ──────────────────────────────────────────────────────── */}
-      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16,
+      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12,
         padding: 24, marginBottom: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 20 }}>
           <div>
-            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>{isUS ? "🏠 Buy" : "🏠 Comprar"}</div>
+            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>{isUS ? "Buy" : "Comprar"}</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioComprar)}
             </div>
             <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>patrimonio neto a {horizonteAnios} años</div>
           </div>
           <div>
-            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>📈 Arrendar + {activoSel.l}</div>
+            <div style={{ fontSize: 12, color: T.txt3, letterSpacing: "0.6px" }}>Arrendar + {activoSel.l}</div>
             <div style={{ fontSize: 28, fontWeight: 700, color: !ganaComprar ? T.green : T.txt, marginTop: 6 }}>
               {fm(r.patrimonioArrendar)}
             </div>
@@ -176,8 +176,8 @@ export default function BuyVsInvest({ isUS = false }) {
 
       {/* ── ENTRADAS ───────────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16, marginBottom: 20 }}>
-        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "🏠 The home" : "🏠 La casa"}</div>
+        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "The home" : "La casa"}</div>
 
           <Campo label={isUS ? "Home price" : "Precio de la casa"}>
             <NumberInput value={precioCasa} onChange={setPrecioCasa} />
@@ -267,8 +267,8 @@ export default function BuyVsInvest({ isUS = false }) {
           </div>
         </div>
 
-        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "📈 Rent and invest" : "📈 Arrendar e invertir"}</div>
+        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 16 }}>{isUS ? "Rent and invest" : "Arrendar e invertir"}</div>
 
           <Campo label={isUS ? "Monthly rent for that same home" : "Arriendo mensual de esa misma casa"}
             ayuda="Lo que pagarías por vivir ahí sin comprarla. Sube con el IPC cada año.">
@@ -332,7 +332,7 @@ export default function BuyVsInvest({ isUS = false }) {
       </div>
 
       {/* ── GRÁFICO ────────────────────────────────────────────────────────── */}
-      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 4 }}>Cómo evoluciona tu patrimonio</div>
         <div style={{ fontSize: 12, color: T.txt3, marginBottom: 16 }}>
           Comprar = valor de la casa menos lo que debes al banco. Sin descontar aún impuestos ni gastos de venta.
@@ -352,7 +352,7 @@ export default function BuyVsInvest({ isUS = false }) {
       </div>
 
       {/* ── DESGLOSE ───────────────────────────────────────────────────────── */}
-      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
         <button onClick={() => setVerSupuestos((v) => !v)}
           style={{ background: "none", border: "none", color: T.txt, fontSize: 14, fontWeight: 700,
             cursor: "pointer", padding: 0, marginBottom: verSupuestos ? 16 : 0 }}>
@@ -392,7 +392,7 @@ export default function BuyVsInvest({ isUS = false }) {
         )}
       </div>
 
-      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16,
+      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12,
         padding: 20, marginBottom: 20, borderLeft: `3px solid ${T.txt3}` }}>
         <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>
           <strong style={{ color: T.txt }}>Lo que este cálculo no puede decidir.</strong> Vivir en lo propio

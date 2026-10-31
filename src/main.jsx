@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return React.createElement("div", {style:{background:"var(--fp-bg)",color:"var(--fp-txt)",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"system-ui"}},
         React.createElement("div", {style:{textAlign:"center",maxWidth:400,padding:32}},
-          React.createElement("div", {style:{fontSize:48,marginBottom:16}}, "😵"),
+          React.createElement("div", {style:{fontSize:48,marginBottom:16}}, ""),
           React.createElement("h1", {style:{fontSize:22,fontWeight:700,marginBottom:8}}, "Algo salió mal"),
           React.createElement("p", {style:{color:"var(--fp-txt3)",fontSize:14,marginBottom:24}}, "Puedes recargar o borrar datos locales."),
           React.createElement("div", {style:{display:"flex",gap:10,justifyContent:"center"}},

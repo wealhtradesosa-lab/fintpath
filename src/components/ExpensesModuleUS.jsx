@@ -286,7 +286,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
     <div>
       {/* Header */}
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>💳 Deductions & Expenses</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Deductions & Expenses</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           Schedule A · Schedule C · Above-the-line deductions · Tax Credits — Tax Year 2025
         </p>
@@ -294,18 +294,18 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
         <button onClick={()=>exportGastosPDF(gastos, 1, true)}
           title="Download expenses PDF with fixed vs variable and category breakdown"
           style={{marginTop:12,background:"#e64800",color:"#fff",border:"none",padding:"9px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
-          📄 PDF
+          PDF
         </button>
         <button onClick={()=>exportGastosExcel(gastos, 1, true)}
           title="Download Excel with full expense detail"
           style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
-          📊 Excel
+          Excel
         </button>
       </div>
 
       {/* AGI + Filing Status */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:20,marginBottom:20}}>
-        <SectionHeader icon="⚙️" title="Tax Situation" subtitle="Used to calculate deduction limits" color={T.bl} />
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:20}}>
+        <SectionHeader icon="" title="Tax Situation" subtitle="Used to calculate deduction limits" color={T.bl} />
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
           <Field l="Adjusted Gross Income (AGI) — before deductions"
             value={form.agi} onChange={v=>sf("agi",v)} placeholder="Your total income" />
@@ -346,7 +346,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
         )}
         {useItemized && (
           <InfoBox color={T.gn}>
-            <strong>✅ Itemizing saves you {fm(itemizedBonus)} more</strong> than the standard deduction. Make sure to keep all receipts and documentation (§ 6001 record-keeping requirements).
+            <strong>Itemizing saves you {fm(itemizedBonus)} more</strong> than the standard deduction. Make sure to keep all receipts and documentation (§ 6001 record-keeping requirements).
           </InfoBox>
         )}
       </div>
@@ -367,8 +367,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
       {/* ════ TAB: ABOVE-THE-LINE ════ */}
       {activeTab === "above" && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24}}>
-          <SectionHeader icon="⬆️" title="Above-the-Line Deductions (Schedule 1)"
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24}}>
+          <SectionHeader icon="" title="Above-the-Line Deductions (Schedule 1)"
             subtitle="These reduce your AGI directly — available whether you itemize or take standard deduction. The most valuable deductions."
             color={T.cy} />
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
@@ -420,8 +420,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
       {/* ════ TAB: SCHEDULE A ════ */}
       {activeTab === "schedA" && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24}}>
-          <SectionHeader icon="📋" title="Schedule A — Itemized Deductions"
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24}}>
+          <SectionHeader icon="" title="Schedule A — Itemized Deductions"
             subtitle={`Only beneficial if total exceeds your standard deduction of ${fm(stdDeduction)}. Current total: ${fm(itemizedTotal)}`}
             color={T.pr} />
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
@@ -452,7 +452,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               </div>
               {schedA.saltWasted > 0 && (
                 <InfoBox color={T.or}>
-                  <strong>⚠ SALT Cap Alert:</strong> Your total SALT of {fm(schedA.saltRaw)} exceeds the $10,000 cap.
+                  <strong>SALT Cap Alert:</strong> Your total SALT of {fm(schedA.saltRaw)} exceeds the $10,000 cap.
                   You lose {fm(schedA.saltWasted)} in deductions (TCJA 2017, § 164(b)(6)).
                   Workaround: Some states offer Pass-Through Entity (PTE) tax elections to bypass SALT cap — consult your CPA.
                 </InfoBox>
@@ -471,7 +471,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               </div>
               {schedA.mortgageExcluded > 0 && (
                 <InfoBox color={T.or}>
-                  <strong>⚠ Debt Limit Alert:</strong> Your mortgage balance exceeds $750,000. Only {pct(C.MORTGAGE_DEBT_LIMIT / form.mortgageBalance)} of interest ({fm(schedA.mortgage)}) is deductible. {fm(schedA.mortgageExcluded)} is excluded.
+                  <strong>Debt Limit Alert:</strong> Your mortgage balance exceeds $750,000. Only {pct(C.MORTGAGE_DEBT_LIMIT / form.mortgageBalance)} of interest ({fm(schedA.mortgage)}) is deductible. {fm(schedA.mortgageExcluded)} is excluded.
                 </InfoBox>
               )}
               <InfoBox color={T.pr}>
@@ -494,11 +494,11 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               </div>
               {schedA.charCarryForward > 0 && (
                 <InfoBox color={T.cy}>
-                  <strong>📋 Carryforward:</strong> {fm(schedA.charCarryForward)} exceeds AGI limit this year. Unused charitable deductions carry forward 5 years (§ 170(d)(1)).
+                  <strong>Carryforward:</strong> {fm(schedA.charCarryForward)} exceeds AGI limit this year. Unused charitable deductions carry forward 5 years (§ 170(d)(1)).
                 </InfoBox>
               )}
               <InfoBox color={T.gn}>
-                <strong>💡 Donor Advised Fund (DAF) Strategy:</strong> Contribute 2+ years of donations into a DAF in one year to exceed the standard deduction threshold. Get the full deduction now; recommend grants to charities over time.
+                <strong>Donor Advised Fund (DAF) Strategy:</strong> Contribute 2+ years of donations into a DAF in one year to exceed the standard deduction threshold. Get the full deduction now; recommend grants to charities over time.
                 <br/><strong>Qualified Charitable Distribution (QCD):</strong> If age 70½+, donate up to $105,000 directly from IRA to charity — satisfies RMD without increasing taxable income (§ 408(d)(8)).
               </InfoBox>
             </div>
@@ -520,7 +520,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {schedA.casualty  > 0 && <DeductRow label="Casualty Loss"      amount={schedA.casualty}  irc="§ 165(h)" />}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
                          fontWeight:700,fontSize:15,borderTop:`2px solid ${T.border}`,marginTop:4}}>
-              <span style={{color:useItemized?T.gn:T.or}}>Total Itemized {useItemized?"✅ USE THIS":"(standard deduction wins)"}</span>
+              <span style={{color:useItemized?T.gn:T.or}}>Total Itemized {useItemized?"USE THIS":"(standard deduction wins)"}</span>
               <span style={{color:useItemized?T.gn:T.or,fontFamily:"monospace"}}>–{fm(schedA.total)}</span>
             </div>
             <div style={{fontSize:12,color:T.tx3}}>
@@ -532,8 +532,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
       {/* ════ TAB: SCHEDULE C ════ */}
       {activeTab === "schedC" && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24}}>
-          <SectionHeader icon="🏢" title="Schedule C — Business Deductions"
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24}}>
+          <SectionHeader icon="" title="Schedule C — Business Deductions"
             subtitle="For self-employed, freelancers, 1099 contractors. Reduce Schedule C net profit = reduce SE tax + income tax."
             color={T.or} />
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
@@ -571,7 +571,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             </div>
           </div>
           <InfoBox color={T.or}>
-            <strong>🔑 Key Rule (IRC § 162):</strong> Expenses must be "ordinary and necessary." Keep meticulous records — IRS audits Schedule C filers at higher rates.
+            <strong>Key Rule (IRC § 162):</strong> Expenses must be "ordinary and necessary." Keep meticulous records — IRS audits Schedule C filers at higher rates.
             <br/><strong>Bonus Depreciation (§ 168(k)):</strong> 40% bonus depreciation in 2025 (phasing down 20%/year from 80% in 2023). For assets not qualifying for § 179.
             <br/><strong>Vehicle Actual vs. Standard Mileage:</strong> If you use actual expenses (gas, insurance, depreciation), you must apply the business-use percentage. Standard mileage ($0.70/mile) is simpler but may be less.
             <br/><strong>Qualified Business Income (§ 199A):</strong> 20% deduction on net business income automatically calculated in your income module.
@@ -581,8 +581,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
       {/* ════ TAB: CREDITS ════ */}
       {activeTab === "credits" && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24}}>
-          <SectionHeader icon="⚡" title="Tax Credits"
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24}}>
+          <SectionHeader icon="" title="Tax Credits"
             subtitle="Credits reduce your tax bill dollar-for-dollar — far more valuable than deductions. A $1,000 credit saves $1,000 in tax; a $1,000 deduction saves only $220–$370."
             color={T.gn} />
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
@@ -628,8 +628,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
       {/* ════ TAB: SUMMARY ════ */}
       {activeTab === "summary" && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24}}>
-          <SectionHeader icon="📊" title="Complete Tax Reduction Summary"
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24}}>
+          <SectionHeader icon="" title="Complete Tax Reduction Summary"
             subtitle="All deductions and credits combined" color={T.tx2} />
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
             {[
@@ -679,10 +679,10 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
           <InfoBox color={T.gn}>
             <strong>CPA Final Checklist:</strong><br/>
-            {aboveLine.total > 0 ? "✅" : "⚠"} Above-the-line: {aboveLine.total > 0 ? fm(aboveLine.total)+" maximized" : "Review HSA, IRA, SE deductions"}<br/>
-            {useItemized ? "✅" : "ℹ️"} {useItemized ? `Itemizing: saving ${fm(itemizedBonus)} over standard` : `Standard deduction wins. Bunching strategy may help.`}<br/>
-            {schedC.total > 0 ? "✅" : "ℹ️"} Schedule C: {schedC.total > 0 ? fm(schedC.total)+" in business deductions" : "No business deductions entered"}<br/>
-            {credits.total > 0 ? "✅" : "ℹ️"} Credits: {credits.total > 0 ? fm(credits.total)+" direct tax reduction" : "Review energy, EV, child credits"}<br/>
+            {aboveLine.total > 0 ? "" : ""} Above-the-line: {aboveLine.total > 0 ? fm(aboveLine.total)+" maximized" : "Review HSA, IRA, SE deductions"}<br/>
+            {useItemized ? "" : ""} {useItemized ? `Itemizing: saving ${fm(itemizedBonus)} over standard` : `Standard deduction wins. Bunching strategy may help.`}<br/>
+            {schedC.total > 0 ? "" : ""} Schedule C: {schedC.total > 0 ? fm(schedC.total)+" in business deductions" : "No business deductions entered"}<br/>
+            {credits.total > 0 ? "" : ""} Credits: {credits.total > 0 ? fm(credits.total)+" direct tax reduction" : "Review energy, EV, child credits"}<br/>
             <br/><em>Disclaimer: This is an estimate for planning purposes only. State taxes not included. Consult a CPA or EA for your official return.</em>
           </InfoBox>
         </div>

@@ -6,8 +6,8 @@
 // renglones de owner.declaracionAnterior capturados del año previo.
 //
 // Umbrales (configurables):
-//   > 20% de delta  → ⚠️ warning (naranja)
-//   > 50% de delta  → 🚨 alerta fuerte (roja)
+//   > 20% de delta  → warning (naranja)
+//   > 50% de delta  → alerta fuerte (roja)
 //   Monto mínimo    → \$1.000.000 para no alertar por ruido en cifras chicas
 //
 // Ejemplos de lo que detecta:
@@ -93,7 +93,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
         color: critical.length > 0 ? T.red : T.orange,
         marginBottom: 8, display: "flex", alignItems: "center", gap: 6,
       }}>
-        {critical.length > 0 ? "🚨" : "⚠️"}
+        {critical.length > 0 ? "" : ""}
         Alertas de consistencia vs año {anoAnterior || "anterior"}
         <span style={{ color: T.txt3, fontWeight: 400, fontSize: 11, marginLeft: 4 }}>
           ({totalSenales} señal{totalSenales !== 1 ? "es" : ""})
@@ -140,7 +140,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               fontSize: 12,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
-                <span style={{ color: T.txt, fontWeight: 600 }}>🔀 {p.label}</span>
+                <span style={{ color: T.txt, fontWeight: 600 }}>{p.label}</span>
                 <span style={{ color: color, fontWeight: 700, fontSize: 11 }}>
                   Patrón cruzado
                 </span>
@@ -164,7 +164,7 @@ export default function AlertasAnoAnterior({ comparaciones, anoAnterior, patrone
               fontSize: 12,
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
-                <span style={{ color: T.txt, fontWeight: 600 }}>📈 {t.label}</span>
+                <span style={{ color: T.txt, fontWeight: 600 }}>{t.label}</span>
                 <span style={{ color: color, fontWeight: 700, fontSize: 11 }}>
                   Tendencia histórica
                 </span>

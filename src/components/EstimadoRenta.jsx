@@ -156,7 +156,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
       {(() => { const y = new Date().getFullYear(); return (
         <div style={{ ...card, background: Cα.accent08, borderColor: Cα.accent25, display: "grid", gap: 6 }}>
-          <div style={F.h3}>📅 Para qué sirve este cálculo</div>
+          <div style={F.h3}>Para qué sirve este cálculo</div>
           <div style={{ ...F.body, color: C.text }}>
             Aquí calculas la <b>renta de {y}</b> (lo que estás ganando este año), que <b>se declara y se paga en {y + 1}</b>.
             {" "}Ese resultado es el que usa el <button type="button" onClick={() => onNavigate?.("simf")} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Simulador {y + 1}</button> para proyectar tu flujo de caja de ese año.
@@ -196,7 +196,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
 
       {e && sel !== "grupo" && (<>
         {versiones.length > 0 && (
-          <div style={{ ...F.body, color: C.text }}>💾 Tienes {versiones.length} cálculo{versiones.length > 1 ? "s" : ""} guardado{versiones.length > 1 ? "s" : ""} para {owner.name}. <button type="button" onClick={() => document.getElementById("guardar-calculo")?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Verlos o abrir uno ↓</button></div>
+          <div style={{ ...F.body, color: C.text }}>Tienes {versiones.length} cálculo{versiones.length > 1 ? "s" : ""} guardado{versiones.length > 1 ? "s" : ""} para {owner.name}. <button type="button" onClick={() => document.getElementById("guardar-calculo")?.scrollIntoView({ behavior: "smooth", block: "start" })} style={{ ...F.body, fontWeight: 700, color: C.accent, background: "none", border: "none", padding: 0, cursor: "pointer" }}>Verlos o abrir uno ↓</button></div>
         )}
         <Panel titulo="2. Su ficha: lo que declaró el año pasado" sub={`${e.d.tipo === "F110" ? "Formulario 110" : "Formulario 210"} · año gravable ${e.ano} · traída del historial`}>
           <KpiGrid>
@@ -275,7 +275,7 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
           {/* 30-oct-2026 (Santiago: "que el contador vea la información"). Primer paso: un PDF
               con lo que ya está cargado, enviado desde el celular por WhatsApp o correo. */}
           <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}` }}>
-            <div style={{ ...F.h3 }}>📤 Para tu contador</div>
+            <div style={{ ...F.h3 }}>Para tu contador</div>
             <div style={{ ...F.caption, marginTop: 2 }}>Un PDF con tu declaración anterior, lo que cambió, este estimado y lo que ya tienes en FINPATHIA: ingresos, bienes, deudas y los gastos que cuentan para la renta. Tus gastos del día a día no van.</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
               <button type="button" onClick={() => descargarPDF(r, abierta ? nombreV : undefined, true)} style={{ padding: "9px 14px", borderRadius: R.md, border: "none", background: C.accent, color: C.text, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Enviar a mi contador</button>
@@ -456,14 +456,14 @@ function Versiones({ nombre, setNombre, sugerido, abierta, versiones, puedeGuard
   const btn = (primario) => ({ padding: "0 14px", height: 42, borderRadius: R.md, border: primario ? "none" : `1px solid ${C.border}`, background: primario ? C.accent : "transparent", color: primario ? C.text : C.muted, fontWeight: 700, fontSize: 13, cursor: "pointer", whiteSpace: "nowrap" });
   const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
   return (
-    <Panel titulo="💾 Guardar este cálculo" sub="Cuando termines, guárdalo con un nombre. Puedes guardar varios escenarios («con venta», «sin venta», «con aportes») para compararlos y mandarle al contador el que decidas.">
+    <Panel titulo="Guardar este cálculo" sub="Cuando termines, guárdalo con un nombre. Puedes guardar varios escenarios («con venta», «sin venta», «con aportes») para compararlos y mandarle al contador el que decidas.">
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "end" }}>
         <div style={{ flex: "1 1 260px" }}>
           <Campo label={abierta ? "Nombre de la versión abierta" : "Nombre de la versión"}>
             <input style={inp} value={nombre} placeholder={sugerido} onChange={(ev) => setNombre(ev.target.value)} />
           </Campo>
         </div>
-        <button type="button" disabled={!puedeGuardar} onClick={() => onGuardar(false)} style={btn(true)}>💾 {abierta ? "Guardar cambios" : "Guardar versión"}</button>
+        <button type="button" disabled={!puedeGuardar} onClick={() => onGuardar(false)} style={btn(true)}>{abierta ? "Guardar cambios" : "Guardar versión"}</button>
         {abierta && <button type="button" onClick={() => onGuardar(true)} style={btn(false)}>Guardar como versión nueva</button>}
         <button type="button" onClick={onNueva} style={btn(false)}>+ Empezar de cero</button>
       </div>
@@ -487,7 +487,7 @@ function Versiones({ nombre, setNombre, sugerido, abierta, versiones, puedeGuard
                   <td style={{ ...td, fontFamily: "inherit" }}>
                     <div style={{ display: "inline-flex", gap: 6 }}>
                       <button type="button" onClick={() => onAbrir(v)} style={{ ...btn(false), height: 30, padding: "0 10px" }}>Abrir</button>
-                      <button type="button" onClick={() => onPDF(v)} style={{ ...btn(false), height: 30, padding: "0 10px" }}>📄 PDF</button>
+                      <button type="button" onClick={() => onPDF(v)} style={{ ...btn(false), height: 30, padding: "0 10px" }}>PDF</button>
                       <button type="button" onClick={() => onBorrar(v)} style={{ ...btn(false), height: 30, padding: "0 10px", color: C.danger }}>Borrar</button>
                     </div>
                   </td>
@@ -920,7 +920,7 @@ function FechaPago({ owner, ano, valor, onCambiarMes, onNavigate }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginTop: 12, padding: "10px 12px", borderRadius: R.md, border: `1px solid ${C.border}` }}>
       <div style={{ ...F.body, color: C.text, flex: "1 1 260px" }}>
-        📅 Pagas <b>{mm(valor)}</b> {jur ? <>en dos cuotas: <b>{auto.length > 1 || owner.mesDeclaracion ? mesesDePago(owner).map((p) => MESES_F[p.mes - 1].toLowerCase()).join(" y ") : "mayo y julio"} de {ano}</b>.</> : <><b>{textoFechaPago(owner)} de {ano}</b>, en un solo pago.</>}
+        Pagas <b>{mm(valor)}</b> {jur ? <>en dos cuotas: <b>{auto.length > 1 || owner.mesDeclaracion ? mesesDePago(owner).map((p) => MESES_F[p.mes - 1].toLowerCase()).join(" y ") : "mayo y julio"} de {ano}</b>.</> : <><b>{textoFechaPago(owner)} de {ano}</b>, en un solo pago.</>}
         <div style={F.caption}>
           {auto[0]?.auto ? "La fecha sale de tu cédula, según el calendario de la DIAN. " : jur ? "Las sociedades pagan en dos cuotas: elige el mes de la primera. " : "Si no es ese mes, cámbialo aquí al lado. "}
           Así queda en tu{" "}

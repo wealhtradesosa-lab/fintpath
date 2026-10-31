@@ -151,10 +151,10 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
   },[inc,filingStatus,stateCode,STD_DED]);
 
   if(!inc.gross) return (
-    <div style={{padding:48,textAlign:"center",background:T.card,border:`1px solid ${T.border}`,borderRadius:16,color:T.tx3}}>
-      <div style={{fontSize:32,marginBottom:12}}>🧾</div>
+    <div style={{padding:48,textAlign:"center",background:T.card,border:`1px solid ${T.border}`,borderRadius:12,color:T.tx3}}>
+      <div style={{fontSize:32,marginBottom:12}}></div>
       <div style={{fontSize:16,fontWeight:700,color:T.tx2,marginBottom:8}}>No income data yet</div>
-      <div style={{fontSize:13}}>Add your income in <strong style={{color:T.gn}}>💰 Income</strong> first.</div>
+      <div style={{fontSize:13}}>Add your income in <strong style={{color:T.gn}}>Income</strong> first.</div>
     </div>
   );
 
@@ -164,7 +164,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
     <div>
       {/* Header */}
       <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🧾 US Tax Planning 2025</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>US Tax Planning 2025</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>Federal + State estimate · IRS brackets 2025</p>
       </div>
 
@@ -228,9 +228,9 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
 
         {/* SIN estrategia */}
         <div style={{background:`${T.rd}10`,border:`2px solid ${T.rd}50`,
-          borderRadius:16,padding:24,textAlign:"center"}}>
+          borderRadius:12,padding:24,textAlign:"center"}}>
           <div style={{fontSize:12,fontWeight:700,color:T.rd,letterSpacing:1,marginBottom:8}}>
-            ❌ WITHOUT STRATEGY
+            WITHOUT STRATEGY
           </div>
           <div style={{fontSize:12,color:T.tx3,marginBottom:4}}>You pay today</div>
           <div style={{fontSize:36,fontWeight:700,color:T.rd,fontFamily:"monospace",lineHeight:1}}>
@@ -250,10 +250,10 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
 
         {/* AHORRO */}
         <div style={{background:`${T.gn}10`,border:`2px solid ${T.gn}`,
-          borderRadius:16,padding:24,textAlign:"center",
+          borderRadius:12,padding:24,textAlign:"center",
           boxShadow:`0 0 24px ${T.gn}20`}}>
           <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1,marginBottom:8}}>
-            💡 YOU SAVE
+            YOU SAVE
           </div>
           <div style={{fontSize:12,color:T.tx3,marginBottom:4}}>with adjustments</div>
           <div style={{fontSize:36,fontWeight:700,color:T.gn,fontFamily:"monospace",lineHeight:1}}>
@@ -272,9 +272,9 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
 
         {/* CON estrategia */}
         <div style={{background:`${T.bl}10`,border:`2px solid ${T.bl}50`,
-          borderRadius:16,padding:24,textAlign:"center"}}>
+          borderRadius:12,padding:24,textAlign:"center"}}>
           <div style={{fontSize:12,fontWeight:700,color:T.bl,letterSpacing:1,marginBottom:8}}>
-            ✅ WITH STRATEGY
+            WITH STRATEGY
           </div>
           <div style={{fontSize:12,color:T.tx3,marginBottom:4}}>You would pay</div>
           <div style={{fontSize:36,fontWeight:700,color:T.bl,fontFamily:"monospace",lineHeight:1}}>
@@ -294,7 +294,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
       </div>
 
       {/* Monthly comparison bar */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,
         padding:"16px 20px",marginBottom:16,display:"flex",
         justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
         <div style={{fontSize:13,color:T.tx2}}>
@@ -320,10 +320,10 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
 
           {/* BEFORE */}
-          <div style={{background:T.card,border:`1px solid ${T.rd}40`,borderRadius:14,padding:20}}>
+          <div style={{background:T.card,border:`1px solid ${T.rd}40`,borderRadius:12,padding:20}}>
             <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:14,
               paddingBottom:10,borderBottom:`1px solid ${T.border}`}}>
-              ❌ Without Strategy — how it's calculated
+              Without Strategy — how it's calculated
             </div>
             <WRow label="Gross Income"          amount={fm(inc.gross)} bold color={T.tx}/>
             {A.halfSE>0&&<WRow label="½ SE Tax deduction" amount={`–${fm(A.halfSE)}`} color={T.tx3} indent irc="§ 164(f)"/>}
@@ -348,10 +348,10 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
           </div>
 
           {/* AFTER */}
-          <div style={{background:T.card,border:`1px solid ${T.gn}60`,borderRadius:14,padding:20}}>
+          <div style={{background:T.card,border:`1px solid ${T.gn}60`,borderRadius:12,padding:20}}>
             <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:14,
               paddingBottom:10,borderBottom:`1px solid ${T.border}`}}>
-              ✅ With Strategy — what changes
+              With Strategy — what changes
             </div>
             <WRow label="Gross Income"           amount={fm(inc.gross)} bold color={T.tx}/>
             {B.k401>0   &&<WRow label="401(k) Pre-Tax"      amount={`–${fm(B.k401)}`}  color={T.gn} indent note="Invested, grows tax-deferred" irc="§ 401(k)"/>}
@@ -375,7 +375,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             {B.fica>0  &&<WRow label="FICA (SS + Medicare)" amount={fm(B.fica)}  color={T.rd} note="Can't reduce — mandatory"/>}
             {B.seTax>0 &&<WRow label="Self-Employment Tax"  amount={fm(B.seTax)} color={T.rd} note="Slightly lower (reduced SE income)"/>}
             {B.niit>0  &&<WRow label="NIIT Surtax 3.8%"     amount={fm(B.niit)}  color={T.rd}/>}
-            {B.niit===0&&A?.niit>0&&<WRow label="NIIT Surtax" amount="✅ $0 — avoided" color={T.gn} note={`Saved ${fm(A.niit)} by lowering AGI`}/>}
+            {B.niit===0&&A?.niit>0&&<WRow label="NIIT Surtax" amount="$0 — avoided" color={T.gn} note={`Saved ${fm(A.niit)} by lowering AGI`}/>}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
               borderTop:`2px solid ${T.gn}40`,marginTop:4,fontWeight:700}}>
               <span style={{color:T.gn}}>TOTAL TAX / YEAR</span>
@@ -386,24 +386,24 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
       )}
 
       {/* Action plan */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:20,marginBottom:16}}>
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:16}}>
         <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>
-          🎯 What to do to achieve those savings
+          What to do to achieve those savings
         </div>
         {[
-          B?.k401>0 && {p:"🔴 HIGH",c:T.rd,
+          B?.k401>0 && {p:"HIGH",c:T.rd,
             a:`Max 401(k): contribute ${fm(C.K401/12)}/month ($${C.K401.toLocaleString("en-US")}/year)`,
             i:`Saves ~${fm(B.k401*(B.mRate||0.22))} in federal tax + grows tax-deferred`},
-          B?.hsa>0&&inc.w2>0 && {p:"🔴 HIGH",c:T.rd,
+          B?.hsa>0&&inc.w2>0 && {p:"HIGH",c:T.rd,
             a:`Open & max HSA: ${fm(C.HSA/12)}/month ($${C.HSA.toLocaleString("en-US")}/year)`,
             i:"Deductible + grows tax-free + tax-free for medical = triple tax win"},
-          inc.se>0 && {p:"🟡 MED",c:T.or,
+          inc.se>0 && {p:"MED",c:T.or,
             a:"Track ALL business expenses (home office, mileage, software, equipment)",
             i:"Every $1 deducted saves ~$0.37 in combined federal + SE tax"},
-          inc.inv>0 && {p:"🟡 MED",c:T.or,
+          inc.inv>0 && {p:"MED",c:T.or,
             a:"Hold investments 12+ months before selling",
             i:`Long-term gains taxed at 0–20% instead of your ${A?.mLabel} ordinary rate`},
-          A?.niit>0&&B?.niit===0 && {p:"🟢 OPT",c:T.gn,
+          A?.niit>0&&B?.niit===0 && {p:"OPT",c:T.gn,
             a:"Pre-tax contributions keep AGI below $200K NIIT threshold",
             i:`Avoids 3.8% surtax on investment income — saves ${fm(A.niit)}/year`},
         ].filter(Boolean).map((item,i)=>(
@@ -419,8 +419,8 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
 
       {/* Quarterly estimates */}
       {B&&B.total>1000&&(
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:20,marginBottom:16}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:4}}>📅 Quarterly Estimated Payments (Form 1040-ES)</div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:20,marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:4}}>Quarterly Estimated Payments (Form 1040-ES)</div>
           <div style={{fontSize:12,color:T.tx3,marginBottom:12}}>
             Required if you owe ≥$1,000 · Penalty ~8%/year if underpaid (IRC § 6654)
           </div>

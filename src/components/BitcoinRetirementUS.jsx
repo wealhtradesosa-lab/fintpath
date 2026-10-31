@@ -70,7 +70,7 @@ function Sl({ label, value, onChange, min, max, step, display, color, sub }) {
 
 const Cd = ({ children, style, glow }) => (
   <div style={{
-    background: C.card, border: `1px solid ${glow || C.border}`, borderRadius: 16,
+    background: C.card, border: `1px solid ${glow || C.border}`, borderRadius: 12,
     boxShadow: glow ? `0 0 0 1px ${glow}22` : "none", ...style,
   }}>{children}</div>
 );
@@ -187,21 +187,21 @@ export default function BitcoinRetirementUS({ user }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))", gap: 16 }}>
         {/* ── Parámetros ── */}
         <Cd style={{ padding: 20 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>⚙️ Your numbers</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Your numbers</div>
 
           <Sec n="1" t="YOUR CONTRIBUTION" s="What you and your employer put in" />
-          <Sl label="💼 Annual salary" value={salary} onChange={setSalary}
+          <Sl label="Annual salary" value={salary} onChange={setSalary}
             min={40000} max={500000} step={5000} display={fFull(salary)} color={C.tx}
             sub={`Social Security estimate: ${fFull(ssMonthly)}/mo at age ${LIMITS.SS_FRA}`} />
-          <Sl label="📊 You contribute" value={pct} onChange={setPct}
+          <Sl label="You contribute" value={pct} onChange={setPct}
             min={1} max={30} step={1} display={pct + "% = " + fFull(yourContrib) + "/yr"} color={C.bl}
             sub={yourContrib >= LIMITS.K401_LIMIT
-              ? `⚠️ Capped at the ${fFull(LIMITS.K401_LIMIT)} IRS limit for 2025`
+              ? `Capped at the ${fFull(LIMITS.K401_LIMIT)} IRS limit for 2025`
               : `${fFull(salary - yourContrib)} of salary left`} />
-          <Sl label="🎁 Employer match" value={match} onChange={setMatch}
+          <Sl label="Employer match" value={match} onChange={setMatch}
             min={0} max={100} step={5} display={match + "% = " + fFull(employerMatch) + "/yr"} color={C.gn}
             sub={`Your employer matches ${match}% of what you put in, up to ${matchCap}% of salary. This is free money — the model counts it.`} />
-          <Sl label="🔒 Match cap" value={matchCap} onChange={setMatchCap}
+          <Sl label="Match cap" value={matchCap} onChange={setMatchCap}
             min={1} max={15} step={1} display={"up to " + matchCap + "% of salary"} color={C.gn} />
 
           <div style={{ background: C.bg3, borderRadius: 10, padding: "12px 14px", marginBottom: 4 }}>
@@ -255,19 +255,19 @@ export default function BitcoinRetirementUS({ user }) {
           )}
 
           <Sec n="3" t="YOUR HORIZON" s="How long the money works" />
-          <Sl label="🎂 Your age today" value={age} onChange={setAge}
+          <Sl label="Your age today" value={age} onChange={setAge}
             min={20} max={65} step={1} display={age + " years old"} color={C.tx} />
-          <Sl label="⏰ Years until retirement" value={years} onChange={setYears}
+          <Sl label="Years until retirement" value={years} onChange={setYears}
             min={1} max={40} step={1} display={years + " years"} color={C.gn}
             sub={`You'd retire at ${retireAge}`} />
 
           <Sec n="4" t="MARKET ASSUMPTIONS" s="Adjust if you disagree with the defaults" />
-          <Sl label="📈 Bitcoin annual growth (CAGR)" value={cagr} onChange={setCagr}
+          <Sl label="Bitcoin annual growth (CAGR)" value={cagr} onChange={setCagr}
             min={0} max={60} step={1} display={cagr + "%"} color={C.or}
             sub="Historical BTC CAGR has been far higher, but past returns don't predict future ones. 401(k) assumes 7% real." />
-          <Sl label="💰 Bitcoin price today" value={pBTC} onChange={setPBTC}
+          <Sl label="Bitcoin price today" value={pBTC} onChange={setPBTC}
             min={10000} max={200000} step={1000} display={fFull(pBTC)} color={C.gold} />
-          <Sl label="🏦 Withdrawal rate" value={swr} onChange={setSwr}
+          <Sl label="Withdrawal rate" value={swr} onChange={setSwr}
             min={2} max={8} step={0.5} display={swr + "% per year"} color={C.bl}
             sub="The 4% rule (Bengen, 1994). Use 3.5% for horizons over 40 years." />
         </Cd>
@@ -281,7 +281,7 @@ export default function BitcoinRetirementUS({ user }) {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 14, marginBottom: 18 }}>
               <div style={{ background: C.bg3, borderRadius: 12, padding: "16px 18px" }}>
-                <div style={{ fontSize: 12, color: C.tx3 }}>🏛️ 401(k) + Social Security</div>
+                <div style={{ fontSize: 12, color: C.tx3 }}>401(k) + Social Security</div>
                 <div style={{ fontSize: 28, fontWeight: 700, color: C.bl, marginTop: 6, fontFamily: "monospace" }}>
                   {fUSD(traditionalTotal)}
                 </div>
@@ -314,7 +314,7 @@ export default function BitcoinRetirementUS({ user }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 16 }}>
             <Cd style={{ padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.bl, marginBottom: 10 }}>🏛️ Traditional plan</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.bl, marginBottom: 10 }}>Traditional plan</div>
               <Rw l="You contribute:" v={fFull(yourContrib) + "/yr"} />
               <Rw l="Employer match:" v={fFull(employerMatch) + "/yr"} color={C.gn} />
               <Rw l={`Total in ${years} years:`} v={fFull(k401.invested)} />
@@ -349,7 +349,7 @@ export default function BitcoinRetirementUS({ user }) {
               La década final viene abierta: es la que interesa. */}
           {btc.serie && btc.serie.length > 0 && (
             <Cd style={{ padding: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>📈 Year by year</div>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>Year by year</div>
               <div style={{ fontSize: 12, color: C.tx3, marginBottom: 12 }}>
                 Bitcoin price growing at {cagr}% a year — this is the assumption doing the heavy lifting.
               </div>
@@ -414,7 +414,7 @@ export default function BitcoinRetirementUS({ user }) {
           {/* Los supuestos, explícitos. Un modelo que no dice de dónde salen sus
               números es una opinión con formato de cálculo. */}
           <Cd style={{ padding: 20 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.tx2, marginBottom: 10 }}>📋 Model assumptions</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.tx2, marginBottom: 10 }}>Model assumptions</div>
             <Rw l="401(k) employee limit (2025):" v={fFull(LIMITS.K401_LIMIT)} />
             <Rw l="401(k) assumed return:" v="7% real, after inflation" />
             <Rw l="Bitcoin CAGR:" v={cagr + "% a year"} color={C.or} />
@@ -430,7 +430,7 @@ export default function BitcoinRetirementUS({ user }) {
           </Cd>
 
           <Cd style={{ padding: 20, border: `1px solid ${C.rd}33` }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.rd, marginBottom: 10 }}>⚠️ What this model doesn't tell you</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.rd, marginBottom: 10 }}>What this model doesn't tell you</div>
             {[
               "The employer match is an immediate, guaranteed return. Bitcoin has no equivalent.",
               "401(k) contributions reduce your taxable income today; buying Bitcoin doesn't.",

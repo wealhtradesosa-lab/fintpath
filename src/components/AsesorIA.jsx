@@ -105,7 +105,7 @@ function buildContext(user, totals) {
  * renderMD — Formato mínimo para las respuestas del asesor.
  *
  * 26-jul-2026. El modelo responde en markdown y se mostraba crudo:
- *   "### 🏠 **VIVIENDA: $18.666.667/mes (29%)**"
+ *   "### **VIVIENDA: $18.666.667/mes (29%)**"
  * Se convierten solo encabezados, negritas y viñetas. No se trae una librería
  * de markdown para esto: son tres patrones y el bundle ya pesa bastante.
  */
@@ -228,11 +228,11 @@ export default function AsesorIA({ user, totals, userId }) {
       <SimToggleInfoCompact />
 
       {/* Chat area */}
-      <div ref={chatRef} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, height: msgs.length > 0 ? 440 : "auto", overflowY: "auto", marginBottom: 16, padding: msgs.length > 0 ? 16 : 0 }}>
+      <div ref={chatRef} style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 12, height: msgs.length > 0 ? 440 : "auto", overflowY: "auto", marginBottom: 16, padding: msgs.length > 0 ? 16 : 0 }}>
         {msgs.length === 0 ? (
           <div style={{ padding: 28 }}>
             <div style={{ textAlign: "center", marginBottom: 24 }}>
-              <div style={{ fontSize: 40, marginBottom: 8 }}>🧠</div>
+              <div style={{ fontSize: 40, marginBottom: 8 }}></div>
               <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>¿Qué quieres analizar?</div>
               <div style={{ fontSize: 13, color: T.txt3 }}>El asesor tiene acceso a todos tus datos financieros</div>
             </div>
@@ -252,7 +252,7 @@ export default function AsesorIA({ user, totals, userId }) {
         ) : (
           msgs.map((m, i) => (
             <div key={i} style={{ display: "flex", gap: 10, marginBottom: 14, justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-              {m.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.gnD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}>🤖</div>}
+              {m.role === "assistant" && <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.gnD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}></div>}
               <div style={{
                 // 26-jul-2026 (Santiago: "la ventana del chat es muy angosta, le toca a uno mover el
                 // cursor para ver las respuestas"). El 80% sirve para la burbuja del USUARIO
@@ -270,7 +270,7 @@ export default function AsesorIA({ user, totals, userId }) {
         )}
         {loading && (
           <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
-            <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.gnD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>🤖</div>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.gnD, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}></div>
             <div style={{ padding: "12px 16px", borderRadius: "0 14px 14px 14px", background: T.bg3, border: "1px solid " + T.border, fontSize: 13, color: T.txt3 }}>
               Analizando tus datos<span style={{ animation: "blink 1.2s infinite" }}>...</span>
             </div>
@@ -278,7 +278,7 @@ export default function AsesorIA({ user, totals, userId }) {
         )}
         {error && (
           <div style={{ padding: "10px 16px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.2)", borderRadius: 10, fontSize: 12, color: T.rd, marginBottom: 10 }}>
-            ⚠ {error}
+            {error}
           </div>
         )}
       </div>

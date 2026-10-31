@@ -189,7 +189,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
   if (owners.length === 0) {
     return (
       <div style={{ maxWidth: 820, margin: "0 auto", padding: "40px 16px", textAlign: "center" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🏛️</div>
+        <div style={{ fontSize: 40, marginBottom: 12 }}></div>
         <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 6 }}>Sin propietarios fiscales</div>
         <div style={{ fontSize: 13, color: T.txt2, marginBottom: 16, lineHeight: 1.6 }}>
           Agrega al menos un propietario fiscal (persona natural o jurídica) para ver el dashboard.
@@ -243,7 +243,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           title="Subir o cargar una declaración"
           style={{ background: showUpload ? T.orange : T.green, border: "none", color: showUpload ? "#000" : "#000", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
         >
-          {showUpload ? "✕ Cerrar upload" : "📤 Subir declaración"}
+          {showUpload ? "✕ Cerrar upload" : "Subir declaración"}
         </button>
         {/* Commit 7: export PDF */}
         <button
@@ -251,7 +251,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           title="Exportar reporte como PDF"
           style={{ background: T.blue, border: "none", color: "white", padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}
         >
-          📄 Exportar PDF
+          Exportar PDF
         </button>
       </div>
 
@@ -269,7 +269,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       {showUpload && onSaveDeclaracion && (
         <div style={{ background: T.bg2, border: "2px solid " + T.green, borderRadius: 12, padding: 16, marginBottom: 18 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>📤 Subir declaración (PDF)</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Subir declaración (PDF)</div>
             <button onClick={() => setShowUpload(false)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt3, padding: "4px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>Cerrar</button>
           </div>
           <DeclaracionUpload
@@ -292,7 +292,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       {tieneDeclaracion ? (
         <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 10, marginBottom: 14, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
-            ✅ Declaración {declarada.tipo} del año <strong style={{ color: T.green }}>{declarada.anoGravable}</strong> cargada.
+            Declaración {declarada.tipo} del año <strong style={{ color: T.green }}>{declarada.anoGravable}</strong> cargada.
             {declarada.capturadoEl && <span style={{ color: T.txt3 }}> · Capturada el {new Date(declarada.capturadoEl).toLocaleDateString("es-CO")}</span>}
           </div>
           {/* Commit 5.5: selector de año si hay más de uno */}
@@ -313,7 +313,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         </div>
       ) : (
         <div style={{ padding: "14px 16px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, marginBottom: 14 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📋 Sin declaración cargada</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 6 }}>Sin declaración cargada</div>
           <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
             Sube la declaración {selectedOwner?.type === "juridica" ? "F-110" : "F-210"} de {selectedOwner?.name} para ver comparaciones año-a-año y detectar deducciones perdidas automáticamente.
           </div>
@@ -358,7 +358,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
       {detalleActual?.retencionDesglose && detalleActual.retencionDesglose.total > 0 && (
         <div style={{ marginBottom: 18 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5, marginBottom: 10 }}>
-            🏦 Retención en la fuente estimada
+            Retención en la fuente estimada
             {detalleActual.retencionDesglose.fuente === "override_global" && (
               <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 3, fontSize: 11, color: "#3b82f6" }}>
                 OVERRIDE MANUAL
@@ -398,7 +398,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               </div>
             </div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 12, fontStyle: "italic", lineHeight: 1.4 }}>
-              ℹ️ Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.
+              Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor.
               Las retenciones son lo que el banco/inquilino te descuentan durante el año; en mayo ese monto
               ya fue pagado. Esta cifra es un borrador: el saldo real puede cambiar por exentas, deducciones,
               topes en UVT y ajustes de tu contador. Presenta la declaración solo en canales oficiales DIAN.
@@ -455,7 +455,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
         </div>
         {alertasDelOwner.length === 0 ? (
           <div style={{ padding: "20px", background: "rgba(0,200,5,0.04)", border: "1px dashed rgba(0,200,5,0.2)", borderRadius: 10, textAlign: "center" }}>
-            <div style={{ fontSize: 20, marginBottom: 6 }}>✅</div>
+            <div style={{ fontSize: 20, marginBottom: 6 }}></div>
             <div style={{ fontSize: 12, color: T.txt2 }}>Sin alertas para {selectedOwner?.name}.</div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
               El motor no detectó desajustes entre tu situación actual y la declaración anterior.
@@ -468,7 +468,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
               const severity = w.severity || "warning";
               const color = severity === "error" ? T.red : severity === "info" ? T.blue : T.orange;
               const bg = severity === "error" ? "rgba(255,80,0,0.06)" : severity === "info" ? "rgba(59,130,246,0.06)" : "rgba(245,158,11,0.06)";
-              const icon = severity === "error" ? "❌" : severity === "info" ? "ℹ️" : "⚠️";
+              const icon = severity === "error" ? "" : severity === "info" ? "" : "";
               return (
                 <div key={i} style={{ padding: "12px 14px", background: bg, border: "1px solid " + color + "33", borderLeft: "3px solid " + color, borderRadius: 8 }}>
                   <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>

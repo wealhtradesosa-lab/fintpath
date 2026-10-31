@@ -13,9 +13,9 @@ describe("la plata abreviada SIEMPRE lleva separador de miles", () => {
     expect(fmtPlataCortaEs(164981833.2e6)).toBe("$165 billones");
   });
 
-  it("la única rama que pasa de tres dígitos es «mil M», y lleva puntos", () => {
+  it("miles de millones se escriben en millones con puntos (31-oct-2026: $16.400 M)", () => {
     expect(fmtPlataCortaEs(1234.5e9)).toBe("$1,2 billón");
-    expect(fmtPlataCortaEs(999e9)).toBe("$999 mil M");
+    expect(fmtPlataCortaEs(999e9)).toBe("$999.000 M");
     expect(fmtPlataCortaEs(456.78e6)).toBe("$457 M");   // M y K nunca pasan de 999
     expect(fmtPlataCortaEs(123456)).toBe("$123 K");
   });

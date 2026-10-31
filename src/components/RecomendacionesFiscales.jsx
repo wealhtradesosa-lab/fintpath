@@ -45,7 +45,7 @@ function RecomendacionCard({ rec, onNavigate }) {
           </div>
           {rec.base && (
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 6, fontFamily: "monospace" }}>
-              📖 {rec.base}
+              {rec.base}
             </div>
           )}
         </div>
@@ -104,7 +104,7 @@ export default function RecomendacionesFiscales({ recomendaciones, ownerId, onNa
     <div style={{ marginBottom: 18 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: T.txt3, letterSpacing: 0.5 }}>
-          💡 Recomendaciones {accionables.length > 0 && <span style={{ color: T.green }}>({accionables.length})</span>}
+          Recomendaciones {accionables.length > 0 && <span style={{ color: T.green }}>({accionables.length})</span>}
         </div>
         {totalAhorro > 0 && (
           <div style={{ fontSize: 12, color: T.txt2 }}>

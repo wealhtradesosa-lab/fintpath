@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Interruptor, Pencil, Trash2 } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
 import { CLASES_GASTO, claseGasto, esDelTitular } from "../lib/clasesListado.js";
 import { mesVsPromedio } from "../lib/lecturasListado.js";
@@ -52,61 +53,61 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
 //  deducible pero en la tabla de egresos sale dian 50% NO ENTIENDO'
 //
 // Problema: la tabla DIAN_REGLAS legacy estaba hardcoded por CATEGORÍA
-// (ej: "Seguros" → "📊 50%") cuando la realidad fiscal depende del
+// (ej: "Seguros" → "50%") cuando la realidad fiscal depende del
 // fiscalCode REAL del item, no de la categoría visual. Resultado:
-//   - Item con fiscalCode SEG_VEHICULO (NO deducible) mostraba "50%" ❌
-//   - Item con fiscalCode AP_TRIB_PV (detracción fiscal) mostraba "50%" ❌
-//   - Item con GAS_HON_VEHICULO (sí 50% Art. 107) mostraba "50%" ✅ por casualidad
+//   - Item con fiscalCode SEG_VEHICULO (NO deducible) mostraba "50%" 
+//   - Item con fiscalCode AP_TRIB_PV (detracción fiscal) mostraba "50%" 
+//   - Item con GAS_HON_VEHICULO (sí 50% Art. 107) mostraba "50%" por casualidad
 //
 // Solución: leer el fiscalCode del item y mapear a la regla legal real.
 // Fallback al comportamiento legacy si no hay fiscalCode (items pre-1.5).
 const REGLA_POR_FISCAL_CODE = {
   // Aporte tributario (detracción de la base, Arts. 126-1, 126-4, 387)
-  "AP_TRIB_PV":                 { txt: "✅ Detracción fiscal", color: "#00c805", help: "Pensión voluntaria — detrae base hasta tope conjunto Art. 126-1 ET" },
-  "AP_TRIB_AFC":                { txt: "✅ Detracción fiscal", color: "#00c805", help: "AFC — detrae base hasta tope conjunto Art. 126-4 ET" },
-  "AP_TRIB_SALUD_PREPAGADA":    { txt: "✅ Hasta 16 UVT/mes", color: "#00c805", help: "Salud prepagada — Art. 387 #2 ET, tope 16 UVT mensuales" },
+  "AP_TRIB_PV":                 { txt: "Detracción fiscal", color: "#00c805", help: "Pensión voluntaria — detrae base hasta tope conjunto Art. 126-1 ET" },
+  "AP_TRIB_AFC":                { txt: "Detracción fiscal", color: "#00c805", help: "AFC — detrae base hasta tope conjunto Art. 126-4 ET" },
+  "AP_TRIB_SALUD_PREPAGADA":    { txt: "Hasta 16 UVT/mes", color: "#00c805", help: "Salud prepagada — Art. 387 #2 ET, tope 16 UVT mensuales" },
   // Vivienda
-  "DEU_NAT_VIVIENDA_HABITACIONAL": { txt: "✅ Intereses 1.200 UVT", color: "#00c805", help: "Intereses vivienda habitacional — Art. 119 ET, tope 1.200 UVT/año" },
+  "DEU_NAT_VIVIENDA_HABITACIONAL": { txt: "Intereses 1.200 UVT", color: "#00c805", help: "Intereses vivienda habitacional — Art. 119 ET, tope 1.200 UVT/año" },
   // Inmueble (depende del uso)
-  "GAS_INMUEBLE_ADMINISTRACION":   { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Gasto del inmueble arrendado — deducible 100% de la renta de capital" },
-  "GAS_INMUEBLE_SERVICIOS":        { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Servicios del inmueble arrendado" },
-  "GAS_INMUEBLE_REPARACION":       { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Reparación del inmueble arrendado" },
-  "GAS_INMUEBLE_MANTENIMIENTO":    { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Mantenimiento del inmueble arrendado" },
-  "GAS_INMUEBLE_PREDIAL":          { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Predial del inmueble arrendado" },
-  "GAS_INMUEBLE_SEGUROS":          { txt: "✅ 100% (renta capital)", color: "#00c805", help: "Seguros del inmueble arrendado" },
+  "GAS_INMUEBLE_ADMINISTRACION":   { txt: "100% (renta capital)", color: "#00c805", help: "Gasto del inmueble arrendado — deducible 100% de la renta de capital" },
+  "GAS_INMUEBLE_SERVICIOS":        { txt: "100% (renta capital)", color: "#00c805", help: "Servicios del inmueble arrendado" },
+  "GAS_INMUEBLE_REPARACION":       { txt: "100% (renta capital)", color: "#00c805", help: "Reparación del inmueble arrendado" },
+  "GAS_INMUEBLE_MANTENIMIENTO":    { txt: "100% (renta capital)", color: "#00c805", help: "Mantenimiento del inmueble arrendado" },
+  "GAS_INMUEBLE_PREDIAL":          { txt: "100% (renta capital)", color: "#00c805", help: "Predial del inmueble arrendado" },
+  "GAS_INMUEBLE_SEGUROS":          { txt: "100% (renta capital)", color: "#00c805", help: "Seguros del inmueble arrendado" },
   // Commit 15 Tarea 3: impuesto vehicular (rodamiento)
-  "IMP_VEHICULAR_PERSONAL":        { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Rodamiento vehículo personal — no cumple Art. 107 ET" },
-  "IMP_VEHICULAR_PROFESIONAL":     { txt: "📊 50% Art. 107", color: "#f59e0b", help: "Rodamiento vehículo profesional — 50% conservador (uso mixto), máx 1" },
+  "IMP_VEHICULAR_PERSONAL":        { txt: "No deducible", color: "var(--fp-txt3)", help: "Rodamiento vehículo personal — no cumple Art. 107 ET" },
+  "IMP_VEHICULAR_PROFESIONAL":     { txt: "50% Art. 107", color: "#f59e0b", help: "Rodamiento vehículo profesional — 50% conservador (uso mixto), máx 1" },
   // Honorarios (Art. 107 ET — actividad independiente)
-  "GAS_HON_SEG_SOCIAL":          { txt: "✅ 100% Art. 126-1", color: "#00c805", help: "Seguridad social independiente — deducible 100%" },
-  "GAS_HON_NOMINA_TERCEROS":     { txt: "✅ 100% Art. 107", color: "#00c805", help: "Nómina/honorarios a terceros — deducible 100%" },
-  "GAS_HON_OFICINA":             { txt: "✅ 100% Art. 107", color: "#00c805", help: "Arriendo oficina — deducible 100%" },
-  "GAS_HON_SERVICIOS_OFICINA":   { txt: "✅ 100% Art. 107", color: "#00c805", help: "Servicios oficina — deducible 100%" },
-  "GAS_HON_INTERNET_TELEFONIA":  { txt: "✅ 100% Art. 107", color: "#00c805", help: "Internet/telefonía profesional" },
-  "GAS_HON_MATERIALES":          { txt: "✅ 100% Art. 107", color: "#00c805", help: "Materiales y suministros profesionales" },
-  "GAS_HON_VEHICULO":            { txt: "📊 50% Art. 107", color: "#f59e0b", help: "Vehículo profesional — 50% conservador (uso mixto), máx 1" },
-  "GAS_HON_VIAJES":              { txt: "✅ 100% Art. 107", color: "#00c805", help: "Viajes con propósito profesional documentado" },
-  "GAS_HON_REPRESENTACION":      { txt: "📊 Tope 10%", color: "#f59e0b", help: "Representación — tope 10% Art. 107-1 ET" },
-  "GAS_HON_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#00c805", help: "Capacitación profesional" },
-  "GAS_HON_OTROS":               { txt: "✅ Con causalidad", color: "#00c805", help: "Otros con causalidad documentada" },
+  "GAS_HON_SEG_SOCIAL":          { txt: "100% Art. 126-1", color: "#00c805", help: "Seguridad social independiente — deducible 100%" },
+  "GAS_HON_NOMINA_TERCEROS":     { txt: "100% Art. 107", color: "#00c805", help: "Nómina/honorarios a terceros — deducible 100%" },
+  "GAS_HON_OFICINA":             { txt: "100% Art. 107", color: "#00c805", help: "Arriendo oficina — deducible 100%" },
+  "GAS_HON_SERVICIOS_OFICINA":   { txt: "100% Art. 107", color: "#00c805", help: "Servicios oficina — deducible 100%" },
+  "GAS_HON_INTERNET_TELEFONIA":  { txt: "100% Art. 107", color: "#00c805", help: "Internet/telefonía profesional" },
+  "GAS_HON_MATERIALES":          { txt: "100% Art. 107", color: "#00c805", help: "Materiales y suministros profesionales" },
+  "GAS_HON_VEHICULO":            { txt: "50% Art. 107", color: "#f59e0b", help: "Vehículo profesional — 50% conservador (uso mixto), máx 1" },
+  "GAS_HON_VIAJES":              { txt: "100% Art. 107", color: "#00c805", help: "Viajes con propósito profesional documentado" },
+  "GAS_HON_REPRESENTACION":      { txt: "Tope 10%", color: "#f59e0b", help: "Representación — tope 10% Art. 107-1 ET" },
+  "GAS_HON_CAPACITACION":        { txt: "100% Art. 107", color: "#00c805", help: "Capacitación profesional" },
+  "GAS_HON_OTROS":               { txt: "Con causalidad", color: "#00c805", help: "Otros con causalidad documentada" },
   // Seguros (persona natural — la mayoría NO deducibles)
-  "SEG_SALUD":                   { txt: "✅ Hasta 16 UVT/mes", color: "#00c805", help: "Seguro de salud — Art. 387 #2 ET, tope 16 UVT mensuales" },
-  "SEG_VIDA":                    { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Seguro de vida personal — no cumple Art. 107 ET" },
-  "SEG_VEHICULO":                { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Seguro de vehículo personal — no cumple Art. 107 ET" },
-  "SEG_HOGAR":                   { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Seguro de hogar personal — no cumple Art. 107 ET" },
+  "SEG_SALUD":                   { txt: "Hasta 16 UVT/mes", color: "#00c805", help: "Seguro de salud — Art. 387 #2 ET, tope 16 UVT mensuales" },
+  "SEG_VIDA":                    { txt: "No deducible", color: "var(--fp-txt3)", help: "Seguro de vida personal — no cumple Art. 107 ET" },
+  "SEG_VEHICULO":                { txt: "No deducible", color: "var(--fp-txt3)", help: "Seguro de vehículo personal — no cumple Art. 107 ET" },
+  "SEG_HOGAR":                   { txt: "No deducible", color: "var(--fp-txt3)", help: "Seguro de hogar personal — no cumple Art. 107 ET" },
   // Gastos juridica
-  "GAS_JUR_DEDUCIBLE":           { txt: "✅ 100% Art. 107", color: "#00c805", help: "Gasto deducible con causalidad" },
-  "GAS_JUR_NO_DEDUCIBLE":        { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Gasto sin causalidad probada" },
+  "GAS_JUR_DEDUCIBLE":           { txt: "100% Art. 107", color: "#00c805", help: "Gasto deducible con causalidad" },
+  "GAS_JUR_NO_DEDUCIBLE":        { txt: "No deducible", color: "var(--fp-txt3)", help: "Gasto sin causalidad probada" },
   // Commit 17 Tarea 3: fiscalCodes de juridica con sus reglas reales
-  "GAS_JUR_NOMINA":              { txt: "✅ 100% Art. 107", color: "#00c805", help: "Nómina + prestaciones de empleados — deducible 100%" },
-  "GAS_JUR_PARAFISCALES":        { txt: "✅ 100% Art. 107", color: "#00c805", help: "Parafiscales (SENA, ICBF, Cajas) — deducible 100%" },
-  "GAS_JUR_HONORARIOS_PROF":     { txt: "✅ 100% Art. 107", color: "#00c805", help: "Honorarios profesionales (contador, abogado, etc.) — deducible 100%" },
-  "GAS_JUR_OPERATIVO":           { txt: "✅ 100% Art. 107", color: "#00c805", help: "Gasto operativo con causalidad — deducible 100%" },
-  "GAS_JUR_PREDIAL":             { txt: "✅ 100% Art. 115", color: "#00c805", help: "Predial pagado por la empresa — deducible 100% (Art. 115 ET)" },
-  "GAS_JUR_DEPRECIACION":        { txt: "✅ 100% Art. 128-141", color: "#00c805", help: "Depreciación de activos productivos — deducible según vida útil fiscal" },
-  "GAS_JUR_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#00c805", help: "Capacitación de empleados — deducible 100%" },
+  "GAS_JUR_NOMINA":              { txt: "100% Art. 107", color: "#00c805", help: "Nómina + prestaciones de empleados — deducible 100%" },
+  "GAS_JUR_PARAFISCALES":        { txt: "100% Art. 107", color: "#00c805", help: "Parafiscales (SENA, ICBF, Cajas) — deducible 100%" },
+  "GAS_JUR_HONORARIOS_PROF":     { txt: "100% Art. 107", color: "#00c805", help: "Honorarios profesionales (contador, abogado, etc.) — deducible 100%" },
+  "GAS_JUR_OPERATIVO":           { txt: "100% Art. 107", color: "#00c805", help: "Gasto operativo con causalidad — deducible 100%" },
+  "GAS_JUR_PREDIAL":             { txt: "100% Art. 115", color: "#00c805", help: "Predial pagado por la empresa — deducible 100% (Art. 115 ET)" },
+  "GAS_JUR_DEPRECIACION":        { txt: "100% Art. 128-141", color: "#00c805", help: "Depreciación de activos productivos — deducible según vida útil fiscal" },
+  "GAS_JUR_CAPACITACION":        { txt: "100% Art. 107", color: "#00c805", help: "Capacitación de empleados — deducible 100%" },
   // Personal
-  "GAS_NAT_PERSONAL":            { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Gasto personal — no cumple Art. 107 ET" },
+  "GAS_NAT_PERSONAL":            { txt: "No deducible", color: "var(--fp-txt3)", help: "Gasto personal — no cumple Art. 107 ET" },
 };
 
 function reglaItem(item, owners) {
@@ -137,7 +138,7 @@ function fiscalSubOptions(ownerType, cat) {
   // si se asigna a jurídica, no genera deducción (tampoco daña).
   if (cat === "Aporte tributario") {
     return {
-      question: "🛡️ ¿Qué tipo de aporte tributario?",
+      question: "¿Qué tipo de aporte tributario?",
       help: "PV y AFC comparten tope: 30% del ingreso, máximo 3.800 UVT al año (Arts. 126-1 y 126-4 ET). Salud prepagada entra al tope de 16 UVT mensuales junto con gastos médicos (Art. 387 #2 ET). Reducen la base gravable del impuesto de renta de persona natural.",
       options: [
         { v: "AP_TRIB_PV", l: "Pensión Voluntaria (Art. 126-1 ET)" },
@@ -153,7 +154,7 @@ function fiscalSubOptions(ownerType, cat) {
     // Compat legacy: gastos viejos guardados como "Predial" siguen funcionando.
     if (cat === "Impuesto" || cat === "Predial") {
       return {
-        question: "🏛️ ¿Qué tipo de impuesto?",
+        question: "¿Qué tipo de impuesto?",
         help: "El predial de tu vivienda personal y el rodamiento de tu vehículo personal NO son deducibles para persona natural (no cumplen Art. 107 ET). Los relacionados con inmuebles arrendados o actividad profesional sí.",
         options: [
           { v: "GAS_NAT_PERSONAL",            l: "Predial vivienda personal (no deducible)" },
@@ -175,7 +176,7 @@ function fiscalSubOptions(ownerType, cat) {
     // "Inmueble arrendado" no pregunta si es personal: ya lo dice su nombre.
     if (cat === "Inmueble arrendado") {
       return {
-        question: "🏢 ¿Qué tipo de costo del inmueble es?",
+        question: "¿Qué tipo de costo del inmueble es?",
         help: "Todos se deducen 100% de la renta de arrendamiento (Art. 107 ET).",
         options: [
           { v: "GAS_INMUEBLE_ADMINISTRACION", l: "Administración / cuota de copropiedad" },
@@ -189,7 +190,7 @@ function fiscalSubOptions(ownerType, cat) {
     // Gastos que pueden ser del inmueble arrendado o personales
     if (["Vivienda", "Mantenimiento", "Servicios", "Seguros", "Arrendamiento"].includes(cat)) {
       return {
-        question: "🏠 ¿Es del inmueble arrendado o de tu vivienda personal?",
+        question: "¿Es del inmueble arrendado o de tu vivienda personal?",
         help: "Si es del inmueble que arriendas a terceros, se deduce 100% de la renta no laboral (Art. 107 ET). Si es personal, no deduce.",
         options: [
           { v: "GAS_NAT_PERSONAL", l: "Personal — mi vivienda (no deducible)" },
@@ -207,7 +208,7 @@ function fiscalSubOptions(ownerType, cat) {
     if (["Educación", "Vivienda", "Alimentación", "Entretenimiento", "Transporte", "Representación"].includes(cat)) {
       const opDeducible = cat === "Educación" ? "GAS_JUR_CAPACITACION" : "GAS_JUR_OPERATIVO";
       return {
-        question: "🧾 ¿Está relacionado con la actividad productora de renta? (Art. 107 ET)",
+        question: "¿Está relacionado con la actividad productora de renta? (Art. 107 ET)",
         help: "Art. 107 ET exige causalidad, necesidad y proporcionalidad con la actividad. Ej. Educación de empleados sí deduce; colegio de hijos del socio no.",
         options: [
           { v: opDeducible, l: "Sí — relacionado con la actividad (deducible)" },
@@ -290,9 +291,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               freq: d.frecuencia === "año" ? "año" : "mes",
             }));
             setShowForm(true);
-            alert("✅ Factura leída" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.concepto || "") + ": $" + (d.monto || 0).toLocaleString("es-CO") + " — " + (d.categoria || ""));
+            alert("Factura leída" + (d.confianza === "alta" ? "" : " (revisa los datos)") + "\n\n" + (d.concepto || "") + ": $" + (d.monto || 0).toLocaleString("es-CO") + " — " + (d.categoria || ""));
           } else {
-            alert("⚠️ No se pudo leer la imagen. Intenta con una foto más clara.");
+            alert("No se pudo leer la imagen. Intenta con una foto más clara.");
           }
           setScanning(false);
         };
@@ -365,7 +366,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * (g.moneda === "USD" ? (trm || 4200) : 1), 0);
 
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
-  // El user hace click en el chip "⏳ Pendiente" y pasa a "✅ Pagado".
+  // El user hace click en el chip "Pendiente" y pasa a "Pagado".
   // Se guarda en `item.pagos[año] = true` (persistente en Supabase).
   const añoActual = new Date().getFullYear();
   const togglePagoItem = (item) => {
@@ -546,17 +547,17 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           {onImport && <button onClick={onImport}
             title="Cargar gastos desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-            ⬆️ Subir Excel
+            Subir Excel
           </button>}
           <button onClick={() => exportGastosExcel(gastos, trm)}
             title="Bajar Excel: detalle + resumen por categoría (Fijos vs Variables)"
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            ⬇️ Bajar Excel
+            Bajar Excel
           </button>
           <button onClick={() => exportGastosPDF(gastos, trm)}
             title="Bajar PDF: fijos vs variables y desglose por categoría"
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            ⬇️ Bajar PDF
+            Bajar PDF
           </button>
           <button onClick={openAdd} style={{ background: "#00c805", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
@@ -566,7 +567,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       {fiscalWarnings.length > 0 && (
         <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 14 }}>⚠️</span>
+            <span style={{ fontSize: 14 }}></span>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
               {fiscalWarnings.length} egreso{fiscalWarnings.length !== 1 ? "s" : ""} con clasificación fiscal pendiente
             </div>
@@ -617,7 +618,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.blue },
           { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.orange },
         ].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
+          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
           </div>
@@ -629,7 +630,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         r={mesVsPromedio(activos, claseGasto, { trm, año: _añoHoy, mes: _mesHoy })} />
 
       {/* Table with checkboxes */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
         {/* 26-jul-2026 (Santiago: "sería muy genial una barra o gráfico que
             muestre por tipologías cómo están esos gastos o ingresos en cada
             sección"). Se reutiliza BarraComposicion, el mismo componente del
@@ -674,12 +675,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             {allItems.length === 0 ? (
               <tr><td colSpan={7} style={{ padding: 0 }}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
-                      <div style={{fontSize:40,marginBottom:12}}>💳</div>
+                      <div style={{fontSize:40,marginBottom:12}}></div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>Registra tus gastos mensuales</h3>
                       <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Vivienda, alimentación, transporte, educación, seguros, entretenimiento. <strong style={{color:"var(--fp-txt2)"}}>Solo gastos — no incluyas cuotas de créditos ni hipotecas</strong>, esas van en la sección Deudas.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
                         <button onClick={()=>setShowForm(true)} style={{background:"#00c805",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar gasto</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de gastos</button>}
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>Subir tabla Excel de gastos</button>}
                       </div>
                       <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
                         <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>Ejemplo de Excel para importar</div>
@@ -721,7 +722,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           onClick={() => openEdit(item)}
                           title={ws.map(w => "• " + (w.message || w.accionSugerida)).join("\n")}
                           style={{ fontSize: 13, cursor: "pointer", color: hasError ? "#ff5000" : "#f59e0b", flexShrink: 0 }}
-                        >⚠️</span>
+                        ></span>
                       );
                     })()}
                     <span>{item.c || "—"}</span>
@@ -767,16 +768,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           userSelect: "none",
                         }}
                       >
-                        {estaPagadoEnAño(item, añoActual) ? `✅ Pagado ${añoActual}` : `⏳ Pendiente ${añoActual}`}
+                        {estaPagadoEnAño(item, añoActual) ? `Pagado ${añoActual}` : `Pendiente ${añoActual}`}
                       </span>
                     )}
                   </div>
                   {(()=>{
                     if(!item.owner || item.owner==="") return null;
-                    if(item.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
-                    if(item.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
+                    if(item.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>N/A</div>;
+                    if(item.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Personal</div>;
                     const ow=(owners||[]).find(o=>o.id===item.owner);
-                    return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                    return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"":""} {ow.name}</div> : null;
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
@@ -810,10 +811,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}>{item.sim===false?"⬜":"✅"}</button>
-                  <button onClick={() => openEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}>✏️</button>
+                  <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}><Interruptor on={item.sim!==false} /></button>
+                  <button onClick={() => openEdit(item)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12, marginRight: 4 }}><Pencil size={14} strokeWidth={1.75} /></button>
                   <button onClick={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }}
-                    style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}>🗑️</button>
+                    style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
                 </td>
               </tr>
               )
@@ -834,7 +835,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       {/* Form Modal */}
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: 32 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editKey ? "Editar Gasto" : "Agregar Gasto"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
@@ -900,13 +901,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {/* Photo scan option — Básico+ */}
               {plan==="free" ? (
                 <div style={{background:"rgba(245,158,11,0.06)",border:"1px dashed rgba(245,158,11,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>onUpgrade&&onUpgrade()}>
-                  <div style={{fontSize:12,fontWeight:600,color:"#f59e0b"}}>🔒 📸 Lectura de facturas con IA</div>
+                  <div style={{fontSize:12,fontWeight:600,color:"#f59e0b"}}>Lectura de facturas con IA</div>
                   <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Disponible desde el plan Básico · click para ver planes</div>
                 </div>
               ) : (
                 <div style={{background:"rgba(59,130,246,0.06)",border:"1px dashed rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
-                  {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>🔄 Leyendo factura...</div> : <>
-                    <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>📸 ¿Tienes la factura o recibo?</div>
+                  {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>Leyendo factura...</div> : <>
+                    <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>¿Tienes la factura o recibo?</div>
                     <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                   </>}
                 </div>
@@ -915,7 +916,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
-              }} options={[{v:"Aporte tributario",l:"🛡️ Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"👥 Nómina y empleados"},{v:"Honorarios",l:"📋 Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"🏠 Vivienda / Arriendo oficina"},{v:"Inmueble arrendado",l:"🏢 Costos de inmueble arrendado (admón, predial, mantenimiento)"},{v:"Servicios",l:"💡 Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"🔧 Mantenimiento y reparaciones"},{v:"Seguros",l:"🛡️ Seguros y pólizas"},{v:"Transporte",l:"🚗 Transporte y combustible"},{v:"Arrendamiento",l:"📄 Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"🏛️ Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"🤝 Gastos de representación"},{v:"Tecnología",l:"💻 Tecnología y software"},{v:"Depreciación",l:"🏗️ Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"🛒 Alimentación y mercado"},{v:"Educación",l:"📚 Educación y capacitación"},{v:"Salud",l:"🏥 Salud / Medicina prepagada"},{v:"Seguridad Social",l:"🏛️ Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"🎬 Entretenimiento y ocio"},{v:"Vestimenta",l:"👔 Vestimenta"},{v:"Mascotas",l:"🐾 Mascotas"},{v:"Deporte",l:"⚽ Deporte y bienestar"},{v:"Personal",l:"👤 Gastos personales"},{v:"Ahorro",l:"💰 Ahorro e inversión"},{v:"Otro",l:"📝 Otro"}]} />
+              }} options={[{v:"Aporte tributario",l:"Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"Nómina y empleados"},{v:"Honorarios",l:"Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"Vivienda / Arriendo oficina"},{v:"Inmueble arrendado",l:"Costos de inmueble arrendado (admón, predial, mantenimiento)"},{v:"Servicios",l:"Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"Mantenimiento y reparaciones"},{v:"Seguros",l:"Seguros y pólizas"},{v:"Transporte",l:"Transporte y combustible"},{v:"Arrendamiento",l:"Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"Gastos de representación"},{v:"Tecnología",l:"Tecnología y software"},{v:"Depreciación",l:"Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"Alimentación y mercado"},{v:"Educación",l:"Educación y capacitación"},{v:"Salud",l:"Salud / Medicina prepagada"},{v:"Seguridad Social",l:"Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"Entretenimiento y ocio"},{v:"Vestimenta",l:"Vestimenta"},{v:"Mascotas",l:"Mascotas"},{v:"Deporte",l:"Deporte y bienestar"},{v:"Personal",l:"Gastos personales"},{v:"Ahorro",l:"Ahorro e inversión"},{v:"Otro",l:"Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
 
               {/* Vínculo al activo. Solo se ofrece si hay activos cargados:
@@ -956,7 +957,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 código listo y nadie podía usarlo.
                 El valor se guarda en la moneda elegida; lo que se VE depende
                 del selector global de la barra superior. */}
-            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
+            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"COP (pesos)"},{v:"USD",l:"USD (se convierte a la TRM)"}]} />
 
               {/* Commit 1.6: sub-selector para Aporte tributario (PV, AFC, Salud prepagada) */}
               {form.cat === "Aporte tributario" && (() => {
@@ -971,7 +972,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     </select>
                     <div style={{fontSize:11,color:"var(--fp-txt2)",marginTop:8,lineHeight:1.5}}>{opts.help}</div>
                     <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:6,lineHeight:1.5,fontStyle:"italic"}}>
-                      ℹ️ Esta categoría sólo reduce impuestos si la asignas a un propietario fiscal de tipo <strong>persona natural</strong> con ingresos laborales.
+                      Esta categoría sólo reduce impuestos si la asignas a un propietario fiscal de tipo <strong>persona natural</strong> con ingresos laborales.
                     </div>
                   </div>
                 );
@@ -983,12 +984,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {form.cat === "Seguros" && (() => {
                 const currentFC = form.fiscalCode || "SEG_GENERICO";
                 const opts = [
-                  { v: "SEG_SALUD", l: "🏥 Seguro de salud — deducible (Art. 387 #2)" },
-                  { v: "SEG_VIDA", l: "❤️ Seguro de vida — deducible (Art. 387 #2)" },
-                  { v: "GAS_INMUEBLE_SEGUROS", l: "🏘️ Seguro del inmueble arrendado — deducible si tienes arriendos" },
-                  { v: "SEG_VEHICULO", l: "🚗 Seguro de vehículo — NO deducible (persona natural)" },
-                  { v: "SEG_HOGAR", l: "🏠 Seguro de hogar — NO deducible (persona natural)" },
-                  { v: "SEG_GENERICO", l: "❓ Otro / Sin clasificar — NO deducible por defecto" },
+                  { v: "SEG_SALUD", l: "Seguro de salud — deducible (Art. 387 #2)" },
+                  { v: "SEG_VIDA", l: "Seguro de vida — deducible (Art. 387 #2)" },
+                  { v: "GAS_INMUEBLE_SEGUROS", l: "Seguro del inmueble arrendado — deducible si tienes arriendos" },
+                  { v: "SEG_VEHICULO", l: "Seguro de vehículo — NO deducible (persona natural)" },
+                  { v: "SEG_HOGAR", l: "Seguro de hogar — NO deducible (persona natural)" },
+                  { v: "SEG_GENERICO", l: "Otro / Sin clasificar — NO deducible por defecto" },
                 ];
                 const help = currentFC === "SEG_SALUD" || currentFC === "SEG_VIDA"
                   ? "Entra al tope de 16 UVT/mes (~$839K) compartido con medicina prepagada y gastos médicos."
@@ -999,7 +1000,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   : "Default conservador. Si tienes un seguro deducible, especifica el tipo correcto.";
                 return (
                   <div style={{gridColumn:"1/-1",background:"rgba(0,200,5,0.04)",border:"1px solid rgba(0,200,5,0.2)",borderRadius:10,padding:"14px 16px",marginTop:4}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#00c805",marginBottom:8}}>🛡️ ¿Qué tipo de seguro es?</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#00c805",marginBottom:8}}>¿Qué tipo de seguro es?</div>
                     <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
                       {opts.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
@@ -1013,11 +1014,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               <div style={{ gridColumn: "1/-1", background: T.bg3, borderRadius: 10, padding: "8px", display: "flex", gap: 6, marginTop: 4, marginBottom: 4 }}>
                 <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "fijo" }))}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: form.montoModo !== "tasa" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: form.montoModo !== "tasa" ? "rgba(0,200,5,0.08)" : "transparent", color: form.montoModo !== "tasa" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: form.montoModo !== "tasa" ? 700 : 500, cursor: "pointer" }}>
-                  💵 Valor fijo
+                  Valor fijo
                 </button>
                 <button type="button" onClick={() => setForm(p => ({ ...p, montoModo: "tasa" }))}
                   style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: form.montoModo === "tasa" ? "1.5px solid #3b82f6" : "1px solid rgba(var(--fp-ink),0.06)", background: form.montoModo === "tasa" ? "rgba(59,130,246,0.08)" : "transparent", color: form.montoModo === "tasa" ? "#3b82f6" : T.txt3, fontSize: 12, fontWeight: form.montoModo === "tasa" ? 700 : 500, cursor: "pointer" }}>
-                  📊 Capital × tasa
+                  Capital × tasa
                 </button>
               </div>
 
@@ -1042,7 +1043,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {mostrarCampo("modoIngresoSimple") && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                       <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                        💵 ¿El monto que vas a poner es...?
+                        ¿El monto que vas a poner es...?
                       </label>
                       <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
                         <button type="button"
@@ -1055,7 +1056,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             setModoIngreso("porPago");
                           }}
                           style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "porPago" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "porPago" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "porPago" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "porPago" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
-                          💵 Mensual<br/>
+                          Mensual<br/>
                           <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>Lo que sale cada mes</span>
                         </button>
                         <button type="button"
@@ -1068,7 +1069,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             setModoIngreso("anual");
                           }}
                           style={{ flex: 1, padding: "10px 12px", borderRadius: 6, border: modoIngreso === "anual" ? "1.5px solid #00c805" : "1px solid rgba(var(--fp-ink),0.06)", background: modoIngreso === "anual" ? "rgba(0,200,5,0.08)" : "transparent", color: modoIngreso === "anual" ? "#00c805" : T.txt3, fontSize: 12, fontWeight: modoIngreso === "anual" ? 700 : 500, cursor: "pointer", lineHeight: 1.3 }}>
-                          📊 Total del año<br/>
+                          Total del año<br/>
                           <span style={{fontSize:11,opacity:0.7,fontWeight:500}}>La suma anual</span>
                         </button>
                       </div>
@@ -1079,7 +1080,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {mostrarCampo("modoIngreso") && form.frecuencia !== "mensual" && (
                     <div style={{gridColumn:"1/-1", marginBottom: 4}}>
                       <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-                        💵 ¿Cómo conoces el monto?
+                        ¿Cómo conoces el monto?
                       </label>
                       <div style={{ background: T.bg3, borderRadius: 10, padding: 5, display: "flex", gap: 5 }}>
                         <button type="button"
@@ -1164,16 +1165,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </>
               ) : (
                 <div style={{ gridColumn: "1/-1", background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 12, color: "#3b82f6", marginBottom: 8, fontWeight: 600 }}>📊 Cálculo automático: capital × tasa = monto mensual</div>
+                  <div style={{ fontSize: 12, color: "#3b82f6", marginBottom: 8, fontWeight: 600 }}>Cálculo automático: capital × tasa = monto mensual</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                    <In l="💼 Capital" value={form.capital} onChange={(v) => {
+                    <In l="Capital" value={form.capital} onChange={(v) => {
                       const cap = Number(v) || 0;
                       const tas = Number(form.tasa) || 0;
                       const tm = form.tasaModo || "mensual";
                       const mensual = tm === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100);
                       setForm(p => ({ ...p, capital: v, m: (cap > 0 && tas > 0) ? String(mensual) : p.m, freq: "mes" }));
                     }} type="number" placeholder="500000000" />
-                    <In l="📈 Tasa %" value={form.tasa} onChange={(v) => {
+                    <In l="Tasa %" value={form.tasa} onChange={(v) => {
                       const tas = Number(v) || 0;
                       const cap = Number(form.capital) || 0;
                       const tm = form.tasaModo || "mensual";
@@ -1186,16 +1187,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     const tas = Number(form.tasa) || 0;
                     const mensual = v === "anual" ? Math.round((cap * tas / 100) / 12) : Math.round(cap * tas / 100);
                     setForm(p => ({ ...p, tasaModo: v, m: (cap > 0 && tas > 0) ? String(mensual) : p.m, freq: "mes" }));
-                  }} options={[{ v: "mensual", l: "📅 Mensual (ej: 1% mensual)" }, { v: "anual", l: "📅 Anual (ej: 12% anual)" }]} />
+                  }} options={[{ v: "mensual", l: "Mensual (ej: 1% mensual)" }, { v: "anual", l: "Anual (ej: 12% anual)" }]} />
                   {Number(form.capital) > 0 && Number(form.tasa) > 0 && (
                     <div style={{ marginTop: 4, padding: "10px 12px", background: "rgba(0,200,5,0.08)", borderRadius: 8, fontSize: 13, fontWeight: 700, color: "#00c805" }}>
-                      💰 Monto calculado: {fm(form.tasaModo === "anual" ? (Number(form.capital) * Number(form.tasa) / 100) / 12 : Number(form.capital) * Number(form.tasa) / 100)} / mes
+                      Monto calculado: {fm(form.tasaModo === "anual" ? (Number(form.capital) * Number(form.tasa) / 100) / 12 : Number(form.capital) * Number(form.tasa) / 100)} / mes
                     </div>
                   )}
                   {/* Commit E: warning si capital muy bajo (<$10K) */}
                   {Number(form.capital) > 0 && Number(form.capital) < 10_000 && (
                     <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.3)", borderRadius: 8, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
-                      ⚠️ El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Si el valor es correcto, ignora este aviso.
+                      El capital es muy bajo ({"$" + Math.round(Number(form.capital)).toLocaleString("es-CO")}). ¿Faltan ceros? Si el valor es correcto, ignora este aviso.
                     </div>
                   )}
                   {/* Commit E: validacion de tasa absurda */}
@@ -1208,14 +1209,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     if (altoRojo) {
                       return (
                         <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.3)", borderRadius: 8, fontSize: 12, color: T.red, lineHeight: 1.5 }}>
-                          ⚠️ Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
+                          Tasa muy alta: {fmtTasaEs(tas)} {tm}. {tm === "mensual" ? "10% mensual ya es ~214% anual." : "100% anual es excepcional."} ¿Querias decir {tm === "anual" ? "tasa mensual" : "tasa anual"}? Cambia la periodicidad arriba si es el caso.
                         </div>
                       );
                     }
                     if (altoNaranja) {
                       return (
                         <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, fontSize: 12, color: "#f59e0b", lineHeight: 1.5 }}>
-                          🟠 Tasa alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta.
+                          Tasa alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta.
                         </div>
                       );
                     }
@@ -1227,7 +1228,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === v);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, owner: v, fiscalCode: defaultFiscalCode(ownerType, p.cat) }));
-              }} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              }} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"Personal"},{v:"na",l:"N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"":"")+o.name}))]} />
               {(() => {
                 const ow = (owners || []).find(o => o.id === form.owner);
                 if (!ow || ow.type !== "juridica") return null;
@@ -1243,14 +1244,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const deductibleCode = form.cat === "Educación" ? "GAS_JUR_CAPACITACION" : "GAS_JUR_OPERATIVO";
                 return (
                   <div style={{background:"rgba(245,158,11,0.04)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4}}>
-                    <div style={{fontSize:12,fontWeight:700,color:"#f59e0b",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#f59e0b",marginBottom:8}}>¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
                     <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
-                      <option value={deductibleCode}>✅ Sí — relacionado con la actividad productora de renta (DEDUCIBLE)</option>
-                      <option value="GAS_JUR_NO_DEDUCIBLE">❌ No — gasto personal o sin nexo con la actividad (NO deducible)</option>
+                      <option value={deductibleCode}>Sí — relacionado con la actividad productora de renta (DEDUCIBLE)</option>
+                      <option value="GAS_JUR_NO_DEDUCIBLE">No — gasto personal o sin nexo con la actividad (NO deducible)</option>
                     </select>
                     <div style={{fontSize:11,color:"var(--fp-txt2)",marginTop:6,lineHeight:1.5}}>Art. 107 ET exige causalidad, necesidad y proporcionalidad. <strong>Ejemplos</strong>: colegio de hijos del socio = NO deducible aunque lo pague la SAS. Cursos de contabilidad para empleados = SÍ deducible. Arriendo de oficina operativa = SÍ. Arriendo de vivienda del socio = NO.</div>
-                    <div style={{fontSize:11,fontWeight:600,marginTop:6,color:isDeductible?"#00c805":"#ff5000"}}>{isDeductible ? "✅ Este gasto bajará el impuesto de renta de la empresa" : "⚠️ Este gasto NO bajará el impuesto de renta (pero sí se registra en tu cash flow)"}</div>
+                    <div style={{fontSize:11,fontWeight:600,marginTop:6,color:isDeductible?"#00c805":"#ff5000"}}>{isDeductible ? "Este gasto bajará el impuesto de renta de la empresa" : "Este gasto NO bajará el impuesto de renta (pero sí se registra en tu cash flow)"}</div>
                   </div>
                 );
               })()}
@@ -1310,7 +1311,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       />
                       <div style={{flex:1}}>
                         <div style={{fontSize:12,fontWeight:700,color:isHon?"#3b82f6":T.txt}}>
-                          🧾 ¿Es gasto de tu actividad por honorarios? (Art. 107 ET)
+                          ¿Es gasto de tu actividad por honorarios? (Art. 107 ET)
                         </div>
                         <div style={{fontSize:11,color:T.txt3,marginTop:2,lineHeight:1.4}}>
                           Márcalo si este gasto cumple causalidad, necesidad y proporcionalidad con tu actividad independiente. Reduce la base gravable de tus honorarios antes de aplicar la cédula laboral.
@@ -1326,17 +1327,17 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           onChange={(e) => setForm(p => ({ ...p, fiscalCode: e.target.value }))}
                           style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}
                         >
-                          <option value="GAS_HON_SEG_SOCIAL">🏛️ Seguridad social independiente (100%, Art. 126-1)</option>
-                          <option value="GAS_HON_NOMINA_TERCEROS">👥 Nómina/honorarios a terceros (con retención)</option>
-                          <option value="GAS_HON_OFICINA">🏢 Arriendo oficina/coworking</option>
-                          <option value="GAS_HON_SERVICIOS_OFICINA">💡 Servicios públicos del lugar de trabajo</option>
-                          <option value="GAS_HON_INTERNET_TELEFONIA">📞 Internet/telefonía profesional</option>
-                          <option value="GAS_HON_MATERIALES">📦 Materiales y suministros profesionales</option>
-                          <option value="GAS_HON_VEHICULO">🚗 Vehículo (50% conservador, máx 1)</option>
-                          <option value="GAS_HON_VIAJES">✈️ Viajes con propósito documentado</option>
-                          <option value="GAS_HON_REPRESENTACION">🤝 Representación (tope 10% Art. 107-1)</option>
-                          <option value="GAS_HON_CAPACITACION">📚 Capacitación profesional</option>
-                          <option value="GAS_HON_OTROS">📝 Otros con causalidad documentada</option>
+                          <option value="GAS_HON_SEG_SOCIAL">Seguridad social independiente (100%, Art. 126-1)</option>
+                          <option value="GAS_HON_NOMINA_TERCEROS">Nómina/honorarios a terceros (con retención)</option>
+                          <option value="GAS_HON_OFICINA">Arriendo oficina/coworking</option>
+                          <option value="GAS_HON_SERVICIOS_OFICINA">Servicios públicos del lugar de trabajo</option>
+                          <option value="GAS_HON_INTERNET_TELEFONIA">Internet/telefonía profesional</option>
+                          <option value="GAS_HON_MATERIALES">Materiales y suministros profesionales</option>
+                          <option value="GAS_HON_VEHICULO">Vehículo (50% conservador, máx 1)</option>
+                          <option value="GAS_HON_VIAJES">Viajes con propósito documentado</option>
+                          <option value="GAS_HON_REPRESENTACION">Representación (tope 10% Art. 107-1)</option>
+                          <option value="GAS_HON_CAPACITACION">Capacitación profesional</option>
+                          <option value="GAS_HON_OTROS">Otros con causalidad documentada</option>
                         </select>
 
                         <div style={{marginTop:10}}>
@@ -1357,12 +1358,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
 
                         {form.fiscalCode === "GAS_HON_VEHICULO" && (
                           <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:11,color:T.orange,lineHeight:1.4}}>
-                            ⚠️ El motor aplica solo el 50% del gasto del vehículo (uso mixto). Solo se permite UN vehículo deducible por persona.
+                            El motor aplica solo el 50% del gasto del vehículo (uso mixto). Solo se permite UN vehículo deducible por persona.
                           </div>
                         )}
                         {form.fiscalCode === "GAS_HON_REPRESENTACION" && (
                           <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:11,color:T.orange,lineHeight:1.4}}>
-                            ⚠️ Los gastos de representación tienen tope rígido del 10% del honorario bruto (Art. 107-1 ET). El motor lo aplica automáticamente.
+                            Los gastos de representación tienen tope rígido del 10% del honorario bruto (Art. 107-1 ET). El motor lo aplica automáticamente.
                           </div>
                         )}
                       </div>

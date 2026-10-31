@@ -104,12 +104,12 @@ export const PLAN_BASE = [
     // no "lo del anterior + ...". Cada plan se cuenta solo, así el lector
     // ve TODO lo que incluye sin tener que comparar mentalmente.
     features: [
-      "👤 1 usuario",
-      "📊 Dashboard con resumen de tu patrimonio",
-      "💰 Registra ingresos, gastos y deudas",
-      "📈 Hasta 3 inversiones y 1 meta financiera",
-      "🖥️ Simulador financiero",
-      "🔒 Datos cifrados en tránsito y en reposo",
+      "1 usuario",
+      "Dashboard con resumen de tu patrimonio",
+      "Registra ingresos, gastos y deudas",
+      "Hasta 3 inversiones y 1 meta financiera",
+      "Simulador financiero",
+      "Datos cifrados en tránsito y en reposo",
     ],
     notFeatures: [
       "Pensiones",
@@ -130,17 +130,17 @@ export const PLAN_BASE = [
     save: "Ahorra 25%",
     // Features con dependencia de jurisdicción (resuelta en getters)
     features: ({ isCO, isUS }) => [
-      "👤 1 usuario · sin límites en inversiones ni metas",
-      "📊 Dashboard con resumen patrimonial",
-      "💰 Ingresos, gastos y deudas ilimitados",
-      "🖥️ Simulador financiero con palancas (cambia ingresos/gastos y simula)",
+      "1 usuario · sin límites en inversiones ni metas",
+      "Dashboard con resumen patrimonial",
+      "Ingresos, gastos y deudas ilimitados",
+      "Simulador financiero con palancas (cambia ingresos/gastos y simula)",
       isUS
-        ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
-        : "🏛️ Pensión Colombia: Colpensiones (RPM) + RAIS",
-      isCO ? "💰 Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
+        ? "Pensión US: 401(k) + IRA + Social Security"
+        : "Pensión Colombia: Colpensiones (RPM) + RAIS",
+      isCO ? "Aportes obligatorios (4%+4%) y voluntarios calculados" : null,
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "📥 Importa Excel/CSV con IA",
-      "📸 Lectura de facturas con IA",
+      "Importa Excel/CSV con IA",
+      "Lectura de facturas con IA",
     ].filter(Boolean),
     notFeatures: ["Asesor IA", "Equipo de 5 asesores", "Plan Tributario completo", "Multi-usuario"],
   },
@@ -155,24 +155,24 @@ export const PLAN_BASE = [
     accent: true, // MÁS POPULAR badge
     save: "2 meses gratis",
     features: ({ isCO, isUS }) => [
-      "👥 Hasta 3 usuarios (tú + pareja + contador)",
-      "🔐 Roles: tú editas, tu pareja o contador consultan",
-      "🎯 Mi futuro a 10 años: arma y compara tus escenarios",
-      "📊 Dashboard con resumen patrimonial",
-      "💰 Ingresos, gastos y deudas ilimitados",
-      "🖥️ Simulador financiero con palancas",
+      "Hasta 3 usuarios (tú + pareja + contador)",
+      "Roles: tú editas, tu pareja o contador consultan",
+      "Mi futuro a 10 años: arma y compara tus escenarios",
+      "Dashboard con resumen patrimonial",
+      "Ingresos, gastos y deudas ilimitados",
+      "Simulador financiero con palancas",
       isUS
-        ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
-        : "🏛️ Pensión Colombia: Colpensiones + RAIS",
+        ? "Pensión US: 401(k) + IRA + Social Security"
+        : "Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "🤖 Asesor IA que analiza tus números reales",
-      "🧠 Tu equipo de 5 asesores: tus rentas, tu libertad, tus riesgos, tus inversiones y una segunda opinión",
+      "Asesor IA que analiza tus números reales",
+      "Tu equipo de 5 asesores: tus rentas, tu libertad, tus riesgos, tus inversiones y una segunda opinión",
       isCO
-        ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
-        : "🧾 Tax Planning US (federal + state, deductions, estimates)",
-      "📥 Importa Excel/CSV y lee facturas con IA",
-      "📈 Resumen ejecutivo del patrimonio en PDF",
-      "🚀 Soporte prioritario por email",
+        ? "Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
+        : "Tax Planning US (federal + state, deductions, estimates)",
+      "Importa Excel/CSV y lee facturas con IA",
+      "Resumen ejecutivo del patrimonio en PDF",
+      "Soporte prioritario por email",
     ],
     notFeatures: [],
   },
@@ -185,25 +185,25 @@ export const PLAN_BASE = [
     maxMembers: 10,
     save: "Ahorra 25%",
     features: ({ isCO, isUS }) => [
-      "👨‍👩‍👧 10 usuarios con acceso al patrimonio compartido",
-      "🔐 Roles: administrador edita, contador y familia consultan",
-      "🧾 Tu contador revisa tus números sin pedirte nada",
-      "📊 Dashboard con resumen patrimonial",
-      "💰 Ingresos, gastos y deudas ilimitados",
-      "🖥️ Simulador financiero con palancas",
+      "10 usuarios con acceso al patrimonio compartido",
+      "Roles: administrador edita, contador y familia consultan",
+      "Tu contador revisa tus números sin pedirte nada",
+      "Dashboard con resumen patrimonial",
+      "Ingresos, gastos y deudas ilimitados",
+      "Simulador financiero con palancas",
       isUS
-        ? "🏛️ Pensión US: 401(k) + IRA + Social Security"
-        : "🏛️ Pensión Colombia: Colpensiones + RAIS",
+        ? "Pensión US: 401(k) + IRA + Social Security"
+        : "Pensión Colombia: Colpensiones + RAIS",
       "₿ Ahorro en BTC con proyecciones por ciclo halving",
-      "🎯 Simula escenarios para alcanzar tu libertad financiera",
-      "🤖 Asesor IA que analiza el patrimonio consolidado",
-      "🧠 Tu equipo de 5 asesores: tus rentas, tu libertad, tus riesgos, tus inversiones y una segunda opinión",
+      "Simula escenarios para alcanzar tu libertad financiera",
+      "Asesor IA que analiza el patrimonio consolidado",
+      "Tu equipo de 5 asesores: tus rentas, tu libertad, tus riesgos, tus inversiones y una segunda opinión",
       isCO
-        ? "🧾 Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
-        : "🧾 Tax Planning US (federal + state, deductions, estimates)",
-      "📥 Importa Excel/CSV y lee facturas con IA",
-      "📈 Reporte ejecutivo del patrimonio en PDF",
-      "🚀 Soporte prioritario con respuesta en 24h",
+        ? "Plan Tributario Colombia completo (renta, retención, ICA, GMF)"
+        : "Tax Planning US (federal + state, deductions, estimates)",
+      "Importa Excel/CSV y lee facturas con IA",
+      "Reporte ejecutivo del patrimonio en PDF",
+      "Soporte prioritario con respuesta en 24h",
     ],
     notFeatures: [],
   },

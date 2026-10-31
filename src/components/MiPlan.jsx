@@ -50,7 +50,7 @@ const ventanaTexto = (p) => {
   if (v.desde <= 1 && v.hasta >= 12) return null;
   return v.desde === v.hasta ? `solo ${MES_CORTO[v.desde - 1]}` : `${MES_CORTO[v.desde - 1]}–${MES_CORTO[v.hasta - 1]}`;
 };
-const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20, minWidth: 0 };
+const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 20, minWidth: 0 };
 const sub = { background: C.raised, border: `1px solid ${C.border}`, borderRadius: 12, padding: 14, minWidth: 0 };
 const inputS = { background: C.bg, border: `1px solid ${C.borderStrong}`, borderRadius: 8, color: C.text, padding: "8px 10px", fontSize: 13, width: "100%", boxSizing: "border-box" };
 const btn = (primary) => ({ background: primary ? C.accent : "transparent", color: primary ? "#fff" : C.text, border: `1px solid ${primary ? C.accent : C.borderStrong}`, borderRadius: 999, padding: "8px 14px", fontSize: 12, fontWeight: 600, cursor: "pointer" });
@@ -144,7 +144,7 @@ const vecesDe = (p) => { const i = Number(p?.patrimonioInicial) || 0, f = Number
  * Qué dato está reventando la proyección, y no dibujar encima (22-oct-2026).
  *
  * Santiago: "no tengo idea de dónde vienen estos valores", "gráficas
- * incompletas". El ✋ avisaba que la cifra era imposible pero no decía POR QUÉ,
+ * incompletas". El avisaba que la cifra era imposible pero no decía POR QUÉ,
  * y las gráficas seguían dibujando: en la de inflación, el año 5 crecía
  * 40.905.658% y los otros nueve quedaban pegados al cero; en la de mes a mes,
  * sus $131 M reales de los primeros años parecían una línea plana en cero.
@@ -206,7 +206,7 @@ function EscalaRota({ r, perfil, base, onArreglar, titulo }) {
   );
 }
 
-const Imposible = ({ p, compacto }) => { const x = vecesDe(p); if (x <= VECES_IMPOSIBLE) return null; return <span style={{ ...chip(C.danger), marginLeft: 6, whiteSpace: "normal", display: "inline-block" }}>✋ multiplica tu patrimonio por {Math.round(x).toLocaleString("es-CO")}{compacto ? "" : ": eso no es un plan, es un supuesto mal puesto. Revisa pensiones y tasas."}</span>; };
+const Imposible = ({ p, compacto }) => { const x = vecesDe(p); if (x <= VECES_IMPOSIBLE) return null; return <span style={{ ...chip(C.danger), marginLeft: 6, whiteSpace: "normal", display: "inline-block" }}>multiplica tu patrimonio por {Math.round(x).toLocaleString("es-CO")}{compacto ? "" : ": eso no es un plan, es un supuesto mal puesto. Revisa pensiones y tasas."}</span>; };
 
 // Producción mensual de una posición hoy: lo que recibes y lo que crece
 const produce = (p) => {
@@ -981,7 +981,7 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
           compiten con el editor, son tres atajos del mismo control. Una
           pantalla, una decisión, los atajos arriba. */}
       {hayImposible && <div style={{ ...card, borderColor: C.danger }}>
-        <div style={{ ...F.h3, color: C.danger }}>✋ Antes de proyectar nada: hay un número con ceros de más</div>
+        <div style={{ ...F.h3, color: C.danger }}>Antes de proyectar nada: hay un número con ceros de más</div>
         <div style={{ display: "grid", gap: 2, marginTop: 6 }}>{sospechosos(perfil, base).slice(0, 4).map((m, i) => <div key={i} style={{ ...F.body, color: C.danger }}>· {m}</div>)}</div>
         <BotonesArreglar perfil={perfil} base={base} onPerfil={onPerfil} />
         {onArreglar && !pensionesImposibles(perfil, base).length && <div style={{ marginTop: 10 }}><button style={btn(true)} onClick={onArreglar}>Llévame a arreglarlo →</button></div>}
@@ -1177,13 +1177,13 @@ function PasoEscenario({ base, perfil, todos, res, activoId, setActivoId, onGuar
             tres escenarios con nombre propio sin decir nunca que los arma
             FINPATHIA con sus datos, ni que el resaltado es el que se edita. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center" }}>
-          {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " ★"}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
+          {todos.map((e) => { const rr = res.find((x) => x.id === e.id); return <button key={e.id} onClick={() => setActivoId(e.id)} style={{ ...btn(false), borderColor: e.id === esc.id ? e.color : C.borderStrong, background: e.id === esc.id ? `${e.color}20` : "transparent", display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 8, height: 8, borderRadius: 999, background: e.color }} />{e.nombre}{caminoElegido === e.id && " "}{rr && !rr.vigilancia.cumple && <span style={{ color: C.danger }}>!</span>}</button>; })}
           <button style={btn(false)} onClick={onNuevo}>+ Nuevo desde cero</button>
           <button style={btn(false)} onClick={() => onDuplicar(esc)}>Duplicar este</button>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12, alignItems: "center", borderTop: `1px solid ${C.border}`, paddingTop: 12 }}>
           <span style={F.caption}>Estás editando <b style={{ color: esc.color }}>{esc.nombre}</b>. Cuando quieras:</span>
-          <button style={btn(false)} onClick={() => setVerNombre((v) => !v)}>{verNombre ? "Cerrar nombre" : "✎ Nombre y tesis"}</button>
+          <button style={btn(false)} onClick={() => setVerNombre((v) => !v)}>{verNombre ? "Cerrar nombre" : "Nombre y tesis"}</button>
           <button style={btn(true)} onClick={onNext}>Ver mi camino a 10 años →</button>
           <button style={btn(false)} onClick={onComparar}>Comparar todos los caminos →</button>
         </div>
@@ -1551,7 +1551,7 @@ function LoQueFalta({ r, base, liq, perfil }) {
   if (flojo.length) puntos.push({ t: `La cobertura baja del ${pctEs(perfil.coberturaMin)} en ${flojo.length === 1 ? `el año ${flojo[0].anio}` : `${flojo.length} años`}`, d: `El más apretado es el año ${flojo.sort((a, b) => a.cobertura - b.cobertura)[0].anio}, con ${pctEs(flojo[0].cobertura)}: ahí lo que entra no cubre con holgura lo que sale.`, mal: true });
   (r.vigilancia?.roturas || []).forEach((x) => puntos.push({ t: x.detalle, d: `Año ${x.anio}: este escenario rompe una de sus propias reglas.`, mal: true }));
   const ocultos = base.base?.ocultos;
-  if (ocultos?.nIngresos > 0) puntos.push({ t: `${ocultos.nIngresos} ${ocultos.nIngresos === 1 ? "ingreso apagado" : "ingresos apagados"} (${fmMes(ocultos.ingresos)}/mes)`, d: "Están con el ojo ⬜ en tus listas y el plan no los cuenta. Si deben contar, enciéndelos.", mal: false });
+  if (ocultos?.nIngresos > 0) puntos.push({ t: `${ocultos.nIngresos} ${ocultos.nIngresos === 1 ? "ingreso apagado" : "ingresos apagados"} (${fmMes(ocultos.ingresos)}/mes)`, d: "Están con el ojo en tus listas y el plan no los cuenta. Si deben contar, enciéndelos.", mal: false });
   const aMedias = base.posiciones.filter((p) => p.ritmo && p.ritmo.meses > 0 && p.ritmo.meses < 12 && p.ritmo.mejor > p.ritmo.promedio * 1.2);
   aMedias.forEach((p) => puntos.push({ t: `${p.nombre} solo corre ${p.ritmo.meses} de los 12 meses`, d: `En su mejor mes son ${fmMes(p.ritmo.mejor)}, pero repartido sobre el año el plan cuenta ${fmMes(p.ritmo.promedio)}. Si entra todos los meses, arregla la vigencia en Ingresos.`, mal: false }));
   if (!puntos.length) return null;
@@ -1665,13 +1665,13 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
           <div style={{ display: "flex", gap: 8 }}><button style={btn(false)} onClick={onVolver}>← Editar</button>{!elegido && <button style={btn(true)} onClick={onElegir}>Elegir este camino</button>}</div>
         </div>
         {r.tesis && <div style={{ ...F.body, marginTop: 6, fontStyle: "italic" }}>{r.tesis}</div>}
-        {/* 22-oct-2026 — El ✋ salia en la barra de arriba pero no aqui, asi
+        {/* 22-oct-2026 — El salia en la barra de arriba pero no aqui, asi
             que la narracion y las ocho cifras se leian como si fueran verdad:
             "el patrimonio pasa de $18,7 mil M a $3.542.514,1 mil M", "cobertura
             79554153%", "crece 221,0% real al ano". Un numero imposible no se
             marca en un sitio y se deja suelto en otros siete. */}
         {vecesDe(p) > VECES_IMPOSIBLE && <div style={{ ...sub, marginTop: 12, borderColor: C.danger, background: "rgba(255,80,0,0.06)" }}>
-          <div style={{ ...F.h3, color: C.danger }}>✋ Hay un número con ceros de más</div>
+          <div style={{ ...F.h3, color: C.danger }}>Hay un número con ceros de más</div>
           <div style={{ ...F.body, marginTop: 4, color: C.text }}>No es que el dato sea falso: está escrito mil veces más grande. Por eso este escenario multiplica tu patrimonio por <b>{Math.round(vecesDe(p)).toLocaleString("es-CO")}</b> en diez años —de {fmM(p.patrimonioInicial)} a {fmM(p.patrimonioFinal)}— y todo lo de abajo sale multiplicado con él.</div>
           {sospechosos(perfil, base).length > 0 && <>
             <div style={{ ...F.body, marginTop: 8 }}>Dónde:</div>
@@ -1737,7 +1737,7 @@ function PasoResultado({ base, r, perfil, onPerfil, elegido, onElegir, onNext, o
       {onEditar && <div style={{ ...card, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span style={F.caption}>¿Algo no cuadra? Cámbialo sin rehacer nada:</span>
         {[[1, "qué vendes"], [2, "qué deudas pagas"], [3, "en qué reinviertes"], [4, "qué más va a pasar"]].map(([n, t]) =>
-          <button key={n} style={{ ...btn(false), padding: "5px 12px" }} onClick={() => onEditar(n)}>✎ {t}</button>)}
+          <button key={n} style={{ ...btn(false), padding: "5px 12px" }} onClick={() => onEditar(n)}>{t}</button>)}
       </div>}
       {/* 24-oct-2026 (Santiago: "demos orden y jerarquía a las secciones y
           etapas"). El resultado se lee en este orden: lo esencial arriba
@@ -1856,7 +1856,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
         </div>
         <div style={{ overflowX: "auto", marginTop: 10 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 640 }}>
-            <thead><tr><th style={th}>Indicador</th><th style={{ ...th, textAlign: "right" }}>Hoy</th>{res.map((r) => <th key={r.id} onClick={() => onVer(r.id)} style={{ ...th, textAlign: "right", cursor: "pointer", color: r.color, fontSize: 12, textTransform: "none", letterSpacing: 0, borderBottom: r.id === activoId ? `2px solid ${r.color}` : "none" }}>{r.nombre}{caminoElegido === r.id ? " ★" : ""}</th>)}</tr></thead>
+            <thead><tr><th style={th}>Indicador</th><th style={{ ...th, textAlign: "right" }}>Hoy</th>{res.map((r) => <th key={r.id} onClick={() => onVer(r.id)} style={{ ...th, textAlign: "right", cursor: "pointer", color: r.color, fontSize: 12, textTransform: "none", letterSpacing: 0, borderBottom: r.id === activoId ? `2px solid ${r.color}` : "none" }}>{r.nombre}{caminoElegido === r.id ? " " : ""}</th>)}</tr></thead>
             <tbody>
               {filas.map(([l, f, h]) => <tr key={l} style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>{l}</td><td style={{ ...tdNum, color: C.subtle }}>{h || "—"}</td>{res.map((r) => <td key={r.id} style={tdNum}>{f(r)}</td>)}</tr>)}
               <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>Se cumple</td><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}><span style={chip(r.vigilancia.cumple ? C.ok : C.danger)}>{r.vigilancia.cumple ? "sí" : `no · año ${r.vigilancia.roturas[0].anio}`}</span></td>)}</tr>
@@ -1865,7 +1865,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
                   mirar el detalle o a cambiar lo que no gusta. */}
               <tr style={{ borderTop: `1px solid ${C.border}` }}><td style={{ ...td, color: C.muted }}>Mirar o cambiar</td><td style={td} />{res.map((r) => <td key={r.id} style={{ ...td, textAlign: "right" }}>
                 <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => onVer(r.id)}>Ver detalle</button>
-                {onEditar && <button style={{ ...btn(false), padding: "4px 10px", marginLeft: 6 }} onClick={() => onEditar(r.id)}>✎ Editar</button>}
+                {onEditar && <button style={{ ...btn(false), padding: "4px 10px", marginLeft: 6 }} onClick={() => onEditar(r.id)}>Editar</button>}
               </td>)}</tr>
             </tbody>
           </table>
@@ -2004,7 +2004,7 @@ export default function MiPlan({ user, perfil: perfilGuardado, fichas = {}, cami
                 {vecesDe(rr.puntos) <= VECES_IMPOSIBLE ? <>
                   <div style={{ ...F.monoLg, color: C.text, marginTop: 8 }}>{fmM(rr.puntos.patrimonioFinal)}</div>
                   <div style={F.caption}>en el año 10 · te deja <b style={{ color: C.ok }}>{fmMes(rr.puntos.quedaMes)}</b>/mes</div>
-                </> : <div style={{ ...F.caption, color: C.danger, marginTop: 8 }}>✋ hay un dato con ceros de más</div>}
+                </> : <div style={{ ...F.caption, color: C.danger, marginTop: 8 }}>hay un dato con ceros de más</div>}
                 <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
                   <button style={{ ...btn(true), padding: "4px 10px" }} onClick={() => { setActivoId(rr.id); setVista("armar"); setPaso(4); }}>Ver</button>
                   <button style={{ ...btn(false), padding: "4px 10px" }} onClick={() => { setActivoId(rr.id); setVista("armar"); setPaso(3); setSub(1); }}>Editar</button>

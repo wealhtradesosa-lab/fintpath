@@ -2,7 +2,7 @@
 // AYUDA: SISTEMA DE DECLARACIÓN
 // ─────────────────────────────────────────────────────────────────────────
 // Componente con FAQ explicando las 3 herramientas y cómo se relacionan.
-// Se accede desde un botón "❓ ¿Cómo uso esto?" en el tab Declaración Completa.
+// Se accede desde un botón "¿Cómo uso esto?" en el tab Declaración Completa.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState } from "react";
@@ -22,7 +22,7 @@ const FAQ = [
         <p>Son <strong>3 herramientas distintas</strong> que cumplen objetivos diferentes:</p>
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", borderLeft: "3px solid " + T.blue, borderRadius: 6 }}>
-            <div style={{ color: T.blue, fontWeight: 700, fontSize: 12 }}>🎯 Simulador rápido (Plan Tributario)</div>
+            <div style={{ color: T.blue, fontWeight: 700, fontSize: 12 }}>Simulador rápido (Plan Tributario)</div>
             <div style={{ color: T.txt2, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> saber cuánto vas a pagar de impuesto si sigues así. Sirve para planear: decidir si hacer aportes a pensión voluntaria, reinvertir utilidades, comprar vivienda, etc.<br/>
               <strong>Dato de entrada:</strong> tus ingresos, gastos, deudas e inversiones registrados en los módulos del día a día.<br/>
@@ -30,7 +30,7 @@ const FAQ = [
             </div>
           </div>
           <div style={{ padding: "10px 12px", background: "rgba(0,200,5,0.08)", borderLeft: "3px solid " + T.green, borderRadius: 6 }}>
-            <div style={{ color: T.green, fontWeight: 700, fontSize: 12 }}>📄 Wizard F-210 / F-110</div>
+            <div style={{ color: T.green, fontWeight: 700, fontSize: 12 }}>Wizard F-210 / F-110</div>
             <div style={{ color: T.txt2, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> preparar la declaración oficial que vas a presentar a la DIAN. Te guía casilla por casilla, muestra los artículos del ET, y calcula el impuesto según la tabla Art. 241 / tarifa jurídica real.<br/>
               <strong>Dato de entrada:</strong> lo que realmente vas a declarar. Puede usar los valores del simulador como punto de partida.<br/>
@@ -38,11 +38,11 @@ const FAQ = [
             </div>
           </div>
           <div style={{ padding: "10px 12px", background: "rgba(148,163,184,0.08)", borderLeft: "3px solid " + T.cyan, borderRadius: 6 }}>
-            <div style={{ color: T.cyan, fontWeight: 700, fontSize: 12 }}>📥 Importador año anterior</div>
+            <div style={{ color: T.cyan, fontWeight: 700, fontSize: 12 }}>Importador año anterior</div>
             <div style={{ color: T.txt2, fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> cargar lo que <em>ya declaraste</em> el año pasado, para usarlo como referencia comparativa al preparar el año en curso.<br/>
               <strong>Dato de entrada:</strong> tu declaración 2023/2024 (del portal DIAN). Capturas ~20 renglones principales, no todos.<br/>
-              <strong>Resultado:</strong> al abrir el Wizard, cada casilla muestra "📥 Año 2024: $X" para comparar. También habilita las alertas cruzadas año a año (retenciones que bajaron, deducciones que desaparecieron, etc).
+              <strong>Resultado:</strong> al abrir el Wizard, cada casilla muestra "Año 2024: $X" para comparar. También habilita las alertas cruzadas año a año (retenciones que bajaron, deducciones que desaparecieron, etc).
             </div>
           </div>
         </div>
@@ -58,7 +58,7 @@ const FAQ = [
           <li><strong>No hay gastos registrados</strong> — si una empresa tiene $500M/año de ingresos y $0 en gastos, el motor asume que el 100% es utilidad.</li>
           <li><strong>Sin depreciación de inmuebles</strong> — verifica que los inmuebles del módulo Inversiones tengan asignado el dueño (campo owner).</li>
           <li><strong>Deudas sin tasa de interés</strong> — sin tasa, el motor no puede restar intereses como gasto deducible.</li>
-          <li><strong>Descuentos tributarios no capturados</strong> — ICA, donaciones, CTI se restan del impuesto (no de la base). Captúralos en el botón "⭐ Descuentos" de la tarjeta de cada jurídica.</li>
+          <li><strong>Descuentos tributarios no capturados</strong> — ICA, donaciones, CTI se restan del impuesto (no de la base). Captúralos en el botón "Descuentos" de la tarjeta de cada jurídica.</li>
         </ol>
         <p style={{ marginTop: 8 }}>Cuando detecta alguna de estas condiciones, aparece un banner naranja arriba del Plan Tributario con las acciones a tomar.</p>
       </>
@@ -87,7 +87,7 @@ const FAQ = [
           <li><strong>Asigna dueño</strong> (owner) a cada item si tienes varias personas/empresas.</li>
           <li><strong>Importa tu declaración del año anterior</strong> en la tarjeta del owner — esto habilita comparaciones automáticas.</li>
           <li><strong>Abre el Plan Tributario</strong> y revisa los warnings de la "Revisión Fiscal" — arregla cada uno.</li>
-          <li><strong>Captura descuentos tributarios y aportes manuales</strong> (botones ⭐ y 🏥) para refinar el cálculo.</li>
+          <li><strong>Captura descuentos tributarios y aportes manuales</strong> (botones y ) para refinar el cálculo.</li>
           <li><strong>Completa el Wizard F-210 / F-110</strong> cuando estés listo para preparar la declaración oficial.</li>
         </ol>
       </>
@@ -113,11 +113,11 @@ const FAQ = [
       <>
         <p>El sistema detecta <strong>17 tipos de situaciones</strong> que requieren tu atención:</p>
         <ul style={{ marginTop: 8, marginLeft: 18, color: T.txt2, fontSize: 12, lineHeight: 1.7 }}>
-          <li><strong>⛔ Errores</strong> — algo que rompe el cálculo (ej: ingreso sin dueño asignado).</li>
-          <li><strong>⚠️ Warnings</strong> — posibles pérdidas de dinero (ej: descuentos no capturados vs año pasado).</li>
-          <li><strong>ℹ️ Info</strong> — el sistema infirió una clasificación, confirma o edita (ej: "asumí que este arriendo es de inmueble").</li>
+          <li><strong>Errores</strong> — algo que rompe el cálculo (ej: ingreso sin dueño asignado).</li>
+          <li><strong>Warnings</strong> — posibles pérdidas de dinero (ej: descuentos no capturados vs año pasado).</li>
+          <li><strong>Info</strong> — el sistema infirió una clasificación, confirma o edita (ej: "asumí que este arriendo es de inmueble").</li>
         </ul>
-        <p style={{ marginTop: 8 }}>Cada alerta tiene botones "✓ Aprobar" (confirma la clasificación sugerida) y "✏️ [Módulo]" (llevarte al lugar donde editar). Los warnings que se repiten (ej: 3 arriendos iguales) se agrupan en una sola fila con detalle expandible.</p>
+        <p style={{ marginTop: 8 }}>Cada alerta tiene botones "✓ Aprobar" (confirma la clasificación sugerida) y "[Módulo]" (llevarte al lugar donde editar). Los warnings que se repiten (ej: 3 arriendos iguales) se agrupan en una sola fila con detalle expandible.</p>
       </>
     ),
   },
@@ -135,7 +135,7 @@ export default function AyudaDeclaracion({ onClose }) {
   return (
     <div style={{ padding: 24, maxWidth: 860, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 28 }}>❓</span>
+        <span style={{ fontSize: 28 }}></span>
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ fontSize: 20, fontWeight: 700, color: T.txt }}>Ayuda: Sistema de declaración</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>

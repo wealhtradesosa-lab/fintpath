@@ -28,7 +28,7 @@ import { sugerenciaPvAfc, textoSugerenciaPvAfc, textoTopePvAfc } from "./sugeren
 // ESTRUCTURA DE UNA RECOMENDACIÓN:
 //   {
 //     id: "comprar_inmueble_productivo",
-//     icono: "🏢",
+//     icono: "",
 //     titulo: "Adquirir un inmueble productivo con crédito",
 //     descripcion: "...",
 //     accion: "qué hacer concretamente",
@@ -126,7 +126,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
   // Aplica si: tiene saldo a cargo > $5M y no tiene ya un crédito
   // hipotecario REAL.
   //
-  // ⚠️ Sesión 1-may-2026 (feedback Santiago): para detectar si "ya tiene
+  // Sesión 1-may-2026 (feedback Santiago): para detectar si "ya tiene
   // crédito vivienda" SOLO leemos el módulo Deudas real (user.deu con
   // fiscalCode DEU_NAT_VIVIENDA_HABITACIONAL). NO leemos
   // fiscalProfile.interesesViviendaAnuales porque ese campo lo escribe
@@ -146,7 +146,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
     recs.push({
       id: "credito_hipotecario_vivienda",
       ejecutaEn: "personal",
-      icono: "🏠",
+      icono: "",
       titulo: "Crédito hipotecario sobre vivienda habitacional",
       descripcion: "Si compras (o refinancias) tu vivienda principal con un crédito hipotecario, los intereses anuales son deducibles hasta 1.200 UVT/año (~$62.8M).",
       accion: `Saca un crédito de ~$500M al 12% para tu vivienda principal. Los intereses del primer año son ~$60M, todos deducibles.`,
@@ -178,7 +178,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
     recs.push({
       id: "consultoria_laboral",
       ejecutaEn: "personal",
-      icono: "💼",
+      icono: "",
       titulo: "Generar renta laboral vía consultoría profesional",
       descripcion: "Hoy todos tus ingresos son por dividendos/arriendos. Eso te bloquea el acceso a las palancas más potentes: aportes a AFC/Pensión Voluntaria (deducibles 100%), dependientes, medicina prepagada deducible.",
       accion: `Factúrale consultoría profesional a tus propias sociedades (Lagoon, etc.) por $10M/mes. Eso genera renta laboral (~$120M/año) y te abre el espacio para aportar a AFC y deducciones laborales.`,
@@ -207,7 +207,7 @@ function recomendacionesNaturalNoLaboral(perfil) {
     recs.push({
       id: "donacion_esal",
       ejecutaEn: "personal",
-      icono: "❤️",
+      icono: "",
       titulo: "Donación a fundación / ESAL educativa o cultural",
       descripcion: "Las donaciones a entidades del Régimen Tributario Especial (RTE) generan un DESCUENTO directo del 25% sobre el monto donado. No es deducción (que reduce base) — es descuento peso a peso del impuesto.",
       accion: `Donar ~$${donacionSugerida.toLocaleString("es-CO")} a una ESAL certificada por DIAN (universidades, fundaciones culturales, salud, etc.).`,
@@ -265,7 +265,7 @@ function recomendacionesNaturalLaboral(perfil) {
     recs.push({
       id: "aporte_pv_estrategico",
       ejecutaEn: "personal",
-      icono: "💼",
+      icono: "",
       titulo: "Pensión voluntaria o AFC",
       tope: textoTopePvAfc(sug),
       descripcion: `${textoSugerenciaPvAfc(sug)} Hasta $${Math.round(topeAnual / 12).toLocaleString("es-CO")}/mes en pensión voluntaria o AFC podría ser exento (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
@@ -289,7 +289,7 @@ function recomendacionesNaturalLaboral(perfil) {
   recs.push({
     id: "cuenta_afc",
       ejecutaEn: "personal",
-    icono: "🏠",
+    icono: "",
     titulo: "Cuenta AFC (Ahorro para Fomento de la Construcción)",
     descripcion: "Hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC. Solo para destinar a compra/mejora de vivienda o pago de hipoteca.",
     accion: "Abre una cuenta AFC en cualquier banco (Bancolombia, Davivienda, etc.) y aporta hasta el cap legal.",
@@ -324,7 +324,7 @@ function recomendacionesJuridica(perfil) {
     recs.push({
       id: "bodega_inmueble_productivo",
       ejecutaEn: "sociedad",
-      icono: "🏢",
+      icono: "",
       titulo: "Adquirir bodega / inmueble productivo",
       descripcion: "Comprar un activo fijo productivo genera triple beneficio: depreciación lineal (20 años), IVA descontable (Art. 258-1) y reduce utilidad distribuible. La estrategia clásica que recomiendan los contadores.",
       accion: `Comprar bodega o inmueble productivo de ~$${inversion.toLocaleString("es-CO")} para uso de la actividad de la empresa (almacenamiento, oficina, taller).`,
@@ -353,7 +353,7 @@ function recomendacionesJuridica(perfil) {
     recs.push({
       id: "vehiculo_productivo_sociedad",
       ejecutaEn: "sociedad",
-      icono: "🚗",
+      icono: "",
       titulo: "Adquirir vehículo / equipo productivo",
       descripcion: "Comprar un activo productivo (vehículo, equipo, maquinaria) bajo la sociedad genera triple beneficio: depreciación deducible (20% anual lineal), IVA descontable, y reduce dividendos distribuibles.",
       accion: "Compra una camioneta/vehículo productivo de ~$200M a nombre de la sociedad. Se usa para gestión de propiedades y reuniones de negocios.",
@@ -383,7 +383,7 @@ function recomendacionesJuridica(perfil) {
     recs.push({
       id: "inversion_cti",
       ejecutaEn: "sociedad",
-      icono: "🔬",
+      icono: "",
       titulo: "Inversión en proyecto CT&I (Ciencia, Tecnología, Innovación)",
       descripcion: "La inversión en proyectos certificados por MinCiencias o Colciencias genera DEDUCCIÓN del 175% (es decir, gastas $100M y deduces $175M) más DESCUENTO directo del 25% del valor invertido. Es de los beneficios fiscales más potentes que existen.",
       accion: `Invertir ~$${inversion.toLocaleString("es-CO")} en un proyecto de I+D+i certificado (desarrollo de software, automatización, mejoras de procesos).`,
@@ -409,7 +409,7 @@ function recomendacionesJuridica(perfil) {
   recs.push({
     id: "capacitacion_empleados",
       ejecutaEn: "sociedad",
-    icono: "🎓",
+    icono: "",
     titulo: "Capacitación certificada a empleados",
     descripcion: "Las inversiones en capacitación certificada (cursos, diplomados, posgrados) de tu equipo generan deducción del 175% del valor invertido (Art. 158-1 inc 2 ET).",
     accion: "Invertir en capacitación certificada para equipo (Coursera Business, EAFIT, Andes, Universidad de los Andes).",
@@ -430,7 +430,7 @@ function recomendacionesJuridica(perfil) {
     recs.push({
       id: "donacion_esal_juridica",
       ejecutaEn: "sociedad",
-      icono: "❤️",
+      icono: "",
       titulo: "Donación a fundación / ESAL desde la sociedad",
       descripcion: "Las donaciones de la sociedad a entidades del Régimen Tributario Especial generan DESCUENTO directo del 25% sobre el impuesto. Es la forma más eficiente de transformar parte del impuesto en impacto social.",
       accion: `Donar $${donacion.toLocaleString("es-CO")} a una ESAL certificada (universidades, fundaciones de salud o cultura).`,

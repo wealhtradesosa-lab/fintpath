@@ -15,11 +15,12 @@
 // FILOSOFÍA:
 //   - Cero ambigüedad: cada renglón muestra su número DIAN oficial
 //   - Trazabilidad: hover muestra de dónde viene el valor automático
-//   - Override visible: cuando el user/contador edita, se ve un badge "✏️"
+//   - Override visible: cuando el user/contador edita, se ve un badge ""
 //   - Reset disponible: siempre puedes volver al valor automático
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { fmtPctEs } from "../lib/formato.js";
+import { Pencil } from "./Iconos.jsx";
 import { useState, useMemo, useEffect } from "react";
 import NumberInput from "./NumberInput";
 import { generarBorradorF110, SECCIONES_F110 } from "../lib/borradorDeclaracion.js";
@@ -66,7 +67,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
   const [editingRenglon, setEditingRenglon] = useState(null);
   const [editValue, setEditValue] = useState("");
   // Sesión 28-abr-2026 noche: state para tips contextuales expandibles.
-  // Cuando el user hace click en 💡 de un renglón, se expande su tip educativo.
+  // Cuando el user hace click en de un renglón, se expande su tip educativo.
   const [showTipFor, setShowTipFor] = useState(null);
   // Sesión 29-abr-2026: state para alternar entre vista amigable (default)
   // y vista técnica (modo experto / tabla DIAN). Por defecto FALSE: el user
@@ -231,7 +232,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         {/* Header del Agente Tributario IA — alto contraste */}
         <div style={{ marginBottom: 20, padding: "24px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 36 }}>🤖</span>
+            <span style={{ fontSize: 36 }}></span>
             <div>
               <h2 style={{ fontSize: 24, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.2 }}>
                 Agente Tributario IA
@@ -244,7 +245,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
         </div>
 
         <div style={{ padding: "32px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, textAlign: "center" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>👋</div>
+          <div style={{ fontSize: 48, marginBottom: 16 }}></div>
           <h3 style={{ fontSize: 22, fontWeight: 700, color: T.txt, marginBottom: 12 }}>
             ¿Es tu primera vez? Empecemos juntos
           </h3>
@@ -266,7 +267,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
               cursor: "pointer",
             }}
           >
-            🪄 Empezar paso a paso
+            Empezar paso a paso
           </button>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 16 }}>
             Si prefieres cargar datos manualmente, ve a Configuración → Owners fiscales.
@@ -408,17 +409,17 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             }}
             title="Descargar PDF profesional para enviar a tu contador"
           >
-            📄 Descargar PDF
+            Descargar PDF
           </button>
           <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600, letterSpacing: 0.5 }}>
-            📋 Modo Experto
+            Modo Experto
           </div>
         </div>
       </div>
       {/* Header con branding "Agente Tributario IA" — alto contraste para legibilidad */}
       <div style={{ marginBottom: 20, padding: "24px 28px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-          <span style={{ fontSize: 36 }}>🤖</span>
+          <span style={{ fontSize: 36 }}></span>
           <div>
             <h2 style={{ fontSize: 24, fontWeight: 700, color: T.txt, margin: 0, lineHeight: 1.2 }}>
               Modo experto · Formulario <TerminoTributario clave={isJuridica ? "f110" : "f210"}>{formulario}</TerminoTributario>
@@ -439,7 +440,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       {/* Disclaimer — claro pero no intimidatorio */}
       <div style={{ marginBottom: 20, padding: "16px 20px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.orange}`, borderRadius: 12 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-          <span style={{ fontSize: 22, flexShrink: 0 }}>⚠️</span>
+          <span style={{ fontSize: 22, flexShrink: 0 }}></span>
           <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
             <strong style={{ color: T.orange, fontSize: 15, display: "block", marginBottom: 4 }}>
               Esto es un borrador, no la declaración final
@@ -503,13 +504,13 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
               ← Volver a la vista simple
             </button>
             <div style={{ fontSize: 12, color: T.txt3, fontWeight: 600 }}>
-              📊 Modo experto · Formulario {formulario} oficial DIAN
+              Modo experto · Formulario {formulario} oficial DIAN
             </div>
           </div>
       {!isJuridica ? (
         <div style={{ marginBottom: 20, padding: "20px 24px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.green}`, borderRadius: 12 }}>
           <div style={{ fontSize: 16, color: T.txt, fontWeight: 700, marginBottom: 10 }}>
-            👤 ¿Cómo funciona tu declaración?
+            ¿Cómo funciona tu declaración?
           </div>
           <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.7 }}>
             En Colombia, las personas naturales pagamos impuesto según el tipo de plata que recibimos.
@@ -517,20 +518,20 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             por separado:
           </div>
           <ul style={{ margin: "12px 0 0 0", paddingLeft: 22, color: T.txt, fontSize: 14, lineHeight: 1.8 }}>
-            <li><strong>💼 Lo que ganaste con tu trabajo:</strong> sueldo, honorarios. Acá puedes descontar cosas como medicina, vivienda, dependientes.</li>
-            <li><strong>📈 Lo que ganaste con tu plata:</strong> intereses de CDT o cuentas. La ley te exime ~50% por inflación (es bastante).</li>
-            <li><strong>🏠 Arriendos que cobraste:</strong> si tienes inmuebles arrendados.</li>
-            <li><strong>📊 Dividendos:</strong> si te pagó plata una empresa donde eres socio.</li>
+            <li><strong>Lo que ganaste con tu trabajo:</strong> sueldo, honorarios. Acá puedes descontar cosas como medicina, vivienda, dependientes.</li>
+            <li><strong>Lo que ganaste con tu plata:</strong> intereses de CDT o cuentas. La ley te exime ~50% por inflación (es bastante).</li>
+            <li><strong>Arriendos que cobraste:</strong> si tienes inmuebles arrendados.</li>
+            <li><strong>Dividendos:</strong> si te pagó plata una empresa donde eres socio.</li>
           </ul>
           <div style={{ marginTop: 14, padding: "10px 14px", background: T.bg3, borderRadius: 8, fontSize: 13, color: T.txt, lineHeight: 1.5 }}>
-            💡 <strong>Tip:</strong> toca el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 3, color: "#fff", fontWeight: 700, fontSize: 12 }}>💡</span> de cualquier fila para que te explique
+            <strong>Tip:</strong> toca el botón <span style={{ background: T.purple, padding: "2px 7px", borderRadius: 3, color: "#fff", fontWeight: 700, fontSize: 12 }}></span> de cualquier fila para que te explique
             qué significa cada cosa, cuánto te conviene y por qué.
           </div>
         </div>
       ) : (
         <div style={{ marginBottom: 20, padding: "20px 24px", background: T.bg2, border: `1px solid ${T.border}`, borderLeft: `4px solid ${T.purple}`, borderRadius: 12 }}>
           <div style={{ fontSize: 16, color: T.txt, fontWeight: 700, marginBottom: 10 }}>
-            🏢 ¿Cómo funciona la declaración de tu empresa?
+            ¿Cómo funciona la declaración de tu empresa?
           </div>
           <div style={{ fontSize: 14, color: T.txt, lineHeight: 1.7 }}>
             Las empresas pagan impuesto sobre la <strong>utilidad</strong> (lo que les sobra después de
@@ -560,7 +561,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
             >
               {allOwners.map(o => (
                 <option key={o.id} value={o.id}>
-                  {o.type === "juridica" ? "🏢" : "👤"} {o.name} · {o.type === "juridica" ? "F-110" : "F-210"}
+                  {o.type === "juridica" ? "" : ""} {o.name} · {o.type === "juridica" ? "F-110" : "F-210"}
                 </option>
               ))}
             </select>
@@ -578,7 +579,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           {overridesCount > 0 && (
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ fontSize: 12, color: T.purple, fontWeight: 600 }}>
-                ✏️ {overridesCount} override{overridesCount > 1 ? "s" : ""} activo{overridesCount > 1 ? "s" : ""}
+                {overridesCount} override{overridesCount > 1 ? "s" : ""} activo{overridesCount > 1 ? "s" : ""}
               </span>
               <button
                 onClick={handleResetTodos}
@@ -665,7 +666,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                           }}
                           title="Ver tip educativo"
                         >
-                          💡
+                          
                         </button>
                       )}
                     </div>
@@ -677,7 +678,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                     {/* Tip expandido */}
                     {r.tip && showTipFor === r.numero && (
                       <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.25)", borderRadius: 8, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-                        <span style={{ color: T.purple, fontWeight: 700, fontSize: 12, marginRight: 6 }}>💡 TIP:</span>
+                        <span style={{ color: T.purple, fontWeight: 700, fontSize: 12, marginRight: 6 }}>TIP:</span>
                         {r.tip}
                       </div>
                     )}
@@ -706,7 +707,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                       fontFamily: "monospace",
                       minWidth: 160,
                     }}>
-                      {hasOverride && <span style={{ fontSize: 12, marginRight: 4 }}>✏️</span>}
+                      {hasOverride && <span style={{ fontSize: 12, marginRight: 4 }}><Pencil size={14} strokeWidth={1.75} /></span>}
                       {fm(r.valor)}
                     </div>
                   )}
@@ -744,7 +745,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                         onClick={() => handleEditar(r)}
                         style={{ background: "transparent", border: `1px solid ${T.border}`, color: hasOverride ? T.purple : T.txt2, padding: "5px 10px", borderRadius: 6, fontSize: 12, cursor: "pointer", fontWeight: 600 }}
                       >
-                        ✏️ {hasOverride ? "Editado" : "Editar"}
+                        {hasOverride ? "Editado" : "Editar"}
                       </button>
                     )}
                   </div>
@@ -758,10 +759,10 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       {/* Footer info */}
       <div style={{ marginTop: 24, padding: 16, background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10 }}>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
-          <strong style={{ color: T.txt }}>💡 ¿Cómo usar este borrador?</strong>
+          <strong style={{ color: T.txt }}>¿Cómo usar este borrador?</strong>
           <ul style={{ marginTop: 8, marginBottom: 0, paddingLeft: 20, color: T.txt3 }}>
             <li>Los <strong style={{ color: T.txt2 }}>valores en gris</strong> vienen automáticamente de tus datos cargados (ingresos, gastos, inversiones, deudas)</li>
-            <li>Los renglones <strong style={{ color: T.purple }}>en púrpura con ✏️</strong> son ediciones manuales tuyas o de tu contador</li>
+            <li>Los renglones <strong style={{ color: T.purple }}>en púrpura con </strong> son ediciones manuales tuyas o de tu contador</li>
             <li>Los <strong style={{ color: T.txt2 }}>totales (Σ)</strong> se recalculan automáticamente cuando cambia algún valor</li>
             <li>Tu contador puede ajustar cualquier renglón antes de presentar a DIAN (ej: gastos no cargados, sanciones, anticipos)</li>
             <li>El export PDF para enviar a tu contador llegará en próxima actualización</li>
@@ -772,7 +773,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
       )}
 
       {/* Modal de aplicación de oportunidad — se abre desde VistaSimple
-          cuando el user clickea "⚡ Aplicar →" en una oportunidad detectada
+          cuando el user clickea "Aplicar →" en una oportunidad detectada
           (sesión 1-may-2026: conexión del botón "¿Cómo pago menos?" placeholder
           a la funcionalidad real). */}
       {oportunidadActiva && (
@@ -850,7 +851,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
           >
             {allOwners.map(o => (
               <option key={o.id} value={o.id}>
-                {o.type === "juridica" ? "🏢" : "👤"} {o.name}
+                {o.type === "juridica" ? "" : ""} {o.name}
               </option>
             ))}
           </select>
@@ -870,10 +871,10 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
         padding: "32px 28px",
         background: "linear-gradient(135deg, rgba(59,130,246,0.10) 0%, rgba(168,85,247,0.06) 100%)",
         border: `2px solid ${T.blue}`,
-        borderRadius: 16,
+        borderRadius: 12,
       }}>
         <div style={{ fontSize: 14, color: T.txt2, fontWeight: 600, marginBottom: 8, letterSpacing: 0.5 }}>
-          {isJuridica ? "🏢" : "👤"} Resumen para {nombreOwner} · Año {ano}
+          {isJuridica ? "" : ""} Resumen para {nombreOwner} · Año {ano}
         </div>
         <div style={{ fontSize: 16, color: T.txt, marginBottom: 6, fontWeight: 500 }}>
           Lo que tendrías que pagar {isJuridica ? "tu empresa" : "tú"} en mayo:
@@ -896,7 +897,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
       {/* 3 cards de explicación: cuánto ganaste, impuesto bruto, retenciones, saldo */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, marginBottom: 24 }}>
         <CardSimple
-          icon="💰"
+          icon=""
           label={isJuridica ? "Lo que ingresó la empresa" : "Lo que ganaste"}
           value={ingresoTotal}
           color={T.green}
@@ -905,7 +906,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             : "Sueldo, honorarios, intereses, arriendos y dividendos sumados."}
         />
         <CardSimple
-          icon="🧾"
+          icon=""
           label="Impuesto que te toca"
           value={impuestoTotal}
           color={T.red}
@@ -914,7 +915,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             : `Calculado con la tabla progresiva DIAN. Tasa efectiva ${fmtPctEs(tasaEfectiva, 1)} sobre ingresos.`}
         />
         <CardSimple
-          icon="✅"
+          icon=""
           label="Lo que ya pagaste"
           value={retenciones}
           color={T.blue}
@@ -922,7 +923,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
           esResta
         />
         <CardSimple
-          icon="📅"
+          icon=""
           label="Lo que falta pagar"
           value={saldoFinal}
           color={T.purple}
@@ -932,7 +933,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
       </div>
 
       {/* Acciones siguientes */}
-      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px" }}>
+      <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "20px 24px" }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: T.txt, marginBottom: 14 }}>
           ¿Qué quieres hacer ahora?
         </div>
@@ -953,7 +954,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 20 }}>📊</span>
+              <span style={{ fontSize: 20 }}></span>
               Ver el cálculo paso a paso
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
@@ -978,7 +979,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 20 }}>💡</span>
+              <span style={{ fontSize: 20 }}></span>
               ¿Cómo pago menos?
               <span style={{ fontSize: 12, background: "#00c805", color: "#000", padding: "2px 8px", borderRadius: 3, fontWeight: 700 }}>
                 PASO A PASO
@@ -1005,7 +1006,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
             onMouseLeave={(e) => e.currentTarget.style.background = T.bg3}
           >
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4, display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 20 }}>📄</span>
+              <span style={{ fontSize: 20 }}></span>
               Compartir con mi contador
             </div>
             <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5 }}>
@@ -1021,7 +1022,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
         {mostrarOportunidades && oportunidadesOwner.length > 0 && (
           <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: T.txt2, marginBottom: 12, letterSpacing: 0.5 }}>
-              💡 Deducciones y beneficios a revisar · {oportunidadesOwner.length}
+              Deducciones y beneficios a revisar · {oportunidadesOwner.length}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {oportunidadesOwner.slice(0, 5).map((opo, i) => {
@@ -1088,7 +1089,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
                           whiteSpace: "nowrap",
                         }}
                       >
-                        ⚡ Aplicar →
+                        Aplicar →
                       </button>
                     ) : (
                       <div style={{
@@ -1115,7 +1116,7 @@ function VistaSimple({ owner, renglones, isJuridica, allOwners, selectedOwnerId,
 
       {/* Mensaje final tranquilizador */}
       <div style={{ marginTop: 20, padding: "16px 20px", background: "rgba(0,200,5,0.06)", border: `1px solid rgba(0,200,5,0.20)`, borderRadius: 10, fontSize: 14, color: T.txt, lineHeight: 1.6 }}>
-        💬 <strong>¿Tienes dudas?</strong> El número de arriba es solo una estimación. Tu contador es quien
+        <strong>¿Tienes dudas?</strong> El número de arriba es solo una estimación. Tu contador es quien
         firma y presenta la declaración a DIAN. Si nunca declaraste, no te preocupes: con este resumen y la
         ayuda de un contador, lo manejas tranquilo.
       </div>

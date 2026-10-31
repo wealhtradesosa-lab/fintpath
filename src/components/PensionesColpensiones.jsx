@@ -31,7 +31,7 @@ const pc = (v) => fmtPctEs((v || 0), 1);
 const TT = { background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
 
 const Cd = ({ children, style: s, glow }) => (
-  <div style={{ background: T.card, border: `1px solid ${glow ? glow + "30" : T.border}`, borderRadius: 16, overflow: "hidden", ...(glow ? { boxShadow: `0 0 20px ${glow}08` } : {}), ...s }}>{children}</div>
+  <div style={{ background: T.card, border: `1px solid ${glow ? glow + "30" : T.border}`, borderRadius: 12, overflow: "hidden", ...(glow ? { boxShadow: `0 0 20px ${glow}08` } : {}), ...s }}>{children}</div>
 );
 const Row = ({ l, v, color, bold, sub }) => (
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
@@ -236,9 +236,9 @@ export default function PensionesColpensiones({ trm }) {
   }), [privSaldo, ibcSM, ibcFuturoSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo]);
 
   const tabs = [
-    { id: "colp", icon: "🏛️", label: "Colpensiones" },
-    { id: "rais", icon: "🏦", label: "Fondo Privado" },
-    { id: "comparar", icon: "⚖️", label: "Comparar" },
+    { id: "colp", icon: "", label: "Colpensiones" },
+    { id: "rais", icon: "", label: "Fondo Privado" },
+    { id: "comparar", icon: "", label: "Comparar" },
   ];
 
   return (
@@ -247,7 +247,7 @@ export default function PensionesColpensiones({ trm }) {
         label="Pensiones"
         title="Cálculo actuarial"
         subtitle={`Ley 100/1993 · Ley 797/2003 · SMMLV 2026: ${fCOP(SM_2026)}`}
-        rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>📄 Exportar PDF</button>}
+        rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>Exportar PDF</button>}
       />
 
             <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
@@ -265,7 +265,7 @@ export default function PensionesColpensiones({ trm }) {
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 6 }}>Sexo</label>
             <div style={{ display: "flex", gap: 8 }}>
-              {[{ v: "M", l: "👨 Hombre", c: T.blue }, { v: "F", l: "👩 Mujer", c: "#64748b" }].map((g) => (
+              {[{ v: "M", l: "Hombre", c: T.blue }, { v: "F", l: "Mujer", c: "#64748b" }].map((g) => (
                 <button key={g.v} onClick={() => setSexo(g.v)} style={{
                   flex: 1, padding: "12px", borderRadius: 10,
                   border: `2px solid ${sexo === g.v ? g.c : T.border}`,
@@ -284,7 +284,7 @@ export default function PensionesColpensiones({ trm }) {
 
           <div>
             <In label="¿Cuántos años llevas trabajando?" value={Math.round(semanas/52)} onChange={v => setSemanas(v * 52)} unit="años" min={0} max={45} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{semanas} semanas cotizadas {semanas >= 1300 ? <span style={{color:T.green}}>✅ Cumples el mínimo</span> : <span style={{color:T.orange}}>⚠️ Necesitas {1300-semanas} más</span>}</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{semanas} semanas cotizadas {semanas >= 1300 ? <span style={{color:T.green}}>Cumples el mínimo</span> : <span style={{color:T.orange}}>Necesitas {1300-semanas} más</span>}</div>
           </div>
 
           <div>
@@ -315,23 +315,23 @@ export default function PensionesColpensiones({ trm }) {
       {/* ═══ RESUMEN RÁPIDO ═══ */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
         <Cd glow={colpJub.pensionFinal >= rais.retiroProgramado ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: T.txt3 }}>🏛️ Colpensiones</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>Colpensiones</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.green, margin: "8px 0" }}>{fCOP(colpJub.pensionFinal)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
           <div style={{ fontSize: 12, color: T.txt3 }}>Pensión de por vida</div>
-          {colpJub.pensionFinal >= rais.retiroProgramado && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
+          {colpJub.pensionFinal >= rais.retiroProgramado && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>Te conviene más</div>}
         </Cd>
         <Cd glow={rais.retiroProgramado > colpJub.pensionFinal ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: T.txt3 }}>🏦 Fondo privado</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>Fondo privado</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.blue, margin: "8px 0" }}>{fCOP(rais.retiroProgramado)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
           <div style={{ fontSize: 12, color: T.txt3 }}>Retiro programado • Saldo: {fCOP(rais.saldoFinal)}</div>
-          {rais.retiroProgramado > colpJub.pensionFinal && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>✅ Te conviene más</div>}
+          {rais.retiroProgramado > colpJub.pensionFinal && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>Te conviene más</div>}
         </Cd>
       </div>
 
       {/* ═══ AFINAR PROYECCIÓN (colapsable) ═══ */}
       <Cd style={{ marginBottom: 20 }}>
         <button onClick={() => setShowAvanzado(!showAvanzado)} style={{ width: "100%", padding: "14px 24px", background: "transparent", border: "none", color: T.txt2, cursor: "pointer", fontSize: 14, fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>⚙️ Afinar proyección</span>
+          <span>Afinar proyección</span>
           <span style={{ fontSize: 18 }}>{showAvanzado ? "▲" : "▼"}</span>
         </button>
         {showAvanzado && (
@@ -345,7 +345,7 @@ export default function PensionesColpensiones({ trm }) {
                     ? <>Proyección: cotizarás sobre {ibcFuturoSM} SMMLV ({fCOP(ibcFuturoSM * SM_2026)}/mes) los próximos {aniosFaltantes} años</>
                     : <>Déjalo en 0 si planeas seguir cotizando igual</>}
                 </div>
-                {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>⚠️ Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
+                {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
               </div>
               <div>
                 <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL) (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
@@ -368,11 +368,11 @@ export default function PensionesColpensiones({ trm }) {
 
       {/* ═══ RESUMEN CALCULADO ═══ */}
       <div style={{ padding: 14, background: T.bg3, borderRadius: 10, display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13, color: T.txt2, marginBottom: 20 }}>
-        <span>📅 <strong>Jubilación:</strong> {edadJub} años</span>
-        <span>⏳ <strong>Faltan:</strong> {aniosFaltantes} años</span>
-        <span>📊 <strong>Salario:</strong> {fCOP(ibcSM * SM_2026)}/mes</span>
-        <span>💰 <strong>Aporte:</strong> {fCOP(ibcSM * SM_2026 * 0.16)}/mes</span>
-        <span>📋 <strong>Semanas al jubilarse:</strong> {semanas + aniosFaltantes * 52}</span>
+        <span><strong>Jubilación:</strong> {edadJub} años</span>
+        <span><strong>Faltan:</strong> {aniosFaltantes} años</span>
+        <span><strong>Salario:</strong> {fCOP(ibcSM * SM_2026)}/mes</span>
+        <span><strong>Aporte:</strong> {fCOP(ibcSM * SM_2026 * 0.16)}/mes</span>
+        <span><strong>Semanas al jubilarse:</strong> {semanas + aniosFaltantes * 52}</span>
       </div>
 
       {/* Tabs */}
@@ -395,12 +395,12 @@ export default function PensionesColpensiones({ trm }) {
         <div>
           {/* Requisitos */}
           <Cd style={{ padding: 20, marginBottom: 16 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>📋 Requisitos de Pensión — Colpensiones</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Requisitos de Pensión — Colpensiones</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               {[
                 { l: "Edad mínima", v: edadJub + " años", ok: edad >= edadJub, actual: edad + " años" },
                 { l: "Semanas mínimas", v: "1,300 sem", ok: colp.semanasTotales >= 1300, actual: colp.semanasTotales + " sem" },
-                { l: "Estado", v: colp.cumpleRequisitos ? "✅ Cumple" : "⏳ En proceso", ok: colp.cumpleRequisitos, actual: colp.cumpleRequisitos ? "Listo" : `Faltan ${colp.semanasQueFaltan} sem` },
+                { l: "Estado", v: colp.cumpleRequisitos ? "Cumple" : "En proceso", ok: colp.cumpleRequisitos, actual: colp.cumpleRequisitos ? "Listo" : `Faltan ${colp.semanasQueFaltan} sem` },
               ].map((r) => (
                 <div key={r.l} style={{ background: r.ok ? T.greenDim : T.bg3, border: `1px solid ${r.ok ? T.green + "20" : T.border}`, borderRadius: 12, padding: 16, textAlign: "center" }}>
                   <div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>{r.l}</div>
@@ -414,7 +414,7 @@ export default function PensionesColpensiones({ trm }) {
           {/* Cálculo detallado */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
             <Cd style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.blue, marginBottom: 14 }}>🧮 Cálculo de la Pensión</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.blue, marginBottom: 14 }}>Cálculo de la Pensión</h3>
               <Row l="IBC (Ingreso Base de Cotización)" v={fCOP(colp.IBC)} color={T.txt} />
               <Row l="IBL (Ingreso Base de Liquidación)" v={fCOP(colp.IBL)} color={T.blue} sub="Promedio últimos 10 años ajustado IPC" />
               <Row l="IBL en SMMLV" v={(colp.IBL / SM_2026).toFixed(1) + " SMMLV"} />
@@ -456,13 +456,13 @@ export default function PensionesColpensiones({ trm }) {
 
               {/* Alertas */}
               <Cd style={{ padding: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>⚠️ Consideraciones</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Consideraciones</div>
                 {[
                   { t: "No heredable — al fallecer se pierde (excepto sustitución pensional)", c: T.red },
                   { t: "Sujeta a reformas pensionales futuras", c: T.orange },
                   { t: "Ajuste anual por IPC (no pierde poder adquisitivo)", c: T.green },
                   { t: "Garantía estatal — respaldada por el gobierno", c: T.blue },
-                  colp.cumpleRequisitos ? { t: "✅ Cumples requisitos de edad y semanas", c: T.green } : { t: `⏳ Faltan ${aniosFaltantes} años y ${Math.max(0, 1300 - semanas)} semanas`, c: T.orange },
+                  colp.cumpleRequisitos ? { t: "Cumples requisitos de edad y semanas", c: T.green } : { t: `Faltan ${aniosFaltantes} años y ${Math.max(0, 1300 - semanas)} semanas`, c: T.orange },
                 ].map((a, i) => (
                   <div key={i} style={{ fontSize: 12, color: a.c, padding: "4px 0", borderBottom: i < 4 ? `1px solid ${T.border}` : "none" }}>
                     {a.t}
@@ -474,7 +474,7 @@ export default function PensionesColpensiones({ trm }) {
 
           {/* ═══ HITOS DE SEMANAS — Como un actuario ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📊 Hitos de Semanas — ¿Cuánto ganas por seguir cotizando?</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>Hitos de Semanas — ¿Cuánto ganas por seguir cotizando?</h3>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 8px" }}>
               Por cada <strong>50 semanas</strong> adicionales después de 1,300 → tu tasa sube <strong>1.5%</strong>. Tope: 80%.
             </p>
@@ -519,7 +519,7 @@ export default function PensionesColpensiones({ trm }) {
                         <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(bruta)}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(neta)}</td>
                         <td style={{ padding: "8px 6px", fontSize: 12, color: yaAlcanzo ? T.green : esAlcanzable ? T.orange : T.txt3 }}>
-                          {esActual ? "← Tú estás aquí" : yaAlcanzo ? "✅ Ya alcanzado" : esAlcanzable ? "📅 Alcanzable" : esTope ? "🏆 Tope 80%" : ""}
+                          {esActual ? "← Tú estás aquí" : yaAlcanzo ? "Ya alcanzado" : esAlcanzable ? "Alcanzable" : esTope ? "Tope 80%" : ""}
                         </td>
                       </tr>
                     );
@@ -531,11 +531,11 @@ export default function PensionesColpensiones({ trm }) {
 
           {/* ═══ ANÁLISIS ACTUARIAL ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>🧮 Análisis Actuarial — ¿Vale la pena seguir cotizando?</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>Análisis Actuarial — ¿Vale la pena seguir cotizando?</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 8 }}>📋 Tu situación actual</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.blue, marginBottom: 8 }}>Tu situación actual</div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
                     Semanas cotizadas: <strong>{semanas.toLocaleString("es-CO")}</strong><br/>
                     Semanas al jubilarte: <strong>{colp.semanasTotales.toLocaleString("es-CO")}</strong><br/>
@@ -546,7 +546,7 @@ export default function PensionesColpensiones({ trm }) {
                   </div>
                 </div>
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 8 }}>💡 Costo de cada bloque</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 8 }}>Costo de cada bloque</div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
                     Cada 50 semanas (~1 año) te compra:<br/>
                     <strong style={{ color: T.green }}>+1.5% de tasa = +{fCOP(colp.IBL * 0.015 * 0.88)}/mes neto</strong><br/><br/>
@@ -560,7 +560,7 @@ export default function PensionesColpensiones({ trm }) {
               </div>
               <div>
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>🎯 Para llegar al 80% (tope máximo)</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>Para llegar al 80% (tope máximo)</div>
                   {(() => {
                     const tasaActual = colp.tasaTotal;
                     const falta = Math.max(0, 80 - tasaActual);
@@ -581,7 +581,7 @@ export default function PensionesColpensiones({ trm }) {
                   })()}
                 </div>
                 <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.08), rgba(59,130,246,0.05))", border: "1px solid " + T.green + "20", borderRadius: 12, padding: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>📌 Recomendación actuarial</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>Recomendación actuarial</div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
                     {colp.tasaTotal >= 75 ? (
                       <span>Estás muy cerca del tope. <strong style={{ color: T.green }}>Sigue cotizando al tope de 25 SMMLV</strong> hasta alcanzar el 80%. La diferencia es significativa.</span>
@@ -602,7 +602,7 @@ export default function PensionesColpensiones({ trm }) {
 
           {/* ═══ ESCENARIOS: SI SIGO PAGANDO X AÑOS MÁS ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>📅 ¿Qué pasa si sigo cotizando X años más?</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>¿Qué pasa si sigo cotizando X años más?</h3>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
               Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString("es-CO")} semanas</strong>. Cada año sumas ~52 semanas. Mira cómo cambia tu pensión:
             </p>
@@ -629,7 +629,7 @@ export default function PensionesColpensiones({ trm }) {
                       return (
                         <tr key={a} style={{ background: esJub ? T.blue + "10" : esHoy ? T.bg3 : "transparent", borderBottom: "1px solid " + T.border }}>
                           <td style={{ padding: "10px 8px", fontWeight: 700, color: esJub ? T.blue : esHoy ? T.orange : T.txt }}>
-                            {esHoy ? "🔵 Paro hoy" : esJub ? "🏆 Hasta jubilación (" + a + "a)" : a + " año" + (a > 1 ? "s" : "") + " más"}
+                            {esHoy ? "Paro hoy" : esJub ? "Hasta jubilación (" + a + "a)" : a + " año" + (a > 1 ? "s" : "") + " más"}
                           </td>
                           <td style={{ padding: "10px 8px", textAlign: "right" }}>{edad + a} años</td>
                           <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{semFuturas.toLocaleString("es-CO")}</td>
@@ -649,7 +649,7 @@ export default function PensionesColpensiones({ trm }) {
               </table>
             </div>
             <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-              <strong style={{ color: T.green }}>📖 Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString("es-CO")} semanas y pagas <strong>5 años más</strong>, acumulas {(semanas + 5 * 52).toLocaleString("es-CO")} semanas.
+              <strong style={{ color: T.green }}>Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString("es-CO")} semanas y pagas <strong>5 años más</strong>, acumulas {(semanas + 5 * 52).toLocaleString("es-CO")} semanas.
               {(() => {
                 const sc5 = calcColpensiones({ sexo, edad, semanasActuales: semanas + 5 * 52, ibcSM, ipc, edadJub });
                 const hoy2 = calcColpensiones({ sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub });
@@ -661,9 +661,9 @@ export default function PensionesColpensiones({ trm }) {
           {/* ═══ FÓRMULA DEL 1.5% EXPLICADA ═══ */}
           <Cd style={{ padding: 24, marginTop: 16 }}>
             <div style={{ background: T.orange + "10", border: "1px solid " + T.orange + "30", borderRadius: 10, padding: 14, marginBottom: 16, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-              <strong style={{ color: T.orange }}>⚠️ Nota importante:</strong> El IBL (Ingreso Base de Liquidación) se calcula como el promedio de los últimos 10 años de cotización. Si no has cotizado al nivel actual durante 10+ años, tu pensión real para "Paro hoy" será <strong>menor</strong> que la proyectada aquí. La proyección "Hasta jubilación" es más precisa porque asume que seguirás cotizando al nivel actual. Para un cálculo exacto con tu historial real, consulta un actuario profesional.
+              <strong style={{ color: T.orange }}>Nota importante:</strong> El IBL (Ingreso Base de Liquidación) se calcula como el promedio de los últimos 10 años de cotización. Si no has cotizado al nivel actual durante 10+ años, tu pensión real para "Paro hoy" será <strong>menor</strong> que la proyectada aquí. La proyección "Hasta jubilación" es más precisa porque asume que seguirás cotizando al nivel actual. Para un cálculo exacto con tu historial real, consulta un actuario profesional.
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>📖 ¿Cómo sube tu pensión? — Fórmula del 1.5%</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>¿Cómo sube tu pensión? — Fórmula del 1.5%</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <div>
                 <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.8 }}>
@@ -696,7 +696,7 @@ export default function PensionesColpensiones({ trm }) {
                   </div>
                 </div>
                 {colp.tasaTotal < 80 && <div style={{ marginTop: 8, fontSize: 12, color: T.green }}>
-                  💡 Si cotizas {Math.ceil((80 - colp.tasaTotal) / 1.5) * 50} semanas más llegas al tope de 80%
+                  Si cotizas {Math.ceil((80 - colp.tasaTotal) / 1.5) * 50} semanas más llegas al tope de 80%
                 </div>}
               </div>
             </div>
@@ -705,8 +705,8 @@ export default function PensionesColpensiones({ trm }) {
           {/* ═══ BARRA VISUAL DE TASA ═══ */}
           <Cd style={{ padding: 20, marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Tu tasa de reemplazo vs máximos</div>
-            <div style={{ position: "relative", height: 32, background: T.bg3, borderRadius: 16, overflow: "hidden", marginBottom: 8 }}>
-              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ff5000 0%, #f59e0b 30%, #00c805 60%, #3b82f6 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
+            <div style={{ position: "relative", height: 32, background: T.bg3, borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
+              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ff5000 0%, #f59e0b 30%, #00c805 60%, #3b82f6 100%)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#000" }}>{pc(colp.tasaTotal)}</span>
               </div>
             </div>
@@ -724,7 +724,7 @@ export default function PensionesColpensiones({ trm }) {
         <div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
             <Cd style={{ padding: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.green, marginBottom: 14 }}>🏦 Fondo Privado — Proyección</h3>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: T.green, marginBottom: 14 }}>Fondo Privado — Proyección</h3>
               <Row l="Saldo actual" v={fCOP(privSaldo)} />
               <Row l="Aporte a tu cuenta (11.5%)" v={fCOP(rais.aporteMes)} sub="De 16% total: 11.5% ahorro + 3% admin + 1.5% garantía" color={T.green} />
               <Row l="Rendimiento anual" v={privRend + "%"} />
@@ -749,7 +749,7 @@ export default function PensionesColpensiones({ trm }) {
               </Cd>
 
               <Cd style={{ padding: 16 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>✅ Ventajas Fondo Privado</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Ventajas Fondo Privado</div>
                 {[
                   { t: "100% heredable — tu familia recibe el saldo", c: T.green },
                   { t: "Retiro anticipado posible (cumpliendo requisitos)", c: T.green },
@@ -786,7 +786,7 @@ export default function PensionesColpensiones({ trm }) {
           {/* Big comparison */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
             <Cd glow={T.blue} style={{ padding: 28, textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>🏛️</div>
+              <div style={{ fontSize: 28, marginBottom: 8 }}></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 12 }}>Colpensiones</div>
               <div style={{ fontSize: 12, color: T.txt3 }}>PENSIÓN MENSUAL</div>
               <div style={{ fontSize: 36, fontWeight: 700, color: T.blue }}>{fCOP(colp.pensionFinal)}</div>
@@ -794,14 +794,14 @@ export default function PensionesColpensiones({ trm }) {
               <div style={{ marginTop: 16, fontSize: 12, color: T.txt2, textAlign: "left" }}>
                 <Row l="Tasa reemplazo" v={pc(colp.tasaTotal)} color={T.blue} bold />
                 <Row l="En 20 años" v={fCOP(colp.total20Anios)} />
-                <Row l="Heredable" v="❌ No" color={T.red} />
-                <Row l="Garantía" v="✅ Estado" color={T.green} />
+                <Row l="Heredable" v="No" color={T.red} />
+                <Row l="Garantía" v="Estado" color={T.green} />
                 <Row l="Riesgo" v="Reformas" color={T.orange} />
               </div>
             </Cd>
 
             <Cd glow={T.green} style={{ padding: 28, textAlign: "center" }}>
-              <div style={{ fontSize: 28, marginBottom: 8 }}>🏦</div>
+              <div style={{ fontSize: 28, marginBottom: 8 }}></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.green, marginBottom: 12 }}>Fondo Privado</div>
               <div style={{ fontSize: 12, color: T.txt3 }}>RENTA MENSUAL</div>
               <div style={{ fontSize: 36, fontWeight: 700, color: T.green }}>{fCOP(rais.rentaMes)}</div>
@@ -809,8 +809,8 @@ export default function PensionesColpensiones({ trm }) {
               <div style={{ marginTop: 16, fontSize: 12, color: T.txt2, textAlign: "left" }}>
                 <Row l="Saldo final" v={fCOP(rais.saldoFinal)} color={T.green} bold />
                 <Row l="Rendimientos" v={fCOP(rais.rendimiento)} color={T.green} />
-                <Row l="Heredable" v="✅ Sí" color={T.green} />
-                <Row l="Garantía" v="❌ Mercado" color={T.orange} />
+                <Row l="Heredable" v="Sí" color={T.green} />
+                <Row l="Garantía" v="Mercado" color={T.orange} />
                 <Row l="Riesgo" v="Rentabilidad" color={T.orange} />
               </div>
             </Cd>
@@ -868,7 +868,7 @@ export default function PensionesColpensiones({ trm }) {
       )}
 
       <div style={{ textAlign: "center", marginTop: 24, padding: "12px 0", borderTop: `1px solid ${T.border}` }}>
-        <p style={{ fontSize: 12, color: T.txt3 }}>⚠️ Simulador educativo • Los cálculos son aproximados • Consulta un asesor pensional certificado • Ley 100/1993 • Ley 797/2003</p>
+        <p style={{ fontSize: 12, color: T.txt3 }}>Simulador educativo • Los cálculos son aproximados • Consulta un asesor pensional certificado • Ley 100/1993 • Ley 797/2003</p>
       </div>
       <Disclaimer variante="proyeccion" T={T} />
     </div>

@@ -42,7 +42,7 @@ const pct = (n) => `${((n||0)*100).toFixed(1)}%`;
 // ─── IRS Income Categories ─────────────────────────────────────────────────
 export const US_INCOME_TYPES = [
   {
-    v:"w2",         l:"💼 W-2 Wages",            form:"W-2 Box 1",
+    v:"w2",         l:"W-2 Wages",            form:"W-2 Box 1",
     desc:"Wages, salaries, tips from employer. Pre-tax 401(k)/HSA already excluded.",
     taxed:"Ordinary income rates. FICA withheld by employer (6.2% SS + 1.45% Medicare).",
     irc:"IRC § 61; withholding § 3402",
@@ -50,7 +50,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"1099nec",     l:"🧾 1099-NEC / Freelance", form:"1099-NEC",
+    v:"1099nec",     l:"1099-NEC / Freelance", form:"1099-NEC",
     desc:"Self-employment, consulting, gig economy. You are your own employer.",
     taxed:"Ordinary rates + 15.3% SE tax (SS + Medicare) on 92.35% of net profit. Minus QBI deduction (up to 20%).",
     irc:"IRC §§ 1401-1402; QBI § 199A",
@@ -58,7 +58,7 @@ export const US_INCOME_TYPES = [
     scheduleC:true, passive:false, selfEmployed:true,
   },
   {
-    v:"rental",      l:"🏠 Rental Income",        form:"Schedule E",
+    v:"rental",      l:"Rental Income",        form:"Schedule E",
     desc:"Net rental income after allowable expenses. Subject to passive loss rules.",
     taxed:"Ordinary rates. Passive activity rules apply (IRC § 469). $25K rental loss allowance if AGI < $100K.",
     irc:"IRC § 469; depreciation § 168; basis § 1012",
@@ -66,7 +66,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:true, selfEmployed:false,
   },
   {
-    v:"lt_gains",    l:"📈 Long-Term Capital Gains", form:"Schedule D / 1099-B",
+    v:"lt_gains",    l:"Long-Term Capital Gains", form:"Schedule D / 1099-B",
     desc:"Assets held > 12 months. Preferential tax rates.",
     taxed:"0% (income ≤ $47,025), 15% ($47,026–$518,900), 20% (above). Plus 3.8% NIIT if MAGI > $200K.",
     irc:"IRC §§ 1(h), 1221, 1222",
@@ -74,7 +74,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"st_gains",    l:"📉 Short-Term Capital Gains", form:"Schedule D / 1099-B",
+    v:"st_gains",    l:"Short-Term Capital Gains", form:"Schedule D / 1099-B",
     desc:"Assets held ≤ 12 months. Taxed as ordinary income.",
     taxed:"Ordinary income rates (10%–37%). No preferential treatment.",
     irc:"IRC §§ 1221, 1222",
@@ -82,7 +82,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"qual_div",    l:"💰 Qualified Dividends",  form:"1099-DIV Box 1b",
+    v:"qual_div",    l:"Qualified Dividends",  form:"1099-DIV Box 1b",
     desc:"Dividends from domestic corporations held 60+ days. Preferential rate.",
     taxed:"Same rates as long-term capital gains: 0%, 15%, or 20%. Plus 3.8% NIIT if applicable.",
     irc:"IRC § 1(h)(11)",
@@ -90,7 +90,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"ord_div",     l:"📊 Ordinary Dividends",  form:"1099-DIV Box 1a",
+    v:"ord_div",     l:"Ordinary Dividends",  form:"1099-DIV Box 1a",
     desc:"Non-qualified dividends. Taxed as ordinary income.",
     taxed:"Ordinary income rates (10%–37%). No preferential treatment.",
     irc:"IRC § 61(a)(7)",
@@ -98,7 +98,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"interest",    l:"🏦 Interest Income",     form:"1099-INT",
+    v:"interest",    l:"Interest Income",     form:"1099-INT",
     desc:"Bank interest, CDs, Treasury bonds, savings accounts.",
     taxed:"Ordinary income rates. US Treasury interest is state-exempt. Municipal bond interest is federal-exempt.",
     irc:"IRC § 61(a)(4)",
@@ -106,7 +106,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"retirement",  l:"🏛️ Retirement Distribution", form:"1099-R",
+    v:"retirement",  l:"Retirement Distribution", form:"1099-R",
     desc:"401(k), Traditional IRA, pension distributions. Roth distributions generally tax-free.",
     taxed:"Ordinary rates for pre-tax accounts. 10% early withdrawal penalty if under 59½ (exceptions exist). RMDs required at age 73.",
     irc:"IRC §§ 72, 402, 408; RMD § 401(a)(9)",
@@ -114,7 +114,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"k1",          l:"🏢 K-1 Pass-through",    form:"Schedule K-1",
+    v:"k1",          l:"K-1 Pass-through",    form:"Schedule K-1",
     desc:"Partnership, S-Corp, LLC, trust income passed to you.",
     taxed:"Ordinary rates on ordinary income. Capital gain treatment on capital gain allocations. Self-employment tax may apply to general partners.",
     irc:"IRC §§ 702, 1366; at-risk § 465; passive § 469",
@@ -122,7 +122,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"social_sec",  l:"👴 Social Security Benefits", form:"SSA-1099",
+    v:"social_sec",  l:"Social Security Benefits", form:"SSA-1099",
     desc:"Up to 85% of SS benefits are taxable depending on combined income.",
     taxed:"0% if combined income < $25K (single). Up to 50% if $25K–$34K. Up to 85% if > $34K.",
     irc:"IRC § 86",
@@ -130,7 +130,7 @@ export const US_INCOME_TYPES = [
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
-    v:"other",       l:"📝 Other Income",         form:"Schedule 1",
+    v:"other",       l:"Other Income",         form:"Schedule 1",
     desc:"Alimony (pre-2019 divorces), gambling winnings, prizes, crypto, forgiven debt.",
     taxed:"Generally ordinary income. Crypto: property treatment (Notice 2014-21). Canceled debt: IRC § 61(a)(12) unless exclusion applies.",
     irc:"IRC § 61; crypto Notice 2014-21",
@@ -254,7 +254,7 @@ function QuarterlyEstimates({ totalTax }) {
   ];
   return (
     <div>
-      <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:4}}>📅 Form 1040-ES — Quarterly Estimated Payments</div>
+      <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:4}}>Form 1040-ES — Quarterly Estimated Payments</div>
       <div style={{fontSize:12,color:T.tx3,marginBottom:12}}>
         Required if you expect to owe ≥ $1,000 after withholding (IRC § 6654). 
         Safe harbor: pay 100% of prior year tax (110% if AGI &gt; $150K).
@@ -271,7 +271,7 @@ function QuarterlyEstimates({ totalTax }) {
         ))}
       </div>
       <InfoBox color={T.or}>
-        <strong>⚠ Underpayment Penalty (IRC § 6654):</strong> IRS charges ~8% annualized on underpaid estimated taxes. 
+        <strong>Underpayment Penalty (IRC § 6654):</strong> IRS charges ~8% annualized on underpaid estimated taxes. 
         Avoid by paying the lesser of: (a) 90% of current year tax, or (b) 100% of prior year tax (110% if prior AGI &gt; $150K).
       </InfoBox>
     </div>
@@ -285,7 +285,7 @@ function NIITWarning({ investmentIncome, magi }) {
   const niit = Math.round(niitBase * 0.038);
   return (
     <InfoBox color={T.rd}>
-      <strong>⚠ Net Investment Income Tax (NIIT) — IRC § 1411:</strong>{" "}
+      <strong>Net Investment Income Tax (NIIT) — IRC § 1411:</strong>{" "}
       3.8% surtax applies on investment income for MAGI &gt; $200K (single). 
       Estimated NIIT: <strong>{fm(niit)}</strong> on {fm(niitBase)} of net investment income.
       Strategy: Maximize deductions to reduce MAGI below threshold; consider installment sales for real estate gains.
@@ -301,7 +301,7 @@ function AddlMedicare({ wages, magi }) {
   if (tax <= 0) return null;
   return (
     <InfoBox color={T.or}>
-      <strong>⚠ Additional Medicare Tax — IRC § 3101(b)(2):</strong>{" "}
+      <strong>Additional Medicare Tax — IRC § 3101(b)(2):</strong>{" "}
       0.9% on wages/SE income over $200K (single). Estimated: <strong>{fm(tax)}</strong>. 
       Employer does not withhold this until $200K threshold is met in-house. Verify Form W-4 or pay via estimated taxes.
     </InfoBox>
@@ -376,7 +376,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
-          <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>💰 Income</h2>
+          <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Income</h2>
           <p style={{color:T.tx3,fontSize:12,margin:0}}>
             All income types per IRS classification — Tax Year 2025
           </p>
@@ -386,12 +386,12 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
         <button onClick={()=>exportIngresosPDF(ingresos.filter(x=>x.sim!==false), [], 1, true)}
           title="Download PDF with summary, detail and category breakdown"
           style={{background:"#e64800",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
-          📄 PDF
+          PDF
         </button>
         <button onClick={()=>exportIngresosExcel(ingresos.filter(x=>x.sim!==false), [], 1, true)}
           title="Download Excel with full detail and category summary"
           style={{background:"#00a804",color:"#fff",border:"none",padding:"10px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,marginRight:8}}>
-          📊 Excel
+          Excel
         </button>
         <button onClick={openAdd} style={{background:`linear-gradient(135deg,${T.gn},#00a804)`,color:"#000",border:"none",padding:"10px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>
           + Add Income
@@ -408,7 +408,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             {l:"Total Tax Burden",v:fm(totals.totalTax),    c:T.rd,  sub:"Fed+FICA+SE"},
             {l:"Monthly Take-Home",v:fm((totals.grossAnnual-totals.totalTax)/12),c:T.gn,sub:"/month net"},
           ].map(k=>(
-            <div key={k.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 18px"}}>
+            <div key={k.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px"}}>
               <div style={{fontSize:11,color:T.tx3,letterSpacing:1,fontWeight:600}}>{k.l}</div>
               <div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4}}>{k.v}</div>
               <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{k.sub}</div>
@@ -423,8 +423,8 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
 
       {/* Income sources list */}
       {ingresos.length === 0 ? (
-        <div style={{padding:56,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:16}}>
-          <div style={{fontSize:36,marginBottom:12}}>📋</div>
+        <div style={{padding:56,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:12}}>
+          <div style={{fontSize:36,marginBottom:12}}></div>
           <div style={{fontSize:15,fontWeight:700,color:T.tx2,marginBottom:6}}>No income sources yet</div>
           <div style={{fontSize:13,marginBottom:20}}>Add your W-2, 1099-NEC, rental, dividends, and other income. Each is handled per IRS rules.</div>
           <button onClick={openAdd} style={{background:T.gn,color:"#000",border:"none",padding:"12px 28px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Add First Income Source</button>
@@ -503,7 +503,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             const calc   = calcTaxForSource(src, totals.taxableAnnual);
             const open   = expanded === idx;
             return (
-              <div key={idx} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden"}}>
+              <div key={idx} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
                 {/* Row */}
                 <div style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",cursor:"pointer"}}
                      onClick={()=>setExpanded(open?null:idx)}>
@@ -528,13 +528,13 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                       {/* IRS Treatment */}
                       <div>
-                        <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:6}}>📖 IRS Tax Treatment</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:6}}>IRS Tax Treatment</div>
                         <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.taxed}</div>
                         <div style={{fontSize:11,color:T.tx3,marginTop:4}}>Ref: <em>{info.irc}</em></div>
                       </div>
                       {/* Planning */}
                       <div>
-                        <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:6}}>💡 Planning Opportunities</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:6}}>Planning Opportunities</div>
                         <div style={{fontSize:12,color:T.tx2,lineHeight:1.7}}>{info.planning}</div>
                       </div>
                     </div>
@@ -542,7 +542,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                     {/* Calc breakdown */}
                     {calc && (
                       <div style={{marginTop:14,background:T.bg3,borderRadius:10,padding:"12px 14px"}}>
-                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>🔢 Tax Calculation — {calc.label}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>Tax Calculation — {calc.label}</div>
                         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
                           <div><div style={{fontSize:11,color:T.tx3}}>GROSS/YR</div><div style={{fontSize:14,fontWeight:700,color:T.gn}}>{fm(calc.grossAnnual)}</div></div>
                           {calc.savings>0 && <div><div style={{fontSize:11,color:T.tx3}}>PRE-TAX SAVINGS</div><div style={{fontSize:14,fontWeight:700,color:T.cy}}>–{fm(calc.savings)}</div></div>}
@@ -555,8 +555,8 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                     )}
 
                     <div style={{display:"flex",gap:8,marginTop:12}}>
-                      <button onClick={()=>openEdit(idx)} style={{padding:"8px 16px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ Edit</button>
-                      <button onClick={()=>remove(idx)} style={{padding:"8px 16px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑️ Remove</button>
+                      <button onClick={()=>openEdit(idx)} style={{padding:"8px 16px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>Edit</button>
+                      <button onClick={()=>remove(idx)} style={{padding:"8px 16px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>
                     </div>
                   </div>
                 )}
@@ -582,7 +582,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
 
       {/* Quarterly estimates */}
       {totals.totalTax > 1000 && (
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24,marginBottom:20}}>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24,marginBottom:20}}>
           <QuarterlyEstimates totalTax={totals.totalTax} />
         </div>
       )}
@@ -590,7 +590,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
       {/* ── Modal Form ── */}
       {showForm && (
         <div onClick={()=>setShowForm(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.7)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:620,maxHeight:"90vh",overflowY:"auto",padding:32}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:12,width:"100%",maxWidth:620,maxHeight:"90vh",overflowY:"auto",padding:32}}>
 
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
               <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"Add"} Income Source</h3>
@@ -678,15 +678,15 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                 <Field l="Holding Period (days)" value={form.holding_days} onChange={v=>sf("holding_days",v)} type="number" />
                 <InfoBox color={form.holding_days > 365 ? T.gn : T.or}>
                   {form.holding_days > 365
-                    ? "✅ Long-term gains (>12 months): 0%, 15%, or 20% preferential rate. Hold to qualify."
-                    : "⚠ Short-term gains (≤12 months): Taxed as ordinary income. Consider holding to 366+ days."}
+                    ? "Long-term gains (>12 months): 0%, 15%, or 20% preferential rate. Hold to qualify."
+                    : "Short-term gains (≤12 months): Taxed as ordinary income. Consider holding to 366+ days."}
                 </InfoBox>
               </div>
             )}
 
             {/* Planning tip */}
             <div style={{marginTop:16,padding:12,background:`${T.pr}10`,border:`1px solid ${T.pr}30`,borderRadius:10,fontSize:12,color:T.tx2,lineHeight:1.7}}>
-              <strong style={{color:T.pr}}>💡 CPA Planning:</strong> {selType.planning}
+              <strong style={{color:T.pr}}>CPA Planning:</strong> {selType.planning}
             </div>
 
             <div style={{display:"flex",gap:12,justifyContent:"flex-end",marginTop:24}}>

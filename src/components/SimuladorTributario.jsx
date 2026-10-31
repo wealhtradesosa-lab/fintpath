@@ -30,9 +30,9 @@ const NO_DEDUC = ["Alimentación","Entretenimiento","Personal","Vestimenta","Mas
 const DEDUC_NAT = { "Salud": 1, "Vivienda": 1, "Seguros": 0.5 };
 const LIM_NAT = { "Salud": 16 * UVT * 12, "Vivienda": 100 * UVT * 12, "Seguros": 16 * UVT * 12 };
 
-const CAT_LABELS = { "Salario": "💼", "Honorarios": "📋", "Arriendo": "🏠", "Rendimiento": "💰", "Dividendos": "📊", "Inversión": "🏦", "Pensión": "🏛️", "Negocio": "🏢", "Otro": "📝" };
+const CAT_LABELS = { "Salario": "", "Honorarios": "", "Arriendo": "", "Rendimiento": "", "Dividendos": "", "Inversión": "", "Pensión": "", "Negocio": "", "Otro": "" };
 
-const Cd = ({ children, style: s }) => <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>;
+const Cd = ({ children, style: s }) => <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", ...s }}>{children}</div>;
 const Kpi = ({ label, value, sub, color, big }) => (
   <div style={{ padding: big ? "20px 16px" : "14px 16px", textAlign: "center" }}>
     <div style={{ fontSize: 11, color: T.txt3, letterSpacing: "0.08em", fontWeight: 600 }}>{label}</div>
@@ -55,22 +55,22 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
     const recs = [];
     if (fiscalData.type === "juridica") {
       const gbc = fiscalData.gastosByCat || {};
-      if (!gbc["Nómina"]) recs.push({ icon: "👥", title: "Nómina y empleados", desc: "Salarios y prestaciones pueden ser deducibles si cumplen los requisitos. Registra la nómina para que el cálculo la tenga en cuenta.", impact: 0, color: T.blue });
-      if (!gbc["Honorarios"]) recs.push({ icon: "📋", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
-      if (!gbc["Mantenimiento"]) recs.push({ icon: "🔧", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
-      if (!gbc["Impuesto"] && !gbc["Predial"]) recs.push({ icon: "🏛️", title: "Impuestos locales (predial, ICA, rodamiento)", desc: "Predial, ICA, contribuciones, rodamiento — impuestos pagados son deducibles.", impact: 0, color: T.blue });
-      if ((fiscalData.pctGastos || 0) < 40) recs.push({ icon: "⚠️", title: "Gastos registrados: " + fmtPctEs((fiscalData.pctGastos || 0), 0)+" de ingresos", desc: "Una empresa operativa típica registra 40–70% de sus ingresos como gastos. Revisa si te faltan gastos operativos por registrar (nómina, honorarios, mantenimiento, servicios). Cada peso deducible real baja el impuesto en $0,35.", impact: 0, color: T.orange });
+      if (!gbc["Nómina"]) recs.push({ icon: "", title: "Nómina y empleados", desc: "Salarios y prestaciones pueden ser deducibles si cumplen los requisitos. Registra la nómina para que el cálculo la tenga en cuenta.", impact: 0, color: T.blue });
+      if (!gbc["Honorarios"]) recs.push({ icon: "", title: "Honorarios profesionales", desc: "Contador, abogado, revisor fiscal. Registra estos gastos como deducibles.", impact: 0, color: T.blue });
+      if (!gbc["Mantenimiento"]) recs.push({ icon: "", title: "Mantenimiento de propiedades", desc: "Reparaciones, pintura, plomería — todo deducible para inmuebles de la empresa.", impact: 0, color: T.blue });
+      if (!gbc["Impuesto"] && !gbc["Predial"]) recs.push({ icon: "", title: "Impuestos locales (predial, ICA, rodamiento)", desc: "Predial, ICA, contribuciones, rodamiento — impuestos pagados son deducibles.", impact: 0, color: T.blue });
+      if ((fiscalData.pctGastos || 0) < 40) recs.push({ icon: "", title: "Gastos registrados: " + fmtPctEs((fiscalData.pctGastos || 0), 0)+" de ingresos", desc: "Una empresa operativa típica registra 40–70% de sus ingresos como gastos. Revisa si te faltan gastos operativos por registrar (nómina, honorarios, mantenimiento, servicios). Cada peso deducible real baja el impuesto en $0,35.", impact: 0, color: T.orange });
       if ((fiscalData.utilidad || 0) > 50e6) {
-        recs.push({ icon: "🎁", title: "Bonificaciones a empleados (Art. 107 ET)", desc: "Primas extralegales y bonificaciones son deducibles si cumplen relación de causalidad, necesidad y proporcionalidad. Consulta con tu contador el monto viable según tu estructura de nómina.", impact: 0, color: T.purple });
-        recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto. El monto recomendable depende de tu estrategia fiscal — tu contador puede calcular el óptimo.", impact: 0, color: T.purple });
-        recs.push({ icon: "📋", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera: aplica si tienes cuentas por cobrar con más de 90 días. El monto deducible depende de tu cartera real — no hay porcentaje automático.", impact: 0, color: T.purple });
-        recs.push({ icon: "🏗️", title: "Depreciación acelerada (Art. 137 ET)", desc: "Evalúa con tu contador aplicar depreciación acelerada en activos productivos. Reduce utilidad gravable hoy, difiere impuesto. Aplica solo a ciertos activos y tasas definidas por reglamento.", impact: 0, color: T.purple });
-        recs.push({ icon: "🏦", title: "Apalancamiento financiero (Art. 117 ET)", desc: "Crédito para inversión productiva: los intereses son deducibles sujetos a subcapitalización. Consulta con tu contador antes de endeudarte solo por el beneficio fiscal.", impact: 0, color: T.purple });
-        recs.push({ icon: "📈", title: "Reinvertir utilidades en activos productivos", desc: "Comprar equipos o vehículos genera depreciación deducible en los años siguientes, según su vida útil. Revisa con tu contador si te conviene.", impact: 0, color: T.purple });
-        recs.push({ icon: "💰", title: "Distribuir dividendos estratégicamente", desc: "En vez de dejar utilidad en la empresa (35%), distribuir dividendos al socio tributa al 15% (>300 UVT). Si la persona natural tiene tasa efectiva menor al 35%, conviene distribuir.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Bonificaciones a empleados (Art. 107 ET)", desc: "Primas extralegales y bonificaciones son deducibles si cumplen relación de causalidad, necesidad y proporcionalidad. Consulta con tu contador el monto viable según tu estructura de nómina.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto. El monto recomendable depende de tu estrategia fiscal — tu contador puede calcular el óptimo.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Provisión de cartera (Art. 145 ET)", desc: "Provisión individual por deterioro de cartera: aplica si tienes cuentas por cobrar con más de 90 días. El monto deducible depende de tu cartera real — no hay porcentaje automático.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Depreciación acelerada (Art. 137 ET)", desc: "Evalúa con tu contador aplicar depreciación acelerada en activos productivos. Reduce utilidad gravable hoy, difiere impuesto. Aplica solo a ciertos activos y tasas definidas por reglamento.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Apalancamiento financiero (Art. 117 ET)", desc: "Crédito para inversión productiva: los intereses son deducibles sujetos a subcapitalización. Consulta con tu contador antes de endeudarte solo por el beneficio fiscal.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Reinvertir utilidades en activos productivos", desc: "Comprar equipos o vehículos genera depreciación deducible en los años siguientes, según su vida útil. Revisa con tu contador si te conviene.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Distribuir dividendos estratégicamente", desc: "En vez de dejar utilidad en la empresa (35%), distribuir dividendos al socio tributa al 15% (>300 UVT). Si la persona natural tiene tasa efectiva menor al 35%, conviene distribuir.", impact: 0, color: T.purple });
       }
-      if ((fiscalData.descuentoICA || 0) > 0) recs.push({ icon: "🏛️", title: "Descuento 50% del ICA: " + fm(fiscalData.descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
-      if ((fiscalData.gmf50 || 0) > 0) recs.push({ icon: "💳", title: "GMF 4×1000 deducible: " + fm(fiscalData.gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
+      if ((fiscalData.descuentoICA || 0) > 0) recs.push({ icon: "", title: "Descuento 50% del ICA: " + fm(fiscalData.descuentoICA), desc: "El 50% del ICA pagado se descuenta directamente del impuesto de renta (Art. 115 ET). No es deducción, es descuento — se resta del impuesto calculado.", impact: 0, color: T.green });
+      if ((fiscalData.gmf50 || 0) > 0) recs.push({ icon: "", title: "GMF 4×1000 deducible: " + fm(fiscalData.gmf50), desc: "El 50% del GMF (4×1000) pagado es deducible de la renta. Se calcula automáticamente.", impact: 0, color: T.green });
     } else {
       const gbc = fiscalData.gastosByCat || {};
       const rentaSin = fiscalData.rentaSin || 0;
@@ -85,17 +85,17 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       // PV y AFC comparten el tope 30 % / 3.800 UVT (dentro del Art. 336): una sola
       // línea que no empuja a ninguno de los dos.
       const pvAfcMax = pvMax; // tope conjunto (afcMax es el mismo tope, no se suma)
-      if (pvAfcMax > 500000) recs.push({ icon: "💰", title: "Pensión voluntaria o AFC", tope: textoTopePvAfc({ topeAnual: pvAfcMax }, fm), desc: textoSugerenciaPvAfc(fiscalData.sugPvAfc, fm) + " Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: fiscalData.sugPvAfc?.sinFlujo ? 0 : ahorroPvAfc(fiscalData), etiqueta: etiquetaAG(fiscalData), aporte: fiscalData.aportePvAfc || 0, impactTexto: "menos de impuesto si aportas " + fm(fiscalData.aportePvAfc || 0) + " al año. Si aportas por nómina, lo notas como menos retención cada mes; si no, como saldo a favor en la declaración.", color: T.green });
-      if (!gbc["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "🏥", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
-      if (deducDep > 0) recs.push({ icon: "👨‍👩‍👧", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
-      if (deducViv > 0) recs.push({ icon: "🏠", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
+      if (pvAfcMax > 500000) recs.push({ icon: "", title: "Pensión voluntaria o AFC", tope: textoTopePvAfc({ topeAnual: pvAfcMax }, fm), desc: textoSugerenciaPvAfc(fiscalData.sugPvAfc, fm) + " Hasta " + fm(pvAfcMax / 12) + "/mes en pensión voluntaria o AFC podría ser exento (tope conjunto 30 % / 3.800 UVT, dentro del tope del 40 %). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.", nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.", impact: fiscalData.sugPvAfc?.sinFlujo ? 0 : ahorroPvAfc(fiscalData), etiqueta: etiquetaAG(fiscalData), aporte: fiscalData.aportePvAfc || 0, impactTexto: "menos de impuesto si aportas " + fm(fiscalData.aportePvAfc || 0) + " al año. Si aportas por nómina, lo notas como menos retención cada mes; si no, como saldo a favor en la declaración.", color: T.green });
+      if (!gbc["Salud"] && ingAnual > 2000 * UVT) recs.push({ icon: "", title: "Medicina prepagada", desc: "Deducible hasta " + fm(16 * UVT) + "/mes. Regístrala en Gastos → Salud.", impact: 0, color: T.purple });
+      if (deducDep > 0) recs.push({ icon: "", title: "Dependientes: " + fm(deducDep) + "/año", desc: "Ya se está deduciendo 10% del ingreso por dependientes (gastos educación detectados).", impact: 0, color: T.green });
+      if (deducViv > 0) recs.push({ icon: "", title: "Intereses vivienda: " + fm(deducViv) + "/año", desc: "Los intereses de tu hipoteca ya se deducen automáticamente.", impact: 0, color: T.green });
       const tieneArriendos = ingresos.some(i => /Arriendo/i.test(i.categoria || ""));
       const invInmuebles = inv.filter(i => /Real Estate|bodega|local|oficina/i.test((i.tp||i.tipo||"").toLowerCase()));
       if (tieneArriendos && invInmuebles.length > 0) {
         const deprecInmuebles = invInmuebles.reduce((s,i) => s + (i.va||0) * 0.0222, 0);
-        recs.push({ icon: "🏠", title: "Depreciación de inmuebles arrendados (Art. 137 ET)", desc: "Tus inmuebles en arriendo se deprecian 2,22%/año (vida útil 45 años). Esto reduce la renta no laboral directamente. Depreciación anual estimada: " + fm(deprecInmuebles) + ". El ahorro efectivo depende de tu tasa marginal (entre 19% y 39% según tu ingreso) — tu contador puede calcular el valor exacto.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Depreciación de inmuebles arrendados (Art. 137 ET)", desc: "Tus inmuebles en arriendo se deprecian 2,22%/año (vida útil 45 años). Esto reduce la renta no laboral directamente. Depreciación anual estimada: " + fm(deprecInmuebles) + ". El ahorro efectivo depende de tu tasa marginal (entre 19% y 39% según tu ingreso) — tu contador puede calcular el valor exacto.", impact: 0, color: T.purple });
       }
-      if (ingAnual > 200e6) recs.push({ icon: "🤝", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto a pagar (no de la base). El tope legal del descuento es el 25% del impuesto de renta del año. El monto que te conviene donar depende de tu estrategia fiscal y filantrópica — consúltalo con tu contador.", impact: 0, color: T.purple });
+      if (ingAnual > 200e6) recs.push({ icon: "", title: "Donaciones con descuento 25% (Art. 257 ET)", desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un DESCUENTO del 25% del valor donado, directo del impuesto a pagar (no de la base). El tope legal del descuento es el 25% del impuesto de renta del año. El monto que te conviene donar depende de tu estrategia fiscal y filantrópica — consúltalo con tu contador.", impact: 0, color: T.purple });
       // Sesión 1-may-2026 (feedback Santiago): chequeamos hipoteca contra
       // user.deu COMPLETO (sin filtro de sim) — el user puede tener la
       // deuda con `sim: off` para verla apagada en el simulador, pero EXISTE
@@ -108,12 +108,12 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
         /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))
       );
       const interesesHip = deu.filter(d => /hipoteca|vivienda|casa|apto|mortgage/i.test((d.tp || "") + (d.n || ""))).reduce((s, d) => s + (d.mt || 0) * ((d.ts || d.tasa || 0) / 100), 0);
-      if (interesesHip === 0 && !tieneHipotecaReal && ingAnual > 200e6) recs.push({ icon: "🏦", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
-      if (ingAnual > 100e6) recs.push({ icon: "💳", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
-      if (ingAnual > 400e6) recs.push({ icon: "🏢", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede cambiar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
+      if (interesesHip === 0 && !tieneHipotecaReal && ingAnual > 200e6) recs.push({ icon: "", title: "Crédito de vivienda: intereses deducibles (Art. 119 ET)", desc: "Los intereses de un crédito hipotecario para vivienda del contribuyente son deducibles hasta 1.200 UVT/año (" + fm(1200 * UVT) + "). Es una de las deducciones más grandes disponibles — pero solo aplica si efectivamente tomas el crédito y usas la vivienda. No te endeudes solo por el beneficio fiscal; evalúalo con tu contador.", impact: 0, color: T.purple });
+      if (ingAnual > 100e6) recs.push({ icon: "", title: "GMF 4×1000 deducible (Art. 115 ET)", desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente: " + fm(ingAnual * 0.004 * 0.50) + "/año.", impact: 0, color: T.green });
+      if (ingAnual > 400e6) recs.push({ icon: "", title: "Evalúa una estructura societaria", desc: "Con ingresos altos, una SAS puede cambiar tu carga fiscal canalizando ingresos por la empresa (35% sobre utilidad vs hasta 39% persona natural).", impact: 0, color: T.purple });
       if (ahorro < 100000 && pctUsado >= 95) {
-        recs.push({ icon: "✅", title: "Tope 40% usado al máximo", desc: "Ya estás usando el " + fmtPctEs(pctUsado, 0)+" del tope de deducciones. No hay más espacio para pensión voluntaria o AFC. Tu contador está haciendo un buen trabajo.", impact: 0, color: T.green });
-        if (ingAnual > 200e6) recs.push({ icon: "💡", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
+        recs.push({ icon: "", title: "Tope 40% usado al máximo", desc: "Ya estás usando el " + fmtPctEs(pctUsado, 0)+" del tope de deducciones. No hay más espacio para pensión voluntaria o AFC. Tu contador está haciendo un buen trabajo.", impact: 0, color: T.green });
+        if (ingAnual > 200e6) recs.push({ icon: "", title: "Para reducir más: redistribuir ingresos", desc: "La única forma de bajar más es mover ingresos a una persona jurídica (SAS). La empresa paga 35% sobre UTILIDAD (después de gastos), no sobre ingreso bruto. Consulta con tu contador.", impact: 0, color: T.purple });
       }
     }
 
@@ -123,10 +123,10 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
   if (!calc) return (
     <Cd style={{ padding: 24, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 20 }}>{isJ ? "🏢" : "👤"}</span>
+        <span style={{ fontSize: 20 }}>{isJ ? "" : ""}</span>
         <div><div style={{ fontSize: 16, fontWeight: 700 }}>{owner.name}</div><div style={{ fontSize: 12, color: T.txt3 }}>{isJ ? "Persona Jurídica" : "Persona Natural"}</div></div>
       </div>
-      <div style={{ padding: 20, textAlign: "center", color: T.txt3, fontSize: 13 }}>No hay ingresos asignados. Ve a <strong style={{ color: T.blue }}>💰 Ingresos</strong> y asigna <strong>{owner.name}</strong> como propietario.</div>
+      <div style={{ padding: 20, textAlign: "center", color: T.txt3, fontSize: 13 }}>No hay ingresos asignados. Ve a <strong style={{ color: T.blue }}>Ingresos</strong> y asigna <strong>{owner.name}</strong> como propietario.</div>
     </Cd>
   );
 
@@ -146,7 +146,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       {/* Header */}
       <div style={{ padding: mb ? "16px" : "20px 24px", borderBottom: "1px solid " + T.border, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontSize: 24 }}>{isJ ? "🏢" : "👤"}</span>
+          <span style={{ fontSize: 24 }}>{isJ ? "" : ""}</span>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>{owner.name}</div>
             <div style={{ fontSize: 12, color: T.txt3, display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
@@ -172,7 +172,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       {/* Banner de régimen */}
       {calc.regimenNota && (
         <div style={{ padding: "10px 20px", borderBottom: "1px solid " + T.border, background: "rgba(59,130,246,0.04)", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-          <span style={{ color: T.blue, fontWeight: 600 }}>ℹ️ {calc.regimenNota}</span>
+          <span style={{ color: T.blue, fontWeight: 600 }}>{calc.regimenNota}</span>
         </div>
       )}
 
@@ -261,7 +261,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           if (hubo > 1_000_000 && descuentosSolicitados < hubo * 0.3) {
             diagnos.push({
               msg: `Año anterior usaste ~${fm(hubo)} en descuentos tributarios y ahora apenas ${fm(descuentosSolicitados)}.`,
-              accion: `Toca el botón '⭐ Descuentos' en la tarjeta de ${owner?.name || "este owner"} para capturar ICA, donaciones, CT&I. Son directo del impuesto, no de la base.`,
+              accion: `Toca el botón 'Descuentos' en la tarjeta de ${owner?.name || "este owner"} para capturar ICA, donaciones, CT&I. Son directo del impuesto, no de la base.`,
             });
           }
 
@@ -270,7 +270,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           return (
             <div style={{ padding: "12px 20px", borderBottom: "1px solid " + T.border, background: "rgba(245,158,11,0.06)" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: T.orange, marginBottom: 6 }}>
-                💡 ¿Por qué este impuesto parece alto?
+                ¿Por qué este impuesto parece alto?
               </div>
               <div style={{ fontSize: 12, color: T.txt2, marginBottom: 8, lineHeight: 1.5 }}>
                 El motor calcula impuesto con la data registrada. Detectamos lo siguiente que puede estar haciéndolo más alto de lo real:
@@ -296,7 +296,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr auto 1fr", gap: 0 }}>
         {/* Sin Estrategia */}
         <div style={{ padding: "16px 20px", background: "rgba(255,80,0,0.03)" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.red, marginBottom: 12 }}>📋 Situación Actual</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.red, marginBottom: 12 }}>Situación Actual</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.red, fontFamily: "monospace" }}>{fm(impActual)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impActual / 12)}/mes • Tasa: {fmtPctEs((tasaActual || 0), 1)}</div>
 
@@ -309,20 +309,20 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               {/* Desglose detallado de gastos */}
               {Object.entries(calc.gastosByCat).filter(([,v]) => v.deduc > 0).map(([cat, v]) => (
                 <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                  <span style={{ color: T.green }}>✅ {cat} ({Math.round(v.pct * 100)}%)</span>
+                  <span style={{ color: T.green }}>{cat} ({Math.round(v.pct * 100)}%)</span>
                   <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc)}/mes</span>
                 </div>
               ))}
               {calc.intereses > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                <span style={{ color: T.green }}>✅ Intereses de deudas</span>
+                <span style={{ color: T.green }}>Intereses de deudas</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.intereses)}/año</span>
               </div>}
               <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                <span style={{ color: T.green }}>✅ GMF 4×1000 (50%)</span>
+                <span style={{ color: T.green }}>GMF 4×1000 (50%)</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.ingAnual * 0.004 * 0.5)}/año</span>
               </div>
               {calc.deprec > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                <span style={{ color: T.green }}>✅ Depreciación de activos</span>
+                <span style={{ color: T.green }}>Depreciación de activos</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deprec)}/año</span>
               </div>}
               
@@ -331,7 +331,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles:</div>
                 {Object.entries(calc.gastosByCat).filter(([,v]) => v.total > v.deduc).map(([cat, v]) => (
                   <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                    <span style={{ color: T.txt3 }}>❌ {cat}</span>
+                    <span style={{ color: T.txt3 }}>{cat}</span>
                     <span style={{ fontFamily: "monospace", color: T.txt3 }}>{fm(v.total - v.deduc)}/mes</span>
                   </div>
                 ))}
@@ -381,7 +381,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                   {calc.descuentosDesglose.donaciones > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Donaciones 25% (Art. 257): {fm(calc.descuentosDesglose.donaciones)}</div>}
                   {calc.descuentosDesglose.otros > 0 && <div style={{ fontSize: 11, color: T.txt3, paddingLeft: 16 }}>• Otros descuentos: {fm(calc.descuentosDesglose.otros)}</div>}
                 </>}
-                {calc.descuentosSolicitados > calc.descuentosAplicados && <div style={{ fontSize: 11, color: T.orange, paddingLeft: 16 }}>⚠ Tope 25% aplicado (Art. 259 ET): {fm(calc.descuentosSolicitados - calc.descuentosAplicados)} exceden el límite y no se aplicaron este año.</div>}
+                {calc.descuentosSolicitados > calc.descuentosAplicados && <div style={{ fontSize: 11, color: T.orange, paddingLeft: 16 }}>Tope 25% aplicado (Art. 259 ET): {fm(calc.descuentosSolicitados - calc.descuentosAplicados)} exceden el límite y no se aplicaron este año.</div>}
               </>}
               {calc.retefuenteCalc > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 11, color: T.blue }}><span>(-) Retención en la fuente</span><span style={{ fontFamily: "monospace" }}>-{fm(calc.retefuenteCalc)}</span></div>}
             </> : <>
@@ -392,16 +392,16 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               {/* Desglose detallado */}
               {calc.gastosDeducNat > 0 && Object.entries(calc.gastosByCat).filter(([,v]) => v.deduc > 0).map(([cat, v]) => (
                 <div key={cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                  <span style={{ color: T.green }}>✅ {cat} ({Math.round(v.pct * 100)}%){v.pct > 0 && v.deduc < v.total ? " — máx aplicado" : ""}</span>
+                  <span style={{ color: T.green }}>{cat} ({Math.round(v.pct * 100)}%){v.pct > 0 && v.deduc < v.total ? " — máx aplicado" : ""}</span>
                   <span style={{ fontFamily: "monospace", color: T.green }}>{fm(v.deduc * 12)}/año</span>
                 </div>
               ))}
               {calc.deducDep > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                <span style={{ color: T.green }}>✅ Dependientes (10% ingreso)</span>
+                <span style={{ color: T.green }}>Dependientes (10% ingreso)</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deducDep)}/año</span>
               </div>}
               {calc.deducViv > 0 && <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                <span style={{ color: T.green }}>✅ Intereses vivienda</span>
+                <span style={{ color: T.green }}>Intereses vivienda</span>
                 <span style={{ fontFamily: "monospace", color: T.green }}>{fm(calc.deducViv)}/año</span>
               </div>}
               
@@ -410,7 +410,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
                 <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, marginTop: 6, marginBottom: 2 }}>No deducibles (persona natural):</div>
                 {Object.entries(calc.gastosByCat).filter(([cat]) => !(DEDUC_NAT[cat]) && calc.gastosByCat[cat].total > 0).slice(0, 5).map(([cat, v]) => (
                   <div key={"nd_"+cat} style={{ display: "flex", justifyContent: "space-between", padding: "2px 0 2px 16px", fontSize: 11 }}>
-                    <span style={{ color: T.txt3 }}>❌ {cat}</span>
+                    <span style={{ color: T.txt3 }}>{cat}</span>
                     <span style={{ fontFamily: "monospace", color: T.txt3 }}>{fm(v.total)}/mes</span>
                   </div>
                 ))}
@@ -420,7 +420,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               {calc.componenteInflacExcluido > 0 && (
                 <div style={{ marginTop: 4, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 6, fontSize: 11, lineHeight: 1.5 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                    <span style={{ color: T.blue, fontWeight: 600 }}>📉 Componente inflacionario {fmtPctEs(calc.pctComponenteInflac, 2)} (Art. 38-39 ET)</span>
+                    <span style={{ color: T.blue, fontWeight: 600 }}>Componente inflacionario {fmtPctEs(calc.pctComponenteInflac, 2)} (Art. 38-39 ET)</span>
                     <span style={{ fontFamily: "monospace", color: T.blue, fontWeight: 600 }}>−{fm(calc.componenteInflacExcluido)}</span>
                   </div>
                   <div style={{ color: T.txt3, fontSize: 11, lineHeight: 1.5 }}>
@@ -444,7 +444,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
 
         {/* Con Estrategia */}
         <div style={{ padding: "16px 20px", background: "rgba(0,200,5,0.03)" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginBottom: 12 }}>🎯 Con Estrategia</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginBottom: 12 }}>Con Estrategia</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>{fm(impOptimo)}<span style={{ fontSize: 12, fontWeight: 400, color: T.txt3 }}>/año</span></div>
           <div style={{ fontSize: 13, color: T.txt3 }}>{fm(impOptimo / 12)}/mes • Tasa: {fmtPctEs((tasaOptima || 0), 1)}</div>
 
@@ -459,7 +459,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               let titulo, texto;
               if (isJ) {
                 titulo = "Sin ajuste automático (persona jurídica)";
-                texto = "Los ajustes jurídicos (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, captura los descuentos tributarios reales con el botón ⭐ Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
+                texto = "Los ajustes jurídicos (depreciación acelerada, distribución de dividendos, descuento ICA, CT&I) requieren decisiones estratégicas que no se automatizan. Para reducir el impuesto, captura los descuentos tributarios reales con el botón Descuentos en la tarjeta de " + (owner?.name || "este owner") + ".";
               } else if (calc?.regimen === "simple") {
                 titulo = "Régimen Simple (RST) no admite ajustes";
                 texto = "El régimen Simple tributa sobre ingresos brutos con tarifa fija (1,4%–8,3% según grupo de actividad). No admite deducciones de cédula general ni aportes voluntarios como reductores de base.";
@@ -476,7 +476,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
 
               return (
                 <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, fontSize: 12, lineHeight: 1.55 }}>
-                  <div style={{ color: "#3b82f6", fontWeight: 700, marginBottom: 4 }}>💡 ¿Por qué no hay diferencia?</div>
+                  <div style={{ color: "#3b82f6", fontWeight: 700, marginBottom: 4 }}>¿Por qué no hay diferencia?</div>
                   <div style={{ color: T.txt2, fontWeight: 600, marginBottom: 4 }}>{titulo}</div>
                   <div style={{ color: T.txt3, fontSize: 11 }}>{texto}</div>
                 </div>
@@ -490,20 +490,20 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           <div style={{ marginTop: 16, fontSize: 12 }}>
             <div style={{ fontWeight: 600, color: T.txt2, marginBottom: 6 }}>Deducciones automáticas aplicadas:</div>
             {isJ ? <>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ Gastos operativos registrados</div>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ Intereses de deudas deducidos</div>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ Depreciación de activos aplicada</div>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ GMF 4×1000 (50% deducible)</div>
-              {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
-              <div style={{ padding: "4px 0", color: T.blue }}>✅ Retención en la fuente descontada</div>
+              <div style={{ padding: "4px 0", color: T.green }}>Gastos operativos registrados</div>
+              <div style={{ padding: "4px 0", color: T.green }}>Intereses de deudas deducidos</div>
+              <div style={{ padding: "4px 0", color: T.green }}>Depreciación de activos aplicada</div>
+              <div style={{ padding: "4px 0", color: T.green }}>GMF 4×1000 (50% deducible)</div>
+              {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>Descuento 50% ICA aplicado</div>}
+              <div style={{ padding: "4px 0", color: T.blue }}>Retención en la fuente descontada</div>
               <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 6, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
-                ℹ️ <strong>El motor ahora aplica 3 palancas avanzadas si las cargas:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mira las recomendaciones abajo para ver cuáles aplican a tu empresa.
+                <strong>El motor ahora aplica 3 palancas avanzadas si las cargas:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mira las recomendaciones abajo para ver cuáles aplican a tu empresa.
               </div>
             </> : <>
-              <div style={{ padding: "4px 0", color: T.green }}>✅ Renta exenta 25% ({fm(calc.exenta25)})</div>
-              {calc.deducDep > 0 && <div style={{ padding: "4px 0", color: T.green }}>✅ Dependientes ({fm(calc.deducDep)})</div>}
-              {calc.deducViv > 0 && <div style={{ padding: "4px 0", color: T.green }}>✅ Intereses vivienda ({fm(calc.deducViv)})</div>}
-              {calc.pvMax > 0 && <div style={{ padding: "4px 0", color: T.green }}>✅ Pensión voluntaria o AFC (hasta {fm(calc.pvMax / 12)}/mes, tope compartido)</div>}
+              <div style={{ padding: "4px 0", color: T.green }}>Renta exenta 25% ({fm(calc.exenta25)})</div>
+              {calc.deducDep > 0 && <div style={{ padding: "4px 0", color: T.green }}>Dependientes ({fm(calc.deducDep)})</div>}
+              {calc.deducViv > 0 && <div style={{ padding: "4px 0", color: T.green }}>Intereses vivienda ({fm(calc.deducViv)})</div>}
+              {calc.pvMax > 0 && <div style={{ padding: "4px 0", color: T.green }}>Pensión voluntaria o AFC (hasta {fm(calc.pvMax / 12)}/mes, tope compartido)</div>}
               <div style={{ padding: "4px 0", color: T.green, fontWeight: 600 }}>→ Tope 40% al 100%</div>
             </>}
           </div>
@@ -526,7 +526,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
           </div>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 11, color: T.txt3 }}>{ahorro > 100000 ? "Reducción" : "Estado"}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + fmtPctEs(impActual > 0 ? (ahorro / impActual * 100) : 0, 0) : "✅ Sin ajuste adicional"}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: ahorro > 100000 ? T.green : T.txt3 }}>{ahorro > 100000 ? "-" + fmtPctEs(impActual > 0 ? (ahorro / impActual * 100) : 0, 0) : "Sin ajuste adicional"}</div>
           </div>
         </div>
       )}
@@ -535,11 +535,11 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       {((isJ && calc.retefuenteCalc > 0) || (!isJ && calc.retefuenteNat > 0)) && (
         <div style={{ padding: "14px 20px", borderTop: "1px solid " + T.border, background: "rgba(59,130,246,0.04)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: T.blue }}>📋 Retención en la fuente estimada</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: T.blue }}>Retención en la fuente estimada</span>
             <span style={{ fontSize: 16, fontWeight: 700, color: T.blue, fontFamily: "monospace" }}>{fm(isJ ? calc.retefuenteCalc : calc.retefuenteNat)}/año</span>
           </div>
           <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>Calculada automáticamente según tus ingresos: arriendos (3.5%), rendimientos (7%), honorarios (11%), salario (tabla Art. 383). Este valor se descuenta del impuesto. Verifica con tus certificados reales.</div>
-          {impActual <= 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>💰 Saldo a favor estimado: {fm(Math.abs(impActual))}</div>}
+          {impActual <= 0 && <div style={{ fontSize: 12, fontWeight: 700, color: T.green, marginTop: 6 }}>Saldo a favor estimado: {fm(Math.abs(impActual))}</div>}
         </div>
       )}
 
@@ -547,7 +547,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       {isJ && (
         <div style={{ padding: "14px 20px", borderTop: "1px solid " + T.border, background: "rgba(251,191,36,0.05)" }}>
           <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 18, flexShrink: 0 }}>⚖️</span>
+            <span style={{ fontSize: 18, flexShrink: 0 }}></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#fbbf24", marginBottom: 4 }}>Qué modela el simulador — y qué no</div>
               <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
@@ -567,7 +567,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
       {/* Recommendations */}
       {calc.recs.length > 0 && (
         <div style={{ padding: "16px 20px", borderTop: "1px solid " + T.border }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 10 }}>💡 Plan de acción ({calc.recs.length} recomendaciones)</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 10 }}>Plan de acción ({calc.recs.length} recomendaciones)</div>
           {calc.recs.map((r, i) => (
             <div key={i} style={{ display: "flex", gap: 10, padding: "10px 0", borderBottom: i < calc.recs.length - 1 ? "1px solid " + T.border : "none" }}>
               <span style={{ fontSize: 18, flexShrink: 0 }}>{r.icon}</span>
@@ -636,7 +636,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
       totalImpOptimo += d.impOptimizado != null ? d.impOptimizado : (d.impuesto || 0);
       items.push({
         name: d.name,
-        icon: d.type === "juridica" ? "🏢" : "👤",
+        icon: d.type === "juridica" ? "" : "",
         imp: d.impuesto || 0,
         impOpt: d.impOptimizado != null ? d.impOptimizado : (d.impuesto || 0),
         ing: d.ingreso || 0,
@@ -648,13 +648,13 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: mb ? 20 : 26, fontWeight: 700, margin: "0 0 4px", color: T.orange }}>🧾 Planeación Tributaria</h1>
+        <h1 style={{ fontSize: mb ? 20 : 26, fontWeight: 700, margin: "0 0 4px", color: T.orange }}>Planeación Tributaria</h1>
         <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>Colombia 2026 • Estatuto Tributario • UVT: {fm(UVT)} • Ley 2277/2022</p>
       </div>
 
       {sinAsignar > 0 && (
         <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 12, color: T.orange, lineHeight: 1.6 }}>
-          ⚠️ <strong>{sinAsignar} ingreso(s)</strong> sin propietario asignado — no se incluyen en el cálculo. Asigna propietario en <strong>💰 Ingresos</strong>.
+          <strong>{sinAsignar} ingreso(s)</strong> sin propietario asignado — no se incluyen en el cálculo. Asigna propietario en <strong>Ingresos</strong>.
         </div>
       )}
 
@@ -721,7 +721,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         };
 
         const pgMap = { ingreso: "ing", gasto: "gas", deuda: "deu", inversion: "inv", owner: "set" };
-        const pgLabel = { ingreso: "💰 Ingresos", gasto: "💳 Egresos", deuda: "📋 Deudas", inversion: "🏦 Patrimonio", owner: "⚙️ Config" };
+        const pgLabel = { ingreso: "Ingresos", gasto: "Egresos", deuda: "Deudas", inversion: "Patrimonio", owner: "Config" };
 
         // Agrupar warnings duplicados (mismo code + mismo itemType).
         // Ejemplo: 3 arriendos separados generan 3 warnings
@@ -756,7 +756,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
 
         const renderRow = (w, i) => {
           const color = w.severity === "error" ? T.red : w.severity === "warning" ? T.orange : T.blue;
-          const icon = w.severity === "error" ? "⛔" : w.severity === "warning" ? "⚠️" : "ℹ️";
+          const icon = w.severity === "error" ? "" : w.severity === "warning" ? "" : "";
           const target = pgMap[w.itemType];
           const label = pgLabel[w.itemType];
           // Label del item: prioriza concepto, cae en categoría.
@@ -800,7 +800,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
                 )}
                 {onNavigate && target && (
                   <button onClick={() => onNavigate(target)} style={{ background: "transparent", border: "1px solid " + T.border, color: T.txt2, padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                    ✏️ {label}
+                    {label}
                   </button>
                 )}
               </div>
@@ -811,7 +811,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         return (
           <div style={{ background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: T.orange }}>🔍 Revisión de precisión fiscal</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: T.orange }}>Revisión de precisión fiscal</div>
               {onUpdate && warns.some(w => w.fiscalCodeSugerido) && (
                 <button onClick={() => {
                   if (!confirm(`Aprobar la clasificación sugerida para ${warns.filter(w => w.fiscalCodeSugerido).length} ítem(s)?\n\nSe persiste el fiscalCode inferido en cada item. Puedes revertir editando el item manualmente.`)) return;
@@ -846,7 +846,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
       {consolidado.items.length > 0 && (
         <Cd style={{ marginBottom: 20, background: "linear-gradient(135deg, rgba(245,158,11,0.04), rgba(0,200,5,0.02))" }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid " + T.border }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>📊 Panorama Fiscal Consolidado</div>
+            <div style={{ fontSize: 14, fontWeight: 700 }}>Panorama Fiscal Consolidado</div>
             <div style={{ fontSize: 12, color: T.txt3 }}>Todos los propietarios combinados</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 0 }}>
@@ -876,7 +876,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
 
       {/* ═══ CALENDARIO TRIBUTARIO ═══ */}
       <Cd style={{ marginBottom: 20, padding: "16px 20px" }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: T.cyan, marginBottom: 10 }}>📅 Fechas clave para revisar</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: T.cyan, marginBottom: 10 }}>Fechas clave para revisar</div>
         <div style={{ display: "grid", gridTemplateColumns: mb ? "1fr" : "1fr 1fr 1fr", gap: 10, fontSize: 12 }}>
           <div style={{ background: T.bg3, borderRadius: 10, padding: "10px 14px" }}>
             <div style={{ fontWeight: 700, color: T.orange }}>Antes de diciembre 31</div>

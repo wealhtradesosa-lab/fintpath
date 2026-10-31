@@ -10,7 +10,7 @@ export function CorteTrabajo({ r, T, fm }) {
       ? "Todo lo que te entra depende de tu trabajo. Ningún activo te paga todavía."
       : `El ${fmtPctEs(pSin, 0)} de lo que te entra no depende de tu trabajo.`;
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
       <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>{frase}</div>
       <div style={{ display: "flex", height: 12, borderRadius: 6, overflow: "hidden", background: T.bg3, margin: "10px 0 8px" }}>
         <div style={{ width: pSin + "%", background: "#00c805" }} />
@@ -31,7 +31,7 @@ export function MesVsPromedio({ r, T, fm, mesNombre }) {
   const enLinea = Math.abs(r.pctTotal) < 5;
   const col = (d) => (d > 0 ? "#ff5000" : "#00c805");
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "14px 16px", marginBottom: 16 }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
       <div style={{ fontSize: 15, fontWeight: 700, color: T.txt }}>
         {enLinea
           ? `En ${mesNombre} vas en línea con tu promedio.`

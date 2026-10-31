@@ -205,7 +205,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
     return (
       <Backdrop onClose={onClose}>
         <div style={{ padding: 24 }}>
-          <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>💡</div>
+          <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}></div>
           <h3 style={{ fontSize: 18, fontWeight: 700, color: C.txt, margin: 0, textAlign: "center" }}>
             {oportunidad?.titulo || "Esta oportunidad no es aplicable directamente"}
           </h3>
@@ -243,7 +243,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
     return (
       <Backdrop onClose={onClose}>
         <div style={{ padding: 32, textAlign: "center" }}>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>✅</div>
+          <div style={{ fontSize: 56, marginBottom: 16 }}></div>
           <h3 style={{ fontSize: 20, fontWeight: 700, color: C.txt, margin: 0, marginBottom: 12 }}>
             Oportunidad aplicada
           </h3>
@@ -260,7 +260,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
               margin: "0 auto 20px",
             }}>
               <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
-                💰 Ahorro estimado
+                Ahorro estimado
               </div>
               <div style={{ fontSize: 22, fontWeight: 700, color: C.txt, marginTop: 4 }}>
                 {fm(oportunidad.ahorroAnualEstimado)} / año
@@ -288,7 +288,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
         alignItems: "flex-start",
         gap: 14,
       }}>
-        <span style={{ fontSize: 28 }}>💡</span>
+        <span style={{ fontSize: 28 }}></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
             Aplicar oportunidad fiscal
@@ -319,7 +319,7 @@ export default function AplicarOportunidadModal({ oportunidad, user, onUpdateUse
             alignItems: "center",
             gap: 10,
           }}>
-            <span style={{ fontSize: 16 }}>💰</span>
+            <span style={{ fontSize: 16 }}></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                 Ahorro estimado
@@ -439,7 +439,7 @@ function Backdrop({ children, onClose }) {
         style={{
           background: C.bg2,
           border: `1px solid ${C.border}`,
-          borderRadius: 14,
+          borderRadius: 12,
           maxWidth: 560,
           width: "100%",
           maxHeight: "90vh",

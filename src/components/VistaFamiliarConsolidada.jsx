@@ -175,7 +175,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
   if (owners.length === 0) {
     return (
       <div style={{ padding: "32px 28px", background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 12, textAlign: "center" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>👨‍👩‍👧‍👦</div>
+        <div style={{ fontSize: 48, marginBottom: 16 }}></div>
         <h3 style={{ fontSize: 20, fontWeight: 700, color: C.txt, marginBottom: 12 }}>
           Vista Familiar Consolidada
         </h3>
@@ -202,7 +202,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
           borderRadius: 12,
         }}>
           <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>
-            💡 Pro Familiar te permite mucho más
+            Pro Familiar te permite mucho más
           </div>
           <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.6, margin: 0 }}>
             Solo tienes <strong style={{ color: C.txt }}>{único.owner.name}</strong> cargado. La Vista Familiar Consolidada brilla
@@ -233,10 +233,10 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
         background: C.bg2,
         border: `1.5px solid ${C.border}`,
         borderLeft: `4px solid ${C.purple}`,
-        borderRadius: 14,
+        borderRadius: 12,
       }}>
         <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, letterSpacing: 0.5, marginBottom: 14 }}>
-          📊 Resumen consolidado del grupo
+          Resumen consolidado del grupo
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
@@ -245,28 +245,28 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
             value={fmShort(consolidado.patrimonioBrutoTotal)}
             subValue={fm(consolidado.patrimonioBrutoTotal)}
             color={C.txt}
-            icon="🏦"
+            icon=""
           />
           <KPI
             label="Patrimonio líquido"
             value={fmShort(consolidado.patrimonioLiquidoTotal)}
             subValue={`Pasivos: ${fmShort(consolidado.pasivosTotal)}`}
             color={C.green}
-            icon="💎"
+            icon=""
           />
           <KPI
             label="Ingreso anual total"
             value={fmShort(consolidado.ingresoTotal)}
             subValue={fm(consolidado.ingresoTotal)}
             color={C.blue}
-            icon="💰"
+            icon=""
           />
           <KPI
             label="Impuesto total"
             value={fmShort(consolidado.impuestoTotal)}
             subValue={`Tasa efectiva ${fmtPctEs(consolidado.tasaEfectivaConsolidada, 1)}`}
             color={C.orange}
-            icon="🏛️"
+            icon=""
           />
         </div>
 
@@ -282,7 +282,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
             alignItems: "center",
             gap: 12,
           }}>
-            <span style={{ fontSize: 24 }}>💡</span>
+            <span style={{ fontSize: 24 }}></span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                 Ahorro fiscal potencial detectado
@@ -378,7 +378,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                           )}
                           {h.sugerencia && (
                             <div style={{ color: C.txt3, marginTop: 2, fontStyle: "italic" }}>
-                              💡 {h.sugerencia}
+                              {h.sugerencia}
                             </div>
                           )}
                         </li>
@@ -393,7 +393,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                           )}
                           {h.sugerencia && (
                             <div style={{ color: C.txt3, marginTop: 2, fontStyle: "italic" }}>
-                              💡 {h.sugerencia}
+                              {h.sugerencia}
                             </div>
                           )}
                         </li>
@@ -415,7 +415,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
       {/* Tarjetas por owner */}
       <div style={{ marginTop: 20 }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
-          👥 Miembros del grupo ({owners.length})
+          Miembros del grupo ({owners.length})
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {ownersData.map(d => (
@@ -490,7 +490,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
       borderRadius: 12,
     }}>
       <div style={{ fontSize: 12, color: C.txt2, fontWeight: 700, marginBottom: 12, letterSpacing: 0.5 }}>
-        🥧 Distribución del patrimonio
+        Distribución del patrimonio
       </div>
       {/* Barra de stack */}
       <div style={{
@@ -535,7 +535,7 @@ function DistribucionPatrimonio({ ownersData, total }) {
           return (
             <div key={d.owner.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: C.txt2 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: getColor(d.owner.type, i) }}></span>
-              <span style={{ fontWeight: 700 }}>{d.owner.type === "juridica" ? "🏢" : "👤"} {d.owner.name}</span>
+              <span style={{ fontWeight: 700 }}>{d.owner.type === "juridica" ? "" : ""} {d.owner.name}</span>
               <span style={{ color: C.txt3 }}>{fmtPctEs(pct, 1)}</span>
             </div>
           );
@@ -579,7 +579,7 @@ function OwnerCard({ data, consolidado, onSelectOwner }) {
           width: 42, height: 42, borderRadius: 10,
           background: isJur ? C.purpleBg : C.blueBg,
           display: "flex", alignItems: "center", justifyContent: "center",
-        }}>{isJur ? "🏢" : "👤"}</div>
+        }}>{isJur ? "" : ""}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: C.txt, lineHeight: 1.2 }}>
             {o.name}

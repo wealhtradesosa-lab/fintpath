@@ -146,19 +146,19 @@ const ProgressBar = ({value,max,color,height=8}) => {
   );
 };
 const SectionCard = ({children,style={}}) => (
-  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24,marginBottom:16,...style}}>{children}</div>
+  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24,marginBottom:16,...style}}>{children}</div>
 );
 
 // ─── Goal Types ───────────────────────────────────────────────────────────────
 const GOAL_TYPES = [
-  {v:"emergency",  l:"🛡️ Emergency Fund",     color:T.bl},
-  {v:"home",       l:"🏠 Home Down Payment",   color:T.or},
-  {v:"college_529",l:"🎓 529 College Fund",    color:T.pr},
-  {v:"debt_payoff",l:"💳 Debt Payoff",         color:T.rd},
-  {v:"vacation",   l:"✈️ Vacation / Travel",   color:T.cy},
-  {v:"vehicle",    l:"🚗 Vehicle",             color:T.tx2},
-  {v:"business",   l:"🏢 Start a Business",    color:T.gn},
-  {v:"custom",     l:"🎯 Custom Goal",         color:T.gn},
+  {v:"emergency",  l:"Emergency Fund",     color:T.bl},
+  {v:"home",       l:"Home Down Payment",   color:T.or},
+  {v:"college_529",l:"529 College Fund",    color:T.pr},
+  {v:"debt_payoff",l:"Debt Payoff",         color:T.rd},
+  {v:"vacation",   l:"Vacation / Travel",   color:T.cy},
+  {v:"vehicle",    l:"Vehicle",             color:T.tx2},
+  {v:"business",   l:"Start a Business",    color:T.gn},
+  {v:"custom",     l:"Custom Goal",         color:T.gn},
 ];
 
 // ─── Empty Goal ───────────────────────────────────────────────────────────────
@@ -289,17 +289,17 @@ export default function GoalsModuleUS({
   const selType = gtInfo(form.type);
 
   const TABS = [
-    {id:"dashboard",l:"📊 Dashboard"},
-    {id:"goals",    l:`🎯 Goals (${goals.length})`},
-    {id:"college",  l:"🎓 529 Planner"},
-    {id:"home",     l:"🏠 Home Buying"},
-    {id:"debt",     l:"💳 Debt Payoff"},
+    {id:"dashboard",l:"Dashboard"},
+    {id:"goals",    l:`Goals (${goals.length})`},
+    {id:"college",  l:"529 Planner"},
+    {id:"home",     l:"Home Buying"},
+    {id:"debt",     l:"Debt Payoff"},
   ];
 
   return (
     <div>
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🎯 Goals & Financial Health</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Goals & Financial Health</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>Dashboard · Goal Tracker · 529 · Mortgage · Debt Payoff</p>
       </div>
 
@@ -329,7 +329,7 @@ export default function GoalsModuleUS({
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,flex:1,maxWidth:500}}>
                 <KPI l="Net Worth Percentile" v={`Top ${100-dash.nwPct}%`} sub="vs US households (Fed SCF 2022)" c={dash.nwPct>=75?T.gn:T.or} />
                 <KPI l="Income Percentile" v={`Top ${100-dash.incPct}%`} sub="vs US earners (IRS SOI 2023)" c={dash.incPct>=75?T.gn:T.or} />
-                <KPI l="Savings Rate" v={pct(dash.savingsRate)} sub={dash.savingsRate>=20?"✅ Excellent (20%+ target)":dash.savingsRate>=10?"Good (target: 20%)":"⚠ Below target (20%)"} c={dash.savingsRate>=20?T.gn:dash.savingsRate>=10?T.or:T.rd} />
+                <KPI l="Savings Rate" v={pct(dash.savingsRate)} sub={dash.savingsRate>=20?"Excellent (20%+ target)":dash.savingsRate>=10?"Good (target: 20%)":"Below target (20%)"} c={dash.savingsRate>=20?T.gn:dash.savingsRate>=10?T.or:T.rd} />
                 <KPI l="FIRE Progress" v={pct(dash.fireProgress)} sub={`of ${fmK(dash.fireNumber)} FIRE number`} c={dash.fireProgress>=75?T.gn:T.or} />
               </div>
             </div>
@@ -337,7 +337,7 @@ export default function GoalsModuleUS({
 
           {/* Net Worth Benchmarks */}
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>📍 Net Worth vs US Benchmarks (Federal Reserve SCF 2022)</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Net Worth vs US Benchmarks (Federal Reserve SCF 2022)</div>
             <div style={{marginBottom:12}}>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:6}}>
                 <span style={{color:T.tx2}}>Your Net Worth: <strong style={{color:T.gn}}>{fmK(netWorth)}</strong></span>
@@ -372,13 +372,13 @@ export default function GoalsModuleUS({
 
           {/* 6 key indicators */}
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>📋 Financial Vitals — CFP Benchmarks</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Financial Vitals — CFP Benchmarks</div>
             {[
               {
                 l:"Emergency Fund",
                 actual: fmK(netWorth>0?Math.min(netWorth,monthlyExpenses*12):0),
                 target: `${fm(monthlyExpenses*6)} (6 months)`,
-                status: netWorth>=monthlyExpenses*6?"✅ Adequate":netWorth>=monthlyExpenses*3?"⚠ Minimum":"❌ Below",
+                status: netWorth>=monthlyExpenses*6?"Adequate":netWorth>=monthlyExpenses*3?"Minimum":"Below",
                 color: netWorth>=monthlyExpenses*6?T.gn:netWorth>=monthlyExpenses*3?T.or:T.rd,
                 tip:"Keep 3-6 months in FDIC-insured HYSA (4.8%+ in 2025). Business owners: 12 months.",
               },
@@ -386,7 +386,7 @@ export default function GoalsModuleUS({
                 l:"Savings Rate",
                 actual: pct(dash.savingsRate),
                 target:"≥ 20% of gross income",
-                status: dash.savingsRate>=20?"✅ Excellent":dash.savingsRate>=15?"⚠ Good":dash.savingsRate>=10?"⚠ Fair":"❌ Low",
+                status: dash.savingsRate>=20?"Excellent":dash.savingsRate>=15?"Good":dash.savingsRate>=10?"Fair":"Low",
                 color: dash.savingsRate>=20?T.gn:dash.savingsRate>=10?T.or:T.rd,
                 tip:"Saving 20% puts you on track for retirement in ~37 years from zero. 50% → 17 years (FIRE territory).",
               },
@@ -394,7 +394,7 @@ export default function GoalsModuleUS({
                 l:"Runway (Months of Expenses Covered)",
                 actual:`${dash.runway} months`,
                 target:"≥ 6 months",
-                status: dash.runway>=12?"✅ Strong":dash.runway>=6?"✅ Adequate":dash.runway>=3?"⚠ Thin":"❌ Fragile",
+                status: dash.runway>=12?"Strong":dash.runway>=6?"Adequate":dash.runway>=3?"Thin":"Fragile",
                 color: dash.runway>=6?T.gn:dash.runway>=3?T.or:T.rd,
                 tip:"How long you can cover all expenses without any income. Includes all liquid assets.",
               },
@@ -402,7 +402,7 @@ export default function GoalsModuleUS({
                 l:"Equity Allocation",
                 actual:`${Math.round((retirementBalance>0?0.75:0.5)*100)}%`,
                 target:`~${dash.recEquity}% at age ${currentAge} (Vanguard glide path)`,
-                status: "ℹ Review",
+                status: "Review",
                 color: T.or,
                 tip:`Vanguard Target Date funds hold ~${dash.recEquity}% equity at age ${currentAge}. Adjust based on risk tolerance and years to retirement.`,
               },
@@ -410,7 +410,7 @@ export default function GoalsModuleUS({
                 l:"FIRE Progress",
                 actual: pct(dash.fireProgress),
                 target:`100% = ${fmK(dash.fireNumber)} (25× annual expenses)`,
-                status: dash.fireProgress>=100?"✅ FIRE Ready!":dash.fireProgress>=75?"🔥 Getting close":dash.fireProgress>=50?"📈 On track":"🌱 Building",
+                status: dash.fireProgress>=100?"FIRE Ready!":dash.fireProgress>=75?"Getting close":dash.fireProgress>=50?"On track":"Building",
                 color: dash.fireProgress>=75?T.gn:dash.fireProgress>=50?T.or:T.bl,
                 tip:"The 4% rule: if your portfolio is 25× your annual spending, you can withdraw 4% indefinitely (historically).",
               },
@@ -444,8 +444,8 @@ export default function GoalsModuleUS({
           </div>
 
           {goalCalcs.length===0
-            ?<div style={{padding:48,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:16}}>
-               <div style={{fontSize:36,marginBottom:12}}>🎯</div>
+            ?<div style={{padding:48,textAlign:"center",color:T.tx3,background:T.card,border:`1px solid ${T.border}`,borderRadius:12}}>
+               <div style={{fontSize:36,marginBottom:12}}></div>
                <div style={{fontSize:15,fontWeight:700,color:T.tx2,marginBottom:6}}>No goals yet</div>
                <div style={{fontSize:13,marginBottom:20}}>Add an emergency fund, home down payment, 529 college savings, or debt payoff goal.</div>
                <button onClick={()=>{setForm(EMPTY_GOAL);setShowForm(true)}} style={{background:T.gn,color:"#000",border:"none",padding:"12px 28px",borderRadius:10,cursor:"pointer",fontWeight:700}}>+ Add First Goal</button>
@@ -455,13 +455,13 @@ export default function GoalsModuleUS({
                  const info = gtInfo(g.type);
                  const done = g.pct_>=100;
                  return(
-                   <div key={i} style={{background:T.card,border:`1px solid ${done?T.gn:T.border}`,borderRadius:14,padding:20}}>
+                   <div key={i} style={{background:T.card,border:`1px solid ${done?T.gn:T.border}`,borderRadius:12,padding:20}}>
                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
                        <div>
                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
                            <span style={{fontSize:14,fontWeight:700}}>{g.name||info.l}</span>
                            <span style={{fontSize:11,background:`${info.color}20`,color:info.color,padding:"2px 8px",borderRadius:999,fontWeight:600}}>{info.l}</span>
-                           {done&&<span style={{fontSize:11,background:`${T.gn}20`,color:T.gn,padding:"2px 8px",borderRadius:999,fontWeight:700}}>✅ ACHIEVED</span>}
+                           {done&&<span style={{fontSize:11,background:`${T.gn}20`,color:T.gn,padding:"2px 8px",borderRadius:999,fontWeight:700}}>ACHIEVED</span>}
                          </div>
                          {g.notes&&<div style={{fontSize:12,color:T.tx3}}>{g.notes}</div>}
                        </div>
@@ -480,7 +480,7 @@ export default function GoalsModuleUS({
                        <div style={{background:T.bg3,borderRadius:8,padding:"8px 12px",marginTop:8,fontSize:12,color:T.tx2}}>
                          Projected 4-yr cost: <strong style={{color:T.or}}>{fm(g.futureCost4yr)}</strong> · Projected balance: <strong style={{color:T.gn}}>{fm(g.projectedBal)}</strong>
                          {g.gap>0&&<span style={{color:T.rd}}> · Gap: {fm(g.gap)} (need +{fm(g.neededMonthly)}/mo)</span>}
-                         {g.gap<=0&&<span style={{color:T.gn}}> · ✅ On track!</span>}
+                         {g.gap<=0&&<span style={{color:T.gn}}> · On track!</span>}
                        </div>
                      )}
                      {/* Debt payoff extra */}
@@ -491,9 +491,9 @@ export default function GoalsModuleUS({
                      )}
                      <div style={{display:"flex",gap:8,marginTop:12}}>
                        <button onClick={()=>{setForm({...EMPTY_GOAL,...g});setEditing(i);setShowForm(true)}}
-                         style={{padding:"6px 14px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>✏️ Edit</button>
+                         style={{padding:"6px 14px",background:T.bg3,border:`1px solid ${T.border}`,borderRadius:8,color:T.tx2,cursor:"pointer",fontSize:12,fontWeight:600}}>Edit</button>
                        <button onClick={()=>remove(i)}
-                         style={{padding:"6px 14px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>🗑️ Remove</button>
+                         style={{padding:"6px 14px",background:T.rdB,border:"none",borderRadius:8,color:T.rd,cursor:"pointer",fontSize:12,fontWeight:600}}>Remove</button>
                      </div>
                    </div>
                  );
@@ -506,7 +506,7 @@ export default function GoalsModuleUS({
       {/* ════ 529 PLANNER ════ */}
       {tab==="college" && (
         <SectionCard>
-          <div style={{fontSize:14,fontWeight:700,color:T.pr,marginBottom:16}}>🎓 529 College Savings Planner (IRC § 529)</div>
+          <div style={{fontSize:14,fontWeight:700,color:T.pr,marginBottom:16}}>529 College Savings Planner (IRC § 529)</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
             <Field l="Child's Current Age" value={form.childAge} onChange={v=>sf("childAge",v)} />
             <Field l="Expected College Start Age" value={form.collegeAge||18} onChange={v=>sf("collegeAge",v)} />
@@ -524,7 +524,7 @@ export default function GoalsModuleUS({
                   <KPI l="Future 4-yr Cost" v={fmK(calc.futureCost4yr)} c={T.or} sub={`at 6%/yr inflation`} />
                   <KPI l="Cost Per Year" v={fmK(calc.annualCostFuture)} c={T.tx2} />
                   <KPI l="Projected Balance" v={fmK(calc.projectedBal)} c={T.gn} sub={`in ${yearsLeft} years @ 7%`} />
-                  <KPI l="Gap" v={fmK(calc.gap)} c={calc.gap<=0?T.gn:T.rd} sub={calc.gap<=0?"✅ Fully funded!":"additional needed"} />
+                  <KPI l="Gap" v={fmK(calc.gap)} c={calc.gap<=0?T.gn:T.rd} sub={calc.gap<=0?"Fully funded!":"additional needed"} />
                   {calc.gap>0&&<KPI l="Extra Needed/Month" v={fm(calc.neededMonthly)} c={T.rd} sub="to fully fund" />}
                 </div>
                 <InfoBox color={T.pr}>
@@ -545,7 +545,7 @@ export default function GoalsModuleUS({
       {/* ════ HOME BUYING ════ */}
       {tab==="home" && (
         <SectionCard>
-          <div style={{fontSize:14,fontWeight:700,color:T.or,marginBottom:16}}>🏠 Home Down Payment Calculator</div>
+          <div style={{fontSize:14,fontWeight:700,color:T.or,marginBottom:16}}>Home Down Payment Calculator</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
             <Field l="Target Home Price" value={form.homePrice||0} onChange={v=>sf("homePrice",v)} />
             <Field l="Loan Type" value={form.loanType||"conventional"} onChange={v=>sfS("loanType",v)}
@@ -585,12 +585,12 @@ export default function GoalsModuleUS({
               <>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10,marginBottom:16}}>
                   <KPI l="Down Payment" v={fm(downPayment)} c={T.or} sub={`${(lt.pct*100).toFixed(1)}% of ${fmK(hp)}`} />
-                  <KPI l="Loan Amount" v={fmK(loanAmount)} c={T.tx2} sub={isJumbo?"⚠ JUMBO LOAN":"conforming"} />
+                  <KPI l="Loan Amount" v={fmK(loanAmount)} c={T.tx2} sub={isJumbo?"JUMBO LOAN":"conforming"} />
                   <KPI l="Monthly P&I" v={fm(monthlyPI)} c={T.tx2} sub="principal + interest" />
                   {pmi>0&&<KPI l="PMI" v={fm(pmi)} c={T.rd} sub="until 80% LTV" />}
                   <KPI l="Taxes + Insurance" v={fm(propTax+insurance)} c={T.tx3} sub="estimated" />
                   <KPI l="Total PITI" v={fm(totalPITI)} c={T.rd} sub="total monthly payment" />
-                  <KPI l="Down Payment Gap" v={fm(gap)} c={gap<=0?T.gn:T.or} sub={months?`~${months} months`:gap<=0?"✅ Ready!":""} />
+                  <KPI l="Down Payment Gap" v={fm(gap)} c={gap<=0?T.gn:T.or} sub={months?`~${months} months`:gap<=0?"Ready!":""} />
                 </div>
                 <InfoBox color={T.or}>
                   <strong>Mortgage Planning (2025):</strong><br/>
@@ -598,7 +598,7 @@ export default function GoalsModuleUS({
                   • <strong>36% Rule:</strong> Total debt (PITI + all debt payments) ≤36% of gross income<br/>
                   • <strong>PMI Removal:</strong> Conventional PMI auto-cancels at 78% LTV; request at 80% LTV<br/>
                   • <strong>Points:</strong> Buying down rate costs 1% of loan per 0.25% rate reduction. Break-even ~3-4 years<br/>
-                  • <strong>Jumbo loans</strong> {isJumbo?"⚠ apply here — typically require 720+ credit score, 20% down, 12 months reserves":"do not apply here"}<br/>
+                  • <strong>Jumbo loans</strong> {isJumbo?"apply here — typically require 720+ credit score, 20% down, 12 months reserves":"do not apply here"}<br/>
                   • <strong>Mortgage interest deduction:</strong> Only on first $750K of debt (post-12/15/2017). Deductible via Schedule A if itemizing.
                 </InfoBox>
               </>
@@ -610,7 +610,7 @@ export default function GoalsModuleUS({
       {/* ════ DEBT PAYOFF ════ */}
       {tab==="debt" && (
         <SectionCard>
-          <div style={{fontSize:14,fontWeight:700,color:T.rd,marginBottom:16}}>💳 Debt Payoff Optimizer</div>
+          <div style={{fontSize:14,fontWeight:700,color:T.rd,marginBottom:16}}>Debt Payoff Optimizer</div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
             <Field l="Total Debt Balance" value={form.debtBalance||0} onChange={v=>sf("debtBalance",v)} />
             <Field l="Annual Interest Rate (%)" value={form.debtRate||0} onChange={v=>sf("debtRate",v)} placeholder="24.99" />
@@ -649,7 +649,7 @@ export default function GoalsModuleUS({
       {/* ════ GOAL FORM MODAL ════ */}
       {showForm && (
         <div onClick={()=>setShowForm(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.75)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:20,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto",padding:32}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:12,width:"100%",maxWidth:560,maxHeight:"90vh",overflowY:"auto",padding:32}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
               <h3 style={{fontSize:18,fontWeight:700,margin:0}}>{editing!==null?"Edit":"New"} Goal</h3>
               <button onClick={()=>setShowForm(false)} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button>

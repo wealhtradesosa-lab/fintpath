@@ -105,7 +105,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   );
 
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>Cómo va {año}</div>
         <div style={{ fontSize: 12, color: T.tx3, marginTop: 1, marginBottom: 11 }}>

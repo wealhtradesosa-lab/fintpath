@@ -115,7 +115,7 @@ const KPI = ({l, v, sub, c}) => (
   </div>
 );
 const SectionCard = ({children, style={}}) => (
-  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:24,marginBottom:16,...style}}>
+  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:24,marginBottom:16,...style}}>
     {children}
   </div>
 );
@@ -394,20 +394,20 @@ export default function RetirementModuleUS({ user = {} }) {
 
   // ─── TABS ────────────────────────────────────────────────────────────────
   const TABS = [
-    {id:"overview",   l:"📊 Overview"},
-    {id:"contribs",   l:"💰 Contributions"},
-    {id:"projection", l:"📈 Projection"},
-    {id:"roth",       l:"🔄 Roth Strategy"},
-    {id:"rmd",        l:"📋 RMDs"},
-    {id:"ss",         l:"👴 Social Security"},
-    {id:"fire",       l:"🔥 FIRE"},
+    {id:"overview",   l:"Overview"},
+    {id:"contribs",   l:"Contributions"},
+    {id:"projection", l:"Projection"},
+    {id:"roth",       l:"Roth Strategy"},
+    {id:"rmd",        l:"RMDs"},
+    {id:"ss",         l:"Social Security"},
+    {id:"fire",       l:"FIRE"},
   ];
 
   return (
     <div>
       {/* Header */}
       <div style={{marginBottom:24}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🏛️ Retirement Planning</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Retirement Planning</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           401(k) · IRA · Roth · RMDs · Social Security · FIRE — SECURE 2.0 / Tax Year 2025
         </p>
@@ -415,7 +415,7 @@ export default function RetirementModuleUS({ user = {} }) {
 
       {/* Profile quick setup */}
       <SectionCard>
-        <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>⚙️ Your Profile</div>
+        <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>Your Profile</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:12}}>
           <Field l="Current Age"        value={p.currentAge}      onChange={v=>sp("currentAge",v)} />
           <Field l="Retirement Age"     value={p.retirementAge}   onChange={v=>sp("retirementAge",v)} />
@@ -485,7 +485,7 @@ export default function RetirementModuleUS({ user = {} }) {
 
           {/* Asset location strategy */}
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:12}}>📍 Asset Location Strategy (Tax Efficiency)</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:12}}>Asset Location Strategy (Tax Efficiency)</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
               {[
                 {l:"Taxable Account",c:T.tx3,assets:["Municipal bonds","Tax-managed index funds","Buy-and-hold stocks","I-Bonds","ETFs (low turnover)"],note:"Minimize taxable events. Hold long-term. Harvest losses."},
@@ -507,12 +507,12 @@ export default function RetirementModuleUS({ user = {} }) {
       {tab === "contribs" && (
         <div>
           <SectionCard>
-            <div style={{fontSize:14,fontWeight:700,color:T.cy,marginBottom:16}}>💰 2025 Contribution Limits & Your Gap</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.cy,marginBottom:16}}>2025 Contribution Limits & Your Gap</div>
             {[
               {l:"401(k) / 403(b)",    max:contribOpt.k401Max, current:contribOpt.current401k, irc:"§ 401(k)",
                note:p.currentAge>=60&&p.currentAge<=63?"Super catch-up age 60-63: $34,750!":p.currentAge>=50?"Catch-up contribution available: $31,000":"Standard limit"},
               {l:"Roth / Traditional IRA", max:contribOpt.rothLimit||contribOpt.iraMax, current:contribOpt.currentRoth, irc:"§ 408 / § 408A",
-               note:!contribOpt.rothEligible?"⚠ Over income limit — use Backdoor Roth IRA (no income limit)":contribOpt.rothLimit<contribOpt.iraMax?`Phase-out: limited to ${fm(contribOpt.rothLimit)}`:"Full contribution allowed"},
+               note:!contribOpt.rothEligible?"Over income limit — use Backdoor Roth IRA (no income limit)":contribOpt.rothLimit<contribOpt.iraMax?`Phase-out: limited to ${fm(contribOpt.rothLimit)}`:"Full contribution allowed"},
               {l:"HSA",                max:C.HSA_INDIVIDUAL, current:contribOpt.currentHSA, irc:"§ 223",
                note:"Must be enrolled in HDHP. Invest HSA funds — triple tax advantage."},
             ].map(acc=>{
@@ -528,7 +528,7 @@ export default function RetirementModuleUS({ user = {} }) {
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:12,color:T.tx2}}>{fm(acc.current)}<span style={{color:T.tx3}}> / {fm(acc.max)}</span></div>
                       {gap > 0 && <div style={{fontSize:12,color:T.or,fontWeight:700}}>Gap: {fm(gap)}/yr</div>}
-                      {gap === 0 && <div style={{fontSize:12,color:T.gn,fontWeight:700}}>✅ Maxed!</div>}
+                      {gap === 0 && <div style={{fontSize:12,color:T.gn,fontWeight:700}}>Maxed!</div>}
                     </div>
                   </div>
                   <div style={{height:8,background:T.bg2,borderRadius:3,overflow:"hidden",marginBottom:6}}>
@@ -540,7 +540,7 @@ export default function RetirementModuleUS({ user = {} }) {
             })}
 
             <div style={{background:`${T.gn}10`,border:`1px solid ${T.gn}25`,borderRadius:12,padding:16}}>
-              <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>💡 Annual Tax Savings Opportunity</div>
+              <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>Annual Tax Savings Opportunity</div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                 <div><div style={{fontSize:11,color:T.tx3}}>TOTAL UNUSED SPACE</div><div style={{fontSize:20,fontWeight:700,color:T.or}}>{fm(contribOpt.totalGap)}/yr</div></div>
                 <div><div style={{fontSize:11,color:T.tx3}}>TAX SAVINGS IF MAXED</div><div style={{fontSize:20,fontWeight:700,color:T.gn}}>{fm(contribOpt.annualTaxSavings)}/yr</div></div>
@@ -554,7 +554,7 @@ export default function RetirementModuleUS({ user = {} }) {
 
           {!contribOpt.rothEligible && (
             <SectionCard>
-              <div style={{fontSize:13,fontWeight:700,color:T.pr,marginBottom:12}}>🔄 Backdoor Roth IRA Strategy</div>
+              <div style={{fontSize:13,fontWeight:700,color:T.pr,marginBottom:12}}>Backdoor Roth IRA Strategy</div>
               <div style={{fontSize:12,color:T.tx2,lineHeight:1.8,marginBottom:12}}>
                 Your income (${(p.annualIncome||0).toLocaleString("en-US")}) exceeds the Roth IRA direct contribution limit (${C.ROTH_PHASEOUT_END.toLocaleString("en-US")}).
                 Use the <strong>Backdoor Roth</strong> — it's completely legal (IRS Notice 2014-54):
@@ -566,7 +566,7 @@ export default function RetirementModuleUS({ user = {} }) {
                 "4. File Form 8606 with your return to track non-deductible basis",
               ].map((s,i)=><div key={i} style={{fontSize:12,color:T.tx2,padding:"6px 0",borderBottom:`1px solid ${T.border}`}}>{s}</div>)}
               <InfoBox color={T.or}>
-                <strong>⚠ Pro Rata Rule (IRC § 408):</strong> If you have other pre-tax IRA money, the conversion will be partially taxable.
+                <strong>Pro Rata Rule (IRC § 408):</strong> If you have other pre-tax IRA money, the conversion will be partially taxable.
                 Best solution: roll pre-tax IRA funds into your 401(k) before doing the backdoor conversion.
                 This is called the "Reverse Rollover" strategy.
               </InfoBox>
@@ -578,7 +578,7 @@ export default function RetirementModuleUS({ user = {} }) {
       {/* ════ PROJECTION ════ */}
       {tab === "projection" && (
         <SectionCard>
-          <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:16}}>📈 Retirement Projection</div>
+          <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:16}}>Retirement Projection</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:20}}>
             <KPI l={`Balance at ${age(p.retirementAge)}`} v={fmK(projection.retirementBal)} c={T.gn} />
             <KPI l="FIRE Number" v={fmK(projection.fireNumber)} c={T.or} />
@@ -618,7 +618,7 @@ export default function RetirementModuleUS({ user = {} }) {
       {tab === "roth" && (
         <div>
           <SectionCard>
-            <div style={{fontSize:14,fontWeight:700,color:T.gn,marginBottom:16}}>🔄 Roth Conversion Strategy</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.gn,marginBottom:16}}>Roth Conversion Strategy</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
               <Field l="Annual Conversion Amount" value={p.rothConvertAmount}
                 onChange={v=>sp("rothConvertAmount",v)}
@@ -640,8 +640,8 @@ export default function RetirementModuleUS({ user = {} }) {
 
                 <InfoBox color={rothAnalysis.isAdvantageousNow?T.gn:T.or}>
                   {rothAnalysis.isAdvantageousNow
-                    ? <><strong>✅ Conversion looks favorable now.</strong> You're paying {pct(rothAnalysis.marginalRate)} to convert, which is likely lower than your future retirement rate. Converting now locks in today's lower rates.</>
-                    : <><strong>⚠ Consider timing.</strong> You're at {pct(rothAnalysis.marginalRate)} marginal rate for conversions. Best to convert in years when your income is lower (sabbaticals, early retirement gap years, before Social Security starts).</>
+                    ? <><strong>Conversion looks favorable now.</strong> You're paying {pct(rothAnalysis.marginalRate)} to convert, which is likely lower than your future retirement rate. Converting now locks in today's lower rates.</>
+                    : <><strong>Consider timing.</strong> You're at {pct(rothAnalysis.marginalRate)} marginal rate for conversions. Best to convert in years when your income is lower (sabbaticals, early retirement gap years, before Social Security starts).</>
                   }
                 </InfoBox>
               </>
@@ -649,7 +649,7 @@ export default function RetirementModuleUS({ user = {} }) {
           </SectionCard>
 
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>🪜 Roth Conversion Ladder (Early Retirement)</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>Roth Conversion Ladder (Early Retirement)</div>
             <div style={{fontSize:12,color:T.tx2,lineHeight:1.8,marginBottom:12}}>
               If retiring before 59½, the Roth Conversion Ladder lets you access retirement funds penalty-free:
             </div>
@@ -677,11 +677,11 @@ export default function RetirementModuleUS({ user = {} }) {
       {/* ════ RMDs ════ */}
       {tab === "rmd" && (
         <SectionCard>
-          <div style={{fontSize:14,fontWeight:700,color:T.pr,marginBottom:16}}>📋 Required Minimum Distributions (RMDs)</div>
+          <div style={{fontSize:14,fontWeight:700,color:T.pr,marginBottom:16}}>Required Minimum Distributions (RMDs)</div>
           <div style={{background:T.bg3,borderRadius:12,padding:16,marginBottom:16}}>
             {rmdCalc.active ? (
               <>
-                <div style={{fontSize:12,color:T.rd,fontWeight:700,marginBottom:8}}>⚠ RMDs are Active (Age {p.currentAge})</div>
+                <div style={{fontSize:12,color:T.rd,fontWeight:700,marginBottom:8}}>RMDs are Active (Age {p.currentAge})</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
                   <KPI l="Pre-Tax Balance" v={fm(rmdCalc.totalPreTax)} c={T.tx2} />
                   <KPI l="Distribution Factor" v={rmdCalc.factor} c={T.tx3} sub="IRS Uniform Lifetime Table" />
@@ -707,7 +707,7 @@ export default function RetirementModuleUS({ user = {} }) {
           </InfoBox>
 
           <SectionCard style={{marginTop:16}}>
-            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>💡 RMD Reduction Strategies</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>RMD Reduction Strategies</div>
             {[
               {s:"Roth Conversions Now", d:"Convert traditional IRA/401(k) to Roth before RMDs begin. Reduces future RMD base. Pay tax now at (hopefully) lower rate."},
               {s:"Qualified Charitable Distribution (QCD)", d:"IRC § 408(d)(8): Donate up to $105,000/yr directly from IRA to charity — satisfies RMD, excludes from income. Best strategy for charitably inclined retirees."},
@@ -728,7 +728,7 @@ export default function RetirementModuleUS({ user = {} }) {
       {tab === "ss" && (
         <div>
           <SectionCard>
-            <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:16}}>👴 Social Security — Claiming Strategy</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:16}}>Social Security — Claiming Strategy</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
               <Field l="Your Estimated Benefit at FRA (age 67)" value={p.ssEstimatedBenefit}
                 onChange={v=>sp("ssEstimatedBenefit",v)}
@@ -776,7 +776,7 @@ export default function RetirementModuleUS({ user = {} }) {
           </SectionCard>
 
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:12}}>🧾 Social Security Taxation (IRC § 86)</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:12}}>Social Security Taxation (IRC § 86)</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
               {[
                 {l:"Combined income < $25K",   tax:"0% of SS taxable",   c:T.gn},
@@ -802,25 +802,25 @@ export default function RetirementModuleUS({ user = {} }) {
       {tab === "fire" && (
         <div>
           <SectionCard>
-            <div style={{fontSize:14,fontWeight:700,color:T.or,marginBottom:16}}>🔥 FIRE Calculator (Financial Independence, Retire Early)</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.or,marginBottom:16}}>FIRE Calculator (Financial Independence, Retire Early)</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:10,marginBottom:20}}>
               <KPI l="Current Savings" v={fmK(fireCalc.currentSavings)} c={T.tx2} />
               <KPI l="Lean FIRE" v={fmK(fireCalc.leanFIRE)} sub={`${fm(p.desiredIncome*0.75*12)}/yr · ${fireCalc.yearsToLean} yrs`} c={T.cy} />
               <KPI l="Regular FIRE" v={fmK(fireCalc.regularFIRE)} sub={`${fm(p.desiredIncome*12)}/yr · ${fireCalc.yearsToFIRE} yrs`} c={T.gn} />
               <KPI l="Fat FIRE" v={fmK(fireCalc.fatFIRE)} sub={`${fm(p.desiredIncome*1.5*12)}/yr · ${fireCalc.yearsToFat} yrs`} c={T.pr} />
-              <KPI l="Coast FIRE" v={fmK(fireCalc.coastFIRE)} sub={fireCalc.coastReached?"✅ REACHED!":"Stop saving, let it grow"} c={fireCalc.coastReached?T.gn:T.or} />
+              <KPI l="Coast FIRE" v={fmK(fireCalc.coastFIRE)} sub={fireCalc.coastReached?"REACHED!":"Stop saving, let it grow"} c={fireCalc.coastReached?T.gn:T.or} />
             </div>
 
             <InfoBox color={T.gn}>
               <strong>Coast FIRE</strong> means you've saved enough that — even without another contribution — your portfolio will grow to your FIRE number by traditional retirement age.
               {fireCalc.coastReached
-                ? " ✅ You've already reached Coast FIRE! Your current savings will reach your retirement goal without additional contributions."
+                ? " You've already reached Coast FIRE! Your current savings will reach your retirement goal without additional contributions."
                 : ` You need ${fmK(fireCalc.coastFIRE)} to Coast FIRE. ${fireCalc.currentSavings > 0 ? `You're at ${((fireCalc.currentSavings/fireCalc.coastFIRE)*100).toFixed(0)}%.` : ""}`}
             </InfoBox>
           </SectionCard>
 
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:12}}>⚡ Rule 72(t) SEPP — Penalty-Free Early Access</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:12}}>Rule 72(t) SEPP — Penalty-Free Early Access</div>
             <div style={{fontSize:12,color:T.tx2,lineHeight:1.8,marginBottom:12}}>
               If you retire before 59½, Rule 72(t) Substantially Equal Periodic Payments (SEPP) lets you take fixed annual distributions from your IRA without the 10% early withdrawal penalty (IRC § 72(t)(2)(A)(iv)).
             </div>
@@ -830,7 +830,7 @@ export default function RetirementModuleUS({ user = {} }) {
               <KPI l="Duration Required" v="5 yrs or age 59½" c={T.tx3} sub="whichever is longer" />
             </div>
             <InfoBox color={T.rd}>
-              <strong>⚠ Critical Rules:</strong> Once you start SEPP, you CANNOT change the amount for 5 years or until you reach 59½ (whichever is longer).
+              <strong>Critical Rules:</strong> Once you start SEPP, you CANNOT change the amount for 5 years or until you reach 59½ (whichever is longer).
               Modifying the schedule triggers all penalties retroactively with interest.
               Three calculation methods: Required Minimum Distribution, Fixed Amortization, Fixed Annuitization.
               Use a CPA to set up correctly — the IRS is unforgiving on errors.
@@ -838,7 +838,7 @@ export default function RetirementModuleUS({ user = {} }) {
           </SectionCard>
 
           <SectionCard>
-            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>📊 The 4% Rule — Is It Safe?</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>The 4% Rule — Is It Safe?</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
               {[
                 {l:"4% SWR (Bengen 1994)",   v:fm(projection.retirementBal*0.04/12)+"/mo", note:"Based on 30-year horizons. May be aggressive for 40+ year retirements.",c:T.gn},

@@ -57,19 +57,19 @@ const fm = (n) => "$" + Math.round(Math.abs(n||0)).toLocaleString("en-US");
 
 // ── 5 Levels of Financial Freedom ─────────────────────────────────────────
 const LEVELS = [
-  { id:1, name:"Security",      icon:"🛡️",  color:"#3b82f6", factor:0.65,
+  { id:1, name:"Security",      icon:"",  color:"#3b82f6", factor:0.65,
     desc:"Passive income covers basic needs",
     detail:"Your income covers 65% of expenses — housing, food, utilities, transport, basic insurance. If you lost your job, your assets would keep you alive." },
-  { id:2, name:"Vitality",      icon:"⚡",  color:"#94a3b8", factor:0.825,
+  { id:2, name:"Vitality",      icon:"",  color:"#94a3b8", factor:0.825,
     desc:"Security + half your lifestyle",
     detail:"Your income covers 82.5% of expenses. Beyond basics, you can maintain half your current lifestyle: some entertainment, modest travel, education." },
-  { id:3, name:"Independence",  icon:"🏆",  color:"#00c805", factor:1.0,
+  { id:3, name:"Independence",  icon:"",  color:"#00c805", factor:1.0,
     desc:"Income covers 100% of all expenses",
     detail:"The breakpoint! Your income covers ALL your current expenses. You no longer need a job to maintain your lifestyle. You could stop working today and live the same." },
-  { id:4, name:"Freedom",       icon:"🚀",  color:"#f59e0b", factor:1.5,
+  { id:4, name:"Freedom",       icon:"",  color:"#f59e0b", factor:1.5,
     desc:"Independence + 50% extra for luxuries",
     detail:"Your income is 1.5× your expenses. You have margin for luxuries, travel, expensive hobbies, giving to causes you care about. You can upgrade your lifestyle without worry." },
-  { id:5, name:"Absolute",      icon:"👑",  color:"#f59e0b", factor:2.5,
+  { id:5, name:"Absolute",      icon:"",  color:"#f59e0b", factor:2.5,
     desc:"Income is 2.5× your expenses",
     detail:"The maximum level. Your income is 2.5× your expenses. You can do what you want, when you want, where you want. Money is no longer a constraint." },
 ];
@@ -121,7 +121,7 @@ function FreedomBar({ ni, te }) {
   const gap = next ? Math.max(0, next.factor * te - ni) : 0;
 
   return (
-    <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:20,padding:24,marginBottom:20}}>
+    <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:24,marginBottom:20}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
         <div>
           <h3 style={{fontSize:16,fontWeight:700,margin:0}}>Financial Freedom Index</h3>
@@ -176,7 +176,7 @@ function FreedomBar({ ni, te }) {
           </>
         ) : (
           <>
-            <div style={{fontSize:13,fontWeight:700,color:T.tx3}}>⬇️ Below Security Level</div>
+            <div style={{fontSize:13,fontWeight:700,color:T.tx3}}>Below Security Level</div>
             <div style={{fontSize:12,color:T.tx2,marginTop:4}}>
               Your income doesn't yet cover 65% of expenses. Need +{fm(LEVELS[0].factor*te - ni)}/mo more.
             </div>
@@ -198,7 +198,7 @@ function FreedomBar({ ni, te }) {
       )}
       {!next && ratio >= LEVELS[4].factor && (
         <div style={{background:`${T.gd}15`,border:`1px solid ${T.gd}40`,borderRadius:10,padding:"10px 14px",textAlign:"center"}}>
-          <div style={{fontSize:14,fontWeight:700,color:T.gd}}>👑 Absolute Financial Freedom Achieved!</div>
+          <div style={{fontSize:14,fontWeight:700,color:T.gd}}>Absolute Financial Freedom Achieved!</div>
           <div style={{fontSize:12,color:T.tx2,marginTop:4}}>Your income is {(ratio*100).toFixed(0)}% of your expenses. Money is no longer a constraint.</div>
         </div>
       )}
@@ -291,10 +291,10 @@ export default function SimuladorUS({ user, totals }) {
   // Scenario selector
   const [scenario, setScenario] = useState("actual");
   const SCENARIOS = [
-    { id:"actual",      l:"📊 Actual",       income:1,    expenses:1 },
-    { id:"conservador", l:"😟 Bear Case",     income:0.80, expenses:1.05 },
-    { id:"optimista",   l:"🚀 Bull Case",     income:1.30, expenses:0.90 },
-    { id:"crisis",      l:"🔴 Crisis",        income:0.60, expenses:1.10 },
+    { id:"actual",      l:"Actual",       income:1,    expenses:1 },
+    { id:"conservador", l:"Bear Case",     income:0.80, expenses:1.05 },
+    { id:"optimista",   l:"Bull Case",     income:1.30, expenses:0.90 },
+    { id:"crisis",      l:"Crisis",        income:0.60, expenses:1.10 },
   ];
   const applyScenario = (s) => {
     setScenario(s.id);
@@ -324,15 +324,15 @@ export default function SimuladorUS({ user, totals }) {
   return (
     <div>
       <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>🖥️ Financial Freedom Simulator</h2>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Financial Freedom Simulator</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
           Move the sliders to see how changes affect your financial independence in real time
         </p>
       </div>
 
       {noData && (
-        <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:48,textAlign:"center",color:T.tx3,marginBottom:20}}>
-          <div style={{fontSize:32,marginBottom:12}}>📊</div>
+        <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:48,textAlign:"center",color:T.tx3,marginBottom:20}}>
+          <div style={{fontSize:32,marginBottom:12}}></div>
           <div style={{fontSize:15,fontWeight:700,color:T.tx2,marginBottom:8}}>No data yet</div>
           <div style={{fontSize:13}}>Add your income and expenses first, then come back here to simulate scenarios.</div>
         </div>
@@ -394,9 +394,9 @@ export default function SimuladorUS({ user, totals }) {
 
         {/* Income sliders */}
         {ingresos.length > 0 && (
-          <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:18}}>
+          <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:18}}>
             <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:12}}>
-              💰 Income Sources
+              Income Sources
               <span style={{fontSize:11,color:T.tx3,fontWeight:400,marginLeft:8}}>
                 Total: {fm(simT.ni)}/mo
               </span>
@@ -421,9 +421,9 @@ export default function SimuladorUS({ user, totals }) {
         )}
 
   {/* Expense + Debt sliders */}
-        <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:18}}>
+        <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:18}}>
           <div style={{fontSize:13,fontWeight:700,color:T.rd,marginBottom:12}}>
-            💳 Expenses & Debt Payments
+            Expenses & Debt Payments
             <span style={{fontSize:11,color:T.tx3,fontWeight:400,marginLeft:8}}>
               Total: {fm(simT.te)}/mo
             </span>
@@ -536,7 +536,7 @@ export default function SimuladorUS({ user, totals }) {
                 impuesto:"Taxes", impuestoNota:"federal + FICA",
                 aportes:"Retirement contributions", aportesNota:"401(k), IRA",
                 cuotas:"Debt payments", cuotasNota:"principal + interest",
-                titulo:"💧 Where your money goes",
+                titulo:"Where your money goes",
                 pie:(monto)=>`Each ribbon's width is the money: ${monto} coming in.`,
               }}
               fmt={fm}
@@ -547,9 +547,9 @@ export default function SimuladorUS({ user, totals }) {
       }catch(e){ return null } })()}
 
       {/* 5-year projection */}
-      <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:14,padding:20}}>
+      <div style={{background:T.card,border:"1px solid "+T.border,borderRadius:12,padding:20}}>
         <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:4}}>
-          📈 5-Year Net Worth Projection
+          5-Year Net Worth Projection
         </div>
         <div style={{fontSize:12,color:T.tx3,marginBottom:14}}>
           Cash flow {fm(simT.cf)}/month (income – expenses – debt – est. taxes) + 7% annual return

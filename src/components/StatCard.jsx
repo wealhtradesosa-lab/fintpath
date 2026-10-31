@@ -67,7 +67,7 @@ export default function StatCard({
           ? `radial-gradient(circle at 0% 0%, ${accent}12 0%, transparent 60%)`
           : undefined,
         border: `1px solid ${highlight ? (accent || C.borderStrong) + (highlight ? "30" : "") : C.border}`,
-        borderRadius: 14,
+        borderRadius: 12,
         padding: size === "sm" ? "12px 14px" : "16px 18px",
         position: "relative",
         overflow: "hidden",

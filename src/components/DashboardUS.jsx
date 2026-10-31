@@ -31,14 +31,14 @@ const fm = (n) => {
 const pct = (n) => ((n||0)).toFixed(1)+"%";
 
 const Kpi = ({l,v,sub,c}) => (
-  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 18px"}}>
+  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 18px"}}>
     <div style={{fontSize:11,color:T.tx3,letterSpacing:1,fontWeight:600}}>{l}</div>
     <div style={{fontSize:22,fontWeight:700,color:c||T.tx,marginTop:6}}>{v}</div>
     {sub&&<div style={{fontSize:12,color:T.tx3,marginTop:2}}>{sub}</div>}
   </div>
 );
 const Card = ({children,s}) => (
-  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,overflow:"hidden",...s}}>
+  <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden",...s}}>
     {children}
   </div>
 );
@@ -179,11 +179,11 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         <div style={{display:"flex",gap:6}}>
           <button onClick={()=>setPg("resumen")}
             style={{background:T.bl,color:"#fff",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
-            📋 Summary
+            Summary
           </button>
           <button onClick={generatePDF}
             style={{background:T.gn,color:"#000",border:"none",padding:"8px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>
-            📄 PDF Report
+            PDF Report
           </button>
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
             </div>
             {/* US Wealth percentile */}
             <div style={{marginTop:16,background:`${T.pr}10`,border:`1px solid ${T.pr}20`,borderRadius:10,padding:"10px 14px"}}>
-              <div style={{fontSize:11,color:T.pr,fontWeight:700}}>🇺🇸 US WEALTH POSITION (Fed Reserve SCF 2022)</div>
+              <div style={{fontSize:11,color:T.pr,fontWeight:700}}>US WEALTH POSITION (Fed Reserve SCF 2022)</div>
               <div style={{fontSize:13,color:T.tx2,marginTop:4}}>
                 You're in the <strong style={{color:T.gn}}>top {100-nwPct}%</strong> of US households by net worth
               </div>
@@ -230,7 +230,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         <Kpi l="Income/month"  v={fm(t.ti)}  c={T.gn} sub="/month"/>
         <Kpi l="Expenses/month" v={fm(t.te)} c={T.rd} sub="/month"/>
         <Kpi l="Cash Flow"     v={fm(t.cf)}  c={t.cf>=0?T.gn:T.rd} sub="/month"/>
-        <Kpi l="Independence"  v={pct(t.ind)} c={t.ind>=100?T.gn:T.tx2} sub={t.ind>=100?"✅ Achieved!":"target 100%"}/>
+        <Kpi l="Independence"  v={pct(t.ind)} c={t.ind>=100?T.gn:T.tx2} sub={t.ind>=100?"Achieved!":"target 100%"}/>
       </div>
 
       {/* 02-ago-2026 (Santiago: "no veo el gráfico de a dónde va el dinero ni
@@ -276,7 +276,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
       {/* Financial Freedom Level */}
       <Card s={{padding:20,marginBottom:14}}>
         <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:14}}>
-          🏆 Financial Freedom Level
+          Financial Freedom Level
         </div>
         <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
           {LEVELS.map((l,i)=>{
@@ -363,7 +363,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:14,marginBottom:14}}>
         <Card s={{padding:0}}>
           <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${T.border}`}}>
-            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>💰 Income by Source</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>Income by Source</span>
             <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}/mo</span>
           </div>
           {ingresos.length>0
@@ -380,7 +380,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         </Card>
         <Card s={{padding:0}}>
           <div style={{padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:`1px solid ${T.border}`}}>
-            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>💳 Expenses by Category</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>Expenses by Category</span>
             <span style={{fontSize:13,fontWeight:700,color:T.rd}}>{fm(t.gfm)}/mo</span>
           </div>
           {expPie.length>0
@@ -416,7 +416,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           </ResponsiveContainer>
         </Card>
         <Card s={{padding:24,display:"flex",flexDirection:"column",justifyContent:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>🔥 FIRE Progress</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>FIRE Progress</div>
           <div style={{position:"relative",height:14,background:T.bg3,borderRadius:6,overflow:"hidden",marginBottom:8}}>
             <div style={{height:"100%",width:Math.min(firePct,100)+"%",
               background:firePct>=100?"linear-gradient(90deg,#00c805,#3b82f6)":"linear-gradient(90deg,#ff5000,#f59e0b)",
@@ -432,7 +432,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           </div>
           <div style={{fontSize:12,color:T.tx3,marginTop:4}}>
             {firePct>=100
-              ? <span style={{color:T.gn}}>🏆 Financially independent!</span>
+              ? <span style={{color:T.gn}}>Financially independent!</span>
               : `Need ${fm(Math.max(0,fireNum-netWorth))} more`}
           </div>
           {t.cf>0&&firePct<100&&(
@@ -445,23 +445,23 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
 
       {/* Key alerts */}
       <Card s={{padding:20}}>
-        <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:12}}>🔔 Key Alerts & Recommendations</div>
+        <div style={{fontSize:13,fontWeight:700,color:T.or,marginBottom:12}}>Key Alerts & Recommendations</div>
         {(()=>{
           const alerts = [];
           const savR = t.ti>0?(t.cf/t.ti*100):0;
           const dtiR  = t.ti>0?(t.tc/t.ti*100):0;
 
-          if(t.cf<0) alerts.push({t:"🔴",l:"Negative cash flow",d:`You're spending ${fm(-t.cf)}/month more than you earn. Action required.`});
-          if(savR<10&&savR>=0) alerts.push({t:"🟡",l:"Low savings rate",d:`${savR.toFixed(0)}% savings rate — target 20%+ for financial independence.`});
-          if(dtiR>40) alerts.push({t:"🔴",l:"High debt-to-income",d:`${dtiR.toFixed(0)}% of income goes to debt payments — target below 36%.`});
+          if(t.cf<0) alerts.push({t:"",l:"Negative cash flow",d:`You're spending ${fm(-t.cf)}/month more than you earn. Action required.`});
+          if(savR<10&&savR>=0) alerts.push({t:"",l:"Low savings rate",d:`${savR.toFixed(0)}% savings rate — target 20%+ for financial independence.`});
+          if(dtiR>40) alerts.push({t:"",l:"High debt-to-income",d:`${dtiR.toFixed(0)}% of income goes to debt payments — target below 36%.`});
 
           const maxDep = deu.filter(d=>(d.ts||0)>15).sort((a,b)=>(b.ts||0)-(a.ts||0))[0];
-          if(maxDep) alerts.push({t:"🔴",l:`High-rate debt: ${maxDep.n}`,d:`${maxDep.ts}% APR — pay this off aggressively. Every dollar saved is a ${maxDep.ts}% guaranteed return.`});
+          if(maxDep) alerts.push({t:"",l:`High-rate debt: ${maxDep.n}`,d:`${maxDep.ts}% APR — pay this off aggressively. Every dollar saved is a ${maxDep.ts}% guaranteed return.`});
 
-          if(t.ind>=100) alerts.push({t:"🟢",l:"Financial independence achieved!",d:`Your income covers 100%+ of expenses. Keep building your FIRE number.`});
-          if(firePct>=75&&firePct<100) alerts.push({t:"🟢",l:`FIRE ${firePct.toFixed(0)}% complete`,d:`Almost there! ${fm(Math.max(0,fireNum-netWorth))} more to financial freedom.`});
+          if(t.ind>=100) alerts.push({t:"",l:"Financial independence achieved!",d:`Your income covers 100%+ of expenses. Keep building your FIRE number.`});
+          if(firePct>=75&&firePct<100) alerts.push({t:"",l:`FIRE ${firePct.toFixed(0)}% complete`,d:`Almost there! ${fm(Math.max(0,fireNum-netWorth))} more to financial freedom.`});
 
-          if(alerts.length===0) alerts.push({t:"🟢",l:"Looking good!",d:"No critical issues. Keep up your current strategy and review monthly."});
+          if(alerts.length===0) alerts.push({t:"",l:"Looking good!",d:"No critical issues. Keep up your current strategy and review monthly."});
 
           return alerts.sort((a,b)=>a.t.localeCompare(b.t)).map((a,i)=>(
             <div key={i} style={{display:"flex",gap:10,padding:"10px 0",borderBottom:i<alerts.length-1?`1px solid ${T.border}`:"none"}}>

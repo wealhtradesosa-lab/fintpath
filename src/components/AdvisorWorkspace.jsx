@@ -203,8 +203,8 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
 
         {/* ─── CLIENT LIST ─── */}
         {activeClients === 0 ? (
-          <div style={{ background: T.bg2, border: `1px dashed ${T.borderL}`, borderRadius: 16, padding: "64px 32px", textAlign: "center" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>👥</div>
+          <div style={{ background: T.bg2, border: `1px dashed ${T.borderL}`, borderRadius: 12, padding: "64px 32px", textAlign: "center" }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}></div>
             <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Aún no tienes clientes</h3>
             <p style={{ fontSize: 14, color: T.txt2, maxWidth: 400, margin: "0 auto 24px", lineHeight: 1.6 }}>
               Invita a tu primer cliente para empezar a gestionar su patrimonio desde este panel. Cada cliente tendrá su propio dashboard completo con Pro activado.
@@ -227,7 +227,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
                   style={{
                     background: T.bg2,
                     border: `1px solid ${T.border}`,
-                    borderRadius: 14,
+                    borderRadius: 12,
                     padding: 20,
                     cursor: "pointer",
                     transition: "all 0.2s ease",
@@ -255,7 +255,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
                     </div>
                   ) : (
                     <div style={{ padding: "12px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, marginBottom: 12 }}>
-                      <div style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>⚠ Sin datos cargados todavía</div>
+                      <div style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>Sin datos cargados todavía</div>
                     </div>
                   )}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: `1px solid ${T.border}`, fontSize: 12, color: T.txt3 }}>
@@ -270,14 +270,14 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
 
         {/* ─── FOOTER NOTE ─── */}
         <div style={{ marginTop: 48, padding: 20, background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, fontSize: 12, color: T.txt3, lineHeight: 1.7 }}>
-          <strong style={{ color: T.txt2 }}>💡 Cómo funciona:</strong> Invita a tus clientes por email. Reciben un link único para crear su cuenta en Finpathia. Una vez dentro, puedes acceder a su dashboard completo con plan Pro activado (dashboard patrimonial, plan tributario Colombia, simuladores, proyecciones, Asesor IA). Los datos de tus clientes están protegidos — sólo tú como asesor asignado los puedes ver.
+          <strong style={{ color: T.txt2 }}>Cómo funciona:</strong> Invita a tus clientes por email. Reciben un link único para crear su cuenta en Finpathia. Una vez dentro, puedes acceder a su dashboard completo con plan Pro activado (dashboard patrimonial, plan tributario Colombia, simuladores, proyecciones, Asesor IA). Los datos de tus clientes están protegidos — sólo tú como asesor asignado los puedes ver.
         </div>
       </div>
 
       {/* ─── INVITE MODAL ─── */}
       {showInviteModal && (
         <div onClick={closeInviteModal} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.borderL}`, borderRadius: 20, padding: 32, maxWidth: 480, width: "100%", maxHeight: "90vh", overflow: "auto" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.borderL}`, borderRadius: 12, padding: 32, maxWidth: 480, width: "100%", maxHeight: "90vh", overflow: "auto" }}>
             {!generatedLink ? (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
@@ -343,7 +343,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
                   onClick={copyLink}
                   style={{ width: "100%", background: copied ? T.green : T.bg3, color: copied ? "#000" : T.txt, border: `1px solid ${T.border}`, padding: "12px", borderRadius: 10, cursor: "pointer", fontSize: 14, fontWeight: 700, marginBottom: 8 }}
                 >
-                  {copied ? "✓ Copiado" : "📋 Copiar link"}
+                  {copied ? "✓ Copiado" : "Copiar link"}
                 </button>
                 <button
                   onClick={closeInviteModal}

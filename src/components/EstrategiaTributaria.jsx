@@ -153,7 +153,7 @@ export default function EstrategiaTributaria({
   if (!selectedOwner) {
     return (
       <div style={{ padding: "40px 28px", textAlign: "center" }}>
-        <div style={{ fontSize: 56, marginBottom: 16 }}>🧾</div>
+        <div style={{ fontSize: 56, marginBottom: 16 }}></div>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: C.txt, marginBottom: 8 }}>
           Empecemos tu estrategia tributaria
         </h1>
@@ -174,7 +174,7 @@ export default function EstrategiaTributaria({
             cursor: "pointer",
           }}
         >
-          🪄 Empezar el wizard guiado →
+          Empezar el wizard guiado →
         </button>
       </div>
     );
@@ -189,10 +189,10 @@ export default function EstrategiaTributaria({
       <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.txt3, letterSpacing: 0.5, marginBottom: 4 }}>
-            🧾 Tu situación tributaria · Año {ano}
+            Tu situación tributaria · Año {ano}
           </div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 24 }}>{isJuridica ? "🏢" : "👤"}</span>
+            <span style={{ fontSize: 24 }}>{isJuridica ? "" : ""}</span>
             {ownerName}
             <span style={{ fontSize: 12, fontWeight: 600, color: C.txt3, padding: "3px 8px", background: C.bg3, borderRadius: 6 }}>
               {isJuridica ? "Persona jurídica" : "Persona natural"}
@@ -218,7 +218,7 @@ export default function EstrategiaTributaria({
           >
             {allOwners.map(o => (
               <option key={o.id} value={o.id}>
-                {o.type === "juridica" ? "🏢" : "👤"} {o.name}
+                {o.type === "juridica" ? "" : ""} {o.name}
               </option>
             ))}
           </select>
@@ -233,7 +233,7 @@ export default function EstrategiaTributaria({
         padding: "32px 28px",
         background: `linear-gradient(135deg, ${C.bg2} 0%, rgba(124,58,237,0.08) 100%)`,
         border: `1.5px solid ${C.border}`,
-        borderRadius: 16,
+        borderRadius: 12,
         marginBottom: 16,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, marginBottom: 10, lineHeight: 1.5 }}>
@@ -258,13 +258,13 @@ export default function EstrategiaTributaria({
         {/* Mini desglose: impuesto bruto + retenciones */}
         {ingresoAnual > 0 && (
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 12, color: C.txt3, marginTop: 8 }}>
-            <span>💰 Ingresaste {fmShort(ingresoAnual)} en el año</span>
+            <span>Ingresaste {fmShort(ingresoAnual)} en el año</span>
             <span>·</span>
-            <span>🏛️ Impuesto calculado {fmShort(impuestoBruto)} ({fmtPctEs(tasaEfectiva, 1)})</span>
+            <span>Impuesto calculado {fmShort(impuestoBruto)} ({fmtPctEs(tasaEfectiva, 1)})</span>
             {retenciones > 0 && (
               <>
                 <span>·</span>
-                <span>📋 Ya te retuvieron {fmShort(retenciones)}</span>
+                <span>Ya te retuvieron {fmShort(retenciones)}</span>
               </>
             )}
           </div>
@@ -283,7 +283,7 @@ export default function EstrategiaTributaria({
             gap: 12,
             flexWrap: "wrap",
           }}>
-            <span style={{ fontSize: 22 }}>💡</span>
+            <span style={{ fontSize: 22 }}></span>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>
                 Detectamos cómo bajarte ese número en {fm(ahorroPotencial)}/año
@@ -302,7 +302,7 @@ export default function EstrategiaTributaria({
       {oportunidades.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, letterSpacing: 0.5 }}>
-            💡 Deducciones y beneficios a revisar
+            Deducciones y beneficios a revisar
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {oportunidades.map((op, i) => (
@@ -323,7 +323,7 @@ export default function EstrategiaTributaria({
       {hallazgos.total > 0 && (
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: C.txt2, marginBottom: 10, letterSpacing: 0.5 }}>
-            ⚠️ Cosas por revisar ({hallazgos.total})
+            Cosas por revisar ({hallazgos.total})
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {hallazgos.errores.map((h, i) => (
@@ -345,33 +345,33 @@ export default function EstrategiaTributaria({
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
           <AccionSecundaria
-            icono="🪄"
+            icono=""
             titulo="Cargar datos paso a paso"
             descripcion="Wizard guiado con preguntas simples"
             onClick={onAbrirWizard}
           />
           <AccionSecundaria
-            icono="💬"
+            icono=""
             titulo="Pregúntale al contador IA"
             descripcion="Chat sobre tu situación"
             onClick={onAbrirChat}
           />
           <AccionSecundaria
-            icono="📋"
+            icono=""
             titulo="Ver el detalle técnico"
             descripcion={`Formulario ${isJuridica ? "F-110" : "F-210"} línea por línea`}
             onClick={onAbrirDetalle}
           />
           {allOwners.length > 1 && (
             <AccionSecundaria
-              icono="👨‍👩‍👧‍👦"
+              icono=""
               titulo="Vista familiar consolidada"
               descripcion={`Todos tus titulares en una vista (${allOwners.length})`}
               onClick={onAbrirVistaFamiliar}
             />
           )}
           <AccionSecundaria
-            icono="📚"
+            icono=""
             titulo="Mis declaraciones anteriores"
             descripcion="Historial de años pasados"
             onClick={onAbrirDeclaracionesPrev}
@@ -475,7 +475,7 @@ function OportunidadCard({ opo, index, onAplicar }) {
             whiteSpace: "nowrap",
           }}
         >
-          ⚡ Aplicar →
+          Aplicar →
         </button>
       )}
     </div>
@@ -506,7 +506,7 @@ function AlertaCard({ hallazgo, severidad, onResolver }) {
         background: colorBg,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        {esError ? "🚫" : "⚠️"}
+        {esError ? "" : ""}
       </div>
       <div style={{ flex: 1, minWidth: 180 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: C.txt, lineHeight: 1.3 }}>

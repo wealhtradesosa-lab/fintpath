@@ -175,7 +175,7 @@ export default function ProyeccionPatrimonio({
   const nominalMezcla = mezcla ? ((1 + mezcla.tasaReal) * (1 + (Number(inflacionPct) || 0) / 100) - 1) * 100 : null;
   const mezclaIgual = nominalMezcla != null && Math.abs(nominalMezcla - (Number(retornoPct) || 0)) < 0.15;
   return (
-    <div style={{ background: T.card || "var(--fp-card)", border: "1px solid " + borde, borderRadius: 16, padding: "24px 24px 20px", marginTop: 20 }}>
+    <div style={{ background: T.card || "var(--fp-card)", border: "1px solid " + borde, borderRadius: 12, padding: "24px 24px 20px", marginTop: 20 }}>
       <div style={{ fontSize: 16, fontWeight: 700, color: txt, lineHeight: 1.3 }}>
         ¿Tu patrimonio crece o se come en 3, 5 y 10 años?
       </div>
@@ -188,7 +188,7 @@ export default function ProyeccionPatrimonio({
           const crece = h.veredicto === "crece";
           const col = crece ? (T.gn || "#00c805") : (T.rd || "#ff5000");
           return (
-            <div key={h.horizonte} style={{ background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + borde, borderRadius: 14, padding: "12px 12px 10px", minWidth: 0, overflow: "hidden" }}>
+            <div key={h.horizonte} style={{ background: "rgba(var(--fp-ink),0.03)", border: "1px solid " + borde, borderRadius: 12, padding: "12px 12px 10px", minWidth: 0, overflow: "hidden" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: sub2 }}>En {h.horizonte} años</div>
               <div title={fm(h.patrimonioReal)} style={{ fontSize: 18, fontWeight: 700, color: txt, marginTop: 8, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmtPlataCortaEs(h.patrimonioReal)}</div>
               <div style={{ fontSize: 12, fontWeight: 700, color: col, marginTop: 2 }}>{crece ? "▲ Crece" : "▼ Se come"}</div>

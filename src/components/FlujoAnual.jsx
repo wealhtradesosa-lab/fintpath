@@ -392,10 +392,10 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         const mesesVigentes = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
         return s + (d.pg || d.pago || 0) * mesesVigentes;
       }, 0);
-    if (cuotasAnual > 0) egresosPorCat["💳 Cuotas de deudas"] = cuotasAnual;
+    if (cuotasAnual > 0) egresosPorCat["Cuotas de deudas"] = cuotasAnual;
 
     // Impuesto neto (después de retención) como categoría separada
-    if (impuestoNetoAnual > 0) egresosPorCat["📋 Impuesto de renta"] = impuestoNetoAnual;
+    if (impuestoNetoAnual > 0) egresosPorCat["Impuesto de renta"] = impuestoNetoAnual;
 
     // ─── Formato para PieChart ───────────────────────────────────
     // Paleta de colores diferenciada por categoría (rotan si hay muchas)
@@ -475,8 +475,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       {/* ═══ HIGHLIGHTS DEL AÑO — 4 cards ═══ */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>
         {/* Mejor mes */}
-        <div style={{ background: T.card, border: `1px solid ${T.gn}30`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>🏆 Mejor mes</div>
+        <div style={{ background: T.card, border: `1px solid ${T.gn}30`, borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Mejor mes</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.gn, marginTop: 6 }}>{highlights.mejorMes?.mesLabelFull}</div>
           <div style={{ fontSize: 13, color: T.txt2, fontFamily: "monospace", marginTop: 2 }}>{fm(highlights.mejorMes?.cashFlow)}</div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
@@ -485,8 +485,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         </div>
 
         {/* Peor mes */}
-        <div style={{ background: T.card, border: `1px solid ${T.rd}30`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>⚠️ Peor mes</div>
+        <div style={{ background: T.card, border: `1px solid ${T.rd}30`, borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Peor mes</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.rd, marginTop: 6 }}>{highlights.peorMes?.mesLabelFull}</div>
           <div style={{ fontSize: 13, color: T.txt2, fontFamily: "monospace", marginTop: 2 }}>{fm(highlights.peorMes?.cashFlow)}</div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
@@ -495,8 +495,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         </div>
 
         {/* Volatilidad */}
-        <div style={{ background: T.card, border: `1px solid ${highlights.volatilidadColor}30`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>📊 Volatilidad</div>
+        <div style={{ background: T.card, border: `1px solid ${highlights.volatilidadColor}30`, borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Volatilidad</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: highlights.volatilidadColor, marginTop: 6 }}>{highlights.volatilidadLabel}</div>
           <div style={{ fontSize: 13, color: T.txt2, marginTop: 2 }}>
             {fmtVolatilidadTextoEs(highlights.volatilidadPct)}
@@ -507,8 +507,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         </div>
 
         {/* Meses positivos/negativos */}
-        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>💰 Balance de meses</div>
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Balance de meses</div>
           <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginTop: 6 }}>
             <span style={{ fontSize: 22, fontWeight: 700, color: T.gn }}>{highlights.positivos}</span>
             <span style={{ fontSize: 12, color: T.txt3 }}>positivos</span>
@@ -529,7 +529,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           {highlights.proximoValle && highlights.proximoValle.cashFlow < highlights.promedio && (
             <div style={{ background: "rgba(245,158,11,0.08)", border: `1px solid ${T.or}40`, borderRadius: 12, padding: "12px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 20 }}>⏰</span>
+                <span style={{ fontSize: 20 }}></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: T.or, fontWeight: 700, letterSpacing: 0.5 }}>PRÓXIMO VALLE</div>
                   <div style={{ fontSize: 13, color: T.txt, fontWeight: 600, marginTop: 2 }}>
@@ -545,7 +545,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           {highlights.proximoPico && highlights.proximoPico.cashFlow > highlights.promedio && (
             <div style={{ background: "rgba(0,200,5,0.08)", border: `1px solid ${T.gn}40`, borderRadius: 12, padding: "12px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 20 }}>🎯</span>
+                <span style={{ fontSize: 20 }}></span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: T.gn, fontWeight: 700, letterSpacing: 0.5 }}>PRÓXIMO PICO</div>
                   <div style={{ fontSize: 13, color: T.txt, fontWeight: 600, marginTop: 2 }}>
@@ -562,7 +562,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       )}
 
       {/* ═══ GRÁFICO PRINCIPAL: 12 meses con barras agrupadas + cash flow ═══ */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 20 }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Ingresos vs Egresos por mes</div>
@@ -828,19 +828,19 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         if (pagosAnuales.length === 0) return null;
         pagosAnuales.sort((a, b) => a.urgencia - b.urgencia || a.mp - b.mp || b.monto - a.monto);
         const conf = {
-          0: { emoji: "🔴", label: L.vencido, color: "#ff5000", bg: "rgba(255,80,0,0.08)" },
-          1: { emoji: "🔔", label: L.sePagaEsteMes, color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
-          2: { emoji: "📅", label: L.proximoMes, color: "#f59e0b", bg: "rgba(245,158,11,0.06)" },
-          3: { emoji: "📅", label: "", color: T.txt3, bg: "transparent" },
-          4: { emoji: "✅", label: L.pagado, color: T.gn, bg: "transparent" },
+          0: { emoji: "", label: L.vencido, color: "#ff5000", bg: "rgba(255,80,0,0.08)" },
+          1: { emoji: "", label: L.sePagaEsteMes, color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
+          2: { emoji: "", label: L.proximoMes, color: "#f59e0b", bg: "rgba(245,158,11,0.06)" },
+          3: { emoji: "", label: "", color: T.txt3, bg: "transparent" },
+          4: { emoji: "", label: L.pagado, color: T.gn, bg: "transparent" },
         };
         const pendientes = pagosAnuales.filter(p => !p.pagado);
         const totalPendiente = pendientes.reduce((s, p) => s + p.monto, 0);
         return (
-          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>🔔 Próximos pagos del año</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Próximos pagos del año</div>
                 <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>Seguros, impuestos y pagos puntuales — marca el chip Pagado en Egresos al cubrirlos.</div>
               </div>
               <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
@@ -872,7 +872,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       {/* ═══ COMPOSICIÓN DEL AÑO — 2 DONUT CHARTS (18-jul-2026 noche) ═══
           Santiago: "sería bueno ver cómo están compuestos los ingresos y
           los gastos en % y valor". */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20 }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Composición del año {año}</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>De dónde vienen tus ingresos y a dónde van tus egresos, en % y valor absoluto.</div>
@@ -884,7 +884,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           {/* ─── INGRESOS ─── */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>💰 Ingresos</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>Ingresos</div>
               <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
                 Total: <span style={{ color: T.gn, fontWeight: 700 }}>${Math.round(composicion.totalIng).toLocaleString("es-CO")}</span>
               </div>
@@ -963,7 +963,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           {/* ─── EGRESOS ─── */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>💸 Egresos</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>Egresos</div>
               <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
                 Total: <span style={{ color: T.rd, fontWeight: 700 }}>${Math.round(composicion.totalEgr).toLocaleString("es-CO")}</span>
               </div>
@@ -1048,7 +1048,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       </div>
 
       {/* ═══ TABLA DE DETALLE POR MES ═══ */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 0, overflow: "hidden" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Detalle mes a mes</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>Desglose completo: ingresos, egresos por categoría, cash flow y saldo acumulado.</div>

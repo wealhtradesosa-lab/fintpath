@@ -2,7 +2,7 @@
 // SIM TOGGLE INFO — Banner reutilizable (Commit 8.8)
 // ─────────────────────────────────────────────────────────────────────────
 // Aparece al top de cada módulo (Ingresos, Egresos, Deudas, Inversiones)
-// para explicar al usuario QUÉ hace el checkbox ✅/⬜ de cada ítem.
+// para explicar al usuario QUÉ hace el checkbox /de cada ítem.
 //
 // Dato: `sim` es un flag por ítem que, cuando está en false, excluye ese
 // ítem de TODAS las simulaciones del sistema:
@@ -27,16 +27,19 @@ const T = {
 };
 
 export default function SimToggleInfo({ total, activos, moduloNombre = "estos ítems" }) {
+  // 31-oct-2026 — Crítica de diseño: el aviso se repetía en 4 pantallas. El
+  // interruptor de cada fila ya lo dice (y su título lo explica al pasar el mouse).
+  if (true) return null;
   const inactivos = (total || 0) - (activos || 0);
   return (
     <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderLeft: "3px solid " + T.green, borderRadius: 8, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      <div style={{ fontSize: 16 }}>✅</div>
+      <div style={{ fontSize: 16 }}></div>
       <div style={{ flex: 1, minWidth: 220 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: T.green, letterSpacing: 0.5, marginBottom: 2 }}>
           Solo los datos ENCENDIDOS se tienen en cuenta para las simulaciones
         </div>
         <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-          Cada ítem tiene un toggle <strong style={{ color: T.green }}>✅ (encendido)</strong> o <strong style={{ color: T.txt3 }}>⬜ (apagado)</strong> a la derecha. Los apagados <strong>no se incluyen</strong> en impuestos, cash flow, asesores ni coaches IA — útil para simular "qué pasaría si quito {moduloNombre}".
+          Cada ítem tiene un toggle <strong style={{ color: T.green }}>(encendido)</strong> o <strong style={{ color: T.txt3 }}>(apagado)</strong> a la derecha. Los apagados <strong>no se incluyen</strong> en impuestos, cash flow, asesores ni coaches IA — útil para simular "qué pasaría si quito {moduloNombre}".
         </div>
       </div>
       {total != null && (
@@ -54,7 +57,7 @@ export default function SimToggleInfo({ total, activos, moduloNombre = "estos í
 export function SimToggleInfoCompact() {
   return (
     <div style={{ padding: "7px 12px", background: "rgba(0,200,5,0.05)", border: "1px solid rgba(0,200,5,0.15)", borderRadius: 6, marginBottom: 12, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 8, lineHeight: 1.5 }}>
-      <span style={{ fontSize: 12 }}>✅</span>
+      <span style={{ fontSize: 12 }}></span>
       <span>
         <strong style={{ color: T.green, letterSpacing: 0.3, fontSize: 11 }}>Solo los datos encendidos</strong> se usan en este cálculo. Items apagados en Ingresos/Egresos/Deudas/Inversiones quedan afuera.
       </span>

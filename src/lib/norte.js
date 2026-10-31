@@ -255,7 +255,7 @@ export const CANASTAS_EXPLICADAS = {
 export const OBJETIVOS = {
   renta: {
     id: "renta",
-    emoji: "🏖️",
+    emoji: "",
     es: { nombre: "Vivir de la renta", desc: "Que mis activos paguen mis gastos, sin depender del salario" },
     en: { nombre: "Live off income", desc: "My assets cover my expenses, no salary needed" },
     mix: { proteccion: 60, mercado: 30, aspiracion: 10 },
@@ -265,7 +265,7 @@ export const OBJETIVOS = {
   },
   preservar: {
     id: "preservar",
-    emoji: "🛡️",
+    emoji: "",
     es: { nombre: "Proteger lo que tengo", desc: "Preservar el patrimonio y transmitirlo sin erosionarlo" },
     en: { nombre: "Protect what I have", desc: "Preserve wealth and pass it on intact" },
     mix: { proteccion: 50, mercado: 40, aspiracion: 10 },
@@ -273,7 +273,7 @@ export const OBJETIVOS = {
   },
   equilibrio: {
     id: "equilibrio",
-    emoji: "⚖️",
+    emoji: "",
     es: { nombre: "Crecer con algo de renta", desc: "Multiplicar el patrimonio sin renunciar a flujo hoy" },
     en: { nombre: "Grow with some income", desc: "Build wealth without giving up cash flow today" },
     mix: { proteccion: 30, mercado: 45, aspiracion: 25 },
@@ -281,7 +281,7 @@ export const OBJETIVOS = {
   },
   multiplicar: {
     id: "multiplicar",
-    emoji: "🚀",
+    emoji: "",
     es: { nombre: "Multiplicar", desc: "Acepto volatilidad alta a cambio de retorno; horizonte largo" },
     en: { nombre: "Multiply", desc: "High volatility for higher return; long horizon" },
     mix: { proteccion: 15, mercado: 35, aspiracion: 50 },

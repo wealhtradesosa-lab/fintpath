@@ -334,7 +334,7 @@ function OpportunityCard({ opp, expanded, onToggle }) {
       style={{
         background: T.bg2,
         border: `1px solid ${expanded ? priColor + "40" : T.border}`,
-        borderRadius: 14,
+        borderRadius: 12,
         padding: 20,
         marginBottom: 12,
         cursor: "pointer",
@@ -387,14 +387,14 @@ function OpportunityCard({ opp, expanded, onToggle }) {
         <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1, marginBottom: 6 }}>
-              ✅ What to do
+              What to do
             </div>
             <p style={{ fontSize: 13, color: T.txt, margin: 0, lineHeight: 1.6 }}>{opp.action}</p>
           </div>
 
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 1, marginBottom: 6 }}>
-              💡 Why this works
+              Why this works
             </div>
             <p style={{ fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.6 }}>{opp.why}</p>
           </div>
@@ -402,7 +402,7 @@ function OpportunityCard({ opp, expanded, onToggle }) {
           {opp.risk && (
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.amber, letterSpacing: 1, marginBottom: 6 }}>
-                ⚠️ Risk / caveat
+                Risk / caveat
               </div>
               <p style={{ fontSize: 13, color: T.txt2, margin: 0, lineHeight: 1.6 }}>{opp.risk}</p>
             </div>
@@ -432,14 +432,14 @@ export default function TaxOptimizerUS({ user }) {
       <div>
         <div style={{ marginBottom: 20 }}>
           <h2 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
-            🎯 Tax Review
+            Tax Review
           </h2>
           <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>
             IRS-grade analysis of your situation — finds legal tax savings opportunities
           </p>
         </div>
-        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: 48, textAlign: "center" }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 48, textAlign: "center" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}></div>
           <h3 style={{ fontSize: 16, color: T.txt, marginBottom: 8 }}>Add your income & accounts to start</h3>
           <p style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
             Once you've added income (W-2, 1099) and your investments (401k, IRA, taxable brokerage),
@@ -455,7 +455,7 @@ export default function TaxOptimizerUS({ user }) {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ fontSize: 24, fontWeight: 700, margin: "0 0 4px", fontFamily: FONT_DISPLAY }}>
-          🎯 Tax Review
+          Tax Review
         </h2>
         <p style={{ color: T.txt3, fontSize: 13, margin: 0 }}>
           IRS-grade analysis of your situation — every strategy below is 100% legal and cites IRC code.
@@ -467,7 +467,7 @@ export default function TaxOptimizerUS({ user }) {
         style={{
           background: `linear-gradient(135deg, ${T.green}15, ${T.blue}10)`,
           border: `2px solid ${T.green}40`,
-          borderRadius: 16,
+          borderRadius: 12,
           padding: 28,
           marginBottom: 24,
           display: "flex",
@@ -478,7 +478,7 @@ export default function TaxOptimizerUS({ user }) {
       >
         <div style={{ flex: 1, minWidth: 250 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.green, letterSpacing: 1, marginBottom: 6 }}>
-            💰 OPPORTUNITIES DETECTED
+            OPPORTUNITIES DETECTED
           </div>
           <div style={{ fontSize: 14, color: T.txt2, lineHeight: 1.5 }}>
             <strong style={{ color: T.txt }}>{opportunities.length} ways</strong> to legally reduce your tax bill —{" "}
@@ -521,7 +521,7 @@ export default function TaxOptimizerUS({ user }) {
           lineHeight: 1.6,
         }}
       >
-        <strong style={{ color: T.txt2 }}>⚖️ Legal disclaimer.</strong> The strategies above are general guidance based on
+        <strong style={{ color: T.txt2 }}>Legal disclaimer.</strong> The strategies above are general guidance based on
         IRS publications and the Internal Revenue Code (current as of 2025). They are not personalized tax or legal advice.
         Specific situations may have nuances (state law, ownership structures, prior-year carryovers) that change the analysis.
         For implementation of high-dollar strategies, consult a CPA or Enrolled Agent.

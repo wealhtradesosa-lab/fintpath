@@ -39,9 +39,9 @@ const C = {
 };
 
 const SEVERIDAD = {
-  error: { color: C.red, bg: C.redBg, icon: "❌", label: "Error" },
-  warning: { color: C.orange, bg: C.orangeBg, icon: "⚠️", label: "Atención" },
-  info: { color: C.blue, bg: C.blueBg, icon: "💡", label: "Sugerencia" },
+  error: { color: C.red, bg: C.redBg, icon: "", label: "Error" },
+  warning: { color: C.orange, bg: C.orangeBg, icon: "", label: "Atención" },
+  info: { color: C.blue, bg: C.blueBg, icon: "", label: "Sugerencia" },
 };
 
 /**
@@ -80,7 +80,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
         alignItems: "center",
         gap: 12,
       }}>
-        <span style={{ fontSize: 20 }}>✅</span>
+        <span style={{ fontSize: 20 }}></span>
         <div>
           <div style={{ fontSize: 13, color: C.green, fontWeight: 700 }}>Auditoría: todo en orden</div>
           <div style={{ fontSize: 12, color: C.txt2, marginTop: 2 }}>
@@ -102,7 +102,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
         overflow: "hidden",
       }}>
         <div style={{ padding: "12px 18px", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 20 }}>✅</span>
+          <span style={{ fontSize: 20 }}></span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, color: C.green, fontWeight: 700 }}>Auditoría: todo resuelto</div>
             <div style={{ fontSize: 12, color: C.txt2, marginTop: 2 }}>
@@ -164,7 +164,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
           gap: 12,
         }}
       >
-        <span style={{ fontSize: 24 }}>🔍</span>
+        <span style={{ fontSize: 24 }}></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: headerColor, letterSpacing: 0.5, marginBottom: 4 }}>
             Auditoría del Contador IA
@@ -189,7 +189,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
             <Seccion
               titulo="Errores que impiden el cálculo"
               color={C.red}
-              icon="🚨"
+              icon=""
               hallazgos={errores}
               expandido={seccionExpandida.errores}
               onToggle={() => setSeccionExpandida(s => ({ ...s, errores: !s.errores }))}
@@ -204,7 +204,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
             <Seccion
               titulo="Datos importantes que faltan"
               color={C.orange}
-              icon="📋"
+              icon=""
               hallazgos={faltantes}
               expandido={seccionExpandida.faltantes}
               onToggle={() => setSeccionExpandida(s => ({ ...s, faltantes: !s.faltantes }))}
@@ -219,7 +219,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
             <Seccion
               titulo="Inconsistencias para revisar"
               color={C.orange}
-              icon="⚠️"
+              icon=""
               hallazgos={advertencias}
               expandido={seccionExpandida.advertencias}
               onToggle={() => setSeccionExpandida(s => ({ ...s, advertencias: !s.advertencias }))}
@@ -234,7 +234,7 @@ export default function BannerAuditoriaDatos({ user, onAccion, onAbrirWizard, on
             <Seccion
               titulo="Puntos por revisar (necesitan más datos)"
               color={C.blue}
-              icon="💡"
+              icon=""
               hallazgos={oportunidadesData}
               expandido={seccionExpandida.oportunidades}
               onToggle={() => setSeccionExpandida(s => ({ ...s, oportunidades: !s.oportunidades }))}
@@ -376,7 +376,7 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
           </div>
           {hallazgo.sugerencia && (
             <div style={{ fontSize: 12, color: C.txt3, lineHeight: 1.5, fontStyle: "italic", marginBottom: hallazgo.items || textoBoton ? 8 : 0 }}>
-              💬 {hallazgo.sugerencia}
+              {hallazgo.sugerencia}
             </div>
           )}
 
@@ -435,7 +435,7 @@ function Hallazgo({ hallazgo, onAccion, onAbrirWizard, onIgnorar }) {
 
           {hallazgo.ahorroEstimado && (
             <div style={{ marginTop: 6, fontSize: 12, color: C.green, fontWeight: 600 }}>
-              💰 Ahorro potencial: hasta ${Number(hallazgo.ahorroEstimado).toLocaleString("es-CO")}
+              Ahorro potencial: hasta ${Number(hallazgo.ahorroEstimado).toLocaleString("es-CO")}
             </div>
           )}
         </div>

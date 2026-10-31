@@ -40,7 +40,7 @@ export default function BuscadorLista({ valor, onChange, T, total, filtrados, pl
   return (
     <div style={{ marginBottom: 12 }}>
       <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-        <span style={{ position: "absolute", left: 12, fontSize: 14, opacity: 0.5, pointerEvents: "none" }}>🔍</span>
+        <span style={{ position: "absolute", left: 12, fontSize: 14, opacity: 0.5, pointerEvents: "none" }}></span>
         <input
           value={valor || ""}
           onChange={(e) => onChange(e.target.value)}

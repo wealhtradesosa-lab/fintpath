@@ -184,7 +184,7 @@ export function calcularBase(d = {}, opts = {}) {
   const deudas = (d.deudas || d.deu || []).filter(visible);
   const inv = (d.inv || []).filter(visible);
 
-  // Lo que el ojo ⬜ de las listas dejó fuera. No se suma (ocultar es una
+  // Lo que el ojo de las listas dejó fuera. No se suma (ocultar es una
   // decisión del usuario y esconder ingresos a la vez que gastos desbalancearía
   // la cobertura), pero se devuelve para que la UI pueda decirlo en voz alta en
   // vez de que la plata desaparezca sin rastro.
@@ -341,23 +341,23 @@ export function calcularBase(d = {}, opts = {}) {
 // `umbral` dice contra qué se compara el ingreso pasivo: "esencial", "total", o
 // null cuando el escalón lo decide el flujo y no el ingreso pasivo.
 export const NIVELES = [
-  { id: 1, clave: "deficit", nombre: "Déficit", umbral: null, factor: 0, icon: "⚠️", color: "#ff5000",
+  { id: 1, clave: "deficit", nombre: "Déficit", umbral: null, factor: 0, icon: "", color: "#ff5000",
     desc: "Gastas más de lo que entra",
     detail: "Tu flujo del mes es negativo. Antes de pensar en ingreso pasivo, el primer paso es que lo que entra cubra lo que sale." },
-  { id: 2, clave: "estabilidad", nombre: "Estabilidad", umbral: null, factor: 0, icon: "🛡️", color: "#3b82f6",
+  { id: 2, clave: "estabilidad", nombre: "Estabilidad", umbral: null, factor: 0, icon: "", color: "#3b82f6",
     desc: "Te alcanza, pero trabajando",
     detail: "Cubres tus gastos y cuotas con lo que ganas. Si dejaras de trabajar, tu ingreso pasivo todavía no paga ni lo esencial." },
-  { id: 3, clave: "seguridad", nombre: "Seguridad", umbral: "esencial", factor: 1, icon: "⚡", color: "#94a3b8",
+  { id: 3, clave: "seguridad", nombre: "Seguridad", umbral: "esencial", factor: 1, icon: "", color: "#94a3b8",
     desc: "Tus activos pagan lo que no puedes apagar",
     detail: "Tu ingreso pasivo cubre lo esencial: techo, comida, servicios, salud, educación, transporte, seguros, aportes y las cuotas de tus deudas. Si tu ingreso por trabajo desapareciera, recortarías lo demás, pero no pierdes el piso." },
-  { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "🚀", color: "#f59e0b",
+  { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "", color: "#f59e0b",
     desc: "Tus activos pagan todo tu nivel de vida",
     detail: "Tu ingreso pasivo neto cubre el 100% de tus gastos y cuotas, sin recortar nada. Trabajar pasa a ser una elección." },
   // 24-oct-2026 (Santiago, con 136 % de cobertura: "¿136 % sí es para estar
   // en abundancia? Abundancia creería yo es cuando se alcanzan porcentajes
   // más altos"). Antes bastaba 130 %. Abundancia es pagar la vida DOS veces
   // con los activos: 200 %.
-  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 2, icon: "👑", color: "#f59e0b",
+  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 2, icon: "", color: "#f59e0b",
     desc: "Lo pagan dos veces",
     detail: "Tu ingreso pasivo es el doble de tus gastos y cuotas. Ese margen absorbe la inflación, un año malo de rentas o un gasto grande sin tocar el capital, y deja plata para reinvertir cada mes." },
 ];
@@ -382,7 +382,7 @@ export function nivelLibertad({ ip = 0, ob = 0, obEsencial = null, fl = 0, patri
   // 21-oct-2026 — El escalón sale SIEMPRE de lo que pagan los activos. Antes el
   // flujo negativo tiraba el nivel a 1/5 pisando la cobertura, y la tarjeta se
   // contradecía consigo misma: la barra dibujada en 67% con el badge en
-  // "⚠️ Déficit 1/5" y los escalones de arriba apagados. El déficit sigue
+  // "Déficit 1/5" y los escalones de arriba apagados. El déficit sigue
   // dejando a alguien en Déficit cuando sus activos no pagan ni lo esencial
   // (que es lo que el nivel 1 quiere decir), pero ya no borra un escalón que
   // los activos SÍ se ganaron: eso se reporta aparte, en `deficitFlujo`, para

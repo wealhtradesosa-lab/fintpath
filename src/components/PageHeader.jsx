@@ -32,8 +32,8 @@ export default function PageHeader({
   compact = false, // versión compacta para módulos secundarios
 }) {
   const titleSize = compact
-    ? "clamp(1.75rem, 3.5vw, 2.5rem)"
-    : "clamp(2rem, 5vw, 3.5rem)";
+    ? "clamp(1.5rem, 3vw, 1.75rem)"
+    : "clamp(1.625rem, 4vw, 2rem)"; // 31-oct-2026: 32 px máx (crítica de diseño; antes 56)
 
   return (
     <div style={{
@@ -74,7 +74,7 @@ export default function PageHeader({
         <h1 style={{
           fontFamily: FONT_DISPLAY,
           fontSize: titleSize,
-          fontWeight: 700,
+          fontWeight: 600,
           lineHeight: 1.0,
           letterSpacing: "-0.04em",
           margin: 0,

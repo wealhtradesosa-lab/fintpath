@@ -86,7 +86,7 @@ function PathCard({ icon: Icon, iconColor, title, description, onClick, recommen
       style={{
         background: T.bg2,
         border: `1px solid ${recommended ? T.green : T.border}`,
-        borderRadius: 14,
+        borderRadius: 12,
         padding: "20px",
         display: "flex",
         flexDirection: "column",
@@ -241,7 +241,7 @@ export default function OnboardingTour({
         style={{
           background: T.bg,
           border: `1px solid ${T.borderL}`,
-          borderRadius: 20,
+          borderRadius: 12,
           width: "100%",
           maxWidth: 720,
           maxHeight: "90vh",
@@ -287,7 +287,7 @@ export default function OnboardingTour({
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 480, margin: "0 auto 24px" }}>
-          {[["🏦", "Tus activos"], ["💰", "Ingresos mensuales"], ["💳", "Gastos mensuales"], ["📋", "Tus deudas"]].map(([ic, tx], i) => (
+          {[["", "Tus activos"], ["", "Ingresos mensuales"], ["", "Gastos mensuales"], ["", "Tus deudas"]].map(([ic, tx], i) => (
             <div key={tx} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: T.txt }}>
               <span style={{ fontSize: 18 }}>{ic}</span><span><span style={{ color: T.txt3, marginRight: 4 }}>{i + 1}.</span>{tx}</span>
             </div>

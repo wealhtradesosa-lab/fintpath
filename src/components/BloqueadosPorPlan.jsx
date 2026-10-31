@@ -30,7 +30,7 @@ export default function BloqueadosPorPlan({ cantidad, monto, fmt, T, onUpgrade, 
       marginTop: 10,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-        <span style={{ fontSize: 20, flexShrink: 0 }}>🔒</span>
+        <span style={{ fontSize: 20, flexShrink: 0 }}></span>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: c1 }}>
             {cantidad} {cantidad === 1 ? que.replace(/s$/, "") : que} sin acceso en el plan gratuito

@@ -781,7 +781,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             if (!difs.length) return null;
             return (
               <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.surface }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>🔎 ¿Por qué cambia frente a hoy?</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>¿Por qué cambia frente a hoy?</div>
                 <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
                   {bloqueK("ing", "Ingresos", vista.ingresos - hoy.ingresos)}
                   {bloqueK("gas", "Gastos", vista.gastos - hoy.gastos)}
@@ -901,7 +901,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
             return (
               <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>🧾 De dónde sale cada número</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>De dónde sale cada número</div>
                 <div style={{ ...F.caption, marginBottom: 10 }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`} · ítem por ítem, ordenado de mayor a menor.</div>
                 {/* 21-oct-2026 (Santiago, en el celular: "esta sección no se deja
                     recorrer"): el scroll interno de 400 px peleaba con el scroll de la
@@ -1152,7 +1152,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           {nuevosHoy.length > 0 && (
             <div style={{ margin: "4px 0 14px", padding: "10px 12px", borderRadius: R.md, background: Cα.accent08, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <div style={F.h3}>🆕 {nuevosHoy.length} {nuevosHoy.length === 1 ? "cosa nueva" : "cosas nuevas"} en tus datos de hoy · ¿{nuevosHoy.length === 1 ? "cuenta" : "cuentan"} en {año}?</div>
+                <div style={F.h3}>{nuevosHoy.length} {nuevosHoy.length === 1 ? "cosa nueva" : "cosas nuevas"} en tus datos de hoy · ¿{nuevosHoy.length === 1 ? "cuenta" : "cuentan"} en {año}?</div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button style={{ ...btn(true), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), true)}>Contar todas</button>
                   <button style={{ ...btn(false), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), false)}>Ninguna</button>

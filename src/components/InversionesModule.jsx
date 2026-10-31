@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { Interruptor, Pencil, Trash2 } from "./Iconos.jsx";
 import { fmtTasaEs } from "../lib/formato.js";
 import { fmtPctEs, inflacionGlobal } from "../lib/metrics.js";
 import { rentabilidadActivos } from "../lib/rentabilidadActivo.js";
@@ -57,14 +58,14 @@ const getType = (i) => {
 // no clasificar por tipo de inversión? inmobiliaria, acciones…"). Los tipos finos (Real
 // Estate, Local, Bodega…) se agrupan en clases que se entienden de un vistazo.
 const CLASES = [
-  { id: "inmuebles", nombre: "Inmuebles", icono: "🏠", tipos: ["Real Estate", "Local Comercial", "Bodega"] },
-  { id: "fondos", nombre: "Fondos y renta fija", icono: "💼", tipos: ["Fondo de Inversión", "CDT", "Renta Fija"] },
-  { id: "bolsa", nombre: "Acciones y bolsa", icono: "📈", tipos: ["Acciones"] },
+  { id: "inmuebles", nombre: "Inmuebles", icono: "", tipos: ["Real Estate", "Local Comercial", "Bodega"] },
+  { id: "fondos", nombre: "Fondos y renta fija", icono: "", tipos: ["Fondo de Inversión", "CDT", "Renta Fija"] },
+  { id: "bolsa", nombre: "Acciones y bolsa", icono: "", tipos: ["Acciones"] },
   { id: "cripto", nombre: "Cripto", icono: "₿", tipos: ["Crypto"] },
-  { id: "liquidez", nombre: "Efectivo y cuentas", icono: "💵", tipos: ["Cash"] },
-  { id: "negocios", nombre: "Negocios y participaciones", icono: "🏢", tipos: ["Negocio"] },
-  { id: "vehiculos", nombre: "Vehículos", icono: "🚗", tipos: ["Vehículo"] },
-  { id: "otros", nombre: "Otros", icono: "📦", tipos: [] },
+  { id: "liquidez", nombre: "Efectivo y cuentas", icono: "", tipos: ["Cash"] },
+  { id: "negocios", nombre: "Negocios y participaciones", icono: "", tipos: ["Negocio"] },
+  { id: "vehiculos", nombre: "Vehículos", icono: "", tipos: ["Vehículo"] },
+  { id: "otros", nombre: "Otros", icono: "", tipos: [] },
 ];
 const claseDe = (i) => CLASES.find((c) => c.tipos.includes(getType(i))) || CLASES[CLASES.length - 1];
 
@@ -346,7 +347,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     const vcCheck = Math.abs(parseFloat(form.vc)) || 0;
     if (va > 0 && vcCheck > 0 && va < vcCheck * 0.1) {
       const ok = window.confirm(
-        `⚠️ REVISA LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${fmtPctEs((100 - (va / vcCheck) * 100), 0)}. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usa el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
+        `REVISA LOS CEROS\n\nValor actual: $${va.toLocaleString("es-CO")}\nCosto de compra: $${vcCheck.toLocaleString("es-CO")}\n\nEsto implica una pérdida del ${fmtPctEs((100 - (va / vcCheck) * 100), 0)}. Si el activo vale MÁS de lo que costó, probablemente faltan ceros en el Valor Actual (tip: usa el shortcut "11700m" = $11.700.000.000).\n\n¿Guardar así de todas formas?`
       );
       if (!ok) return;
     }
@@ -434,17 +435,17 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           {onImport && <button onClick={onImport}
             title="Cargar activos desde una tabla de Excel"
             style={{ background: "rgba(59,130,246,0.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,0.25)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>
-            ⬆️ Subir Excel
+            Subir Excel
           </button>}
           <button onClick={() => exportInversionesExcel(activos, owners, trm)}
             title="Descarga XLSX con activos + resumen por tipo + resumen por propietario fiscal"
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            ⬇️ Bajar Excel
+            Bajar Excel
           </button>
           <button onClick={() => exportPatrimonioPDF(activos, owners, trm)}
             title="Bajar PDF: valor, ganancia y concentración por tipo"
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
-            ⬇️ Bajar PDF
+            Bajar PDF
           </button>
           <button onClick={openAdd} style={{ background: T.green, color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
@@ -460,7 +461,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         return (
           <div style={{ marginBottom: 16, padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 10 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 14 }}>⚠️</span>
+              <span style={{ fontSize: 14 }}></span>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", flex: 1 }}>
                 {sinOwner.length} inversi{sinOwner.length !== 1 ? "ones" : "ón"} sin propietario asignado
               </div>
@@ -503,7 +504,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
           
           { l: "Activos", v: activos.length, c: T.txt },
         ].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 20px" }}>
+          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
             <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
           </div>
@@ -553,13 +554,13 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       {/* 31-oct-2026: buscar y filtrar por titular para encontrar un activo rápido */}
       {items.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", marginBottom: 10 }}>
-          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="🔍 Buscar activo, ciudad o tipo…"
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar activo, ciudad o tipo…"
             style={{ flex: "1 1 220px", minWidth: 0, background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, padding: "9px 12px", fontSize: 13, outline: "none" }} />
           {(owners || []).length > 1 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {[{ id: "", name: "Todos" }, ...(owners || [])].map((o) => {
                 const on = titularFiltro === o.id;
-                return <button key={o.id || "todos"} type="button" onClick={() => setTitularFiltro(o.id)} style={{ padding: "7px 12px", borderRadius: 999, border: `1px solid ${on ? T.green : T.border}`, background: on ? "rgba(0,200,5,0.12)" : "transparent", color: on ? T.green : T.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{o.type === "juridica" ? "🏢 " : o.id ? "👤 " : ""}{o.name}</button>;
+                return <button key={o.id || "todos"} type="button" onClick={() => setTitularFiltro(o.id)} style={{ padding: "7px 12px", borderRadius: 999, border: `1px solid ${on ? T.green : T.border}`, background: on ? "rgba(0,200,5,0.12)" : "transparent", color: on ? T.green : T.txt2, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{o.type === "juridica" ? "" : o.id ? "" : ""}{o.name}</button>;
               })}
             </div>
           )}
@@ -572,7 +573,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         </div>
       )}
       {/* Table */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
           <table style={{ ...estiloTablaPortafolio(angosto), color: T.txt }}>
             <thead style={estiloSeccionPortafolio(angosto)}>
@@ -586,12 +587,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               {items.length === 0 ? (
                 <tr style={estiloFilaPortafolio(angosto)}><td colSpan={7} style={estiloCeldaCompleta(angosto, { padding: 0 })}>
                     <div style={{padding:"40px 32px",textAlign:"center"}}>
-                      <div style={{fontSize:40,marginBottom:12}}>🏦</div>
+                      <div style={{fontSize:40,marginBottom:12}}></div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>Agrega tu patrimonio</h3>
                       <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos, cuentas de ahorro. Incluye el <strong style={{color:"var(--fp-txt2)"}}>valor actual</strong> de cada activo.</p>
                       <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
                         <button onClick={openAdd} style={{background:"#00c805",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar activo</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>⬆️ Subir tabla Excel de activos</button>}
+                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>Subir tabla Excel de activos</button>}
                       </div>
                       <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
                         <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>Ejemplo de Excel para importar</div>
@@ -639,7 +640,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                             onClick={() => openEdit(inv)}
                             title="Sin propietario asignado — los rendimientos no se atribuyen al cálculo de Impuestos"
                             style={{ fontSize: 13, cursor: "pointer", color: "#ff5000", flexShrink: 0 }}
-                          >⚠️</span>
+                          ></span>
                         )}
                         <span>{name}</span>
                       </div>
@@ -649,10 +650,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <div style={{ fontSize: 12, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
-                        if(inv.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>🌐 N/A</div>;
-                        if(inv.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>👤 Personal</div>;
+                        if(inv.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>N/A</div>;
+                        if(inv.owner==="own_1") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>Personal</div>;
                         const ow=(owners||[]).find(o=>o.id===inv.owner);
-                        return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"🏢":"👤"} {ow.name}</div> : null;
+                        return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"":""} {ow.name}</div> : null;
                       })()}
                     </td>
                     {angosto ? (<>
@@ -662,10 +663,10 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       </td>
                       <td style={{ padding: pad, textAlign: "right", whiteSpace: "nowrap", fontSize: 12, color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: pad }}><div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                      <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>
-                      <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12 }}>✏️</button>
+                      <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
+                      <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12 }}><Pencil size={14} strokeWidth={1.75} /></button>
                       <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
-                        style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}>🗑️</button>
+                        style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
                     </div></td>
                     </>) : (<>
                       <td style={{ padding: "12px 14px", fontSize: 12, color: T.txt3 }}>{tipo}</td>
@@ -673,12 +674,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv, trm)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv, trm))}</td>
                       <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: "12px 14px", textAlign: "center" }}>
-                        <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}>{inv.sim===false?"⬜":"✅"}</button>
+                        <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
                       </td>
                       <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                        <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12 }}>✏️</button>
+                        <button onClick={() => openEdit(inv)} style={{ background: T.bg3, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.txt2, fontSize: 12 }}><Pencil size={14} strokeWidth={1.75} /></button>
                         <button onClick={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }}
-                          style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}>🗑️</button>
+                          style={{ background: T.redDim, border: "none", padding: "5px 8px", borderRadius: 6, cursor: "pointer", color: T.red, fontSize: 12 }}><Trash2 size={14} strokeWidth={1.75} /></button>
                       </div></td>
                     </>)}
                   </tr>
@@ -707,7 +708,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       {/* Form Modal */}
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", padding: 32 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", padding: 32 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>{editId ? "Editar Activo" : "Agregar Activo"}</h3>
               <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 18 }}>✕</button>
@@ -717,11 +718,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 <In l="Nombre" value={form.nombre} onChange={(v) => setForm((p) => ({ ...p, nombre: v }))} placeholder="Ej: Apartamento, Fondo, Acciones, Terreno" />
               </div>
               <In l="Ubicación" value={form.ubicacion} onChange={(v) => setForm((p) => ({ ...p, ubicacion: v }))} placeholder="Miami, FL" />
-              <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
+              <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"Personal"},{v:"na",l:"N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"":"")+o.name}))]} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v, fiscalCode: fiscalCodeParaTipo(v, p.fiscalCode, (owners || []).find((o) => o.id === p.owner)) }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && (
                 <div style={{ gridColumn: "1/-1", background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>🏠 ¿Cómo usas este inmueble? (define si depreciación aplica)</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>¿Cómo usas este inmueble? (define si depreciación aplica)</div>
                   <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
                     <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
@@ -735,7 +736,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   <div style={{ fontSize: 11, color: "var(--fp-txt3)", marginTop: 4, lineHeight: 1.5 }}>Solo la construcción se deprecia fiscalmente (Art. 131 ET). El terreno no. Típico urbano: 30%. Si es una finca o lote con poca construcción, puede ser 80%+.</div>
                 </div>
               )}
-              <In l="Moneda del valor" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"🇨🇴 COP (pesos)"},{v:"USD",l:"🇺🇸 USD (se convierte a la TRM)"}]} />
+              <In l="Moneda del valor" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"COP (pesos)"},{v:"USD",l:"USD (se convierte a la TRM)"}]} />
               <In l="Valor Actual" value={form.va} onChange={(v) => setForm((p) => ({ ...p, va: v }))} type="number" placeholder="0" />
               <In l="Valor Compra" value={form.vc} onChange={(v) => setForm((p) => ({ ...p, vc: v }))} type="number" placeholder="0" />
               {/* ALERTA ANTI-TYPO (20-jul-2026, Santiago): Puerto Madero quedó
@@ -748,7 +749,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   const perdidaPct = ((1 - vaN / vcN) * 100).toFixed(0);
                   return (
                     <div style={{ gridColumn: "1/-1", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "#f59e0b", lineHeight: 1.5 }}>
-                      ⚠️ <strong>Revisa los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignora este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
+                      <strong>Revisa los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignora este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
                     </div>
                   );
                 }
@@ -758,7 +759,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 {/* 21-oct-2026 — Aquí nace el ingreso del activo (un solo origen).
                     Santiago: "activo Puerto Madero: cuánto vale, cuánto renta, y esa
                     renta si es todo el año o unos meses; también cuánto se valoriza". */}
-                <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:10}}>💰 ¿Este activo te genera ingreso?</div>
+                <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:10}}>¿Este activo te genera ingreso?</div>
                 <div style={{display:"flex",gap:8,marginBottom:10}}>
                   {[["no","No"],["si","Sí"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, genera: v }))} style={{flex:1,padding:"9px 12px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,border:`1px solid ${(form.genera||"no")===v?T.green:T.border}`,background:(form.genera||"no")===v?"rgba(0,200,5,0.12)":"transparent",color:(form.genera||"no")===v?T.green:T.txt2}}>{l}</button>)}
                 </div>
@@ -815,7 +816,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   })()}
                 </>)}
                 <div style={{marginTop:8}}>
-                  <In l="📈 ¿Cuánto se valoriza al año? (%)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 5" />
+                  <In l="¿Cuánto se valoriza al año? (%)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 5" />
                   <div style={{fontSize:11,color:T.txt3,marginTop:-6,lineHeight:1.5}}>Cuánto sube el valor del activo al año. No es renta: se suma aparte al proyectar tu patrimonio.</div>
                 </div>
                 {/* 14-sep-2026 (Santiago: "poner en una sola casilla todos los
@@ -876,7 +877,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 </div>
               </div>
               {false && <div style={{ gridColumn: "1/-1", background: T.blue + "10", borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 12, color: T.blue }}>💡 Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
+                <div style={{ fontSize: 12, color: T.blue }}>Si este activo genera renta mensual (arriendo, dividendos, rendimientos), ponla en el módulo de <strong>Ingresos</strong>. Aquí solo va el valor del activo.</div>
               </div>}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>

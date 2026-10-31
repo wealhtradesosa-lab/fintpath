@@ -5,7 +5,7 @@ export default function FiltroListado({ owners = [], titular, onTitular, hayCerr
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginBottom: 10 }}>
       {owners.length > 1 && [{ id: "", name: "Todos" }, ...owners].map((o) => (
         <button key={o.id || "todos"} type="button" onClick={() => onTitular(o.id)} style={chip(titular === o.id)}>
-          {o.type === "juridica" ? "🏢 " : o.id ? "👤 " : ""}{o.name}
+          {o.type === "juridica" ? "" : o.id ? "" : ""}{o.name}
         </button>
       ))}
       {onAlternar && <button type="button" onClick={onAlternar} style={{ ...chip(false), fontWeight: 500 }}>{hayCerrados ? "Abrir todo" : "Ver solo totales"}</button>}

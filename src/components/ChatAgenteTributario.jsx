@@ -222,14 +222,14 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
           background: C.bg2,
           border: `1px solid ${C.border}`,
           borderLeft: `4px solid ${C.purple}`,
-          borderRadius: 14,
+          borderRadius: 12,
           display: "flex",
           alignItems: "center",
           gap: 14,
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontSize: 36 }}>💬</div>
+        <div style={{ fontSize: 36 }}></div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -244,7 +244,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
             }}
           >
             <span style={{ fontSize: 11, fontWeight: 700, color: C.purple, letterSpacing: 0.5 }}>
-              💬 CHAT · AGENTE TRIBUTARIO IA
+              CHAT · AGENTE TRIBUTARIO IA
             </span>
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
@@ -296,7 +296,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
         style={{
           background: C.bg2,
           border: `1px solid ${C.border}`,
-          borderRadius: 14,
+          borderRadius: 12,
           padding: "20px 20px",
           minHeight: 360,
           maxHeight: 560,
@@ -306,7 +306,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
       >
         {messages.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 20px" }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}></div>
             <h3 style={{ fontSize: 18, fontWeight: 700, color: C.txt, marginBottom: 8 }}>
               ¿Sobre qué quieres que te asesore?
             </h3>
@@ -341,7 +341,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
                     e.currentTarget.style.borderColor = C.border;
                   }}
                 >
-                  💡 {sug}
+                  {sug}
                 </button>
               ))}
             </div>
@@ -364,7 +364,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
                 fontSize: 16,
               }}
             >
-              🤖
+              
             </div>
             <div
               style={{
@@ -395,7 +395,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
             marginBottom: 12,
           }}
         >
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
@@ -453,7 +453,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
           lineHeight: 1.5,
         }}
       >
-        ⚖️ Este chat usa IA para análisis preliminar. Las recomendaciones deben ser
+        Este chat usa IA para análisis preliminar. Las recomendaciones deben ser
         validadas por tu contador antes de ejecutar cualquier estrategia. FINPATHIA
         no se responsabiliza por decisiones tomadas exclusivamente con base en estos
         análisis.
@@ -490,7 +490,7 @@ function MessageBubble({ message }) {
           flexShrink: 0,
         }}
       >
-        {isUser ? "👤" : "🤖"}
+        {isUser ? "" : ""}
       </div>
       <div
         style={{

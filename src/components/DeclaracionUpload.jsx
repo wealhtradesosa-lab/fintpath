@@ -202,7 +202,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: T.txt, marginBottom: 6 }}>
-          📋 Declaración oficial DIAN
+          Declaración oficial DIAN
         </div>
         <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.6 }}>
           Sube el PDF de tu declaración de renta presentada en la DIAN. La IA extrae los renglones principales
@@ -214,7 +214,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       {/* Pro gate */}
       {!isPro && (
         <div style={{ padding: 16, background: "rgba(168,139,250,0.08)", border: "1px solid rgba(168,139,250,0.3)", borderRadius: 12, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.purple, marginBottom: 4 }}>🔒 Feature del plan Pro</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: T.purple, marginBottom: 4 }}>Feature del plan Pro</div>
           <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
             La extracción automática de declaraciones requiere el plan Pro. Con el plan gratuito puedes capturar
             manualmente los renglones desde el perfil del owner.
@@ -244,7 +244,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
         </select>
         {declaracionesGuardadas.length > 0 && (
           <div style={{ marginTop: 8, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-            📚 Declaraciones guardadas para este titular ({declaracionesGuardadas.length}/4):{" "}
+            Declaraciones guardadas para este titular ({declaracionesGuardadas.length}/4):{" "}
             {declaracionesGuardadas
               .map((d) => d?.anoGravable)
               .filter(Boolean)
@@ -282,7 +282,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
             ✓ {file.name} · {(file.size / 1024).toFixed(0)} KB
           </div>
         )}
-        {error && <div style={{ marginTop: 10, fontSize: 12, color: T.red }}>❌ {error}</div>}
+        {error && <div style={{ marginTop: 10, fontSize: 12, color: T.red }}>{error}</div>}
 
         <button
           onClick={handleParse}
@@ -296,7 +296,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
             opacity: !file || !isPro ? 0.5 : 1,
           }}
         >
-          {uploading ? "🔍 Analizando con IA (15-30 seg)…" : "🔍 Extraer datos con IA"}
+          {uploading ? "Analizando con IA (15-30 seg)…" : "Extraer datos con IA"}
         </button>
       </div>
 
@@ -304,7 +304,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
       {parsed && (
         <div ref={previewRef} style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "2px solid " + T.green, marginBottom: 14 }}>
           <div style={{ padding: "8px 10px", background: "rgba(245,158,11,0.10)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, marginBottom: 10, fontSize: 13, color: T.txt, fontWeight: 600 }}>
-            ⚠️ Todavía no está guardada. Revisa los valores y pulsa «💾 Guardar en {selectedOwner?.name}» al final.
+            Todavía no está guardada. Revisa los valores y pulsa «Guardar en {selectedOwner?.name}» al final.
           </div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
             <div>
@@ -322,7 +322,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
           {parsed.confianza === "baja" && (
             <div style={{ padding: 10, background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.2)", borderRadius: 8, marginBottom: 10, fontSize: 12, color: T.txt2 }}>
-              ⚠️ La IA marcó la lectura como <strong>baja confianza</strong>. Revisa cada campo y corrige los que no coincidan con tu declaración antes de guardar.
+              La IA marcó la lectura como <strong>baja confianza</strong>. Revisa cada campo y corrige los que no coincidan con tu declaración antes de guardar.
             </div>
           )}
 
@@ -351,7 +351,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
               onClick={handleConfirm}
               style={{ flex: 1, padding: "10px 16px", background: T.green, border: "none", borderRadius: 8, color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
             >
-              💾 Guardar en {selectedOwner?.name}
+              Guardar en {selectedOwner?.name}
             </button>
           </div>
         </div>
@@ -359,7 +359,7 @@ export default function DeclaracionUpload({ owners, onSaveToOwner, isPro, onUpse
 
       {/* Info: declaraciones ya guardadas */}
       <div style={{ fontSize: 12, color: T.txt3, padding: 12, background: T.bg3, borderRadius: 8, lineHeight: 1.6 }}>
-        💡 <strong>¿Qué pasa después?</strong> Los datos se guardan en el perfil del propietario fiscal. El sistema usa esa información para <strong>detectar desajustes</strong> contra tu situación actual —por ejemplo, si el año pasado aportaste a pensión voluntaria pero este año no registraste aportes, aparece una alerta en el Plan Tributario.
+        <strong>¿Qué pasa después?</strong> Los datos se guardan en el perfil del propietario fiscal. El sistema usa esa información para <strong>detectar desajustes</strong> contra tu situación actual —por ejemplo, si el año pasado aportaste a pensión voluntaria pero este año no registraste aportes, aparece una alerta en el Plan Tributario.
       </div>
     </div>
   );

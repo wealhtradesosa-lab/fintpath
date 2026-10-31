@@ -23,7 +23,7 @@ const T = {
 
 const MODULES = {
   inversiones: {
-    label: "Inversiones / Activos", icon: "📈", key: "inv",
+    label: "Inversiones / Activos", icon: "", key: "inv",
     prompt: `Extrae cada inversión o activo. Para CADA fila de datos devuelve un JSON con:
 - "n": nombre del activo (string, OBLIGATORIO)
 - "ub": ubicación (string, "" si no hay)
@@ -34,7 +34,7 @@ const MODULES = {
 - "gs": array de gastos mensuales, ej: [{"c":"Admin","m":500,"t":"f"}] (vacío [] si no hay)`,
   },
   ingresos: {
-    label: "Ingresos", icon: "💰", key: "ingresos",
+    label: "Ingresos", icon: "", key: "ingresos",
     prompt: `Extrae cada fuente de ingreso. Para CADA fila devuelve un JSON con:
 - "nombre": nombre/descripción (string, OBLIGATORIO)
 - "categoria": "Salario", "Freelance", "Arriendo", "Inversión", "Negocio", "Dividendos", "Pensión" u "Otro"
@@ -43,7 +43,7 @@ const MODULES = {
 - "fuente": origen (string, "" si no hay)`,
   },
   gastos: {
-    label: "Gastos", icon: "💳", key: "gastos", isGastos: true,
+    label: "Gastos", icon: "", key: "gastos", isGastos: true,
     prompt: `Extrae cada gasto. Para CADA fila devuelve un JSON con:
 - "cat": categoría ("Vivienda", "Educación", "Salud", "Transporte", "Alimentación", "Entretenimiento" u "Otro")
 - "c": concepto/descripción (string, OBLIGATORIO)
@@ -51,7 +51,7 @@ const MODULES = {
 - "t": "f" para fijo o "v" para variable`,
   },
   deudas: {
-    label: "Deudas", icon: "📋", key: "deudas",
+    label: "Deudas", icon: "", key: "deudas",
     prompt: `Extrae cada deuda. Para CADA fila devuelve un JSON con:
 - "n": nombre de la deuda (string, OBLIGATORIO)
 - "tp": "mortgage", "loan", "personal" o "credit_card"
@@ -61,7 +61,7 @@ const MODULES = {
 - "la": null`,
   },
   trading: {
-    label: "Trading / Acciones", icon: "💹", key: "ibk",
+    label: "Trading / Acciones", icon: "", key: "ibk",
     prompt: `Extrae cada posición bursátil/acción/ETF. Busca columnas como: Ticker, Symbol, Name, Nombre, Quantity, Qty, Shares, Cantidad, Cost, Costo, Average Cost, Precio Compra, Price, Precio, Market Value, Valor, Current Price, Last Price, Target, Objetivo.
 
 Para CADA posición devuelve un JSON con:
@@ -226,12 +226,12 @@ export default function CsvImport({ onImport, onClose }) {
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20, width: "100%", maxWidth: 780, maxHeight: "88vh", overflow: "auto", padding: 32 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, width: "100%", maxWidth: 780, maxHeight: "88vh", overflow: "auto", padding: 32 }}>
 
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
           <div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: T.txt }}>🧠 Importar Excel con IA</h3>
+            <h3 style={{ fontSize: 22, fontWeight: 700, margin: 0, color: T.txt }}>Importar Excel con IA</h3>
             <p style={{ fontSize: 13, color: T.txt3, margin: "6px 0 0" }}>
               Sube una tabla Excel por cada categoría: gastos, ingresos, activos o deudas. La IA organiza los datos automáticamente.
             </p>
@@ -246,7 +246,7 @@ export default function CsvImport({ onImport, onClose }) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {Object.entries(MODULES).map(([key, m]) => (
                 <button key={key} onClick={() => { setModule(key); setStep(2); }}
-                  style={{ padding: 24, borderRadius: 16, border: `1px solid ${T.border}`, background: T.card, cursor: "pointer", textAlign: "left", transition: "border-color 0.2s" }}>
+                  style={{ padding: 24, borderRadius: 12, border: `1px solid ${T.border}`, background: T.card, cursor: "pointer", textAlign: "left", transition: "border-color 0.2s" }}>
                   <div style={{ fontSize: 28, marginBottom: 10 }}>{m.icon}</div>
                   <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>{m.label}</div>
                   <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.4 }}>
@@ -269,8 +269,8 @@ export default function CsvImport({ onImport, onClose }) {
               </span>
             </div>
 
-            <div style={{ background: T.card, borderRadius: 16, padding: 20, marginBottom: 20, border: `1px solid ${T.purple}20` }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: T.purple, marginBottom: 8 }}>🧠 ¿Cómo funciona?</div>
+            <div style={{ background: T.card, borderRadius: 12, padding: 20, marginBottom: 20, border: `1px solid ${T.purple}20` }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.purple, marginBottom: 8 }}>¿Cómo funciona?</div>
               <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.7 }}>
                 1. Subes tu archivo Excel — cualquier formato, cualquier estructura<br />
                 2. La IA de Claude analiza el contenido y entiende qué es cada columna<br />
@@ -285,8 +285,8 @@ export default function CsvImport({ onImport, onClose }) {
             </div>
 
             <div onClick={() => fileRef.current?.click()}
-              style={{ border: `2px dashed ${T.purple}40`, borderRadius: 20, padding: 56, textAlign: "center", cursor: "pointer", transition: "border-color 0.2s" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
+              style={{ border: `2px dashed ${T.purple}40`, borderRadius: 12, padding: 56, textAlign: "center", cursor: "pointer", transition: "border-color 0.2s" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}></div>
               <p style={{ color: T.txt, margin: "0 0 6px", fontSize: 16, fontWeight: 600 }}>Click para subir tu archivo</p>
               <p style={{ color: T.txt3, fontSize: 13 }}>.xlsx, .xls, .csv — cualquier formato</p>
               <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.txt" onChange={handleFile} style={{ display: "none" }} />
@@ -297,8 +297,8 @@ export default function CsvImport({ onImport, onClose }) {
         {/* ─── LOADING ─── */}
         {loading && (
           <div style={{ textAlign: "center", padding: 60 }}>
-            <div style={{ width: 64, height: 64, margin: "0 auto 20px", borderRadius: 20, background: T.purple + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ fontSize: 32, animation: "spin 2s ease-in-out infinite" }}>🧠</div>
+            <div style={{ width: 64, height: 64, margin: "0 auto 20px", borderRadius: 12, background: T.purple + "15", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ fontSize: 32, animation: "spin 2s ease-in-out infinite" }}></div>
             </div>
             <p style={{ color: T.purple, fontWeight: 700, fontSize: 16 }}>La IA está analizando tu archivo...</p>
             <p style={{ color: T.txt3, fontSize: 13, marginTop: 6 }}>Detectando columnas, interpretando datos y organizando la información</p>
@@ -309,12 +309,12 @@ export default function CsvImport({ onImport, onClose }) {
         {/* ─── STEP 3: Preview & Confirm ─── */}
         {step === 3 && !loading && (
           <div>
-            <p style={{ fontSize: 13, color: T.txt3, marginBottom: 12 }}>📄 {fileName}</p>
+            <p style={{ fontSize: 13, color: T.txt3, marginBottom: 12 }}>{fileName}</p>
 
             {/* Error */}
             {error && (
-              <div style={{ background: T.redDim, borderRadius: 14, padding: 20, marginBottom: 16, border: `1px solid ${T.red}20` }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.red, marginBottom: 6 }}>⚠ {error}</div>
+              <div style={{ background: T.redDim, borderRadius: 12, padding: 20, marginBottom: 16, border: `1px solid ${T.red}20` }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.red, marginBottom: 6 }}>{error}</div>
                 <button onClick={() => { setStep(2); setError(""); setParsed([]); setFileName(""); }}
                   style={{ background: T.bg3, border: "none", color: T.txt2, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, marginTop: 8 }}>
                   Intentar con otro archivo
@@ -330,11 +330,11 @@ export default function CsvImport({ onImport, onClose }) {
                     ✓ {parsed.length} registros detectados
                   </span>
                   <span style={{ background: T.purple + "15", color: T.purple, fontSize: 13, fontWeight: 600, padding: "6px 16px", borderRadius: 10 }}>
-                    🧠 Análisis IA completado
+                    Análisis IA completado
                   </span>
                 </div>
 
-                <div style={{ overflowX: "auto", maxHeight: 360, borderRadius: 14, border: `1px solid ${T.border}`, marginBottom: 20 }}>
+                <div style={{ overflowX: "auto", maxHeight: 360, borderRadius: 12, border: `1px solid ${T.border}`, marginBottom: 20 }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr>

@@ -20,7 +20,7 @@ import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Barras, Linea, Grafic
 const FILAS_210 = [["Ingresos brutos (total)", "ingresosBrutos"], ["· Salario y empleo (rentas de trabajo)", "ingresosTrabajo"], ["· Honorarios (trabajo no laboral)", "ingresosHonorarios"], ["· Rentas de capital", "ingresosCapital"], ["· Rentas no laborales", "ingresosNoLaborales"], ["· Pensiones", "ingresosPensiones"], ["· Dividendos", "ingresosDividendos"], ["Ingresos no constitutivos", "ingresosNoConstitutivos"], ["Renta exenta 25%", "rentaExenta25"], ["Deducción intereses de vivienda", "deducIntereses"], ["Deducción medicina prepagada", "deducMedicina"], ["Deducción dependientes", "deducDependientes"], ["Pensión voluntaria y AFC", "pvAFC"], ["Impuesto", "impuestoCalculado"], ["Retenciones", "retefuente"], ["Anticipo año siguiente", "anticipoAnoSiguiente"], ["Saldo pagado", "saldoPagar"], ["Patrimonio bruto", "patrimonioBruto"], ["Deudas", "deudas"], ["Patrimonio líquido", "patrimonioLiquido"]];
 const FILAS_110 = [["Ingresos brutos", "ingresosBrutos"], ["Costos y deducciones", "costosDeducciones"], ["Renta líquida gravable", "rentaLiquidaGravable"], ["Impuesto calculado", "impuestoCalculado"], ["Descuento ICA", "descICA"], ["Impuesto neto", "impuestoNeto"], ["Autorretenciones", "autorretencion"], ["Anticipo año siguiente", "anticipoAnoSiguiente"], ["Saldo pagado", "saldoPagar"], ["Patrimonio bruto", "patrimonioBruto"], ["Deudas", "deudas"], ["Patrimonio líquido", "patrimonioLiquido"]];
 const MALOS = ["impuestoCalculado", "impuestoNeto", "saldoPagar", "deudas", "anticipoAnoSiguiente"];
-const ICONO = { alerta: "⚠️", bien: "✅", info: "ℹ️" };
+const ICONO = { alerta: "", bien: "", info: "" };
 const SERIE = [C.accent, C.ok, C.warn, C.purple, C.danger];
 const td = { padding: "8px 6px", borderBottom: `1px solid ${C.border}`, textAlign: "right", fontFamily: "ui-monospace, Menlo, monospace", whiteSpace: "nowrap" };
 const th = { ...F.label, padding: "8px 6px", textAlign: "right" };
@@ -75,7 +75,7 @@ export default function HistorialDeclaraciones({ user, u, owners: ownersIn, onSa
       )}
       {owners.length > 0 && <Cobertura owners={owners} onSubir={abrirSubida} onVer={(id) => setSel(id)} onBorrar={onDeleteDeclaracion} />}
       {owners.length > 0 && calRef && (
-        <Panel titulo={`💸 Lo que pagas de renta en ${new Date().getFullYear()} y cuándo`} sub="De aquí sale el impuesto de los simuladores y del flujo de caja.">
+        <Panel titulo={`Lo que pagas de renta en ${new Date().getFullYear()} y cuándo`} sub="De aquí sale el impuesto de los simuladores y del flujo de caja.">
           <PagosDeRenta cal={calRef} owners={owners} detalle={detalleImpuesto || []} onGuardarDeclaracion={onGuardarDeclaracion} onCambiarMes={onCambiarMes} onSubir={() => abrirSubida(null)} />
         </Panel>
       )}

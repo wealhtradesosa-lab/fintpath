@@ -56,7 +56,7 @@ const CATEGORIAS = [
   {
     id: "unidades",
     titulo: "Unidades y Constantes",
-    icono: "📐",
+    icono: "",
     color: C.blue,
     descripcion: "Las 'monedas fiscales' y bases con las que la DIAN expresa todos los topes y sanciones.",
     keys: ["uvt", "smmlv", "trm"],
@@ -64,7 +64,7 @@ const CATEGORIAS = [
   {
     id: "cedulas",
     titulo: "Cédulas Tributarias",
-    icono: "📂",
+    icono: "",
     color: C.purple,
     descripcion: "Los 'cajones' donde se clasifican tus ingresos. Cada cédula tributa con sus propias reglas.",
     keys: ["cedula", "cedulaGeneral", "cedulaCapital", "cedulaNoLaboral", "cedulaDividendos"],
@@ -72,7 +72,7 @@ const CATEGORIAS = [
   {
     id: "rentas",
     titulo: "Tipos de Renta",
-    icono: "💰",
+    icono: "",
     color: C.green,
     descripcion: "Categorías profesionales de ingresos que la ley colombiana trata distinto.",
     keys: ["gananciaOcasional", "rentaExenta", "incrngo", "rentaPresuntiva", "componenteInflacionario"],
@@ -80,7 +80,7 @@ const CATEGORIAS = [
   {
     id: "deducciones",
     titulo: "Deducciones y Beneficios",
-    icono: "💎",
+    icono: "",
     color: C.green,
     descripcion: "Mecanismos legales para reducir tu base gravable y pagar menos impuesto.",
     keys: ["deduccion", "afc", "pensionVoluntaria", "dependientes"],
@@ -88,7 +88,7 @@ const CATEGORIAS = [
   {
     id: "operaciones",
     titulo: "Operaciones Tributarias",
-    icono: "🔁",
+    icono: "",
     color: C.orange,
     descripcion: "Mecanismos de pago, retención y ajuste que aparecen en tu día a día fiscal.",
     keys: ["retencion", "autoretencion", "anticipo", "saldoAFavor", "tasaEfectiva"],
@@ -96,7 +96,7 @@ const CATEGORIAS = [
   {
     id: "impuestos",
     titulo: "Impuestos y Cargas",
-    icono: "🏛️",
+    icono: "",
     color: C.orange,
     descripcion: "Los distintos tributos colombianos que pueden afectar tu declaración.",
     keys: ["gmf", "ica"],
@@ -104,7 +104,7 @@ const CATEGORIAS = [
   {
     id: "personas",
     titulo: "Tipos de Contribuyente",
-    icono: "👥",
+    icono: "",
     color: C.purple,
     descripcion: "Las categorías legales de quienes declaran impuestos en Colombia.",
     keys: ["personaNatural", "personaJuridica", "holding"],
@@ -112,7 +112,7 @@ const CATEGORIAS = [
   {
     id: "regimenes",
     titulo: "Regímenes Tributarios",
-    icono: "⚖️",
+    icono: "",
     color: C.purple,
     descripcion: "Los esquemas fiscales que aplican a sociedades. Definen tu tarifa y obligaciones.",
     keys: ["regimenOrdinario", "regimenSimple"],
@@ -120,7 +120,7 @@ const CATEGORIAS = [
   {
     id: "patrimonio",
     titulo: "Patrimonio",
-    icono: "🏦",
+    icono: "",
     color: C.blue,
     descripcion: "Los conceptos de balance que aparecen al declarar tu patrimonio fiscal.",
     keys: ["patrimonioBruto", "patrimonioLiquido", "pasivos"],
@@ -128,7 +128,7 @@ const CATEGORIAS = [
   {
     id: "documentos",
     titulo: "Formularios DIAN",
-    icono: "📄",
+    icono: "",
     color: C.blue,
     descripcion: "Los formatos oficiales que usas para declarar.",
     keys: ["f110", "f210"],
@@ -136,7 +136,7 @@ const CATEGORIAS = [
   {
     id: "entidades",
     titulo: "Entidades y Organismos",
-    icono: "🏢",
+    icono: "",
     color: C.txt2,
     descripcion: "Las instituciones que regulan o intervienen en tu vida fiscal.",
     keys: ["dian"],
@@ -162,7 +162,7 @@ export default function GlosarioPage({ onClose }) {
     result.otros = {
       id: "otros",
       titulo: "Otros términos",
-      icono: "📌",
+      icono: "",
       color: C.txt3,
       descripcion: "Términos adicionales que aparecen en la app.",
       terminos: [],
@@ -226,7 +226,7 @@ export default function GlosarioPage({ onClose }) {
         alignItems: "center",
         gap: 12,
       }}>
-        <span style={{ fontSize: 18, color: C.txt3 }}>🔍</span>
+        <span style={{ fontSize: 18, color: C.txt3 }}></span>
         <input
           type="text"
           value={busqueda}
@@ -269,7 +269,7 @@ export default function GlosarioPage({ onClose }) {
           onClick={() => setCategoriaActiva("todas")}
           color={C.green}
         >
-          ✨ Todas ({totalTerminos})
+          Todas ({totalTerminos})
         </ChipCategoria>
         {categoriasConTerminos.map(c => (
           <ChipCategoria
@@ -430,7 +430,7 @@ function TarjetaTermino({ termino, color }) {
           color: C.txt2,
           lineHeight: 1.5,
         }}>
-          <span style={{ color, fontWeight: 700, marginRight: 6 }}>📝 Ejemplo:</span>
+          <span style={{ color, fontWeight: 700, marginRight: 6 }}>Ejemplo:</span>
           {termino.ejemplo}
         </div>
       )}

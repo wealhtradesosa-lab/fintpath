@@ -187,7 +187,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
             width: 38, height: 38, borderRadius: 8,
             background: C.bg3,
             display: "flex", alignItems: "center", justifyContent: "center",
-          }}>{isJur ? "🏢" : "👤"}</div>
+          }}>{isJur ? "" : ""}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: isJur ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, marginBottom: 2 }}>
               Cargando datos para · {isJur ? "Persona jurídica · F-110" : "Persona natural · F-210"}
@@ -231,7 +231,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
                       display: "flex", alignItems: "center", gap: 5,
                     }}
                   >
-                    <span style={{ fontSize: 13 }}>{esJur ? "🏢" : "👤"}</span>
+                    <span style={{ fontSize: 13 }}>{esJur ? "" : ""}</span>
                     {o.name}
                   </button>
                 );
@@ -278,7 +278,7 @@ export default function WizardTributario({ user, selectedOwnerId, onUpdateUser, 
         padding: "32px 32px",
         background: C.bg2,
         border: `1px solid ${C.border}`,
-        borderRadius: 16,
+        borderRadius: 12,
         marginBottom: 20,
       }}>
         {/* Banner de precarga: si esta respuesta vino de datos existentes,
@@ -354,16 +354,16 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
   const isJur = ownerType === "juridica";
   return (
     <div>
-      <div style={{ fontSize: 48, marginBottom: 16, textAlign: "center" }}>{isJur ? "🏢" : "🤖"}</div>
+      <div style={{ fontSize: 48, marginBottom: 16, textAlign: "center" }}>{isJur ? "" : ""}</div>
       <h2 style={{ fontSize: 24, fontWeight: 700, color: C.txt, margin: "0 0 14px 0", textAlign: "center", lineHeight: 1.3 }}>
         {tieneDatos ? (
           isJur
             ? <>Hola, vamos con la declaración de <span style={{ color: C.purple }}>{ownerName}</span> — ya tengo {cantidadPrecargados} datos cargados</>
-            : <>Hola {ownerName !== "tú" ? ownerName : ""} 👋 ya tengo {cantidadPrecargados} datos tuyos cargados</>
+            : <>Hola {ownerName !== "tú" ? ownerName : ""} ya tengo {cantidadPrecargados} datos tuyos cargados</>
         ) : (
           isJur
             ? <>Vamos a preparar la declaración de renta de <span style={{ color: C.purple }}>{ownerName}</span></>
-            : <>Hola {ownerName !== "tú" ? ownerName : ""} 👋 vamos a entender tus impuestos juntos</>
+            : <>Hola {ownerName !== "tú" ? ownerName : ""} vamos a entender tus impuestos juntos</>
         )}
       </h2>
       <p style={{ fontSize: 15, color: C.txt2, lineHeight: 1.6, textAlign: "center", margin: "0 auto", maxWidth: 540 }}>
@@ -374,7 +374,7 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
       {isJur && (
         <div style={{ marginTop: 14, padding: "12px 16px", background: C.purpleBg || "rgba(196,181,253,0.10)", border: `1px solid ${C.purple}40`, borderRadius: 10 }}>
           <div style={{ fontSize: 12, color: C.purple, fontWeight: 700, marginBottom: 4, letterSpacing: 0.5 }}>
-            🏢 PERSONA JURÍDICA · F-110
+            PERSONA JURÍDICA · F-110
           </div>
           <div style={{ fontSize: 12, color: C.txt2, lineHeight: 1.5 }}>
             Te voy a preguntar sobre régimen tributario, ingresos operacionales, costos, ICA y patrimonio.
@@ -384,7 +384,7 @@ function IntroStep({ step, ownerName, cantidadPrecargados = 0, ownerType = "natu
       )}
       <div style={{ marginTop: 16, padding: "16px 20px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 10 }}>
         <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6 }}>
-          {tieneDatos ? "✨ Cómo va a ir esto:" : "✨ Lo que voy a hacer por ti:"}
+          {tieneDatos ? "Cómo va a ir esto:" : "Lo que voy a hacer por ti:"}
         </div>
         <ul style={{ margin: 0, paddingLeft: 20, color: C.txt2, fontSize: 13, lineHeight: 1.7 }}>
           {tieneDatos ? (
@@ -423,7 +423,7 @@ function SingleSelectStep({ step, value, onChange }) {
       </h2>
       {step.helpText && (
         <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, margin: "0 0 24px 0" }}>
-          💡 {step.helpText}
+          {step.helpText}
         </p>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -468,7 +468,7 @@ function NumberStep({ step, value, onChange, onSubmit }) {
       </h2>
       {step.helpText && (
         <p style={{ fontSize: 14, color: C.txt2, lineHeight: 1.5, margin: "0 0 24px 0" }}>
-          💡 {step.helpText}
+          {step.helpText}
         </p>
       )}
       <div style={{ position: "relative" }}>
@@ -598,7 +598,7 @@ function ReviewStep({ answers, ownerType, onEdit }) {
 
   return (
     <div>
-      <div style={{ fontSize: 36, marginBottom: 12, textAlign: "center" }}>📋</div>
+      <div style={{ fontSize: 36, marginBottom: 12, textAlign: "center" }}></div>
       <h2 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: "0 0 12px 0", lineHeight: 1.3, textAlign: "center" }}>
         {ownerType === "juridica" ? "Revisemos los datos de la sociedad" : "Revisemos lo que me contaste"}
       </h2>
@@ -639,7 +639,7 @@ function ReviewStep({ answers, ownerType, onEdit }) {
               cursor: "pointer",
               fontWeight: 600,
             }}>
-              ✏️ Editar
+              Editar
             </button>
           </div>
         ))}
@@ -676,7 +676,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
     <div style={{ padding: "20px 0", maxWidth: 720, margin: "0 auto" }}>
       {/* Header celebratorio */}
       <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div style={{ fontSize: 56, marginBottom: 12 }}>🎉</div>
+        <div style={{ fontSize: 56, marginBottom: 12 }}></div>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: C.txt, margin: "0 0 8px 0" }}>
           Listo, {ownerName !== "tú" ? ownerName : "ya"} terminamos
         </h1>
@@ -690,11 +690,11 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
         padding: "32px 28px",
         background: C.bg2,
         border: `2px solid ${saldoFinal > 0 ? C.orange : C.green}`,
-        borderRadius: 16,
+        borderRadius: 12,
         marginBottom: 20,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 8, letterSpacing: 0.8 }}>
-          {saldoFinal > 0 ? "💰 Lo que te toca pagar" : "✨ Tu situación"}
+          {saldoFinal > 0 ? "Lo que te toca pagar" : "Tu situación"}
         </div>
         <div style={{
           fontSize: 56,
@@ -725,11 +725,11 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
         padding: "20px 24px",
         background: C.bg2,
         border: `1px solid ${C.border}`,
-        borderRadius: 14,
+        borderRadius: 12,
         marginBottom: 20,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 700, marginBottom: 14, letterSpacing: 0.5 }}>
-          📊 Cómo llegamos a este número
+          Cómo llegamos a este número
         </div>
         <DesgloseRow label="Lo que ganaste en total" value={ingresoTotal} color={C.blue} />
         <DesgloseRow label="Impuesto calculado (antes de descuentos)" value={impuestoBruto} color={C.txt2} />
@@ -768,7 +768,7 @@ function PantallaResultado({ user, ownerName, answers, onClose }) {
       {/* Acciones */}
       <div style={{ display: "flex", gap: 12, flexDirection: "column" }}>
         <button onClick={onClose} style={btnStyle(C.green, "#000")}>
-          📋 Ver resumen completo y modo experto
+          Ver resumen completo y modo experto
         </button>
       </div>
     </div>

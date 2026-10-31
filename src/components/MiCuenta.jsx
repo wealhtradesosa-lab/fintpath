@@ -72,8 +72,8 @@ export default function MiCuenta({
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
   const tabs = [
-    showMembersTab && { id: "miembros", label: "👥 Personas con acceso" },
-    configContent && { id: "config", label: "⚙️ Configuración" },
+    showMembersTab && { id: "miembros", label: "Personas con acceso" },
+    configContent && { id: "config", label: "Configuración" },
   ].filter(Boolean);
 
   // Tab activa: si vienen explícitamente, respetar. Sino, default según contexto.
@@ -230,7 +230,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* Header de la cuenta */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24 }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 24 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
           <div>
             <h3 style={{ fontSize: 18, fontWeight: 700, margin: "0 0 8px", color: T.txt }}>
@@ -310,7 +310,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                   }}
                   title="Cancelar, cambiar plan, ver facturas"
                 >
-                  ⚙️ Gestionar suscripción
+                  Gestionar suscripción
                 </button>
               )}
             </div>
@@ -329,11 +329,11 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             color: T.amber,
             lineHeight: 1.6,
           }}>
-            <strong>⚠️ Tu plan {PLAN_LABELS[plan] || plan} fue cancelado.</strong>{" "}
+            <strong>Tu plan {PLAN_LABELS[plan] || plan} fue cancelado.</strong>{" "}
             Sigues teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
             Después, tu cuenta vuelve al plan Free.{" "}
             {isAdmin && (
-              <span>Si fue un error, click en "⚙️ Gestionar suscripción" arriba para reactivar.</span>
+              <span>Si fue un error, click en "Gestionar suscripción" arriba para reactivar.</span>
             )}
           </div>
         )}
@@ -341,19 +341,19 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
         {/* Explicación del modelo */}
         <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
           {plan === "pro_familiar" ? (
-            <>👨‍👩‍👧 <strong style={{ color: T.txt }}>Plan Pro Familiar:</strong> hasta 10 personas pueden ver y trabajar con los mismos datos. Útil para familia + contador.</>
+            <><strong style={{ color: T.txt }}>Plan Pro Familiar:</strong> hasta 10 personas pueden ver y trabajar con los mismos datos. Útil para familia + contador.</>
           ) : plan === "pro" ? (
-            <>⭐ <strong style={{ color: T.txt }}>Tu plan:</strong> hasta 3 personas con la misma información y el mismo acceso, y aparte hasta 3 contadores que solo ven lo tributario, sin poder cambiar nada.</>
+            <><strong style={{ color: T.txt }}>Tu plan:</strong> hasta 3 personas con la misma información y el mismo acceso, y aparte hasta 3 contadores que solo ven lo tributario, sin poder cambiar nada.</>
           ) : plan === "managed" ? (
-            <>👤 <strong style={{ color: T.txt }}>Cuenta gestionada por asesor:</strong> tu asesor configuró este espacio.</>
+            <><strong style={{ color: T.txt }}>Cuenta gestionada por asesor:</strong> tu asesor configuró este espacio.</>
           ) : plan === "basico" ? (
-            <>👤 <strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, sube a Pro.</>
+            <><strong style={{ color: T.txt }}>Plan Básico:</strong> 1 usuario por cuenta. Para compartir con familia o contador, sube a Pro.</>
           ) : (
             // 25-jul-2026 (Santiago): esta rama decía "Plan Básico" para
             // CUALQUIER plan que no fuera pro/pro_familiar/managed. Un usuario
             // gratuito veía el badge "Plan free" y debajo "Plan Básico" —
             // dos planes distintos en la misma tarjeta.
-            <>👤 <strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tienes todo: el motor fiscal, el Asesor IA, los Coaches y hasta 3 personas sobre los mismos datos.</>
+            <><strong style={{ color: T.txt }}>Plan gratuito:</strong> 1 usuario por cuenta. Con Pro tienes todo: el motor fiscal, el Asesor IA, los Coaches y hasta 3 personas sobre los mismos datos.</>
           )}
           {onUpgrade && plan !== "pro_familiar" && (
             <div style={{ marginTop: 10 }}>
@@ -368,12 +368,12 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
       {/* Error global */}
       {error && (
         <div style={{ background: T.redB, border: `1px solid ${T.red}`, color: T.red, padding: "10px 14px", borderRadius: 10, fontSize: 13 }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
       {/* Personas de la cuenta */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Personas de la cuenta ({familia.length})</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Ven y trabajan con la misma información. «Administrador» puede editar; «Solo lectura» solo mira.</div>
@@ -394,7 +394,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
       </div>
 
       {/* Contadores: solo lectura de lo tributario, no ocupan cupo */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: contadores.length ? `1px solid ${T.border}` : "none", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ minWidth: 0, flex: "1 1 260px" }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Tus contadores ({contadores.length} de 3)</div>
@@ -411,7 +411,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
 
       {/* Invitaciones pendientes (solo admin) */}
       {isAdmin && invitations.length > 0 && (
-        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
+        <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
           <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>
               Invitaciones pendientes ({invitations.length})
@@ -541,7 +541,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 14, color: T.amber, flexShrink: 0,
       }}>
-        ⏳
+        
       </div>
       <div style={{ flex: "1 1 170px", minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -561,7 +561,7 @@ function InvitationRow({ invitation, isLast, onRevoke }) {
           cursor: "pointer", fontSize: 12, fontWeight: 600,
         }}
       >
-        {copied ? "✓ Copiado" : "📋 Copiar link"}
+        {copied ? "✓ Copiado" : "Copiar link"}
       </button>
       <button
         onClick={() => onRevoke(invitation.invitation_id, invitation.email)}
@@ -659,7 +659,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
         justifyContent: "center", zIndex: 1000, padding: 20,
       }}>
         <div onClick={(e) => e.stopPropagation()} style={{
-          background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20,
+          background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12,
           width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto", padding: 32,
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -676,7 +676,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               background: "rgba(59,130,246,0.08)", border: `1px solid rgba(59,130,246,0.25)`,
               borderRadius: 10, padding: "8px 12px", fontSize: 12, color: T.blue, marginBottom: 12,
             }}>
-              ✉️ Enviando email…
+              Enviando email…
             </div>
           )}
           {emailStatus === "sent" && (
@@ -692,7 +692,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.25)`,
               borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#f59e0b", marginBottom: 12,
             }}>
-              ℹ️ Email automático no disponible · copia el link y envíalo manualmente
+              Email automático no disponible · copia el link y envíalo manualmente
             </div>
           )}
           <div style={{
@@ -710,7 +710,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
               cursor: "pointer", fontWeight: 700, fontSize: 13, marginBottom: 8,
             }}
           >
-            {copied ? "✓ Link copiado al portapapeles" : "📋 Copiar link"}
+            {copied ? "✓ Link copiado al portapapeles" : "Copiar link"}
           </button>
           <div style={{ fontSize: 12, color: T.txt3, textAlign: "center" }}>
             Expira en 7 días.
@@ -728,7 +728,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
       justifyContent: "center", zIndex: 1000, padding: 20,
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
-        background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 20,
+        background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12,
         width: "100%", maxWidth: 480, maxHeight: "90vh", overflowY: "auto", padding: 32,
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
@@ -786,7 +786,7 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
 
         {submitError && (
           <div style={{ marginTop: 12, padding: "10px 12px", background: T.redB, border: `1px solid ${T.red}`, color: T.red, borderRadius: 10, fontSize: 12 }}>
-            ⚠️ {submitError}
+            {submitError}
           </div>
         )}
 

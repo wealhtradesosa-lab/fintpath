@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Pencil, Trash2 } from "./Iconos.jsx";
 import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -26,7 +27,7 @@ const _fm = (n) => {
   if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+"M";
   return "$" + Math.round(n).toLocaleString("es-CO");
 };
-const ICONS = ["🏠","🚗","🎓","✈️","💼","🏖️","💰","🏥","👶","📱","🎯","🏆"];
+const ICONS = ["","","","","","","","","","","",""];
 const CATS = ["Propiedad","Vehículo","Educación","Viaje","Negocio","Retiro","Ahorro","Salud","Familia","Otro"];
 
 const emptyForm = () => ({
@@ -35,7 +36,7 @@ const emptyForm = () => ({
   monto: "",
   fechaMeta: "",
   ahorrado: "",
-  icono: "🎯",
+  icono: "",
   prioridad: "media",
   moneda: "COP",
   norteObjetivo: "",
@@ -119,7 +120,7 @@ export default function MetasModule({
       monto: item.monto ?? "",
       fechaMeta: item.fechaMeta || "",
       ahorrado: item.ahorrado ?? "",
-      icono: item.icono || "🎯",
+      icono: item.icono || "",
       prioridad: item.prioridad || "media",
       moneda: item.moneda || "COP",
       norteObjetivo: item.norteObjetivo || "",
@@ -190,7 +191,7 @@ export default function MetasModule({
       >
         <div>
           <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px" }}>
-            🎯 Metas fondeables
+            Metas fondeables
           </h2>
           <p style={{ fontSize: 13, color: T.txt3, margin: 0 }}>
             {items.length} metas · Falta: {fm(totalNeeded)}
@@ -227,7 +228,7 @@ export default function MetasModule({
         style={{
           background: T.card,
           border: "1px solid " + T.border,
-          borderRadius: 14,
+          borderRadius: 12,
           padding: "14px 16px",
           marginBottom: 14,
         }}
@@ -422,12 +423,12 @@ export default function MetasModule({
           style={{
             background: T.card,
             border: "1px solid " + T.border,
-            borderRadius: 16,
+            borderRadius: 12,
             padding: 40,
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
+          <div style={{ fontSize: 40, marginBottom: 12 }}></div>
           <p style={{ color: T.txt2, fontSize: 14, margin: "0 0 8px" }}>
             {EMPTY_STATE_COPY}
           </p>
@@ -465,7 +466,7 @@ export default function MetasModule({
                   border:
                     "1px solid " +
                     (fondeo.done ? T.green + "30" : T.border),
-                  borderRadius: 16,
+                  borderRadius: 12,
                   padding: "18px 20px",
                 }}
               >
@@ -480,7 +481,7 @@ export default function MetasModule({
                   }}
                 >
                   <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
-                    <span style={{ fontSize: 28 }}>{meta.icono || "🎯"}</span>
+                    <span style={{ fontSize: 28 }}>{meta.icono || ""}</span>
                     <div style={{ minWidth: 0 }}>
                       <div
                         style={{
@@ -504,7 +505,7 @@ export default function MetasModule({
                         </span>
                         {fondeo.fechaObj && (
                           <span style={{ marginLeft: 8 }}>
-                            📅{" "}
+                            {" "}
                             {fondeo.fechaObj.toLocaleDateString("es-CO", {
                               month: "short",
                               year: "numeric",
@@ -513,7 +514,7 @@ export default function MetasModule({
                         )}
                         {norteMeta && (
                           <span style={{ marginLeft: 8, color: T.cyan }}>
-                            🧭 {norteMeta.emoji} {norteMeta.es.nombre}
+                            {norteMeta.emoji} {norteMeta.es.nombre}
                           </span>
                         )}
                         {fondeo.monedaOrigen === "USD" && (
@@ -553,9 +554,7 @@ export default function MetasModule({
                         color: T.txt2,
                         fontSize: 12,
                       }}
-                    >
-                      ✏️
-                    </button>
+                    ><Pencil size={14} strokeWidth={1.75} /></button>
                     <button
                       onClick={() => {
                         if (!guardEdit(role)) return;
@@ -571,9 +570,7 @@ export default function MetasModule({
                         color: T.red,
                         fontSize: 12,
                       }}
-                    >
-                      🗑️
-                    </button>
+                    ><Trash2 size={14} strokeWidth={1.75} /></button>
                   </div>
                 </div>
 
@@ -950,7 +947,7 @@ export default function MetasModule({
             style={{
               background: T.bg2,
               border: "1px solid " + T.border,
-              borderRadius: 20,
+              borderRadius: 12,
               width: "100%",
               maxWidth: 520,
               maxHeight: "85vh",
@@ -1083,9 +1080,9 @@ export default function MetasModule({
                     outline: "none",
                   }}
                 >
-                  <option value="alta">🔴 Alta</option>
-                  <option value="media">🟡 Media</option>
-                  <option value="baja">🟢 Baja</option>
+                  <option value="alta">Alta</option>
+                  <option value="media">Media</option>
+                  <option value="baja">Baja</option>
                 </select>
               </div>
               <div>

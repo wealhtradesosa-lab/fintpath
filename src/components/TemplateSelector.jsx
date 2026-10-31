@@ -35,7 +35,7 @@
 export const TEMPLATES = [
   {
     id: "mensual-todo-año",
-    emoji: "💵",
+    emoji: "",
     titulo: (tipo) => tipo === "ingreso" ? "Cada mes durante todo el año" : "Cada mes durante todo el año",
     descripcion: () => "Se recibe/paga los 12 meses",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: sueldo, arriendo, dividendo mensual" : "Ej: arriendo, servicios, gimnasio, mercado",
@@ -55,7 +55,7 @@ export const TEMPLATES = [
   },
   {
     id: "mensual-limitado",
-    emoji: "📅",
+    emoji: "",
     titulo: () => "Cada mes solo durante algunos meses",
     descripcion: () => "Se recibe/paga solo un rango de meses (ej: jul–dic)",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: Rapicredit jul–dic, contrato por proyecto" : "Ej: alquiler temporal, curso trimestral",
@@ -69,7 +69,7 @@ export const TEMPLATES = [
   },
   {
     id: "anual",
-    emoji: "🎯",
+    emoji: "",
     titulo: () => "Solo una vez al año",
     descripcion: () => "1 pago único en un mes específico",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: prima diciembre, bono anual, cesantías" : "Ej: impuesto vehículo, predial, seguro anual",
@@ -80,7 +80,7 @@ export const TEMPLATES = [
   },
   {
     id: "variable-mensual",
-    emoji: "📊",
+    emoji: "",
     titulo: () => "Cambia mes a mes",
     descripcion: (tipo) => tipo === "ingreso"
       ? "Diferente monto cada mes (ej: comisiones, honorarios variables)"
@@ -104,7 +104,7 @@ export const TEMPLATES = [
   },
   {
     id: "avanzado",
-    emoji: "⚙️",
+    emoji: "",
     titulo: () => "Otras opciones",
     // 25-jul-2026: se quitaron trimestral y semestral de los selectores (nadie
     // las usaba y confundían). El texto las seguía prometiendo, así que el
@@ -213,7 +213,7 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
             onClick={() => onSelect(templateAvanzado)}
             style={{ background: "transparent", border: "none", color: T.txt3, fontSize: 12, cursor: "pointer", padding: "6px 12px", textDecoration: "underline" }}
           >
-            ⚙️ ¿Otro caso? Ver opciones avanzadas
+            ¿Otro caso? Ver opciones avanzadas
           </button>
         </div>
       )}

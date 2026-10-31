@@ -96,7 +96,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
         color: T.cyan,
         marginBottom: 10, display: "flex", alignItems: "center", gap: 6,
       }}>
-        📊 Evolución histórica
+        Evolución histórica
         <span style={{ color: T.txt3, fontWeight: 400, fontSize: 11, marginLeft: 4 }}>
           ({puntos.length} año{puntos.length !== 1 ? "s" : ""})
         </span>
@@ -120,7 +120,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
       {(proyImp || proyIng) && (
         <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 8, fontSize: 12 }}>
           <div style={{ color: T.green, fontWeight: 700, marginBottom: 4 }}>
-            🔮 Proyección año siguiente
+            Proyección año siguiente
           </div>
           <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.5 }}>
             Basado en la pendiente histórica, el año que viene podría rondar:

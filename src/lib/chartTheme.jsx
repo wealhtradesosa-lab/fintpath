@@ -220,7 +220,7 @@ export function chartCardStyle({ glow, padding = 24 } = {}) {
     backdropFilter: "blur(20px)",
     WebkitBackdropFilter: "blur(20px)",
     border: `1px solid ${CHART.border}`,
-    borderRadius: 16,
+    borderRadius: 12,
     padding,
     position: "relative",
     overflow: "hidden",
@@ -239,7 +239,7 @@ export function statCardStyle({ accent } = {}) {
   return {
     background: "rgba(var(--fp-ink),0.02)",
     border: `1px solid ${CHART.border}`,
-    borderRadius: 14,
+    borderRadius: 12,
     padding: "16px 18px",
     position: "relative",
     overflow: "hidden",

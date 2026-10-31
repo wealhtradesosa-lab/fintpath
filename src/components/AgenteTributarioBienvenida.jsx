@@ -142,7 +142,7 @@ export default function AgenteTributarioBienvenida({
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: "rgba(124,58,237,0.15)", border: "1px solid rgba(196,181,253,0.4)", borderRadius: 999 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: "#c4b5fd", letterSpacing: 0.5 }}>2️⃣ PASO 2 · AUDITORÍA IA</span>
           </div>
-          <span style={{ fontSize: 13, color: C.txt2 }}>{saludo} 👋</span>
+          <span style={{ fontSize: 13, color: C.txt2 }}>{saludo} </span>
         </div>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
           {isJuridica ? `Auditoría de ${ownerName}` : `Auditoría de tu declaración`}
@@ -178,7 +178,7 @@ export default function AgenteTributarioBienvenida({
               alignItems: "center",
               justifyContent: "center",
             }}>
-              {isJuridica ? "🏢" : "👤"}
+              {isJuridica ? "" : ""}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: isJuridica ? "#c4b5fd" : "#60a5fa", letterSpacing: 0.5, marginBottom: 4 }}>
@@ -226,7 +226,7 @@ export default function AgenteTributarioBienvenida({
                       gap: 6,
                     }}
                   >
-                    <span style={{ fontSize: 14 }}>{isJur ? "🏢" : "👤"}</span>
+                    <span style={{ fontSize: 14 }}>{isJur ? "" : ""}</span>
                     {o.name}
                   </button>
                 );
@@ -242,10 +242,10 @@ export default function AgenteTributarioBienvenida({
         padding: "32px 28px",
         background: C.bg2,
         border: `1.5px solid ${saldoFinal > 0 ? C.orangeBg.replace("0.10", "0.40") : C.greenBg.replace("0.10", "0.40")}`,
-        borderRadius: 16,
+        borderRadius: 12,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 8, letterSpacing: 0.8 }}>
-          {saldoFinal > 0 ? "💰 Lo que te toca pagar este año" : "✨ Estás al día"}
+          {saldoFinal > 0 ? "Lo que te toca pagar este año" : "Estás al día"}
         </div>
         <div style={{
           fontSize: 56,
@@ -282,14 +282,14 @@ export default function AgenteTributarioBienvenida({
           subLabel="Ingresos del año"
           value={ingresoTotal}
           color={C.blue}
-          icon="💼"
+          icon=""
         />
         <NumeroSimple
           label="Ya pagaste durante el año"
           subLabel={<>Retenciones automáticas <TerminoTributario clave="retencion">(¿qué es?)</TerminoTributario> del banco, empleador, etc.</>}
           value={retencionTotal}
           color={C.green}
-          icon="✅"
+          icon=""
           prefix="-"
         />
         <NumeroSimple
@@ -297,7 +297,7 @@ export default function AgenteTributarioBienvenida({
           subLabel="Lo que daría sin retenciones"
           value={impuestoBruto}
           color={C.txt2}
-          icon="📊"
+          icon=""
         />
       </div>
 
@@ -348,7 +348,7 @@ export default function AgenteTributarioBienvenida({
       )}
 
       {/* Modal de aplicar oportunidad: se renderiza cuando el user clickea
-          "⚡ Aplicar oportunidad" en una OportunidadCard */}
+          "Aplicar oportunidad" en una OportunidadCard */}
       {oportunidadAplicar && (
         <AplicarOportunidadModal
           oportunidad={oportunidadAplicar}
@@ -366,10 +366,10 @@ export default function AgenteTributarioBienvenida({
           background: C.bg2,
           border: `1px solid ${C.border}`,
           borderLeft: `4px solid ${C.green}`,
-          borderRadius: 14,
+          borderRadius: 12,
         }}>
           <div style={{ fontSize: 13, color: C.green, fontWeight: 700, marginBottom: 6, letterSpacing: 0.5 }}>
-            💡 Detectamos deducciones y beneficios para revisar
+            Detectamos deducciones y beneficios para revisar
           </div>
           <h3 style={{ fontSize: 22, fontWeight: 700, color: C.txt, margin: "4px 0 6px 0" }}>
             Podrías ahorrar hasta {fm(ahorroPotencial)}
@@ -396,7 +396,7 @@ export default function AgenteTributarioBienvenida({
         padding: "24px 24px",
         background: C.bg2,
         border: `1px solid ${C.border}`,
-        borderRadius: 14,
+        borderRadius: 12,
       }}>
         <div style={{ fontSize: 13, color: C.txt2, fontWeight: 600, marginBottom: 16, letterSpacing: 0.5 }}>
           ¿Qué quieres hacer ahora?
@@ -417,7 +417,7 @@ export default function AgenteTributarioBienvenida({
             onMouseOver={(e) => { e.currentTarget.style.borderColor = C.blue; }}
             onMouseOut={(e) => { e.currentTarget.style.borderColor = C.border; }}
           >
-            <div style={{ fontSize: 22, marginBottom: 6 }}>📋</div>
+            <div style={{ fontSize: 22, marginBottom: 6 }}></div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
               Ver el detalle completo
             </div>
@@ -441,7 +441,7 @@ export default function AgenteTributarioBienvenida({
             onMouseOver={(e) => { e.currentTarget.style.borderColor = C.green; }}
             onMouseOut={(e) => { e.currentTarget.style.borderColor = C.border; }}
           >
-            <div style={{ fontSize: 22, marginBottom: 6 }}>🪄</div>
+            <div style={{ fontSize: 22, marginBottom: 6 }}></div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
               Modo paso a paso
             </div>
@@ -465,7 +465,7 @@ export default function AgenteTributarioBienvenida({
             onMouseOver={(e) => { e.currentTarget.style.borderColor = C.purple; }}
             onMouseOut={(e) => { e.currentTarget.style.borderColor = C.border; }}
           >
-            <div style={{ fontSize: 22, marginBottom: 6 }}>💬</div>
+            <div style={{ fontSize: 22, marginBottom: 6 }}></div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
               Hablar con la IA
             </div>
@@ -490,7 +490,7 @@ export default function AgenteTributarioBienvenida({
             onMouseOver={(e) => { e.currentTarget.style.background = "rgba(74,222,128,0.18)"; }}
             onMouseOut={(e) => { e.currentTarget.style.background = C.greenBg; }}
           >
-            <div style={{ fontSize: 22, marginBottom: 6 }}>📄</div>
+            <div style={{ fontSize: 22, marginBottom: 6 }}></div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.txt, marginBottom: 4 }}>
               Descargar PDF para mi contador
             </div>
@@ -607,7 +607,7 @@ function OportunidadCard({ rec, numero, onAplicar }) {
               cursor: "pointer",
             }}
           >
-            ⚡ Aplicar oportunidad →
+            Aplicar oportunidad →
           </button>
         )}
       </div>

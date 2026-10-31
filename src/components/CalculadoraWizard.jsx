@@ -154,18 +154,18 @@ function resumenOptimizaciones(owner) {
   const fp = owner?.fiscalProfile || {};
   const items = [];
   if ((fp.dependientes?.cantidad || 0) > 0) {
-    items.push({ icono: "👨‍👩‍👧", texto: `${fp.dependientes.cantidad} dependiente${fp.dependientes.cantidad > 1 ? 's' : ''}${fp.dependientes.conDiscapacidad ? ' (con discapacidad)' : ''}` });
+    items.push({ icono: "", texto: `${fp.dependientes.cantidad} dependiente${fp.dependientes.cantidad > 1 ? 's' : ''}${fp.dependientes.conDiscapacidad ? ' (con discapacidad)' : ''}` });
   }
-  if (fp.auxilios?.alimentacion) items.push({ icono: "🍽️", texto: "Auxilio de alimentación" });
-  if (fp.auxilios?.transporte) items.push({ icono: "🚍", texto: "Auxilio de transporte" });
-  if (fp.obligadoContabilidad) items.push({ icono: "📚", texto: "Obligado a llevar contabilidad" });
-  if (fp.honorariosConPersonal) items.push({ icono: "💼", texto: "Honorarios con personal a cargo" });
-  if (fp.eventosAno?.recibioHerencia) items.push({ icono: "🎁", texto: "Herencia/legado recibido" });
-  if (fp.eventosAno?.vendioInmuebleAntiguo) items.push({ icono: "🏠", texto: "Venta de inmueble > 2 años" });
-  if (fp.eventosAno?.ganoLoteria) items.push({ icono: "🎰", texto: "Lotería/rifa ganada" });
-  if ((fp.donaciones?.monto || 0) > 0) items.push({ icono: "💝", texto: `Donaciones ESAL` });
-  if ((fp.inversionesCTI?.monto || 0) > 0) items.push({ icono: "🔬", texto: `Inversión CTI/cine/primera infancia` });
-  if (fp.regimenEspecial) items.push({ icono: "⚖️", texto: `Régimen especial: ${fp.regimenEspecial}` });
+  if (fp.auxilios?.alimentacion) items.push({ icono: "", texto: "Auxilio de alimentación" });
+  if (fp.auxilios?.transporte) items.push({ icono: "", texto: "Auxilio de transporte" });
+  if (fp.obligadoContabilidad) items.push({ icono: "", texto: "Obligado a llevar contabilidad" });
+  if (fp.honorariosConPersonal) items.push({ icono: "", texto: "Honorarios con personal a cargo" });
+  if (fp.eventosAno?.recibioHerencia) items.push({ icono: "", texto: "Herencia/legado recibido" });
+  if (fp.eventosAno?.vendioInmuebleAntiguo) items.push({ icono: "", texto: "Venta de inmueble > 2 años" });
+  if (fp.eventosAno?.ganoLoteria) items.push({ icono: "", texto: "Lotería/rifa ganada" });
+  if ((fp.donaciones?.monto || 0) > 0) items.push({ icono: "", texto: `Donaciones ESAL` });
+  if ((fp.inversionesCTI?.monto || 0) > 0) items.push({ icono: "", texto: `Inversión CTI/cine/primera infancia` });
+  if (fp.regimenEspecial) items.push({ icono: "", texto: `Régimen especial: ${fp.regimenEspecial}` });
   return items;
 }
 
@@ -199,7 +199,7 @@ function getHintContextual(det, owner) {
     const pct = impAct > 0 ? Math.round((ahorro / impAct) * 100) : 0;
     return {
       tono: "ok",
-      icono: "💰",
+      icono: "",
       texto: `Según tu estimación, aportes a PV/AFC podrían reducir tu impuesto en ~$${fmtNumEs((ahorro / 1_000_000), 1)}M (${pct}%). Confírmalo con tu contador.`,
     };
   }
@@ -208,7 +208,7 @@ function getHintContextual(det, owner) {
   if (ahorro > 0) {
     return {
       tono: "info",
-      icono: "💡",
+      icono: "",
       texto: `Diferencia pequeña estimada ($${Math.round(ahorro / 1000).toLocaleString('es-CO')}k). Hay poco margen de ajuste.`,
     };
   }
@@ -237,7 +237,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
   // Dependientes ya aplicados
   if ((det.deducDep || 0) > 0) {
     recs.push({
-      icono: "👨‍👩‍👧",
+      icono: "",
       titulo: `Dependientes: $${fmtNumEs((det.deducDep / 1_000_000), 1)}M/año`,
       desc: `Ya se está deduciendo 10% del ingreso por ${fp.dependientes?.cantidad || 1} dependiente(s).`,
       tono: "ok",
@@ -247,7 +247,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
   // Intereses vivienda
   if ((det.deducVivienda || 0) > 0) {
     recs.push({
-      icono: "🏠",
+      icono: "",
       titulo: `Intereses vivienda: $${fmtNumEs((det.deducVivienda / 1_000_000), 1)}M/año`,
       desc: "Los intereses de tu hipoteca ya se deducen automáticamente.",
       tono: "ok",
@@ -256,7 +256,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
 
   // Donaciones (Art. 257 ET)
   recs.push({
-    icono: "🤝",
+    icono: "",
     titulo: "Donaciones con descuento 25% (Art. 257 ET)",
     desc: "Las donaciones a entidades sin ánimo de lucro calificadas dan un descuento del 25% del valor donado, directo del impuesto a pagar. Tope legal: 25% del impuesto de renta del año.",
     tono: "info",
@@ -264,7 +264,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
 
   // GMF deducible
   recs.push({
-    icono: "💳",
+    icono: "",
     titulo: "GMF 4×1000 deducible (Art. 115 ET)",
     desc: "El 50% del GMF pagado es deducible. Se calcula automáticamente según tus movimientos bancarios.",
     tono: "ok",
@@ -281,7 +281,7 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
   return (
     <div>
       <div style={{ textAlign: "center", marginBottom: 18, padding: "0 20px" }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🧑</div>
+        <div style={{ fontSize: 36, marginBottom: 8 }}></div>
         <div style={{ fontSize: 20, fontWeight: 700, color: T.txt, marginBottom: 6 }}>
           ¿Para quién quieres calcular el impuesto?
         </div>
@@ -293,7 +293,7 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
       {/* Progreso global */}
       {owners.length > 1 && (
         <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10, maxWidth: 520, margin: "0 auto 14px" }}>
-          <div style={{ fontSize: 16 }}>📊</div>
+          <div style={{ fontSize: 16 }}></div>
           <div style={{ flex: 1, fontSize: 12, color: T.txt2 }}>
             <strong style={{ color: T.green }}>{ownersConfigurados}</strong> de <strong style={{ color: T.txt }}>{owners.length}</strong> propietarios configurados
           </div>
@@ -326,7 +326,7 @@ function Paso1Owner({ owners, selectedOwnerId, onSelect, onNext }) {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ fontSize: 22 }}>{o.type === "juridica" ? "🏢" : "🧑"}</div>
+                  <div style={{ fontSize: 22 }}>{o.type === "juridica" ? "" : ""}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ fontSize: 14, fontWeight: 700 }}>{o.name}</div>
@@ -386,7 +386,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
     });
   };
 
-  // Commit 9.1: Respetar sim. Los items apagados (⬜) NO se incluyen en el cálculo
+  // Commit 9.1: Respetar sim. Los items apagados () NO se incluyen en el cálculo
   // ni en la detección de data gaps — son decisiones explícitas del usuario.
   // También exponemos apagados para poder informar al usuario (sin pedir acción).
   const ownerIngAll = useMemo(() => (user?.ingresos || []).filter(i => i.owner === ownerId), [user, ownerId]);
@@ -447,7 +447,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
         desc: esJuridica
           ? "Como sociedad que recibe arriendos, si pagas predial, administración, mantenimiento o seguros de los inmuebles, son deducibles (Art. 107 ET). Si los paga el arrendatario directamente o no aplica a tu estructura, descarta este aviso."
           : "Si como arrendador pagas predial, administración, mantenimiento o seguros, son deducibles del ingreso de arriendo. Si el arrendatario los paga directamente o no tienes estos gastos, descarta este aviso.",
-        page: "gas", icono: "🏠",
+        page: "gas", icono: "",
       });
     }
     if (resumen.honorarios > 0 && resumen.gastosActividad === 0) {
@@ -455,7 +455,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
         id: "honorarios_sin_gastos",
         titulo: "¿Tienes gastos relacionados a tu actividad profesional?",
         desc: "Como independiente con honorarios, puedes deducir oficina, servicios, transporte o tecnología que uses para ejercer tu actividad (Art. 107 ET, causalidad). Si no tienes estos gastos o ya los cargaste en otra categoría, descarta este aviso.",
-        page: "gas", icono: "💼",
+        page: "gas", icono: "",
       });
     }
     const tieneSalario = resumen.salario > 0;
@@ -471,7 +471,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
         id: "salario_sin_aportes",
         titulo: "¿Cargaste tus aportes obligatorios de pensión y salud?",
         desc: "Todo empleado aporta ~4% pensión + 4% salud del salario. Si no los registras en el ingreso, el motor sobrestima tu impuesto. Si ya los registraste en otro campo o no aplican a tu caso, descarta este aviso.",
-        page: "ing", icono: "💼",
+        page: "ing", icono: "",
       });
     }
     const tieneDeudaHipotecaria = ownerDeu.some(d => (d.mt || 0) > 10_000_000 && (d.tipo === "Hipoteca" || (d.nombre || "").toLowerCase().includes("hipote") || (d.nombre || "").toLowerCase().includes("vivienda")));
@@ -481,7 +481,7 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
         id: "hipoteca_sin_clasificar",
         titulo: "¿Es tu vivienda de habitación la hipoteca que tienes?",
         desc: "Si la hipoteca es sobre la casa donde vives, los intereses son deducibles hasta 1.200 UVT/año (Art. 119 ET). Si es de un inmueble de inversión o comercial, descarta este aviso — esa deducción solo aplica a vivienda habitacional.",
-        page: "deu", icono: "🏡",
+        page: "deu", icono: "",
       });
     }
     // Filtrar los que el usuario descartó explícitamente
@@ -489,11 +489,11 @@ function Paso2Datos({ user, selectedOwner, onBack, onNext, onNavigate }) {
   }, [resumen, ownerIng, ownerDeu, dismissedGaps]);
 
   const filas = [
-    { label: "Salario mensual", value: resumen.salario, icono: "💼" },
-    { label: "Honorarios mensual", value: resumen.honorarios, icono: "💰" },
-    { label: "Arriendos recibidos", value: resumen.arriendos, icono: "🏠" },
-    { label: "Rendimientos financieros", value: resumen.rendimientos, icono: "📈" },
-    { label: "Dividendos", value: resumen.dividendos, icono: "🏦" },
+    { label: "Salario mensual", value: resumen.salario, icono: "" },
+    { label: "Honorarios mensual", value: resumen.honorarios, icono: "" },
+    { label: "Arriendos recibidos", value: resumen.arriendos, icono: "" },
+    { label: "Rendimientos financieros", value: resumen.rendimientos, icono: "" },
+    { label: "Dividendos", value: resumen.dividendos, icono: "" },
   ].filter(f => f.value > 0);
 
   return (
@@ -594,7 +594,7 @@ function PasoHeader({ owner, titulo, descripcion }) {
       {owner && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-            {owner.type === "juridica" ? "🏢" : "🧑"}
+            {owner.type === "juridica" ? "" : ""}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: T.txt3, letterSpacing: 0.6, marginBottom: 2 }}>
@@ -621,7 +621,7 @@ function OwnerChip({ owner }) {
   if (!owner) return null;
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 12 }}>
-      <span style={{ fontSize: 12 }}>{owner.type === "juridica" ? "🏢" : "🧑"}</span>
+      <span style={{ fontSize: 12 }}>{owner.type === "juridica" ? "" : ""}</span>
       <span style={{ fontSize: 11, fontWeight: 600, color: T.blue }}>{owner.name}</span>
     </div>
   );
@@ -732,7 +732,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
   return (
     <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
-        <span style={{ fontSize: 20 }}>⚖️</span>
+        <span style={{ fontSize: 20 }}></span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Régimen tributario
@@ -778,7 +778,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
               <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
               {noElegible && (
                 <div style={{ fontSize: 11, color: T.red, marginTop: 6, fontWeight: 600 }}>
-                  ⚠️ Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${fmtNumEs((TOPE_SIMPLE_UVT * UVT / 1_000_000), 0)}M COP). No eres elegible para Régimen Simple.
+                  Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${fmtNumEs((TOPE_SIMPLE_UVT * UVT / 1_000_000), 0)}M COP). No eres elegible para Régimen Simple.
                 </div>
               )}
             </button>
@@ -829,7 +829,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
           </div>
           {!grupoActual && (
             <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, fontSize: 11, color: T.orange, lineHeight: 1.4 }}>
-              ⚠️ Sin grupo seleccionado, el motor estimará 5% como fallback. Elige el grupo correcto para ver tu tarifa real.
+              Sin grupo seleccionado, el motor estimará 5% como fallback. Elige el grupo correcto para ver tu tarifa real.
             </div>
           )}
         </div>
@@ -906,7 +906,7 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
   return (
     <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
-        <span style={{ fontSize: 20 }}>🏢</span>
+        <span style={{ fontSize: 20 }}></span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Descuentos tributarios disponibles
@@ -979,7 +979,7 @@ function DescuentosTributariosForm({ selectedOwner, onUpdateProfile }) {
       </div>
 
       <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-        <strong style={{ color: T.txt2 }}>⚖️ Tope global Art. 259 ET:</strong> el total de descuentos
+        <strong style={{ color: T.txt2 }}>Tope global Art. 259 ET:</strong> el total de descuentos
         aplicados no puede exceder el 25% del impuesto bruto. Si excede, el motor lo ajusta automáticamente
         al límite legal.
       </div>
@@ -1024,12 +1024,12 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
 
   // Color del banner según alerta
   const tono = alerta === "roja"
-    ? { bg: "rgba(255,80,0,0.06)", border: "rgba(255,80,0,0.25)", text: T.red, icon: "🚨", label: "Riesgo alto de revisión DIAN" }
+    ? { bg: "rgba(255,80,0,0.06)", border: "rgba(255,80,0,0.25)", text: T.red, icon: "", label: "Riesgo alto de revisión DIAN" }
     : alerta === "amarilla"
-    ? { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.25)", text: T.orange, icon: "⚠️", label: "Zona de atención" }
+    ? { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.25)", text: T.orange, icon: "", label: "Zona de atención" }
     : gastosHon > 0
     ? { bg: "rgba(0,200,5,0.06)", border: "rgba(0,200,5,0.20)", text: T.green, icon: "✓", label: "Estructura saludable" }
-    : { bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.20)", text: T.blue, icon: "💡", label: "Sin gastos cargados" };
+    : { bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.20)", text: T.blue, icon: "", label: "Sin gastos cargados" };
 
   // Categorías con monto > 0 para mostrar desglose
   const itemsDesglose = [
@@ -1049,7 +1049,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
   return (
     <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
-        <span style={{ fontSize: 20 }}>📋</span>
+        <span style={{ fontSize: 20 }}></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Honorarios y gastos de actividad (Art. 107 ET)
@@ -1141,7 +1141,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
       {/* Commit B1: warning si hay >1 vehículo registrado (solo uno es deducible — Art. 107 ET) */}
       {Number(desglose.vehiculosTotalRegistrados || 0) > 1 && (
         <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 12, color: T.orange, lineHeight: 1.5 }}>
-          🚗 <strong>{desglose.vehiculosTotalRegistrados} vehículos registrados</strong> como gasto de actividad. <strong>Art. 107 ET</strong> exige causalidad: solo <strong>uno</strong> puede ser deducible (el de mayor monto). Los otros {desglose.vehiculosIgnorados} ({fmtM(desglose.vehiculoIgnoradoMonto || 0)}/año) <strong>NO</strong> se están deduciendo. Si efectivamente usas más de un vehículo para tu actividad profesional, marca los otros con otra categoría.
+          <strong>{desglose.vehiculosTotalRegistrados} vehículos registrados</strong> como gasto de actividad. <strong>Art. 107 ET</strong> exige causalidad: solo <strong>uno</strong> puede ser deducible (el de mayor monto). Los otros {desglose.vehiculosIgnorados} ({fmtM(desglose.vehiculoIgnoradoMonto || 0)}/año) <strong>NO</strong> se están deduciendo. Si efectivamente usas más de un vehículo para tu actividad profesional, marca los otros con otra categoría.
         </div>
       )}
 
@@ -1156,7 +1156,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
       )}
 
       <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-        <strong style={{ color: T.txt2 }}>⚖️ Art. 107 ET:</strong> los gastos deben tener
+        <strong style={{ color: T.txt2 }}>Art. 107 ET:</strong> los gastos deben tener
         causalidad, necesidad y proporcionalidad con tu actividad. Mantén facturas y
         comprobantes para sustentar cada deducción si la DIAN los requiere.
       </div>
@@ -1214,7 +1214,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   const items = [
     {
       key: "dep",
-      icono: "👨‍👩‍👧",
+      icono: "",
       label: "Dependientes",
       art: "Art. 387 #2 ET",
       topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~$${Math.round(MAX_DEP / 1_000_000)}M)`,
@@ -1226,7 +1226,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
     },
     {
       key: "medicina",
-      icono: "💊",
+      icono: "",
       label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
       topeMensual: `Tope: 16 UVT/mes (~$${fmtNumEs(MED_MES, 0)}/mes · ${ETIQUETA_AG}, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
@@ -1238,7 +1238,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
     },
     {
       key: "vivienda",
-      icono: "🏠",
+      icono: "",
       label: "Intereses de vivienda",
       art: "Art. 119 ET",
       topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${fmtNumEs((MAX_VIVIENDA / 1_000_000), 1)}M)`,
@@ -1250,7 +1250,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
     },
     {
       key: "pv",
-      icono: "🏛️",
+      icono: "",
       label: "Pensión Voluntaria (PV)",
       art: "Art. 126-1 ET",
       topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M) · ${ETIQUETA_AG}`,
@@ -1263,7 +1263,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
     },
     {
       key: "afc",
-      icono: "💰",
+      icono: "",
       label: "AFC (Ahorro Fomento Construcción)",
       art: "Art. 126-4 ET",
       topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M) · ${ETIQUETA_AG}`,
@@ -1288,7 +1288,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
   return (
     <div style={{ background: "rgba(0,200,5,0.04)", border: "1px solid rgba(0,200,5,0.15)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
-        <span style={{ fontSize: 20 }}>📋</span>
+        <span style={{ fontSize: 20 }}></span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
             Deducciones aplicadas — qué detecté de tus datos
@@ -1306,7 +1306,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
           const aplicada = it.valor > 0;
           // Camino 1.5: dos modos visuales claros.
           //   APLICADA: borde + fondo verde, valor mostrado, link discreto "Modificar →"
-          //   $0:       borde + fondo naranja con header ⚠️, monto máximo, botón fuerte
+          //   $0:       borde + fondo naranja con header , monto máximo, botón fuerte
           if (aplicada) {
             return (
               <div key={it.key} style={{ background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 8, padding: 12 }}>
@@ -1349,7 +1349,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
                     <span style={{ ...F.mono, fontSize: 12, color: T.txt3, fontWeight: 700 }}>$0</span>
                   </div>
                   <div style={{ fontSize: 11, color: T.orange, fontWeight: 700, marginBottom: 6, lineHeight: 1.4 }}>
-                    ⚠️ Esta deducción está disponible y no la estás aplicando
+                    Esta deducción está disponible y no la estás aplicando
                   </div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
                     {it.montoMaximoTexto}
@@ -1370,7 +1370,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       </div>
 
       <div style={{ marginTop: 12, padding: "8px 10px", background: T.bg2, borderRadius: 6, fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-        <strong style={{ color: T.txt2 }}>⚖️ Tope global Art. 336 #3 ET:</strong> el total de exenta 25%
+        <strong style={{ color: T.txt2 }}>Tope global Art. 336 #3 ET:</strong> el total de exenta 25%
         + deducciones del Art. 387 + AFC + PV no puede superar el <strong>40% de la renta neta</strong>.
         El motor lo respeta automáticamente y prioriza llenar primero las deducciones que no caben en la base laboral.
       </div>
@@ -1466,7 +1466,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
     return (
       <div>
         <div style={{ padding: 30, textAlign: "center", background: T.bg3, borderRadius: 10 }}>
-          <div style={{ fontSize: 24, marginBottom: 8 }}>📭</div>
+          <div style={{ fontSize: 24, marginBottom: 8 }}></div>
           <div style={{ fontSize: 13, color: T.txt2, marginBottom: 12 }}>
             No hay suficientes datos para calcular el impuesto de este propietario. Vuelve al Paso 2 y completa los ingresos.
           </div>
@@ -1502,7 +1502,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
   if (ahorro > 1_000_000) {
     acciones.push({
-      icono: "💸",
+      icono: "",
       titulo: `Registra aportes a PV/AFC para reflejarlos en tu estimación`,
       desc: `El cálculo estima espacio legal de hasta ${fm(ahorro)}/año. Si aportas a PV o AFC, regístralo en Egresos para reflejarlo en tu estimación.`,
       cta: "Ir a Egresos",
@@ -1515,7 +1515,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
     // a menudo es bajo precisamente porque no tiene aportes que el motor
     // pueda optimizar.
     acciones.push({
-      icono: "🎯",
+      icono: "",
       titulo: "Oportunidad: no tienes aportes tributarios registrados",
       desc: "Pensión Voluntaria (PV) y AFC son las 2 palancas más potentes para bajar tu impuesto legalmente. Puedes aportar hasta 30% de tus ingresos con tope 3.800 UVT/año. Registra tu primer aporte en Egresos.",
       cta: "Ir a Egresos",
@@ -1526,7 +1526,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
   if (!tieneDeclaracion) {
     acciones.push({
-      icono: "📤",
+      icono: "",
       titulo: "Sube tu declaración del año pasado",
       desc: "Así comparamos lo que pagaste el año anterior vs lo que estás proyectando hoy. Se sube con IA en 30 segundos.",
       cta: "Ir al Dashboard",
@@ -1536,7 +1536,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
   }
 
   acciones.push({
-    icono: "👨‍💼",
+    icono: "",
     titulo: "Comparte este reporte con tu contador",
     desc: "Exporta un PDF con todos los números para revisar con él antes de declarar.",
     cta: "Exportar PDF",
@@ -1547,7 +1547,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
   return (
     <div>
       <div style={{ textAlign: "center", marginBottom: 14 }}>
-        <div style={{ fontSize: 36, marginBottom: 6 }}>🎯</div>
+        <div style={{ fontSize: 36, marginBottom: 6 }}></div>
         <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginBottom: 3 }}>
           Tu impuesto estimado para {selectedOwner?.name}
         </div>
@@ -1558,7 +1558,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
       {/* Banner de guardado automático */}
       <div style={{ padding: "10px 14px", background: "rgba(0,200,5,0.08)", border: "1px solid rgba(0,200,5,0.25)", borderRadius: 10, marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ fontSize: 16 }}>💾</div>
+        <div style={{ fontSize: 16 }}></div>
         <div style={{ flex: 1, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           <strong style={{ color: T.green }}>Tu configuración se guardó automáticamente.</strong>
           {optimizacionesActivas.length > 0 && ` Aplicaste ${optimizacionesActivas.length} ajuste${optimizacionesActivas.length > 1 ? 's' : ''} para este propietario.`}
@@ -1602,7 +1602,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
 
       {impGO > 0 && (
         <div style={{ padding: "10px 14px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, marginBottom: 14 }}>
-          <div style={{ fontSize: 12, color: T.purple, fontWeight: 700, marginBottom: 4 }}>💸 Ganancias ocasionales (cédula separada)</div>
+          <div style={{ fontSize: 12, color: T.purple, fontWeight: 700, marginBottom: 4 }}>Ganancias ocasionales (cédula separada)</div>
           <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
             Dentro del impuesto de arriba, hay <strong style={{ color: T.purple }}>{fm(impGO)}</strong> de ganancias ocasionales (herencia, venta de inmueble, lotería). Tarifa 15% / 20%.
           </div>
@@ -1613,7 +1613,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       {optimizacionesActivas.length > 0 && (
         <div style={{ marginBottom: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, border: "1px solid " + T.border }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.txt2, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-            <span>✅</span> Ajustes aplicados ({optimizacionesActivas.length})
+            <span></span> Ajustes aplicados ({optimizacionesActivas.length})
             <button onClick={() => onGotoStep?.(2)} style={{ marginLeft: "auto", background: "transparent", border: "1px solid " + T.border, color: T.txt3, borderRadius: 6, padding: "3px 8px", fontSize: 11, cursor: "pointer" }}>
               Modificar
             </button>
@@ -1630,7 +1630,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       )}
       {optimizacionesActivas.length === 0 && (
         <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, fontSize: 12, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: 16 }}>💡</div>
+          <div style={{ fontSize: 16 }}></div>
           <div style={{ flex: 1, lineHeight: 1.5 }}>
             No aplicaste ningún ajuste. Puede haber deducciones legales que apliquen a tu caso — vuelve al Paso 3 o 4 y revisa las preguntas.
           </div>
@@ -1669,7 +1669,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
           <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
-                {todosConfigurados ? "🎉 Configuraste todos tus propietarios" : `Este propietario ya está configurado (${ownersConfigurados} de ${owners.length} listos)`}
+                {todosConfigurados ? "Configuraste todos tus propietarios" : `Este propietario ya está configurado (${ownersConfigurados} de ${owners.length} listos)`}
               </div>
               <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
                 {todosConfigurados
@@ -1910,7 +1910,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
             style={{ position: "absolute", top: 10, right: 12, background: "transparent", border: "none", color: T.txt3, fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 4 }}
           >×</button>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: 20, flexShrink: 0 }}>💵</span>
+            <span style={{ fontSize: 20, flexShrink: 0 }}></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#00c805", marginBottom: 4 }}>
                 Detectamos {ownersConSalarioSinCesantias.length === 1 ? "un salario sin cesantías cargadas" : `${ownersConSalarioSinCesantias.length} salarios sin cesantías cargadas`}
@@ -1951,7 +1951,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
           </div>
 
           <div style={{ marginTop: 10, fontSize: 11, color: T.txt3, fontStyle: "italic", lineHeight: 1.4 }}>
-            💡 La estimación se basa en 1 mes de salario al año + 12% de intereses (1.12 sueldos anuales). Puedes modificar o eliminar el item después.
+            La estimación se basa en 1 mes de salario al año + 12% de intereses (1.12 sueldos anuales). Puedes modificar o eliminar el item después.
           </div>
         </div>
       )}
@@ -1971,7 +1971,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                 {/* Header compacto */}
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(59,130,246,0.1)", border: "1px solid rgba(59,130,246,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>
-                    {owner.type === "juridica" ? "🏢" : "🧑"}
+                    {owner.type === "juridica" ? "" : ""}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: T.txt, textTransform: "capitalize", lineHeight: 1.2, wordBreak: "break-word" }}>
@@ -2117,7 +2117,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.10), rgba(168,85,247,0.10))", border: "1.5px solid rgba(0,200,5,0.35)", borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 16 }}>⚡</span>
+                          <span style={{ fontSize: 16 }}></span>
                           <span style={{ fontSize: 12, fontWeight: 700, color: T.green, letterSpacing: 0.3 }}>
                             POSIBLE CAMBIO DE RÉGIMEN
                           </span>
@@ -2130,7 +2130,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                         Si <strong>{owner.name}</strong> cumple los criterios de actividad del grupo <strong>"{mejor.label}"</strong>, podría acogerse al <strong>Régimen Simple (Arts. 903-916 ET)</strong> y pagar <strong>{fm(mejor.impuestoSimple)}</strong> en lugar de <strong>{fm(mejor.impuestoOrdinario)}</strong> al año <span style={{ color: T.green, fontWeight: 700 }}>(ahorro ~{fmtPctEs(mejor.ahorroPct, 0)})</span>.
                       </div>
                       <div style={{ background: "rgba(var(--fp-hundir),0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 11, color: T.txt3, lineHeight: 1.5 }}>
-                        ⚠️ <strong>Esto es una sugerencia estratégica, no automática.</strong> Cambiar de régimen requiere validar el grupo CIIU exacto con tu contador, presentar formulario ante DIAN antes del 28 de febrero, y NO se puede deshacer hasta el siguiente año fiscal. Hay también exclusiones (Art. 906 ET) — no todas las actividades califican aunque cumplan el tope de ingresos.
+                        <strong>Esto es una sugerencia estratégica, no automática.</strong> Cambiar de régimen requiere validar el grupo CIIU exacto con tu contador, presentar formulario ante DIAN antes del 28 de febrero, y NO se puede deshacer hasta el siguiente año fiscal. Hay también exclusiones (Art. 906 ET) — no todas las actividades califican aunque cumplan el tope de ingresos.
                       </div>
                     </div>
                   );
@@ -2152,7 +2152,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                     <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 8 }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: T.blue }}>
-                          💡 {recsOwner.length} oportunidad{recsOwner.length > 1 ? "es" : ""} de ahorro detectada{recsOwner.length > 1 ? "s" : ""}
+                          {recsOwner.length} oportunidad{recsOwner.length > 1 ? "es" : ""} de ahorro detectada{recsOwner.length > 1 ? "s" : ""}
                         </span>
                         {totalAhorroEstimado > 0 && (
                           <span style={{ ...F.mono, fontSize: 12, color: T.green, fontWeight: 700 }}>
@@ -2189,7 +2189,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                   <details style={{ paddingTop: 8, marginTop: 8 }}>
                     <summary style={{ cursor: "pointer", fontSize: 12, color: T.blue, fontWeight: 700, listStyle: "none", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "10px 14px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 8, userSelect: "none" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 14 }}>📊</span>
+                        <span style={{ fontSize: 14 }}></span>
                         Ver desglose y plan de acción
                       </span>
                       <span style={{ fontSize: 12, opacity: 0.7 }}>▼</span>

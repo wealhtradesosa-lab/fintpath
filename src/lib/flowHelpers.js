@@ -42,12 +42,12 @@
 // registro viejo las trae, sigue computando bien. Borrarlas del todo habría
 // hecho que esos ítems cayeran al default "mensual" y multiplicaran su valor.
 export const FRECUENCIAS = [
-  { v: "mensual",    l: "Mensual",    emoji: "📅", n: 12 },
-  { v: "variable",   l: "Variable",   emoji: "📊", n: 12 },
-  { v: "anual",      l: "Anual",      emoji: "🎯", n: 1 },
-  { v: "trimestral", l: "Trimestral", emoji: "🗓️", n: 4,  oculta: true },
-  { v: "semestral",  l: "Semestral",  emoji: "📆", n: 2,  oculta: true },
-  { v: "unico",      l: "Pago único", emoji: "💥", n: 1,  oculta: true },
+  { v: "mensual",    l: "Mensual",    emoji: "", n: 12 },
+  { v: "variable",   l: "Variable",   emoji: "", n: 12 },
+  { v: "anual",      l: "Anual",      emoji: "", n: 1 },
+  { v: "trimestral", l: "Trimestral", emoji: "", n: 4,  oculta: true },
+  { v: "semestral",  l: "Semestral",  emoji: "", n: 2,  oculta: true },
+  { v: "unico",      l: "Pago único", emoji: "", n: 1,  oculta: true },
 ];
 
 // Las que se ofrecen al usuario en los selectores.
@@ -230,7 +230,7 @@ export function labelVigenciaBadge(item) {
     // Si tiene vigencia limitada, mostrar rango en el label
     if (vigenciaLimitada) {
       return {
-        emoji: "📊",
+        emoji: "",
         label: `Var. ${MESES_CORTOS[desde]}–${MESES_CORTOS[hasta]}`,
         sub: proyectados > 0
           ? `${reales} real · ${proyectados} proy.`
@@ -239,7 +239,7 @@ export function labelVigenciaBadge(item) {
       };
     }
     return {
-      emoji: "📊",
+      emoji: "",
       label: "Variable",
       sub: proyectados > 0
         ? `${reales} real · ${proyectados} proy.`
@@ -255,7 +255,7 @@ export function labelVigenciaBadge(item) {
     // Mensual con vigencia limitada
     const nMeses = hasta - desde + 1;
     return {
-      emoji: "📅",
+      emoji: "",
       label: `${MESES_CORTOS[desde]}–${MESES_CORTOS[hasta]}`,
       sub: `${nMeses} ${nMeses === 1 ? "mes" : "meses"}`,
       color: "#3b82f6",
@@ -267,16 +267,16 @@ export function labelVigenciaBadge(item) {
   const mesNombre = item?.mesSupuesto ? null : (MESES_CORTOS[mesPago] || "Ene");
 
   if (freq === "anual") {
-    return { emoji: "🎯", label: "Anual", sub: mesNombre, color: "#3b82f6" };
+    return { emoji: "", label: "Anual", sub: mesNombre, color: "#3b82f6" };
   }
   if (freq === "unico") {
-    return { emoji: "💥", label: "Único", sub: mesNombre, color: "#f59e0b" };
+    return { emoji: "", label: "Único", sub: mesNombre, color: "#f59e0b" };
   }
   if (freq === "semestral") {
-    return { emoji: "📆", label: "Semestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#94a3b8" };
+    return { emoji: "", label: "Semestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#94a3b8" };
   }
   if (freq === "trimestral") {
-    return { emoji: "🗓️", label: "Trimestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#94a3b8" };
+    return { emoji: "", label: "Trimestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#94a3b8" };
   }
   return null;
 }
@@ -527,8 +527,8 @@ export function ingresoInversionAnual(ingresos, trm = 1) {
 // extracto), y la equivalencia correcta es la raíz 12, NO dividir entre 12.
 // Verificado 24-jul-2026 contra extracto real (Sufi, saldo $130.308.044 al
 // 22,99% E.A.): interés cobrado $2.296.186/mes.
-//   EA/12       → 1,9158% → $2.496.485  (10% de más ❌)
-//   (1+EA)^1/12 → 1,7394% → $2.266.571  (coincide ✅)
+//   EA/12       → 1,9158% → $2.496.485  (10% de más )
+//   (1+EA)^1/12 → 1,7394% → $2.266.571  (coincide )
 export const tasaMensualEq = (eaPct) => {
   const ea = Number(eaPct) || 0;
   if (ea <= 0) return 0;

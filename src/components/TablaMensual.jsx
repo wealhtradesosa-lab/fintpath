@@ -100,7 +100,7 @@ export default function TablaMensual({
       {/* Header con acciones rápidas */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 6 }}>
         <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em" }}>
-          📊 Monto de cada mes
+          Monto de cada mes
         </label>
         <div style={{ display: "flex", gap: 5 }}>
           <button
@@ -108,14 +108,14 @@ export default function TablaMensual({
             onClick={aplicarATodos}
             title="Copia el valor de enero a todos los meses"
             style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 10px", color: T.txt3, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>
-            📋 Aplicar a todos
+            Aplicar a todos
           </button>
           <button
             type="button"
             onClick={limpiar}
             title="Poner todos en 0"
             style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 6, padding: "4px 10px", color: T.txt3, fontSize: 11, cursor: "pointer", fontWeight: 600 }}>
-            🗑️ Limpiar
+            Limpiar
           </button>
         </div>
       </div>
@@ -129,7 +129,7 @@ export default function TablaMensual({
         if (!todosIguales) return null;
         return (
           <div style={{ background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 12, color: "#00c805", lineHeight: 1.5 }}>
-            ✅ <strong>Se importó tu monto</strong> ({fm(cargados[0])}/mes) en los 12 meses. Ajusta los que sean diferentes (ej: mayo con $40M, marzo con $8M).
+            <strong>Se importó tu monto</strong> ({fm(cargados[0])}/mes) en los 12 meses. Ajusta los que sean diferentes (ej: mayo con $40M, marzo con $8M).
           </div>
         );
       })()}
@@ -137,14 +137,14 @@ export default function TablaMensual({
       {/* Explicación de proyección — solo aparece si hay meses futuros a proyectar */}
       {proyectadosCount > 0 && proyeccion > 0 && (
         <div style={{ background: "rgba(148,163,184,0.06)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 12, color: "#94a3b8", lineHeight: 1.5 }}>
-          💡 Los meses <strong>futuros vacíos</strong> se proyectan con el promedio de los cargados: <strong>{fm(proyeccion)}</strong>/mes
+          Los meses <strong>futuros vacíos</strong> se proyectan con el promedio de los cargados: <strong>{fm(proyeccion)}</strong>/mes
         </div>
       )}
 
       {/* Nota de vigencia limitada — si el rango no es 1-12 */}
       {vigenciaLimitada && (
         <div style={{ background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 12, color: "#3b82f6", lineHeight: 1.5 }}>
-          📅 <strong>Vigencia limitada:</strong> solo {nMesesEnRango} {nMesesEnRango === 1 ? "mes" : "meses"} activos ({MESES[desdeMes - 1].l}–{MESES[hastaMes - 1].l}). Los meses fuera del rango se muestran deshabilitados.
+          <strong>Vigencia limitada:</strong> solo {nMesesEnRango} {nMesesEnRango === 1 ? "mes" : "meses"} activos ({MESES[desdeMes - 1].l}–{MESES[hastaMes - 1].l}). Los meses fuera del rango se muestran deshabilitados.
         </div>
       )}
 
@@ -157,7 +157,7 @@ export default function TablaMensual({
           const esFuturo = esMesFuturo(añoActual, mes.v);
           const esProyectado = enR && !tieneValor && esFuturo && proyeccion > 0;
 
-          // Fuera de vigencia: celda gris opaca, no editable, muestra 🚫
+          // Fuera de vigencia: celda gris opaca, no editable, muestra 
           if (!enR) {
             return (
               <div key={mes.v} style={{
@@ -171,7 +171,7 @@ export default function TablaMensual({
                   <label style={{ fontSize: 11, fontWeight: 700, color: T.txt3, letterSpacing: 0.3 }}>
                     {mes.l.slice(0, 3)}
                   </label>
-                  <span style={{ fontSize: 11, color: T.txt3 }} title="Fuera del rango de vigencia">🚫</span>
+                  <span style={{ fontSize: 11, color: T.txt3 }} title="Fuera del rango de vigencia"></span>
                 </div>
                 <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace", fontWeight: 500, padding: "2px 0" }}>—</div>
               </div>

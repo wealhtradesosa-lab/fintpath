@@ -43,8 +43,8 @@ export default function SankeyFlujo({
 
   if (!(bruto > 0)) {
     return (
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, textAlign: "center", color: T.tx3, fontSize: 13 }}>
-        💧 Sin ingresos en este mes — no hay flujo que mostrar.
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, textAlign: "center", color: T.tx3, fontSize: 13 }}>
+        Sin ingresos en este mes — no hay flujo que mostrar.
       </div>
     );
   }
@@ -67,7 +67,7 @@ export default function SankeyFlujo({
     impuesto: "Impuesto de renta",       impuestoNota: "saldo a pagar",
     aportes: "Aportes obligatorios",     aportesNota: "salud y pensión",
     cuotas: "Cuotas de deuda",           cuotasNota: "capital + interés",
-    titulo: "💧 ¿Por dónde se va tu plata?",
+    titulo: "¿Por dónde se va tu plata?",
     pie: (monto) => `El ancho de cada cinta es la plata: entran ${monto}.`,
     ...(labels || {}),
   };
@@ -112,7 +112,7 @@ export default function SankeyFlujo({
   };
 
   return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "16px 18px" }}>
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px" }}>
       {/* 03-ago-2026 (captura de Santiago en móvil): el título y el pie estaban
           fijos en español, así que en la vista US salía "¿Por dónde se va tu
           plata?" seguido de "Where your money goes". Ahora vienen en `labels`
@@ -171,7 +171,7 @@ export default function SankeyFlujo({
 
       {deficit > 0 && (
         <div style={{ marginTop: 10, fontSize: 12, color: "#fca5a5", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.25)", borderRadius: 8, padding: "9px 12px" }}>
-          ⚠️ Este mes sale más de lo que entra: faltan <strong>{fmt(Math.round(deficit))}</strong>. Esa diferencia se cubre con ahorros o con más deuda.
+          Este mes sale más de lo que entra: faltan <strong>{fmt(Math.round(deficit))}</strong>. Esa diferencia se cubre con ahorros o con más deuda.
         </div>
       )}
     </div>

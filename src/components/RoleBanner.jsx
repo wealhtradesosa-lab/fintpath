@@ -44,7 +44,7 @@ export default function RoleBanner({ accountName, onLearnMore }) {
       }}
     >
       {/* Ícono de ojo (solo lectura) */}
-      <span style={{ fontSize: 16, lineHeight: 1 }} aria-hidden="true">👁️</span>
+      <span style={{ fontSize: 16, lineHeight: 1 }} aria-hidden="true"></span>
 
       <div style={{ flex: 1, lineHeight: 1.4 }}>
         <span style={{ color: C.accent, fontWeight: 600 }}>Solo lectura · </span>

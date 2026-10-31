@@ -115,7 +115,7 @@ export default function TemporadaRenta({ onEmpezar }) {
 
   return (
     <div style={{ background: T.bg2, border: `1px solid ${T.border}`,
-      borderRadius: 16, padding: "28px 24px", maxWidth: 620, margin: "0 auto" }}>
+      borderRadius: 12, padding: "28px 24px", maxWidth: 620, margin: "0 auto" }}>
 
       {/* NOTA PARA SANTIAGO: los textos de abajo son funcionales, escritos
           para que la herramienta se entienda. La voz de la marca es tuya --

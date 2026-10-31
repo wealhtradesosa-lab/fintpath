@@ -9,12 +9,12 @@
    grises suaves. Los acentos (verde, azul, rojo) no cambian. */
 :root {
   color-scheme: dark;
-  --fp-bg: #000000; --fp-surface: #0b0b0c; --fp-raised: #17171a;
-  --fp-text: #ffffff; --fp-muted: #b4b4ba; --fp-subtle: #85858c;
+  --fp-bg: #000000; --fp-surface: #111113; --fp-raised: #18181b;
+  --fp-text: #f5f5f6; --fp-muted: #a1a1a6; --fp-subtle: #6e6e73;
   --fp-border: rgba(255,255,255,0.08); --fp-border-strong: rgba(255,255,255,0.15);
-  --fp-card: #0b0b0c;
-  --fp-txt: #ffffff; --fp-txt2: #b4b4ba; --fp-txt3: #85858c;
-  --fp-line: #2c2c30;
+  --fp-card: #111113;
+  --fp-txt: #f5f5f6; --fp-txt2: #a1a1a6; --fp-txt3: #8a8a90;
+  --fp-line: #232326;
   --fp-ink: 255,255,255;
   --fp-sombra: none;
   --fp-hundir: 0,0,0; /* fondos "hundidos": negro en oscuro, blanco en claro */
@@ -23,12 +23,12 @@
    oscuras, sobre fotos, y se quedan así. */
 html[data-tema="claro"] .fp-app {
   color-scheme: light;
-  --fp-bg: #ffffff;  --fp-surface: #ffffff; --fp-card: #ffffff; --fp-raised: #f4f5f6;
-  --fp-text: #0b0b0c; --fp-txt: #0b0b0c;
+  --fp-bg: #ffffff;  --fp-surface: #ffffff; --fp-card: #ffffff; --fp-raised: #f7f7f8;
+  --fp-text: #0a0a0a; --fp-txt: #0a0a0a;
   --fp-muted: #5c5f66; --fp-txt2: #5c5f66;
-  --fp-subtle: #868a91; --fp-txt3: #868a91;
-  --fp-line: #e3e5e8;
-  --fp-ink: 11,11,12;
+  --fp-subtle: #8e9196; --fp-txt3: #8e9196;
+  --fp-line: #ececee;
+  --fp-ink: 10,10,10;
   --fp-hundir: 255,255,255;
   --fp-border: rgba(11,11,12,0.08); --fp-border-strong: rgba(11,11,12,0.15);
   --fp-sombra: none; /* estilo Robinhood: separar con aire y líneas finas, sin sombras */
@@ -66,15 +66,31 @@ html[data-tema="claro"] .fp-app [style*="color: rgb(59, 130, 246)"] { color: #25
   letter-spacing: -0.01em;
 }
 
-/* ═══ Estilo «Robinhood» (31-oct-2026, Santiago: «todo el diseño al estilo
-   gráfico y de colores de Robinhood») ═══════════════════════════════════
-   Blanco/negro puros, un verde para lo positivo, rojo anaranjado para lo
-   negativo. Los botones de acción azules pasan a botón sólido negro (claro) o
-   blanco (oscuro); los enlaces azules, a verde. Las gráficas no se tocan. */
-.fp-app button[style*="background: rgb(59, 130, 246)"] {
+/* ═══ Estilo «Robinhood» (31-oct-2026) — valores de la crítica de diseño ═══
+   Regla: el verde y el naranja solo para lo que sube/baja o está a favor/en
+   contra. Botón principal sólido negro (claro) / blanco (oscuro). Sin azul. */
+:root { --fp-pos: #1fd15f; --fp-neg: #ff6b35; --fp-alerta: #f5b544; }
+html[data-tema="claro"] .fp-app { --fp-pos: #00873c; --fp-neg: #d9480f; --fp-alerta: #9a6400; }
+/* bordes de tarjeta visibles en oscuro */
+.fp-app { --fp-border: rgba(var(--fp-ink),0.1); }
+/* textos verdes / rojos / ámbar → tonos de la paleta según el modo */
+.fp-app [style*="color: rgb(0, 200, 5)"] { color: var(--fp-pos) !important; }
+.fp-app [style*="color: rgb(255, 80, 0)"] { color: var(--fp-neg) !important; }
+.fp-app [style*="color: rgb(245, 158, 11)"] { color: var(--fp-alerta) !important; }
+/* botones de acción: verdes o azules sólidos → botón principal neutro */
+.fp-app button[style*="background: rgb(0, 200, 5)"],
+.fp-app button[style*="background: rgb(59, 130, 246)"],
+.fp-app button[style*="background: rgb(37, 99, 235)"],
+.fp-app button[style*="background: linear-gradient(135deg, rgb(59, 130, 246)"],
+.fp-app button[style*="background: linear-gradient(135deg, rgb(0, 200, 5)"] {
   background: var(--fp-txt) !important; color: var(--fp-bg) !important; border-color: transparent !important;
 }
-.fp-app [style*="color: rgb(59, 130, 246)"] { color: #00c805 !important; }
-html[data-tema="claro"] .fp-app [style*="color: rgb(59, 130, 246)"] { color: #00a804 !important; }
-/* Íconos del menú en un solo tono: el color queda para los números. */
-.fp-app aside nav button > span:first-child { filter: grayscale(1); opacity: .75; }
+/* botones con fondo azul claro (secundarios) → contorno neutro */
+.fp-app button[style*="background: rgba(59, 130, 246"] {
+  background: transparent !important; color: var(--fp-txt) !important; border: 1px solid rgba(var(--fp-ink),0.15) !important;
+}
+/* textos azules (enlaces, cifras informativas) → texto principal */
+.fp-app [style*="color: rgb(59, 130, 246)"], .fp-app [style*="color: rgb(37, 99, 235)"], .fp-app [style*="color: rgb(96, 165, 250)"] { color: var(--fp-txt) !important; }
+/* sin brillos ni degradados decorativos en las tarjetas */
+.fp-app [style*="radial-gradient"] { background-image: none !important; }
+.fp-app [style*="box-shadow: rgba(0, 200, 5"], .fp-app [style*="0px 0px 24px"] { box-shadow: none !important; }

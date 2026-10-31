@@ -9,7 +9,7 @@ const T = {
   blue: "#3b82f6", orange: "#f59e0b",
 };
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
-const Cd = ({ children, s }) => <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>;
+const Cd = ({ children, s }) => <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 12, overflow: "hidden", ...s }}>{children}</div>;
 
 export default function AportesCalculadora({ fmt }) {
   const f = fmt || fm;
@@ -46,7 +46,7 @@ export default function AportesCalculadora({ fmt }) {
 
       <Cd s={{ padding: 24, marginBottom: 16 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          {[{ v: "empleado", l: "👔 Empleado", c: T.blue }, { v: "independiente", l: "🧑‍💻 Independiente", c: T.orange }].map(t => (
+          {[{ v: "empleado", l: "Empleado", c: T.blue }, { v: "independiente", l: "Independiente", c: T.orange }].map(t => (
             <button key={t.v} onClick={() => setTipo(t.v)} style={{
               flex: 1, padding: "14px", borderRadius: 10,
               border: "2px solid " + (tipo === t.v ? t.c : T.border),
@@ -70,7 +70,7 @@ export default function AportesCalculadora({ fmt }) {
 
       {tipo === "empleado" && sal > 0 && (
         <Cd s={{ padding: 24, marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.blue, marginBottom: 16 }}>👔 Aportes como empleado</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.blue, marginBottom: 16 }}>Aportes como empleado</div>
           <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Te descuentan de tu nómina:</div>
           <Row l="Pensión (4%)" v={f(empPen)} />
           <Row l="Salud (4%)" v={f(empSal2)} />
@@ -85,18 +85,18 @@ export default function AportesCalculadora({ fmt }) {
           <Row l="Total empleador" v={f(dorTotal)} bold color={T.txt2} />
 
           <div style={{ marginTop: 12, background: T.bg3, padding: "12px 14px", borderRadius: 10, fontSize: 12, color: T.txt3, lineHeight: 1.6 }}>
-            <strong style={{ color: T.blue }}>📌 Para tu declaración de renta:</strong><br />
+            <strong style={{ color: T.blue }}>Para tu declaración de renta:</strong><br />
             Tu aporte de pensión ({f(empPen)}/mes = {f(empPen * 12)}/año) es ingreso no constitutivo de renta (Art. 55 ET). Se resta automáticamente en tu planeación tributaria.
           </div>
           <div style={{ marginTop: 12, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.blue, lineHeight: 1.6 }}>
-            <strong>📌 En Ingresos registre su salario BRUTO ({f(sal)})</strong>, no el neto que le consignan ({f(sal - empTotal)}). El 8% que le descuentan ya está considerado en el cálculo tributario como ingreso no constitutivo de renta (Art. 55 ET). No necesita registrar egreso adicional.
+            <strong>En Ingresos registre su salario BRUTO ({f(sal)})</strong>, no el neto que le consignan ({f(sal - empTotal)}). El 8% que le descuentan ya está considerado en el cálculo tributario como ingreso no constitutivo de renta (Art. 55 ET). No necesita registrar egreso adicional.
           </div>
         </Cd>
       )}
 
       {tipo === "independiente" && (
         <Cd s={{ padding: 24, marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.orange, marginBottom: 16 }}>🧑‍💻 Aportes como independiente</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.orange, marginBottom: 16 }}>Aportes como independiente</div>
           
           <div style={{ marginBottom: 16 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 4 }}>¿Cuánto facturas al mes?</label>
@@ -116,7 +116,7 @@ export default function AportesCalculadora({ fmt }) {
               style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}
             />
             <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Equivale a {f(ibcCOP)}/mes. Tope máximo: 25 SMMLV</div>
-            {ibcSM < ibcMinimo && sal > 0 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>⚠️ El mínimo legal para tu ingreso es {ibcMinimo} SMMLV</div>}
+            {ibcSM < ibcMinimo && sal > 0 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>El mínimo legal para tu ingreso es {ibcMinimo} SMMLV</div>}
           </div>
 
           <div style={{ background: T.bg3, padding: "10px 14px", borderRadius: 8, marginBottom: 12, fontSize: 13, color: T.txt2 }}>
@@ -135,12 +135,12 @@ export default function AportesCalculadora({ fmt }) {
           </div>
 
           <div style={{ marginTop: 12, background: T.bg3, padding: "12px 14px", borderRadius: 10, fontSize: 12, color: T.txt3, lineHeight: 1.6 }}>
-            <strong style={{ color: T.orange }}>📌 Para tu declaración de renta:</strong><br />
+            <strong style={{ color: T.orange }}>Para tu declaración de renta:</strong><br />
             Pensión obligatoria (parte trabajador): {f(ibcCOP * 0.04)}/mes = INCRNGO (Art. 55 ET)<br />
             Retención en la fuente honorarios: 11% = {f(sal * 0.11)}/mes si eres declarante
           </div>
           <div style={{ marginTop: 12, background: "rgba(0,200,5,0.08)", border: "1px solid rgba(0,200,5,0.2)", padding: "14px 16px", borderRadius: 10, fontSize: 13, color: T.green, lineHeight: 1.6 }}>
-            <strong>👉 Registre {f(indTotal)}/mes como egreso en Pensión y Salud</strong> para que el Simulador y el Plan Tributario lo consideren en el análisis y la respectiva deducción.
+            <strong>Registre {f(indTotal)}/mes como egreso en Pensión y Salud</strong> para que el Simulador y el Plan Tributario lo consideren en el análisis y la respectiva deducción.
           </div>
         </Cd>
       )}

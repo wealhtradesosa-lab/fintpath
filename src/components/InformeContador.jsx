@@ -96,7 +96,7 @@ export default function InformeContador({ u, modoContador = false, cliente = "",
       ) : (
       <Panel titulo="2. Envíalo a tu contador" sub="En el celular se abre el menú para mandarlo por WhatsApp o correo. En el computador se descarga y lo adjuntas.">
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          <button type="button" disabled={!elegidos.length} onClick={() => generar(true)} style={btn(true)}>📤 Enviar a mi contador</button>
+          <button type="button" disabled={!elegidos.length} onClick={() => generar(true)} style={btn(true)}>Enviar a mi contador</button>
           <button type="button" disabled={!elegidos.length} onClick={() => generar(false)} style={btn(false)}>Descargar PDF</button>
         </div>
         {estado && <div style={{ ...F.caption, marginTop: 8, color: C.ok }}>{estado}</div>}

@@ -147,7 +147,7 @@ export default function FrecuenciaSelector({
       {mostrarChipsFrecuencia && (
         <>
           <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 6 }}>
-            📅 Frecuencia de pago
+            Frecuencia de pago
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(88px, 1fr))", gap: 6, marginBottom: showMes ? 10 : 6 }}>
             {FRECUENCIAS_VISIBLES.map(f => {
@@ -211,7 +211,7 @@ export default function FrecuenciaSelector({
         <div style={{ marginBottom: 8, marginTop: 4 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 500, color: T.txt3 }}>
-              📆 ¿Se recibe/paga todo el año?
+              ¿Se recibe/paga todo el año?
             </label>
             <div style={{ display: "flex", gap: 4 }}>
               <button type="button"
@@ -264,7 +264,7 @@ export default function FrecuenciaSelector({
       {frecuencia === "mensual" && rangoLimitado && (
         <div style={{ fontSize: 12, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           <div style={{ marginBottom: 4 }}>
-            💡 <strong style={{ color: T.txt2 }}>{mesesActivos} {mesesActivos === 1 ? "mes" : "meses"} activos</strong>: {MESES.find(m => m.v === desdeMes)?.l} a {MESES.find(m => m.v === hastaMes)?.l}. El resto del año no pesa.
+            <strong style={{ color: T.txt2 }}>{mesesActivos} {mesesActivos === 1 ? "mes" : "meses"} activos</strong>: {MESES.find(m => m.v === desdeMes)?.l} a {MESES.find(m => m.v === hastaMes)?.l}. El resto del año no pesa.
           </div>
           {montoNum > 0 && (
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
@@ -286,7 +286,7 @@ export default function FrecuenciaSelector({
         <div style={{ fontSize: 12, color: T.txt3, background: "rgba(var(--fp-ink),0.04)", padding: "10px 12px", borderRadius: 8, lineHeight: 1.6, border: `1px solid ${T.border}` }}>
           {frecuencia === "trimestral" && (
             <>
-              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>4 pagos al año</strong> en {MESES.find(m=>m.v===Number(mesPago))?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+3)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+9)%12)+1)?.l}</div>
+              <div style={{ marginBottom: 4 }}><strong style={{ color: T.txt2 }}>4 pagos al año</strong> en {MESES.find(m=>m.v===Number(mesPago))?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+3)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}, {MESES.find(m=>m.v===((Number(mesPago)-1+9)%12)+1)?.l}</div>
               {montoNum > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   <span>Por trimestre: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
@@ -298,7 +298,7 @@ export default function FrecuenciaSelector({
           )}
           {frecuencia === "semestral" && (
             <>
-              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>2 pagos al año</strong>: {mesNombre} y {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}</div>
+              <div style={{ marginBottom: 4 }}><strong style={{ color: T.txt2 }}>2 pagos al año</strong>: {mesNombre} y {MESES.find(m=>m.v===((Number(mesPago)-1+6)%12)+1)?.l}</div>
               {montoNum > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   <span>Por semestre: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
@@ -310,7 +310,7 @@ export default function FrecuenciaSelector({
           )}
           {frecuencia === "anual" && (
             <>
-              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>1 pago al año</strong> en {mesNombre}. El resto del año no pesa.</div>
+              <div style={{ marginBottom: 4 }}><strong style={{ color: T.txt2 }}>1 pago al año</strong> en {mesNombre}. El resto del año no pesa.</div>
               {montoNum > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   <span>Pago anual: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong></span>
@@ -321,7 +321,7 @@ export default function FrecuenciaSelector({
           )}
           {frecuencia === "unico" && (
             <>
-              <div style={{ marginBottom: 4 }}>💡 <strong style={{ color: T.txt2 }}>Pago único</strong> en {mesNombre}. No se repite el próximo año.</div>
+              <div style={{ marginBottom: 4 }}><strong style={{ color: T.txt2 }}>Pago único</strong> en {mesNombre}. No se repite el próximo año.</div>
               {montoNum > 0 && (
                 <div style={{ fontSize: 11, marginTop: 6, paddingTop: 6, borderTop: `1px dashed ${T.border}` }}>
                   Monto del pago: <strong style={{ color: T.txt }}>{fm(montoNum)}</strong>

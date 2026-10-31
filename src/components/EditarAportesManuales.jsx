@@ -102,7 +102,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
   return (
     <div style={{ padding: 24, maxWidth: 680, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-        <span style={{ fontSize: 28 }}>⚙️</span>
+        <span style={{ fontSize: 28 }}></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.txt }}>Ajustes fiscales avanzados</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
@@ -112,7 +112,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
       </div>
 
       <div style={{ padding: 14, background: "rgba(148,163,184,0.06)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-        <div style={{ fontWeight: 700, color: T.cyan, marginBottom: 4 }}>💡 ¿Dónde están los demás aportes?</div>
+        <div style={{ fontWeight: 700, color: T.cyan, marginBottom: 4 }}>¿Dónde están los demás aportes?</div>
         <strong>Pensión y salud obligatorias</strong> viven dentro del form de cada salario (módulo <em>Ingresos</em>) — prellenadas al 4%+4% y editables.
         <strong> Pensión Voluntaria, AFC y Salud prepagada</strong> viven como egresos con categoría <em>"Aporte tributario"</em> (módulo <em>Egresos</em>).
         Este modal es sólo para los dos casos especiales de abajo.
@@ -139,7 +139,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
           Cancelar
         </button>
         <button onClick={handleSave} style={{ flex: 1, padding: "12px 20px", background: T.green, border: "none", borderRadius: 8, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-          💾 Guardar ajustes
+          Guardar ajustes
         </button>
       </div>
 

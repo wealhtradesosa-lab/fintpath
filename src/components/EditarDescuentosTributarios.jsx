@@ -50,7 +50,7 @@ const Field = ({ label, articulo, value, onChange, hint, prevYear, prevYearLabel
         marginTop: 4, padding: "4px 8px", background: "rgba(148,163,184,0.12)", border: "1px solid " + T.cyan,
         color: T.cyan, borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: "pointer",
       }}>
-        📥 {prevYearLabel || "Año anterior"}: {fm(prevYear)}
+        {prevYearLabel || "Año anterior"}: {fm(prevYear)}
       </button>
     )}
     {hint && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.4 }}>{hint}</div>}
@@ -119,7 +119,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
   return (
     <div style={{ padding: 24, maxWidth: 680, margin: "0 auto" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-        <span style={{ fontSize: 28 }}>⭐</span>
+        <span style={{ fontSize: 28 }}></span>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.txt }}>Descuentos tributarios</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
@@ -129,14 +129,14 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
       </div>
 
       <div style={{ padding: 14, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-        <div style={{ fontWeight: 700, color: T.orange, marginBottom: 4 }}>⚠️ Tope del 25% (Art. 259 ET)</div>
+        <div style={{ fontWeight: 700, color: T.orange, marginBottom: 4 }}>Tope del 25% (Art. 259 ET)</div>
         El total aplicado no puede reducir el impuesto a menos del 75% del bruto (solo aplica a régimen ordinario y zona franca). El motor calcula esto automáticamente — captura el monto TOTAL que te corresponde y el sistema aplica el tope.
       </div>
 
       {/* ── DEDUCCIONES AVANZADAS (reducen la base gravable, sin tope) ── */}
       <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "1px solid " + T.border, marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid " + T.border }}>
-          <span style={{ fontSize: 16 }}>🧮</span>
+          <span style={{ fontSize: 16 }}></span>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.purple, flex: 1 }}>Deducciones avanzadas</div>
           <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>Reducen la base · ahorro = monto × 35%</span>
         </div>
@@ -187,7 +187,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
         />
         {totalImpactoDeducciones > 0 && (
           <div style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid " + T.purple, borderRadius: 8, marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: T.txt2, fontSize: 12 }}>💰 Ahorro estimado de estas deducciones</span>
+            <span style={{ color: T.txt2, fontSize: 12 }}>Ahorro estimado de estas deducciones</span>
             <span style={{ color: T.purple, fontSize: 14, fontWeight: 700, fontFamily: "monospace" }}>~{fm(totalImpactoDeducciones)}/año</span>
           </div>
         )}
@@ -196,7 +196,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
       {/* ── DESCUENTOS (reducen el impuesto directo, tope 25% Art. 259 ET) ── */}
       <div style={{ background: T.bg2, borderRadius: 12, padding: 16, border: "1px solid " + T.border }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, paddingBottom: 10, borderBottom: "1px solid " + T.border }}>
-          <span style={{ fontSize: 16 }}>⭐</span>
+          <span style={{ fontSize: 16 }}></span>
           <div style={{ fontSize: 13, fontWeight: 700, color: T.green, flex: 1 }}>Descuentos del impuesto</div>
           <span style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>Reducen el impuesto directo · sujetos a tope 25%</span>
         </div>
@@ -259,7 +259,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           Cancelar
         </button>
         <button onClick={handleSave} style={{ flex: 1, padding: "12px 20px", background: T.green, border: "none", borderRadius: 8, color: "white", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-          💾 Guardar descuentos
+          Guardar descuentos
         </button>
       </div>
 

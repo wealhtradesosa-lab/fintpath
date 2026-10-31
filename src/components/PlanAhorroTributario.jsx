@@ -73,7 +73,7 @@ function fmShort(v) {
 const AREAS_JURIDICA = [
   {
     id: "cartera",
-    icono: "📋",
+    icono: "",
     titulo: "Cartera por cobrar",
     pregunta: "¿Tu sociedad tiene clientes que le deben dinero?",
     explicacion: "Si tienes cuentas por cobrar a clientes que llevan más de 90 días sin pagar, puedes deducir hasta el 33% como provisión de cartera. Es plata que entra al cálculo como gasto y baja tu impuesto.",
@@ -113,7 +113,7 @@ const AREAS_JURIDICA = [
 
   {
     id: "donaciones",
-    icono: "❤️",
+    icono: "",
     titulo: "Donaciones a fundaciones",
     pregunta: "¿Tu sociedad donó a alguna fundación, ONG o entidad sin ánimo de lucro en 2025?",
     explicacion: "Si donaste a una ESAL (Entidad Sin Ánimo de Lucro) registrada ante la DIAN, puedes DESCONTAR el 25% del monto donado directamente del impuesto. No es deducción (que reduce base), es DESCUENTO (resta peso a peso del impuesto final).",
@@ -147,7 +147,7 @@ const AREAS_JURIDICA = [
 
   {
     id: "ica",
-    icono: "🏛️",
+    icono: "",
     titulo: "ICA pagado en el año",
     pregunta: "¿Tu sociedad pagó ICA (Industria y Comercio) durante 2025?",
     explicacion: "El ICA pagado a las alcaldías es 100% deducible. Si lo pagaste pero no lo cargaste, estás pagando impuesto sobre algo que ya pagaste como impuesto. Cárgalo y se deduce automáticamente.",
@@ -186,7 +186,7 @@ const AREAS_JURIDICA = [
 
   {
     id: "perdidas",
-    icono: "📉",
+    icono: "",
     titulo: "Pérdidas de años anteriores",
     pregunta: "¿Tu sociedad tuvo pérdidas fiscales en algún año entre 2017 y 2024?",
     explicacion: "Si en años anteriores Lagoon registró pérdida fiscal, esa pérdida se puede COMPENSAR contra la utilidad de este año. Tienes 12 años para usarla. Pérdidas anteriores a 2017 ya no son compensables.",
@@ -219,7 +219,7 @@ const AREAS_JURIDICA = [
 
   {
     id: "iva_capital",
-    icono: "🏗️",
+    icono: "",
     titulo: "IVA en activos productivos",
     pregunta: "¿Tu sociedad compró maquinaria, equipo, vehículos o inmuebles productivos en 2025?",
     explicacion: "El IVA pagado al comprar bienes de capital (que se usan en la actividad productiva) se descuenta directamente del impuesto. No es un gasto: es un crédito tributario peso a peso.",
@@ -261,7 +261,7 @@ const AREAS_JURIDICA = [
 const AREAS_NATURAL = [
   {
     id: "dependientes",
-    icono: "👨‍👩‍👧",
+    icono: "",
     titulo: "Personas que dependen de ti",
     pregunta: "¿Tienes cónyuge, hijos o padres que dependen económicamente de ti?",
     explicacion: "Si mantienes económicamente a tu cónyuge sin ingresos, hijos menores de 23 años, hijos con discapacidad o padres que no se pueden mantener solos, puedes deducir el 10% de tu salario (con tope ~$20M/año).",
@@ -305,7 +305,7 @@ const AREAS_NATURAL = [
 
   {
     id: "salud_prepagada",
-    icono: "🏥",
+    icono: "",
     titulo: "Medicina prepagada o seguro de salud",
     pregunta: "¿Pagas Colsanitas, Sura, Medplus u otra medicina prepagada / seguro de salud?",
     explicacion: "El gasto en medicina prepagada es deducible hasta 16 UVT/mes (tope 16 UVT/mes). Solo necesitas cargar cuánto pagas cada mes.",
@@ -350,7 +350,7 @@ const AREAS_NATURAL = [
 
   {
     id: "pv_afc",
-    icono: "💼",
+    icono: "",
     titulo: "Aportes a Pensión Voluntaria o AFC",
     pregunta: "¿Aportas (o quieres empezar a aportar) a Pensión Voluntaria o cuenta AFC?",
     explicacion: "Estos aportes son exentos (hasta 30% del ingreso, máximo 3.800 UVT al año, compartido entre pensión voluntaria y AFC). Es la palanca fiscal más potente para personas con salario alto.",
@@ -407,7 +407,7 @@ const AREAS_NATURAL = [
 
   {
     id: "vivienda",
-    icono: "🏠",
+    icono: "",
     titulo: "Intereses de vivienda habitacional",
     pregunta: "¿Pagas cuotas de un crédito hipotecario sobre tu vivienda principal?",
     explicacion: "Los intereses de tu hipoteca de VIVIENDA HABITACIONAL son deducibles hasta 1.200 UVT/año (tope 1.200 UVT/año). Es deducción directa sobre tu base gravable.",
@@ -530,11 +530,11 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", background: C.greenBg, border: `1px solid ${C.green}40`, borderRadius: 999 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: C.green, letterSpacing: 0.5 }}>🎯 PLAN DE AHORRO TRIBUTARIO</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: C.green, letterSpacing: 0.5 }}>PLAN DE AHORRO TRIBUTARIO</span>
           </div>
         </div>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: C.txt, margin: 0, lineHeight: 1.2 }}>
-          {isJuridica ? "🏢" : "👤"} {ownerName}
+          {isJuridica ? "" : ""} {ownerName}
         </h1>
         <p style={{ fontSize: 13, color: C.txt2, marginTop: 6, lineHeight: 1.5 }}>
           Te voy a hacer <strong style={{ color: C.txt }}>{areas.length} preguntas simples</strong>. Por cada SÍ
@@ -567,7 +567,7 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
             <div style={{ fontSize: 24, color: C.txt3 }}>−</div>
             <div style={{ flex: "1 1 200px" }}>
               <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5, marginBottom: 4 }}>
-                💚 Ahorro detectado
+                Ahorro detectado
               </div>
               <div style={{ fontSize: 22, fontWeight: 700, color: C.green }}>
                 {fm(ahorroTotalEstimado)}
@@ -613,7 +613,7 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
           borderRadius: 12,
           textAlign: "center",
         }}>
-          <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
+          <div style={{ fontSize: 32, marginBottom: 8 }}></div>
           <div style={{ fontSize: 18, fontWeight: 700, color: C.txt, marginBottom: 6 }}>
             Plan completado
           </div>
@@ -719,7 +719,7 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
                 fontSize: 12, padding: "2px 8px", borderRadius: 999,
                 background: C.greenBg, color: C.green, fontWeight: 700,
               }}>
-                💚 {fmShort(area.ahorroEstimado)} ahorrados
+                {fmShort(area.ahorroEstimado)} ahorrados
               </span>
             )}
             {esNoAplica && (
@@ -793,7 +793,7 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
               alignItems: "center",
               gap: 10,
             }}>
-              <span style={{ fontSize: 18 }}>💚</span>
+              <span style={{ fontSize: 18 }}></span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 12, color: C.green, fontWeight: 700, letterSpacing: 0.5 }}>
                   Ahorro estimado al confirmar

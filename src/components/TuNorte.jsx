@@ -82,7 +82,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
     <div>
       <div style={{ marginBottom: 20 }}>
         <h2 style={{ fontSize: 22, fontWeight: 700, margin: "0 0 4px", color: tx }}>
-          🧭 {isEN ? "Your North" : "Tu Norte"}
+          {isEN ? "Your North" : "Tu Norte"}
         </h2>
         <p style={{ color: tx3, fontSize: 12, margin: 0 }}>
           {isEN
@@ -177,7 +177,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
       {/* ── Diagnóstico ── */}
       {objetivo && !diag.vacio && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16 }}>
-          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20 }}>
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14 }}>
               <div>
                 <div style={{ fontSize: 11, color: tx3, fontWeight: 700, letterSpacing: "0.08em" }}>
@@ -308,7 +308,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                               creible que una correcta. */}
                           <div style={{ fontSize: 12, color: it.inferido ? "#f59e0b" : tx3,
                                 marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            <span>{it.inferido ? "⚠️ " : ""}{it.motivo}</span>
+                            <span>{it.inferido ? "" : ""}{it.motivo}</span>
                             {it.manual && <span style={{ color: "#00c805" }}>✓</span>}
                           </div>
 
@@ -345,7 +345,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
             </div>
           </div>
 
-          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20 }}>
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: tx, marginBottom: 12 }}>
               {isEN ? "What the numbers say" : "Lo que dicen tus números"}
             </div>
@@ -359,7 +359,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
               <div key={i} style={{ marginBottom: 14, paddingBottom: 14,
                     borderBottom: i < diag.hallazgos.length - 1 ? `1px solid ${border}` : "none" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: tx, marginBottom: 3 }}>
-                  {h.tono === "riesgo" ? "⚠️" : h.tono === "logro" ? "✅" : "→"} {h.titulo}
+                  {h.tono === "riesgo" ? "" : h.tono === "logro" ? "" : "→"} {h.titulo}
                 </div>
                 <div style={{ fontSize: 12, color: tx3, lineHeight: 1.6 }}>{h.detalle}</div>
               </div>
@@ -386,8 +386,8 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
       )}
 
       {objetivo && diag.vacio && (
-        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 32, textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 10 }}>📊</div>
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 32, textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 10 }}></div>
           <div style={{ fontSize: 14, fontWeight: 700, color: tx2, marginBottom: 6 }}>
             {isEN ? "No assets loaded yet" : "Todavía no cargaste activos"}
           </div>
@@ -414,7 +414,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           { k: "favorable", es: "Si sale bien",  en: "If it goes well",   col: "#3b82f6", v: proy.favorable.final },
         ];
         return (
-          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
+          <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 20, marginTop: 16 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: tx, marginBottom: 3 }}>
               {isEN ? `Your wealth in ${horizonte} years` : `Tu patrimonio en ${horizonte} años`}
             </div>
@@ -470,7 +470,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           Son referencias de COMPOSICIÓN —qué tipo de activo cumple cada
           función— no recomendaciones de compra. */}
       {objetivo && !diag.vacio && (
-        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 20, marginTop: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: tx, marginBottom: 3 }}>
             {isEN ? "How this goal splits your wealth" : "Cómo se reparte tu patrimonio con este norte"}
           </div>
@@ -525,7 +525,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
           NO se dice "vende esto": recomendar operaciones concretas es asesoría
           de inversión. Es la diferencia entre un mapa y un chofer. */}
       {objetivo && !diag.vacio && diag.evaluados?.length > 0 && (
-        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 16, padding: 20, marginTop: 16 }}>
+        <div style={{ background: card, border: `1px solid ${border}`, borderRadius: 12, padding: 20, marginTop: 16 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: tx, marginBottom: 3 }}>
             {isEN ? "Your assets against your north" : "Tus activos frente a tu norte"}
           </div>
@@ -591,8 +591,8 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                   // El estado ahora es una marca de la fila, no un grupo: el
                   // borde de color y un ícono cuando conviene mirarla.
                   const EST = {
-                    revisar:  { ic: "⚠️", col: "#f59e0b" },
-                    aporta:   { ic: "✅", col: gn },
+                    revisar:  { ic: "", col: "#f59e0b" },
+                    aporta:   { ic: "", col: gn },
                     alineado: { ic: "",   col: border },
                   }[a.estado] || { ic: "", col: border };
                   return (
@@ -648,7 +648,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                           adivinando: es justo donde el usuario debe mirar. */}
                       {a.inferido && (
                         <span style={{ fontSize: 11, color: "#f59e0b" }}>
-                          {isEN ? "⚠️ we guessed this one" : "⚠️ lo asumimos nosotros"}
+                          {isEN ? "we guessed this one" : "lo asumimos nosotros"}
                         </span>
                       )}
                       {a.manual && (

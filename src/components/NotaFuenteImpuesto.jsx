@@ -96,7 +96,7 @@ export default function NotaFuenteImpuesto({ modo = "actual", cal = {}, owners =
   return (
     <details style={{ ...F.caption, color: C.muted, border: `1px solid ${C.border}`, borderRadius: R.md, padding: "8px 12px", marginTop: 14 }}>
       <summary style={{ cursor: "pointer", color: C.muted }}>
-        🧾 {modo === "actual" ? `Impuesto de este año: tu declaración ${hoy - 1}` : `Renta de ${hoy} (se paga en ${hoy + 1}): de la Calculadora de declaración`}
+        {modo === "actual" ? `Impuesto de este año: tu declaración ${hoy - 1}` : `Renta de ${hoy} (se paga en ${hoy + 1}): de la Calculadora de declaración`}
         {faltan.length > 0 && <span style={{ color: C.warn }}> · falta la de {faltan.map((o) => o.name).join(", ")} (por ahora, aproximado)</span>}
         <span style={{ color: C.accent }}> · ver detalle</span>
       </summary>

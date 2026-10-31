@@ -81,7 +81,7 @@ export default function PlanDeudasACero({
         marginBottom: 20,
         background: T.card,
         border: `1px solid ${T.border}`,
-        borderRadius: 16,
+        borderRadius: 12,
         padding: "18px 18px 14px",
       }}
     >
