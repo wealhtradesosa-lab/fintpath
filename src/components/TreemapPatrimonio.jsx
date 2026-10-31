@@ -22,7 +22,7 @@ import { useId } from "react";
 // concepto tenga el MISMO color en el treemap y en la lista de abajo: antes
 // las dos paletas coincidían solo en los dos primeros colores, así que
 // "Vivienda" salía morada en el gráfico y naranja en la lista.
-const PALETA = ["#22c55e", "#3b82f6", "#f59e0b", "#a78bfa", "#ec4899", "#06b6d4", "#eab308", "#14b8a6", "#64748b"];
+const PALETA = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
 
 /**
  * Reparte items en un rectángulo alternando cortes horizontales y verticales.

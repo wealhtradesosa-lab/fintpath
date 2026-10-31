@@ -61,7 +61,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
     totales,
   }), [user, objetivo, totales]);
 
-  const PAL_CANASTA = { proteccion: "#3b82f6", mercado: "#22c55e", aspiracion: "#f97316" };
+  const PAL_CANASTA = { proteccion: "#3b82f6", mercado: "#22c55e", aspiracion: "#f59e0b" };
   const NOM_CANASTA = isEN
     ? { proteccion: "Protection", mercado: "Market", aspiracion: "Aspiration" }
     : { proteccion: "Protección", mercado: "Mercado", aspiracion: "Aspiración" };
@@ -268,7 +268,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                           "+53" suelto no dice nada: el signo puede leerse al revés.
                           Ahora va la palabra y el MONTO, que es lo accionable. */}
                       {Math.abs(b.puntos) >= 5 && (
-                        <span style={{ color: b.puntos > 0 ? "#f97316" : "#3b82f6",
+                        <span style={{ color: b.puntos > 0 ? "#f59e0b" : "#3b82f6",
                                        marginLeft: 8, fontWeight: 700, fontSize: 12 }}>
                           {b.puntos > 0
                             ? (isEN ? `${fm(Math.abs(b.monto))} too much` : `sobran ${fm(Math.abs(b.monto))}`)
@@ -306,7 +306,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                               usuario no puede juzgar si la clasificacion esta
                               bien, y una mezcla mal clasificada se ve igual de
                               creible que una correcta. */}
-                          <div style={{ fontSize: 11, color: it.inferido ? "#f97316" : tx3,
+                          <div style={{ fontSize: 11, color: it.inferido ? "#f59e0b" : tx3,
                                 marginTop: 3, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                             <span>{it.inferido ? "⚠️ " : ""}{it.motivo}</span>
                             {it.manual && <span style={{ color: "#22c55e" }}>✓</span>}
@@ -497,7 +497,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                   </div>
                   <div style={{ fontSize: 11, color: tx3, marginBottom: 10 }}>
                     {isEN ? "you have" : "tienes"} {fm(actual)}
-                    <span style={{ color: Math.abs(dif) < diag.total * 0.05 ? tx3 : (dif > 0 ? "#f97316" : "#3b82f6"),
+                    <span style={{ color: Math.abs(dif) < diag.total * 0.05 ? tx3 : (dif > 0 ? "#f59e0b" : "#3b82f6"),
                                    fontWeight: 700, marginLeft: 5 }}>
                       {dif > 0 ? "+" : ""}{fm(dif)}
                     </span>
@@ -591,7 +591,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                   // El estado ahora es una marca de la fila, no un grupo: el
                   // borde de color y un ícono cuando conviene mirarla.
                   const EST = {
-                    revisar:  { ic: "⚠️", col: "#f97316" },
+                    revisar:  { ic: "⚠️", col: "#f59e0b" },
                     aporta:   { ic: "✅", col: gn },
                     alineado: { ic: "",   col: border },
                   }[a.estado] || { ic: "", col: border };
@@ -647,7 +647,7 @@ export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onRecla
                       {/* El aviso naranja marca donde la plataforma esta
                           adivinando: es justo donde el usuario debe mirar. */}
                       {a.inferido && (
-                        <span style={{ fontSize: 10, color: "#f97316" }}>
+                        <span style={{ fontSize: 10, color: "#f59e0b" }}>
                           {isEN ? "⚠️ we guessed this one" : "⚠️ lo asumimos nosotros"}
                         </span>
                       )}

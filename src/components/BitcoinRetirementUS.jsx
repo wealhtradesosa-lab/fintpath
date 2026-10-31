@@ -27,7 +27,7 @@ const C = {
   bg2: "var(--fp-card)", bg3: "var(--fp-raised)", card: "var(--fp-card)",
   border: "rgba(var(--fp-ink),0.06)",
   tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", tx3: "var(--fp-txt3)",
-  gn: "#22c55e", rd: "#ef4444", or: "#f97316", bl: "#3b82f6", gold: "#eab308",
+  gn: "#22c55e", rd: "#ef4444", or: "#f59e0b", bl: "#3b82f6", gold: "#f59e0b",
 };
 
 const LIMITS = {

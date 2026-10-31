@@ -360,7 +360,7 @@ export default function DashboardFiscal({ u, owners, estimacion, warnings, onNav
           <div style={{ fontSize: 11, fontWeight: 700, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10 }}>
             🏦 Retención en la fuente estimada
             {detalleActual.retencionDesglose.fuente === "override_global" && (
-              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 3, fontSize: 9, color: "#a78bfa" }}>
+              <span style={{ marginLeft: 8, padding: "2px 8px", background: "rgba(168,85,247,0.15)", borderRadius: 3, fontSize: 9, color: "#3b82f6" }}>
                 OVERRIDE MANUAL
               </span>
             )}

@@ -73,7 +73,7 @@ const T = {
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
   gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
   rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
-  bl:"#3b82f6", pr:"#a78bfa", or:"#f59e0b", cy:"#06b6d4",
+  bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm  = (n) => `$${Math.round(n||0).toLocaleString("en-US")}`;
 const fmK = (n) => n>=1000000 ? `$${(n/1000000).toFixed(2)}M` : n>=1000 ? `$${(n/1000).toFixed(0)}K` : fm(n);

@@ -51,7 +51,7 @@ const T = {
   border:"rgba(var(--fp-ink),0.06)",
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
   gn:"#22c55e", rd:"#ef4444", bl:"#3b82f6",
-  pr:"#a78bfa", or:"#f97316", cy:"#22d3ee", gd:"#eab308",
+  pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8", gd:"#f59e0b",
 };
 const fm = (n) => "$" + Math.round(Math.abs(n||0)).toLocaleString("en-US");
 
@@ -60,16 +60,16 @@ const LEVELS = [
   { id:1, name:"Security",      icon:"🛡️",  color:"#3b82f6", factor:0.65,
     desc:"Passive income covers basic needs",
     detail:"Your income covers 65% of expenses — housing, food, utilities, transport, basic insurance. If you lost your job, your assets would keep you alive." },
-  { id:2, name:"Vitality",      icon:"⚡",  color:"#22d3ee", factor:0.825,
+  { id:2, name:"Vitality",      icon:"⚡",  color:"#94a3b8", factor:0.825,
     desc:"Security + half your lifestyle",
     detail:"Your income covers 82.5% of expenses. Beyond basics, you can maintain half your current lifestyle: some entertainment, modest travel, education." },
   { id:3, name:"Independence",  icon:"🏆",  color:"#22c55e", factor:1.0,
     desc:"Income covers 100% of all expenses",
     detail:"The breakpoint! Your income covers ALL your current expenses. You no longer need a job to maintain your lifestyle. You could stop working today and live the same." },
-  { id:4, name:"Freedom",       icon:"🚀",  color:"#f97316", factor:1.5,
+  { id:4, name:"Freedom",       icon:"🚀",  color:"#f59e0b", factor:1.5,
     desc:"Independence + 50% extra for luxuries",
     detail:"Your income is 1.5× your expenses. You have margin for luxuries, travel, expensive hobbies, giving to causes you care about. You can upgrade your lifestyle without worry." },
-  { id:5, name:"Absolute",      icon:"👑",  color:"#eab308", factor:2.5,
+  { id:5, name:"Absolute",      icon:"👑",  color:"#f59e0b", factor:2.5,
     desc:"Income is 2.5× your expenses",
     detail:"The maximum level. Your income is 2.5× your expenses. You can do what you want, when you want, where you want. Money is no longer a constraint." },
 ];
@@ -141,7 +141,7 @@ function FreedomBar({ ni, te }) {
           <div style={{
             height:"100%",
             width:Math.min(progress,100)+"%",
-            background:`linear-gradient(90deg,#3b82f6,#22d3ee,#22c55e,#f97316,#eab308)`,
+            background:`linear-gradient(90deg,#3b82f6,#94a3b8,#22c55e,#f59e0b,#f59e0b)`,
             borderRadius:8,transition:"width 0.3s ease",
           }}/>
         </div>

@@ -38,7 +38,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.06)",
   green: "#22c55e", blue: "#3b82f6", purple: "#c4b5fd",
-  orange: "#f59e0b", red: "#ef4444", gold: "#eab308",
+  orange: "#f59e0b", red: "#ef4444", gold: "#f59e0b",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
@@ -396,8 +396,8 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
           <button
             onClick={() => exportarBorradorPDF(user, selectedOwner, estimacion, ano)}
             style={{
-              background: "#7c3aed",
-              border: "1.5px solid #7c3aed",
+              background: "#2563eb",
+              border: "1.5px solid #2563eb",
               color: "#fff",
               padding: "10px 18px",
               borderRadius: 10,

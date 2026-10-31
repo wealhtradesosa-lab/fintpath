@@ -28,7 +28,7 @@ import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx
 const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  red: "#ef4444", orange: "#f59e0b", green: "#22c55e", blue: "#3b82f6", cyan: "#06b6d4",
+  red: "#ef4444", orange: "#f59e0b", green: "#22c55e", blue: "#3b82f6", cyan: "#94a3b8",
   card: "rgba(var(--fp-ink),0.02)",
 };
 

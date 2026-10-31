@@ -15,8 +15,8 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
-  orange: "#f97316", gold: "#eab308", cyan: "#22d3ee", red: "#ef4444",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
 };
 

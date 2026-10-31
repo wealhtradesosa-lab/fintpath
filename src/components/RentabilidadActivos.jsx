@@ -6,7 +6,7 @@ import { fmtPctEs } from "../lib/metrics.js";
  * rentabilidadActivos(). Barra por activo contra la línea de la inflación;
  * clic en un activo abre su edición para completar renta o valorización.
  */
-const COL = { gana: "#22c55e", bajo_inflacion: "#eab308", pierde: "#ef4444" };
+const COL = { gana: "#22c55e", bajo_inflacion: "#f59e0b", pierde: "#ef4444" };
 const TXT = { gana: "le gana a la inflación", bajo_inflacion: "por debajo de la inflación", pierde: "pierde plata" };
 
 export default function RentabilidadActivos({ r, T, fm, nombre, onAbrir }) {

@@ -22,9 +22,9 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   border: "rgba(var(--fp-ink),0.06)", borderL: "rgba(var(--fp-ink),0.1)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa", red: "#ef4444",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
-  gradAdv: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)",
+  gradAdv: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)",
 };
 
 // 30-oct-2026 (Santiago: "¿cómo saben que van para mi cuenta?"): el nombre por defecto de
@@ -275,7 +275,7 @@ export default function AcceptInvite({ token, onComplete }) {
         {/* Invitation banner */}
         {invitation?.type === "family" ? (
           <>
-            <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(167,139,250,0.08))", border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
+            <div style={{ background: "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(59,130,246,0.08))", border: `1px solid rgba(34,197,94,0.3)`, borderRadius: 14, padding: 18, marginBottom: 16 }}>
               <div style={{ fontSize: 11, color: T.green, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>🎉 Invitación recibida</div>
               <div style={{ fontSize: 16, fontWeight: 800, color: T.txt, marginBottom: 6, lineHeight: 1.35 }}>
                 {invitation?.invited_by_name || "Alguien"} te invitó a <strong style={{ color: T.green }}>{nombreCuenta(invitation)}</strong> en Finpathia
@@ -309,7 +309,7 @@ export default function AcceptInvite({ token, onComplete }) {
             </div>
           </>
         ) : (
-          <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(167,139,250,0.08))", border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
+          <div style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.08))", border: `1px solid rgba(59,130,246,0.25)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
             <div style={{ fontSize: 11, color: T.blue, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Invitación de tu asesor</div>
             <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>
               {invitation?.advisor_firm || "Tu asesor"}
@@ -360,7 +360,7 @@ export default function AcceptInvite({ token, onComplete }) {
               required
             />
             {invitation?.email_invited && form.email.trim().toLowerCase() !== invitation.email_invited.toLowerCase() && (
-              <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
+              <div style={{ fontSize: 11, color: "#fbbf24", marginTop: 6, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, lineHeight: 1.4 }}>
                 ⚠️ La invitación se envió a <strong>{invitation.email_invited}</strong>. Tienes que usar ese mismo email — si usas otro, no vamos a poder vincularte.
               </div>
             )}

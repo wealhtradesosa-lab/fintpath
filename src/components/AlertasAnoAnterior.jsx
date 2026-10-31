@@ -32,7 +32,7 @@ import { track } from "../lib/analytics.js";
 const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  orange: "#f59e0b", red: "#ef4444", green: "#22c55e", cyan: "#06b6d4",
+  orange: "#f59e0b", red: "#ef4444", green: "#22c55e", cyan: "#94a3b8",
 };
 
 const fmMoney = (v) => {

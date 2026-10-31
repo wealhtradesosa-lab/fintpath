@@ -21,9 +21,9 @@ import { useState } from "react";
 
 // Paleta consistente con el resto del app
 const colors = {
-  warningBg: "rgba(234, 179, 8, 0.08)",
-  warningBorder: "rgba(234, 179, 8, 0.25)",
-  warningText: "#eab308",
+  warningBg: "rgba(245,158,11, 0.08)",
+  warningBorder: "rgba(245,158,11, 0.25)",
+  warningText: "#f59e0b",
   infoBg: "rgba(59, 130, 246, 0.06)",
   infoBorder: "rgba(59, 130, 246, 0.20)",
   infoText: "#3b82f6",

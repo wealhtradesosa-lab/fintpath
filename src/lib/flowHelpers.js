@@ -235,7 +235,7 @@ export function labelVigenciaBadge(item) {
         sub: proyectados > 0
           ? `${reales} real · ${proyectados} proy.`
           : `${reales} ${reales === 1 ? "mes" : "meses"}`,
-        color: "#22d3ee",
+        color: "#94a3b8",
       };
     }
     return {
@@ -244,7 +244,7 @@ export function labelVigenciaBadge(item) {
       sub: proyectados > 0
         ? `${reales} real · ${proyectados} proy.`
         : `${reales} ${reales === 1 ? "mes" : "meses"}`,
-      color: "#22d3ee",
+      color: "#94a3b8",
     };
   }
 
@@ -267,16 +267,16 @@ export function labelVigenciaBadge(item) {
   const mesNombre = item?.mesSupuesto ? null : (MESES_CORTOS[mesPago] || "Ene");
 
   if (freq === "anual") {
-    return { emoji: "🎯", label: "Anual", sub: mesNombre, color: "#a78bfa" };
+    return { emoji: "🎯", label: "Anual", sub: mesNombre, color: "#3b82f6" };
   }
   if (freq === "unico") {
-    return { emoji: "💥", label: "Único", sub: mesNombre, color: "#f97316" };
+    return { emoji: "💥", label: "Único", sub: mesNombre, color: "#f59e0b" };
   }
   if (freq === "semestral") {
-    return { emoji: "📆", label: "Semestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#22d3ee" };
+    return { emoji: "📆", label: "Semestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#94a3b8" };
   }
   if (freq === "trimestral") {
-    return { emoji: "🗓️", label: "Trimestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#22d3ee" };
+    return { emoji: "🗓️", label: "Trimestral", sub: mesNombre ? `desde ${mesNombre}` : null, color: "#94a3b8" };
   }
   return null;
 }

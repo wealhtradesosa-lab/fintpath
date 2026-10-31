@@ -24,7 +24,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
-  blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
+  blue: "#3b82f6", orange: "#f59e0b", purple: "#3b82f6",
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 const pc = (n) => fmtPctEs(n);
@@ -470,7 +470,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {sinOwner.slice(0, 6).map((inv, idx) => (
-                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
+                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(var(--fp-hundir),0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
                   <span style={{ width: 6, height: 6, borderRadius: 3, background: "#ef4444", flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -521,7 +521,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
         if (datos.length < 2) return null;
         const tot = datos.reduce((s, d) => s + d.value, 0);
-        const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308","#f97316"];
+        const PAL = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
         return (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6, fontWeight: 600 }}>EN QUÉ ESTÁ TU PATRIMONIO</div>
@@ -720,8 +720,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"👤 Personal"},{v:"na",l:"🌐 N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"🏢 ":"👤 ")+o.name}))]} />
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v, fiscalCode: fiscalCodeParaTipo(v, p.fiscalCode, (owners || []).find((o) => o.id === p.owner)) }))} options={["Real Estate", "Fondo de Inversión", "CDT", "Acciones", "Crypto", "Bodega", "Lote", "Vehículo", "Local Comercial", "Renta Fija", "Negocio", "Cash", "Otro"]} />
               {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && (
-                <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🏠 ¿Cómo usas este inmueble? (define si depreciación aplica)</div>
+                <div style={{ gridColumn: "1/-1", background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>🏠 ¿Cómo usas este inmueble? (define si depreciación aplica)</div>
                   <select value={form.fiscalCode || "INV_INMUEBLE_HABITACIONAL"} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                     style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer", marginBottom: 10 }}>
                     <option value="INV_INMUEBLE_HABITACIONAL">Habitacional — donde vivo (no se deprecia)</option>
@@ -747,7 +747,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 if (vaN > 0 && vcN > 0 && vaN < vcN * 0.1) {
                   const perdidaPct = ((1 - vaN / vcN) * 100).toFixed(0);
                   return (
-                    <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.35)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
+                    <div style={{ gridColumn: "1/-1", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "#f59e0b", lineHeight: 1.5 }}>
                       ⚠️ <strong>Revisa los ceros:</strong> el valor actual (${vaN.toLocaleString("es-CO")}) es {perdidaPct}% menor que lo que costó (${vcN.toLocaleString("es-CO")}). Si es correcto, ignora este aviso — pero si el activo vale ${(vaN/1e6).toFixed(1)} millones y costó ${(vcN/1e9).toFixed(1)} mil millones, probablemente faltan ceros en el valor actual.
                     </div>
                   );
@@ -864,7 +864,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                           </div>
                         )}
                         {legacy > 0 && (
-                          <div style={{ marginTop: 5, fontSize: 11, color: "#f97316" }}>
+                          <div style={{ marginTop: 5, fontSize: 11, color: "#f59e0b" }}>
                             Además hay ${legacy.toLocaleString("es-CO")}/mes cargados en el
                             campo antiguo. Conviene pasarlos a Gastos como registros
                             separados para saber de qué se componen.

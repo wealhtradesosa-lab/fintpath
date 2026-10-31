@@ -999,7 +999,7 @@ function PasoIntencion({ moldes, todos, res, base, perfil, onPerfil, onCrear, ac
             como opción avanzada dentro del taller, para quien las quiera. */}
         <div style={F.h2}>Crear un escenario</div>
         <div style={{ ...F.caption, marginTop: 4 }}>Parte de lo que tienes hoy; tú decides qué vendes, a dónde va la plata y qué viene después.</div>
-        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onCrear({ id: null, nombre: `Escenario ${(todos || []).length + 1}`, tesis: "", color: [CHART.purple, "#f59e0b", "#22c55e", "#3b82f6", "#ec4899"][(todos || []).length % 5], objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>+ Crear escenario →</button></div>
+        <div style={{ marginTop: 12 }}><button style={btn(true)} onClick={() => { onCrear({ id: null, nombre: `Escenario ${(todos || []).length + 1}`, tesis: "", color: [CHART.purple, "#f59e0b", "#22c55e", "#3b82f6", "#64748b"][(todos || []).length % 5], objetivo: null, canastas: { colchonMeses: 6 }, excedente: [{ canasta: "rentas", pct: 50 }, { canasta: "crecimiento", pct: 50 }] }); onNext(); }}>+ Crear escenario →</button></div>
       </div>
       {/* 22-oct-2026 (Santiago: "veo que se han creado muchos escenarios,
           ¿dónde los borra uno?", "¿dónde los compara?"). Borrar vivía al final

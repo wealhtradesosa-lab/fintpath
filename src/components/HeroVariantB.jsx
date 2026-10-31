@@ -18,8 +18,8 @@ const T = {
   border: "rgba(var(--fp-ink),0.06)",
   borderStrong: "rgba(var(--fp-ink),0.12)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
-  pink: "#ec4899", cyan: "#22d3ee", orange: "#f97316",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
+  pink: "#64748b", cyan: "#94a3b8", orange: "#f59e0b",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";

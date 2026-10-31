@@ -11,7 +11,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  cyan: "#06b6d4", green: "#22c55e", orange: "#f59e0b", blue: "#3b82f6", purple: "#a78bfa",
+  cyan: "#94a3b8", green: "#22c55e", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const FAQ = [
@@ -37,7 +37,7 @@ const FAQ = [
               <strong>Resultado:</strong> borrador de declaración listo para transcribir al portal DIAN.
             </div>
           </div>
-          <div style={{ padding: "10px 12px", background: "rgba(6,182,212,0.08)", borderLeft: "3px solid " + T.cyan, borderRadius: 6 }}>
+          <div style={{ padding: "10px 12px", background: "rgba(148,163,184,0.08)", borderLeft: "3px solid " + T.cyan, borderRadius: 6 }}>
             <div style={{ color: T.cyan, fontWeight: 700, fontSize: 12 }}>📥 Importador año anterior</div>
             <div style={{ color: T.txt2, fontSize: 11, marginTop: 4, lineHeight: 1.5 }}>
               <strong>Para qué:</strong> cargar lo que <em>ya declaraste</em> el año pasado, para usarlo como referencia comparativa al preparar el año en curso.<br/>

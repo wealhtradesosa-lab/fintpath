@@ -17,6 +17,7 @@
   --fp-line: #3f3f46;
   --fp-ink: 255,255,255;
   --fp-sombra: none;
+  --fp-hundir: 0,0,0; /* fondos "hundidos": negro en oscuro, blanco en claro */
 }
 /* Solo dentro de la app (.fp-app): las páginas de aterrizaje están diseñadas
    oscuras, sobre fotos, y se quedan así. */
@@ -28,6 +29,7 @@ html[data-tema="claro"] .fp-app {
   --fp-subtle: #6b7280; --fp-txt3: #6b7280;
   --fp-line: #d1d5db;
   --fp-ink: 17,24,39;
+  --fp-hundir: 255,255,255;
   --fp-border: rgba(17,24,39,0.08); --fp-border-strong: rgba(17,24,39,0.15);
   --fp-sombra: 0 1px 2px rgba(17,24,39,0.04), 0 4px 16px rgba(17,24,39,0.04);
 }
@@ -47,5 +49,5 @@ html[data-tema="claro"] .fp-app [style*="color: rgb(34, 197, 94)"] { color: #158
 html[data-tema="claro"] .fp-app [style*="color: rgb(239, 68, 68)"] { color: #dc2626 !important; }
 html[data-tema="claro"] .fp-app [style*="color: rgb(234, 179, 8)"] { color: #a16207 !important; }
 html[data-tema="claro"] .fp-app [style*="color: rgb(249, 115, 22)"] { color: #c2410c !important; }
-html[data-tema="claro"] .fp-app [style*="color: rgb(167, 139, 250)"] { color: #7c3aed !important; }
+html[data-tema="claro"] .fp-app [style*="color: rgb(167, 139, 250)"] { color: #2563eb !important; }
 html[data-tema="claro"] .fp-app [style*="color: rgb(59, 130, 246)"] { color: #2563eb !important; }

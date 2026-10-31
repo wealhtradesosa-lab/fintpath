@@ -17,9 +17,9 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
-  blue: "#3b82f6", purple: "#a78bfa", orange: "#f97316",
-  gold: "#eab308", cyan: "#22d3ee",
-  ch: ["#22c55e","#3b82f6","#f97316","#a78bfa","#22d3ee","#eab308","#ef4444","#ec4899"],
+  blue: "#3b82f6", purple: "#3b82f6", orange: "#f59e0b",
+  gold: "#f59e0b", cyan: "#94a3b8",
+  ch: ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
 const _fm = (n) => {
   if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e9), 1)+"B";
@@ -328,7 +328,7 @@ export default function MetasModule({
               marginTop: 10,
               fontSize: 12,
               color: T.orange,
-              background: "rgba(249,115,22,0.08)",
+              background: "rgba(245,158,11,0.08)",
               borderRadius: 8,
               padding: "8px 10px",
             }}
@@ -779,7 +779,7 @@ export default function MetasModule({
                                 style={{
                                   textAlign: "left",
                                   background: active
-                                    ? "rgba(34,211,238,0.12)"
+                                    ? "rgba(148,163,184,0.12)"
                                     : "rgba(var(--fp-ink),0.03)",
                                   border:
                                     "1px solid " +

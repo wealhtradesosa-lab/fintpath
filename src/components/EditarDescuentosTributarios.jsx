@@ -23,7 +23,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  cyan: "#06b6d4", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#a78bfa",
+  cyan: "#94a3b8", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
@@ -47,7 +47,7 @@ const Field = ({ label, articulo, value, onChange, hint, prevYear, prevYearLabel
     />
     {prevYear != null && prevYear > 0 && (
       <button onClick={() => onChange(Math.round(prevYear))} title="Click para copiar este valor" style={{
-        marginTop: 4, padding: "4px 8px", background: "rgba(6,182,212,0.12)", border: "1px solid " + T.cyan,
+        marginTop: 4, padding: "4px 8px", background: "rgba(148,163,184,0.12)", border: "1px solid " + T.cyan,
         color: T.cyan, borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: "pointer",
       }}>
         📥 {prevYearLabel || "Año anterior"}: {fm(prevYear)}
@@ -140,7 +140,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           <div style={{ fontSize: 13, fontWeight: 700, color: T.purple, flex: 1 }}>Deducciones avanzadas</div>
           <span style={{ fontSize: 9, color: T.txt3, fontWeight: 600 }}>Reducen la base · ahorro = monto × 35%</span>
         </div>
-        <div style={{ padding: "10px 12px", background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 8, marginBottom: 14, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ padding: "10px 12px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, marginBottom: 14, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           Estas son <strong style={{ color: T.txt }}>palancas que tu contador aplica</strong> y que el motor ahora puede capturar. A diferencia de los descuentos de abajo, estas reducen la <strong>base gravable</strong> (no el impuesto). El ahorro real es ~35% del monto cargado en régimen ordinario.
         </div>
         <Field
@@ -186,7 +186,7 @@ export default function EditarDescuentosTributarios({ owner, onSave, onCancel })
           hint="Depreciación anual de inmuebles propios usados para producir renta (típicamente arrendados). Vida útil fiscal 45 años (Decreto 2235/2017). Solo se deprecia la construcción (no terreno). Estimación rápida: valor de compra × 75% / 45. IMPORTANTE: tu contador calcula el monto correcto considerando depreciación acumulada de años anteriores. Carga el monto que él te indique."
         />
         {totalImpactoDeducciones > 0 && (
-          <div style={{ padding: "10px 12px", background: "rgba(167,139,250,0.08)", border: "1px solid " + T.purple, borderRadius: 8, marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid " + T.purple, borderRadius: 8, marginTop: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ color: T.txt2, fontSize: 12 }}>💰 Ahorro estimado de estas deducciones</span>
             <span style={{ color: T.purple, fontSize: 14, fontWeight: 800, fontFamily: "monospace" }}>~{fm(totalImpactoDeducciones)}/año</span>
           </div>

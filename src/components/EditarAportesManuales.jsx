@@ -23,7 +23,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.08)",
-  cyan: "#06b6d4", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#a78bfa",
+  cyan: "#94a3b8", green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const Field = ({ label, articulo, value, onChange, hint }) => (
@@ -111,7 +111,7 @@ export default function EditarAportesManuales({ owner, onSave, onCancel }) {
         </div>
       </div>
 
-      <div style={{ padding: 14, background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+      <div style={{ padding: 14, background: "rgba(148,163,184,0.06)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 10, marginBottom: 16, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
         <div style={{ fontWeight: 700, color: T.cyan, marginBottom: 4 }}>💡 ¿Dónde están los demás aportes?</div>
         <strong>Pensión y salud obligatorias</strong> viven dentro del form de cada salario (módulo <em>Ingresos</em>) — prellenadas al 4%+4% y editables.
         <strong> Pensión Voluntaria, AFC y Salud prepagada</strong> viven como egresos con categoría <em>"Aporte tributario"</em> (módulo <em>Egresos</em>).

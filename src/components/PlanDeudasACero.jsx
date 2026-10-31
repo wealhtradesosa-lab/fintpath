@@ -20,7 +20,7 @@ const T = {
   green: "#22c55e",
   red: "#ef4444",
   blue: "#3b82f6",
-  orange: "#f97316",
+  orange: "#f59e0b",
 };
 
 const _fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
@@ -191,8 +191,8 @@ export default function PlanDeudasACero({
                     fontSize: 11,
                     fontWeight: 700,
                     color: T.orange,
-                    background: "rgba(249,115,22,0.12)",
-                    border: "1px solid rgba(249,115,22,0.35)",
+                    background: "rgba(245,158,11,0.12)",
+                    border: "1px solid rgba(245,158,11,0.35)",
                     borderRadius: 999,
                     padding: "4px 10px",
                   }}
@@ -267,7 +267,7 @@ export default function PlanDeudasACero({
                         fontSize: 10,
                         fontWeight: 700,
                         color: T.orange,
-                        background: "rgba(249,115,22,0.12)",
+                        background: "rgba(245,158,11,0.12)",
                         borderRadius: 6,
                         padding: "3px 8px",
                         flexShrink: 0,

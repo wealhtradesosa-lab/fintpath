@@ -6,7 +6,7 @@ const T = {
   bg2: "var(--fp-card)", bg3: "var(--fp-raised)", card: "var(--fp-card)",
   border: "rgba(var(--fp-ink),0.06)", txt: "var(--fp-txt)",
   txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#22c55e",
-  blue: "#3b82f6", orange: "#f97316",
+  blue: "#3b82f6", orange: "#f59e0b",
 };
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
 const Cd = ({ children, s }) => <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, overflow: "hidden", ...s }}>{children}</div>;

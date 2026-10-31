@@ -15,7 +15,7 @@ import { compararCompraVsInversion, valorizacionDeEquilibrio, BUY_VS_INVEST_DEFA
 
 const T = { bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", border:"rgba(var(--fp-ink),0.06)",
   txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#22c55e", red:"#ef4444",
-  blue:"#3b82f6", orange:"#f97316", gold:"#eab308" };
+  blue:"#3b82f6", orange:"#f59e0b", gold:"#f59e0b" };
 
 let LOC = "es-CO";
 const fm = (n) => "$" + Math.round(Number(n) || 0).toLocaleString(LOC);

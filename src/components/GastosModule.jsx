@@ -31,7 +31,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
-  blue: "#3b82f6", orange: "#f97316",
+  blue: "#3b82f6", orange: "#f59e0b",
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 
@@ -76,7 +76,7 @@ const REGLA_POR_FISCAL_CODE = {
   "GAS_INMUEBLE_SEGUROS":          { txt: "✅ 100% (renta capital)", color: "#22c55e", help: "Seguros del inmueble arrendado" },
   // Commit 15 Tarea 3: impuesto vehicular (rodamiento)
   "IMP_VEHICULAR_PERSONAL":        { txt: "❌ No deducible", color: "var(--fp-txt3)", help: "Rodamiento vehículo personal — no cumple Art. 107 ET" },
-  "IMP_VEHICULAR_PROFESIONAL":     { txt: "📊 50% Art. 107", color: "#eab308", help: "Rodamiento vehículo profesional — 50% conservador (uso mixto), máx 1" },
+  "IMP_VEHICULAR_PROFESIONAL":     { txt: "📊 50% Art. 107", color: "#f59e0b", help: "Rodamiento vehículo profesional — 50% conservador (uso mixto), máx 1" },
   // Honorarios (Art. 107 ET — actividad independiente)
   "GAS_HON_SEG_SOCIAL":          { txt: "✅ 100% Art. 126-1", color: "#22c55e", help: "Seguridad social independiente — deducible 100%" },
   "GAS_HON_NOMINA_TERCEROS":     { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Nómina/honorarios a terceros — deducible 100%" },
@@ -84,9 +84,9 @@ const REGLA_POR_FISCAL_CODE = {
   "GAS_HON_SERVICIOS_OFICINA":   { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Servicios oficina — deducible 100%" },
   "GAS_HON_INTERNET_TELEFONIA":  { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Internet/telefonía profesional" },
   "GAS_HON_MATERIALES":          { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Materiales y suministros profesionales" },
-  "GAS_HON_VEHICULO":            { txt: "📊 50% Art. 107", color: "#eab308", help: "Vehículo profesional — 50% conservador (uso mixto), máx 1" },
+  "GAS_HON_VEHICULO":            { txt: "📊 50% Art. 107", color: "#f59e0b", help: "Vehículo profesional — 50% conservador (uso mixto), máx 1" },
   "GAS_HON_VIAJES":              { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Viajes con propósito profesional documentado" },
-  "GAS_HON_REPRESENTACION":      { txt: "📊 Tope 10%", color: "#eab308", help: "Representación — tope 10% Art. 107-1 ET" },
+  "GAS_HON_REPRESENTACION":      { txt: "📊 Tope 10%", color: "#f59e0b", help: "Representación — tope 10% Art. 107-1 ET" },
   "GAS_HON_CAPACITACION":        { txt: "✅ 100% Art. 107", color: "#22c55e", help: "Capacitación profesional" },
   "GAS_HON_OTROS":               { txt: "✅ Con causalidad", color: "#22c55e", help: "Otros con causalidad documentada" },
   // Seguros (persona natural — la mayoría NO deducibles)
@@ -582,7 +582,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               if (!item) return null;
               const colorBySev = w.severity === "error" ? "#ef4444" : (w.severity === "warning" ? "#f59e0b" : "#3b82f6");
               return (
-                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
+                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(var(--fp-hundir),0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
                   <span style={{ width: 6, height: 6, borderRadius: 3, background: colorBySev, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -643,7 +643,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
           if (datos.length < 2) return null;   // con una sola categoría no dice nada
           const tot = datos.reduce((s, d) => s + d.value, 0);
-          const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308","#f97316"];
+          const PAL = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
           return (
             <div style={{ marginBottom: 16 }}>
               <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
@@ -761,8 +761,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           cursor: "pointer",
                           padding: "2px 8px",
                           borderRadius: 10,
-                          background: estaPagadoEnAño(item, añoActual) ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
-                          color: estaPagadoEnAño(item, añoActual) ? "#22c55e" : "#f97316",
+                          background: estaPagadoEnAño(item, añoActual) ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)",
+                          color: estaPagadoEnAño(item, añoActual) ? "#22c55e" : "#f59e0b",
                           letterSpacing: 0.3,
                           userSelect: "none",
                         }}
@@ -899,14 +899,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Photo scan option — Básico+ */}
               {plan==="free" ? (
-                <div style={{background:"rgba(234,179,8,0.06)",border:"1px dashed rgba(234,179,8,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>onUpgrade&&onUpgrade()}>
-                  <div style={{fontSize:12,fontWeight:600,color:"#eab308"}}>🔒 📸 Lectura de facturas con IA</div>
+                <div style={{background:"rgba(245,158,11,0.06)",border:"1px dashed rgba(245,158,11,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>onUpgrade&&onUpgrade()}>
+                  <div style={{fontSize:12,fontWeight:600,color:"#f59e0b"}}>🔒 📸 Lectura de facturas con IA</div>
                   <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Disponible desde el plan Básico · click para ver planes</div>
                 </div>
               ) : (
-                <div style={{background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
-                  {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo factura...</div> : <>
-                    <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes la factura o recibo?</div>
+                <div style={{background:"rgba(59,130,246,0.06)",border:"1px dashed rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
+                  {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>🔄 Leyendo factura...</div> : <>
+                    <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>📸 ¿Tienes la factura o recibo?</div>
                     <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                   </>}
                 </div>
@@ -1214,7 +1214,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     }
                     if (altoNaranja) {
                       return (
-                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.25)", borderRadius: 8, fontSize: 11, color: "#f97316", lineHeight: 1.5 }}>
+                        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, fontSize: 11, color: "#f59e0b", lineHeight: 1.5 }}>
                           🟠 Tasa alta: {fmtTasaEs(tas)} {tm}. Verifica que la periodicidad ({tm}) sea correcta.
                         </div>
                       );
@@ -1242,8 +1242,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const isDeductible = currentFC !== "GAS_JUR_NO_DEDUCIBLE";
                 const deductibleCode = form.cat === "Educación" ? "GAS_JUR_CAPACITACION" : "GAS_JUR_OPERATIVO";
                 return (
-                  <div style={{background:"rgba(249,115,22,0.04)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4}}>
-                    <div style={{fontSize:11,fontWeight:700,color:"#f97316",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
+                  <div style={{background:"rgba(245,158,11,0.04)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:10,padding:"12px 14px",marginTop:4}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"#f59e0b",marginBottom:8}}>🧾 ¿Este gasto cumple causalidad con la actividad de la empresa? (Art. 107 ET)</div>
                     <select value={currentFC} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{width:"100%",background:"var(--fp-raised)",border:"1px solid rgba(var(--fp-ink),0.06)",color:"var(--fp-txt)",padding:"10px 12px",borderRadius:8,fontSize:13,outline:"none",cursor:"pointer"}}>
                       <option value={deductibleCode}>✅ Sí — relacionado con la actividad productora de renta (DEDUCIBLE)</option>
@@ -1292,7 +1292,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 };
 
                 return (
-                  <div style={{gridColumn:"1/-1",background:"rgba(99,102,241,0.04)",border:`1px solid ${isHon?"#6366f1":"rgba(99,102,241,0.2)"}`,borderRadius:10,padding:"12px 14px",marginTop:4}}>
+                  <div style={{gridColumn:"1/-1",background:"rgba(59,130,246,0.04)",border:`1px solid ${isHon?"#3b82f6":"rgba(59,130,246,0.2)"}`,borderRadius:10,padding:"12px 14px",marginTop:4}}>
                     <label style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
                       <input
                         type="checkbox"
@@ -1306,10 +1306,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                             setForm(p => ({ ...p, fiscalCode: defaultFiscalCode("natural", p.cat), causalidad: "" }));
                           }
                         }}
-                        style={{width:16,height:16,accentColor:"#6366f1",cursor:"pointer"}}
+                        style={{width:16,height:16,accentColor:"#3b82f6",cursor:"pointer"}}
                       />
                       <div style={{flex:1}}>
-                        <div style={{fontSize:12,fontWeight:700,color:isHon?"#6366f1":T.txt}}>
+                        <div style={{fontSize:12,fontWeight:700,color:isHon?"#3b82f6":T.txt}}>
                           🧾 ¿Es gasto de tu actividad por honorarios? (Art. 107 ET)
                         </div>
                         <div style={{fontSize:10,color:T.txt3,marginTop:2,lineHeight:1.4}}>
@@ -1319,8 +1319,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     </label>
 
                     {isHon && (
-                      <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(99,102,241,0.15)"}}>
-                        <div style={{fontSize:11,fontWeight:700,color:"#6366f1",marginBottom:6}}>Tipo de gasto deducible</div>
+                      <div style={{marginTop:12,paddingTop:12,borderTop:"1px solid rgba(59,130,246,0.15)"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:6}}>Tipo de gasto deducible</div>
                         <select
                           value={form.fiscalCode}
                           onChange={(e) => setForm(p => ({ ...p, fiscalCode: e.target.value }))}
@@ -1340,7 +1340,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         </select>
 
                         <div style={{marginTop:10}}>
-                          <label style={{fontSize:11,fontWeight:700,color:"#6366f1",display:"block",marginBottom:4}}>
+                          <label style={{fontSize:11,fontWeight:700,color:"#3b82f6",display:"block",marginBottom:4}}>
                             Nota de causalidad (opcional pero recomendado)
                           </label>
                           <input
@@ -1356,12 +1356,12 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         </div>
 
                         {form.fiscalCode === "GAS_HON_VEHICULO" && (
-                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
+                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
                             ⚠️ El motor aplica solo el 50% del gasto del vehículo (uso mixto). Solo se permite UN vehículo deducible por persona.
                           </div>
                         )}
                         {form.fiscalCode === "GAS_HON_REPRESENTACION" && (
-                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(249,115,22,0.06)",border:"1px solid rgba(249,115,22,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
+                          <div style={{marginTop:10,padding:"8px 10px",background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.2)",borderRadius:6,fontSize:10,color:T.orange,lineHeight:1.4}}>
                             ⚠️ Los gastos de representación tienen tope rígido del 10% del honorario bruto (Art. 107-1 ET). El motor lo aplica automáticamente.
                           </div>
                         )}

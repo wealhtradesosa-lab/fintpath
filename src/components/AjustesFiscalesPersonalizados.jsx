@@ -27,7 +27,7 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   border: "rgba(var(--fp-ink),0.06)",
-  green: "#22c55e", red: "#ef4444", orange: "#f97316", blue: "#3b82f6", purple: "#a78bfa",
+  green: "#22c55e", red: "#ef4444", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const fm = (v) => {
@@ -261,7 +261,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
               placeholder="Ej: 50"
               hint="Si la deuda es compartida 50/50 con tu pareja, escribe 50. Si es 100% tuya, deja este toggle apagado."
             />
-            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.20)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+            <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.20)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
               <strong style={{ color: T.txt }}>⚖️ Por qué importa:</strong> el Art. 119 ET permite
               deducir intereses solo en proporción a tu responsabilidad legal. Si declaras 100% sin
               serlo, la DIAN puede cuestionar la deducción.
@@ -314,7 +314,7 @@ export default function AjustesFiscalesPersonalizados({ owner, onUpdate, filterG
           </div>
 
           {juridicasDisponibles.length === 0 ? (
-            <div style={{ padding: "12px 14px", background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+            <div style={{ padding: "12px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
               ⚠️ No tienes owners jurídicos cargados todavía. Primero crea la empresa como owner jurídica desde la pantalla principal de la calculadora; después puedes vincular tu participación acá.
             </div>
           ) : (

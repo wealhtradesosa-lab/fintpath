@@ -25,7 +25,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
-  bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308", cy: "#22d3ee",
+  bl: "#3b82f6", pr: "#3b82f6", or: "#f59e0b", gd: "#f59e0b", cy: "#94a3b8",
 };
 // El signo va ANTES del peso: un flujo negativo salía "$-35.114.710".
 const fm = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("es-CO"); };
@@ -263,7 +263,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           {/* Fill bar */}
           <div style={{
             width: overallProg + "%", height: "100%",
-            background: "linear-gradient(90deg, #3b82f6 0%, #22d3ee 20%, #22c55e 40%, #f97316 70%, #eab308 100%)",
+            background: "linear-gradient(90deg, #3b82f6 0%, #94a3b8 20%, #22c55e 40%, #f59e0b 70%, #f59e0b 100%)",
             borderRadius: 16, transition: "width 0.3s ease",
             display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 14,
             minWidth: overallProg > 3 ? 50 : 0,
@@ -310,7 +310,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           es un botón de VER (dice "Ocultar"/"Mostrar"), pero la plata oculta
           desaparecía del nivel sin que nada lo dijera. */}
       {ocultos && (ocultos.nGastos > 0 || ocultos.nIngresos > 0) && (
-        <div style={{ background: "rgba(234,179,8,0.06)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 10, padding: "9px 14px", marginBottom: 12, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
+        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "9px 14px", marginBottom: 12, fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
           👁️ Esta cuenta <b>no incluye</b> lo que tienes oculto:
           {ocultos.nGastos > 0 && <> {ocultos.nGastos} gasto{ocultos.nGastos > 1 ? "s" : ""} por <b>{fm(ocultos.gastos)}/mes</b></>}
           {ocultos.nGastos > 0 && ocultos.nIngresos > 0 && " y"}
@@ -461,7 +461,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
         </div>
       )}
       {currentLevel >= 5 && (
-        <div style={{ background: "linear-gradient(135deg, rgba(234,179,8,0.1), rgba(234,179,8,0.04))", border: "1px solid rgba(234,179,8,0.25)", borderRadius: 12, padding: 20, textAlign: "center" }}>
+        <div style={{ background: "linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04))", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 12, padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 32 }}>👑</div>
           {/* 24-oct-2026 (Santiago: "arriba muestra Abundancia y abajo
               Independencia: ¿en cuál estoy?"). El cartel decía siempre
@@ -1319,8 +1319,8 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
       <span style="font-weight:500">$${Math.round(expT.brutoTotal||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:10px;padding-left:8px;border-left:2px solid #e5e7eb">
-      <span style="color:#8b5cf6">− Retención <span style="color:var(--fp-txt2);font-size:9px">(recuperable)</span></span>
-      <span style="color:#8b5cf6;font-weight:500">−$${Math.round(expT.retencionMensual||0).toLocaleString("es-CO")}</span>
+      <span style="color:#3b82f6">− Retención <span style="color:var(--fp-txt2);font-size:9px">(recuperable)</span></span>
+      <span style="color:#3b82f6;font-weight:500">−$${Math.round(expT.retencionMensual||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
       <span style="color:#16a34a">= DISPONIBLE</span>
@@ -1344,8 +1344,8 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
       <span>$${Math.round(expT.cuotasDeudas||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:8px">
-      <span style="color:#8b5cf6">D. Impuesto neto</span>
-      <span style="color:#8b5cf6">$${Math.round(expT.impuestoNeto||0).toLocaleString("es-CO")}</span>
+      <span style="color:#3b82f6">D. Impuesto neto</span>
+      <span style="color:#3b82f6">$${Math.round(expT.impuestoNeto||0).toLocaleString("es-CO")}</span>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800;padding-top:8px;border-top:1px solid #d1d5db">
       <span style="color:#dc2626">= EGRESOS TOTALES</span>
@@ -1363,7 +1363,7 @@ ${scenarioDesc ? `<div class="desc">${scenarioDesc.replace(/</g,"&lt;").replace(
   </div>
   <div style="display:flex;gap:22px;text-align:center">
     <div><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">AL AÑO (PROMEDIO)</div><div style="font-size:17px;font-weight:700;color:${simT.cf>=0?'#16a34a':'#dc2626'}">$${Math.round(simT.cf*12).toLocaleString("es-CO")}</div></div>
-    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#eab308'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
+    <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">INDEPENDENCIA</div><div style="font-size:17px;font-weight:700;color:${expT.ind>=100?'#16a34a':'#f59e0b'}">${fmtPctEs((expT.ind||0), 0)}</div></div>
     <div style="border-left:1px solid #d1d5db;padding-left:22px"><div style="font-size:9px;color:var(--fp-txt3);letter-spacing:0.6px">NIVEL</div><div style="font-size:13px;font-weight:700;color:#3b82f6">${niveles[nivel]} (${nivel+1}/5)</div></div>
   </div>
 </div>
@@ -1389,7 +1389,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
 <h2>📊 Resumen</h2>
 <div class="grid2">
   <div>
-    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(expT.ind,100)}%;background:${expT.ind>=100?"#16a34a":"#eab308"}"></div></div>
+    <div class="bar-container"><div class="bar-fill" style="width:${Math.min(expT.ind,100)}%;background:${expT.ind>=100?"#16a34a":"#f59e0b"}"></div></div>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:#888"><span>0%</span><span>Independencia: ${fmtPctEs((expT.ind||0), 0)}</span><span>100%</span></div>
   </div>
   <div class="diag">
@@ -1760,9 +1760,9 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 14, paddingLeft: 12, borderLeft: "2px solid rgba(var(--fp-ink),0.12)" }}>
             <div>
               <div style={{ fontSize: 12, color: T.txt3 }}>− Retención en la fuente</div>
-              <div style={{ fontSize: 10, color: "#a78bfa", marginTop: 1 }}>💳 Crédito recuperable en declaración</div>
+              <div style={{ fontSize: 10, color: "#3b82f6", marginTop: 1 }}>💳 Crédito recuperable en declaración</div>
             </div>
-            <div style={{ fontSize: 14, fontWeight: 500, color: "#a78bfa", fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: "#3b82f6", fontFamily: "'Plus Jakarta Sans',ui-monospace" }}>
               −{fm(simT.retencionMensual || 0)}
             </div>
           </div>
@@ -1797,7 +1797,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             { label: "A. Aportes obligatorios", sub: "Pensión + salud (independiente)", value: simT.aportesObligatorios || 0, color: "#f59e0b" },
             { label: "B. Gastos familiares", sub: "Vivienda, educación, transporte…", value: simT.gastosFamiliares || 0, color: T.txt2 },
             { label: "C. Cuotas de deudas", sub: "Hipotecas, préstamos, TC", value: simT.cuotasDeudas || 0, color: T.txt2 },
-            { label: "D. Impuesto neto", sub: "Promedio al mes; el saldo real sale de un golpe en el mes de tu declaración", value: simT.impuestoNeto || 0, color: "#a78bfa" },
+            { label: "D. Impuesto neto", sub: "Promedio al mes; el saldo real sale de un golpe en el mes de tu declaración", value: simT.impuestoNeto || 0, color: "#3b82f6" },
           ].map((row, i) => (
             <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8, opacity: row.value > 0 ? 1 : 0.5 }}>
               <div>
@@ -1883,8 +1883,8 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                   fontWeight: 700,
                   padding: "2px 8px",
                   borderRadius: 10,
-                  background: simTMes.deltaVsPromedio >= 0 ? "rgba(34,197,94,0.15)" : "rgba(249,115,22,0.15)",
-                  color: simTMes.deltaVsPromedio >= 0 ? T.gn : "#f97316",
+                  background: simTMes.deltaVsPromedio >= 0 ? "rgba(34,197,94,0.15)" : "rgba(245,158,11,0.15)",
+                  color: simTMes.deltaVsPromedio >= 0 ? T.gn : "#f59e0b",
                   letterSpacing: 0.3,
                 }}>
                   {simTMes.deltaVsPromedio >= 0 ? "▲" : "▼"} este mes {simTMes.deltaVsPromedio >= 0 ? "+" : ""}{fm(simTMes.deltaVsPromedio)} vs promedio
@@ -1978,7 +1978,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
             </div>
             <div style={{ textAlign: "center", borderLeft: `1px solid ${T.border}`, paddingLeft: 24 }}>
               <div style={{ fontSize: 10, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>Independencia</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#eab308", marginTop: 2 }}>{pc(simT.ind)}</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: simT.ind >= 100 ? T.gn : "#f59e0b", marginTop: 2 }}>{pc(simT.ind)}</div>
               <div style={{ fontSize: 9, color: T.txt3, marginTop: 2 }}>ingresos vs gastos hoy</div>
             </div>
           </div>
@@ -2061,7 +2061,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                   <div style={{ padding: "12px 16px" }}>
                     {/* Ingresos */}
                     {grp.ing.length > 0 && <>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: "#22d3ee", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: "#94a3b8", margin: "4px 0 6px", textTransform: "uppercase" }}>💰 Ingresos ({grp.ing.length})</div>
                       {grp.ing.map((ing, ii) => {
                         if (ing.sim === false) return null;
                         const safeIdx = ing._idx != null ? ing._idx : ii;
@@ -2145,14 +2145,14 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                         }
 
                         return (
-                          <div key={"ing_"+safeIdx} style={{marginBottom:10, background:"rgba(34,211,238,0.04)", borderRadius:10, padding:"10px 14px"}}>
+                          <div key={"ing_"+safeIdx} style={{marginBottom:10, background:"rgba(148,163,184,0.04)", borderRadius:10, padding:"10px 14px"}}>
                             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
                               <div>
                                 <div style={{fontSize:13,fontWeight:700}}>{ing.nombre||"Ingreso"}</div>
                                 <div style={{fontSize:10,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+fmtTasaEs(simTasa)+" anual":""}</div>
                               </div>
                               <div style={{textAlign:"right"}}>
-                                <div style={{fontSize:16,fontWeight:800,color:"#22d3ee"}}>{fm(simRenta)}<span style={{fontSize:10,fontWeight:400,color:T.txt3}}>/mes</span></div>
+                                <div style={{fontSize:16,fontWeight:800,color:"#94a3b8"}}>{fm(simRenta)}<span style={{fontSize:10,fontWeight:400,color:T.txt3}}>/mes</span></div>
                                 {rentDiff!==0&&<div style={{fontSize:10,color:rentDiff>0?T.gn:T.rd,fontWeight:600}}>{rentDiff>0?"+":""}{fm(rentDiff)}</div>}
                               </div>
                             </div>
@@ -2166,7 +2166,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                 </div>
                                 <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:"6px 10px"}}>
                                   <div style={{fontSize:9,color:T.txt3}}>Renta mensual ({fmtTasaEs(simTasa)} anual)</div>
-                                  <div style={{fontSize:14,fontWeight:700,color:"#22d3ee"}}>{fm(simRenta)}</div>
+                                  <div style={{fontSize:14,fontWeight:700,color:"#94a3b8"}}>{fm(simRenta)}</div>
                                 </div>
                               </div>
                               <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:4}}>
@@ -2174,24 +2174,24 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                 {[["capital","Capital"],["renta","Renta"]].map(([k,l])=>(
                                   <button key={k} onClick={()=>{setVal("ingmodo_"+safeIdx,k);setVal("ingcap_"+safeIdx,baseCap);setVal("ing_"+safeIdx,baseRenta);}}
                                     style={{fontSize:10,fontWeight:700,padding:"2px 10px",borderRadius:999,cursor:"pointer",
-                                      background:modo===k?"rgba(34,211,238,0.18)":"transparent",color:modo===k?"#22d3ee":T.txt3,
-                                      border:"1px solid "+(modo===k?"#22d3ee":T.border)}}>{l}</button>
+                                      background:modo===k?"rgba(148,163,184,0.18)":"transparent",color:modo===k?"#94a3b8":T.txt3,
+                                      border:"1px solid "+(modo===k?"#94a3b8":T.border)}}>{l}</button>
                                 ))}
                               </div>
                               {modo==="capital" ? (
                                 <Slider label="Capital invertido" value={simCap} base={baseCap}
-                                  max={Math.max(Math.round(baseCap*2),1000)} color={"#22d3ee"}
+                                  max={Math.max(Math.round(baseCap*2),1000)} color={"#94a3b8"}
                                   onChange={(v)=>{setVal("ingcap_"+safeIdx,v);setVal("ing_"+safeIdx,rentaDesdeCapital(v));}}
                                   sub={`la renta sigue al capital a ${fmtTasaEs(baseTasa)} anual`} />
                               ) : (
                                 <Slider label="Renta mensual" value={simRenta} base={baseRenta}
-                                  max={Math.max(Math.round(baseRenta*2),1000)} color={"#22d3ee"}
+                                  max={Math.max(Math.round(baseRenta*2),1000)} color={"#94a3b8"}
                                   onChange={(v)=>setVal("ing_"+safeIdx,v)}
                                   sub="el capital invertido se mantiene fijo; la tasa es consecuencia" />
                               )}
                             </>) : (
                               <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
-                                max={Math.max(baseRenta*3,1000)} color={"#22d3ee"}
+                                max={Math.max(baseRenta*3,1000)} color={"#94a3b8"}
                                 onChange={(v)=>setVal("ing_"+safeIdx,v)}
                                 sub={isInvType?"💡 Agrega Capital y Tasa para simular inversión":""} />
                             )}
@@ -2328,10 +2328,10 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                     {/* Impuestos */}
                     {grp.tax && <>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "10px 0 6px" }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#a78bfa", textTransform: "uppercase" }}>🧾 Impuesto de renta de {ow.name} {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : `· falta la declaración ${new Date().getFullYear() - 1}`}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase" }}>🧾 Impuesto de renta de {ow.name} {grp.tax.fuente === "declaracion_real" ? `· declaración ${new Date().getFullYear() - 1}` : `· falta la declaración ${new Date().getFullYear() - 1}`}</div>
                       </div>
                       {/* 29-oct-2026 (Santiago: "uno debe saber basado en qué se está calculando el impuesto") */}
-                      <div style={{ fontSize: 12, color: T.txt2, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, lineHeight: 1.45 }}>
+                      <div style={{ fontSize: 12, color: T.txt2, background: "rgba(59,130,246,0.06)", border: "1px solid rgba(59,130,246,0.15)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, lineHeight: 1.45 }}>
                         {grp.tax.fuente === "declaracion_real"
                           ? <>Basado en tu <b style={{ color: T.txt }}>declaración de renta {new Date().getFullYear() - 1}</b>, que ya presentaste: lo que te retuvieron durante el año más el saldo que pagaste al declarar. Es plata real de este año. La renta que estás ganando ahora se paga el año que viene.</>
                           : grp.tax.fuente === "declaracion"
@@ -2389,7 +2389,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           {/* Modo COMPARATIVO: solo cuando hay ahorro real > \$100K via PV/AFC */}
                           {mostrarComparativo && (
                             <div style={{display:"flex",gap:6,marginBottom:8}}>
-                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(var(--fp-ink),0.06)":"#a78bfa"),background:isOpt?"transparent":"rgba(167,139,250,0.1)",color:isOpt?T.txt3:"#a78bfa",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
+                              <button onClick={toggleActual} style={{flex:1,padding:"8px",borderRadius:6,border:"1px solid "+(isOpt?"rgba(var(--fp-ink),0.06)":"#3b82f6"),background:isOpt?"transparent":"rgba(59,130,246,0.1)",color:isOpt?T.txt3:"#3b82f6",cursor:"pointer",fontSize:10,fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                                 <span>Tu impuesto hoy</span>
                                 <span style={{fontWeight:700,fontSize:11}}>Saldo: {fm(saldoActualAnualToggle)}/año</span>
                                 <span style={{fontSize:9,opacity:0.7,fontWeight:400}}>Bruto: {fm(impBrutoActualMes*12)}/año</span>
@@ -2404,12 +2404,12 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                           {/* Modo UNIFICADO: cuando no hay ahorro real adicional, mostrar SOLO
                               el escenario actual con texto explicativo de que ya esta optimizado. */}
                           {!mostrarComparativo && (
-                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(167,139,250,0.06)",border:"1px solid rgba(167,139,250,0.15)",borderRadius:8,fontSize:10,color:T.txt2,lineHeight:1.5}}>
-                              <div style={{fontSize:11,fontWeight:700,color:"#a78bfa",marginBottom:4}}>📋 Tu impuesto estimado</div>
+                            <div style={{marginBottom:8,padding:"10px 12px",background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.15)",borderRadius:8,fontSize:10,color:T.txt2,lineHeight:1.5}}>
+                              <div style={{fontSize:11,fontWeight:700,color:"#3b82f6",marginBottom:4}}>📋 Tu impuesto estimado</div>
                               <div style={{lineHeight:1.5}}>Ya con todas las deducciones automáticas que el motor pudo aplicar de tus datos {isJuridica ? "(35% utilidad, ICA, retenciones)" : "(Art. 119, 206, 387, 336 ET)"}. Las palancas estándar (PV/AFC) no aportan ahorro adicional en tu caso. Si quieres simular estrategias por fuera del modelo, usa el slider manual abajo.</div>
                             </div>
                           )}
-                          <div style={{background:isOptEffectivo?"rgba(34,197,94,0.06)":"rgba(167,139,250,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOptEffectivo?"rgba(34,197,94,0.15)":"rgba(167,139,250,0.15)"),marginBottom:8}}>
+                          <div style={{background:isOptEffectivo?"rgba(34,197,94,0.06)":"rgba(59,130,246,0.06)",borderRadius:10,padding:"12px 14px",border:"1px solid "+(isOptEffectivo?"rgba(34,197,94,0.15)":"rgba(59,130,246,0.15)"),marginBottom:8}}>
                             {/* 3 líneas transparentes: Total / Retención / Saldo */}
                             <div style={{display:"flex",flexDirection:"column",gap:6}}>
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
@@ -2417,7 +2417,7 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                                   <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>{grp.tax.fuente === "declaracion_real" ? `🧾 Impuesto de la declaración ${new Date().getFullYear() - 1} (retenciones + saldo pagado)` : isJuridica ? "🧾 Impuesto corporativo bruto (35% × utilidad)" : "🧾 Impuesto total (tabla progresiva DIAN)"}</div>
                                   <div style={{fontSize:9,color:T.txt3,marginTop:1}}>{isJuridica ? "Tasa efectiva sobre ingresos: " : "Tasa efectiva sobre ingreso bruto: "}{fmtPctEs(tasaEfectivaEff, 1)}{isJuridica && grp.tax.baseGravable > 0 && grp.tax.ingreso > 0 && <span> · Utilidad/ingreso: {fmtPctEs(((grp.tax.baseGravable / grp.tax.ingreso) * 100), 0)}</span>}</div>
                                 </div>
-                                <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
+                                <div style={{fontSize:18,fontWeight:800,color:isOptEffectivo?T.gn:"#3b82f6"}}>{fm(simImpAnualEffectivo)}<span style={{fontSize:10,color:T.txt3,fontWeight:400}}>/año</span></div>
                               </div>
                               {reteNMes > 0 && <>
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",paddingTop:6,borderTop:"1px dashed rgba(var(--fp-ink),0.06)"}}>
@@ -2455,18 +2455,18 @@ ${deuRows ? `<h2>📋 Cuotas de ${mesPdfL}</h2>
                               setVal(`tax_${nameKey}`, brutoEquivalente);
                             };
                             return (
-                              <div style={{background:(isOptEffectivo?T.gn:"#a78bfa")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#a78bfa")+"20",borderRadius:10,padding:"10px 12px"}}>
-                                <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — saldo a pagar</div>
+                              <div style={{background:(isOptEffectivo?T.gn:"#3b82f6")+"08",border:"1px solid "+(isOptEffectivo?T.gn:"#3b82f6")+"20",borderRadius:10,padding:"10px 12px"}}>
+                                <div style={{fontSize:10,fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6",textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>🎛️ Ajuste manual — saldo a pagar</div>
                                 <div style={{fontSize:10,color:T.txt3,marginBottom:8,lineHeight:1.5}}>
                                   El slider arranca en tu <strong>saldo real</strong>. Muévelo hacia arriba para simular escenarios más conservadores, o si logras <strong>estrategias adicionales</strong> que el sistema no modela (donaciones, depreciación agresiva, créditos fiscales especiales) que cambien el saldo final.
                                 </div>
                                 <Slider label="" value={saldoMesEff} base={saldoMesBase}
-                                  max={saldoMesMax} color={isOptEffectivo ? T.gn : "#a78bfa"}
+                                  max={saldoMesMax} color={isOptEffectivo ? T.gn : "#3b82f6"}
                                   onChange={onChangeSaldo}
                                   sub="" />
                                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginTop:4,fontSize:11}}>
                                   <span style={{color:T.txt3}}>Saldo anual ajustado:</span>
-                                  <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#a78bfa"}}>{fm(saldoMesEff*12)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(saldoMesEff)}/mes</span></span>
+                                  <span style={{fontWeight:700,color:isOptEffectivo?T.gn:"#3b82f6"}}>{fm(saldoMesEff*12)}<span style={{fontSize:9,color:T.txt3,fontWeight:400}}> · {fm(saldoMesEff)}/mes</span></span>
                                 </div>
                                 {/* Diferencia respecto al saldo real (no al bruto) */}
                                 {(() => {

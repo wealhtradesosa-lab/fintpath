@@ -7,8 +7,8 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
-  orange: "#f97316", gold: "#eab308", cyan: "#22d3ee", red: "#ef4444",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
 };
 
@@ -218,8 +218,8 @@ export default function LandingPage({ onGetStarted, onLogin }) {
             {plansData.filter((p) => p.name === "Pro" || p.advisor).map((p) => (
               <div key={p.name} style={{ background: T.bg, border: p.accent ? `2px solid ${T.green}` : p.advisor ? "1px solid rgba(59,130,246,0.35)" : p.comingSoon ? "1px dashed " + T.border : `1px solid ${T.border}`, borderRadius: 20, overflow: "hidden", position: "relative", opacity: p.comingSoon ? 0.95 : 1 }}>
                 
-                {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}
-                {p.comingSoon && <div style={{ background: "linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>PRONTO DISPONIBLE</div>}
+                {p.advisor && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700, letterSpacing: "0.02em" }}>PARA PROFESIONALES</div>}
+                {p.comingSoon && <div style={{ background: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)", color: "#fff", textAlign: "center", padding: "8px 0", fontSize: 13, fontWeight: 700 }}>PRONTO DISPONIBLE</div>}
                 <div style={{ padding: "clamp(18px, 4vw, 24px)" }}>
                   <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
                   <div style={{ fontSize: 12, color: T.txt3, marginBottom: 14, lineHeight: 1.4, minHeight: 32 }}>{p.tag}</div>
@@ -246,7 +246,7 @@ export default function LandingPage({ onGetStarted, onLogin }) {
                     ))}
                   </div>
                   {p.advisor ? (
-                    <a href="/asesores" style={{ display: "block", textAlign: "center", width: "100%", padding: "14px", borderRadius: 10, textDecoration: "none", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)", color: "#fff", boxSizing: "border-box" }}>
+                    <a href="/asesores" style={{ display: "block", textAlign: "center", width: "100%", padding: "14px", borderRadius: 10, textDecoration: "none", fontSize: 14, fontWeight: 700, background: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)", color: "#fff", boxSizing: "border-box" }}>
                       {p.cta}
                     </a>
                   ) : p.comingSoon ? (

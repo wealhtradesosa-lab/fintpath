@@ -11,8 +11,8 @@ export default function ContrarianHomeCard({
   onCta,
   T,
 }) {
-  const accent = "#a78bfa";
-  const bg = "rgba(167,139,250,0.06)";
+  const accent = "#3b82f6";
+  const bg = "rgba(59,130,246,0.06)";
 
   if (muted || !alert) {
     return (

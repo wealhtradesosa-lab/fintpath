@@ -21,10 +21,10 @@ const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)", borderL: "rgba(var(--fp-ink),0.1)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
-  orange: "#f97316", gold: "#eab308", red: "#ef4444",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", red: "#ef4444",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
-  gradAdv: "linear-gradient(135deg, #3b82f6 0%, #a78bfa 100%)",
+  gradAdv: "linear-gradient(135deg, #3b82f6 0%, #3b82f6 100%)",
 };
 
 const fmt = (n) => n == null ? "$0" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
@@ -254,7 +254,7 @@ export default function AdvisorWorkspace({ advisorProfile, clients, onOpenClient
                       </div>
                     </div>
                   ) : (
-                    <div style={{ padding: "12px 14px", background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)", borderRadius: 8, marginBottom: 12 }}>
+                    <div style={{ padding: "12px 14px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 8, marginBottom: 12 }}>
                       <div style={{ fontSize: 12, color: T.gold, fontWeight: 600 }}>⚠ Sin datos cargados todavía</div>
                     </div>
                   )}

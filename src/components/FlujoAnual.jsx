@@ -38,7 +38,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   gn: "#22c55e", gnD: "rgba(34,197,94,0.1)",
   rd: "#ef4444", rdD: "rgba(239,68,68,0.08)",
-  bl: "#3b82f6", pr: "#a78bfa", or: "#f97316", gd: "#eab308",
+  bl: "#3b82f6", pr: "#3b82f6", or: "#f59e0b", gd: "#f59e0b",
 };
 
 const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
@@ -399,8 +399,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
 
     // ─── Formato para PieChart ───────────────────────────────────
     // Paleta de colores diferenciada por categoría (rotan si hay muchas)
-    const paletaIng = ["#22c55e", "#16a34a", "#4ade80", "#86efac", "#bbf7d0", "#059669", "#10b981", "#34d399"];
-    const paletaEgr = ["#ef4444", "#dc2626", "#f87171", "#fca5a5", "#fecaca", "#b91c1c", "#f97316", "#fb923c", "#fdba74"];
+    const paletaIng = ["#22c55e", "#16a34a", "#4ade80", "#86efac", "#bbf7d0", "#059669", "#22c55e", "#34d399"];
+    const paletaEgr = ["#ef4444", "#dc2626", "#f87171", "#fca5a5", "#fecaca", "#b91c1c", "#f59e0b", "#fbbf24", "#fdba74"];
 
     const totalIng = Object.values(ingresosPorCat).reduce((s, v) => s + v, 0);
     const totalEgr = Object.values(egresosPorCat).reduce((s, v) => s + v, 0);
@@ -527,7 +527,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       {año === añoDefault && (highlights.proximoValle || highlights.proximoPico) && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, marginBottom: 20 }}>
           {highlights.proximoValle && highlights.proximoValle.cashFlow < highlights.promedio && (
-            <div style={{ background: "rgba(249,115,22,0.08)", border: `1px solid ${T.or}40`, borderRadius: 12, padding: "12px 16px" }}>
+            <div style={{ background: "rgba(245,158,11,0.08)", border: `1px solid ${T.or}40`, borderRadius: 12, padding: "12px 16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 20 }}>⏰</span>
                 <div style={{ flex: 1 }}>
@@ -830,8 +830,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         pagosAnuales.sort((a, b) => a.urgencia - b.urgencia || a.mp - b.mp || b.monto - a.monto);
         const conf = {
           0: { emoji: "🔴", label: L.vencido, color: "#ef4444", bg: "rgba(239,68,68,0.08)" },
-          1: { emoji: "🔔", label: L.sePagaEsteMes, color: "#f97316", bg: "rgba(249,115,22,0.08)" },
-          2: { emoji: "📅", label: L.proximoMes, color: "#eab308", bg: "rgba(234,179,8,0.06)" },
+          1: { emoji: "🔔", label: L.sePagaEsteMes, color: "#f59e0b", bg: "rgba(245,158,11,0.08)" },
+          2: { emoji: "📅", label: L.proximoMes, color: "#f59e0b", bg: "rgba(245,158,11,0.06)" },
           3: { emoji: "📅", label: "", color: T.txt3, bg: "transparent" },
           4: { emoji: "✅", label: L.pagado, color: T.gn, bg: "transparent" },
         };
@@ -845,7 +845,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                 <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Seguros, impuestos y pagos puntuales — marca el chip Pagado en Egresos al cubrirlos.</div>
               </div>
               <div style={{ fontSize: 11, color: T.txt3, fontFamily: "monospace" }}>
-                Pendiente: <span style={{ color: "#f97316", fontWeight: 700 }}>${Math.round(totalPendiente).toLocaleString("es-CO")}</span> · {pendientes.length} {pendientes.length === 1 ? "pago" : "pagos"}
+                Pendiente: <span style={{ color: "#f59e0b", fontWeight: 700 }}>${Math.round(totalPendiente).toLocaleString("es-CO")}</span> · {pendientes.length} {pendientes.length === 1 ? "pago" : "pagos"}
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>

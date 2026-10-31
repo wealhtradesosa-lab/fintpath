@@ -496,7 +496,7 @@ export const CAMINOS_BASE = [
     canastas: { rentas: { min: 45 }, crecimiento: { min: 10, max: 35 }, colchonMeses: 12, vivienda: "indiferente" },
     excedente: [{ canasta: "rentas", pct: 65 }, { canasta: "crecimiento", pct: 35 }],
     condiciones: ["sin_deuda_cara"] },
-  { id: "crecimiento", nombre: "Rentar y multiplicar", color: "#f97316",
+  { id: "crecimiento", nombre: "Rentar y multiplicar", color: "#f59e0b",
     tesis: "Que la mitad del patrimonio esté multiplicándose, sin quedarte sin con qué vivir: un tercio sigue pagando cada mes y el colchón se mantiene.",
     objetivo: { proteccion: 15, rentas: 35, crecimiento: 50 },
     canastas: { rentas: { min: 20 }, crecimiento: { min: 35, max: 65 }, colchonMeses: 6, vivienda: "indiferente" },

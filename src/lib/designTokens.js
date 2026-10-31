@@ -40,9 +40,9 @@ export const C = {
   // Acentos semánticos (4 colores con propósito claro)
   accent: "#3b82f6",  // azul — primary actions, info, selected state
   ok:     "#22c55e",  // verde — success, savings, completed
-  warn:   "#f97316",  // naranja — warnings, gaps, partial
+  warn:   "#f59e0b",  // naranja — warnings, gaps, partial
   danger: "#ef4444",  // rojo — errors, taxes owed
-  purple: "#a78bfa",  // morado — solo para ganancias ocasionales (cédula especial)
+  purple: "#3b82f6",  // morado — solo para ganancias ocasionales (cédula especial)
 };
 
 // Variantes con opacidad — para fondos sutiles de cada acento
@@ -53,9 +53,9 @@ export const Cα = {
   ok08:     "rgba(34,197,94,0.08)",
   ok15:     "rgba(34,197,94,0.15)",
   ok25:     "rgba(34,197,94,0.25)",
-  warn08:   "rgba(249,115,22,0.08)",
-  warn15:   "rgba(249,115,22,0.15)",
-  warn25:   "rgba(249,115,22,0.25)",
+  warn08:   "rgba(245,158,11,0.08)",
+  warn15:   "rgba(245,158,11,0.15)",
+  warn25:   "rgba(245,158,11,0.25)",
   danger08: "rgba(239,68,68,0.08)",
 };
 

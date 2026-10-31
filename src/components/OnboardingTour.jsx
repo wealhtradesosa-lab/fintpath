@@ -38,7 +38,7 @@ const T = {
   txt3: "var(--fp-txt3)",
   green: "#22c55e",
   blue: "#3b82f6",
-  purple: "#a78bfa",
+  purple: "#3b82f6",
 };
 
 // ─── Iconos SVG inline ──────────────────────────────────────────────────────

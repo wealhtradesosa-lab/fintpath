@@ -40,25 +40,18 @@ export const CHART = {
   // Colores semánticos (alineados con landing)
   green: "#22c55e",
   blue: "#3b82f6",
-  purple: "#a78bfa",
-  cyan: "#22d3ee",
-  pink: "#ec4899",
-  orange: "#f97316",
-  gold: "#eab308",
+  purple: "#3b82f6",
+  cyan: "#94a3b8",
+  pink: "#64748b",
+  orange: "#f59e0b",
+  gold: "#f59e0b",
   red: "#ef4444",
 
   // Paleta para charts categóricos (orden importa: primero los más usados)
   // Optimizada para distinguibilidad y armonía cromática
-  series: [
-    "#22c55e", // verde (positivo, ingresos)
-    "#3b82f6", // azul (neutro, principal)
-    "#a78bfa", // púrpura (premium)
-    "#22d3ee", // cyan (secundario)
-    "#f97316", // orange (warning, gastos)
-    "#ec4899", // pink (highlight)
-    "#eab308", // gold (oro, conservador)
-    "#ef4444", // rojo (negativo, deudas)
-  ],
+  // 31-oct-2026 (Santiago: "demasiados colores… eso hace que se vea pesado").
+  // Verde y azul para lo principal; el resto, grises azulados.
+  series: ["#22c55e", "#3b82f6", "#64748b", "#94a3b8", "#475569", "#b4bfcc", "#334155", "#7a8699"],
 
   // Tipografía (mantener consistencia con PageHeader)
   fontDisplay: "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif",

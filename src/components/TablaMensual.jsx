@@ -136,7 +136,7 @@ export default function TablaMensual({
 
       {/* Explicación de proyección — solo aparece si hay meses futuros a proyectar */}
       {proyectadosCount > 0 && proyeccion > 0 && (
-        <div style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 11, color: "#22d3ee", lineHeight: 1.5 }}>
+        <div style={{ background: "rgba(148,163,184,0.06)", border: "1px solid rgba(148,163,184,0.2)", borderRadius: 8, padding: "8px 10px", marginBottom: 8, fontSize: 11, color: "#94a3b8", lineHeight: 1.5 }}>
           💡 Los meses <strong>futuros vacíos</strong> se proyectan con el promedio de los cargados: <strong>{fm(proyeccion)}</strong>/mes
         </div>
       )}
@@ -182,21 +182,21 @@ export default function TablaMensual({
             <div key={mes.v} style={{
               background: tieneValor
                 ? "rgba(34,197,94,0.05)"
-                : (esProyectado ? "rgba(34,211,238,0.06)" : T.bg3),
+                : (esProyectado ? "rgba(148,163,184,0.06)" : T.bg3),
               border: `1px solid ${
                 tieneValor
                   ? "rgba(34,197,94,0.25)"
-                  : (esProyectado ? "rgba(34,211,238,0.25)" : T.border)
+                  : (esProyectado ? "rgba(148,163,184,0.25)" : T.border)
               }`,
               borderRadius: 8,
               padding: "6px 8px"
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 2 }}>
-                <label style={{ fontSize: 9, fontWeight: 700, color: tieneValor ? "#22c55e" : (esProyectado ? "#22d3ee" : T.txt3), letterSpacing: 0.3, textTransform: "uppercase" }}>
+                <label style={{ fontSize: 9, fontWeight: 700, color: tieneValor ? "#22c55e" : (esProyectado ? "#94a3b8" : T.txt3), letterSpacing: 0.3, textTransform: "uppercase" }}>
                   {mes.l.slice(0, 3)}
                 </label>
                 {tieneValor && <span style={{ fontSize: 9, color: "#22c55e" }}>✓</span>}
-                {esProyectado && <span style={{ fontSize: 9, color: "#22d3ee" }} title="Proyectado con promedio">~</span>}
+                {esProyectado && <span style={{ fontSize: 9, color: "#94a3b8" }} title="Proyectado con promedio">~</span>}
               </div>
               <NumberInput
                 value={valor || ""}
@@ -208,7 +208,7 @@ export default function TablaMensual({
                   background: "transparent",
                   border: "none",
                   outline: "none",
-                  color: tieneValor ? T.txt : (esProyectado ? "#22d3ee" : T.txt3),
+                  color: tieneValor ? T.txt : (esProyectado ? "#94a3b8" : T.txt3),
                   fontSize: 12,
                   fontFamily: "monospace",
                   fontWeight: 600,
@@ -225,7 +225,7 @@ export default function TablaMensual({
         <div>
           <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>
             {vigenciaLimitada ? `Total (${nMesesEnRango} ${nMesesEnRango === 1 ? "mes" : "meses"})` : "Total del año"}
-            {proyectadosCount > 0 && <span style={{ color: "#22d3ee" }}> (c/ proyección)</span>}
+            {proyectadosCount > 0 && <span style={{ color: "#94a3b8" }}> (c/ proyección)</span>}
           </div>
           <div style={{ fontSize: 14, fontWeight: 800, color: totalConProyeccion > 0 ? "#22c55e" : T.txt3, fontFamily: "monospace", marginTop: 1 }}>{fm(totalConProyeccion)}</div>
         </div>
@@ -237,7 +237,7 @@ export default function TablaMensual({
           <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700 }}>Cargados</div>
           <div style={{ fontSize: 14, fontWeight: 700, marginTop: 1 }}>
             <span style={{ color: "#22c55e" }}>{reales}</span>
-            {proyectadosCount > 0 && <span style={{ color: "#22d3ee", marginLeft: 6, fontSize: 12 }}>+ {proyectadosCount} proy.</span>}
+            {proyectadosCount > 0 && <span style={{ color: "#94a3b8", marginLeft: 6, fontSize: 12 }}>+ {proyectadosCount} proy.</span>}
           </div>
         </div>
       </div>

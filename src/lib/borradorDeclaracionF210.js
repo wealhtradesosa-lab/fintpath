@@ -246,13 +246,13 @@ export function resolverRenglones(renglones) {
  * Etiquetas de las secciones F-210 con sus iconos y colores.
  */
 export const SECCIONES_F210 = {
-  patrimonio: { label: "Patrimonio", icon: "🏛️", color: "#a78bfa" },
+  patrimonio: { label: "Patrimonio", icon: "🏛️", color: "#3b82f6" },
   trabajo: { label: "Cédula General — Rentas de Trabajo", icon: "💼", color: "#22c55e" },
   deducciones: { label: "Deducciones y Rentas Exentas", icon: "💎", color: "#3b82f6" },
   capital: { label: "Cédula de Capital", icon: "📈", color: "#f59e0b" },
-  noLaboral: { label: "Cédula No Laboral", icon: "🏠", color: "#06b6d4" },
-  dividendos: { label: "Cédula de Dividendos", icon: "📊", color: "#eab308" },
+  noLaboral: { label: "Cédula No Laboral", icon: "🏠", color: "#94a3b8" },
+  dividendos: { label: "Cédula de Dividendos", icon: "📊", color: "#f59e0b" },
   rentaTotal: { label: "Renta Líquida Total", icon: "📋", color: "#ef4444" },
   impuesto: { label: "Impuesto", icon: "🧾", color: "#ef4444" },
-  liquidacion: { label: "Liquidación Privada", icon: "💳", color: "#06b6d4" },
+  liquidacion: { label: "Liquidación Privada", icon: "💳", color: "#94a3b8" },
 };

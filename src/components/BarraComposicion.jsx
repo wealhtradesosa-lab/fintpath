@@ -22,7 +22,7 @@ export default function BarraComposicion({ datos = [], total = 0, paleta = [], T
 
   const suma = items.reduce((s, i) => s + i.value, 0);
   const base = total > 0 ? total : suma;
-  const COLORES = paleta.length ? paleta : ["#22c55e", "#3b82f6", "#f59e0b", "#a78bfa", "#ec4899", "#06b6d4", "#eab308"];
+  const COLORES = paleta.length ? paleta : ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
 
   return (
     <div style={{ display: "flex", height: altura, borderRadius: 8, overflow: "hidden", gap: 2 }}>

@@ -57,7 +57,7 @@ const T = {
   borderL: "rgba(var(--fp-ink),0.14)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", red: "#ef4444", blue: "#3b82f6",
-  amber: "#f59e0b", purple: "#a78bfa",
+  amber: "#f59e0b", purple: "#3b82f6",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";

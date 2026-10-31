@@ -5,7 +5,7 @@ import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
-const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.06)",txt:"var(--fp-txt)",txt2:"var(--fp-txt2)",txt3:"var(--fp-txt3)",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f97316",orangeDim:"rgba(249,115,22,0.1)",gold:"#eab308"};
+const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.06)",txt:"var(--fp-txt)",txt2:"var(--fp-txt2)",txt3:"var(--fp-txt3)",green:"#22c55e",greenDim:"rgba(34,197,94,0.1)",red:"#ef4444",blue:"#3b82f6",orange:"#f59e0b",orangeDim:"rgba(245,158,11,0.1)",gold:"#f59e0b"};
 const SM=1750905; // SMMLV 2026 Decreto 1469
 const fC=v=>{if(Math.abs(v)>=1e9)return"$"+(v/1e9).toFixed(1)+"B COP";if(Math.abs(v)>=1e6)return"$"+(v/1e6).toFixed(1)+"M COP";if(Math.abs(v)>=1e3)return"$"+(v/1e3).toFixed(0)+"K COP";return"$"+Math.round(v).toLocaleString("es-CO")+" COP"};
 // 26-jul-2026 (Santiago: "a veces no sé si estoy ingresando valores en pesos o
@@ -106,7 +106,7 @@ export default function PensionBTC({trm:pTrm}){
 
     {tab==="resumen"&&<div>
       {/* PASO A PASO - Lo que pasa con tu dinero */}
-      <div style={{background:"linear-gradient(135deg,rgba(249,115,22,0.06),rgba(249,115,22,0.02))",border:"1px solid "+T.orange+"20",borderRadius:16,padding:24,marginBottom:20}}>
+      <div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.06),rgba(245,158,11,0.02))",border:"1px solid "+T.orange+"20",borderRadius:16,padding:24,marginBottom:20}}>
         <div style={{fontSize:16,fontWeight:800,color:T.orange,marginBottom:12}}>¿Cómo funciona esta estrategia?</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16}}>
           <div style={{textAlign:"center"}}>
@@ -377,7 +377,7 @@ export default function PensionBTC({trm:pTrm}){
           if (capImplicita < RIQUEZA_MUNDIAL * 0.25) return null;
           const veces = capImplicita / RIQUEZA_MUNDIAL;
           return (
-            <div style={{background:"rgba(249,115,22,0.10)",border:"1px solid rgba(249,115,22,0.35)",
+            <div style={{background:"rgba(245,158,11,0.10)",border:"1px solid rgba(245,158,11,0.35)",
                  borderRadius:12,padding:14,marginTop:10,fontSize:13,lineHeight:1.6,color:T.txt2}}>
               <strong style={{color:T.orange}}>⚠️ Este escenario no se sostiene.</strong>{" "}
               Con {pc(cagr)} anual durante {anios} años, un Bitcoin valdría{" "}
@@ -500,7 +500,7 @@ export default function PensionBTC({trm:pTrm}){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
         <Cd style={{padding:24}}><div style={{fontSize:15,fontWeight:700,marginBottom:16}}>📋 Supuestos del Modelo</div><Rw l="SMMLV 2026:" v={"$"+SM.toLocaleString("es-CO")+" COP"}/><Rw l="Aporte pensión:" v="16% del salario"/><Rw l="Tasa reemplazo:" v={tasaR+"%"}/><Rw l="Retiro anual del portafolio:" v={regla+"% → "+fC(btc.rMC)+"/mes"}/><Rw l="CAGR BTC:" v={pc(cagr)} color={T.orange}/></Cd>
-        <Cd glow={T.orange} style={{padding:28,display:"flex",flexDirection:"column",justifyContent:"center",textAlign:"center",background:"linear-gradient(135deg,rgba(249,115,22,0.05),rgba(249,115,22,0.02))"}}>
+        <Cd glow={T.orange} style={{padding:28,display:"flex",flexDirection:"column",justifyContent:"center",textAlign:"center",background:"linear-gradient(135deg,rgba(245,158,11,0.05),rgba(245,158,11,0.02))"}}>
           <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>🎯 Conclusión</div>
           <div style={{fontSize:14,color:T.txt2}}>Invirtiendo <span style={{color:T.green,fontWeight:700}}>{fC(btc.ti)}</span> en BTC</div>
           <div style={{fontSize:36,fontWeight:800,color:T.orange,margin:"12px 0"}}>{mult.toFixed(1)}× ratio ilustrativo</div>

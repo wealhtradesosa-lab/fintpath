@@ -63,7 +63,7 @@ const SANCION_MINIMA = 524000;
 
 const T = { bg2:"var(--fp-card)", bg3:"var(--fp-raised)", border:"rgba(var(--fp-ink),0.08)",
   txt:"var(--fp-txt)", txt2:"var(--fp-txt2)", txt3:"var(--fp-txt3)", green:"#22c55e",
-  orange:"#f97316", red:"#ef4444", blue:"#3b82f6" };
+  orange:"#f59e0b", red:"#ef4444", blue:"#3b82f6" };
 
 export default function TemporadaRenta({ onEmpezar }) {
   const [digitos, setDigitos] = useState("");

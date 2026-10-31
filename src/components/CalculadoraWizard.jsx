@@ -730,7 +730,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
   };
 
   return (
-    <div style={{ background: "rgba(167,139,250,0.04)", border: "1px solid rgba(167,139,250,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+    <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
         <span style={{ fontSize: 20 }}>⚖️</span>
         <div>
@@ -757,7 +757,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
               style={{
                 textAlign: "left",
                 padding: "12px 14px",
-                background: sel ? "rgba(167,139,250,0.08)" : T.bg3,
+                background: sel ? "rgba(59,130,246,0.08)" : T.bg3,
                 border: "2px solid " + (sel ? T.purple : (noElegible ? "rgba(239,68,68,0.3)" : T.border)),
                 borderRadius: 8,
                 cursor: "pointer",
@@ -828,7 +828,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
             })}
           </div>
           {!grupoActual && (
-            <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 6, fontSize: 10, color: T.orange, lineHeight: 1.4 }}>
+            <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 6, fontSize: 10, color: T.orange, lineHeight: 1.4 }}>
               ⚠️ Sin grupo seleccionado, el motor estimará 5% como fallback. Elige el grupo correcto para ver tu tarifa real.
             </div>
           )}
@@ -1026,10 +1026,10 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
   const tono = alerta === "roja"
     ? { bg: "rgba(239,68,68,0.06)", border: "rgba(239,68,68,0.25)", text: T.red, icon: "🚨", label: "Riesgo alto de revisión DIAN" }
     : alerta === "amarilla"
-    ? { bg: "rgba(249,115,22,0.06)", border: "rgba(249,115,22,0.25)", text: T.orange, icon: "⚠️", label: "Zona de atención" }
+    ? { bg: "rgba(245,158,11,0.06)", border: "rgba(245,158,11,0.25)", text: T.orange, icon: "⚠️", label: "Zona de atención" }
     : gastosHon > 0
     ? { bg: "rgba(34,197,94,0.06)", border: "rgba(34,197,94,0.20)", text: T.green, icon: "✓", label: "Estructura saludable" }
-    : { bg: "rgba(99,102,241,0.06)", border: "rgba(99,102,241,0.20)", text: T.blue, icon: "💡", label: "Sin gastos cargados" };
+    : { bg: "rgba(59,130,246,0.06)", border: "rgba(59,130,246,0.20)", text: T.blue, icon: "💡", label: "Sin gastos cargados" };
 
   // Categorías con monto > 0 para mostrar desglose
   const itemsDesglose = [
@@ -1047,7 +1047,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
   ].filter((i) => Number(i.monto || 0) > 0);
 
   return (
-    <div style={{ background: "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
+    <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.18)", borderRadius: 12, padding: 18, marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14 }}>
         <span style={{ fontSize: 20 }}>📋</span>
         <div style={{ flex: 1 }}>
@@ -1140,7 +1140,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
 
       {/* Commit B1: warning si hay >1 vehículo registrado (solo uno es deducible — Art. 107 ET) */}
       {Number(desglose.vehiculosTotalRegistrados || 0) > 1 && (
-        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(249,115,22,0.08)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 8, fontSize: 11, color: T.orange, lineHeight: 1.5 }}>
+        <div style={{ marginTop: 8, padding: "10px 12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, fontSize: 11, color: T.orange, lineHeight: 1.5 }}>
           🚗 <strong>{desglose.vehiculosTotalRegistrados} vehículos registrados</strong> como gasto de actividad. <strong>Art. 107 ET</strong> exige causalidad: solo <strong>uno</strong> puede ser deducible (el de mayor monto). Los otros {desglose.vehiculosIgnorados} ({fmtM(desglose.vehiculoIgnoradoMonto || 0)}/año) <strong>NO</strong> se están deduciendo. Si efectivamente usas más de un vehículo para tu actividad profesional, marca los otros con otra categoría.
         </div>
       )}
@@ -1337,7 +1337,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
           }
           // NO aplicada (en $0): tarjeta de oportunidad con CTA fuerte
           return (
-            <div key={it.key} style={{ background: "rgba(249,115,22,0.05)", border: "1px solid rgba(249,115,22,0.3)", borderRadius: 8, padding: 12 }}>
+            <div key={it.key} style={{ background: "rgba(245,158,11,0.05)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: 12 }}>
               <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
                 <span style={{ fontSize: 18, flexShrink: 0, marginTop: 2 }}>{it.icono}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -1601,7 +1601,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
       )}
 
       {impGO > 0 && (
-        <div style={{ padding: "10px 14px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 10, marginBottom: 14 }}>
+        <div style={{ padding: "10px 14px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", borderRadius: 10, marginBottom: 14 }}>
           <div style={{ fontSize: 11, color: T.purple, fontWeight: 700, marginBottom: 4 }}>💸 Ganancias ocasionales (cédula separada)</div>
           <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
             Dentro del impuesto de arriba, hay <strong style={{ color: T.purple }}>{fm(impGO)}</strong> de ganancias ocasionales (herencia, venta de inmueble, lotería). Tarifa 15% / 20%.
@@ -1629,7 +1629,7 @@ function Paso5Resultado({ user, selectedOwner, owners, onBack, onNavigate, onRei
         </div>
       )}
       {optimizacionesActivas.length === 0 && (
-        <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ marginBottom: 14, padding: "10px 14px", background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, fontSize: 11, color: T.txt2, display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ fontSize: 16 }}>💡</div>
           <div style={{ flex: 1, lineHeight: 1.5 }}>
             No aplicaste ningún ajuste. Puede haber deducciones legales que apliquen a tu caso — vuelve al Paso 3 o 4 y revisa las preguntas.
@@ -1944,7 +1944,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
             </button>
             <button
               onClick={accionMarcarNoAplica}
-              style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.4)", color: "#6366f1", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
+              style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", padding: "8px 14px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer" }}
             >
               No aplica (honorarios / otro)
             </button>
@@ -2087,8 +2087,8 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                 {(() => {
                   const hint = getHintContextual(det, owner);
                   if (!hint) return null;
-                  const tonoBg = hint.tono === "ok" ? "rgba(34,197,94,0.06)" : "rgba(167,139,250,0.06)";
-                  const tonoBorder = hint.tono === "ok" ? "rgba(34,197,94,0.18)" : "rgba(167,139,250,0.18)";
+                  const tonoBg = hint.tono === "ok" ? "rgba(34,197,94,0.06)" : "rgba(59,130,246,0.06)";
+                  const tonoBorder = hint.tono === "ok" ? "rgba(34,197,94,0.18)" : "rgba(59,130,246,0.18)";
                   const tonoText = hint.tono === "ok" ? T.green : T.purple;
                   return (
                     <div style={{ background: tonoBg, border: `1px solid ${tonoBorder}`, borderRadius: 8, padding: "8px 10px", display: "flex", gap: 8, alignItems: "flex-start", fontSize: 11, lineHeight: 1.4 }}>
@@ -2129,7 +2129,7 @@ function VistaResumenMultiOwner({ user, owners, onSelectOwner, onNuevoCalculo, o
                       <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5 }}>
                         Si <strong>{owner.name}</strong> cumple los criterios de actividad del grupo <strong>"{mejor.label}"</strong>, podría acogerse al <strong>Régimen Simple (Arts. 903-916 ET)</strong> y pagar <strong>{fm(mejor.impuestoSimple)}</strong> en lugar de <strong>{fm(mejor.impuestoOrdinario)}</strong> al año <span style={{ color: T.green, fontWeight: 700 }}>(ahorro ~{fmtPctEs(mejor.ahorroPct, 0)})</span>.
                       </div>
-                      <div style={{ background: "rgba(0,0,0,0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
+                      <div style={{ background: "rgba(var(--fp-hundir),0.20)", borderRadius: 6, padding: "6px 10px", fontSize: 9, color: T.txt3, lineHeight: 1.5 }}>
                         ⚠️ <strong>Esto es una sugerencia estratégica, no automática.</strong> Cambiar de régimen requiere validar el grupo CIIU exacto con tu contador, presentar formulario ante DIAN antes del 28 de febrero, y NO se puede deshacer hasta el siguiente año fiscal. Hay también exclusiones (Art. 906 ET) — no todas las actividades califican aunque cumplan el tope de ingresos.
                       </div>
                     </div>

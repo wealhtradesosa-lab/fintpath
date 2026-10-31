@@ -27,9 +27,9 @@ import { obtenerTermino } from "../lib/glosario.js";
 
 const STYLES = {
   trigger: {
-    color: "#a78bfa",
+    color: "#3b82f6",
     cursor: "help",
-    borderBottom: "1px dotted #a78bfa",
+    borderBottom: "1px dotted #3b82f6",
     paddingBottom: 1,
     background: "transparent",
     border: "none",

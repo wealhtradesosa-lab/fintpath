@@ -20,8 +20,8 @@ const T = {
   border: "rgba(var(--fp-ink),0.06)",
   borderStrong: "rgba(var(--fp-ink),0.12)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa", cyan: "#22d3ee",
-  pink: "#ec4899",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6", cyan: "#94a3b8",
+  pink: "#64748b",
 };
 
 const FONT_DISPLAY = "'Plus Jakarta Sans', 'Inter', system-ui, sans-serif";
@@ -242,7 +242,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
               display: "flex",
               alignItems: "center",
               gap: 12,
-              background: "rgba(0,0,0,0.2)",
+              background: "rgba(var(--fp-hundir),0.2)",
             }}>
               {/* Avatar con gradient */}
               <div style={{
@@ -350,7 +350,7 @@ export default function LandingAIAdvisorSection({ onGetStarted = () => {} }) {
             <div style={{
               padding: "12px 16px",
               borderTop: `1px solid ${T.border}`,
-              background: "rgba(0,0,0,0.2)",
+              background: "rgba(var(--fp-hundir),0.2)",
               display: "flex",
               alignItems: "center",
               gap: 10,

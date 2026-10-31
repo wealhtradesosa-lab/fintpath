@@ -92,8 +92,8 @@ export default function AdminMetrics({ email, fmt, T }) {
         <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, marginBottom: 12 }}>Dónde se cae la gente</div>
         {[
           { l: "Se registran", v: d.total, base: d.total, c: "#3b82f6" },
-          { l: "Cargan sus datos", v: d.activados, base: d.total, c: "#eab308", nota: "activación" },
-          { l: "En trial (gratis 14 días)", v: d.trials ?? 0, base: d.total, c: "#a78bfa", nota: "no es plata" },
+          { l: "Cargan sus datos", v: d.activados, base: d.total, c: "#f59e0b", nota: "activación" },
+          { l: "En trial (gratis 14 días)", v: d.trials ?? 0, base: d.total, c: "#3b82f6", nota: "no es plata" },
           { l: "Con plan pago asignado", v: d.diag?.conPlanPago || 0, base: d.total, c: "#22c55e", nota: "no confirma ingreso" },
         ].map((p, i) => {
           const w = p.base > 0 ? (p.v / p.base) * 100 : 0;

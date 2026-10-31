@@ -18,7 +18,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
-  blue: "#3b82f6", purple: "#a78bfa",
+  blue: "#3b82f6", purple: "#3b82f6",
 };
 
 const MODULES = {

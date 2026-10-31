@@ -8,7 +8,7 @@ import { ChartTooltip } from "../lib/chartTheme.jsx";
  * libre y lo que pagas en intereses; con y sin abono extra. Antes era una
  * cifra ("Cero en 138 meses") y un campo "Override".
  */
-const V = { txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", green: "#22c55e", red: "#ef4444", orange: "#f97316" };
+const V = { txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", green: "#22c55e", red: "#ef4444", orange: "#f59e0b" };
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
 export const fechaEnMeses = (n, hoy = new Date()) => {

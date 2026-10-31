@@ -30,7 +30,7 @@ const C = {
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
-  orange: "#fb923c",
+  orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
   red: "#f87171",
   redBg: "rgba(248,113,113,0.10)",

@@ -34,7 +34,7 @@ const T = {
   blue: "#3b82f6", blueB: "rgba(59,130,246,0.1)",
   red: "#ef4444", redB: "rgba(239,68,68,0.1)",
   amber: "#f59e0b", amberB: "rgba(245,158,11,0.1)",
-  purple: "#a78bfa",
+  purple: "#3b82f6",
 };
 
 const PLAN_LABELS = {
@@ -689,8 +689,8 @@ function InviteModal({ supabase, accountId, accountName, inviterName, onClose, o
           )}
           {emailStatus === "fallback" && (
             <div style={{
-              background: "rgba(234,179,8,0.08)", border: `1px solid rgba(234,179,8,0.25)`,
-              borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#eab308", marginBottom: 12,
+              background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.25)`,
+              borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#f59e0b", marginBottom: 12,
             }}>
               ℹ️ Email automático no disponible · copia el link y envíalo manualmente
             </div>

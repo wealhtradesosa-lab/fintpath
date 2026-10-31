@@ -26,7 +26,7 @@ const T = {
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.08)",
-  blue: "#3b82f6", orange: "#f97316", purple: "#a78bfa",
+  blue: "#3b82f6", orange: "#f59e0b", purple: "#3b82f6",
 };
 const _fm = (n) => "$" + Math.round(n||0).toLocaleString("es-CO");
 const pc = (n) => fmtPctEs((n || 0), 1);
@@ -269,7 +269,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {sinOwner.slice(0, 6).map((d, idx) => (
-                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(0,0,0,0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
+                <div key={"fw_" + idx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", background: "rgba(var(--fp-hundir),0.2)", border: "1px solid " + T.border, borderRadius: 8 }}>
                   <span style={{ width: 6, height: 6, borderRadius: 3, background: "#ef4444", flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -351,7 +351,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         // invisible para quien no los clasificó. Ahora, en ese caso, se
         // explica QUÉ FALTA en vez de no mostrar nada.
         if (datos.length < 2) return (
-          <div style={{ marginBottom: 16, background: "rgba(249,115,22,0.07)", border: "1px dashed rgba(249,115,22,0.35)",
+          <div style={{ marginBottom: 16, background: "rgba(245,158,11,0.07)", border: "1px dashed rgba(245,158,11,0.35)",
                         borderRadius: 10, padding: "12px 14px", fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
             🏷️ <strong>Asigna el tipo a cada deuda</strong> para ver cómo se reparte tu pasivo.
             <span style={{ color: T.txt3 }}> Edita cada una y elige Hipoteca, Libre inversión, Vehículo, Leasing,
@@ -359,7 +359,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           </div>
         );
         const tot = datos.reduce((s, d) => s + d.value, 0);
-        const PAL = ["#ef4444","#f97316","#a78bfa","#3b82f6","#ec4899","#06b6d4"];
+        const PAL = ["#ef4444","#f59e0b","#64748b","#94a3b8","#475569","#b4bfcc"];
         return (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, color: T.txt3, marginBottom: 6, fontWeight: 600 }}>DÓNDE ESTÁ TU DEUDA</div>
@@ -607,9 +607,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               {/* Photo scan option */}
-              <div style={{background:"rgba(139,92,246,0.06)",border:"1px dashed rgba(139,92,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
-                {scanning ? <div style={{fontSize:12,color:"#a78bfa"}}>🔄 Leyendo extracto...</div> : <>
-                  <div style={{fontSize:12,fontWeight:600,color:"#a78bfa"}}>📸 ¿Tienes el extracto o estado de cuenta?</div>
+              <div style={{background:"rgba(59,130,246,0.06)",border:"1px dashed rgba(59,130,246,0.3)",borderRadius:10,padding:"12px 14px",marginBottom:12,textAlign:"center",cursor:"pointer"}} onClick={()=>{if(!scanning)scanImage()}}>
+                {scanning ? <div style={{fontSize:12,color:"#3b82f6"}}>🔄 Leyendo extracto...</div> : <>
+                  <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>📸 ¿Tienes el extracto o estado de cuenta?</div>
                   <div style={{fontSize:10,color:"var(--fp-txt3)",marginTop:2}}>Sube una foto o PDF y los campos se llenan automáticamente</div>
                 </>}
               </div>
@@ -945,8 +945,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       { v: "DEU_NAT_CONSUMO", l: "Consumo personal — tarjeta, libre inversión (intereses NO deducibles)" },
                     ];
                 return (
-                  <div style={{ gridColumn: "1/-1", background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#f97316", marginBottom: 8 }}>🧾 ¿Para qué usaste esta deuda? (define deducibilidad de los intereses)</div>
+                  <div style={{ gridColumn: "1/-1", background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>🧾 ¿Para qué usaste esta deuda? (define deducibilidad de los intereses)</div>
                     <select value={form.fiscalCode} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}>
                       {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
@@ -997,7 +997,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                                   → Reclasificar como Inversión
                                 </button>
                                 <button type="button" onClick={() => { setForm(p => ({ ...p, fiscalCode: "DEU_NAT_CONSUMO" })); setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true }); }}
-                                  style={{ background: "rgba(99,102,241,0.15)", border: "1px solid rgba(99,102,241,0.4)", color: "#6366f1", padding: "6px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
+                                  style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", padding: "6px 12px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer" }}>
                                   → Reclasificar como Consumo
                                 </button>
                               </div>

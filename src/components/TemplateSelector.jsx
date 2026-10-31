@@ -76,7 +76,7 @@ export const TEMPLATES = [
     preset: { frecuencia: "anual", desdeMes: 1, hastaMes: 12, mesPago: 6 },
     camposVisibles: ["monto", "mesPago"],
     modoIngresoDefault: "porPago",
-    color: "#a78bfa",
+    color: "#3b82f6",
   },
   {
     id: "variable-mensual",
@@ -100,7 +100,7 @@ export const TEMPLATES = [
     // Ej: contrato temporal variable jul-dic con montos diferentes cada mes.
     camposVisibles: ["tablaMensual", "vigencia"],
     modoIngresoDefault: "porPago",
-    color: "#22d3ee",
+    color: "#94a3b8",
   },
   {
     id: "avanzado",

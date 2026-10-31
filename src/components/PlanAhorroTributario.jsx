@@ -47,7 +47,7 @@ const C = {
   blueBg: "rgba(96,165,250,0.10)",
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
-  orange: "#fb923c",
+  orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
   red: "#f87171",
   redBg: "rgba(248,113,113,0.10)",

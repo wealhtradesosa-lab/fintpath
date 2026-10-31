@@ -26,8 +26,8 @@ const C = {
   border: "var(--fp-raised)",
   green: "#4ade80", greenBg: "rgba(74,222,128,0.1)",
   blue: "#60a5fa", blueBg: "rgba(96,165,250,0.1)",
-  orange: "#fb923c", orangeBg: "rgba(251,146,60,0.1)",
-  purple: "#a78bfa",
+  orange: "#fbbf24", orangeBg: "rgba(251,146,60,0.1)",
+  purple: "#3b82f6",
   red: "#f87171",
 };
 

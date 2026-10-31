@@ -18,8 +18,8 @@ const T = {
   tx:"var(--fp-txt)",tx2:"var(--fp-txt2)",tx3:"var(--fp-txt3)",
   gn:"#22c55e",gnB:"rgba(34,197,94,0.08)",
   rd:"#ef4444",rdB:"rgba(239,68,68,0.06)",
-  bl:"#3b82f6",pr:"#a78bfa",or:"#f59e0b",cy:"#06b6d4",
-  ch:["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"],
+  bl:"#3b82f6",pr:"#3b82f6",or:"#f59e0b",cy:"#94a3b8",
+  ch:["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
 const fm = (n) => {
   if(n==null||isNaN(n)) return "$0";
@@ -63,10 +63,10 @@ function getNWPct(nw) {
 // ── FIRE levels ───────────────────────────────────────────────────────────
 const LEVELS = [
   {name:"Security",     factor:0.65,c:"#3b82f6"},
-  {name:"Vitality",     factor:0.825,c:"#22d3ee"},
+  {name:"Vitality",     factor:0.825,c:"#94a3b8"},
   {name:"Independence", factor:1.0, c:"#22c55e"},
-  {name:"Freedom",      factor:1.5, c:"#f97316"},
-  {name:"Absolute",     factor:2.5, c:"#eab308"},
+  {name:"Freedom",      factor:1.5, c:"#f59e0b"},
+  {name:"Absolute",     factor:2.5, c:"#f59e0b"},
 ];
 
 export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
@@ -291,7 +291,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
         </div>
         <div style={{height:12,background:T.bg3,borderRadius:6,overflow:"hidden",marginBottom:8}}>
           <div style={{height:"100%",width:Math.min(ratio/2.5*100,100)+"%",
-            background:"linear-gradient(90deg,#3b82f6,#22d3ee,#22c55e,#f97316,#eab308)",
+            background:"linear-gradient(90deg,#3b82f6,#94a3b8,#22c55e,#f59e0b,#f59e0b)",
             borderRadius:6,transition:"width 0.4s"}}/>
         </div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -419,7 +419,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:16}}>🔥 FIRE Progress</div>
           <div style={{position:"relative",height:14,background:T.bg3,borderRadius:6,overflow:"hidden",marginBottom:8}}>
             <div style={{height:"100%",width:Math.min(firePct,100)+"%",
-              background:firePct>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#eab308)",
+              background:firePct>=100?"linear-gradient(90deg,#22c55e,#3b82f6)":"linear-gradient(90deg,#ef4444,#f59e0b)",
               borderRadius:6,transition:"width 0.5s"}}/>
           </div>
           <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>

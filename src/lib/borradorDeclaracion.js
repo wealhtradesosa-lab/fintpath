@@ -335,10 +335,10 @@ export function aplicarOverride(renglones, numero, valor) {
  * Etiquetas legibles de las secciones para agrupar la UI.
  */
 export const SECCIONES_F110 = {
-  patrimonio: { label: "Patrimonio", icon: "🏛️", color: "#a78bfa" },
+  patrimonio: { label: "Patrimonio", icon: "🏛️", color: "#3b82f6" },
   ingresos: { label: "Ingresos", icon: "💰", color: "#22c55e" },
   costos: { label: "Costos y gastos deducibles", icon: "📋", color: "#f59e0b" },
   renta: { label: "Renta", icon: "📊", color: "#3b82f6" },
   impuesto: { label: "Impuesto", icon: "🧾", color: "#ef4444" },
-  liquidacion: { label: "Liquidación privada", icon: "💳", color: "#06b6d4" },
+  liquidacion: { label: "Liquidación privada", icon: "💳", color: "#94a3b8" },
 };

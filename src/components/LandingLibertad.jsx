@@ -269,8 +269,8 @@ function Resultado({ r, onGuardar, btn, onAfinar = () => {} }) {
           esencial, está en Seguridad y no lo sabe. Se ofrece justo acá, que es
           donde importa, en vez de cargar el formulario de entrada. */}
       {r.nivel === 2 && !r.esencialDeclarado && (
-        <button type="button" onClick={onAfinar} style={{ width: "100%", textAlign: "left", marginTop: 14, background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.28)", borderRadius: 12, padding: "11px 13px", cursor: "pointer", fontFamily: BODY, color: T.txt2, fontSize: 12.5, lineHeight: 1.5 }}>
-          ⚡ <b style={{ color: "#22d3ee" }}>¿Ya estás en Seguridad y no lo sabes?</b> Ese nivel se gana cuando tus activos pagan lo que no puedes apagar. Dinos cuánto de tus gastos es eso y lo medimos. →
+        <button type="button" onClick={onAfinar} style={{ width: "100%", textAlign: "left", marginTop: 14, background: "rgba(148,163,184,0.08)", border: "1px solid rgba(148,163,184,0.28)", borderRadius: 12, padding: "11px 13px", cursor: "pointer", fontFamily: BODY, color: T.txt2, fontSize: 12.5, lineHeight: 1.5 }}>
+          ⚡ <b style={{ color: "#94a3b8" }}>¿Ya estás en Seguridad y no lo sabes?</b> Ese nivel se gana cuando tus activos pagan lo que no puedes apagar. Dinos cuánto de tus gastos es eso y lo medimos. →
         </button>
       )}
 

@@ -347,17 +347,17 @@ export const NIVELES = [
   { id: 2, clave: "estabilidad", nombre: "Estabilidad", umbral: null, factor: 0, icon: "🛡️", color: "#3b82f6",
     desc: "Te alcanza, pero trabajando",
     detail: "Cubres tus gastos y cuotas con lo que ganas. Si dejaras de trabajar, tu ingreso pasivo todavía no paga ni lo esencial." },
-  { id: 3, clave: "seguridad", nombre: "Seguridad", umbral: "esencial", factor: 1, icon: "⚡", color: "#22d3ee",
+  { id: 3, clave: "seguridad", nombre: "Seguridad", umbral: "esencial", factor: 1, icon: "⚡", color: "#94a3b8",
     desc: "Tus activos pagan lo que no puedes apagar",
     detail: "Tu ingreso pasivo cubre lo esencial: techo, comida, servicios, salud, educación, transporte, seguros, aportes y las cuotas de tus deudas. Si tu ingreso por trabajo desapareciera, recortarías lo demás, pero no pierdes el piso." },
-  { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "🚀", color: "#f97316",
+  { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "🚀", color: "#f59e0b",
     desc: "Tus activos pagan todo tu nivel de vida",
     detail: "Tu ingreso pasivo neto cubre el 100% de tus gastos y cuotas, sin recortar nada. Trabajar pasa a ser una elección." },
   // 24-oct-2026 (Santiago, con 136 % de cobertura: "¿136 % sí es para estar
   // en abundancia? Abundancia creería yo es cuando se alcanzan porcentajes
   // más altos"). Antes bastaba 130 %. Abundancia es pagar la vida DOS veces
   // con los activos: 200 %.
-  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 2, icon: "👑", color: "#eab308",
+  { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 2, icon: "👑", color: "#f59e0b",
     desc: "Lo pagan dos veces",
     detail: "Tu ingreso pasivo es el doble de tus gastos y cuotas. Ese margen absorbe la inflación, un año malo de rentas o un gasto grande sin tocar el capital, y deja plata para reinvertir cada mes." },
 ];

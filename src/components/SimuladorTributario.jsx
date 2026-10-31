@@ -12,8 +12,8 @@ import { track } from "../lib/analytics.js";
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
   border: "rgba(var(--fp-ink),0.06)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", red: "#ef4444", blue: "#3b82f6", purple: "#a78bfa",
-  orange: "#f97316", gold: "#eab308", cyan: "#22d3ee",
+  green: "#22c55e", red: "#ef4444", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const fm = (v) => {
   if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e9), 2)+"B";
@@ -475,8 +475,8 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               }
 
               return (
-                <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 8, fontSize: 11, lineHeight: 1.55 }}>
-                  <div style={{ color: "#a78bfa", fontWeight: 700, marginBottom: 4 }}>💡 ¿Por qué no hay diferencia?</div>
+                <div style={{ marginTop: 10, padding: "10px 12px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 8, fontSize: 11, lineHeight: 1.55 }}>
+                  <div style={{ color: "#3b82f6", fontWeight: 700, marginBottom: 4 }}>💡 ¿Por qué no hay diferencia?</div>
                   <div style={{ color: T.txt2, fontWeight: 600, marginBottom: 4 }}>{titulo}</div>
                   <div style={{ color: T.txt3, fontSize: 10 }}>{texto}</div>
                 </div>
@@ -496,7 +496,7 @@ function OwnerPlan({ owner, ingresos, gastos, inv, deu, trm, isJ, mb, componente
               <div style={{ padding: "4px 0", color: T.green }}>✅ GMF 4×1000 (50% deducible)</div>
               {calc.descuentoICA > 0 && <div style={{ padding: "4px 0", color: T.blue }}>✅ Descuento 50% ICA aplicado</div>}
               <div style={{ padding: "4px 0", color: T.blue }}>✅ Retención en la fuente descontada</div>
-              <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
+              <div style={{ marginTop: 10, padding: "8px 10px", background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 6, fontSize: 10, color: T.txt2, lineHeight: 1.5 }}>
                 ℹ️ <strong>El motor ahora aplica 3 palancas avanzadas si las cargas:</strong> provisión de cartera (Art. 145), CT&I deducción 175% (Art. 158-1), y discapacidad 200% (Ley 361/97). Otras palancas (bonificaciones, depreciación acelerada, apalancamiento, zona franca, donaciones específicas) requieren análisis caso-por-caso con tu contador. Mira las recomendaciones abajo para ver cuáles aplican a tu empresa.
               </div>
             </> : <>
@@ -653,7 +653,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
       </div>
 
       {sinAsignar > 0 && (
-        <div style={{ background: "rgba(249,115,22,0.06)", border: "1px solid rgba(249,115,22,0.15)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 12, color: T.orange, lineHeight: 1.6 }}>
+        <div style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 12, color: T.orange, lineHeight: 1.6 }}>
           ⚠️ <strong>{sinAsignar} ingreso(s)</strong> sin propietario asignado — no se incluyen en el cálculo. Asigna propietario en <strong>💰 Ingresos</strong>.
         </div>
       )}
@@ -809,7 +809,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         };
 
         return (
-          <div style={{ background: "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
+          <div style={{ background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8, flexWrap: "wrap" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: T.orange }}>🔍 Revisión de precisión fiscal</div>
               {onUpdate && warns.some(w => w.fiscalCodeSugerido) && (
@@ -844,7 +844,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
 
       {/* ═══ RESUMEN CONSOLIDADO ═══ */}
       {consolidado.items.length > 0 && (
-        <Cd style={{ marginBottom: 20, background: "linear-gradient(135deg, rgba(249,115,22,0.04), rgba(34,197,94,0.02))" }}>
+        <Cd style={{ marginBottom: 20, background: "linear-gradient(135deg, rgba(245,158,11,0.04), rgba(34,197,94,0.02))" }}>
           <div style={{ padding: "20px 24px", borderBottom: "1px solid " + T.border }}>
             <div style={{ fontSize: 14, fontWeight: 700 }}>📊 Panorama Fiscal Consolidado</div>
             <div style={{ fontSize: 11, color: T.txt3 }}>Todos los propietarios combinados</div>

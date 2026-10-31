@@ -42,7 +42,7 @@ const C = {
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",       // azul claro
   blueBg: "rgba(96,165,250,0.10)",
-  orange: "#fb923c",     // naranja claro
+  orange: "#fbbf24",     // naranja claro
   orangeBg: "rgba(251,146,60,0.10)",
   red: "#f87171",
   purple: "#c4b5fd",
@@ -190,7 +190,7 @@ export default function AgenteTributarioBienvenida({
               <div style={{ fontSize: 11, color: C.txt3, marginTop: 4, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {selectedOwner?.nit && <span>NIT/CC {selectedOwner.nit}</span>}
                 {selectedOwner?.regimen && <span>· Régimen {selectedOwner.regimen}</span>}
-                {isJuridica && !selectedOwner?.regimen && <span style={{ color: "#fb923c" }}>· Régimen sin definir</span>}
+                {isJuridica && !selectedOwner?.regimen && <span style={{ color: "#fbbf24" }}>· Régimen sin definir</span>}
                 <span>· {isJuridica ? "F-110" : "F-210"} · Año gravable {ano}</span>
               </div>
             </div>

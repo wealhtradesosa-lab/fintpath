@@ -17,7 +17,7 @@ const T = {
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   borderStrong: "rgba(var(--fp-ink),0.12)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
-  green: "#22c55e", blue: "#3b82f6", purple: "#a78bfa",
+  green: "#22c55e", blue: "#3b82f6", purple: "#3b82f6",
   grad: "linear-gradient(135deg, #22c55e 0%, #3b82f6 100%)",
 };
 
@@ -242,7 +242,7 @@ export default function HeroVariantA({ onGetStarted = () => {}, onLogin }) {
             }}>
               <div style={{ display: "flex", gap: 6 }}>
                 <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#ef4444" }} />
-                <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#eab308" }} />
+                <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#f59e0b" }} />
                 <span style={{ width: 11, height: 11, borderRadius: "50%", background: "#22c55e" }} />
               </div>
               <div style={{ marginLeft: 12, fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>

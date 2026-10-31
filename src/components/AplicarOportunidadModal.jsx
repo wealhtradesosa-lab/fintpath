@@ -39,7 +39,7 @@ const C = {
   purple: "#c4b5fd",
   purpleBg: "rgba(196,181,253,0.10)",
   red: "#f87171",
-  orange: "#fb923c",
+  orange: "#fbbf24",
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");

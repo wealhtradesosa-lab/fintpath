@@ -21,7 +21,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
   const buenas = hallazgos?.buenas || [];
   if (!alertas.length && !buenas.length) return null;
 
-  const COLOR = { oportunidad: "#22c55e", riesgo: "#eab308", bueno: "#3b82f6" };
+  const COLOR = { oportunidad: "#22c55e", riesgo: "#f59e0b", bueno: "#3b82f6" };
 
   const Tarjeta = ({ h, compacta }) => {
     const c = COLOR[h.tono] || T.tx2;

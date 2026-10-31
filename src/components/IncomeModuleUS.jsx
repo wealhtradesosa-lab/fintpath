@@ -34,7 +34,7 @@ const T = {
   tx:"var(--fp-txt)", tx2:"var(--fp-txt2)", tx3:"var(--fp-txt3)",
   gn:"#22c55e", gnB:"rgba(34,197,94,0.08)",
   rd:"#ef4444", rdB:"rgba(239,68,68,0.06)",
-  bl:"#3b82f6", pr:"#a78bfa", or:"#f59e0b", cy:"#06b6d4",
+  bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm = (n) => US.formatCurrency(n || 0);
 const pct = (n) => `${((n||0)*100).toFixed(1)}%`;
@@ -445,7 +445,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
             const datos = Object.entries(g).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
             if (datos.length < 2) return null;
             const tot = datos.reduce((s, d) => s + d.value, 0);
-            const PAL = ["#22c55e","#3b82f6","#f59e0b","#a78bfa","#ec4899","#06b6d4","#eab308"];
+            const PAL = ["#22c55e","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
             return (
               <div style={{marginBottom:4}}>
                 <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />

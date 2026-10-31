@@ -17,8 +17,8 @@ const T = {
   card: "var(--fp-card)", border: "rgba(var(--fp-ink),0.06)",
   txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.1)",
-  red: "#ef4444", blue: "#3b82f6", purple: "#a78bfa",
-  orange: "#f97316", gold: "#eab308", cyan: "#22d3ee",
+  red: "#ef4444", blue: "#3b82f6", purple: "#3b82f6",
+  orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const SM_2026 = 1_750_905;
 const fCOP = (v) => {
@@ -250,7 +250,7 @@ export default function PensionesColpensiones({ trm }) {
         rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>📄 Exportar PDF</button>}
       />
 
-            <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
+            <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
         <strong style={{ color: T.gold }}>Simulación Ley 100 (legado).</strong>{" "}
         Esta pantalla modela Colpensiones/RAIS bajo Ley 100/1993 y normas relacionadas.
         La reforma de pilares (Ley 2381) aún no está modelada aquí.
@@ -265,7 +265,7 @@ export default function PensionesColpensiones({ trm }) {
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 6 }}>Sexo</label>
             <div style={{ display: "flex", gap: 8 }}>
-              {[{ v: "M", l: "👨 Hombre", c: T.blue }, { v: "F", l: "👩 Mujer", c: "#ec4899" }].map((g) => (
+              {[{ v: "M", l: "👨 Hombre", c: T.blue }, { v: "F", l: "👩 Mujer", c: "#64748b" }].map((g) => (
                 <button key={g.v} onClick={() => setSexo(g.v)} style={{
                   flex: 1, padding: "12px", borderRadius: 10,
                   border: `2px solid ${sexo === g.v ? g.c : T.border}`,
@@ -706,7 +706,7 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 20, marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Tu tasa de reemplazo vs máximos</div>
             <div style={{ position: "relative", height: 32, background: T.bg3, borderRadius: 16, overflow: "hidden", marginBottom: 8 }}>
-              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ef4444 0%, #eab308 30%, #22c55e 60%, #3b82f6 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
+              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ef4444 0%, #f59e0b 30%, #22c55e 60%, #3b82f6 100%)", borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
                 <span style={{ fontSize: 13, fontWeight: 800, color: "#000" }}>{pc(colp.tasaTotal)}</span>
               </div>
             </div>

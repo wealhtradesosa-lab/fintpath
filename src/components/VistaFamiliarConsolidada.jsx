@@ -47,7 +47,7 @@ const C = {
   greenBg: "rgba(74,222,128,0.10)",
   blue: "#60a5fa",
   blueBg: "rgba(96,165,250,0.10)",
-  orange: "#fb923c",
+  orange: "#fbbf24",
   orangeBg: "rgba(251,146,60,0.10)",
   red: "#f87171",
   redBg: "rgba(248,113,113,0.10)",
@@ -347,7 +347,7 @@ export default function VistaFamiliarConsolidada({ user, estimacion, onSelectOwn
                 {ownersData.filter(d => d.erroresAuditoria > 0 || d.advertenciasAuditoria > 0).map(d => (
                   <div key={d.owner.id} style={{
                     padding: "10px 12px",
-                    background: "rgba(0,0,0,0.25)",
+                    background: "rgba(var(--fp-hundir),0.25)",
                     borderRadius: 6,
                     borderLeft: `3px solid ${d.erroresAuditoria > 0 ? C.red : C.orange}`,
                   }}>
@@ -475,8 +475,8 @@ function DistribucionPatrimonio({ ownersData, total }) {
   // Colores por tipo
   const getColor = (tipo, idx) => {
     const palettes = {
-      natural: ["#60a5fa", "#a78bfa", "#22d3ee", "#34d399"],
-      juridica: ["#c4b5fd", "#f472b6", "#fbbf24", "#fb7185"],
+      natural: ["#60a5fa", "#3b82f6", "#94a3b8", "#34d399"],
+      juridica: ["#c4b5fd", "#94a3b8", "#fbbf24", "#fb7185"],
     };
     return palettes[tipo]?.[idx % 4] || "var(--fp-txt3)";
   };

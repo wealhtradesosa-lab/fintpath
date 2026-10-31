@@ -22,7 +22,7 @@ const CINTA = (x0, y0, x1, y1, h) => {
   return `M ${x0} ${y0} C ${cx} ${y0}, ${cx} ${y1}, ${x1} ${y1} L ${x1} ${y1 + h} C ${cx} ${y1 + h}, ${cx} ${y0 + h}, ${x0} ${y0 + h} Z`;
 };
 
-const COLOR_GASTO = ["#a78bfa", "#06b6d4", "#8b5cf6", "#0ea5e9", "#6366f1"];
+const COLOR_GASTO = ["#3b82f6", "#64748b", "#94a3b8", "#475569", "#7a8699"];
 
 export default function SankeyFlujo({
   bruto = 0,
@@ -71,10 +71,10 @@ export default function SankeyFlujo({
     pie: (monto) => `El ancho de cada cinta es la plata: entran ${monto}.`,
     ...(labels || {}),
   };
-  push(L.retencion, retencion, "#f97316", L.retencionNota);
+  push(L.retencion, retencion, "#f59e0b", L.retencionNota);
   push(L.impuesto, impuesto, "#ef4444", L.impuestoNota);
-  push(L.aportes, aportes, "#eab308", L.aportesNota);
-  push(L.cuotas, cuotas, "#ec4899", L.cuotasNota);
+  push(L.aportes, aportes, "#f59e0b", L.aportesNota);
+  push(L.cuotas, cuotas, "#64748b", L.cuotasNota);
 
   let cats = (gastosCats || []).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
   if (cats.length > 5) {
