@@ -105,6 +105,7 @@ import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte } from "./lib/norteUnMinuto.js";
 import { TRM_PROVISIONAL } from "./lib/trm.js";
+import { registrarMes, resumenHistoria, etiquetaMes, fotoPatrimonio } from "./lib/historiaPatrimonio.js";
 import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId, PRECIOS_COP, fmtCOP } from "./lib/plans.js";
@@ -340,29 +341,15 @@ let _svT=null;
 let _versionServidor=null;
 let _forzarGuardado=false;
 export const forzarSiguienteGuardado=()=>{_forzarGuardado=true;};
-const takeSnapshot=(d)=>{
-  try{
-    const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
-    const now=new Date();
-    const key=now.getFullYear()+"-"+(now.getMonth()+1).toString().padStart(2,"0");
-    const exists=snaps.find(s=>s.k===key);
-    if(!exists&&d){
-      const inv=(d.inv||[]).reduce((s,i)=>s+(i.va||0),0);
-      const deu=(d.deu||[]).reduce((s,i)=>s+(i.mt||0),0);
-      snaps.push({k:key,d:now.toISOString().split("T")[0],nw:inv-deu,a:inv,de:deu});
-      if(snaps.length>60)snaps.shift();
-      localStorage.setItem("fp3_snapshots",JSON.stringify(snaps));
-    }
-  }catch{}
-};
 const sS=async(d,uid,accountId,isLegacy,role)=>{
   // Nunca se persiste una TRM que no sea real (p. ej. el 4200 provisional).
   d=sinTrmProvisional(d);
   // Modo demo: solo en memoria. Ni caché local, ni snapshots, ni Supabase.
   if(esDemo(d))return;
+  // 31-oct-2026 — la foto del mes va con los datos (servidor), no en localStorage.
+  d=registrarMes(d,{trm:trmReal(d)});
   try{
     localStorage.setItem(SK,JSON.stringify(d));
-    takeSnapshot(d);
     if(isSupabaseConfigured&&uid){
       // Copia vieja en pantalla (lectura falló): ningún PATCH/upsert a user_data.
       if(datosNoSincronizados())return;
@@ -1481,6 +1468,8 @@ export default function FinPath(){
     const rfPaga=(nombre,monto,tasa,moneda="COP")=>({preset:"custom",nombre,monto,anio:1,rendimientoNomPct:tasa,pctRecibe:100,moneda,fuente:"venta"});
     const bodegaF10={accion:"modifica",inversionMonto:600000000,inversionAnio:1,rentaNuevaMensual:8000000,rentaNuevaDesdeMes:6,valorizacionNomPct:7};
     const f10=(id,nombre,descripcion,config)=>({id,nombre,descripcion,creado:"2026-10-30T12:00:00.000Z",config:{escenario:"base",decisiones:{},norte:"equilibrio",mezcla:null,nuevas:[],reinversiones:[],futuros:{ingresos:[],activos:[],gastos:[]},...config}});
+    // Demo: 12 meses de historia del patrimonio (crece ~1% al mes, con un bache en abril).
+    {const f=fotoPatrimonio(nd,trmReal(nd)||4000);if(f){const hoy=new Date();nd.historiaPatrimonio=[];for(let m=12;m>=1;m--){const dt=new Date(hoy.getFullYear(),hoy.getMonth()-m,28);const fac=Math.pow(0.99,m)*(dt.getMonth()===3?0.97:1);nd.historiaPatrimonio.push({k:dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0"),d:dt.toISOString().slice(0,10),a:Math.round(f.a*fac),de:Math.round(f.de*(1+m*0.01)),nw:Math.round(f.a*fac-f.de*(1+m*0.01))})}}}
     nd.futuro10={escenarios:[
       f10("demo_f10_1","1 · Protección: blindar la familia","Quedar sin deudas y con la vida pagada pase lo que pase: vender Orlando (renta menos de lo que cuesta), la fintech y el bitcoin, pagar todos los créditos y dejar lo que sobra en liquidez y renta fija. Se quedan la casa del lago y el fondo que paga cada mes.",
         {decisiones:{d_i2:{accion:"vende"},d_i7:{accion:"vende"},d_i10:{accion:"vende"}},pagarDeudas:pagarTodo,mezcla:{liquidez:30,renta:65,crecimiento:5}}),
@@ -2564,6 +2553,26 @@ export default function FinPath(){
                 <div key={k.l}><div style={{fontSize:10,color:CHART.txt3,letterSpacing:"0.06em",fontWeight:600,textTransform:"uppercase"}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4,fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums"}}>{k.v}</div></div>
               )}
             </div>
+            {/* 31-oct-2026 — La pregunta que importa, arriba y en una frase:
+                ¿tus rentas ya pagan tu vida? (misma cifra que "Independencia"). */}
+            {(t.ob||0)>0&&(()=>{
+              const pct=t.ind||0, ok=pct>=100, dif=(t.ingresoPasivo||0)-(t.ob||0);
+              const col=ok?CHART.green:pct>=50?"#eab308":CHART.red;
+              const hs=resumenHistoria(registrarMes(u||{},{trm:trmReal(u)}).historiaPatrimonio);
+              return<div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${CHART.border}`}}>
+                <div style={{fontSize:15,color:CHART.txt,lineHeight:1.4}}>
+                  Tus rentas cubren el <b style={{color:col}}>{fmtPctEs(pct,0)}</b> de tus gastos y cuotas
+                  <span style={{color:CHART.txt3}}> · {ok?"sobran ":"faltan "}<b style={{color:ok?CHART.green:CHART.txt}}>{fm(Math.abs(dif))}</b> de rentas al mes</span>
+                </div>
+                <div style={{height:6,background:"rgba(255,255,255,0.06)",borderRadius:3,marginTop:8,overflow:"hidden"}}>
+                  <div style={{height:"100%",width:Math.min(pct,100)+"%",background:col,borderRadius:3}}/>
+                </div>
+                <div style={{fontSize:11,color:CHART.txt3,marginTop:6}}>
+                  Cuentas de este mes: rentas (lo que te dejan tus activos sin trabajar) {fm(t.ingresoPasivo||0)} · gastos y cuotas {fm(t.ob||0)}.
+                  {hs.mes&&<span> · Patrimonio {hs.mes.cambio>=0?"▲ +":"▼ "}{fm(hs.mes.cambio)} vs {etiquetaMes(hs.mes.desde)}.</span>}
+                </div>
+              </div>;
+            })()}
           </div>
         </div>
         <div style={{
@@ -3437,22 +3446,21 @@ export default function FinPath(){
         </Cd>
       </div>
 
-      {/* Cómo evolucionó en el tiempo. */}
+      {/* Cómo evolucionó en el tiempo — 31-oct-2026: ahora sale de los datos de
+          la cuenta (servidor), un punto por mes, con los dólares a la TRM. */}
       {(()=>{
-        const snaps=JSON.parse(localStorage.getItem("fp3_snapshots")||"[]");
-        if(snaps.length<2)return null;
-        const sorted=snaps.sort((a,b)=>a.k.localeCompare(b.k));
-        const last=sorted[sorted.length-1];
-        const prev=sorted[sorted.length-2];
-        const change=last.nw-prev.nw;
-        const months=["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-        const maxVal=Math.max(...sorted.map(s=>s.nw));
-        const minVal=Math.min(...sorted.map(s=>s.nw));
-        const range=maxVal-minVal||1;
-        return<Cd s={{padding:20,marginBottom:14}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><div><div style={{fontSize:13,fontWeight:700,color:T.bl}}>📈 Historial Patrimonio Neto</div><div style={{fontSize:11,color:T.tx3}}>{sorted.length} meses registrados</div></div><div style={{textAlign:"right"}}><div style={{fontSize:11,color:T.tx3}}>Último mes</div><div style={{fontSize:14,fontWeight:700,color:change>=0?T.gn:T.rd}}>{change>=0?"+":""}{fm(change)}</div></div></div>
-          <div style={{display:"flex",alignItems:"flex-end",gap:3,height:100}}>
-            {sorted.map((s,i)=>{const h=((s.nw-minVal)/range)*80+20;const m=parseInt(s.k.split("-")[1])-1;return<div key={s.k} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}} title={months[m]+" "+s.k.split("-")[0]+": "+fm(s.nw)}><div style={{width:"100%",height:h,background:s.nw>=0?"linear-gradient(to top,"+T.gn+"40,"+T.gn+")":"linear-gradient(to top,"+T.rd+"40,"+T.rd+")",borderRadius:"4px 4px 0 0",minHeight:4,transition:"height 0.3s"}}/><div style={{fontSize:9,color:T.tx3}}>{months[m]}</div></div>})}
+        const hs=resumenHistoria(registrarMes(u||{},{trm:trmReal(u)}).historiaPatrimonio);
+        if(hs.puntos.length<2)return null;
+        const data=hs.puntos.map(p=>({m:etiquetaMes(p.k),nw:p.nw}));
+        const c=hs.ano?hs.ano.cambio:hs.mes.cambio;
+        return<Cd s={{padding:20,marginBottom:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:8,marginBottom:12}}>
+            <div><div style={{fontSize:13,fontWeight:700,color:T.tx}}>📈 Cómo ha crecido tu patrimonio</div><div style={{fontSize:11,color:T.tx3,marginTop:2}}>Un punto por mes, con lo que tenías cargado ese mes</div></div>
+            <div style={{fontSize:13,fontWeight:700,color:c>=0?T.gn:T.rd}}>{c>=0?"▲ +":"▼ "}{fm(c)} {hs.ano?"desde "+etiquetaMes(hs.ano.desde):"este mes"}</div>
           </div>
+          <ResponsiveContainer width="100%" height={160}>
+            <AreaChart data={data}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="m" {...axisProps}/><YAxis {...axisProps} width={52} domain={[v=>Math.floor(v*0.97),v=>Math.ceil(v*1.02)]} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="nw" name="Patrimonio neto" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2}/></AreaChart>
+          </ResponsiveContainer>
         </Cd>;
       })()}
 
