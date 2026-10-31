@@ -14,6 +14,8 @@ import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import FrecuenciaSelector, { labelMontoSegunFrecuencia } from "./FrecuenciaSelector";
 import { detectarTemplate, TEMPLATES } from "./TemplateSelector";
 import TablaMensual from "./TablaMensual";
+import FiltroListado from "./FiltroListado";
+import { CLASES_INGRESO, claseIngreso, esDelTitular } from "../lib/clasesListado.js";
 import { textoRevisarPrima, MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
@@ -349,6 +351,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     return templateElegido.camposVisibles.includes(campo);
   };
   const [busqueda, setBusqueda] = useState("");
+  const [titularFiltro, setTitularFiltro] = useState("");
   const [cerrados, setCerrados] = useState({}); // 31-oct-2026: grupos colapsables
   // Commit 11 Tarea 3: feedback visible para el usuario sobre lo que paso
   // con la auto-creacion de cesantias (creada / saltada / no aplica). El silencio
@@ -362,7 +365,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // `activos` y los totales usan la lista COMPLETA: el buscador filtra lo que
   // se ve, no lo que se calcula. Si al buscar cambiaran los totales, el
   // usuario podría leer un total parcial como si fuera el suyo.
-  const allItems = filtrarPorTexto(items, busqueda, ["nombre", "tipo", "categoria"]);
+  const allItems = filtrarPorTexto(items, busqueda, ["nombre", "tipo", "categoria"]).filter((i) => esDelTitular(i, titularFiltro, owners));
   // 26-jul-2026 (Santiago: "quedó muy bien organizado los gastos pero
   // necesitamos también ordenar ingresos y deudas"). Mismo patrón que
   // GastosModule: se intercalan marcadores {__cat} en la lista de datos y el
@@ -370,21 +373,18 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // Acá se agrupa por CATEGORÍA DIAN, que es como el motor fiscal piensa los
   // ingresos y lo que determina cómo tributan.
   const conEncabezados = (lista) => {
+    const mes = (i) => montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1);
     const porCat = {};
-    lista.forEach(it => {
-      const k = labelCategoria(it.categoria) || it.tipo || "Sin categoría";
-      (porCat[k] = porCat[k] || []).push(it);
-    });
-    const grupos = Object.entries(porCat)
-      .map(([cat, its]) => ({ cat, items: its,
-        sub: its.filter(i => i.sim !== false)
-               .reduce((s, i) => s + montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1), 0) }))
+    lista.forEach(it => { const c = claseIngreso(it); (porCat[c.id] = porCat[c.id] || { c, items: [] }).items.push(it); });
+    const grupos = Object.values(porCat)
+      .map(({ c, items: its }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...its].sort((a, b) => mes(b) - mes(a)),
+        sub: its.filter(i => i.sim !== false).reduce((s, i) => s + mes(i), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
       { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
-        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.cat },
-      ...((!!(busqueda || "").trim()) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? gr.items : []),
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.id },
+      ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
   };
   const activos = items.filter((i) => i.sim !== false);
@@ -844,6 +844,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             })()}
             <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
               total={items.length} filtrados={allItems.length} />
+            <FiltroListado owners={owners || []} titular={titularFiltro} onTitular={setTitularFiltro} T={T}
+              hayCerrados={Object.values(cerrados).some(Boolean)} onAlternar={() => setCerrados(Object.values(cerrados).some(Boolean) ? {} : Object.fromEntries(CLASES_INGRESO.map((c) => ["__h_" + c.id, true])))} />
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
               <thead><tr>
                 {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", "On/Off", ""].map((h) => (

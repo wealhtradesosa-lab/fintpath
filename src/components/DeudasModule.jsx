@@ -1,4 +1,7 @@
 import { useState } from "react";
+import FiltroListado from "./FiltroListado";
+import BuscadorLista, { filtrarPorTexto as filtrarDeudas } from "./BuscadorLista";
+import { esDelTitular } from "../lib/clasesListado.js";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
@@ -120,6 +123,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   };
   const [editId, setEditId] = useState(null);
   const [cerrados, setCerrados] = useState({}); // 31-oct-2026: grupos colapsables
+  const [busqueda, setBusqueda] = useState("");
+  const [titularFiltro, setTitularFiltro] = useState("");
   const [form, setForm] = useState({ n: "", tp: "loan", fiscalCode: "DEU_NAT_CONSUMO", mt: "", pg: "", ts: "", la: "", owner: "", capExt: "", intExt: "", frecuencia: "mensual", montosMensuales: new Array(12).fill(0) });
   // Commit 5 Tarea 3: confirmaciones del Art. 119 ET cuando el usuario marca
   // una deuda como vivienda habitacional. Es solo UI — no se persiste al item
@@ -143,7 +148,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                    credit_card: "Tarjeta", tarjeta: "Tarjeta", card: "Tarjeta", saldo_pendiente: "Saldo pendiente" };
   const conEncabezados = (lista) => {
     const porTipo = {};
-    lista.forEach(d => { const k = NOM_TP[d.tp] || "Otro"; (porTipo[k] = porTipo[k] || []).push(d); });
+    lista.filter((d) => esDelTitular(d, titularFiltro, owners)).forEach(d => { const k = NOM_TP[d.tp] || "Otro"; (porTipo[k] = porTipo[k] || []).push(d); });
     const grupos = Object.entries(porTipo)
       .map(([tipo, its]) => ({ tipo, items: its,
         sub: its.filter(d => d.sim !== false)
@@ -151,9 +156,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
-      { __cat: gr.tipo, __sub: gr.sub, __n: gr.items.length,
+      { __cat: `${({ Hipoteca: "🏠", "Vehículo": "🚗", "Libre inversión": "💳", Leasing: "📄", "Préstamo personal": "🤝", Tarjeta: "💳", "Saldo pendiente": "🧾" })[gr.tipo] || "📦"} ${gr.tipo}`, __sub: gr.sub, __n: gr.items.length,
         __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.tipo },
-      ...((false) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? gr.items : []),
+      ...((!!busqueda.trim()) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? [...gr.items].sort((a, b) => (b.mt || 0) - (a.mt || 0)) : []),
     ]);
   };
   const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
@@ -370,6 +375,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           </div>
         );
       })()}
+      {items.length > 0 && <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T} total={items.length} filtrados={filtrarDeudas(items, busqueda, ["n", "nombre"]).length} placeholder="Buscar deuda…" />}
+      {items.length > 0 && <FiltroListado owners={owners || []} titular={titularFiltro} onTitular={setTitularFiltro} T={T}
+        hayCerrados={Object.values(cerrados).some(Boolean)} onAlternar={() => setCerrados(Object.values(cerrados).some(Boolean) ? {} : Object.fromEntries([...new Set(Object.values(NOM_TP)), "Otro"].map((k) => ["__h_" + k, true])))} />}
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
@@ -404,7 +412,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       </div>
                     </div>
                   </td></tr>
-              ) : conEncabezados(separarPorLimite(items, plan).visibles).map((d) => {
+              ) : conEncabezados(filtrarDeudas(separarPorLimite(items, plan).visibles, busqueda, ["n", "nombre"])).map((d) => {
                   if (d.__cat) return (
                     <tr key={d.id} onClick={() => setCerrados((c) => ({ ...c, [d.id]: !c[d.id] }))} title={cerrados[d.id] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
                       <td colSpan={10} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>

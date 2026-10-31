@@ -1,4 +1,6 @@
 import { useState } from "react";
+import FiltroListado from "./FiltroListado";
+import { CLASES_GASTO, claseGasto, esDelTitular } from "../lib/clasesListado.js";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { valorOpcion, etiquetaOpcion } from "../lib/patrimonioUI.js";
 import { fetchAuth } from "../lib/apiFetch";
@@ -318,6 +320,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     return templateElegido.camposVisibles.includes(campo);
   };
   const [busqueda, setBusqueda] = useState(""); // "cat|idx"
+  const [titularFiltro, setTitularFiltro] = useState("");
   const [cerrados, setCerrados] = useState({}); // 31-oct-2026: grupos colapsables
 
   const gas = gastos || {};
@@ -327,7 +330,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // 26-jul-2026: los totales usan la lista completa; el buscador filtra sólo
   // lo que se ve. Ver BuscadorLista.jsx.
   const activos = allItems.filter((g) => g.sim !== false);
-  const itemsFiltrados = filtrarPorTexto(allItems, busqueda, ["c", "cat"]);
+  const itemsFiltrados = filtrarPorTexto(allItems, busqueda, ["c", "cat"]).filter((g) => esDelTitular(g, titularFiltro, owners));
   // 26-jul-2026 (Santiago: "en los listados es muy difícil encontrar algún ítem
   // porque hay muchos; qué bueno que organizara por tipologías y con
   // subtotales"). Con 53 gastos en lista plana no se ve en qué se va la plata.
@@ -338,16 +341,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // Orden por MONTO, no alfabético: lo que más pesa va primero.
   const conEncabezados = (lista) => {
     const porCat = {};
-    lista.forEach(it => { (porCat[it.cat] = porCat[it.cat] || []).push(it); });
-    const grupos = Object.entries(porCat)
-      .map(([cat, items]) => ({ cat, items,
+    lista.forEach(it => { const c = claseGasto(it); (porCat[c.id] = porCat[c.id] || { c, items: [] }).items.push(it); });
+    const grupos = Object.values(porCat)
+      .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => montoPromedioMensual(b) - montoPromedioMensual(a)),
         sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
       { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
-        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, key: "__h_" + gr.cat },
-      ...((!!(busqueda || "").trim()) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? gr.items : []),
+        __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, key: "__h_" + gr.id },
+      ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
   };
   const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g), 0)
@@ -651,6 +654,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         })()}
         <BuscadorLista valor={busqueda} onChange={setBusqueda} T={T}
           total={allItems.length} filtrados={itemsFiltrados.length} />
+        <FiltroListado owners={owners || []} titular={titularFiltro} onTitular={setTitularFiltro} T={T}
+          hayCerrados={Object.values(cerrados).some(Boolean)} onAlternar={() => setCerrados(Object.values(cerrados).some(Boolean) ? {} : Object.fromEntries(CLASES_GASTO.map((c) => ["__h_" + c.id, true])))} />
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600, color: T.txt }}>
           <thead>
             <tr>
