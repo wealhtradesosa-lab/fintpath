@@ -14,7 +14,7 @@ const DISPLAY = "'Plus Jakarta Sans','Inter',system-ui,sans-serif";
 const BODY = "'Inter',system-ui,sans-serif";
 
 export const PLANES_TEXTO =
-  "Hay plan gratis. Pro cuesta 16 USD al mes, o 12 USD al mes en plan anual. Pro Familiar: 27 USD al mes, o 20 en anual, hasta 10 personas.";
+  "Hay plan gratis. Pro cuesta $24.900 COP al mes o 14 USD; en plan anual, $249.000 COP o 140 USD al año. Pro Familiar: $44.900 COP al mes o 27 USD, o 20 USD al mes en anual, hasta 10 personas.";
 
 export const FAQ = [
   ["¿Cuánto cuesta?", PLANES_TEXTO],

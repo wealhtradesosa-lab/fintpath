@@ -64,7 +64,7 @@ Todos los precios en USD. Stripe cobra USD; usuarios CO ven equivalente COP din�
 |---|---|---|---|
 | **Free** | Gratis | 1 usuario | Empezar a organizarte |
 | **Básico** | $8/mes · $6 anual | 1 usuario | Vida financiera completa |
-| **Pro** | $16/mes · $12 anual | Hasta 3 usuarios | Planificar como experto |
+| **Pro** | $14/mes · $140/año (≈ $11,67/mes) · $24.900 COP/mes | Hasta 3 usuarios | Planificar como experto |
 | **Pro Familiar** | $27/mes · $20 anual | Hasta 10 usuarios | Familia + contador |
 
 Trial 14 días sin tarjeta para Pro Familiar. Grace period 30 días post-cancelación.

@@ -25,10 +25,16 @@ describe("copy de /patrimonio", () => {
     expect(html.includes(frase)).toBe(false);
   });
   it("planes: precios de la brief", () => {
-    expect(PLANES_TEXTO).toContain("16 USD");
-    expect(PLANES_TEXTO).toContain("12 USD");
+    // 25-oct-2026: Pro bajó a 14 USD/mes o 140 USD/año; en pesos, PRECIOS_COP.
+    expect(PLANES_TEXTO).toContain("$24.900 COP");
+    expect(PLANES_TEXTO).toContain("14 USD");
+    expect(PLANES_TEXTO).toContain("$249.000 COP");
+    expect(PLANES_TEXTO).toContain("140 USD al año");
+    expect(PLANES_TEXTO).toContain("$44.900 COP");
     expect(PLANES_TEXTO).toContain("27 USD");
-    expect(PLANES_TEXTO).toContain("20 en anual");
+    expect(PLANES_TEXTO).toContain("20 USD al mes en anual");
+    expect(PLANES_TEXTO).not.toContain("16 USD");
+    expect(PLANES_TEXTO).not.toContain("12 USD");
     expect(FAQ).toHaveLength(4);
   });
   it("tiene los dos CTA y el login", () => {
