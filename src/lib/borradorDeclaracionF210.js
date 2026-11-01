@@ -23,6 +23,99 @@ import { totalAnualItem } from "./flowHelpers.js";
 
 import { uvtForYear } from "./taxCO.js";
 import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
+import { claseDeActivo, normalizar } from "./taxonomiaActivos.js";
+
+// ── Patrimonio bruto (renglones 291–294) ─────────────────────────────────
+// 1-nov-2026 — El patrimonio bruto dejaba por fuera todo lo que no fuera
+// inmueble: el 291 solo reconocía `tipo === "cash"` en minúscula (los activos
+// reales vienen como "Cash", "Efectivo", "CDT", "Acciones", "Crypto"...) y el
+// 294 estaba fijo en 0. Ahora cada activo entra en un renglón y a su valor
+// fiscal (Arts. 267–277 ET), y la clasificación no distingue mayúsculas ni
+// tildes (usa la misma taxonomía del resto de la app).
+//
+// Renglón según la clase del activo:
+//   291 efectivo y equivalentes  ← liquidez (cuentas, efectivo)
+//   292 inversiones financieras  ← CDT, bonos, FIC, acciones, aportes en sociedades
+//   293 inmuebles y vehículos    ← inmuebles, vehículos
+//   294 otros activos            ← cripto y todo lo que no tenga otra clase
+//
+// Valor fiscal:
+//   · depósitos, CDT, bonos, FIC: el saldo / valor al 31-dic (valor || va)
+//   · acciones, aportes, cripto, vehículos y otros: el costo fiscal, que es
+//     lo que pagaste (vc). Las acciones no se declaran a valor de mercado
+//     (Art. 272 ET) y la cripto va a su costo de adquisición.
+//   · inmuebles: el mayor que el usuario cargó entre avalúo y costo (ubi || va || vc)
+// Si el activo trae `valorFiscal` explícito, ese manda.
+export const UMBRAL_PATRIMONIO_DECLARAR_UVT = 4500;
+
+const RENGLON_POR_CLASE = {
+  liquidez: 291,
+  renta_fija: 292,
+  mercado_publico: 292,
+  negocio: 292,
+  inmueble: 293,
+  vehiculo: 293,
+  alternativo: 294,
+  otro: 294,
+};
+
+const RENGLON_POR_CODIGO = {
+  INV_EFECTIVO: 291, INV_CUENTA_BANCARIA: 291,
+  INV_CDT: 292, INV_FIC: 292, INV_ACCIONES: 292, INV_BONOS: 292,
+  INV_VEHICULO_PRODUCTIVO: 293, INV_VEHICULO_PERSONAL: 293,
+  INV_CRYPTO: 294, INV_EQUIPO_PRODUCTIVO: 294, INV_OTROS_ACTIVOS: 294,
+};
+
+/** Renglón 291–294 de un activo. El Tipo manda; el fiscalCode solo si el Tipo no alcanza. */
+export function renglonPatrimonioDe(activo) {
+  const tipo = activo?.tipo || activo?.tp || "";
+  const { clase, exacto } = claseDeActivo(tipo);
+  const porTipo = RENGLON_POR_CLASE[clase] || 294;
+  if (normalizar(tipo) && (exacto || clase !== "otro")) return porTipo;
+  const fc = activo?.fiscalCode;
+  if (typeof fc === "string") {
+    if (fc.startsWith("INV_INMUEBLE_")) return 293;
+    if (RENGLON_POR_CODIGO[fc]) return RENGLON_POR_CODIGO[fc];
+  }
+  return porTipo;
+}
+
+const CODIGOS_A_VALOR = new Set(["INV_EFECTIVO", "INV_CUENTA_BANCARIA", "INV_CDT", "INV_FIC", "INV_BONOS"]);
+
+// true → el valor fiscal es el costo (vc); false → el saldo o valor al 31-dic.
+const ES_COSTO = (activo) => {
+  const t = normalizar(activo?.tipo || activo?.tp || "");
+  const { clase, exacto } = claseDeActivo(t);
+  if (t && (exacto || clase !== "otro")) {
+    if (clase === "mercado_publico") return !/fondo|fic/.test(t);
+    return clase === "alternativo" || clase === "negocio" || clase === "vehiculo" || clase === "otro";
+  }
+  const fc = activo?.fiscalCode;
+  if (typeof fc === "string" && (CODIGOS_A_VALOR.has(fc) || fc.startsWith("INV_INMUEBLE_"))) return false;
+  return true;
+};
+
+/** Valor fiscal en la moneda del activo (sin convertir). */
+export function valorFiscalActivo(activo) {
+  const n = (x) => Number(x) || 0;
+  if (activo?.valorFiscal != null && activo.valorFiscal !== "") return n(activo.valorFiscal);
+  const renglon = renglonPatrimonioDe(activo);
+  if (renglon === 293 && !ES_COSTO(activo)) return n(activo.ubi || activo.va || activo.vc || activo.valor);
+  if (ES_COSTO(activo)) return n(activo.vc || activo.valor || activo.va);
+  return n(activo.valor || activo.va || activo.vc);
+}
+
+/**
+ * ¿El patrimonio bruto al 31-dic obliga a declarar? (Art. 592-594-3 ET:
+ * patrimonio bruto > 4.500 UVT del año gravable). Se compara contra el
+ * patrimonio COMPLETO del renglón 29, no solo contra los inmuebles.
+ */
+export function obligacionPorPatrimonio(patrimonioBruto, ano = 2025) {
+  const uvt = uvtForYear(ano);
+  const umbral = UMBRAL_PATRIMONIO_DECLARAR_UVT * uvt;
+  const pb = Number(patrimonioBruto) || 0;
+  return { obligado: pb > umbral, umbral, uvt, uvtTope: UMBRAL_PATRIMONIO_DECLARAR_UVT, patrimonioBruto: pb, ano };
+}
 
 /**
  * Genera el borrador F-210 para un owner persona natural.
@@ -92,15 +185,12 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
 
   // Patrimonio (mismo cálculo que F-110)
   const oInv = (user.inv || []).filter(i => i.owner === owner.id && i.sim !== false && !i.excluirDeclaracion);
-  const efectivo = oInv
-    .filter(i => i.fiscalCode === "INV_CUENTA_BANCARIA" || i.tipo === "cash")
-    .reduce((s, i) => s + (Number(i.valor || i.va) || 0) * (i.moneda === "USD" ? trm : 1), 0);
-  const inversionesFinancieras = oInv
-    .filter(i => i.fiscalCode === "INV_CDT" || i.tipo === "cdt" || i.tipo === "equity")
-    .reduce((s, i) => s + (Number(i.valor || i.va) || 0) * (i.moneda === "USD" ? trm : 1), 0);
-  const propiedades = oInv
-    .filter(i => /Real Estate|Bodega|Local Comercial|Inmueble/i.test(i.tipo || i.tp || ""))
-    .reduce((s, i) => s + (Number(i.ubi || i.va || i.vc) || 0) * (i.moneda === "USD" ? trm : 1), 0);
+  const conv = (i) => valorFiscalActivo(i) * (i.moneda === "USD" ? trm : 1);
+  const sumaRenglon = (n) => oInv.filter(i => renglonPatrimonioDe(i) === n).reduce((s, i) => s + conv(i), 0);
+  const efectivo = sumaRenglon(291);
+  const inversionesFinancieras = sumaRenglon(292);
+  const propiedades = sumaRenglon(293);
+  const otrosActivos = sumaRenglon(294);
   const oDeu = (user.deu || []).filter(d => d.owner === owner.id && d.sim !== false && !d.excluirDeclaracion);
   const pasivos = oDeu.reduce((s, d) => s + (Number(d.saldo || d.s || d.mt) || 0), 0);
 
@@ -116,13 +206,13 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
     // ── PATRIMONIO ────────────────────────────────────────────────────────
     { seccion: "patrimonio", numero: 29, concepto: "Total patrimonio bruto", tipo: "formula", destacado: true,
       calc: (vals) => (vals[291] || 0) + (vals[292] || 0) + (vals[293] || 0) + (vals[294] || 0) },
-    { seccion: "patrimonio", numero: 291, concepto: "Efectivo y equivalentes", valor: v(291, efectivo), auto: efectivo, tipo: "editable", fuente: "Inversiones tipo cuenta bancaria",
+    { seccion: "patrimonio", numero: 291, concepto: "Efectivo y equivalentes", valor: v(291, efectivo), auto: efectivo, tipo: "editable", fuente: "Activos tipo efectivo o cuenta (saldo al 31-dic)",
       tip: "Acá va el saldo de tus cuentas de ahorro, corriente y similares al 31 de diciembre. Si tienes CDT abierto, no va acá (va abajo en inversiones)." },
-    { seccion: "patrimonio", numero: 292, concepto: "Inversiones financieras (CDT, fondos, acciones)", valor: v(292, inversionesFinancieras), auto: inversionesFinancieras, tipo: "editable", fuente: "Inversiones CDT/equity/fondos",
+    { seccion: "patrimonio", numero: 292, concepto: "Inversiones financieras (CDT, fondos, acciones)", valor: v(292, inversionesFinancieras), auto: inversionesFinancieras, tipo: "editable", fuente: "Activos CDT, bonos, fondos y acciones (valor fiscal)",
       tip: "CDT, fondos de inversión colectiva, acciones bursátiles. Para activos en USD usar TRM del 31-dic." },
-    { seccion: "patrimonio", numero: 293, concepto: "Bienes inmuebles y vehículos", valor: v(293, propiedades), auto: propiedades, tipo: "editable", fuente: "Inversiones tipo Real Estate (valor de compra)",
+    { seccion: "patrimonio", numero: 293, concepto: "Bienes inmuebles y vehículos", valor: v(293, propiedades), auto: propiedades, tipo: "editable", fuente: "Activos tipo inmueble y vehículo",
       tip: "Casa, apartamentos, lotes, vehículos. La DIAN acepta el mayor entre: avalúo catastral o costo fiscal (lo que pagaste + mejoras)." },
-    { seccion: "patrimonio", numero: 294, concepto: "Otros activos", valor: v(294, 0), auto: 0, tipo: "editable", fuente: "Manual",
+    { seccion: "patrimonio", numero: 294, concepto: "Otros activos", valor: v(294, otrosActivos), auto: otrosActivos, tipo: "editable", fuente: "Cripto y demás activos (costo fiscal)",
       tip: "Cuentas por cobrar, joyas, obras de arte valiosas, criptomonedas." },
     { seccion: "patrimonio", numero: 30, concepto: "Total deudas (pasivos)", valor: v(30, pasivos), auto: pasivos, tipo: "editable", fuente: "Deudas cargadas",
       tip: "Saldos de hipotecas, préstamos personales, tarjetas de crédito al 31-dic. Las deudas reducen tu patrimonio líquido." },
@@ -215,7 +305,18 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       calc: (vals) => Math.max(0, (vals[110] || 0)) + (vals[112] || 0) },
   ];
 
-  return resolverRenglones(renglones);
+  const resueltos = resolverRenglones(renglones);
+  // Obligación de declarar por patrimonio: contra el renglón 29 completo.
+  const r29 = resueltos.find(r => r.numero === 29);
+  if (r29) {
+    const ob = obligacionPorPatrimonio(r29.valor, ano);
+    r29.obligacionDeclarar = ob;
+    const fmt = (x) => "$" + Math.round(x).toLocaleString("es-CO");
+    r29.nota = ob.obligado
+      ? `Tu patrimonio bruto (${fmt(ob.patrimonioBruto)}) supera ${ob.uvtTope.toLocaleString("es-CO")} UVT (${fmt(ob.umbral)} para el año gravable ${ano}): por patrimonio estás obligado a declarar.`
+      : `Tu patrimonio bruto (${fmt(ob.patrimonioBruto)}) no supera ${ob.uvtTope.toLocaleString("es-CO")} UVT (${fmt(ob.umbral)} para el año gravable ${ano}). Por patrimonio no estás obligado; revisa también los topes de ingresos, consumos y consignaciones.`;
+  }
+  return resueltos;
 }
 
 /**
