@@ -9,6 +9,7 @@ import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, rendimientoHint
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
+import EscenariosCreados from "./infografia/EscenariosCreados";
 
 const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#00c805", rd: "#ff5000", am: "#f59e0b" };
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
@@ -61,6 +62,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   editandoRef.current = editandoId;
   const [descEsc, setDescEsc] = useState("");
   const [verEsc, setVerEsc] = useState(null);
+  // 1-nov-2026 (Santiago): «Escenarios creados» es una subsección propia de
+  // Mi futuro a 10 años, no el último paso del proceso. Abre ahí si hay
+  // escenarios guardados; si no, en el proceso de creación.
+  const [vista, setVista] = useState(() => (pasoInicial === 0 && (guardado.escenarios || []).length ? "creados" : "crear"));
+  const [verDetalle, setVerDetalle] = useState(false);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
   const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
   const esc = r.escenario;
@@ -99,7 +105,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     setNombreEsc(""); setDescEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
-  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setCfg(migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...e.config }), user)); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
+  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setVista("crear"); setCfg(migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...e.config }), user)); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
   const descartarBorrador = () => { setCfg(editandoEsc ? migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }), user) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); };
   const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.filter((e) => e.id !== id) });
 
@@ -109,6 +115,32 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         subtitle="1. Revisa lo que tienes y decide qué sigue · 2. Agrega lo que viene · 3. Mueve tu plata · 4. Mira el resultado. Tus datos reales no se tocan." />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{AVISO_F10}</div>
 
+      <div role="tablist" aria-label="Mi futuro a 10 años" style={{ display: "flex", gap: 4, background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 999, padding: 4, marginBottom: 14, width: "fit-content", maxWidth: "100%", flexWrap: "wrap" }}>
+        {[["creados", `Escenarios creados${escenarios.length ? ` (${escenarios.length})` : ""}`], ["crear", editandoEsc ? `Editando «${editandoEsc.nombre}»` : "Crear o editar un escenario"]].map(([k, l]) => (
+          <button key={k} type="button" role="tab" aria-selected={vista === k} onClick={() => { setVista(k); setVerEsc(null); track("futuro10_vista", { vista: k }); }}
+            style={{ minHeight: 40, padding: "0 16px", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 13, fontWeight: vista === k ? 600 : 500, background: vista === k ? C.tx : "transparent", color: vista === k ? "var(--fp-card)" : C.tx2, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l}</button>
+        ))}
+      </div>
+
+      {vista === "creados" && (verEsc ? <>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+          <button style={btn(false)} onClick={() => setVerEsc(null)}>← Volver a tus escenarios</button>
+          {verEsc.id && !demo && <button style={btn(true)} onClick={() => { setVerEsc(null); editarEsc(verEsc.id); }}>Editar este escenario</button>}
+        </div>
+        <div style={{ ...card, marginBottom: 14 }}><h3 style={{ margin: 0 }}>{verEsc.nombre}</h3>{verEsc.descripcion ? <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{verEsc.descripcion}</div> : null}</div>
+        <PlanInforme r={verEsc.r} nombre={verEsc.nombre} inflacionPct={esc.inflacionPct} />
+      </> : <>
+        <EscenariosCreados planes={planesComparar} inflacionPct={esc.inflacionPct} demo={demo}
+          onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
+          onEditar={demo ? null : editarEsc}
+          onCrear={() => { setVista("crear"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
+        {escenarios.length > 0 && <button type="button" onClick={() => setVerDetalle((v) => !v)} style={{ ...btn(false), width: "100%", minHeight: 44, marginBottom: 12 }}>{verDetalle ? "Ocultar la comparación detallada" : "Ver la comparación detallada: curvas, reparto, ¿da para vivir? y el patrimonio como empresa"}</button>}
+        {verDetalle && <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
+          onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
+          onRecomendar={demo ? null : (id) => onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => ({ ...e, recomendado: e.id === id ? !e.recomendado : false })) })} />}
+      </>)}
+
+      {vista === "crear" && <>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
       </div>
@@ -288,6 +320,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {paso > 0 && <button style={{ ...btn(false), padding: "12px" }} onClick={() => { ir(paso - 1); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>← Atrás</button>}
         {paso < PASOS.length - 1 && <button style={{ ...btn(true), flex: 1, padding: "12px", fontWeight: 600 }} onClick={() => { ir(paso + 1); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>Siguiente: {PASOS[paso + 1]} →</button>}
       </div>
+      </>}
 
       <details style={card}>
         <summary style={{ cursor: "pointer" }}>Supuestos (inflación y cuánto rinden las inversiones)</summary>

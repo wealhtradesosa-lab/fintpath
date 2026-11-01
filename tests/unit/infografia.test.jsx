@@ -80,3 +80,21 @@ describe("infografías", () => {
     }
   });
 });
+
+import EscenariosCreados from "../../src/components/infografia/EscenariosCreados.jsx";
+describe("escenarios creados", () => {
+  const fila = (anio, patrimonio) => ({ anio, patrimonio, ingresos: 100, gastos: 80 });
+  const r = (fin) => ({ filas: Array.from({ length: 11 }, (_, i) => fila(i, 1000 + (fin - 1000) * i / 10)) });
+  it("sin escenarios invita a crear el primero", () => {
+    const html = renderToStaticMarkup(<EscenariosCreados planes={[{ nombre: "Hoy", esHoy: true, r: r(1500) }]} inflacionPct={5} onCrear={() => {}} />);
+    expect(html).toContain("Todavía no tienes escenarios creados");
+    expect(html).toContain("Crear mi primer escenario");
+  });
+  it("con escenarios ordena por patrimonio final y compara contra hoy", () => {
+    const html = renderToStaticMarkup(<EscenariosCreados inflacionPct={5} onVer={() => {}} onCrear={() => {}}
+      planes={[{ nombre: "Hoy", esHoy: true, r: r(1500) }, { id: "a", nombre: "Vender", r: r(1200) }, { id: "b", nombre: "Crecer", r: r(2000) }]} />);
+    expect(html).toContain("«Crecer» lleva la delantera");
+    expect(html.indexOf("Crecer")).toBeLessThan(html.indexOf("Vender"));
+    expect(html).not.toContain("NaN");
+  });
+});
