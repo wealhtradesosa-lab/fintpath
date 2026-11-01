@@ -47,8 +47,9 @@ describe("Déficit solo con flujo negativo (Finanzas)", () => {
     expect(nivelLibertad({ ip: 99, ob: 100, fl: 50 }).nivel).toBe(2);
     expect(nivelLibertad({ ip: 99, ob: 100, fl: -1 }).nivel).toBe(1);
     expect(nivelLibertad({ ip: 100, ob: 100, fl: 0 }).nivel).toBe(4);
-    expect(nivelLibertad({ ip: 130, ob: 100, fl: 0 }).nivel).toBe(5);
-    expect(nivelLibertad({ ip: 129.99, ob: 100, fl: 0 }).nivel).toBe(4);
+    expect(nivelLibertad({ ip: 200, ob: 100, fl: 0 }).nivel).toBe(5);
+    expect(nivelLibertad({ ip: 199.99, ob: 100, fl: 0 }).nivel).toBe(4);
+    expect(nivelLibertad({ ip: 130, ob: 100, fl: 0 }).nivel).toBe(4);
   });
 });
 

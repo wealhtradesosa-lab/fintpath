@@ -117,6 +117,11 @@ import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCod
 import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId, PRECIOS_COP, fmtCOP } from "./lib/plans.js";
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
+import MedidorLibertad from "./components/infografia/MedidorLibertad";
+import FlujoDinero from "./components/infografia/FlujoDinero";
+import MapaPatrimonio from "./components/infografia/MapaPatrimonio";
+import RentasMesAMes from "./components/infografia/RentasMesAMes";
+import { rentasPorMes } from "./lib/infografia.js";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2582,25 +2587,14 @@ export default function FinPath(){
                 <div key={k.l}><div style={{fontSize:11,color:CHART.txt3,letterSpacing:"0.06em",fontWeight:600}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4,fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums"}}>{k.v}</div></div>
               )}
             </div>
-            {/* 31-oct-2026 — La pregunta que importa, arriba y en una frase:
-                ¿tus rentas ya pagan tu vida? (misma cifra que "Independencia"). */}
-            {(t.ob||0)>0&&(()=>{
-              const pct=t.ind||0, ok=pct>=100, dif=(t.ingresoPasivo||0)-(t.ob||0);
-              const col=ok?CHART.green:pct>=50?"#f59e0b":CHART.red;
+            {/* 1-nov-2026 — «¿Tus rentas ya pagan tu vida?» pasó al medidor de
+                libertad (MedidorLibertad, debajo). Aquí queda solo la variación
+                del patrimonio, que es del número de arriba. */}
+            {(()=>{
               const hs=resumenHistoria(registrarMes(u||{},{trm:trmReal(u)}).historiaPatrimonio);
-              return<div style={{marginTop:20,paddingTop:16,borderTop:`1px solid ${CHART.border}`}}>
-                <div style={{fontSize:15,color:CHART.txt,lineHeight:1.4}}>
-                  Tus rentas cubren el <b style={{color:col}}>{fmtPctEs(pct,0)}</b> de tus gastos y cuotas
-                  <span style={{color:CHART.txt3}}> · {ok?"sobran ":"faltan "}<b style={{color:ok?CHART.green:CHART.txt}}>{fm(Math.abs(dif))}</b> de rentas al mes</span>
-                </div>
-                <div style={{height:6,background:"rgba(var(--fp-ink),0.06)",borderRadius:3,marginTop:8,overflow:"hidden"}}>
-                  <div style={{height:"100%",width:Math.min(pct,100)+"%",background:col,borderRadius:3}}/>
-                </div>
-                <div style={{fontSize:12,color:CHART.txt3,marginTop:6}}>
-                  Cuentas de este mes: rentas (lo que te dejan tus activos sin trabajar) {fm(t.ingresoPasivo||0)} · gastos y cuotas {fm(t.ob||0)}.
-                  {!ok&&<span> · Para cubrirlo con rentas necesitarías unos <b style={{color:CHART.txt}}>{fm(Math.abs(dif)*12/RETORNO_SUPUESTO)}</b> más invertidos al {fmtPctEs(RETORNO_SUPUESTO*100,0)} anual.</span>}
-                  {hs.mes&&<span> · Patrimonio {hs.mes.cambio>=0?"▲ +":"▼ "}{fm(hs.mes.cambio)} vs {etiquetaMes(hs.mes.desde)}.</span>}
-                </div>
+              if(!hs.mes)return null;
+              return<div style={{marginTop:16,fontSize:13,color:CHART.txt3}}>
+                Patrimonio <b style={{color:hs.mes.cambio>=0?CHART.green:CHART.txt}}>{hs.mes.cambio>=0?"+":""}{fm(hs.mes.cambio)}</b> frente a {etiquetaMes(hs.mes.desde)}.
               </div>;
             })()}
           </div>
@@ -2633,6 +2627,11 @@ export default function FinPath(){
           <div style={{fontSize:11,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",fontWeight:600}}>Salud Financiera</div>
         </div>
       </div>
+
+      {/* 1-nov-2026 — Infografías del Dashboard (skill infografia-finpathia).
+          Base «este mes» (t.metMes), la misma del nivel, el Simulador y el Asesor. */}
+      {(t.ob||0)>0&&<MedidorLibertad cobertura={t.ind||0} ip={t.ingresoPasivo||0} ob={t.ob||0} nivel={t.nivel} fm={fm}
+        extra={(t.ind||0)<100?<div style={{fontSize:12,color:CHART.txt3}}>Para cubrirlo con rentas necesitarías unos <b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b> más invertidos al {fmtPctEs(RETORNO_SUPUESTO*100,0)} anual.</div>:null}/>}
 
       {/* Ubicación (25-jul-2026, Santiago): "mejor el slot del patrimonio neto
           de primero y debajo lo que ve el family office". Correcto — primero
@@ -2722,6 +2721,12 @@ export default function FinPath(){
       })()}
 
       <SecH n={2} t="¿Cómo se mueve tu plata?" s="Lo que entra, lo que sale y lo que queda cada mes"/>
+      {t.metMes&&<FlujoDinero met={t.metMes} fm={fm} periodo={"Este mes, "+(["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][new Date().getMonth()])}/>}
+      {(()=>{try{
+        const hoy=new Date();
+        const meses=rentasPorMes({ingresos:u.ingresos,gastos:u.gas,deudas:u.deu,inv:u.inv,trm,retencionMensual:t.retencionMensual||0,impuestoNeto:t.impuestoNeto||0},hoy.getFullYear());
+        return<RentasMesAMes meses={meses} mesActual={hoy.getMonth()+1}/>;
+      }catch(e){return null}})()}
       {/* ══════════ 2 · ¿CÓMO SE MUEVE MI PLATA? ══════════
           Indicadores de flujo: entra, sale, queda. */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:20}}>
@@ -2899,6 +2904,7 @@ export default function FinPath(){
       </div>
 
       <SecH n={3} t="¿En qué está tu patrimonio?" s="Composición, liquidez real y evolución"/>
+      {t.metMes&&<MapaPatrimonio met={t.metMes} fm={fm}/>}
       {/* ══════════ 3 · ¿EN QUÉ ESTÁ MI PATRIMONIO? ══════════
           Composición: en qué está puesta la plata. */}
       {(() => {

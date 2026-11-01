@@ -15,12 +15,22 @@ describe("nivel de libertad: una sola regla para badge, barra, tarjetas y titula
     expect(umbralNivel(NIVELES[3], { ob })).toBe(ob);
     expect(Math.round(umbralNivel(NIVELES[4], { ob }))).toBe(Math.round(ob * (NIVELES[4].factor || 1)));
   });
-  it("136% con meta de Abundancia en 130% → Abundancia 5/5 en todos lados", () => {
+  // 1-nov-2026 — El caso de la captura: con 136 % Santiago esperaba estar en
+  // Independencia, no en Abundancia (24-oct). Abundancia se asigna en 200 %.
+  it("136% → Independencia, y dice cuánto falta para Abundancia", () => {
     const nv = nivelLibertad({ ip, ob, fl: 1 });
-    expect(nv.nivel).toBe(5);
+    expect(nv.nivel).toBe(4);
     const v = vistaNivel({ ip, ob, nivel: nv });
-    expect(v.titular).toMatch(/^Estás en Abundancia \(nivel 5\/5\)\. Tu ingreso pasivo cubre el 136\s?% de tus gastos y cuotas: te sobra un 36\s?% cada mes\.$/);
+    expect(v.titular).toMatch(/^Estás en Independencia \(nivel 4\/5\)\. Tu ingreso pasivo cubre el 136\s?% de tus gastos y cuotas: te sobra un 36\s?% cada mes\.$/);
     expect(v.desborde).toMatch(/^\+36\s?% por encima$/);
+    expect(v.siguiente).toBe("Abundancia");
+  });
+  it("210% → Abundancia 5/5 en todos lados", () => {
+    const ip3 = Math.round(ob * 2.1);
+    const nv = nivelLibertad({ ip: ip3, ob, fl: 1 });
+    expect(nv.nivel).toBe(5);
+    const v = vistaNivel({ ip: ip3, ob, nivel: nv });
+    expect(v.titular).toMatch(/^Estás en Abundancia \(nivel 5\/5\)\. Tu ingreso pasivo cubre el 210\s?% de tus gastos y cuotas: te sobra un 110\s?% cada mes\.$/);
     expect(v.siguiente).toBeNull();
   });
   it("120% → Independencia y dice cuánto falta para Abundancia", () => {

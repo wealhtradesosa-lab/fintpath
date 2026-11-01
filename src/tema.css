@@ -71,6 +71,14 @@ html[data-tema="claro"] .fp-app [style*="color: rgb(59, 130, 246)"] { color: #25
    contra. Botón principal sólido negro (claro) / blanco (oscuro). Sin azul. */
 :root { --fp-pos: #1fd15f; --fp-neg: #ff6b35; --fp-alerta: #f5b544; }
 html[data-tema="claro"] .fp-app { --fp-pos: #00873c; --fp-neg: #d9480f; --fp-alerta: #9a6400; }
+/* 1-nov-2026 — Paleta de infografías (Santiago: «negro, verde, azul, naranja y
+   blanco … con tramas de oscuros a claros»; «uso adecuado del color, que no
+   seamos llenos de colores»). El azul vuelve como segundo acento con un solo
+   significado: lo que tienes y lo que producen tus activos. Verde = resultado
+   a favor; naranja = cuotas y lo que pierde valor; negro/blanco = estructura.
+   Las tramas se sacan con color-mix(var(--fp-azul) N%, transparent). */
+:root { --fp-azul: #3b82f6; }
+html[data-tema="claro"] .fp-app { --fp-azul: #1d5fd6; }
 /* bordes de tarjeta visibles en oscuro */
 .fp-app { --fp-border: rgba(var(--fp-ink),0.1); }
 /* textos verdes / rojos / ámbar → tonos de la paleta según el modo */

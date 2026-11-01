@@ -23,9 +23,9 @@ const simular = (u, fi, fg) => calcularMetricas({
 const nombre = (m) => m.nivel?.nivel;
 
 describe("nivel real vs escenario", () => {
-  it.each([[0.99, 4], [1.0, 4], [1.29, 4], [1.3, 5]])("borde %s → nivel %s con datos reales", (f, n) => {
+  it.each([[0.99, 4], [1.0, 4], [1.3, 4], [1.99, 4], [2.0, 5]])("borde %s → nivel %s con datos reales", (f, n) => {
     const m = metricasReales(mkUser(Math.round(G * f)));
-    // 99% no llega a Independencia (Seguridad si no hay esenciales aparte); 100–129 Independencia; 130 Abundancia
+    // 99% no llega a Independencia (Seguridad si no hay esenciales aparte); 100–199 Independencia; 200 Abundancia
     if (f < 1) expect(nombre(m)).toBeLessThan(4); else expect(nombre(m)).toBe(n);
   });
 
@@ -48,7 +48,9 @@ describe("nivel real vs escenario", () => {
     const u = mkUser(G);
     const f = FACTORES_ESCENARIO[id];
     const esc = simular(u, f.i, f.g);
-    expect(nombre(esc)).not.toBe(4);
+    // El escenario mide otra cobertura (con Abundancia en 200 %, el optimista
+    // puede quedar en el mismo escalón: lo que se prueba es que es otra cuenta).
+    expect(esc.coberturaPasiva).not.toBe(metricasReales(u).coberturaPasiva);
     expect(nombre(metricasReales(u))).toBe(4);
   });
 

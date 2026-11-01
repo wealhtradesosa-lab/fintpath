@@ -57,10 +57,11 @@ describe("candados y umbrales", () => {
   });
   // 21-oct-2026 — Los escalones ya no son fracciones inventadas (25%/50%): se
   // anclan a lo esencial y al total. Con esencial = 60 de un total de 100:
-  // bajo 60 es Estabilidad, 60 da Seguridad, 100 Independencia, 130 Abundancia.
-  it("umbrales: esencial / total / 1,3× total", () => {
+  // bajo 60 es Estabilidad, 60 da Seguridad, 100 Independencia, 200 Abundancia
+  // (1-nov-2026: el umbral de Abundancia es el mismo de su meta, 2× total).
+  it("umbrales: esencial / total / 2× total", () => {
     const n = (c) => nivelLibertad({ ip: c, ob: 100, obEsencial: 60, fl: 1, patrimonioNeto: 1 }).nivel;
-    expect([n(59.9), n(60), n(99.9), n(100), n(129.9), n(130)]).toEqual([2, 3, 3, 4, 4, 5]);
+    expect([n(59.9), n(60), n(99.9), n(100), n(130), n(199.9), n(200)]).toEqual([2, 3, 3, 4, 4, 4, 5]);
   });
   it("sin gastos clasificados, Seguridad es tan exigente como Independencia", () => {
     const n = (c) => nivelLibertad({ ip: c, ob: 100, fl: 1, patrimonioNeto: 1 }).nivel;

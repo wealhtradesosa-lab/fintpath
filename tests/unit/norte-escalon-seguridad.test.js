@@ -12,13 +12,13 @@ import { describe, it, expect } from "vitest";
 import { calcularNorte, itemsDesdeNorte } from "../../src/lib/norteUnMinuto.js";
 import { calcularMetricas } from "../../src/lib/metrics.js";
 
-// Barre el ingreso pasivo de 0 a 1,6× el gasto y devuelve los escalones que
+// Barre el ingreso pasivo de 0 a 2,4× el gasto (Abundancia = 2×) y devuelve los escalones que
 // la calculadora llega a mostrar.
 const escalonesAlcanzables = (extra = {}) => {
   const gastos = 10000000;
   const vistos = new Set();
   for (let i = 0; i <= 320; i++) {
-    const ingresoPasivo = (gastos * 1.6 * i) / 320;
+    const ingresoPasivo = (gastos * 2.4 * i) / 320;
     const r = calcularNorte({ ingresoTrabajo: gastos, gastos, ahorrado: 0, ingresoPasivo, ...extra });
     vistos.add(r.nivel);
   }

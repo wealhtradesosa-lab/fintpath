@@ -203,11 +203,20 @@ export function calcularBase(d = {}, opts = {}) {
   const rentaPorActivo = {};      // activoId → renta mensual bruta
   let rentaSinVinculo = 0;        // arriendos sin activoId
   const detallePasivo = [];
+  // 1-nov-2026 — Desglose para las infografías (flujo del dinero): mismo motor,
+  // misma base, para que las bandas sumen exactamente lo que dicen las cifras.
+  const ingresosPorGrupo = { inmuebles: 0, financieros: 0, trabajo: 0 };
+  const esRentaInmueble = (i) =>
+    /^NOL_ARRIENDO_|^CAP_ARRIENDO_/.test(String(i.fiscalCode || "")) ||
+    /^Arriendo|^Arrendamiento/.test(String(i.categoria || ""));
   ingresos.forEach((i) => {
     const m = mensualIngreso(i, trm, mens);
+    if (tipoIngreso(i) !== "pasivo") ingresosPorGrupo.trabajo += m;
+    else if (esRentaInmueble(i)) ingresosPorGrupo.inmuebles += m;
+    else ingresosPorGrupo.financieros += m;
     if (tipoIngreso(i) === "pasivo") {
       ipBruto += m;
-      detallePasivo.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: m, activoId: i.activoId || null });
+      detallePasivo.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: m, activoId: i.activoId || null, fuente: i.fuente || "" });
       if (i.activoId) rentaPorActivo[i.activoId] = (rentaPorActivo[i.activoId] || 0) + m;
       else if (/^NOL_ARRIENDO_|^CAP_ARRIENDO_/.test(String(i.fiscalCode || "")) || /^Arriendo|^Arrendamiento/.test(String(i.categoria || ""))) rentaSinVinculo += m;
     } else {
@@ -218,6 +227,7 @@ export function calcularBase(d = {}, opts = {}) {
   // 2) Gastos: los costos de un activo que renta se netean contra su renta.
   let aportesObligatorios = 0, gastosVida = 0, gastosVidaEsencial = 0;
   const costoPorActivo = {};
+  const gastosPorCategoria = {};
   let costoInmuebleSinVinculo = 0;
   // Origen de la renta del activo (`rentaOrigen`): 'manual' = el usuario escribió
   // el % y ya es neta → se usa tal cual: sus gastos vinculados (administración,
@@ -231,7 +241,10 @@ export function calcularBase(d = {}, opts = {}) {
       const m = mensualGasto(g, trm, mens);
       if (g.activoId && manualIds.has(g.activoId) && rentaPorActivo[g.activoId] != null) {
         costosAbsorbidosManual += m;
-      } else if (g.activoId && rentaPorActivo[g.activoId] != null) {
+        return; // ya está dentro de la renta neta: no sale del bolsillo aparte
+      }
+      gastosPorCategoria[cat] = (gastosPorCategoria[cat] || 0) + m;
+      if (g.activoId && rentaPorActivo[g.activoId] != null) {
         costoPorActivo[g.activoId] = (costoPorActivo[g.activoId] || 0) + m;
       } else if (!g.activoId && esGastoInmuebleArrendado(cat, g) && rentaSinVinculo > 0) {
         costoInmuebleSinVinculo += m;
@@ -318,6 +331,7 @@ export function calcularBase(d = {}, opts = {}) {
     activosTotal, deudaTotal, patrimonioNeto,
     liquidos, colchonMeses, invertibles, invertiblesIds: invertiblesLista.map((i) => i.id),
     rentaPorActivo, rentaNetaPorActivo, detallePasivo,
+    ingresosPorGrupo, gastosPorCategoria,
     // Valorización anual declarada (campo opcional `valorizacionPct` del activo).
     valorizacionAnual: inv.reduce((s, i) => s + valorActivo(i) * (num(i.valorizacionPct) / 100), 0),
     inv,
@@ -336,7 +350,7 @@ export function calcularBase(d = {}, opts = {}) {
 //   N2 Estabilidad   el flujo da, pero tus activos no pagan ni lo esencial
 //   N3 Seguridad     tus activos pagan LO ESENCIAL + las cuotas
 //   N4 Independencia tus activos pagan TODO tu nivel de vida
-//   N5 Abundancia    lo pagan con 30% de margen
+//   N5 Abundancia    lo pagan dos veces (200 %)
 //
 // `umbral` dice contra qué se compara el ingreso pasivo: "esencial", "total", o
 // null cuando el escalón lo decide el flujo y no el ingreso pasivo.
@@ -371,7 +385,7 @@ export function umbralNivel(nivelDef, { ob = 0, obEsencial = 0 } = {}) {
 
 /**
  * Nivel 1–5, o null si no hay obligaciones cargadas.
- *   N1 FL < 0 · N2 IP < esencial · N3 IP ≥ esencial · N4 IP ≥ total · N5 IP ≥ 1,3× total
+ *   N1 FL < 0 · N2 IP < esencial · N3 IP ≥ esencial · N4 IP ≥ total · N5 IP ≥ 2× total
  *   Candado: patrimonio neto < 0 → máximo N2.
  */
 export function nivelLibertad({ ip = 0, ob = 0, obEsencial = null, fl = 0, patrimonioNeto = 0 } = {}) {
@@ -388,7 +402,11 @@ export function nivelLibertad({ ip = 0, ob = 0, obEsencial = null, fl = 0, patri
   // los activos SÍ se ganaron: eso se reporta aparte, en `deficitFlujo`, para
   // que la UI lo diga encima de la tarjeta.
   let nivel;
-  if (ip >= ob * 1.3) nivel = 5;
+  // 1-nov-2026 — Abundancia se asigna con el MISMO umbral que su meta
+  // (umbralNivel → NIVELES[4].factor = 2, decisión de Santiago del 24-oct).
+  // Quedaba en 1,3×: con 150 % el badge decía «Abundancia» y la meta, a la vez,
+  // «te faltan $X para Abundancia».
+  if (ip >= umbralNivel(NIVELES[4], ctx)) nivel = 5;
   else if (ip >= ob) nivel = 4;
   else if (ip >= obEs) nivel = 3;
   else nivel = fl < 0 ? 1 : 2;
