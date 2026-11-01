@@ -7,7 +7,7 @@ export const RECORRIDOS = {
   horizonte: { titulo: "Tu plan en el tiempo", pasos: [
     { ids: ["flujo", "sim"], go: "flujo", l: "Este año", s: "mes a mes y simulador" },
     { ids: ["simf"], go: "simf", l: "Año entrante", s: "lo que viene en 2027" },
-    { ids: ["f10"], go: "f10", l: "10 años", s: "tus escenarios" },
+    { ids: ["f10", "f10crear", "f10esc", "plan"], go: "f10", l: "10 años", s: "tus escenarios" },
   ] },
   ia: { titulo: "Asesor IA", pasos: [
     { ids: ["asesor"], go: "asesor", l: "Pregúntale", s: "lo que quieras, en un chat" },

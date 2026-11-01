@@ -21,7 +21,7 @@ import {
   LayoutGrid, ChartColumnIncreasing, CircleDollarSign, ArrowUp, ArrowDown, Database, CircleAlert, FileText, Percent,
   Users, History, Calculator, Briefcase, CalendarDays, RefreshCw, DollarSign, ChartSpline, CalendarClock, Sunrise,
   Compass, Target, CandlestickChart, Armchair, Bitcoin, House, Tag, HandCoins, Bot, Gem, Settings, BookOpen,
-  BarChart3, Circle, FileBarChart,
+  BarChart3, Circle, FileBarChart, PencilRuler, Layers,
 } from "lucide-react";
 
 // 31-oct-2026 (Santiago, con dos referencias): íconos de línea con degradado
@@ -32,7 +32,7 @@ const MENU = {
   dash: [LayoutGrid], inv: [ChartColumnIncreasing], ing: [CircleDollarSign, ArrowUp], gas: [CircleDollarSign, ArrowDown],
   deu: [Database, CircleAlert], tax: [FileText, Percent], taxopt: [FileText, Percent], famtax: [Users], prevtax: [History],
   taxcalc: [Calculator], taxinf: [FileBarChart], contclientes: [Briefcase],
-  anio: [CalendarDays], flujo: [RefreshCw, DollarSign, "centro"], sim: [ChartSpline], simf: [CalendarClock], f10: [Sunrise],
+  anio: [CalendarDays], flujo: [RefreshCw, DollarSign, "centro"], sim: [ChartSpline], simf: [CalendarClock], f10: [Sunrise], f10crear: [PencilRuler], f10esc: [Layers],
   norte: [Compass], met: [Target], trd: [CandlestickChart], calc: [Calculator], pen: [Armchair], btc: [Bitcoin],
   buyvsinvest: [House], gocasional: [Tag], aportes: [HandCoins], asesor: [Bot], coach: [Users],
   price: [Gem], cuenta: [Settings], glosario: [BookOpen], metrics: [BarChart3],

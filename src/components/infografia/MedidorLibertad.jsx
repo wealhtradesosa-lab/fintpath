@@ -37,7 +37,7 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
     <section aria-label="Nivel de libertad financiera" style={{ ...tarjeta, display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center", marginBottom: 20 }}>
       <style>{CSS_INFOGRAFIA}</style>
 
-      <svg viewBox="0 0 320 196" role="img"
+      <svg viewBox="-28 -44 376 252" role="img"
         aria-label={`Tus rentas cubren el ${fmtPct(cobertura)} de tus gastos y cuotas${n ? `; nivel ${NIVELES[n - 1].nombre}` : ""}`}
         style={{ flex: "1 1 260px", maxWidth: 340, width: "100%", height: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
         <defs>
@@ -51,10 +51,21 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
           <path className="fpi-arco" d={`M${ini.x},${ini.y} A${R},${R} 0 0 1 ${p.x.toFixed(1)},${p.y.toFixed(1)}`} fill="none" strokeWidth="20" strokeLinecap="round"
             style={{ stroke: ok ? "url(#fpi-grad-arco)" : C.neg, "--fpi-largo": largo.toFixed(1) }} />
         )}
-        {marcas.map((m) => {
+        {marcas.map((m, i) => {
           const a = puntoArco(m.pct, max, { cx: CX, cy: CY, r: R - 16 });
           const b = puntoArco(m.pct, max, { cx: CX, cy: CY, r: R + 16 });
-          return <line key={m.et} x1={a.x} y1={a.y} x2={b.x} y2={b.y} strokeWidth="1.5" strokeDasharray="2 3" style={{ stroke: C.txt3 }} aria-hidden="true" />;
+          // Etiqueta afuera del arco; si queda pegada a la anterior, más afuera.
+          const pegada = i > 0 && Math.abs(m.pct - marcas[i - 1].pct) / max < 0.12;
+          const t = puntoArco(m.pct, max, { cx: CX, cy: CY, r: R + (pegada ? 44 : 28) });
+          const ancla = t.x < CX - 20 ? "end" : t.x > CX + 20 ? "start" : "middle";
+          const alcanzada = cobertura >= m.pct;
+          const enElExtremo = m.pct >= max * 0.97; // su nombre va bajo el extremo del arco
+          return (
+            <g key={m.et}>
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} strokeWidth="1.5" strokeDasharray="2 3" style={{ stroke: C.txt3 }} aria-hidden="true" />
+              {!enElExtremo && <text x={t.x} y={t.y + 4} textAnchor={ancla} fontSize="12" fontWeight={alcanzada ? 600 : 400} style={{ fill: alcanzada ? C.txt2 : C.txt3 }}>{m.et}</text>}
+            </g>
+          );
         })}
         <circle className="fpi-fade" cx={p.x} cy={p.y} r="8" strokeWidth="3"
           style={{ fill: "var(--fp-card)", stroke: ok ? C.pos : C.neg, filter: `drop-shadow(0 0 8px ${ok ? "var(--fp-pos)" : "var(--fp-neg)"})` }} />
@@ -62,6 +73,7 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
         <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" style={{ fill: C.txt2 }}>de tus gastos y cuotas</text>
         <text x={ini.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>0 %</text>
         <text x={fin.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>{max} %</text>
+        {marcas.some((m) => m.pct >= max * 0.97) && <text x={fin.x} y={CY + 41} textAnchor="middle" fontSize="12" style={{ fill: C.txt3 }}>Abundancia</text>}
       </svg>
 
       <div style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>

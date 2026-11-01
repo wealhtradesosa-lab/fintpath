@@ -2324,7 +2324,7 @@ export default function FinPath(){
       // sola —"Este año"— con sus dos vistas adentro. Las rutas no cambian
       // (`flujo` y `sim` siguen siendo las páginas): cambia la puerta.
       // `goesTo` = el padre no tiene página propia, lleva a su primera vista.
-      {id:"anio",i:"",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"",l:"Año entrante",hidden:isUS},{id:"f10",i:"",l:"Mi futuro a 10 años",hidden:isUS},{id:"norte",i:"",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"",l:"Trading",
+      {id:"anio",i:"",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"",l:"Año entrante",hidden:isUS},{id:"f10",i:"",l:"Mi futuro a 10 años",hidden:isUS,hasChildren:true,goesTo:((u?.futuro10?.escenarios)||[]).length?"f10esc":"f10crear"},{id:"f10crear",i:"",l:"Creador de escenarios",parent:"f10",hidden:isUS},{id:"f10esc",i:"",l:"Escenarios creados",parent:"f10",hidden:isUS},{id:"norte",i:"",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -3525,8 +3525,15 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     // «Escenarios a 10 años» (MiPlan) se retiró del menú: lo reemplaza «Mi futuro a 10 años».
     // Links/estado viejo con pg="plan" muestran f10. Datos guardados (perfilPlan, caminos…) se conservan.
+    // 1-nov-2026 (Santiago): «Mi futuro a 10 años» se despliega en el menú como
+    // «Este año», con dos subsecciones: Creador de escenarios y Escenarios creados.
     case"plan":
-    case"f10":return <MiFuturo10 user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
+    case"f10":
+    case"f10crear":
+    case"f10esc":{
+      const vistaF10=pg==="f10crear"?"crear":pg==="f10esc"?"creados":(((u?.futuro10?.escenarios)||[]).length?"creados":"crear");
+      return <MiFuturo10 vista={vistaF10} onCambiarVista={v=>setPg(v==="crear"?"f10crear":"f10esc")} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
+    }
     case"simf":return <><SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRefFuturo,_calRefHoy:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/><NotaFuenteImpuesto modo="futuro" cal={calRefFuturo} owners={(u?.owners)||[]} onNavigate={setPg}/></>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<><SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg}/></>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.

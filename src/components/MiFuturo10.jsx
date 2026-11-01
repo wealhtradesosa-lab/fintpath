@@ -27,7 +27,7 @@ const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio",
 
 export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 
-export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false }) {
+export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, vista: vistaProp, onCambiarVista }) {
   const [paso, setPaso] = useState(pasoInicial);
   // 24-oct-2026 (Santiago: "los avances que uno hace en la sección como que
   // no quedan guardados"). Lo que uno va decidiendo se guarda solo como
@@ -65,7 +65,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // 1-nov-2026 (Santiago): «Escenarios creados» es una subsección propia de
   // Mi futuro a 10 años, no el último paso del proceso. Abre ahí si hay
   // escenarios guardados; si no, en el proceso de creación.
-  const [vista, setVista] = useState(() => (pasoInicial === 0 && (guardado.escenarios || []).length ? "creados" : "crear"));
+  const [vistaLocal, setVistaLocal] = useState(() => (pasoInicial === 0 && (guardado.escenarios || []).length ? "creados" : "crear"));
+  // Con `vista` la manda el menú (subsecciones Creador de escenarios / Escenarios
+  // creados); sin ella, el componente la lleva solo (tests, usos sueltos).
+  const vista = vistaProp || vistaLocal;
+  const setVista = (v) => { if (onCambiarVista) onCambiarVista(v); else setVistaLocal(v); };
   const [verDetalle, setVerDetalle] = useState(false);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
   const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
@@ -115,12 +119,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         subtitle="1. Revisa lo que tienes y decide qué sigue · 2. Agrega lo que viene · 3. Mueve tu plata · 4. Mira el resultado. Tus datos reales no se tocan." />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{AVISO_F10}</div>
 
+      {!vistaProp && <>
       <div role="tablist" aria-label="Mi futuro a 10 años" style={{ display: "flex", gap: 4, background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 999, padding: 4, marginBottom: 14, width: "fit-content", maxWidth: "100%", flexWrap: "wrap" }}>
         {[["creados", `Escenarios creados${escenarios.length ? ` (${escenarios.length})` : ""}`], ["crear", editandoEsc ? `Editando «${editandoEsc.nombre}»` : "Crear o editar un escenario"]].map(([k, l]) => (
           <button key={k} type="button" role="tab" aria-selected={vista === k} onClick={() => { setVista(k); setVerEsc(null); track("futuro10_vista", { vista: k }); }}
             style={{ minHeight: 40, padding: "0 16px", borderRadius: 999, border: "none", cursor: "pointer", fontSize: 13, fontWeight: vista === k ? 600 : 500, background: vista === k ? C.tx : "transparent", color: vista === k ? "var(--fp-card)" : C.tx2, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l}</button>
         ))}
       </div>
+      </>}
 
       {vista === "creados" && (verEsc ? <>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
