@@ -4,10 +4,12 @@ import { fmtTasaEs } from "../lib/formato.js";
 import { fmtPctEs, inflacionGlobal } from "../lib/metrics.js";
 import { rentabilidadActivos } from "../lib/rentabilidadActivo.js";
 import RentabilidadActivos from "./RentabilidadActivos";
+import MapaPatrimonio from "./infografia/MapaPatrimonio";
+import ConcentracionActivos from "./infografia/ConcentracionActivos";
+import { calcularMetricas } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
 import BloqueadosPorPlan from "./BloqueadosPorPlan";
-import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { C } from "../lib/designTokens.js";
 import SimToggleInfo from "./SimToggleInfo";
@@ -495,53 +497,34 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       {/* Banner explicando toggle sim (Commit 8.8) */}
       <SimToggleInfo total={items.length} activos={activos.length} moduloNombre="una inversión" />
 
-      {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, marginBottom: 20 }}>
+      {/* 1-nov-2026 — Cifras de arriba en neutro (antes verde, azul y morado sin
+          significado) y el mapa del patrimonio (treemap: área = valor, color =
+          renta) en vez de la barra de composición. Skill infografia-finpathia. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))", gap: 12, marginBottom: 16 }}>
         {[
-          { l: "Patrimonio Total", v: fm(totalValor), c: T.green },
-          { l: "Rendimiento bruto al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—", c: T.blue },
-          { l: "Rendimiento bruto al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—", c: T.purple },
-          
-          { l: "Activos", v: activos.length, c: T.txt },
+          { l: "Patrimonio total", v: fm(totalValor), grande: true },
+          { l: "Renta bruta al mes", v: rendimientoAnual > 0 ? fm(rendimientoAnual / 12) : "—" },
+          { l: "Renta bruta al año", v: rendimientoAnual > 0 ? fm(rendimientoAnual) : "—" },
+          { l: "Activos", v: activos.length },
         ].map((m) => (
-          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
-            <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: m.c, marginTop: 4 }}>{m.v}</div>
+          <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "18px 20px" }}>
+            <div style={{ fontSize: 12, color: T.txt3 }}>{m.l}</div>
+            <div style={{ fontSize: m.grande ? 26 : 22, fontWeight: 600, color: T.txt, marginTop: 4, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{m.v}</div>
           </div>
         ))}
       </div>
 
-      {/* 26-jul-2026 (Santiago): barra de composición por tipo de activo,
-          el mismo componente de las otras tres secciones. En patrimonio esta
-          lectura es especialmente útil: es la misma que alimenta la alerta de
-          concentración del dashboard, así que el usuario ve acá el porqué de
-          esa advertencia. */}
       {(() => {
-        const grupos = {};
-        activos.forEach(i => { const c = claseDe(i); const k = c.nombre; grupos[k] = (grupos[k] || 0) + getVA(i, trm); });
-        const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
-        if (datos.length < 2) return null;
-        const tot = datos.reduce((s, d) => s + d.value, 0);
-        const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"];
-        return (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, color: T.txt3, marginBottom: 6, fontWeight: 600 }}>EN QUÉ ESTÁ TU PATRIMONIO</div>
-            <BarraComposicion datos={datos} total={tot} paleta={PAL} T={T} altura={44} />
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "7px 16px", marginTop: 8 }}>
-              {[...datos].sort((a,b)=>b.value-a.value).map((d, i) => (
-                <span key={d.name} style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, color: T.txt2 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: 3, background: PAL[i % PAL.length], flexShrink: 0 }} />
-                  {d.name} <strong style={{ fontFamily: "monospace" }}>{fmtPctEs(((d.value/tot)*100), 0)}</strong>
-                </span>
-              ))}
-            </div>
-          </div>
-        );
+        try {
+          const met = calcularMetricas({ ingresos: user?.ingresos || [], gastos: user?.gas || {}, deudas: deudas || [], inv: activos, trm });
+          return <MapaPatrimonio met={met} fm={fm} />;
+        } catch { return null; }
       })()}
 
       {/* 31-oct-2026 — Cuánto rinde cada activo, contra la inflación. */}
-      <RentabilidadActivos T={T} fm={fm} nombre={getName} onAbrir={openEdit}
+      <RentabilidadActivos fm={fm} nombre={getName} onAbrir={openEdit}
         r={rentabilidadActivos(activos, { valor: (i) => getVA(i, trm), rentaAnual: rentaPorActivo, gastoAnual: gastoPorActivo, inflacion: inflacionGlobal(user?.inflacionPct) })} />
+      <ConcentracionActivos fm={fm} activos={activos.map((i) => ({ id: i.id, nombre: getName(i), valor: getVA(i, trm) }))} />
       {(() => {
         const ds = deudasSinActivo(deudas, activos);
         if (ds.n === 0) return null;
