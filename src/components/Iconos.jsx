@@ -87,9 +87,9 @@ export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar" }) {
   const item = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", color: "var(--fp-txt)", borderRadius: 6 };
   return (
     <span ref={ref} style={{ position: "relative", display: "inline-block" }}>
-      <button type="button" aria-label="Más opciones" aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
-        style={{ background: "transparent", border: "1px solid transparent", borderRadius: 8, padding: "4px 6px", cursor: "pointer", color: "var(--fp-txt3)", display: "inline-flex" }}>
-        <MoreHorizontal size={18} strokeWidth={1.75} />
+      <button type="button" aria-label="Más opciones" title="Editar o eliminar" aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
+        style={{ background: abierto ? "rgba(var(--fp-ink),0.08)" : "rgba(var(--fp-ink),0.04)", border: "1px solid rgba(var(--fp-ink),0.16)", borderRadius: 8, padding: "4px 8px", cursor: "pointer", color: "var(--fp-txt)", display: "inline-flex" }}>
+        <MoreHorizontal size={18} strokeWidth={2.25} />
       </button>
       {abierto && (
         <div role="menu" style={{ position: "absolute", right: 0, top: "100%", zIndex: 30, minWidth: 150, background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.12)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
