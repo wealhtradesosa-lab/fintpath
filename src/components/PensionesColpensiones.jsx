@@ -3,7 +3,7 @@ import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
-import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 
 /* ═══════════════════════════════════════════════════
@@ -767,11 +767,11 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 14 }}>Crecimiento del Fondo</div>
             <ResponsiveContainer width="100%" height={240}>
-              <AreaChart data={rais.proyeccion}>
+              <AreaChart data={rais.proyeccion} margin={MARGEN_EJE}>
                 <ChartGradients/>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="anio" {...axisProps} />
-                <YAxis {...axisProps} tickFormatter={(v) => fCOP(v).replace("$","")} />
+                <YAxis {...axisProps} width={80} tickFormatter={(v) => sinCorte(fCOP(v).replace("$",""))} />
                 <Tooltip content={<ChartTooltip formatter={(v) => fCOP(v)}/>} />
                 <Area type="monotone" dataKey="saldo" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} />
               </AreaChart>

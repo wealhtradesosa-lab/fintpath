@@ -60,7 +60,7 @@ import PWAInstallPrompt from "./components/PWAInstallPrompt";
 import { track, trackSignup, trackCheckoutStarted, trackPurchase, captureUTMs, identifyUser, readFirstTouch, guardarEntrada, leerEntrada } from "./lib/analytics";
 import PageHeader from "./components/PageHeader";
 import StatCard from "./components/StatCard";
-import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "./lib/chartTheme.jsx";
+import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART, sinCorte, MARGEN_EJE } from "./lib/chartTheme.jsx";
 import AdvisorWorkspace from "./components/AdvisorWorkspace";
 import AcceptInvite from "./components/AcceptInvite";
 import DashboardObservabilidad from "./components/DashboardObservabilidad";
@@ -2763,7 +2763,7 @@ export default function FinPath(){
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>Flujo de Caja Mensual</div>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={fd}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
+            <BarChart data={fd} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} width={78} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         {/* Tax Estimate */}
@@ -3347,20 +3347,49 @@ export default function FinPath(){
       </div>
       </>}
 
-      {/* Cómo evolucionó en el tiempo — 31-oct-2026: ahora sale de los datos de
-          la cuenta (servidor), un punto por mes, con los dólares a la TRM. */}
+      {/* Cómo evolucionó en el tiempo — 31-oct-2026: sale de los datos de la
+          cuenta (servidor), un punto por mes, con los dólares a la TRM.
+          1-nov-2026 (Santiago: «veo una línea recta»). La historia arrancó el
+          31-oct: con 2 o 3 meses una curva es una recta que parece inventada.
+          Hasta 4 meses se muestra la comparación mes a mes; desde ahí, la curva
+          (azul: lo que tienes), con cada mes marcado. No se rellena con las
+          declaraciones: ese patrimonio es fiscal (costo) y daría un salto falso. */}
       {(()=>{
         const hs=resumenHistoria(registrarMes(u||{},{trm:trmReal(u)}).historiaPatrimonio);
-        if(hs.puntos.length<2)return null;
-        const data=hs.puntos.map(p=>({m:etiquetaMes(p.k),nw:p.nw}));
-        const c=hs.ano?hs.ano.cambio:hs.mes.cambio;
-        return<Cd s={{padding:20,marginBottom:20}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:8,marginBottom:12}}>
-            <div><div style={{fontSize:13,fontWeight:700,color:T.tx}}>Cómo ha crecido tu patrimonio</div><div style={{fontSize:12,color:T.tx3,marginTop:2}}>Un punto por mes, con lo que tenías cargado ese mes</div></div>
-            <div style={{fontSize:13,fontWeight:700,color:c>=0?T.gn:T.rd}}>{c>=0?"▲ +":"▼ "}{fm(c)} {hs.ano?"desde "+etiquetaMes(hs.ano.desde):"este mes"}</div>
+        if(hs.puntos.length<1)return null;
+        const pts=hs.puntos;
+        const c=hs.ano?hs.ano.cambio:hs.mes?hs.mes.cambio:0;
+        const titulo=<div><div style={{fontSize:19,fontWeight:600,color:T.tx,letterSpacing:"-0.01em"}}>¿Cómo ha crecido tu patrimonio?</div><div style={{fontSize:13,color:T.tx3,marginTop:4}}>Un punto por mes con lo que tenías cargado ese mes. La historia empezó en {etiquetaMes(pts[0].k)}; cada mes se suma uno.</div></div>;
+        if(pts.length<4){
+          return<Cd s={{padding:"clamp(20px,3vw,28px)",marginBottom:20,borderRadius:16}}>
+            {titulo}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,160px),1fr))",gap:16,marginTop:20,alignItems:"end"}}>
+              {pts.map((p,i)=>{const ult=i===pts.length-1;return<div key={p.k} style={{borderTop:`2px solid ${ult?"var(--fp-azul)":"rgba(var(--fp-ink),0.12)"}`,paddingTop:10}}>
+                <div style={{fontSize:12,color:T.tx3}}>{etiquetaMes(p.k)}{ult?" · hoy":""}</div>
+                <div style={{fontSize:ult?26:20,fontWeight:600,color:T.tx,fontVariantNumeric:"tabular-nums"}}>{fm(p.nw)}</div>
+              </div>})}
+              {pts.length>1&&<div style={{paddingTop:12}}>
+                <div style={{fontSize:12,color:T.tx3}}>Cambio</div>
+                <div style={{fontSize:20,fontWeight:600,color:c>=0?"var(--fp-pos)":"var(--fp-neg)",fontVariantNumeric:"tabular-nums"}}>{c>=0?"+":"−"}{fm(Math.abs(c))}</div>
+              </div>}
+            </div>
+            <div style={{fontSize:12,color:T.tx3,marginTop:14}}>{pts.length===1?"El próximo mes verás cuánto cambió.":`Con ${4-pts.length===1?"un mes":(4-pts.length)+" meses"} más verás la curva.`}</div>
+          </Cd>;
+        }
+        const data=pts.map(p=>({m:etiquetaMes(p.k),nw:p.nw}));
+        return<Cd s={{padding:"clamp(20px,3vw,28px)",marginBottom:20,borderRadius:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:12,marginBottom:12}}>
+            {titulo}
+            <div style={{textAlign:"right"}}><div style={{fontSize:12,color:T.tx3}}>{hs.ano?"Desde "+etiquetaMes(hs.ano.desde):"Este mes"}</div><div style={{fontSize:20,fontWeight:600,color:c>=0?"var(--fp-pos)":"var(--fp-neg)",fontVariantNumeric:"tabular-nums"}}>{c>=0?"+":"−"}{fm(Math.abs(c))}</div></div>
           </div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={data}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="m" {...axisProps}/><YAxis {...axisProps} width={52} domain={[v=>Math.floor(v*0.97),v=>Math.ceil(v*1.02)]} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="nw" name="Patrimonio neto" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2}/></AreaChart>
+          <ResponsiveContainer width="100%" height={200}>
+            <AreaChart data={data} margin={MARGEN_EJE}>
+              <defs><linearGradient id="fpGradHist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3b82f6" stopOpacity={0.3}/><stop offset="1" stopColor="#3b82f6" stopOpacity={0}/></linearGradient></defs>
+              <CartesianGrid {...gridProps}/><XAxis dataKey="m" {...axisProps}/>
+              <YAxis {...axisProps} width={78} domain={[v=>Math.floor(v*0.97),v=>Math.ceil(v*1.02)]} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/>
+              <Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/>
+              <Area type="monotone" dataKey="nw" name="Patrimonio neto" stroke="#3b82f6" strokeWidth={2.5} fill="url(#fpGradHist)" dot={{r:3.5,fill:"#3b82f6",strokeWidth:0}} activeDot={{r:5}}/>
+            </AreaChart>
           </ResponsiveContainer>
         </Cd>;
       })()}
@@ -3372,7 +3401,7 @@ export default function FinPath(){
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>Proyección Patrimonial (8% anual)</div>
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={pj}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
+            <AreaChart data={pj} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} width={78} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
           </ResponsiveContainer>
         </Cd>
         {/* Independence Progress */}

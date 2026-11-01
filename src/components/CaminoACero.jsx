@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import NumberInput from "./NumberInput";
-import { ChartTooltip } from "../lib/chartTheme.jsx";
+import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 
 /**
  * 31-oct-2026 — Deudas: el saldo bajando mes a mes, la fecha en que quedas
@@ -99,10 +99,10 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
       {data.length > 1 && (
         <div style={{ height: 200 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}>
+            <LineChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
               <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={56} tickFormatter={(v) => fm(v).replace("$", "")} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={78} tickFormatter={(v) => sinCorte(fm(v).replace("$", ""))} axisLine={false} tickLine={false} />
               <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />
               <Line type="monotone" dataKey="solo" name="Solo cuotas" stroke={V.red} strokeWidth={2} dot={false} />
               {conExtra && <Line type="monotone" dataKey="extra" name={`Con ${fm(plan.extra)} extra`} stroke={V.green} strokeWidth={2} dot={false} />}

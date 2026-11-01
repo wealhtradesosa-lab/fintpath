@@ -29,7 +29,7 @@ import {
 import PageHeader from "./PageHeader";
 import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, estaPagadoEnAño, getMesPago, FRECUENCIAS, getMonto, rangoEfectivo } from "../lib/flowHelpers.js";
 import { estimarImpuestoReferente, calibracionReferente, saldoImpuestoDelMes } from "../lib/impuestoReferente";
-import { ChartTooltip } from "../lib/chartTheme.jsx";
+import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 
 const T = {
@@ -596,7 +596,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               style={{ cursor: "pointer" }}>
               <CartesianGrid stroke={T.border} vertical={false} />
               <XAxis dataKey="mesLabel" stroke={T.txt3} fontSize={11} axisLine={{ stroke: T.border }} tickLine={false} />
-              <YAxis stroke={T.txt3} fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmShort} />
+              <YAxis stroke={T.txt3} fontSize={11} width={84} axisLine={false} tickLine={false} tickFormatter={(v) => sinCorte(fmShort(v))} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(var(--fp-ink),0.03)" }} />
               <ReferenceLine y={0} stroke={T.border} strokeDasharray="3 3" />
               <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: `Cash Flow promedio ${fmShort(highlights.promedio)}`, position: "insideTopRight", fill: T.txt3, fontSize: 11 }} />

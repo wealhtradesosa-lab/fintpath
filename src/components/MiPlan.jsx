@@ -27,7 +27,7 @@ import InputDecimalEs from "./InputDecimalEs.jsx";
 import { C, F } from "../lib/designTokens";
 import { fmtPlataCortaEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Area, ReferenceLine, BarChart, Bar, Cell } from "recharts";
-import { ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
+import { ChartTooltip, axisProps, gridProps, CHART, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import { baseDesdeUsuario, CAMINOS_BASE, compararCaminos, medirCanastas, canastaDe, CANASTA_LABEL, CANASTA_CORTO, CANASTA_PRUEBA, CANASTA_EJEMPLOS, nombrarMezcla, moverMezcla, porQueCanasta, CONDICION_LABEL, PERFIL_DEFAULT, escenarioDesdeCamino, proponerDesdeCamino, cuentaMotor, escenarioVacio, liquidezEscenario, narrar, cienEnCada, pagaAlMes } from "../lib/caminos.js";
 
 // Capital y mensualidades se escriben igual: una sola función, con separador
@@ -1457,7 +1457,7 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
           <ComposedChart data={datos} margin={{ top: 26, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="mes" {...axisProps} ticks={ticks} tickFormatter={(m) => (m === 0 ? "hoy" : `año ${m / 12}`)} />
-            <YAxis {...axisProps} width={64} tickFormatter={(v) => fmMes(v).replace("$", "")} />
+            <YAxis {...axisProps} width={80} tickFormatter={(v) => sinCorte(fmMes(v).replace("$", ""))} />
             <Tooltip content={<DeDonde />} />
             <Area type="stepAfter" dataKey={(x) => [Math.min(x.entra, x.sale), x.entra]} name="Sobra" stroke="none" fill={C.ok} fillOpacity={0.16} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="entra" name="Entra" stroke={r.color} strokeWidth={2} dot={false} isAnimationActive={false} />

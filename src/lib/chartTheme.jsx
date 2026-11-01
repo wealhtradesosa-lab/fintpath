@@ -189,6 +189,13 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
 // axisProps · estilo unificado para ejes X/Y de Recharts
 // USO: <XAxis dataKey="name" {...axisProps} />
 // ─────────────────────────────────────────────────────────────────────────
+// 1-nov-2026 — Recharts parte el texto del eje en los espacios cuando no le
+// cabe: «17.378 MM» salía en dos líneas y la cifra de arriba quedaba mordida.
+// sinCorte cambia los espacios por espacios duros (Recharts no parte ahí).
+export const sinCorte = (s) => String(s).replace(/ /g, "\u00A0");
+// Margen para que la cifra más alta y la más baja del eje no se corten.
+export const MARGEN_EJE = { top: 12, right: 12, bottom: 4, left: 4 };
+
 export const axisProps = {
   tick: {
     fill: SVG_TXT, // atributo SVG: no acepta var(); gris que se lee en claro y en oscuro
