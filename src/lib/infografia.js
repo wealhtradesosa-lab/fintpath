@@ -9,6 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { tipoActivo, calcularMetricas } from "./metrics.js";
+import { tasaMensualEq } from "./flowHelpers.js";
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 // Etiquetas del Sankey: caben ~24 caracteres a cada lado.
@@ -195,4 +196,30 @@ export function rentasPorMes(args, anio) {
     const m = calcularMetricas(args, { base: "mes", anio, mes: i + 1 });
     return { mes: i + 1, ip: num(m.ip), ob: num(m.ob), cobertura: num(m.coberturaPasiva) };
   });
+}
+
+// ─── Camino a cero deudas ──────────────────────────────────────────────────
+// Por deuda viva (sim !== false, saldo y cuota > 0): meses hasta saldarla
+// pagando la cuota de hoy (misma fórmula que mesesLibreDeuda) y la cuota que
+// devuelve al terminar, en pesos. Ordenado por fecha de salida.
+export function planDeudas(deudas, { trm = 4200, hoy = new Date() } = {}) {
+  const filas = [];
+  let noAmortizan = 0;
+  (deudas || []).forEach((d) => {
+    if (!d || d.sim === false) return;
+    const B = num(d.mt), P = num(d.pg ?? d.pago);
+    if (B <= 0 || P <= 0) return;
+    const r = tasaMensualEq(d.ts);
+    let n;
+    if (r <= 0) n = B / P;
+    else if (P <= B * r) { noAmortizan++; return; }
+    else n = -Math.log(1 - (r * B) / P) / Math.log(1 + r);
+    const meses = Math.ceil(n);
+    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + meses, 1);
+    const fx = d.moneda === "USD" ? trm : 1;
+    filas.push({ nombre: d.n || d.nombre || "Deuda", meses, fecha, cuota: P * fx, saldo: B * fx, tasa: num(d.ts) });
+  });
+  filas.sort((a, b) => a.meses - b.meses);
+  const meses = filas.length ? filas[filas.length - 1].meses : 0;
+  return { filas, meses, fecha: filas.length ? filas[filas.length - 1].fecha : null, cuotaTotal: filas.reduce((s, f) => s + f.cuota, 0), noAmortizan };
 }

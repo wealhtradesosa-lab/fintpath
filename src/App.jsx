@@ -121,6 +121,10 @@ import MedidorLibertad from "./components/infografia/MedidorLibertad";
 import FlujoDinero from "./components/infografia/FlujoDinero";
 import MapaPatrimonio from "./components/infografia/MapaPatrimonio";
 import RentasMesAMes from "./components/infografia/RentasMesAMes";
+import IndicadoresSalud from "./components/infografia/IndicadoresSalud";
+import FireNumero from "./components/infografia/FireNumero";
+import CaminoIndependencia from "./components/infografia/CaminoIndependencia";
+import LineaDeudas from "./components/infografia/LineaDeudas";
 import { rentasPorMes } from "./lib/infografia.js";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
@@ -2631,7 +2635,10 @@ export default function FinPath(){
       {/* 1-nov-2026 — Infografías del Dashboard (skill infografia-finpathia).
           Base «este mes» (t.metMes), la misma del nivel, el Simulador y el Asesor. */}
       {(t.ob||0)>0&&<MedidorLibertad cobertura={t.ind||0} ip={t.ingresoPasivo||0} ob={t.ob||0} nivel={t.nivel} fm={fm}
-        extra={(t.ind||0)<100?<div style={{fontSize:12,color:CHART.txt3}}>Para cubrirlo con rentas necesitarías unos <b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b> más invertidos al {fmtPctEs(RETORNO_SUPUESTO*100,0)} anual.</div>:null}/>}
+        extra={<>
+          {(t.ind||0)<100&&<div style={{fontSize:12,color:CHART.txt3}}>Para cubrirlo con rentas necesitarías unos <b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b> más invertidos al {fmtPctEs(RETORNO_SUPUESTO*100,0)} anual.</div>}
+          {(t.gfm||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>Tu número FIRE: <b style={{color:CHART.txt}}>{fm(t.gfm*12*25)}</b> · llevas el <b style={{color:CHART.txt}}>{fmtPctEs(Math.max(0,t.nw/(t.gfm*12*25)*100),0)}</b></div>}
+        </>}/>}
 
       {/* Ubicación (25-jul-2026, Santiago): "mejor el slot del patrimonio neto
           de primero y debajo lo que ve el family office". Correcto — primero
@@ -2928,42 +2935,35 @@ export default function FinPath(){
         const concRisk = (t.ab+ib.tv) > 0 ? (maxAsset.v / (t.ab+ib.tv) * 100) : 0;
 
         return (<>
-          <Cd s={{padding:20,marginTop:20}}>
-            <div style={{fontSize:14,fontWeight:700,color:T.tx2,marginBottom:20}}>Indicadores Family Office</div>
-            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:20}}>
-              {[
-                {l:"Colchón de liquidez",v:runway >= 999 ? "∞" : fmtMeses(runway),c:runway>=12?T.gn:runway>=6?"#f59e0b":T.rd,tip:"Activos líquidos (caja, cuentas, CDT, fondos a la vista) ÷ gastos y cuotas del mes. Mínimo 6 meses.",i:""},
-                {l:"Burn rate",v:pc(burnRate),c:burnRate<=4?T.gn:burnRate<=8?"#f59e0b":T.rd,tip:"% del patrimonio que gastas al año. Ideal: <4%.",i:""},
-                {l:"Tasa de ahorro",v:pc(savingsRate),c:savingsRate>=20?T.gn:savingsRate>=10?"#f59e0b":T.rd,tip:"% del ingreso que ahorras. Ideal: >20%.",i:""},
-                {l:"Debt service",v:pc(debtService),c:debtService<=30?T.gn:debtService<=50?"#f59e0b":T.rd,tip:"% del ingreso que va a pagar deudas. Ideal: <30%.",i:""},
-              ].map(k => (
-                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 18px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:11,color:T.tx3,fontWeight:600}}>{k.l}</span>
-                    <span style={{fontSize:14}}>{k.i}</span>
-                  </div>
-                  <div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div>
-                  <div style={{fontSize:11,color:T.tx3,marginTop:4,lineHeight:1.3}}>{k.tip}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:mb?"1fr 1fr":"repeat(auto-fit,minmax(150px,1fr))",gap:10,marginBottom:20}}>
-              {[
-                {l:"Ingreso que no es trabajo",v:pc(passiveRatio),c:passiveRatio>=80?T.gn:passiveRatio>=50?"#f59e0b":T.rd,tip:"% del ingreso que NO depende de tu trabajo.",i:""},
-                {l:t.rentaYield.etiqueta,v:t.rentaYield.yield==null?"—":pc(yieldOnCost),c:yieldOnCost>=8?T.gn:yieldOnCost>=4?"#f59e0b":T.rd,tip:"Renta neta anual ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"costo de adquisición")+" de los activos que rentan.",i:""},
-                {l:"Concentración",v:pc(concRisk),c:concRisk<=30?T.gn:concRisk<=50?"#f59e0b":T.rd,tip:concRisk>30?""+maxAsset.n+" es "+pc(concRisk)+" de tu patrimonio":"Ningún activo supera el 30%. Bien diversificado.",i:""},
-                {l:"FIRE progress",v:pc(fireProgress),c:fireProgress>=100?T.gn:fireProgress>=50?"#f59e0b":T.rd,tip:"Patrimonio ÷ (gastos×25 años). 100% = nunca más necesitas trabajar.",i:""},
-              ].map(k => (
-                <div key={k.l} style={{background:T.bg3,borderRadius:12,padding:"14px 18px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:11,color:T.tx3,fontWeight:600}}>{k.l}</span>
-                    <span style={{fontSize:14}}>{k.i}</span>
-                  </div>
-                  <div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div>
-                  <div style={{fontSize:11,color:T.tx3,marginTop:4,lineHeight:1.3}}>{k.tip}</div>
-                </div>
-              ))}
-            </div>
+          {/* 1-nov-2026 (Santiago: «toda esa sección de indicadores family office
+              también la podrías mejorar»; «me faltan datos… estaba escondido»).
+              Indicadores como bullet graphs y, A LA VISTA (antes plegados en «Ver
+              el análisis detallado»): número FIRE, hitos y fecha libre de deudas.
+              Mismas fórmulas de siempre; cambia la presentación. */}
+          <IndicadoresSalud items={[
+            {l:"Colchón de liquidez",valor:Math.min(runway,24),texto:runway>=999?"∞":fmtMeses(runway),max:24,ideal:[6,1e9],cerca:[3,6],tip:"Líquidos ÷ gastos y cuotas del mes. Ideal: 6 meses o más."},
+            {l:"Gasto anual sobre patrimonio",valor:burnRate,texto:pc(burnRate),max:12,ideal:[0,4],cerca:[4,8],tip:"Lo que gastas al año ÷ tu patrimonio. Ideal: 4 % o menos."},
+            {l:"Tasa de ahorro",valor:savingsRate,texto:pc(savingsRate),max:50,ideal:[20,1e9],cerca:[10,20],tip:"Lo que te sobra ÷ lo que entra. Ideal: 20 % o más."},
+            {l:"Carga de deudas",valor:debtService,texto:pc(debtService),max:60,ideal:[0,30],cerca:[30,50],tip:"Cuotas ÷ lo que entra. Ideal: 30 % o menos."},
+            {l:"Ingreso que no es trabajo",valor:passiveRatio,texto:pc(passiveRatio),max:100,ideal:[80,100],cerca:[50,80],tip:"La parte de tu ingreso que no depende de trabajar."},
+            {l:t.rentaYield.etiqueta,valor:t.rentaYield.yield==null?null:yieldOnCost,texto:t.rentaYield.yield==null?"—":pc(yieldOnCost),max:16,ideal:[8,1e9],cerca:[4,8],tip:"Renta neta al año ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"lo que costaron")+" los activos que rentan."},
+            {l:"Concentración",valor:concRisk,texto:pc(concRisk),max:100,ideal:[0,30],cerca:[30,50],tip:concRisk>30?(maxAsset.n+" es el "+pc(concRisk)+" de tu patrimonio."):"Ningún activo pasa del 30 %."},
+          ]}/>
+          <FireNumero fireNumber={fireNumber} nw={t.nw} fm={fm} ahorroMes={Math.max(0,t.cf||0)}
+            anios={añosParaMeta(t.nw,fireNumber,Math.max(0,t.cf||0),0.05)}/>
+          {(()=>{
+            const liquidA=((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i=>["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0);
+            const totalD=((u&&u.deu)||[]).filter(d=>d.sim!==false).reduce((s,d)=>s+(d.mt||0),0);
+            return<CaminoIndependencia fm={fm} hitos={[
+              {name:"Fondo de emergencia (6 meses)",target:t.te*6,current:liquidA},
+              {name:"Libre de deudas",target:totalD>0?totalD:1,current:totalD>0?Math.max(0,totalD-t.td):1},
+              {name:"50 % independencia",target:t.gfm*12*12.5,current:t.nw},
+              {name:"Número FIRE (25× gastos)",target:fireNumber,current:t.nw},
+              {name:"Libertad absoluta (62,5× gastos)",target:t.gfm*12*62.5,current:t.nw},
+            ]}/>;
+          })()}
+          {t.td>0&&<LineaDeudas deudas={(u&&u.deu)||[]} trm={trm} fm={fm}/>}
+          <Cd s={dashMas?{padding:20,marginTop:20}:{padding:0,marginTop:20,background:"transparent",border:"none"}}>
             {/* Dos columnas (25-jul-2026, Santiago: "¿se podrá diagramar mejor
                 esta parte? tal vez aprovechando un diseño a dos columnas, no
                 tiene que quedar unas gráficas tan alargadas de líneas tan
@@ -2980,134 +2980,9 @@ export default function FinPath(){
             `}</style>
             {dashMas&&<>
             <div className="fp-fo2" style={{columnCount:mb?1:2,columnGap:12}}>
-            {/* FIRE Number */}
-            <div style={{background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                <div>
-                  <div style={{fontSize:12,color:T.tx3,fontWeight:600}}>FIRE NUMBER — ¿Cuánto necesitas para no trabajar más?</div>
-                  <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Fórmula: gastos mensuales × 12 × 25 años (regla del 4%)</div>
-                </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:18,fontWeight:700,color:fireProgress>=100?T.gn:"#f59e0b"}}>{fm(fireNumber)}</div>
-                  <div style={{fontSize:11,color:T.tx3}}>necesitas en total</div>
-                </div>
-              </div>
-              <div style={{height:12,background:"rgba(var(--fp-ink),0.05)",borderRadius:8,overflow:"hidden",marginBottom:8}}>
-                <div style={{height:"100%",width:Math.min(fireProgress,100)+"%",background:fireProgress>=100?"linear-gradient(90deg,#00c805,#3b82f6)":"linear-gradient(90deg,#f59e0b,#f59e0b)",borderRadius:8,transition:"width 0.5s"}}/>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:T.tx3}}>
-                <span>Tienes: {fm(t.nw)}</span>
-                <span style={{color:fireProgress>=100?T.gn:"#f59e0b",fontWeight:700}}>{pc(fireProgress)}</span>
-                <span>Meta: {fm(fireNumber)}</span>
-              </div>
-              {fireProgress<100&&<div style={{fontSize:11,color:T.tx3,marginTop:6}}>
-                Te falta: {fm(fireNumber - t.nw)}. {(()=>{const a=añosParaMeta(t.nw,fireNumber,Math.max(0,t.cf),0.05);return a==null?"Con tu ahorro actual no se proyecta alcanzarlo — genera ahorro mensual positivo.":"Proyectado a 5% real anual"+(t.cf>0?" ("+fm(t.cf)+"/mes de ahorro)":", solo con tu patrimonio actual")+", llegas en ~"+(a<1?"menos de 1":fmtAniosEs(a))+" años.";})()}
-              </div>}
-              {fireProgress>=100&&<div style={{fontSize:12,color:T.gn,fontWeight:700,marginTop:6}}>
-                ¡Ya superaste tu FIRE number! Técnicamente puedes dejar de trabajar y vivir de tu patrimonio por 25+ años.
-              </div>}
-            </div>
-
-            {/* FECHA LIBRE DE DEUDA */}
-            {t.td > 0 && (() => {
-              const deudas = ((u&&u.deu)||[]).filter(d => d.sim !== false).map(d => ({...d, mt: d.mt||0, pg: d.pg||0, ts: d.ts||0})).filter(d => d.mt > 0 && d.pg > 0);
-              const totalDeuda = deudas.reduce((s,d) => s + d.mt, 0);
-              const totalCuota = deudas.reduce((s,d) => s + d.pg, 0);
-              const { meses: mesesLibre, algunaNoAmortiza } = mesesLibreDeuda(deudas);
-              const aniosLibre = fmtAniosEs(mesesLibre / 12);
-              const fechaLibre = new Date();
-              fechaLibre.setMonth(fechaLibre.getMonth() + mesesLibre);
-              const fechaStr = fechaLibre.toLocaleDateString("es-CO", {month:"long", year:"numeric"});
-              // Avalancha: order by highest rate first
-              const avalancha = [...deudas].sort((a,b) => (b.ts||0) - (a.ts||0));
-              // Bola de nieve: order by smallest balance first
-              const bolaNieve = [...deudas].sort((a,b) => a.mt - b.mt);
-              
-              return (
-                <div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-                    <div>
-                      <div style={{fontSize:12,color:T.tx3,fontWeight:600}}>FECHA LIBRE DE DEUDA</div>
-                      <div style={{fontSize:11,color:T.tx3,marginTop:2}}>Al ritmo actual de pago de cuotas</div>
-                    </div>
-                    <div style={{textAlign:"right"}}>
-                      <div style={{fontSize:20,fontWeight:700,color:mesesLibre<=36?T.gn:mesesLibre<=72?"#f59e0b":T.rd}}>{fechaStr}</div>
-                      <div style={{fontSize:11,color:T.tx3}}>en {aniosLibre} años ({mesesLibre} meses)</div>
-                    </div>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
-                    <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:12}}>
-                      <div style={{fontSize:12,fontWeight:700,color:T.rd,marginBottom:8}}>Estrategia Avalancha (ahorra más intereses)</div>
-                      <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>Paga primero la de mayor tasa de interés</div>
-                      {avalancha.slice(0,4).map((d,i) => (
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"3px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
-                          <span style={{color:i===0?T.rd:T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
-                          <span style={{color:T.tx3,fontFamily:"monospace"}}>{fmtTasaEs(d.ts||0)} → {fm(d.pg)}/mes</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{background:"rgba(var(--fp-ink),0.03)",borderRadius:8,padding:12}}>
-                      <div style={{fontSize:12,fontWeight:700,color:"#f59e0b",marginBottom:8}}>Estrategia Bola de Nieve (motivación rápida)</div>
-                      <div style={{fontSize:11,color:T.tx3,marginBottom:8}}>Paga primero la más pequeña</div>
-                      {bolaNieve.slice(0,4).map((d,i) => (
-                        <div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"3px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
-                          <span style={{color:i===0?"#f59e0b":T.tx2}}>{i+1}. {d.n||d.nombre||"Deuda"}</span>
-                          <span style={{color:T.tx3,fontFamily:"monospace"}}>{fm(d.mt)} saldo</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{fontSize:11,color:T.tx3,marginTop:8}}>
-                    Al quedar libre de deuda, tu cash flow sube <strong style={{color:T.gn}}>+{fm(totalCuota)}/mes</strong> ({fm(totalCuota*12)}/año) — ese dinero pasa directo a inversión o ahorro.
-                  </div>
-                  {algunaNoAmortiza && <div style={{fontSize:11,color:T.rd,marginTop:6}}>Alguna cuota no alcanza a cubrir el interés — a ese ritmo esa deuda no se amortiza. Revisa la cuota o la tasa.</div>}
-                </div>
-              );
-            })()}
-
-            {/* TIMELINE DE INDEPENDENCIA */}
-            <div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:8}}>CAMINO A LA INDEPENDENCIA FINANCIERA</div>
-              {(() => {
-                const hitos = [];
-                // Milestone 1: Emergency fund (6 months)
-                const emerFund = t.te * 6;
-                const liquidA = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
-                hitos.push({name:"Fondo de emergencia (6 meses)",target:emerFund,current:liquidA,icon:""});
-                // Milestone 2: Debt free
-                const totalD = ((u&&u.deu)||[]).filter(d=>d.sim!==false).reduce((s,d) => s + (d.mt||0), 0);
-                hitos.push({name:"Libre de deudas",target:totalD,current:Math.max(0,totalD - t.td),icon:""});
-                // Milestone 3: 50% independence
-                const half = t.gfm * 12 * 12.5;
-                hitos.push({name:"50% independencia",target:half,current:t.nw,icon:""});
-                // Milestone 4: FIRE number
-                hitos.push({name:"FIRE number (25× gastos)",target:fireNumber,current:t.nw,icon:""});
-                // Milestone 5: Absolute freedom (2.5x gastos)
-                const absol = t.gfm * 12 * 62.5;
-                hitos.push({name:"Libertad absoluta (62,5× gastos)",target:absol,current:t.nw,icon:""});
-                
-                return hitos.map((h,i) => {
-                  const prog = h.target > 0 ? Math.min((h.current / h.target) * 100, 100) : 0;
-                  const done = prog >= 100;
-                  return (
-                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                      <span style={{fontSize:14,width:20}}>{h.icon}</span>
-                      <div style={{flex:1}}>
-                        <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:8}}>
-                          <span style={{color:done?T.gn:T.tx2,fontWeight:done?700:400}}>{h.name}</span>
-                          <span style={{color:done?T.gn:T.tx3}}>{done?"Logrado":fm(h.target)}</span>
-                        </div>
-                        <div style={{height:6,background:"rgba(var(--fp-ink),0.05)",borderRadius:3,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:prog+"%",background:done?T.gn:prog>50?"#f59e0b":"#ff5000",borderRadius:3}}/>
-                        </div>
-                      </div>
-                      <span style={{fontSize:11,color:done?T.gn:T.tx3,minWidth:36,textAlign:"right"}}>{Math.round(prog)}%</span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
+            {/* 1-nov-2026 — Número FIRE, fecha libre de deuda y camino a la
+                independencia salieron de aquí: ahora van a la vista arriba
+                (FireNumero, LineaDeudas, CaminoIndependencia). */}
             {/* CONCENTRACIÓN DE RIESGO */}
             <div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
               <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:20}}>CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?</div>

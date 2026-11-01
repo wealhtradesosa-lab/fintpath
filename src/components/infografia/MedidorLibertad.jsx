@@ -84,24 +84,29 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
         {extra}
       </div>
 
-      <div aria-hidden="true" style={{ flex: "1 1 260px", minWidth: 0, display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 6, alignItems: "end" }}>
+      <div aria-hidden="true" style={{ flex: "1 1 380px", minWidth: "min(100%, 340px)", display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", columnGap: 8, rowGap: 10 }}>
         {NIVELES.map((lv, i) => {
           const h = [26, 44, 66, 92, 120][i];
           const actual = n === lv.id;
           const pasado = n && lv.id < n;
           return (
-            <div key={lv.id} style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+            <div key={lv.id} style={{ height: 120, display: "flex", alignItems: "flex-end", gridRow: 1 }}>
               <div className="fpi-barra" style={{
-                height: h, borderRadius: 6, animationDelay: `${i * 40}ms`,
+                width: "100%", height: h, borderRadius: 6, animationDelay: `${i * 40}ms`, boxSizing: "border-box",
                 background: actual ? C.pos : pasado ? trama(C.azul, 28 + i * 12) : "transparent",
                 border: actual || pasado ? "none" : "1px dashed rgba(var(--fp-ink),0.22)",
                 boxShadow: actual ? "0 0 16px color-mix(in srgb, var(--fp-pos) 35%, transparent)" : "none",
-                display: "flex", justifyContent: "center", paddingTop: 6, boxSizing: "border-box",
+                display: "flex", justifyContent: "center", paddingTop: 6,
               }}>
                 {actual && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--fp-card)" }}>Tú</span>}
               </div>
-              <div style={{ fontSize: 11, lineHeight: 1.25, color: actual ? C.txt : C.txt3, fontWeight: actual ? 600 : 400, overflowWrap: "anywhere", hyphens: "auto" }} lang="es">{lv.nombre}</div>
             </div>
+          );
+        })}
+        {NIVELES.map((lv) => {
+          const actual = n === lv.id;
+          return (
+            <div key={"e" + lv.id} style={{ gridRow: 2, fontSize: 11, lineHeight: 1.2, whiteSpace: "nowrap", color: actual ? C.txt : C.txt3, fontWeight: actual ? 600 : 400 }}>{lv.nombre}</div>
           );
         })}
       </div>

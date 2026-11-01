@@ -38,6 +38,8 @@ export const CSS_INFOGRAFIA = `
 @keyframes fpi-crecer { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 .fpi-arco { stroke-dasharray: var(--fpi-largo, 400); animation: fpi-dibujar .6s cubic-bezier(.2,.8,.2,1) both; }
 .fpi-fade { animation: fpi-aparecer .5s cubic-bezier(.2,.8,.2,1) both; }
+.fpi-barra-h { transform-origin: left; animation: fpi-crecer-h .6s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fpi-crecer-h { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .fpi-barra { transform-box: fill-box; transform-origin: bottom; animation: fpi-crecer .5s cubic-bezier(.2,.8,.2,1) both; }
 .fpi-banda { transition: opacity .2s ease; }
 .fpi-sankey:hover .fpi-banda { opacity: .35; }
@@ -51,6 +53,6 @@ export const CSS_INFOGRAFIA = `
   .fpi-solo-movil { display: flex; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fpi-arco, .fpi-fade, .fpi-barra { animation: none; }
+  .fpi-arco, .fpi-fade, .fpi-barra, .fpi-barra-h { animation: none; }
 }
 `;
