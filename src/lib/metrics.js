@@ -406,9 +406,13 @@ export function nivelLibertad({ ip = 0, ob = 0, obEsencial = null, fl = 0, patri
   // (umbralNivel → NIVELES[4].factor = 2, decisión de Santiago del 24-oct).
   // Quedaba en 1,3×: con 150 % el badge decía «Abundancia» y la meta, a la vez,
   // «te faltan $X para Abundancia».
+  // 1-nov-2026 — Los otros dos también salen del catálogo. Hoy dan igual
+  // (factor 1 sobre el total y sobre lo esencial), pero quedaban escritos a
+  // mano: la misma puerta por la que Abundancia se separó de su meta durante
+  // una semana. Con esto, cambiar un umbral es cambiar NIVELES.factor y nada más.
   if (ip >= umbralNivel(NIVELES[4], ctx)) nivel = 5;
-  else if (ip >= ob) nivel = 4;
-  else if (ip >= obEs) nivel = 3;
+  else if (ip >= umbralNivel(NIVELES[3], ctx)) nivel = 4;
+  else if (ip >= umbralNivel(NIVELES[2], ctx)) nivel = 3;
   else nivel = fl < 0 ? 1 : 2;
   let candado = nivel === 1 ? "deficit" : null;
   const deficitFlujo = fl < 0;
