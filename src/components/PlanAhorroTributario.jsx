@@ -32,6 +32,7 @@ import { fmtPctEs, fmtNumEs } from "../lib/formato.js";
 import { useState, useMemo } from "react";
 import NumberInput from "./NumberInput";
 import { UVT } from "../lib/taxCO.js";
+import { impuestoACargoDe, saldoAFavorDe, textoSaldoAFavor, notaAhorroConSaldoAFavor } from "../lib/saldoAFavor.js";
 
 const C = {
   bg: "var(--fp-bg)",
@@ -258,7 +259,7 @@ const AREAS_JURIDICA = [
 // DEFINICIÓN DE ÁREAS · NATURAL
 // ─────────────────────────────────────────────────────────────────────────
 
-const AREAS_NATURAL = [
+export const AREAS_NATURAL = [
   {
     id: "dependientes",
     icono: "",
@@ -272,9 +273,10 @@ const AREAS_NATURAL = [
       const ingLaboral = Number(det?.aportesDesglose?.salarioGravableAnual) || 0;
       const deducMax = Math.min(ingLaboral * 0.10, 32 * UVT * 12);
       const tasaMarg = (det?.tasaMarginal || 28) / 100;
-      const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
+      // 1-nov-2026 (#60): tope = impuesto a cargo (antes de retenciones), no el saldo a pagar.
+      const impuestoACargo = impuestoACargoDe(det);
       const ahorroBruto = Math.round(deducMax * tasaMarg);
-      return Math.min(ahorroBruto, saldoActual);
+      return Math.min(ahorroBruto, impuestoACargo);
     },
     inputs: [
       {
@@ -316,9 +318,9 @@ const AREAS_NATURAL = [
       const tope = 16 * UVT * 12;
       const deducible = Math.min(anual, tope);
       const tasaMarg = (det?.tasaMarginal || 28) / 100;
-      const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
+      const impuestoACargo = impuestoACargoDe(det);
       const ahorroBruto = Math.round(deducible * tasaMarg);
-      return Math.min(ahorroBruto, saldoActual);
+      return Math.min(ahorroBruto, impuestoACargo);
     },
     inputs: [
       {
@@ -361,9 +363,9 @@ const AREAS_NATURAL = [
       const espacio = Number(det?.espacioParaPVyAFC) || 0;
       const aplicable = Math.min(anual, espacio);
       const tasaMarg = (det?.tasaMarginal || 28) / 100;
-      const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
+      const impuestoACargo = impuestoACargoDe(det);
       const ahorroBruto = Math.round(aplicable * tasaMarg);
-      return Math.min(ahorroBruto, saldoActual);
+      return Math.min(ahorroBruto, impuestoACargo);
     },
     inputs: [
       {
@@ -417,9 +419,9 @@ const AREAS_NATURAL = [
       const tope = 1200 * UVT;
       const deducible = Math.min(interesesAnuales, tope);
       const tasaMarg = (det?.tasaMarginal || 28) / 100;
-      const saldoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
+      const impuestoACargo = impuestoACargoDe(det);
       const ahorroBruto = Math.round(deducible * tasaMarg);
-      return Math.min(ahorroBruto, saldoActual);
+      return Math.min(ahorroBruto, impuestoACargo);
     },
     inputs: [
       {
@@ -464,6 +466,7 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
   }, [estimacion, selectedOwner]);
 
   const saldoACargoActual = Number(det?.saldoACargo ?? det?.impuesto ?? 0);
+  const saldoAFavor = saldoAFavorDe(det);
 
   // State del checklist
   const [areaActiva, setAreaActiva] = useState(null); // id del área que está expandida
@@ -561,8 +564,18 @@ export default function PlanAhorroTributario({ user, selectedOwner, estimacion, 
           <div style={{ fontSize: 22, fontWeight: 700, color: C.txt }}>
             {fm(saldoACargoActual)}
           </div>
+          {saldoAFavor > 0 && (
+            <div data-testid="saldo-a-favor-plan" style={{ fontSize: 12, color: C.txt2, marginTop: 6, lineHeight: 1.4 }}>
+              {textoSaldoAFavor(saldoAFavor, fm)}.
+            </div>
+          )}
         </div>
-        {ahorroTotalEstimado > 0 && (
+        {ahorroTotalEstimado > 0 && saldoAFavor > 0 && (
+          <div style={{ flex: "1 1 100%", fontSize: 12, color: C.txt2, lineHeight: 1.4 }}>
+            {notaAhorroConSaldoAFavor(det, ahorroTotalEstimado, fm)}.
+          </div>
+        )}
+        {ahorroTotalEstimado > 0 && saldoAFavor <= 0 && (
           <>
             <div style={{ fontSize: 24, color: C.txt3 }}>−</div>
             <div style={{ flex: "1 1 200px" }}>
@@ -722,6 +735,11 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
                 {fmShort(area.ahorroEstimado)} ahorrados
               </span>
             )}
+            {esAplicado && area.ahorroEstimado > 0 && notaAhorroConSaldoAFavor(det, area.ahorroEstimado, fm) && (
+              <div style={{ flex: "1 1 100%", fontSize: 12, color: C.txt2, lineHeight: 1.4 }}>
+                {notaAhorroConSaldoAFavor(det, area.ahorroEstimado, fm)}.
+              </div>
+            )}
             {esNoAplica && (
               <span style={{
                 fontSize: 12, padding: "2px 8px", borderRadius: 999,
@@ -801,6 +819,11 @@ function AreaCard({ area, index, activa, onActivar, onAplicar, onNoAplica, det }
                 <div style={{ fontSize: 18, fontWeight: 700, color: C.green, lineHeight: 1 }}>
                   {fm(ahorroPreview)}
                 </div>
+                {notaAhorroConSaldoAFavor(det, ahorroPreview, fm) && (
+                  <div style={{ fontSize: 12, color: C.txt2, marginTop: 6, lineHeight: 1.4 }}>
+                    {notaAhorroConSaldoAFavor(det, ahorroPreview, fm)}.
+                  </div>
+                )}
               </div>
             </div>
           )}

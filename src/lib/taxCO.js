@@ -451,7 +451,10 @@ export const estimarImpuesto = (u, options = {}) => {
         // FIX abr 2026: impBruto ahora descuenta ICA (descuento permanente legal).
         // impOptBruto adicionalmente descuenta los descuentos opcionales cargados.
         // Diferencia = descuentos opcionales = ahorro real declarado por el usuario.
-        impBruto: impBrutoSinOpt, impuestoACargo: impBrutoSinOpt, saldoAPagar: impActual, saldoACargo: impActual, impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
+        impBruto: impBrutoSinOpt, impuestoACargo: impBrutoSinOpt, saldoAPagar: impActual, saldoACargo: impActual,
+        // 1-nov-2026 (fix/saldo-a-favor): saldo a favor = max(0, retenciones − impuesto a cargo),
+        // la misma regla que persona natural. Lo leen el borrador F-110 y las tarjetas de ahorro.
+        saldoAFavor: Math.max(0, reteJ - impBrutoSinOpt), impOptBruto: impBrutoOpt, reteN: descICA + reteJ,
         ahorroOptimo: impActual - impOptimoJ,
         tasa: ingAnual > 0 ? (impActual / ingAnual * 100) : 0,
         tasaBruta: ingAnual > 0 ? (impBruto / ingAnual * 100) : 0,

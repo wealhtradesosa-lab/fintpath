@@ -2069,6 +2069,9 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
 
   // Filtrar solo renglones con valor resuelto > 0
   const renglonesConValor = renglones.filter(r => r && r.valorResuelto > 0);
+  // 1-nov-2026: el saldo a favor se ve sin tener que expandir el detalle.
+  const renglonSaldoAFavor = renglonesConValor.find(r => r.numero === 114 && typeof r.notaDe === "function");
+  const notaSaldoAFavor = renglonSaldoAFavor ? renglonSaldoAFavor.notaDe(renglonSaldoAFavor.valorResuelto, fm) : null;
 
   return (
     <div style={{
@@ -2106,6 +2109,12 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
         </span>
       </button>
 
+      {notaSaldoAFavor && (
+        <div data-testid="saldo-a-favor-borrador" style={{ padding: "0 16px 12px", fontSize: 13, color: C.txt, lineHeight: 1.4 }}>
+          {notaSaldoAFavor}
+        </div>
+      )}
+
       {expandido && (
         <div style={{ padding: "0 16px 16px", borderTop: `1px solid ${C.border}` }}>
           {ordenSecciones.map(seccionId => {
@@ -2124,8 +2133,12 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
                   {seccionLabel}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {renglonesSeccion.map(r => (
-                    <div key={r.numero} style={{
+                  {renglonesSeccion.map(r => {
+                    // 1-nov-2026: nota del renglón (p. ej. saldo a favor) a partir del valor resuelto.
+                    const nota = typeof r.notaDe === "function" ? r.notaDe(r.valorResuelto, fm) : r.nota;
+                    return (
+                    <div key={r.numero}>
+                    <div style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 10,
@@ -2144,7 +2157,14 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
                         {fm(r.valorResuelto)}
                       </span>
                     </div>
-                  ))}
+                    {nota && (
+                      <div data-testid={`nota-renglon-${r.numero}`} style={{ padding: "2px 10px 6px 48px", fontSize: 12, color: C.txt2, lineHeight: 1.4 }}>
+                        {nota}
+                      </div>
+                    )}
+                    </div>
+                    );
+                  })}
                 </div>
               </div>
             );

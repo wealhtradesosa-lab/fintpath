@@ -23,6 +23,7 @@ import { totalAnualItem } from "./flowHelpers.js";
 
 import { uvtForYear } from "./taxCO.js";
 import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
+import { notaSaldoAFavorRenglon } from "./saldoAFavor.js";
 
 /**
  * Genera el borrador F-210 para un owner persona natural.
@@ -213,6 +214,14 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       tip: "Si presentas extemporáneo o hay corrección, acá van las sanciones calculadas." },
     { seccion: "liquidacion", numero: 113, concepto: "TOTAL SALDO A PAGAR", tipo: "formula", destacado: true,
       calc: (vals) => Math.max(0, (vals[110] || 0)) + (vals[112] || 0) },
+    // 1-nov-2026 (fix/saldo-a-favor): cuando retenciones + anticipos superan el
+    // impuesto a cargo, el 110 queda negativo y antes no se mostraba en ningún
+    // lado. Ahora el saldo a favor tiene su renglón y su nota.
+    { seccion: "liquidacion", numero: 114, concepto: "TOTAL SALDO A FAVOR", tipo: "formula", destacado: true,
+      formula: "max(0, 100 + 101 + 102 - 91 - 103)",
+      tip: "Si te retuvieron (o anticipaste) más que el impuesto a cargo, la diferencia es saldo a favor. Puedes pedir su devolución a la DIAN o imputarlo en la declaración del año siguiente.",
+      calc: (vals) => Math.max(0, -(vals[110] || 0)),
+      notaDe: notaSaldoAFavorRenglon },
   ];
 
   return resolverRenglones(renglones);

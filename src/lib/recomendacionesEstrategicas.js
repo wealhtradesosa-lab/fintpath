@@ -1,6 +1,7 @@
 import { fmtPctEs } from "./formato.js";
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
-import { sugerenciaPvAfc, textoSugerenciaPvAfc, textoTopePvAfc } from "./sugerenciaPvAfc.js";
+import { sugerenciaPvAfc, textoSugerenciaPvAfc, textoTopePvAfc, flujoLibreTrasEmergencia } from "./sugerenciaPvAfc.js";
+import { saldoAFavorDe, notaAhorroConSaldoAFavor, montoSugeridoAcotado } from "./saldoAFavor.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -102,6 +103,10 @@ function analizarPerfil(owner, det, user) {
     patrimonioAprox,
     deudasTotal,
     capacidadInversion: Math.max(0, patrimonioAprox * 0.20), // 20% del patrimonio típico
+    saldoAFavor: saldoAFavorDe(det),
+    // 1-nov-2026: tope de donaciones/inversiones = flujo libre del año tras el
+    // fondo de emergencia (mismo cálculo que la sugerencia de PV/AFC).
+    flujoLibreAnual: flujoLibreTrasEmergencia(user, owner, { ag: AG_RECOS })?.flujoLibreAnual ?? null,
   };
 }
 
@@ -201,8 +206,10 @@ function recomendacionesNaturalNoLaboral(perfil) {
   }
 
   // ── REC 3: Donaciones a ESAL ──────────────────────────────────────────
-  if (impuestoACargo > 5_000_000) {
-    const donacionSugerida = Math.min(impuestoACargo * 0.5, 50_000_000); // sugerir donar hasta 50M o 50% del saldo
+  // 1-nov-2026: 50 % del impuesto a cargo (máx. $50M), nunca más que el flujo
+  // libre que queda después del fondo de emergencia.
+  const donacionSugerida = montoSugeridoAcotado(Math.min(impuestoACargo * 0.5, 50_000_000), perfil.flujoLibreAnual);
+  if (impuestoACargo > 5_000_000 && donacionSugerida > 0) {
     const descuento = donacionSugerida * 0.25; // 25% del Art. 257
     recs.push({
       id: "donacion_esal",
@@ -316,8 +323,10 @@ function recomendacionesJuridica(perfil) {
   if (impuestoACargo < 5_000_000) return recs;
 
   // REC 1: Comprar bodega / inmueble productivo
-  if (impuestoACargo > 50_000_000) {
-    const inversion = Math.min(impuestoACargo * 5, 1_000_000_000); // dimensionar a la capacidad
+  // 1-nov-2026: dimensionada al impuesto a cargo y acotada al flujo libre tras el fondo de emergencia.
+  const inversionBodega = montoSugeridoAcotado(Math.min(impuestoACargo * 5, 1_000_000_000), perfil.flujoLibreAnual);
+  if (impuestoACargo > 50_000_000 && inversionBodega > 0) {
+    const inversion = inversionBodega;
     const depreciacionAnual = inversion / 20;
     const ivaDescontable = inversion * 0.19;
     const ahorroAno1 = Math.round(depreciacionAnual * 0.35 + ivaDescontable);
@@ -376,8 +385,9 @@ function recomendacionesJuridica(perfil) {
   }
 
   // REC 2: Inversión en CT&I (deducción 175%)
-  if (impuestoACargo > 20_000_000) {
-    const inversion = Math.min(impuestoACargo * 0.5, 200_000_000);
+  const inversionCTI = montoSugeridoAcotado(Math.min(impuestoACargo * 0.5, 200_000_000), perfil.flujoLibreAnual);
+  if (impuestoACargo > 20_000_000 && inversionCTI > 0) {
+    const inversion = inversionCTI;
     const deduccion = inversion * 1.75;
     const ahorroFiscal = Math.round(deduccion * 0.35) + (inversion * 0.25);
     recs.push({
@@ -490,6 +500,13 @@ export function generarRecomendacionesEstrategicas(user, owner, det) {
     if (!r.ejecutaEn) return true; // legacy sin clasificar: no filtrar
     return esJuridica ? r.ejecutaEn === "sociedad" : r.ejecutaEn === "personal";
   });
+
+  // 1-nov-2026: con saldo a favor, el ahorro agranda la devolución en vez de
+  // bajar lo que se paga. La tarjeta lo dice con cifras (X → X + ahorro).
+  for (const r of recs) {
+    const nota = notaAhorroConSaldoAFavor(det, r.ahorroAnual?.monto);
+    if (nota) r.notaSaldoAFavor = nota;
+  }
 
   // Ordenar por prioridad (alta > media > baja) y luego por ahorro descendente
   const prioridad = { alta: 3, media: 2, baja: 1 };

@@ -43,6 +43,7 @@
 // entraba al F-110 como $589M. `totalAnualItem` respeta frecuencia y vigencia.
 import { totalAnualItem } from "./flowHelpers.js";
 import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
+import { notaSaldoAFavorRenglon } from "./saldoAFavor.js";
 
 export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
   if (!owner || owner.type !== "juridica") return null;
@@ -278,7 +279,8 @@ export function generarBorradorF110(user, owner, estimacion, ano = 2025) {
     { seccion: "liquidacion", numero: 114, concepto: "TOTAL SALDO A FAVOR", tipo: "formula",
       formula: "max(0, 103 + 104 + 107 - 99 - 108)",
       tip: "Si el cálculo resulta negativo en el renglón 111 (pagaste más en retenciones/anticipos que el impuesto), aparece aquí el saldo a favor. Puedes solicitar devolución a la DIAN o imputarlo al año siguiente (renglón 104 del próximo año).",
-      calc: (vals) => Math.max(0, (vals[103] || 0) + (vals[104] || 0) + (vals[107] || 0) - (vals[99] || 0) - (vals[108] || 0)) },
+      calc: (vals) => Math.max(0, (vals[103] || 0) + (vals[104] || 0) + (vals[107] || 0) - (vals[99] || 0) - (vals[108] || 0)),
+      notaDe: notaSaldoAFavorRenglon },
   ];
 
   // ── Resolver fórmulas en orden ──────────────────────────────────────────

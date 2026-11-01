@@ -66,18 +66,31 @@ function deOwner(user, owner) {
  *   fondo emerg. → 3 meses de calcularBase().ob frente a calcularBase().liquidos
  *   espacio      → aporte optimizado de taxCO (pensionVol) − lo que ya aporta
  */
-export function sugerenciaPvAfc(user, owner, { ag = DEFAULT_AG } = {}) {
-  const vacio = { motivo: "gastos", flujoNetoAnual: 0, descuentos: null, topeAnual: 0, aporte: 0, ahorro: null, sinFlujo: true, flujoLibreAnual: 0, faltanteEmergencia: 0, espacioFiscal: 0 };
-  if (!user || !owner) return vacio;
+/**
+ * 1-nov-2026 — Flujo libre del año después de completar el fondo de emergencia,
+ * el mismo que usa sugerenciaPvAfc. Las sugerencias de donación e inversión
+ * (recomendacionesEstrategicas) se acotan con esto. null si el owner no tiene
+ * detalle en taxCO.
+ */
+export function flujoLibreTrasEmergencia(user, owner, { ag = DEFAULT_AG } = {}) {
+  if (!user || !owner) return null;
   const u = deOwner(user, owner);
   const det0 = estimarImpuesto(u, { ag }).detalle.find((d) => d.name === owner.name);
-  if (!det0) return vacio;
-  const topeAnual = Math.round(Number(det0.pvMax) || 0);
+  if (!det0) return null;
   const b = calcularBase({ ingresos: u.ingresos, gastos: u.gas, deudas: u.deu, inv: u.inv, trm: u.trm });
   const descuentos = descuentosObligatorios(det0, ag);
   const flujoNetoAnual = Math.round((b.fl || 0) * 12 - descuentos.total);
   const faltanteEmergencia = Math.max(0, MESES_FONDO_EMERGENCIA * (b.ob || 0) - (b.liquidos || 0));
   const flujoLibreAnual = Math.max(0, flujoNetoAnual - faltanteEmergencia);
+  return { u, det0, descuentos, flujoNetoAnual, faltanteEmergencia, flujoLibreAnual };
+}
+
+export function sugerenciaPvAfc(user, owner, { ag = DEFAULT_AG } = {}) {
+  const vacio = { motivo: "gastos", flujoNetoAnual: 0, descuentos: null, topeAnual: 0, aporte: 0, ahorro: null, sinFlujo: true, flujoLibreAnual: 0, faltanteEmergencia: 0, espacioFiscal: 0 };
+  const fl = flujoLibreTrasEmergencia(user, owner, { ag });
+  if (!fl) return vacio;
+  const { u, det0, descuentos, flujoNetoAnual, faltanteEmergencia, flujoLibreAnual } = fl;
+  const topeAnual = Math.round(Number(det0.pvMax) || 0);
   const motivo = flujoNetoAnual <= 0 ? "gastos" : flujoLibreAnual <= 0 ? "fondo" : null;
   const yaAporta = Object.values(u.gas).flat().filter((g) => PV_AFC.has(g?.fiscalCode)).reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
   const espacioFiscal = Math.max(0, sugerenciaPvAfcDe(det0).aporte - yaAporta);
