@@ -43,6 +43,7 @@ import {
 import { TABLA_ART_241, calcImpRenta as calcImpRentaCore } from "./tablaArt241.js";
 import { GRUPOS_SIMPLE as SIMPLE_GRUPOS, calcularImpuestoSimple as calcularImpSimple } from "./regimenSimple.js";
 import { calcularRetencionOwner } from "./retencionesTax.js";
+import { trmUsable } from "./trm.js";
 
 // UVT por año gravable (fuente Tributario / DIAN).
 // AG 2025 → $49.799 · AG 2026 → $52.374. Agregar aquí la UVT de cada año nuevo en enero.
@@ -158,6 +159,18 @@ export const estimarImpuesto = (u, options = {}) => {
     if (filtered.length > 0) gas[cat] = filtered;
   });
   const deu = (u.deu || []).filter(d => d.sim !== false && !d.excluirDeclaracion);
+  // ── TASA DEL DÓLAR ──
+  // 1-nov-2026 — Antes `u.trm || 4200`: sin tasa real, cada dólar valía $4.200
+  // y el impuesto salía como si esa cifra fuera cierta. Ahora la tasa pasa por
+  // trmUsable (src/lib/trm.js): si no hay una real, los montos en USD quedan
+  // FUERA del cálculo (factor 0) y el owner sale con `pendienteTasa: true` y la
+  // lista `ingresosPendientesTasa`, igual que nivelVista («pendiente de tasa»).
+  const trmReal = trmUsable(u.trm);
+  const fx = (i) => (i && i.moneda === "USD" ? (trmReal ?? 0) : 1);
+  const pendientesTasaDe = (items) => trmReal == null
+    ? items.filter(i => i && i.moneda === "USD" && totalAnualItem(i) > 0)
+        .map(i => ({ id: i.id, nombre: String(i.nombre || i.n || i.categoria || i.fiscalCode || "Ingreso en USD"), usdAnual: totalAnualItem(i) }))
+    : [];
   let totalImp = 0;
   const detalle = [];
   const sinClasificar = ing.filter(i => !i.owner || i.owner === "").length;
@@ -178,8 +191,7 @@ export const estimarImpuesto = (u, options = {}) => {
     const oIng = ing.filter(i => i.owner === ow.id);
     const oGas = Object.values(gas).flat().filter(g => g.owner === ow.id);
     const oDeu = deu.filter(d => d.owner === ow.id);
-    const trm = u.trm || 4200;
-    const ingAnualJ = oIng.reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+    const ingAnualJ = oIng.reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
     const gastosDeducJ = oGas.filter(g => g.fiscalCode !== GAS_JUR_NO_DEDUCIBLE).reduce((s, g) => s + totalAnualItem(g), 0);
     const interesesJ = oDeu.reduce((s, d) => { const saldo = d.mt || 0; const tasa = (d.ts || d.tasa || 0) / 100; return s + saldo * tasa; }, 0);
     const gmf50J = ingAnualJ * 0.004 * 0.50;
@@ -207,6 +219,8 @@ export const estimarImpuesto = (u, options = {}) => {
       (eventosAno.ganoLoteria && Number(eventosAno.loteriaMonto) > 0)
     );
     if (oIng.length === 0 && !tieneEventosGO) return;
+    const _pendTasa = pendientesTasaDe(oIng);
+    const marcaTasa = { pendienteTasa: _pendTasa.length > 0, ingresosPendientesTasa: _pendTasa, trm: trmReal };
 
     const isJ = ow.type === "juridica";
 
@@ -226,7 +240,7 @@ export const estimarImpuesto = (u, options = {}) => {
     if (isJ) {
       // ═══ PERSONA JURÍDICA — Régimen dependiente ═══
       const regimen = ow.regimen || "ordinario";
-      const ingAnual = oIng.reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? (u.trm || 4200) : 1), 0);
+      const ingAnual = oIng.reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
       // Gastos deducibles jurídica. Se excluyen los marcados explícitamente como
       // no deducibles por el usuario (GAS_JUR_NO_DEDUCIBLE — usado cuando el
       // contribuyente confirma que el gasto no cumple causalidad Art. 107 ET).
@@ -294,7 +308,7 @@ export const estimarImpuesto = (u, options = {}) => {
       const utilidad = Math.max(0, ingAnual - totalDeduc);
 
       // Sub-tipos de ingresos con tratamiento especial por Art. 48 ET
-      const dividIntersocietarios = oIng.filter(i => i.fiscalCode === DIV_INTERSOCIETARIOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? (u.trm || 4200) : 1), 0);
+      const dividIntersocietarios = oIng.filter(i => i.fiscalCode === DIV_INTERSOCIETARIOS).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
 
       // Retención automática según tipo de ingreso (solo aplica a régimen ordinario/ZF/CHC; SIMPLE sustituye retención)
       // Retención fuente jurídica: ahora vía módulo central src/lib/retencionesTax.js
@@ -306,7 +320,7 @@ export const estimarImpuesto = (u, options = {}) => {
       let reteJ = 0;
       let retencionDesgloseJ = null;
       if (regimen !== "simple" && regimen !== "exenta") {
-        retencionDesgloseJ = calcularRetencionOwner(oIng, ow, u.trm || 4200);
+        retencionDesgloseJ = calcularRetencionOwner(oIng, ow, trmReal ?? 0);
         reteJ = retencionDesgloseJ.total;
       }
       // Descuento 50% ICA (solo ordinario y zona franca)
@@ -426,6 +440,7 @@ export const estimarImpuesto = (u, options = {}) => {
       const impBrutoOpt = Math.max(0, impBruto - descICA - descuentosAplicados);
       const impOptimoJ = impActual;
       detalle.push({
+        ...marcaTasa,
         name: ow.name, type: "juridica", ingreso: ingAnual,
         regimen, regimenNota, tarifa,
         perdidasAcumuladas, perdidasAplicadas,
@@ -459,7 +474,7 @@ export const estimarImpuesto = (u, options = {}) => {
       });
     } else {
       // ═══ PERSONA NATURAL — Cédula General (Ley 2277/2022, ET Arts. 55,206,336,383,387) ═══
-      const trm = u.trm || 4200;
+      // Sin tasa real, fx() deja los USD por fuera (ver arriba): nunca 4200.
 
       // ── APORTES A SEGURIDAD SOCIAL ──
       // Commit 1.7: aportes obligatorios se leen en shape nuevo desde `ing.aportes`
@@ -482,27 +497,27 @@ export const estimarImpuesto = (u, options = {}) => {
       // (sanitize en App.jsx) convierte datos viejos antes de llegar acá.
 
       // Clasificar ingresos por subcédula
-      const salAnualInput = oIng.filter(i => i.fiscalCode === LAB_SALARIO).reduce((s, i) => s + totalAnualItem(i), 0);
+      const salAnualInput = oIng.filter(i => i.fiscalCode === LAB_SALARIO).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
       // Gross-up: si el salario registrado es neto (después de aportes), sumarlos para obtener el bruto gravable
       const salAnual = salarioEsBruto ? salAnualInput : salAnualInput + (aPensObl + aSaludObl) * 12;
       // Commit 3 Tarea 3 (Art. 206 #4 ET): cesantías y prima son rentas de TRABAJO,
       // no rentas no laborales. Antes el motor las dejaba caer en otrosAnual (bug).
       // Las cesantías además tienen exenta proporcional al salario mensual promedio.
-      const cesantiasAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_CESANTIAS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
-      const primaAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_PRIMA).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
-      const honAnual = oIng.filter(i => i.fiscalCode === LAB_HONORARIOS_CON_EMPLEADOS || i.fiscalCode === LAB_HONORARIOS_SIN_EMPLEADOS).reduce((s, i) => s + totalAnualItem(i), 0);
-      const rentasAnual = oIng.filter(i => i.fiscalCode === NOL_ARRIENDO_INMUEBLE).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+      const cesantiasAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_CESANTIAS).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
+      const primaAnual = oIng.filter(i => i.fiscalCode === LAB_PRESTACIONES_PRIMA).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
+      const honAnual = oIng.filter(i => i.fiscalCode === LAB_HONORARIOS_CON_EMPLEADOS || i.fiscalCode === LAB_HONORARIOS_SIN_EMPLEADOS).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
+      const rentasAnual = oIng.filter(i => i.fiscalCode === NOL_ARRIENDO_INMUEBLE).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
       // Sub-tipos de rendimientos con tratamiento diferenciado:
       // - Intereses bancarios/CDT: aplica componente inflacionario Art. 38 ET
       // - Utilidad FIC: aplica componente inflacionario Art. 39 ET
       // - Rendimiento genérico (legacy): aplica componente inflacionario Art. 38 ET
       // - Inversión: NO aplica componente inflacionario (típicamente venta de activos)
-      const interesesBancAnual = oIng.filter(i => i.fiscalCode === CAP_INTERESES_BANCARIOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
-      const utilidadFICAnual = oIng.filter(i => i.fiscalCode === CAP_FIC).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
-      const rendimientoGenAnual = oIng.filter(i => i.fiscalCode === CAP_RENDIMIENTO_GENERICO).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
-      const inversionAnual = oIng.filter(i => i.fiscalCode === CAP_VENTA_ACTIVOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+      const interesesBancAnual = oIng.filter(i => i.fiscalCode === CAP_INTERESES_BANCARIOS).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
+      const utilidadFICAnual = oIng.filter(i => i.fiscalCode === CAP_FIC).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
+      const rendimientoGenAnual = oIng.filter(i => i.fiscalCode === CAP_RENDIMIENTO_GENERICO).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
+      const inversionAnual = oIng.filter(i => i.fiscalCode === CAP_VENTA_ACTIVOS).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
       const rendAnual = interesesBancAnual + utilidadFICAnual + rendimientoGenAnual + inversionAnual;
-      const divAnualManual = oIng.filter(i => i.fiscalCode === DIV_ART49_GRAVADOS).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+      const divAnualManual = oIng.filter(i => i.fiscalCode === DIV_ART49_GRAVADOS).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
       // Commit 13 Tarea 3: dividendos automáticos derivados de jurídicas en las que
       // el natural es socio (Gap 4 del reporte). Si fiscalProfile.socios está definido,
       // sumamos % de la utilidad distribuible de cada jurídica vinculada como
@@ -531,7 +546,7 @@ export const estimarImpuesto = (u, options = {}) => {
         }
       });
       const divAnual = divAnualManual + divAnualAutomatico;
-      const pensAnual = oIng.filter(i => i.fiscalCode === PEN_JUBILACION).reduce((s, i) => s + totalAnualItem(i), 0);
+      const pensAnual = oIng.filter(i => i.fiscalCode === PEN_JUBILACION).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
       // "Otros" = ingresos que no caen en ninguna cédula específica arriba (NOL_OTROS, NOL_NEGOCIO, NOL_HONORARIOS_INDEP, ganancia ocasional, etc).
       // Van a ingNoLaboral como fallback conservador.
       const categorizadas = new Set([
@@ -541,7 +556,7 @@ export const estimarImpuesto = (u, options = {}) => {
         NOL_ARRIENDO_INMUEBLE, CAP_INTERESES_BANCARIOS, CAP_FIC,
         CAP_RENDIMIENTO_GENERICO, CAP_VENTA_ACTIVOS, DIV_ART49_GRAVADOS, PEN_JUBILACION,
       ]);
-      const otrosAnual = oIng.filter(i => !categorizadas.has(i.fiscalCode)).reduce((s, i) => s + totalAnualItem(i) * (i.moneda === "USD" ? trm : 1), 0);
+      const otrosAnual = oIng.filter(i => !categorizadas.has(i.fiscalCode)).reduce((s, i) => s + totalAnualItem(i) * fx(i), 0);
 
       const ingLaboral = salAnual + honAnual + cesantiasAnual + primaAnual;
       const ingCapital = rendAnual;
@@ -580,6 +595,7 @@ export const estimarImpuesto = (u, options = {}) => {
         }
         totalImp += impGOSolo;
         detalle.push({
+        ...marcaTasa,
           name: ow.name, type: "natural",
           ingreso: 0, regimen: ow.regimen || "ordinario",
           regimenNota: "Solo ganancias ocasionales — sin ingresos ordinarios en el año.",
@@ -882,7 +898,7 @@ export const estimarImpuesto = (u, options = {}) => {
       // Anticipos de renta (Art. 807) también reducen el saldo a pagar.
       let reteN = 0;
       oIng.forEach(i => {
-        const m = totalAnualItem(i) * (i.moneda === "USD" ? trm : 1);
+        const m = totalAnualItem(i) * fx(i);
         const fc = i.fiscalCode;
         if (fc === LAB_SALARIO) { const mUVT = m / 12 / uvt; reteN += m * (mUVT > 360 ? 0.19 : mUVT > 150 ? 0.10 : mUVT > 95 ? 0.04 : 0); }
         else if (fc === LAB_HONORARIOS_CON_EMPLEADOS || fc === LAB_HONORARIOS_SIN_EMPLEADOS) reteN += m * 0.11;
@@ -1015,6 +1031,7 @@ export const estimarImpuesto = (u, options = {}) => {
 
       totalImp += impActualNat;
       detalle.push({
+        ...marcaTasa,
         name: ow.name, type: "natural", ingreso: ingAnual,
         regimen: regimenN, regimenNota: regimenNotaN,
         ingLaboral, ingCapital, ingNoLaboral, divAnual, pensAnual,
@@ -1091,5 +1108,7 @@ export const estimarImpuesto = (u, options = {}) => {
       });
     }
   });
-  return { total: totalImp, mes: totalImp / 12, detalle, sinClasificar };
+  // «pendiente de tasa»: hay ingresos en USD y no hay una tasa real para pasarlos a pesos.
+  const pendienteTasa = detalle.some(d => d.pendienteTasa);
+  return { total: totalImp, mes: totalImp / 12, detalle, sinClasificar, pendienteTasa, trm: trmReal };
 };

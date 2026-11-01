@@ -11,6 +11,7 @@ const leer = (f) => readFileSync(new URL(`../../src/${f}`, import.meta.url), "ut
 const MIGRADOS = [
   "lib/borradorDeclaracionF210.js",
   "lib/borradorDeclaracion.js",
+  "lib/taxCO.js",
   "lib/auditoriaDatos.js",
   "lib/contextoAsesor.js",
   "components/SimuladorAvanzado.jsx",
