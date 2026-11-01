@@ -7,8 +7,8 @@ import { conUtm, DESTINOS, BASE_APP } from "./enlaces.mjs";
 const pro = PLAN_BASE.find((p) => p.name === "Pro");
 const familiar = PLAN_BASE.find((p) => p.name === "Pro Familiar");
 export const PRECIOS = {
-  pro_mensual: pro?.priceUSD?.mensual ?? 16,
-  pro_anual: pro?.priceUSD?.anual ?? 12,
+  pro_mensual: pro?.priceUSD?.mensual ?? 14,
+  pro_anual: pro?.priceUSD?.anual ?? 11.67,
   familiar_mensual: familiar?.priceUSD?.mensual ?? 27,
   familiar_anual: familiar?.priceUSD?.anual ?? 20,
   familiar_personas: familiar?.maxMembers ?? 10,

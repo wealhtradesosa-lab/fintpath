@@ -22,7 +22,7 @@
 // según el tamaño del documento. Los topes dejan margen en cada plan:
 //   free          10 → ~$0,30 de costo · es adquisición, se pierde a propósito
 //   basico  $8 →  30 → ~$0,90 · margen ~$7
-//   pro    $16 → 150 → ~$4,50 · margen ~$11
+//   pro    $14 → 150 → ~$4,50 · margen ~$9,50 (era $16 hasta 25-oct-2026)
 //   familiar $27→ 400 → ~$12   · margen ~$15
 // Son un punto de partida conservador. Si el consumo real se queda corto,
 // subirlos es una línea; bajarlos después de prometerlos, no.

@@ -200,7 +200,7 @@ export default function LandingLibertad({ onGetStarted = () => {}, onLogin = () 
               </li>
             ))}
           </ol>
-          <p style={{ fontSize: 13, color: T.txt3, margin: "14px 0 0" }}>14 días Pro sin tarjeta. Después sigues gratis o eliges un plan. Hay plan gratis. Pro cuesta 16 USD al mes, o 12 USD al mes en plan anual.</p>
+          <p style={{ fontSize: 13, color: T.txt3, margin: "14px 0 0" }}>14 días Pro sin tarjeta. Después sigues gratis o eliges un plan. Hay plan gratis. Pro cuesta $24.900 COP al mes o 14 USD; en plan anual, $249.000 COP o 140 USD al año.</p>
         </section>
 
         {/* ── Cierre ── */}
