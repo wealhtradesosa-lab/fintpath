@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
 import {
-  generarBorradorF210, obligacionPorPatrimonio, renglonPatrimonioDe, valorFiscalActivo,
+  generarBorradorF210, obligacionPorPatrimonio, renglonPatrimonioDe, valorFiscalActivo, valorFiscalInmueble,
 } from "../../src/lib/borradorDeclaracionF210.js";
 
 const owner = { id: "o1", name: "QA", type: "natural" };
@@ -29,9 +29,9 @@ describe("F-210 · patrimonio bruto con todos los activos", () => {
     ]);
     expect(g(291)).toBe(20_000_000);   // efectivo: saldo
     expect(g(292)).toBe(30_000_000);   // acciones: costo fiscal (Art. 272 ET)
-    expect(g(293)).toBe(350_000_000);  // casa
+    expect(g(293)).toBe(300_000_000);  // casa: costo fiscal, no el comercial (Art. 277)
     expect(g(294)).toBe(10_000_000);   // cripto: costo de adquisición
-    expect(g(29)).toBe(20_000_000 + 30_000_000 + 350_000_000 + 10_000_000);
+    expect(g(29)).toBe(20_000_000 + 30_000_000 + 300_000_000 + 10_000_000);
   });
 
   it("el efectivo entra sin importar mayúsculas ni tildes", () => {
@@ -69,5 +69,21 @@ describe("F-210 · patrimonio bruto con todos los activos", () => {
     expect(completo.g(29)).toBe(225_000_000);
     expect(completo.r29.obligacionDeclarar).toMatchObject({ obligado: true, umbral, uvt: 49_799 });
     expect(completo.r29.nota).toMatch(/obligado a declarar/);
+  });
+});
+
+// 2-nov-2026 — Art. 277 ET: el inmueble se declara al mayor entre el costo
+// fiscal y el avalúo catastral, nunca al valor comercial.
+describe("F-210 · inmuebles a su valor patrimonial (Art. 277)", () => {
+  it("toma el mayor entre costo y avalúo catastral", () => {
+    expect(valorFiscalInmueble({ vc: 300_000_000, avaluoCatastral: 180_000_000, va: 500_000_000 })).toBe(300_000_000);
+    expect(valorFiscalInmueble({ vc: 120_000_000, avaluoCatastral: 210_000_000, va: 500_000_000 })).toBe(210_000_000);
+  });
+  it("sin costo ni avalúo usa el valor cargado como respaldo", () => {
+    expect(valorFiscalInmueble({ va: 200_000_000 })).toBe(200_000_000);
+    expect(valorFiscalInmueble({})).toBe(0);
+  });
+  it("el valorFiscal explícito sigue mandando", () => {
+    expect(valorFiscalActivo({ tp: "Real Estate", vc: 1, va: 2, valorFiscal: 3 })).toBe(3);
   });
 });
