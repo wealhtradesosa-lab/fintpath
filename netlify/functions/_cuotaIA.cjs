@@ -36,6 +36,14 @@ const TOPES = {
 
 const topeDe = (plan) => TOPES[plan] ?? TOPES.free;
 
+// 11-oct-2026 (#35, rehecho 2-nov) — El mes de la cuota se corta en hora de
+// Colombia. incrementar_uso_ia y consultar_uso_ia calculan el periodo con
+// to_char(now(), 'YYYY-MM') en la zona de la sesión (UTC en Supabase): el mes
+// nuevo empezaba el último día del mes a las 7:00 p. m. hora Colombia.
+// PostgREST (v12+) acepta "Prefer: timezone=…" solo para esa petición, sin
+// migración. Si una versión vieja no la reconoce, la ignora y sigue en UTC.
+const PREFER_MES_COLOMBIA = { Prefer: "timezone=America/Bogota" };
+
 /**
  * Verifica y consume una unidad de cuota.
  * Devuelve { permitido, usos, tope, plan }.
@@ -44,13 +52,15 @@ const topeDe = (plan) => TOPES[plan] ?? TOPES.free;
  * que una caída de la base no bloquee a un usuario legítimo que ya pagó. El
  * riesgo de abuso durante una caída es menor que el de romper el producto.
  */
-async function consumirCuota({ url, serviceKey, userId }) {
+async function consumirCuota({ url, serviceKey, userId, plan: planDado }) {
   if (!userId) return { permitido: true, usos: 0, tope: 0, plan: "desconocido", motivo: "sin_usuario" };
 
   const h = { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json" };
 
-  let plan = "free";
-  try {
+  // Quien llama puede pasar el plan ya resuelto (ai-chat lo resuelve con la
+  // prueba de 14 días incluida, ver leerPlanIA).
+  let plan = planDado || "free";
+  if (!planDado) try {
     const r = await fetch(`${url}/rest/v1/accounts?select=plan&owner_user_id=eq.${userId}`, { headers: h });
     if (r.ok) {
       const filas = await r.json();
@@ -62,13 +72,68 @@ async function consumirCuota({ url, serviceKey, userId }) {
 
   try {
     const r = await fetch(`${url}/rest/v1/rpc/incrementar_uso_ia`, {
-      method: "POST", headers: h, body: JSON.stringify({ p_user_id: userId }),
+      method: "POST", headers: { ...h, ...PREFER_MES_COLOMBIA }, body: JSON.stringify({ p_user_id: userId }),
     });
     if (!r.ok) return { permitido: true, usos: 0, tope, plan, motivo: "rpc_fallo" };
     const usos = await r.json();
     return { permitido: usos <= tope, usos, tope, plan };
   } catch {
     return { permitido: true, usos: 0, tope, plan, motivo: "excepcion" };
+  }
+}
+
+/**
+ * Plan que cuenta para la cuota del asesor, con la prueba incluida. Durante la
+ * prueba de 14 días accounts.plan sigue en "free" y la app da acceso Pro: sin
+ * esto, quien prueba el Asesor IA tendría el tope de free (10 al mes) justo en
+ * la prueba. Función pura: `hoy` es 'YYYY-MM-DD' en Colombia.
+ */
+function planEfectivo({ planCuenta, trialEnd, hoy }) {
+  const plan = planCuenta || "free";
+  const enPrueba = typeof trialEnd === "string" && /^\d{4}-\d{2}-\d{2}/.test(trialEnd) && trialEnd.slice(0, 10) >= hoy;
+  if (enPrueba && (plan === "free" || plan === "basico")) return "pro";
+  return plan;
+}
+
+const hoyColombia = (ahora = Date.now()) => new Date(ahora - 5 * 3600000).toISOString().slice(0, 10);
+
+/**
+ * Lee accounts.plan y la fecha de fin de prueba y devuelve el plan efectivo.
+ * La prueba sale de accounts.trial_end (la fija auth-signup en el servidor
+ * desde el 11-oct); si está vacía, de user_data.p.trialEnd (cuentas viejas).
+ */
+async function leerPlanIA({ url, serviceKey, userId }) {
+  const h = { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey };
+  let planCuenta = "free", trialEnd = null;
+  try {
+    const [ra, ru] = await Promise.all([
+      fetch(`${url}/rest/v1/accounts?select=plan,trial_end&owner_user_id=eq.${userId}`, { headers: h }),
+      fetch(`${url}/rest/v1/user_data?select=trial_end:data->p->>trialEnd&id=eq.${userId}`, { headers: h }),
+    ]);
+    if (ra.ok) { const f = await ra.json(); if (f?.[0]?.plan) planCuenta = f[0].plan; if (f?.[0]?.trial_end) trialEnd = String(f[0].trial_end); }
+    else {
+      // Sin la columna trial_end (base sin migrar) PostgREST responde 400:
+      // se vuelve a leer solo el plan para no bajar a free a quien ya paga.
+      const r2 = await fetch(`${url}/rest/v1/accounts?select=plan&owner_user_id=eq.${userId}`, { headers: h });
+      if (r2.ok) { const f = await r2.json(); if (f?.[0]?.plan) planCuenta = f[0].plan; }
+    }
+    if (!trialEnd && ru.ok) { const f = await ru.json(); trialEnd = f?.[0]?.trial_end || null; }
+  } catch { /* queda en free, el tope más restrictivo */ }
+  return planEfectivo({ planCuenta, trialEnd, hoy: hoyColombia() });
+}
+
+/** Usos del mes sin consumir (para mostrar el contador al abrir el asesor). */
+async function consultarUsos({ url, serviceKey, userId }) {
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/consultar_uso_ia`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, "Content-Type": "application/json", ...PREFER_MES_COLOMBIA },
+      body: JSON.stringify({ p_user_id: userId }),
+    });
+    if (!r.ok) return null;
+    return Number(await r.json()) || 0;
+  } catch {
+    return null;
   }
 }
 
@@ -87,4 +152,4 @@ function mensajeCuota({ usos, tope, plan }, concepto = "lecturas con IA") {
   };
 }
 
-module.exports = { consumirCuota, mensajeCuota, TOPES, topeDe };
+module.exports = { consumirCuota, mensajeCuota, TOPES, topeDe, PREFER_MES_COLOMBIA, planEfectivo, hoyColombia, leerPlanIA, consultarUsos };

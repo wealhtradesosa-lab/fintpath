@@ -17,7 +17,11 @@ const LIMIT = 15;
 const WINDOW = 24 * 60 * 60 * 1000;
 
 // ════════════════════════════════════════════════════════════════════════════
-// KNOWLEDGE BASE COLOMBIA — preservado del original
+// KNOWLEDGE BASE COLOMBIA
+// 2-nov-2026 (#35 rehecho): sin tasas de mercado, cap rates ni patrimonios
+// «por estrato» (el asesor los citaba como datos del usuario); topes de Art.
+// 206, 126-1/126-4 y 336, dividendos (Ley 2277) y herencia corregidos. La
+// revisión semanal de normas mantiene esta parte al día.
 // ════════════════════════════════════════════════════════════════════════════
 const KNOWLEDGE_CO = `
 ═══ CONOCIMIENTO EXPERTO DEL ASESOR FINPATHIA — COLOMBIA ═══
@@ -25,10 +29,12 @@ const KNOWLEDGE_CO = `
 1. TRIBUTARIO COLOMBIA 2026:
 - UVT 2026: $52,374 COP
 - Tabla renta personas naturales (UVT): 0-1090: 0% | 1090-1700: 19% | 1700-4100: 28% | 4100-8670: 33% | 8670-18970: 35% | 18970-31000: 37% | >31000: 39%
-- Rentas exentas: 25% de ingresos laborales (tope 790 UVT/mes), aportes voluntarios a pensión (hasta 3800 UVT/año), AFC (hasta 3800 UVT/año)
+- Rentas exentas y deducciones (Art. 336, Ley 2277/2022): en conjunto no pueden pasar del 40% del ingreso neto ni de 1.340 UVT al año. Dependientes (72 UVT por dependiente, hasta 4) y el 1% de compras con factura electrónica van por fuera de ese tope.
+- Renta exenta del 25% de los pagos laborales: tope 790 UVT al AÑO (Art. 206 num. 10), dentro del tope del 40%/1.340 UVT.
+- Aportes voluntarios a pensión y cuenta AFC (Arts. 126-1 y 126-4): hasta el 30% del ingreso del año y máximo 3.800 UVT al año, sumados, y además dentro del tope del 40%/1.340 UVT.
 - GMF (4x1000): aplica a movimientos financieros, exención en cuenta marcada hasta 350 UVT/mes
 - Impuesto al patrimonio: aplica si patrimonio líquido > 72,000 UVT (~$3.7B COP). Tarifa 0.5% a 1.5%
-- Dividendos: 0-300 UVT exentos, >300 UVT al 15%. Dividendos del exterior: tarifa plena
+- Dividendos de sociedades nacionales (Arts. 242 y 254-1, Ley 2277/2022): la parte no gravada se suma a la cédula general y paga con la tabla del Art. 241; se descuenta el 19% de lo que exceda 1.090 UVT. La parte gravada (Art. 49 par. 2) paga primero la tarifa de sociedades (35%). Dividendos del exterior: cédula general, con descuento por impuestos pagados afuera
 - Ganancia ocasional (venta activos >2 años): 15%
 - GANANCIA OCASIONAL EN VENTA DE INMUEBLES (verificado 28-oct-2026):
   · Art. 300: activo fijo poseído 2 años o más → GO al 15% (Arts. 313-314, Ley 2277/2022). Menos de 2 años → renta ordinaria (persona natural hasta 39%, sociedad 35%).
@@ -50,24 +56,11 @@ const KNOWLEDGE_CO = `
 - Rental income USA: se reporta en Form 1040-NR
 - Tax treaty Colombia-USA: crédito tributario para evitar doble imposición
 
-3. INVERSIONES Y TASAS COLOMBIA 2026:
-- CDTs grandes bancos: 9-11% EA
-- TES corto plazo: ~10% EA
-- Fondos fiduciarios conservadores: 8-10% EA / moderados: 11-14% EA
-- FICs inmobiliarios: 12-18% EA (con riesgo de liquidez)
-- Acciones Colombia (MSCI Colcap): retorno histórico ~12% EA
-- ETFs internacionales (VT, VTI, VXUS): 8-10% USD histórico
-- S&P 500 histórico: ~10% USD anual nominal
-- Bitcoin CAGR 4 años: 40-60% (extremadamente volátil)
-- Inflación Colombia 2025: ~5.5%, meta BanRep: 3%. Tasa BanRep: ~9.5%
+3. INVERSIONES (sin tasas de mercado):
+- 2-nov-2026: aquí había tasas de CDT, fondos y retornos de mercado. Se quitaron porque quedaban desactualizadas y el asesor las citaba como ciertas. Para hablar de rentabilidad usa solo las tasas que el usuario cargó en <datos>.
+- Inflación y tasa de BanRep: no las cites como dato; si importan, pídelas o usa las que traiga <datos>.
 
-4. CAP RATES Y REAL ESTATE:
-- Bogotá estrato 6: 4-6% / estrato 4-5: 5-7%
-- Medellín El Poblado: 5-7%
-- Locales comerciales Colombia: 7-10%
-- Bodegas industriales: 8-12%
-- Orlando FL residential: 5-7% / Miami FL residential: 4-6%
-- Orlando FL vacation rental: 8-12% (bruto)
+4. INMUEBLES (fórmulas; sin cap rates de mercado):
 - Regla general: si cap rate < costo de deuda → no conviene apalancar
 - NOI = Ingreso bruto - vacancy (5-8%) - opex (30-40%)
 - Cash-on-Cash = NOI neto / capital propio invertido
@@ -79,7 +72,7 @@ const KNOWLEDGE_CO = `
 - Tasa: 65% por 1300 sem + 1.5% por cada 50 sem adicionales (tope 80%)
 - Fondo privado (RAIS): pensión = ahorro acumulado / expectativa de vida
 - Generalmente RAIS da MENOS que Colpensiones para salarios medios-altos
-- Recomendación: salarios >4 SMMLV → Colpensiones casi siempre mejor
+- Para salarios altos Colpensiones suele dar una pensión mayor que el RAIS, pero depende de semanas, edad y saldo: no lo afirmes sin una proyección
 - Traslado entre regímenes: posible hasta 10 años antes de edad de pensión
 
 6. FIRE Y RETIRO:
@@ -91,20 +84,13 @@ const KNOWLEDGE_CO = `
 
 7. SUCESIÓN PATRIMONIAL COLOMBIA:
 - Herencia forzosa: 50% legítima rigurosa, 25% mejora, 25% libre disposición
-- Herederos forzosos: hijos, cónyuge, padres
+- Legitimarios (herederos forzosos): hijos y, a falta de ellos, padres. El cónyuge no es legitimario: tiene porción conyugal
 - Sociedad patrimonial: 50% del cónyuge no entra a herencia
-- Impuesto herencia: ganancia ocasional 15% (exención primeras 7,700 UVT)
+- Impuesto herencia: ganancia ocasional 15%, con las exenciones del Art. 307 (el monto exacto lo calcula el módulo de Impuestos)
 - Seguro de vida: NO entra a masa herencial → herramienta clave
 - SAS familiar: facilita sucesión de negocios
 
-8. BENCHMARKS COLOMBIA:
-- Patrimonio promedio por edad (estrato 5-6):
-  30: $200-500M | 35: $500M-1.5B | 40: $1.5-3B | 45: $3-6B | 50: $5-10B | 55+: $8-15B
-- Top 1% patrimonio Colombia: >$5B COP / Top 10%: >$1.5B COP
-- Gasto familiar mensual estrato 6 Bogotá: $8-15M / estrato 5: $5-10M
-- Ahorro ideal: mínimo 20% del ingreso, ideal 30-50%
-
-9. FRAMEWORKS DE DECISIÓN:
+8. FRAMEWORKS DE DECISIÓN:
 - Kiyosaki: Activo = genera ingreso. Pasivo = genera gasto
 - Buffett: margin of safety >30%
 - Dalio All-Weather: 30% acciones, 40% bonos largo, 15% bonos corto, 7.5% commodities, 7.5% oro
@@ -252,78 +238,19 @@ const KNOWLEDGE_US = `
 `;
 
 // ════════════════════════════════════════════════════════════════════════════
-// SYSTEM PROMPTS por jurisdicción
+// SYSTEM PROMPT
+// 2-nov-2026 (#35 rehecho): el prompt y las reglas viven en _asesorIA.cjs
+// (puro, con pruebas). Antes pedía «montos específicos», «máximo 500 palabras»
+// y «nunca digas consulta un asesor: TÚ eres el asesor»; de ahí salían los
+// datos inventados, las órdenes y las respuestas cortadas que encontró QA.
 // ════════════════════════════════════════════════════════════════════════════
+const A = require("./_asesorIA.cjs");
+
 function buildSystemPrompt({ jurisdiction, financialContext, taxConfig }) {
-  if (jurisdiction === "US") {
-    const taxConfigText = taxConfig
-      ? `\nUSER TAX CONFIG: Filing as ${taxConfig.filingStatus || "single"}, resident of ${taxConfig.state || "(not set)"}\n`
-      : "";
-
-    return `You are the FINPATHIA AI Financial Advisor — a premium wealth management platform for US individuals and families.
-
-ROLE: You act as a CFP-equivalent (Certified Financial Planner) Family Office Advisor with 20+ years of experience in:
-- Personal financial planning and wealth management
-- US federal & state taxation
-- Retirement accounts (401k, IRA, Roth, HSA, 529)
-- Investment portfolio construction
-- Estate planning and asset protection
-- Real estate investing and tax strategy
-
-${KNOWLEDGE_US}
-
-USER'S FINANCIAL DATA:
-${financialContext}
-${taxConfigText}
-
-RESPONSE RULES:
-1. ALWAYS use the user's exact numbers — never generic figures
-2. Provide actionable recommendations with specific dollar amounts
-3. When simulating scenarios, show BEFORE vs AFTER with concrete figures
-4. Format: $X,XXX or $XK or $X.XM
-5. Maximum 500 words per response — be concise and direct
-6. If you mention a %, also calculate the dollar amount
-7. Identify risks the user may not see
-8. Reference relevant IRC sections when applicable (§401(k), §72(t), §1031, etc.)
-9. Prioritize: emergency fund → debt → tax-advantaged retirement → taxable investing → estate planning
-10. If you don't have enough data, say exactly what's missing
-11. NEVER say "consult an advisor" — YOU are the advisor
-12. Use the user's filing status and state of residence in tax calculations
-13. Respond in ENGLISH unless user writes to you in Spanish — then mirror their language
-
-SPECIFIC US ADVICE TONE: be direct, technical, no fluff. Reference IRS rules confidently. Suggest specific account types and percentages.`;
-  }
-
-  // CO (default — preserva comportamiento original)
-  return `Eres el Asesor Financiero IA de FINPATHIA — plataforma premium de gestión patrimonial para familias colombianas con activos en Colombia y el exterior.
-
-ROL: Actúas como un Family Office Advisor con +20 años de experiencia en:
-- Gestión patrimonial y planificación financiera
-- Tributación Colombia y USA
-- Inversiones (inmuebles, renta fija, variable, crypto)
-- Pensiones (Colpensiones, fondos privados, FIRE)
-- Sucesión y protección patrimonial
-- Análisis de riesgo y diversificación
-
-${KNOWLEDGE_CO}
-
-DATOS FINANCIEROS DEL USUARIO:
-${financialContext}
-
-REGLAS DE RESPUESTA:
-1. Usa SIEMPRE los números exactos del usuario — nunca genéricos
-2. Da recomendaciones accionables con montos específicos en COP
-3. Si simulas escenarios, muestra ANTES vs DESPUÉS con cifras
-4. Formatea: M = millones, B = miles de millones (billones COP)
-5. Máximo 500 palabras por respuesta — sé conciso y directo
-6. Si mencionas un %, calcula también el monto en pesos
-7. Identifica riesgos que el usuario puede no ver
-8. Si aplica, menciona implicaciones tributarias
-9. Prioriza: liquidez → protección → crecimiento → revisión fiscal
-10. Si no tienes datos suficientes, di exactamente qué falta
-11. Nunca digas "consulta un asesor" — TÚ eres el asesor
-12. Si el usuario pregunta algo fuera de finanzas, redirige amablemente
-13. Tienes los planes de «Mi futuro a 10 años» que armó el usuario (sección MI FUTURO A 10 AÑOS). Si pregunta por sus planes, compáralos con sus cifras: qué decide cada uno, por qué uno termina con más patrimonio (ventas, valorización de lo que compra o construye, rentas, gastos que entran o se acaban), qué supuestos lo sostienen y cuáles son optimistas, el flujo mensual año a año y los riesgos (liquidez, concentración, dólar). Di cuál te parece mejor para su situación y por qué, sin inventar datos que no estén en el contexto`;
+  return A.construirPromptSistema({
+    jurisdiction, financialContext, taxConfig,
+    conocimiento: jurisdiction === "US" ? KNOWLEDGE_US : KNOWLEDGE_CO,
+  });
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -371,6 +298,22 @@ async function marcarAsesorUsado(userId, cookieHeader) {
 // ════════════════════════════════════════════════════════════════════════════
 // HANDLER
 // ════════════════════════════════════════════════════════════════════════════
+const MODELO = "claude-sonnet-4-5-20250929";
+// Si la primera respuesta tardó más que esto no se reintenta el formato: dos
+// llamadas seguidas podían pasar el límite de la función y devolver 504.
+const MS_MAX_PARA_REINTENTAR = 12000;
+
+async function llamarAnthropic({ key, system, messages }) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+    body: JSON.stringify({ model: MODELO, max_tokens: A.MAX_TOKENS, system, messages }),
+  });
+  const data = await res.json().catch(() => ({ error: { message: "respuesta no legible" } }));
+  if (!res.ok || data.error) return { error: data?.error?.message || `HTTP ${res.status}` };
+  return { texto: data.content?.map((b) => b.text || "").join("") || "", stop: data.stop_reason };
+}
+
 exports.handler = async (event) => {
   const headers = {
     "Access-Control-Allow-Origin": "*",
@@ -381,93 +324,104 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method not allowed" };
 
   try {
-    const { messages, financialContext, jurisdiction, taxConfig } = JSON.parse(event.body);
-    // 28-sep-2026: sin sesión no hay IA. El userId del body era un texto
-    // libre ("anon" para cualquiera) y el límite se reiniciaba en cada
-    // arranque en frío: presupuesto de Anthropic abierto a quien quisiera.
+    let body = {};
+    try { body = JSON.parse(event.body || "{}"); } catch { return { statusCode: 400, headers, body: JSON.stringify({ error: "Solicitud inválida." }) }; }
+    const { messages, financialContext, jurisdiction, taxConfig, accion } = body;
+    const idioma = jurisdiction === "US" ? "en" : "es";
+    // 28-sep-2026: sin sesión no hay IA (el userId del body era texto libre).
     const { usuarioDesdeToken, sinSesion } = require("./_auth.cjs");
     const quien = await usuarioDesdeToken(event);
-    if (!quien) return sinSesion(headers, "Inicia sesión para usar el asesor con IA.");
+    if (!quien) return sinSesion(headers, "Inicia sesión para usar el Asesor IA.");
     const userId = quien.id;
+
+    // ── CUOTA EN EL SERVIDOR ───────────────────────────────────────────────
+    // 26-oct-2026: la misma cuota mensual de las otras funciones de IA (free 10,
+    // básico 30, pro 150, pro familiar 400); el contador en memoria solo queda
+    // de respaldo si Supabase no está configurado.
+    // 2-nov-2026 (#35): la prueba de 14 días cuenta como Pro (leerPlanIA), el
+    // mes se corta en hora de Colombia, y `accion: "cuota"` devuelve las
+    // restantes sin consumir para que la pantalla muestre el contador real (el
+    // de localStorage volvía a 15 al recargar).
+    const C = require("./_cuotaIA.cjs");
+    const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+    const conSupabase = !!(SUPA_URL && SERVICE_KEY);
+
+    if (accion === "cuota") {
+      if (!conSupabase) return { statusCode: 200, headers, body: JSON.stringify({ restantes: null, tope: null }) };
+      const plan = await C.leerPlanIA({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+      const tope = C.topeDe(plan);
+      const usos = await C.consultarUsos({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+      return { statusCode: 200, headers, body: JSON.stringify({ restantes: usos == null ? null : Math.max(0, tope - usos), tope }) };
+    }
+
+    // Historial limpio (solo user/assistant, últimos turnos, termina en el
+    // usuario). Sin pregunta válida no se consume cuota.
+    const mensajes = A.limpiarMensajes(messages);
+    if (!mensajes.length) {
+      return { statusCode: 400, headers, body: JSON.stringify({ error: idioma === "en" ? "Write a question." : "Escribe una pregunta." }) };
+    }
+
     const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_KEY) {
       return { statusCode: 500, headers, body: JSON.stringify({ error: "API key no configurada. Contacta al administrador." }) };
     }
 
-    // ── 26-oct-2026 — EL TOPE NO SE APLICABA ───────────────────────────────
-    // `rateLimits` es un objeto en memoria del módulo: en funciones serverless
-    // se reinicia en cada arranque en frío y cada instancia concurrente lleva su
-    // propio contador. O sea que el "límite de 15 diarias" no limitaba nada, y
-    // el chat es la función de IA más cara. Las otras tres (analyze-image,
-    // parse-declaration, analyze-excel) ya descontaban de la cuota real del plan
-    // contra la base; el chat era la única que no.
-    // Ahora usa la misma cuota: free 10, básico 30, pro 150, pro familiar 400.
-    // El contador en memoria queda SOLO como respaldo para cuando Supabase no
-    // está configurado, para no quedarse sin ningún tope.
-    const { consumirCuota, mensajeCuota } = require("./_cuotaIA.cjs");
-    const SUPA_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-    const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-    let remaining;
-
-    if (SUPA_URL && SERVICE_KEY) {
-      const cuota = await consumirCuota({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+    let restantes = null, tope = null;
+    if (conSupabase) {
+      const plan = await C.leerPlanIA({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId });
+      const cuota = await C.consumirCuota({ url: SUPA_URL, serviceKey: SERVICE_KEY, userId, plan });
+      const r = A.resumenCuota(cuota);
+      restantes = r.restantes; tope = r.tope;
       if (!cuota.permitido) {
-        return { statusCode: 429, headers, body: JSON.stringify({ ...mensajeCuota(cuota, "consultas al asesor"), remaining: 0 }) };
+        return { statusCode: 429, headers, body: JSON.stringify({
+          error: "cuota_ia_agotada", mensaje: A.mensajeCuotaAsesor({ tope: cuota.tope, plan: cuota.plan, idioma }),
+          restantes: 0, remaining: 0, tope: cuota.tope,
+        }) };
       }
-      remaining = Math.max(0, cuota.tope - cuota.usos);
     } else {
-      const key = userId;
       const now = Date.now();
-      if (!rateLimits[key] || now - rateLimits[key].start > WINDOW) {
-        rateLimits[key] = { start: now, count: 0 };
-      }
-      rateLimits[key].count++;
-      remaining = LIMIT - rateLimits[key].count;
-      if (remaining < 0) {
-        const isUS = jurisdiction === "US";
-        const horas = Math.round((rateLimits[key].start + WINDOW - now) / 3600000);
-        const errMsg = isUS
+      if (!rateLimits[userId] || now - rateLimits[userId].start > WINDOW) rateLimits[userId] = { start: now, count: 0 };
+      rateLimits[userId].count++;
+      restantes = LIMIT - rateLimits[userId].count;
+      tope = LIMIT;
+      if (restantes < 0) {
+        const horas = Math.round((rateLimits[userId].start + WINDOW - now) / 3600000);
+        const errMsg = idioma === "en"
           ? `Daily limit of ${LIMIT} messages reached. Resets in ${horas} hours.`
-          : `Límite de ${LIMIT} consultas diarias alcanzado. Se renueva en ${horas} horas.`;
-        return { statusCode: 429, headers, body: JSON.stringify({ error: errMsg, remaining: 0 }) };
+          : `Llegaste al límite de ${LIMIT} consultas de hoy. Se renueva en ${horas} horas.`;
+        return { statusCode: 429, headers, body: JSON.stringify({ error: errMsg, restantes: 0, remaining: 0, tope }) };
       }
     }
 
     // advisor_used: arranca en paralelo, sin await (ver marcarAsesorUsado).
     const pAsesorUsado = marcarAsesorUsado(userId, event.headers?.cookie || event.headers?.Cookie).catch(() => {});
 
-    // System prompt según jurisdicción
-    // 24-oct-2026: el contexto ahora trae todas las secciones (planes incluidos);
-    // tope de tamaño para no disparar el costo con cuentas muy grandes.
-    const ctxSeguro = String(financialContext || "").slice(0, 60000);
-    const systemPrompt = buildSystemPrompt({ jurisdiction, financialContext: ctxSeguro, taxConfig });
+    const systemPrompt = buildSystemPrompt({ jurisdiction, financialContext, taxConfig });
+    const t0 = Date.now();
+    const primera = await llamarAnthropic({ key: ANTHROPIC_KEY, system: systemPrompt, messages: mensajes });
+    if (primera.error) return { statusCode: 400, headers, body: JSON.stringify({ error: primera.error, restantes, remaining: restantes, tope }) };
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5-20250929",
-        // 24-oct-2026: con 2048 las respuestas largas pasaban de 30 s y el CDN
-        // devolvía 504 en HTML ("Unexpected token '<'"). 1024 ≈ 500 palabras,
-        // que es el tope que ya pide la regla 5.
-        max_tokens: 1024,
-        system: systemPrompt,
-        messages: messages,
-      }),
-    });
+    // Revisión de las opciones (máximo 2, con Pro y Contra; las fijas en
+    // «qué deuda primero» y «fondo de emergencia»). Si no cumple, se pide UNA
+    // vez más con una instrucción correctiva; cuenta como un solo uso. Si el
+    // reintento falla o sale peor, queda la primera.
+    const pregunta = mensajes[mensajes.length - 1].content;
+    let final = primera, reintentada = false;
+    const rev1 = A.revisarOpciones(primera.texto, pregunta);
+    if (!rev1.ok && primera.stop !== "max_tokens" && Date.now() - t0 < MS_MAX_PARA_REINTENTAR) {
+      reintentada = true;
+      const segunda = await llamarAnthropic({
+        key: ANTHROPIC_KEY, system: systemPrompt,
+        messages: [...mensajes, { role: "assistant", content: primera.texto }, { role: "user", content: A.instruccionCorrectiva(rev1, idioma) }],
+      });
+      if (!segunda.error && segunda.texto && A.revisarOpciones(segunda.texto, pregunta).problemas.length < rev1.problemas.length) final = segunda;
+    }
 
-    const data = await res.json();
-    if (data.error) return { statusCode: 400, headers, body: JSON.stringify({ error: data.error.message, remaining }) };
-
-    const reply = data.content?.map((b) => b.text || "").join("") || "Sin respuesta";
-    // Le damos como mucho 300 ms extra para terminar (normalmente ya terminó
-    // mientras respondía Anthropic). Nunca bloquea la respuesta.
+    const { texto: reply, recortada } = A.recortarRespuesta(final.texto || (idioma === "en" ? "No answer." : "Sin respuesta."), final.stop, idioma);
+    // Como mucho 300 ms extra para el evento; nunca bloquea la respuesta.
     await Promise.race([pAsesorUsado, new Promise((r) => setTimeout(r, 300))]);
-    return { statusCode: 200, headers, body: JSON.stringify({ reply, remaining }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ reply, recortada, reintentada, restantes, remaining: restantes, tope }) };
   } catch (e) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: e.message }) };
   }

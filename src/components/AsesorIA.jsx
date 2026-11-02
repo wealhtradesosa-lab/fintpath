@@ -8,6 +8,7 @@ import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
 import { SimToggleInfoCompact } from "./SimToggleInfo";
 import PageHeader from "./PageHeader.jsx";
 import { contextoCompleto } from "../lib/contextoAsesor.js";
+import { cifrasClave, NO_CARGADO, normalizarMarkdown } from "../lib/asesorIA.js";
 
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)",
@@ -17,13 +18,14 @@ const T = {
   bl: "#3b82f6", rd: "#ff5000",
 };
 
+// 2-nov-2026 (#35): sugerencias que se responden con los datos cargados, sin
+// prometer plazos («independencia en 3 años») ni suponer edad o metas.
 const SUGGESTIONS = [
-  "¿Cómo puedo alcanzar independencia financiera en 3 años?",
-  "¿Dónde tengo más riesgo concentrado?",
+  "¿Qué gasto me está frenando para subir de nivel?",
+  "¿Qué deuda me conviene pagar primero?",
+  "¿Cuántos meses de gastos debería tener ahorrados?",
   "¿Debería pagar deudas o invertir más?",
-  "Genera 3 escenarios para mejorar mi cash flow",
-  "¿Qué gastos puedo recortar para ahorrar $5M/mes?",
-  "¿Cuánto necesito para retirarme a los 55?",
+  "¿Dónde tengo más riesgo concentrado?",
   "¿Qué opinas de mis planes a 10 años? ¿Cuál me conviene?",
 ];
 
@@ -48,9 +50,12 @@ function buildContext(user, totals) {
   ctx += bloqueNivelLibertad(t);
 
   // Inversiones
-  if ((u.inv || []).length > 0) {
+  // 2-nov-2026: solo lo encendido (sim !== false); antes entraban inversiones
+  // y deudas apagadas.
+  const invOn = (u.inv || []).filter(i => i && i.sim !== false);
+  if (invOn.length > 0) {
     ctx += "\nINVERSIONES:\n";
-    (u.inv || []).forEach(i => {
+    invOn.forEach(i => {
       ctx += `• ${i.n || i.nombre || "?"}: ${fm(i.va)} (tipo: ${i.tp || i.tipo || "?"})${i.vc ? " costo: " + fm(i.vc) : ""}\n`;
     });
   }
@@ -90,13 +95,18 @@ function buildContext(user, totals) {
   }
 
   // Deudas
-  if ((u.deu || []).length > 0) {
+  const deuOn = (u.deu || []).filter(d => d && d.sim !== false && (d.mt || 0) > 0);
+  if (deuOn.length > 0) {
     ctx += "\nDEUDAS:\n";
-    (u.deu || []).filter(d => (d.mt || 0) > 0).forEach(d => {
-      ctx += `• ${d.n || d.nombre || "?"}: saldo ${fm(d.mt)}, cuota ${fm(d.pg || d.pago)}/mes, tasa ${d.ts || 0}%\n`;
+    deuOn.forEach(d => {
+      ctx += `• ${d.n || d.nombre || "?"}: saldo ${fm(d.mt)}, cuota ${fm(d.pg || d.pago)}/mes, tasa ${d.ts || 0}% E.A.\n`;
     });
   }
 
+  // 2-nov-2026 (#35): lo que no está cargado y las cifras ya calculadas, para
+  // que el modelo no suponga ni haga aritmética.
+  ctx += NO_CARGADO;
+  ctx += cifrasClave(u, t);
   return ctx;
 }
 
@@ -114,7 +124,8 @@ function renderMD(txt) {
     const partes = String(s).split(/\*\*(.+?)\*\*/g);
     return partes.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : p));
   };
-  return String(txt || "").split("\n").map((linea, i) => {
+  // 2-nov-2026: tablas y bloques de código se normalizan antes (se veían los «| --- |» crudos).
+  return normalizarMarkdown(txt).split("\n").map((linea, i) => {
     const l = linea.trimEnd();
     if (!l.trim()) return <div key={i} style={{ height: 8 }} />;
     if (/^#{1,6}\s/.test(l)) {
@@ -132,31 +143,29 @@ function renderMD(txt) {
   });
 }
 
-export default function AsesorIA({ user, totals, userId }) {
+export default function AsesorIA({ user, totals }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const DAILY_LIMIT = 15;
-  const getUsage = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("fp3_ai_usage") || "{}");
-      const today = new Date().toISOString().split("T")[0];
-      if (stored.date !== today) return { date: today, count: 0 };
-      return stored;
-    } catch { return { date: new Date().toISOString().split("T")[0], count: 0 }; }
-  };
-  const [remaining, setRemaining] = useState(() => {
-    const usage = getUsage();
-    return Math.max(0, DAILY_LIMIT - usage.count);
-  });
-  const trackUsage = () => {
-    const usage = getUsage();
-    usage.count++;
-    localStorage.setItem("fp3_ai_usage", JSON.stringify(usage));
-    setRemaining(Math.max(0, DAILY_LIMIT - usage.count));
-    return usage.count <= DAILY_LIMIT;
-  };
+  // 2-nov-2026 (#35): el contador sale del servidor (cuota mensual por plan,
+  // compartida con las lecturas de documentos con IA). El de localStorage
+  // («15 consultas restantes hoy») volvía a 15 al recargar y no limitaba nada.
+  // null = todavía no se sabe: no se muestra.
+  const [restantes, setRestantes] = useState(null);
+  useEffect(() => {
+    try { localStorage.removeItem("fp3_ai_usage"); } catch { /* sin storage */ }
+    let vivo = true;
+    fetchAuth("/api/ai-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "cuota" }),
+    })
+      .then((r) => r.json())
+      .then((d) => { if (vivo && typeof d?.restantes === "number") setRestantes(d.restantes); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, []);
   const chatRef = useRef(null);
 
   useEffect(() => {
@@ -170,10 +179,6 @@ export default function AsesorIA({ user, totals, userId }) {
     setError("");
 
     const newMsgs = [...msgs, { role: "user", content: q }];
-    if (remaining <= 0) {
-      setError("Has alcanzado el límite de " + DAILY_LIMIT + " consultas diarias. Se renueva mañana.");
-      return;
-    }
     setMsgs(newMsgs);
     setLoading(true);
 
@@ -189,7 +194,7 @@ export default function AsesorIA({ user, totals, userId }) {
       const res = await fetchAuth("/api/ai-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, userId: userId || "anon", jurisdiction, taxConfig }),
+        body: JSON.stringify({ messages: apiMsgs, financialContext: ctx, jurisdiction, taxConfig }),
       });
 
       // 24-oct-2026: si el servidor tarda demasiado, Netlify responde una
@@ -198,7 +203,7 @@ export default function AsesorIA({ user, totals, userId }) {
       let data;
       try { data = JSON.parse(texto); }
       catch { setError(res.status === 504 || res.status === 502 ? "El asesor tardó demasiado en responder. Intenta de nuevo o haz la pregunta más concreta (por ejemplo, sobre un plan)." : "No pude leer la respuesta del asesor. Intenta de nuevo."); setLoading(false); return; }
-      trackUsage();
+      if (typeof data.restantes === "number") setRestantes(data.restantes);
       if (data.error) {
         setError(data.mensaje || data.error);
       } else {
@@ -217,7 +222,7 @@ export default function AsesorIA({ user, totals, userId }) {
         title="Conversa con tu family office"
         subtitle="Análisis de tus datos encendidos y recomendaciones personalizadas con datos reales."
         rightSlot={<>
-          <span style={{fontSize:12,color:remaining<=5?"#ff5000":"var(--fp-txt3)",background:"var(--fp-raised)",padding:"6px 12px",borderRadius:999}}>{remaining} consultas restantes hoy</span>
+          {restantes != null && <span style={{fontSize:12,color:restantes<=5?"#ff5000":"var(--fp-txt3)",background:"var(--fp-raised)",padding:"6px 12px",borderRadius:999}}>{restantes} {restantes === 1 ? "consulta restante" : "consultas restantes"} este mes</span>}
           {msgs.length > 0 && (
             <button onClick={() => setMsgs([])} style={{ background: T.bg3, border: "1px solid " + T.border, color: T.txt3, padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontSize: 12 }}>Nueva consulta</button>
           )}
