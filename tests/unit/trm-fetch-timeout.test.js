@@ -1,15 +1,22 @@
 // El fetch de la TRM no puede quedarse colgado. Hasta oct-2026 era un
 // `fetch("/api/trm")` pelado: si la red no responde, la promesa no se resuelve
 // nunca, el `catch {}` tampoco corre y la tasa no llega sin que nadie se entere.
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import { readFileSync } from "node:fs";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
-const cargar = async () => {
-  const m = await import("../../src/App.jsx");
-  return { traerTrm: m.traerTrm, TRM_TIMEOUT_MS: m.TRM_TIMEOUT_MS };
-};
+// 2-nov-2026 — Estos tests fallaban de a ratos ("5005ms") y el rojo no era de
+// la TRM: cada `it` hacía `await import("src/App.jsx")`, el archivo más pesado
+// del proyecto, y bajo la carga de la suite completa el PRIMERO se comía los
+// 5 s que vitest da por defecto. Fallaba el reloj del test, no el código. Un
+// test que se cae de a ratos es peor que no tenerlo: enseña a ignorar el rojo.
+// Ahora App.jsx se carga UNA vez, con holgura, y los tests miden lo suyo.
+let traerTrm;
+beforeAll(async () => {
+  ({ traerTrm } = await import("../../src/App.jsx"));
+}, 60000);
+const cargar = async () => ({ traerTrm });
 
 describe("traerTrm", () => {
   it("devuelve el json cuando /api/trm responde", async () => {
