@@ -84,6 +84,22 @@ describe("KNOWLEDGE_CO en ai-chat", () => {
   });
 });
 
+describe("KNOWLEDGE_US en ai-chat (2-nov-2026)", () => {
+  const { readFileSync } = require("node:fs");
+  const s = readFileSync(new URL("../../netlify/functions/ai-chat.cjs", import.meta.url), "utf8");
+  const kus = s.slice(s.indexOf("const KNOWLEDGE_US"), s.indexOf("function buildSystemPrompt"));
+  it("cifras 2026 de Rev. Proc. 2025-32 y sin el sunset del estate tax", () => {
+    expect(kus).toContain("Single $16,100 / MFJ $32,200 / HoH $24,150");
+    expect(kus).toContain("10% to $12,400 | 12% to $50,400");
+    expect(kus).toContain("$15,000,000 per person for 2026");
+    expect(kus).not.toContain("sunsets to ~$7M");
+    expect(kus).not.toContain("Single $15,000 / MFJ $30,000");
+  });
+  it("sin retornos de mercado, cap rates, tasas hipotecarias ni benchmarks", () => {
+    for (const viejo of ["S&P 500 historical", "Sun Belt cap rates", "Mortgage rates 2025", "BENCHMARKS US", "VTI + VXUS + BND"]) expect(kus).not.toContain(viejo);
+  });
+});
+
 describe("recortarRespuesta", () => {
   it("no toca una respuesta completa", () => {
     expect(A.recortarRespuesta("Hola. Todo bien.\n", "end_turn")).toEqual({ texto: "Hola. Todo bien.", recortada: false });
