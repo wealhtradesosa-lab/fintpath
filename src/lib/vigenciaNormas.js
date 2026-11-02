@@ -14,7 +14,7 @@ import { UVT_BY_AG } from "./taxCO.js";
 import { TABLA_ART73_AG, ULTIMO_AG_ART70, NORMA_GO_VERIFICADA } from "./normaGananciaOcasional.js";
 
 /** Fecha de la última revisión completa de normas nuevas (la mueve el revisor semanal). */
-export const ULTIMA_REVISION_NORMATIVA = "2026-10-28";
+export const ULTIMA_REVISION_NORMATIVA = "2026-11-02";
 
 const d = (s) => new Date(s + "T12:00:00");
 
