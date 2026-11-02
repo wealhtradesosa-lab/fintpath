@@ -8,10 +8,10 @@
 //
 // Regla del producto: nunca inventar la tasa. Si no hay una real, se informa en
 // dólares y se avisa (contextoAsesor.js), o los totales quedan «pendiente de
-// tasa» (estadoTrm/totalesConTasa en App.jsx). El respaldo de abajo sobrevive
-// solo donde el cálculo no puede quedar en blanco: los borradores de
-// declaración, que además muestran NOTA_TRM_DECLARACION avisando que no sirven
-// para declarar.
+// tasa» (estadoTrm/totalesConTasa en App.jsx). Desde el 1-nov-2026 el motor
+// de renta (taxCO.js) y los borradores F-210/F-110 tampoco lo usan: sin tasa
+// real dejan los USD por fuera y avisan «pendiente de tasa»
+// (usdPendienteDeTasa / NOTA_TRM_PENDIENTE).
 
 /** Respaldo histórico. NO es una tasa real: nunca se guarda en el perfil. */
 export const TRM_PROVISIONAL = 4200;
@@ -21,3 +21,18 @@ export function trmUsable(trm) {
   const t = Number(trm);
   return Number.isFinite(t) && t > 0 && t !== TRM_PROVISIONAL ? t : null;
 }
+
+/**
+ * 1-nov-2026 — ¿Hay montos en USD que no se pueden pasar a pesos? El motor de
+ * renta y los borradores F-210/F-110 los dejan por fuera y la pantalla dice
+ * «pendiente de tasa» en vez de mostrar cifras como si fueran válidas.
+ */
+export function usdPendienteDeTasa(user) {
+  if (!user || trmUsable(user.trm) != null) return false;
+  const usd = (i) => !!i && i.moneda === "USD";
+  const listas = ["inv", "deu", "ingresos", "ibk"].some((k) => (user[k] || []).some(usd));
+  const gastos = Object.values(user.gas || {}).some((g) => (Array.isArray(g) ? g.some(usd) : usd(g)));
+  return listas || gastos;
+}
+
+export const NOTA_TRM_PENDIENTE = "Sin una TRM real, tus montos en dólares quedan fuera de este borrador: pendiente de tasa. Las cifras que ves son solo de tus montos en pesos.";

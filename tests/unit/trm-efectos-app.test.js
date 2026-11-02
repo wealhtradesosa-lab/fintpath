@@ -131,4 +131,11 @@ describe("TRM en pantalla: viva → guardada → pendiente (sin 4200)", async ()
     expect(con).not.toContain("Convertido con la TRM actual");
     expect(renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: soloCOP }))).toBe("");
   });
+  it("sin tasa real, la nota dice «pendiente de tasa»; con tasa real no", () => {
+    const sin = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: { ...conUSD, trm: 4200 } }));
+    expect(sin).toContain("pendiente de tasa");
+    const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: { ...conUSD, trm: 3958 } }));
+    expect(con).not.toContain("pendiente de tasa");
+    expect(con).toContain(A.NOTA_TRM_DECLARACION);
+  });
 });

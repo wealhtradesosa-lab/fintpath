@@ -22,7 +22,7 @@ import { totalAnualItem } from "./flowHelpers.js";
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { uvtForYear } from "./taxCO.js";
-import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
+import { trmUsable } from "./trm.js";
 import { claseDeActivo, normalizar } from "./taxonomiaActivos.js";
 
 // ── Patrimonio bruto (renglones 291–294) ─────────────────────────────────
@@ -132,7 +132,9 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const det = estimacion?.detalle?.find(d => d.name === owner.name);
   if (!det) return null;
 
-  const trm = trmUsable(user.trm) ?? TRM_PROVISIONAL;
+  // Sin tasa real, los montos en USD quedan fuera del borrador (factor 0) y la
+  // pantalla avisa «pendiente de tasa» (NotaTrmDeclaracion). Nunca 4200.
+  const trm = trmUsable(user.trm) ?? 0;
   const uvt = uvtForYear(ano);
 
   // Lectura de overrides persistidos
