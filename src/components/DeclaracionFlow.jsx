@@ -2069,6 +2069,9 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
 
   // Filtrar solo renglones con valor resuelto > 0
   const renglonesConValor = renglones.filter(r => r && r.valorResuelto > 0);
+  // 1-nov-2026: el saldo a favor se ve sin tener que expandir el detalle.
+  const renglonSaldoAFavor = renglonesConValor.find(r => r.numero === 114 && typeof r.notaDe === "function");
+  const notaSaldoAFavor = renglonSaldoAFavor ? renglonSaldoAFavor.notaDe(renglonSaldoAFavor.valorResuelto, fm) : null;
 
   return (
     <div style={{
@@ -2105,6 +2108,12 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
           ▸
         </span>
       </button>
+
+      {notaSaldoAFavor && (
+        <div data-testid="saldo-a-favor-borrador" style={{ padding: "0 16px 12px", fontSize: 13, color: C.txt, lineHeight: 1.4 }}>
+          {notaSaldoAFavor}
+        </div>
+      )}
 
       {expandido && (
         <div style={{ padding: "0 16px 16px", borderTop: `1px solid ${C.border}` }}>

@@ -38,6 +38,7 @@
 import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
+import { impuestoACargoDe, saldoAFavorDe, textoSaldoAFavor, notaAhorroConSaldoAFavor } from "../lib/saldoAFavor.js";
 import { auditarDatos } from "../lib/auditoriaDatos.js";
 import AsignarTitularMasivo from "./AsignarTitularMasivo.jsx";
 import AplicarOportunidadModal from "./AplicarOportunidadModal.jsx";
@@ -119,7 +120,10 @@ export default function EstrategiaTributaria({
 
   // Lo que toca pagar (saldo a cargo después de retenciones)
   const saldoACargo = det?.saldoACargo ?? det?.impuesto ?? 0;
-  const impuestoBruto = det?.impuesto ?? 0;
+  // 1-nov-2026 (#60): impuesto a cargo ANTES de retenciones. det.impuesto es el
+  // saldo tras retenciones (0 con saldo a favor) y no sirve como "impuesto calculado".
+  const impuestoBruto = impuestoACargoDe(det);
+  const saldoAFavor = saldoAFavorDe(det);
   const retenciones = det?.retefuenteNat ?? det?.retefuenteCalc ?? 0;
   const ingresoAnual = det?.ingreso ?? 0;
   const tasaEfectiva = ingresoAnual > 0 ? (impuestoBruto / ingresoAnual * 100) : 0;
@@ -242,6 +246,11 @@ export default function EstrategiaTributaria({
           ) : (
             <>Por ahora, <strong style={{ color: C.green }}>no te toca pagar nada</strong> de impuesto de renta. Tus retenciones cubren todo.</>
           )}
+          {saldoACargo <= 0 && saldoAFavor > 0 && (
+            <div data-testid="saldo-a-favor-estrategia" style={{ marginTop: 6, color: C.txt }}>
+              {textoSaldoAFavor(saldoAFavor, fm)}.
+            </div>
+          )}
         </div>
 
         <div style={{
@@ -271,7 +280,7 @@ export default function EstrategiaTributaria({
         )}
 
         {/* CTA al ahorro si hay oportunidades */}
-        {ahorroPotencial > 0 && saldoACargo > 0 && (
+        {ahorroPotencial > 0 && (saldoACargo > 0 || saldoAFavor > 0) && (
           <div style={{
             marginTop: 18,
             padding: "12px 16px",
@@ -286,11 +295,18 @@ export default function EstrategiaTributaria({
             <span style={{ fontSize: 22 }}></span>
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.txt }}>
-                Detectamos cómo bajarte ese número en {fm(ahorroPotencial)}/año
+                {saldoACargo > 0
+                  ? <>Detectamos cómo bajarte ese número en {fm(ahorroPotencial)}/año</>
+                  : <>Detectamos cómo bajar tu impuesto en {fm(ahorroPotencial)}/año</>}
               </div>
               <div style={{ fontSize: 12, color: C.txt3 }}>
                 Sin trampa: son {oportunidades.length} {oportunidades.length === 1 ? "forma legal" : "formas legales"} que la ley te permite y no estás usando.
               </div>
+              {saldoACargo <= 0 && saldoAFavor > 0 && (
+                <div style={{ fontSize: 12, color: C.txt2, marginTop: 4 }}>
+                  {notaAhorroConSaldoAFavor(det, ahorroPotencial, fm)}.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -451,6 +467,11 @@ function OportunidadCard({ opo, index, onAplicar }) {
         <div style={{ fontSize: 12, color: C.txt3, marginTop: 4, lineHeight: 1.4 }}>
           {opo.descripcionCorta || opo.descripcion || ""}
         </div>
+        {opo.notaSaldoAFavor && (
+          <div style={{ fontSize: 12, color: C.txt2, marginTop: 6, lineHeight: 1.4 }}>
+            {opo.notaSaldoAFavor}.
+          </div>
+        )}
       </div>
       <div style={{ textAlign: "right", flexShrink: 0 }}>
         <div style={{ fontSize: 12, color: C.txt3 }}>Te ahorras</div>

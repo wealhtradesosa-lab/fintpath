@@ -31,6 +31,7 @@ import { fmtPctEs } from "./formato.js";
 import { GRUPOS_SIMPLE, TOPE_SIMPLE_UVT, calcularImpuestoSimple } from "./regimenSimple.js";
 // 27-sep-2026 — gastos anualizados por el motor, no con m * 12.
 import { totalAnualItem } from "./flowHelpers.js";
+import { impuestoACargoDe, notaAhorroConSaldoAFavor } from "./saldoAFavor.js";
 
 const UVT = 49799; // AG 2025 default ($49.799) — ver UVT_BY_AG / uvtForYear en taxCO.js
 
@@ -51,11 +52,16 @@ export function generarRecomendaciones(user, estimacion) {
     const det = estimacion.detalle.find(d => d.name === ow.name);
     if (!det) continue;
 
-    if (ow.type === "natural") {
-      recs.push(...recomendacionesNatural(user, ow, det));
-    } else if (ow.type === "juridica") {
-      recs.push(...recomendacionesJuridica(user, ow, det));
+    const delOwner = ow.type === "natural"
+      ? recomendacionesNatural(user, ow, det)
+      : ow.type === "juridica" ? recomendacionesJuridica(user, ow, det) : [];
+    // 1-nov-2026: con saldo a favor el ahorro no baja lo que se paga, agranda
+    // la devolución. La tarjeta lo dice con cifras.
+    for (const r of delOwner) {
+      const nota = notaAhorroConSaldoAFavor(det, r.ahorroAnualEstimado);
+      if (nota) r.notaSaldoAFavor = nota;
     }
+    recs.push(...delOwner);
   }
 
   // Ordenar por impacto descendente (ahorro mayor primero).
@@ -78,15 +84,16 @@ function recomendacionesNatural(user, ow, det) {
   // hay margen legal para aportar más.
   const espacio = Number(det.espacioParaPVyAFC) || 0;
   const pvAportaHoy = pvAportadaHoyAnual(user, ow.id);
-  // Saldo a cargo actual: si es 0 (retenciones cubren todo o tarifa cero),
-  // no podemos prometer ahorros. Cap aplicado a TODAS las palancas de
-  // deducción a continuación. Sin esto, el user veía "ahorra $20M" pero al
-  // aplicar la palanca el saldo seguía $0 — promesa rota.
-  const saldoACargoActual = Number(det.saldoACargo ?? det.impuesto ?? 0);
+  // Impuesto a cargo (antes de retenciones): cap de TODAS las palancas de
+  // deducción a continuación — una deducción no puede ahorrar más impuesto
+  // del que hay. 1-nov-2026 (#60, regla Finanzas): antes se acotaba al saldo
+  // a pagar, que es 0 con saldo a favor y escondía palancas que sí bajan el
+  // impuesto (y por tanto agrandan la devolución).
+  const impuestoACargoActual = impuestoACargoDe(det);
   if (espacio > 1_000_000 && tasaMarginalAprox > 0) {
     const aporteSugeridoMensual = Math.round(espacio / 12 * 0.8);
     const ahorroBruto = Math.round(aporteSugeridoMensual * 12 * tasaMarginalAprox / 100);
-    const ahorro = Math.min(ahorroBruto, Math.max(0, saldoACargoActual));
+    const ahorro = Math.min(ahorroBruto, impuestoACargoActual);
     if (ahorro >= 500_000) {
       recs.push({
         code: "APORTAR_PV_AFC",
@@ -109,7 +116,7 @@ function recomendacionesNatural(user, ow, det) {
           `Tasa marginal estimada: ${fmtPctEs(tasaMarginalAprox, 1)}`,
           `Espacio legal disponible: ${fm(espacio)}/año`,
           `Aporte sugerido: 80% del espacio (conservador)`,
-          `Ahorro acotado al saldo a cargo actual: ${fm(saldoACargoActual)}`,
+          `Ahorro acotado al impuesto a cargo actual: ${fm(impuestoACargoActual)}`,
         ],
       });
     }
@@ -166,8 +173,7 @@ function recomendacionesNatural(user, ow, det) {
     // ahorro de $X. Sin este capping, mostrábamos "ahorra $20M" cuando
     // el impuesto era $0 y el user agregaba dependientes y NO veía nada.
     const ahorroBruto = Math.round(deducMax * tasaMarginalAprox / 100);
-    const saldoACargoActual = Number(det.saldoACargo ?? det.impuesto ?? 0);
-    const ahorro = Math.min(ahorroBruto, Math.max(0, saldoACargoActual));
+    const ahorro = Math.min(ahorroBruto, impuestoACargoActual);
     if (ahorro >= 500_000) {
       recs.push({
         code: "DEPENDIENTES_NO_DECLARADOS",
@@ -184,7 +190,7 @@ function recomendacionesNatural(user, ow, det) {
         supuestos: [
           `Tasa marginal estimada: ${fmtPctEs(tasaMarginalAprox, 1)}`,
           `Tope: 10% del bruto laboral, máx 32 UVT × 12 meses`,
-          `Ahorro acotado al impuesto a cargo actual: ${fm(saldoACargoActual)}`,
+          `Ahorro acotado al impuesto a cargo actual: ${fm(impuestoACargoActual)}`,
           `Requiere documentación (registro civil, certificados)`,
         ],
       });
@@ -197,13 +203,13 @@ function recomendacionesNatural(user, ow, det) {
   // tiene impuesto > 0, vale la pena mencionarlo.
   const deducMedActual = Number(det.deducMedicina) || 0;
   // Cambio del trigger: antes se mostraba si impBruto > 2M (impuesto
-  // teórico antes de retenciones). Ahora exigimos saldoACargoActual > 0
+  // teórico antes de retenciones). Ahora exigimos impuestoACargoActual > 500k
   // para que la palanca solo aparezca cuando el user EFECTIVAMENTE puede
   // ahorrar al aplicarla.
-  if (deducMedActual === 0 && saldoACargoActual > 500_000) {
+  if (deducMedActual === 0 && impuestoACargoActual > 500_000) {
     const topeAnual = 16 * UVT * 12;
     const ahorroBruto = Math.round(topeAnual * tasaMarginalAprox / 100);
-    const ahorro = Math.min(ahorroBruto, saldoACargoActual);
+    const ahorro = Math.min(ahorroBruto, impuestoACargoActual);
     if (ahorro >= 500_000) {
       recs.push({
         code: "SALUD_PREPAGADA_NO_REGISTRADA",
@@ -220,7 +226,7 @@ function recomendacionesNatural(user, ow, det) {
         supuestos: [
           `Tope: 16 UVT × 12 meses = ${fm(topeAnual)}/año`,
           `Tasa marginal: ${fmtPctEs(tasaMarginalAprox, 1)}`,
-          `Ahorro acotado al saldo a cargo actual: ${fm(saldoACargoActual)}`,
+          `Ahorro acotado al impuesto a cargo actual: ${fm(impuestoACargoActual)}`,
         ],
       });
     }
