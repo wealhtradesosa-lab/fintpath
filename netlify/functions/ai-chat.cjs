@@ -103,20 +103,20 @@ const KNOWLEDGE_CO = `
 // KNOWLEDGE BASE USA — nuevo, expert-grade
 // ════════════════════════════════════════════════════════════════════════════
 const KNOWLEDGE_US = `
-═══ FINPATHIA AI ADVISOR — US KNOWLEDGE BASE 2025 ═══
+═══ FINPATHIA AI ADVISOR — US KNOWLEDGE BASE (tax year 2026; items marked 2025 not yet updated) ═══
 
-1. FEDERAL INCOME TAX 2025 (IRS Rev. Proc. 2024-40):
-- Standard Deduction: Single $15,000 / MFJ $30,000 / HoH $22,500
-- Tax brackets Single: 10% to $11,925 | 12% to $48,475 | 22% to $103,350 | 24% to $197,300 | 32% to $250,525 | 35% to $626,350 | 37% above
-- Tax brackets MFJ: 10% to $23,850 | 12% to $96,950 | 22% to $206,700 | 24% to $394,600 | 32% to $501,050 | 35% to $751,600 | 37% above
-- Tax brackets HoH: 10% to $17,000 | 12% to $64,850 | 22% to $103,350 | 24% to $197,300 | 32% to $250,500 | 35% to $626,350 | 37% above
+1. FEDERAL INCOME TAX 2026 (IRS Rev. Proc. 2025-32, includes One Big Beautiful Bill Act changes):
+- Standard Deduction: Single $16,100 / MFJ $32,200 / HoH $24,150
+- Tax brackets Single: 10% to $12,400 | 12% to $50,400 | 22% to $105,700 | 24% to $201,775 | 32% to $256,225 | 35% to $640,600 | 37% above
+- Tax brackets MFJ: 10% to $24,800 | 12% to $100,800 | 22% to $211,400 | 24% to $403,550 | 32% to $512,450 | 35% to $768,700 | 37% above
+- Tax brackets HoH 2026: not loaded here — do not quote them; point to Finpathia's Taxes module
 - Long-term capital gains (held >1 year): 0%/15%/20% based on income
 - Short-term capital gains: ordinary income rates
 - NIIT (Net Investment Income Tax): 3.8% surtax on investment income above $200K (single) / $250K (MFJ)
 - QBI deduction (§199A): up to 20% deduction for qualified business income (S-corp, LLC, sole prop)
 - Wash sale rule: can't claim loss if you buy substantially identical security within 30 days
 
-2. STATE INCOME TAX 2025:
+2. STATE INCOME TAX (2025 figures):
 - 9 states with NO income tax: AK, FL, NV, NH, SD, TN, TX, WA, WY
 - 14 states with FLAT tax: AZ 2.5%, CO 4.4%, GA 5.39%, ID 5.8%, IL 4.95%, IN 3%, IA 3.8%, KY 4%, LA 3%, MI 4.25%, NC 4.25%, PA 3.07%, UT 4.55%
 - Top progressive states: CA 12.3% top, NY 10.9% top, NJ 10.75% top, HI 11% top, OR 9.9% top, MA 9% (millionaire tax)
@@ -125,7 +125,7 @@ const KNOWLEDGE_US = `
 - City taxes: NYC adds 3-3.876%, Yonkers, Philadelphia 3.79%
 - Strategy: high-earners often relocate to TX/FL/NV for state tax savings
 
-3. RETIREMENT ACCOUNTS 2025:
+3. RETIREMENT ACCOUNTS (2025 limits; 2026 limits not yet loaded here — say they are 2025 figures):
 - 401(k): contribution limit $23,500 + $7,500 catch-up (50+) + $11,250 catch-up (60-63 SECURE 2.0)
 - Roth 401(k): same limits, after-tax contributions, tax-free growth & withdrawals
 - Traditional IRA: $7,000 + $1,000 catch-up (50+). Deductible if income <$87K single / <$143K MFJ
@@ -139,7 +139,7 @@ const KNOWLEDGE_US = `
 - SEP-IRA: 25% of compensation up to $69K — easier than Solo 401(k)
 - Saver's Credit: tax credit if income <$76,500 MFJ for retirement contributions
 
-4. SOCIAL SECURITY 2025:
+4. SOCIAL SECURITY (2025 figures; 2026 not yet loaded here):
 - Wage base: $176,100 (capped, 6.2% employer + 6.2% employee)
 - Medicare: 1.45% no cap + Additional Medicare Tax 0.9% above $200K single / $250K MFJ
 - Self-employment: pay both halves = 15.3% (15.3% on first $176,100, 2.9% above)
@@ -150,22 +150,14 @@ const KNOWLEDGE_US = `
 - Survivor benefit: 100% of deceased spouse's benefit
 - Strategy: high earner delays to 70, lower earner claims at FRA
 
-5. INVESTMENT VEHICLES & RETURNS:
-- S&P 500 historical: 10% nominal / 7% real (after inflation)
-- Total US market (VTI): similar to S&P + small-cap exposure
-- International (VXUS): 6-8% historical
-- Bonds (BND): 4-5% nominal historical, ~2% real
-- Bitcoin: ~50% CAGR 5-year (high volatility)
+5. INVESTMENT VEHICLES (no market returns):
+- 2-nov-2026: historical returns by fund/ticker were removed; use only the rates the user entered in <data>.
 - I-Bonds: inflation-protected, capped at $10K/year
 - TIPS: Treasury inflation-protected securities
-- Brokerage account types: Taxable, IRA, Roth IRA, HSA, 401(k)
-- Tax-efficient fund placement: bonds in Trad IRA, growth in Roth, index in taxable
+- Account types: Taxable, IRA, Roth IRA, HSA, 401(k)
+- Tax-efficient placement: bonds in Trad IRA, growth in Roth, broad index funds in taxable
 
-6. REAL ESTATE US:
-- Sun Belt cap rates: 5-8% (Austin, Phoenix, Tampa, Nashville)
-- Vacation rental: 8-15% gross (Orlando, Smoky Mountains, beach areas)
-- NYC/SF/LA: 2-4% (appreciation play, not cashflow)
-- Mortgage rates 2025: 6.5-7.5% (30yr fixed)
+6. REAL ESTATE US (no market cap rates or mortgage rates):
 - Property tax: TX 1.5-2.5% / NJ 2.5% / NH 1.9% / FL 0.9% / CA 0.7-1.1% (Prop 13)
 - Depreciation: 27.5 years residential / 39 years commercial
 - 1031 exchange: defer capital gains by reinvesting in like-kind property within 180 days
@@ -195,9 +187,9 @@ const KNOWLEDGE_US = `
 - Homestead exemption: protects primary residence ($550K in CA, unlimited in FL/TX)
 
 9. ESTATE PLANNING US:
-- Federal estate tax exemption: $13.99M per person (2025), sunsets to ~$7M in 2026 (TCJA expiration)
-- Gift tax annual exclusion: $19,000/recipient (2025)
-- Lifetime gift exemption: same as estate ($13.99M, unified)
+- Federal estate tax basic exclusion: $15,000,000 per person for 2026 (One Big Beautiful Bill Act made it permanent and indexed; the TCJA sunset no longer applies)
+- Gift tax annual exclusion: $19,000/recipient (2026, unchanged from 2025)
+- Lifetime gift exemption: unified with the estate exclusion ($15M in 2026)
 - Step-up in basis: heirs receive assets at FMV at death (massive tax benefit on appreciated assets)
 - State estate tax: 12 states + DC have separate estate tax (MA, OR, WA, NY, etc.)
 - Revocable Living Trust: avoids pruébate, public, doesn't reduce taxes
@@ -218,7 +210,7 @@ const KNOWLEDGE_US = `
 - ACA subsidies: "manage AGI" to keep healthcare premium subsidies
 
 11. PROFESSIONAL FRAMEWORKS:
-- Bogleheads Three-Fund Portfolio: VTI + VXUS + BND (simple, low-cost)
+- Bogleheads Three-Fund Portfolio: total US stock index + international stock index + bond index (simple, low-cost)
 - Bill Bengen 4% rule (1994 Trinity Study)
 - Ray Dalio All-Weather: 30% stocks / 40% long bonds / 15% short bonds / 7.5% gold / 7.5% commodities
 - Buffett's 90/10: 90% S&P 500 + 10% short-term Treasuries
@@ -226,15 +218,6 @@ const KNOWLEDGE_US = `
 - Rule of 110: stock allocation = 110 - age (rule of thumb)
 - 50/30/20 budget: 50% needs / 30% wants / 20% savings & debt
 - Dave Ramsey baby steps: $1K emergency → debt snowball → 3-6mo emergency → 15% retirement → kids college → mortgage → wealth/giving
-
-12. BENCHMARKS US 2025:
-- Median household income: $80,610
-- Median net worth by age: 35: $39K | 45: $247K | 55: $364K | 65: $410K
-- Top 10% net worth: $1.9M+ | Top 1%: $11M+
-- Top 10% income: $230K+ | Top 1%: $785K+
-- Average savings rate: 4-5%, recommended 15-20% minimum for retirement
-- Healthcare cost projection in retirement: $315K per couple (Fidelity 2024)
-- Average mortgage payment: $2,300 (median home $420K @ 7%)
 `;
 
 // ════════════════════════════════════════════════════════════════════════════
