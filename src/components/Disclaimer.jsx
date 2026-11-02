@@ -42,7 +42,7 @@ const TEXTOS = {
     },
     ia: {
       t: "Generado por IA — verifícalo",
-      p: "Este análisis lo produce un modelo de inteligencia artificial a partir de tus datos. Puede contener errores, omisiones o interpretaciones incorrectas de la normativa. No constituye asesoría profesional. Tratalo como un punto de partida para tu propia investigación o para una conversación con tu asesor, nunca como una conclusión definitiva.",
+      p: "Este análisis lo produce un modelo de inteligencia artificial a partir de tus datos. Puede contener errores, omisiones o interpretaciones incorrectas de la normativa. No constituye asesoría profesional. Trátalo como un punto de partida para tu propia investigación o para una conversación con tu asesor, nunca como una conclusión definitiva.",
     },
   },
   en: {

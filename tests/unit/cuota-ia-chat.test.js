@@ -18,27 +18,31 @@ describe("cuota de IA", () => {
     }
   });
 
+  // 2-nov-2026 (#35 rehecho): la llamada a Anthropic vive en llamarAnthropic()
+  // y la cuota pasa por leerPlanIA (prueba de 14 días); el orden se mide dentro
+  // del handler. El comportamiento con fetch simulado está en aiChatHandler.test.js.
+  const handlerDe = (s) => s.slice(s.indexOf("exports.handler"));
+
   it("el chat exige sesión antes de gastar la clave de Anthropic", () => {
-    const s = leer("ai-chat.cjs");
+    const s = handlerDe(leer("ai-chat.cjs"));
     expect(s).toContain("usuarioDesdeToken");
     // El cobro de cuota va DESPUÉS de identificar y ANTES de llamar a Anthropic.
     expect(s.indexOf("usuarioDesdeToken")).toBeLessThan(s.indexOf("consumirCuota"));
-    expect(s.indexOf("consumirCuota")).toBeLessThan(s.indexOf("api.anthropic.com"));
+    expect(s.indexOf("consumirCuota")).toBeLessThan(s.indexOf("await llamarAnthropic"));
   });
 
   it("el contador en memoria quedó solo como respaldo sin Supabase", () => {
-    const s = leer("ai-chat.cjs");
-    const iCuota = s.indexOf("if (SUPA_URL && SERVICE_KEY)");
-    const iMem = s.indexOf("rateLimits[key].count++");
+    const s = handlerDe(leer("ai-chat.cjs"));
+    const iCuota = s.indexOf("if (conSupabase) {");
+    const iMem = s.indexOf("rateLimits[userId].count++");
     expect(iCuota).toBeGreaterThan(-1);
     // El incremento en memoria vive dentro del `else`, o sea después del if.
     expect(iMem).toBeGreaterThan(iCuota);
   });
 
-  it("sigue devolviendo `remaining`, que es lo que muestra la interfaz", () => {
-    const s = leer("ai-chat.cjs");
-    expect(s).toMatch(/remaining = Math\.max\(0, cuota\.tope - cuota\.usos\)/);
-    expect(s).toMatch(/JSON\.stringify\(\{ reply, remaining \}\)/);
+  it("sigue devolviendo `remaining` (y ahora `restantes` y `tope`)", () => {
+    const s = handlerDe(leer("ai-chat.cjs"));
+    expect(s).toMatch(/reply, recortada, reintentada, restantes, remaining: restantes, tope/);
   });
 
   it("el mensaje nombra lo que se consumió, sin romper a los otros llamadores", () => {
