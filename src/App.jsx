@@ -2647,7 +2647,7 @@ export default function FinPath(){
         </>}/>}
 
       {/* 2-nov-2026 — Después del primer minuto: primero ve su número (arriba), luego el camino para volverlo exacto. */}
-      {!isUS&&!esDemo(u)&&tieneEstimados(u)&&!u?.p?.afinaCerrada&&<AfinaTuNumero u={u} T={T} mb={mb} irA={(id)=>{track("afina_clic",{id});setPg(id)}} onCerrar={()=>setU(p=>p?{...p,p:{...p.p,afinaCerrada:true}}:p)}/>}
+      {!isUS&&!esDemo(u)&&tieneEstimados(u)&&!u?.p?.afinaCerrada&&<AfinaTuNumero u={u} T={T} mb={mb} fm={fm} c={{nw:t.nw,cf:t.cf,ing:t.ti,gas:t.te,pasivo:t.ingresoPasivo,deuda:t.td}} irA={(id)=>{track("afina_clic",{id});setPg(id)}} onCerrar={()=>setU(p=>p?{...p,p:{...p.p,afinaCerrada:true}}:p)}/>}
       {/* Ubicación (25-jul-2026, Santiago): "mejor el slot del patrimonio neto
           de primero y debajo lo que ve el family office". Correcto — primero
           el número, después la lectura del número. Antes iba sobre el

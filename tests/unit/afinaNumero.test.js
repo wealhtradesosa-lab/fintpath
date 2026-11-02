@@ -27,3 +27,17 @@ describe("afina tu número", () => {
     expect(p[2].opcional).toBe(true);
   });
 });
+
+import { futuroEstimado, extraRedondo } from "../../src/lib/afinaNumero.js";
+describe("futuroEstimado", () => {
+  it("capitaliza patrimonio y aportes", () => {
+    const v = futuroEstimado({ nw: 100, cfMes: 0, anos: 10, r: 0.07 });
+    expect(v).toBeCloseTo(100 * Math.pow(1.07, 10), 6);
+    expect(futuroEstimado({ nw: 0, cfMes: 1, extraMes: 1 })).toBeGreaterThan(futuroEstimado({ nw: 0, cfMes: 1 }));
+    expect(futuroEstimado({ nw: 0, cfMes: -5 })).toBe(0);
+  });
+  it("extra redondo", () => {
+    expect(extraRedondo(9000000)).toBe(900000);
+    expect(extraRedondo(0)).toBe(100000);
+  });
+});
