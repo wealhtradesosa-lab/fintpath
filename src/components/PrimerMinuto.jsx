@@ -36,7 +36,7 @@ export default function PrimerMinuto({ nombre, onListo, onDetallar, onExcel }) {
     <div style={{ marginBottom: 24, border: `1px solid ${Cα.ok25}`, borderRadius: R.xl, padding: "20px 20px 18px", background: `linear-gradient(135deg, ${Cα.ok08}, ${Cα.accent08})` }}>
       <div style={{ ...F.label, color: C.ok }}>Tu primer minuto</div>
       <h2 style={{ ...F.display, fontSize: "clamp(20px, 5vw, 26px)", margin: "6px 0 4px" }}>
-        {nombre ? `${nombre}, ` : ""}tres cifras y ves dónde estás
+        {nombre ? `${nombre}, tres cifras y ves dónde estás` : "Tres cifras y ves dónde estás"}
       </h2>
       <div style={{ ...F.body, marginBottom: 18 }}>
         Números redondos sirven. Con esto te mostramos tu patrimonio, tu nivel de libertad y cuánto de tus gastos ya pagan tus rentas. Después lo afinas.
