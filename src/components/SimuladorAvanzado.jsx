@@ -157,8 +157,8 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <input type="range" min="0" max={max} step={Math.max(Math.round(max * 0.01), 5)} value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          style={{ flex: 1, accentColor: color, height: 4, cursor: "pointer" }} />
+          onChange={(e) => onChange(Number(e.target.value))} className="fp-range"
+          style={{ flex: 1, "--fp-r-c": color, "--fp-r-p": (max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0) + "%" }} />
         <span style={{ fontSize: 11, color: T.txt3, minWidth: 32, textAlign: "right" }}>{perc}%</span>
       </div>
     </div>
@@ -2103,18 +2103,18 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
                               </div>
                               {modo==="capital" ? (
                                 <Slider label="Capital invertido" value={simCap} base={baseCap}
-                                  max={Math.max(Math.round(baseCap*2),1000)} color={"#94a3b8"}
+                                  max={Math.max(Math.round(baseCap*2),1000)} color={T.gn}
                                   onChange={(v)=>{setVal("ingcap_"+safeIdx,v);setVal("ing_"+safeIdx,rentaDesdeCapital(v));}}
                                   sub={`la renta sigue al capital a ${fmtTasaEs(baseTasa)} anual`} />
                               ) : (
                                 <Slider label="Renta mensual" value={simRenta} base={baseRenta}
-                                  max={Math.max(Math.round(baseRenta*2),1000)} color={"#94a3b8"}
+                                  max={Math.max(Math.round(baseRenta*2),1000)} color={T.gn}
                                   onChange={(v)=>setVal("ing_"+safeIdx,v)}
                                   sub="el capital invertido se mantiene fijo; la tasa es consecuencia" />
                               )}
                             </>) : (
                               <Slider label={ing.nombre||"Ingreso"} value={simRenta} base={baseRenta}
-                                max={Math.max(baseRenta*3,1000)} color={"#94a3b8"}
+                                max={Math.max(baseRenta*3,1000)} color={T.gn}
                                 onChange={(v)=>setVal("ing_"+safeIdx,v)}
                                 sub={isInvType?"Agrega Capital y Tasa para simular inversión":""} />
                             )}

@@ -114,3 +114,12 @@ html[data-tema="claro"] .fp-app { --fp-azul: #1d5fd6; }
 .fp-app div[style*="background: rgba(59, 130, 246, 0.1"] {
   background: rgba(var(--fp-ink),0.03) !important; border-color: rgba(var(--fp-ink),0.08) !important;
 }
+
+/* 2-nov-2026 — Sliders del simulador (Santiago: «a las rayas les falta color»).
+   La raya muestra en color hasta dónde va el valor; el resto, gris suave. */
+.fp-range { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px; outline: none; cursor: pointer;
+  background: linear-gradient(to right, var(--fp-r-c, #00c805) 0%, var(--fp-r-c, #00c805) var(--fp-r-p, 50%), rgba(var(--fp-ink), 0.14) var(--fp-r-p, 50%), rgba(var(--fp-ink), 0.14) 100%); }
+.fp-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--fp-r-c, #00c805); box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.fp-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--fp-r-c, #00c805); box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.fp-range::-moz-range-track { background: transparent; }
+.fp-range:focus-visible { box-shadow: 0 0 0 3px rgba(var(--fp-ink), 0.18); }
