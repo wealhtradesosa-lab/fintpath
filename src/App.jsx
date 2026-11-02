@@ -106,6 +106,8 @@ import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte, RETORNO_SUPUESTO } from "./lib/norteUnMinuto.js";
 import PrimerMinuto from "./components/PrimerMinuto.jsx";
+import AfinaTuNumero from "./components/AfinaTuNumero.jsx";
+import { tieneEstimados } from "./lib/afinaNumero.js";
 import BotonTema from "./components/BotonTema.jsx";
 import { IconoMenu, DefsIconos } from "./components/Iconos.jsx";
 import { Eye, EyeOff, Menu as IconoMenuHamburguesa, X as IconoCerrar } from "lucide-react";
@@ -2485,7 +2487,7 @@ export default function FinPath(){
       </div>
 
       {/* 25-oct-2026 — Primera pantalla: tu nivel y UNA acción. Mientras dura la prueba y hasta que la cierre. */}
-      {trialActive&&!u?.p?.bienvenidaVista&&!isUS&&((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0&&(()=>{
+      {trialActive&&!u?.p?.bienvenidaVista&&!(tieneEstimados(u)&&!u?.p?.afinaCerrada&&!isUS)&&!isUS&&((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0&&(()=>{
         const nv=t.nivel||{};
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
@@ -2513,6 +2515,9 @@ export default function FinPath(){
           const ownerId=(u?.owners&&u.owners[0]?.id)||"own_1";
           const it=itemsDesdeNorte(e,ownerId);
           it.inv=it.inv.map(i=>({...i,n:"Lo que tengo (estimado)",tp:"Otros"}));
+          // 2-nov-2026: todas las filas del primer minuto quedan marcadas como estimadas (AfinaTuNumero las cuenta aparte).
+          const est=x=>({...x,estimado:true});it.inv=it.inv.map(est);it.ingresos=it.ingresos.map(est);it.deu=it.deu.map(est);Object.keys(it.gas).forEach(k=>{it.gas[k]=it.gas[k].map(est)});
+          track("afina_mostrado");
           track("primer_minuto_listo",{pasivo:Number(e.ingresoPasivo)>0,deudas:Number(e.deudas)>0});
           setU(p=>p?{...p,owners:(p.owners&&p.owners.length)?p.owners:[{id:ownerId,name:(p.p&&p.p.name)||"Yo",type:"natural"}],ingresos:it.ingresos,gas:it.gas,inv:it.inv,deu:it.deu}:p);
           try{window.scrollTo({top:0,behavior:"smooth"})}catch{}
@@ -2523,6 +2528,7 @@ export default function FinPath(){
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasDeu=((u&&u.deu)||[]).length>0;
         if(sinDatos&&!pmDetalle&&!isUS&&!esDemo(u))return null; // el primer minuto va primero
+        if(!isUS&&!esDemo(u)&&tieneEstimados(u))return null; // 2-nov-2026: con estimados manda «Ahora hazlo exacto»
         // 25-oct-2026: orden y texto de Santiago — activos, ingresos, gastos y deudas.
         const steps=[
           {id:"inv",done:hasInv,icon:"",title:"Tus activos",desc:"Lo que tienes: cuentas, CDTs, fondos, acciones, propiedades, cripto, vehículos",action:"Activos cargados",tip:"Cada uno con su valor de hoy"},
@@ -2640,6 +2646,8 @@ export default function FinPath(){
           {(t.gfm||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>Tu número FIRE: <b style={{color:CHART.txt}}>{fm(t.gfm*12*25)}</b> · llevas el <b style={{color:CHART.txt}}>{fmtPctEs(Math.max(0,t.nw/(t.gfm*12*25)*100),0)}</b></div>}
         </>}/>}
 
+      {/* 2-nov-2026 — Después del primer minuto: primero ve su número (arriba), luego el camino para volverlo exacto. */}
+      {!isUS&&!esDemo(u)&&tieneEstimados(u)&&!u?.p?.afinaCerrada&&<AfinaTuNumero u={u} T={T} mb={mb} irA={(id)=>{track("afina_clic",{id});setPg(id)}} onCerrar={()=>setU(p=>p?{...p,p:{...p.p,afinaCerrada:true}}:p)}/>}
       {/* Ubicación (25-jul-2026, Santiago): "mejor el slot del patrimonio neto
           de primero y debajo lo que ve el family office". Correcto — primero
           el número, después la lectura del número. Antes iba sobre el
