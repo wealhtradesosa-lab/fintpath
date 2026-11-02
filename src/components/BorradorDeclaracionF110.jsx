@@ -670,6 +670,11 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                         </button>
                       )}
                     </div>
+                    {r.nota && (
+                      <div role="note" style={{ fontSize: 11, color: r.obligacionDeclarar?.obligado ? T.txt : T.txt3, marginTop: 4, lineHeight: 1.5 }}>
+                        {r.nota}
+                      </div>
+                    )}
                     {r.fuente && !isFormula && (
                       <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, fontStyle: "italic" }}>
                         ↳ {r.fuente}
