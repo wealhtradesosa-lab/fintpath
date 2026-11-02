@@ -98,6 +98,42 @@ describe("nadie vuelve a leer el campo que la escala renombró", () => {
   });
 });
 
+describe("el umbral que se MUESTRA es el que se APLICA", () => {
+  // 1-nov-2026 — Abundancia pasó a `factor: 2` el 24-oct ("pagar la vida dos
+  // veces") y la condición que ascendía se quedó en un 1,3 escrito a mano:
+  // durante una semana, con 1,5× el badge decía Abundancia mientras la meta de
+  // la misma tarjeta pedía el doble. Se arregló caso por caso; esto lo barre
+  // entero. Recorre el CATÁLOGO, así que cubre también los umbrales que nadie
+  // ha movido todavía y los que se agreguen después.
+  const ctx = { ob: 100, obEsencial: 70 };
+  const conIP = (ip) => nivelLibertad({ ...ctx, ip, fl: 1, patrimonioNeto: 1e9 });
+
+  for (const def of NIVELES.filter((n) => n.umbral)) {
+    it(`justo en la meta de ${def.nombre} ya se alcanza ese nivel`, () => {
+      expect(conIP(umbralNivel(def, ctx)).nivel).toBeGreaterThanOrEqual(def.id);
+    });
+
+    it(`un peso por debajo de la meta de ${def.nombre} todavía no`, () => {
+      expect(conIP(umbralNivel(def, ctx) - 1).nivel).toBeLessThan(def.id);
+    });
+  }
+
+  it("a quien está en el tope no le queda nada que alcanzar", () => {
+    const n = conIP(umbralNivel(NIVELES[4], ctx));
+    expect(n.nivel).toBe(5);
+    expect(n.siguiente).toBeNull();
+    expect(n.faltaIPSiguiente).toBeNull();
+  });
+
+  it("lo que falta para el siguiente escalón es su meta menos lo que ya pagan", () => {
+    const ip = umbralNivel(NIVELES[3], ctx);   // justo en Independencia
+    const n = conIP(ip);
+    expect(n.nivel).toBe(4);
+    expect(n.siguiente.nombre).toBe("Abundancia");
+    expect(n.faltaIPSiguiente).toBe(umbralNivel(NIVELES[4], ctx) - ip);
+  });
+});
+
 describe("la plata negativa lleva el signo antes del peso", () => {
   const bloque = (fl) => bloqueNivelLibertad({
     metMes: {
