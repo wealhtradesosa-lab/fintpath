@@ -45,7 +45,11 @@ import { claseDeActivo, normalizar } from "./taxonomiaActivos.js";
 //   · acciones, aportes, cripto, vehículos y otros: el costo fiscal, que es
 //     lo que pagaste (vc). Las acciones no se declaran a valor de mercado
 //     (Art. 272 ET) y la cripto va a su costo de adquisición.
-//   · inmuebles: el mayor que el usuario cargó entre avalúo y costo (ubi || va || vc)
+//   · inmuebles (Art. 277 ET): el MAYOR entre el costo fiscal (vc) y el avalúo
+//     catastral (avaluoCatastral), nunca el valor comercial. 2-nov-2026: antes
+//     tomaba el primer valor cargado (ubi || va || vc) y `va` es el valor de
+//     mercado, que infla el patrimonio. Solo si no hay costo ni avalúo se usa
+//     `va` como respaldo.
 // Si el activo trae `valorFiscal` explícito, ese manda.
 export const UMBRAL_PATRIMONIO_DECLARAR_UVT = 4500;
 
@@ -96,12 +100,21 @@ const ES_COSTO = (activo) => {
   return true;
 };
 
+/** Art. 277 ET: mayor entre costo fiscal y avalúo catastral; sin ninguno, el valor cargado. */
+export function valorFiscalInmueble(activo) {
+  const n = (x) => Number(x) || 0;
+  const costo = n(activo?.vc);
+  const avaluo = n(activo?.avaluoCatastral);
+  const mayor = Math.max(costo, avaluo);
+  return mayor > 0 ? mayor : n(activo?.va || activo?.valor);
+}
+
 /** Valor fiscal en la moneda del activo (sin convertir). */
 export function valorFiscalActivo(activo) {
   const n = (x) => Number(x) || 0;
   if (activo?.valorFiscal != null && activo.valorFiscal !== "") return n(activo.valorFiscal);
   const renglon = renglonPatrimonioDe(activo);
-  if (renglon === 293 && !ES_COSTO(activo)) return n(activo.ubi || activo.va || activo.vc || activo.valor);
+  if (renglon === 293 && !ES_COSTO(activo)) return valorFiscalInmueble(activo);
   if (ES_COSTO(activo)) return n(activo.vc || activo.valor || activo.va);
   return n(activo.valor || activo.va || activo.vc);
 }
@@ -213,7 +226,7 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       tip: "Acá va el saldo de tus cuentas de ahorro, corriente y similares al 31 de diciembre. Si tienes CDT abierto, no va acá (va abajo en inversiones)." },
     { seccion: "patrimonio", numero: 292, concepto: "Inversiones financieras (CDT, fondos, acciones)", valor: v(292, inversionesFinancieras), auto: inversionesFinancieras, tipo: "editable", fuente: "Activos CDT, bonos, fondos y acciones (valor fiscal)",
       tip: "CDT, fondos de inversión colectiva, acciones bursátiles. Para activos en USD usar TRM del 31-dic." },
-    { seccion: "patrimonio", numero: 293, concepto: "Bienes inmuebles y vehículos", valor: v(293, propiedades), auto: propiedades, tipo: "editable", fuente: "Activos tipo inmueble y vehículo",
+    { seccion: "patrimonio", numero: 293, concepto: "Bienes inmuebles y vehículos", valor: v(293, propiedades), auto: propiedades, tipo: "editable", fuente: "Inmuebles al mayor entre costo y avalúo catastral (Art. 277); vehículos al costo",
       tip: "Casa, apartamentos, lotes, vehículos. La DIAN acepta el mayor entre: avalúo catastral o costo fiscal (lo que pagaste + mejoras)." },
     { seccion: "patrimonio", numero: 294, concepto: "Otros activos", valor: v(294, otrosActivos), auto: otrosActivos, tipo: "editable", fuente: "Cripto y demás activos (costo fiscal)",
       tip: "Cuentas por cobrar, joyas, obras de arte valiosas, criptomonedas." },
