@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceDot } from "recharts";
 import NumberInput from "./NumberInput";
 import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 
@@ -24,6 +24,47 @@ const opcionesExtra = (cuotas) => {
   return [...new Set([0.1, 0.25, 0.5].map((f) => red(base * f)))].filter((v) => v > 0);
 };
 
+
+// 2-nov-2026 (Santiago: "este gráfico de las deudas no se entiende, no se sabe
+// cómo leerlo"). Tres problemas: las dos líneas no decían qué eran, el eje se
+// estiraba 50 años porque la línea sin abono nunca llega a cero (tres cuartos
+// de la gráfica eran dos rayas planas) y el aviso no decía QUÉ deuda se queda.
+
+// Último mes en que la serie todavía baja. Después de ahí la línea es plana
+// (o sube): mostrarla 40 años más no le dice nada al lector.
+export const mesQueDejaDeBajar = (serie = []) => {
+  if (serie.length < 2) return 0;
+  const tol = Math.max(1, (serie[0] || 0) * 0.0005);
+  let ult = 0;
+  for (let i = 1; i < serie.length; i++) if (serie[i] < serie[i - 1] - tol) ult = i;
+  return ult;
+};
+
+// Hasta qué mes se dibuja: hasta que la última línea que llega a cero lo hace
+// (o deja de bajar), más un año de aire. Tope de 30 años.
+export const mesesAGraficar = ({ base, sim, conExtra }) => {
+  const total = Math.max(base?.serie?.length || 0, conExtra ? sim?.serie?.length || 0 : 0);
+  if (total < 2) return total;
+  const finRojo = base?.converge ? base.meses : mesQueDejaDeBajar(base?.serie);
+  const finVerde = conExtra ? (sim?.converge ? sim.meses : mesQueDejaDeBajar(sim?.serie)) : 0;
+  const fin = Math.max(finRojo || 0, finVerde || 0) + 12;
+  return Math.min(total, fin + 1, 361);
+};
+
+// Qué deudas no llegan a cero solo con las cuotas, y por qué, en palabras.
+export const deudasQueNoTerminan = (s) =>
+  (s?.porDeuda || [])
+    .filter((d) => (d.saldoFinal || 0) > 0)
+    .map((d) => {
+      const interes = (d.saldo0 || 0) * (d.rMes || 0);
+      const motivo = !(d.cuota > 0)
+        ? "no tiene cuota mensual"
+        : interes > 0 && d.cuota <= interes
+          ? "su cuota no alcanza ni para los intereses"
+          : "su cuota no alcanza";
+      return { nombre: d.nombre, saldo: d.saldoFinal, cuota: d.cuota || 0, interes, motivo };
+    });
+
 export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtraOverride }) {
   const cuotas = (plan.ordenadas || []).reduce((s, d) => s + (d.cuotaCOP || 0), 0);
   const ops = opcionesExtra(cuotas);
@@ -32,13 +73,18 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
 
   const data = useMemo(() => {
     const a = base?.serie || [], b = conExtra ? sim?.serie || [] : [];
-    const n = Math.min(Math.max(a.length, b.length), 601);
+    const n = mesesAGraficar({ base, sim, conExtra });
     const paso = n > 240 ? 6 : n > 96 ? 3 : 1;
     const out = [];
     const y0 = new Date().getFullYear(), m0 = new Date().getMonth();
     for (let i = 0; i < n; i += paso) {
       const d = new Date(y0, m0 + i, 1);
-      out.push({ i, x: String(d.getFullYear()), solo: a[i] ?? 0, extra: conExtra ? (b[i] ?? 0) : undefined });
+      out.push({ i, x: String(d.getFullYear()), solo: a[i] ?? a[a.length - 1] ?? 0, extra: conExtra ? (b[i] ?? 0) : undefined });
+    }
+    // El último punto siempre entra, para que la línea termine donde termina.
+    if (n > 1 && out[out.length - 1].i !== n - 1) {
+      const i = n - 1;
+      out.push({ i, solo: a[i] ?? a[a.length - 1] ?? 0, extra: conExtra ? (b[i] ?? 0) : undefined });
     }
     return out;
   }, [base, sim, conExtra]);
@@ -63,7 +109,14 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
           <div style={{ fontSize: 12, color: V.txt2, marginTop: 2 }}>{s.labelMeses} · pagas {fm(s.interesTotal)} en intereses</div>
         </>
       ) : (
-        <div style={{ fontSize: 14, fontWeight: 700, color: V.orange, marginTop: 4 }}>Con estas cuotas no termina de pagarse: alguna cuota no cubre ni los intereses.</div>
+        <>
+          <div style={{ fontSize: 18, fontWeight: 700, color: V.txt, marginTop: 4 }}>No llegas a cero</div>
+          <div style={{ fontSize: 12, color: V.txt2, marginTop: 2, lineHeight: 1.5 }}>
+            {deudasQueNoTerminan(s).map((d, k) => (
+              <div key={k}>Quedan {fm(d.saldo)} de <strong style={{ color: V.txt }}>{d.nombre}</strong>: {d.motivo}{d.cuota > 0 && d.interes > 0 ? ` (${fm(d.cuota)} de cuota frente a ${fm(d.interes)} de intereses al mes)` : ""}.</div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -96,20 +149,40 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
         </div>
       )}
 
-      {data.length > 1 && (
-        <div style={{ height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
-              <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={78} tickFormatter={(v) => sinCorte(fm(v).replace("$", ""))} axisLine={false} tickLine={false} />
-              <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />
-              <Line type="monotone" dataKey="solo" name="Solo cuotas" stroke={V.red} strokeWidth={2} dot={false} />
-              {conExtra && <Line type="monotone" dataKey="extra" name={`Con ${fm(plan.extra)} extra`} stroke={V.green} strokeWidth={2} dot={false} />}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {data.length > 1 && (() => {
+        const finSolo = base?.converge ? base.meses : null;
+        const finExtra = conExtra && sim?.converge ? sim.meses : null;
+        const linea = (color, texto) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: V.txt2 }}>
+            <span style={{ width: 18, height: 3, background: color, flex: "none" }} />
+            <span>{texto}</span>
+          </div>
+        );
+        return (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: V.txt }}>Cuánto debes en total, mes a mes</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", margin: "6px 0 4px" }}>
+              {linea(V.red, "Solo con tus cuotas")}
+              {conExtra && linea(V.green, `Abonando ${fm(plan.extra)} más al mes`)}
+            </div>
+            <div style={{ height: 200 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
+                  <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={78} tickFormatter={(v) => sinCorte(fm(v).replace("$", ""))} axisLine={false} tickLine={false} />
+                  <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />
+                  <Line type="monotone" dataKey="solo" name="Solo con tus cuotas" stroke={V.red} strokeWidth={2} dot={false} isAnimationActive={false} />
+                  {conExtra && <Line type="monotone" dataKey="extra" name={`Abonando ${fm(plan.extra)} más`} stroke={V.green} strokeWidth={2.5} dot={false} isAnimationActive={false} />}
+                  {finSolo != null && <ReferenceDot x={finSolo} y={0} r={4} fill={V.red} stroke="none" />}
+                  {finExtra != null && <ReferenceDot x={finExtra} y={0} r={5} fill={V.green} stroke="var(--fp-raised)" strokeWidth={2} />}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ fontSize: 12, color: V.txt3, marginTop: 4 }}>El punto marca el mes en que la deuda llega a cero. Pasa el dedo o el mouse sobre la gráfica para ver el saldo de cada mes.</div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

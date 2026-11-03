@@ -251,6 +251,7 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
       saldoFinal: Math.round(d.saldo),
       noAmortiza: d.noAmortiza,
       tasaEA: d.tasaEA,
+      rMes: d.rMes,
       saldo0: deudasOrdenadas.find((x) => x.id === d.id)?.saldoCOP || 0,
       cuota: d.cuota,
     })),
