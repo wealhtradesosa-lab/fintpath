@@ -15,7 +15,8 @@
 // SEGURIDAD: usa la service key (solo servidor, nunca llega al navegador) y
 // exige que el email pedido esté en la lista de admins. Devuelve únicamente
 // AGREGADOS y correos de los últimos registros — nunca datos financieros de
-// ningún usuario.
+// ningún usuario. Los correos de quienes pagan sí se muestran (2-nov-2026):
+// es el dueño viendo a sus clientes, como en el panel de Stripe o Mercado Pago.
 // ════════════════════════════════════════════════════════════════════════════
 
 const { ADMINS } = require("./_auth.cjs");
@@ -57,7 +58,7 @@ exports.handler = async (event) => {
     }
 
     // ── Datos cargados (para medir activación)
-    const rd = await fetch(`${URL}/rest/v1/user_data?select=id,data,updated_at`, { headers: h });
+    const rd = await fetch(`${URL}/rest/v1/user_data?select=id,data,updated_at,plan,stripe_customer_id,account_id`, { headers: h });
     const filas = rd.ok ? await rd.json() : [];
 
     // Una cuenta está ACTIVADA si cargó al menos un dato real (no demo).
@@ -126,6 +127,129 @@ exports.handler = async (event) => {
     // Trials: tienen plan local "pro" pero ninguna marca de pago en Stripe.
     trials = Object.values(planDe).filter((p) => p === "pro" || p === "pro_familiar" || p === "basico").length;
 
+    // ── 2-nov-2026 (Santiago: "cómo veo los registros por mes, no solo los
+    // últimos, y quiénes han pagado por Mercado Pago, no solo Stripe").
+    //
+    // QUIÉN PAGÓ: los dos webhooks dejan la marca en user_data.stripe_customer_id
+    // (nombre histórico de la columna): "cus_…" lo escribe Stripe y "mp_…" lo
+    // escribe Mercado Pago (mp-webhook.cjs). Esa es la única marca que pone un
+    // cobro real; el plan "pro" sin marca es la prueba de 14 días o un plan
+    // asignado a mano. El estado (activa / cancelada) sale de accounts.
+    const estadoCuenta = {};
+    try {
+      const rc = await fetch(`${URL}/rest/v1/accounts?select=id,subscription_status,grace_until`, { headers: h });
+      if (rc.ok) (await rc.json()).forEach((a) => { estadoCuenta[a.id] = a; });
+    } catch { /* sin estado: se muestra la marca sola */ }
+    const correoDe = Object.fromEntries(usuarios.map((u) => [u.id, u.email]));
+    const creadoDe = Object.fromEntries(usuarios.map((u) => [u.id, u.created_at]));
+    const viaDe = (cid) => (String(cid || "").startsWith("mp_") ? "Mercado Pago" : String(cid || "").startsWith("cus_") ? "Stripe" : null);
+    const pagadores = filas
+      .filter((r) => viaDe(r.stripe_customer_id))
+      .map((r) => {
+        const cta = estadoCuenta[r.account_id] || {};
+        const estado = cta.subscription_status || "—";
+        return {
+          email: correoDe[r.id] || "(sin correo)",
+          via: viaDe(r.stripe_customer_id),
+          plan: r.plan || r?.data?.p?.plan || "free",
+          estado,
+          vigente: estado === "active" && ["basico", "pro", "pro_familiar"].includes(r.plan || r?.data?.p?.plan),
+          registro: creadoDe[r.id] || null,
+          ultimoCambio: r.updated_at,
+        };
+      })
+      .sort((a, b) => Number(b.vigente) - Number(a.vigente) || new Date(b.ultimoCambio) - new Date(a.ultimoCambio));
+    pagos = pagadores.filter((x) => x.vigente).length;
+    const pagosPorVia = {
+      stripe: pagadores.filter((x) => x.vigente && x.via === "Stripe").length,
+      mercadoPago: pagadores.filter((x) => x.vigente && x.via === "Mercado Pago").length,
+    };
+    // Planes pagos sin marca de cobro: asignados a mano o cuentas de prueba.
+    const cortesia = filas
+      .filter((r) => !viaDe(r.stripe_customer_id) && ["basico", "pro", "pro_familiar"].includes(r.plan) && !(r?.data?.p?.trialEnd && new Date(r.data.p.trialEnd) > new Date()))
+      .map((r) => ({ email: correoDe[r.id] || "(sin correo)", plan: r.plan }));
+
+    // Mercado Pago en vivo: las suscripciones (preapprovals) y su estado. Así se
+    // ven también las que quedaron "pending" (la persona abrió el pago y no lo
+    // terminó), que nunca llegan a la base. Si MP no responde, se sigue sin esto.
+    let mercadoPago = null;
+    if (process.env.MP_ACCESS_TOKEN) {
+      try {
+        const r = await fetch("https://api.mercadopago.com/preapproval/search?limit=100&sort=date_created:desc", { headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` } });
+        if (r.ok) {
+          const j = await r.json();
+          const lista = (j.results || []).filter((x) => String(x.reason || "").includes("FINPATHIA"));
+          const porEstado = {};
+          lista.forEach((x) => { porEstado[x.status] = (porEstado[x.status] || 0) + 1; });
+          mercadoPago = {
+            total: lista.length,
+            porEstado,
+            lista: lista.slice(0, 50).map((x) => {
+              const uid = String(x.external_reference || "").split("|")[0];
+              return {
+                email: correoDe[uid] || x.payer_email || "(sin correo)",
+                estado: x.status,
+                plan: x.reason,
+                monto: x?.auto_recurring?.transaction_amount || null,
+                moneda: x?.auto_recurring?.currency_id || "COP",
+                creada: x.date_created,
+              };
+            }),
+          };
+        } else mercadoPago = { error: `Mercado Pago respondió ${r.status}` };
+      } catch (e) { mercadoPago = { error: "No se pudo consultar Mercado Pago" }; }
+    }
+
+    // ── ¿Vuelven? (2-nov-2026). Días distintos con la app abierta, por persona,
+    // desde la renovación de sesión de Supabase Auth (RPC solo para service_role,
+    // migración 20261102_admin_actividad_usuarios). Aproximado: una pestaña que
+    // se queda abierta en segundo plano también cuenta.
+    const actividad = {};
+    try {
+      const rr = await fetch(`${URL}/rest/v1/rpc/admin_actividad_usuarios`, { method: "POST", headers: h, body: "{}" });
+      if (rr.ok) (await rr.json()).forEach((x) => { actividad[x.user_id] = x; });
+    } catch { /* sin actividad: el panel lo dice */ }
+    const volvio = (id) => (actividad[id]?.dias_que_volvio || 0) > 0;
+    // Cuentas propias y de prueba no cuentan como "clientes que vuelven".
+    const PROPIAS = [...ADMINS, "santisosa@feelingcompany.com", "wealhtradesosa@gmail.com"];
+    const internos = new Set(usuarios.filter((u) => PROPIAS.includes(String(u.email || "").toLowerCase()) || /^qa\./i.test(u.email || "") || /@example\.com$/i.test(u.email || "")).map((u) => u.id));
+    const losQueMasVuelven = usuarios
+      .filter((u) => !internos.has(u.id) && volvio(u.id))
+      .map((u) => ({ email: u.email, registro: u.created_at, diasQueVolvio: actividad[u.id].dias_que_volvio, ultimaVez: actividad[u.id].ultima_vez, activado: idsActivados.has(u.id), paga: false }))
+      .sort((a, b) => b.diasQueVolvio - a.diasQueVolvio || String(b.ultimaVez).localeCompare(String(a.ultimaVez)))
+      .slice(0, 15);
+
+    // ── Registros por mes, desde el primer usuario: cuántos se registran, cuántos
+    // cargan datos y cuántos tienen hoy un pago vigente. Cada mes trae la lista
+    // de quienes se registraron (para abrirla en el panel).
+    const vigentesIds = new Set(filas.filter((r) => viaDe(r.stripe_customer_id) && (estadoCuenta[r.account_id]?.subscription_status === "active") && ["basico", "pro", "pro_familiar"].includes(r.plan)).map((r) => r.id));
+    const porMesMap = {};
+    usuarios.forEach((u) => {
+      const k = (u.created_at || "").slice(0, 7);
+      if (!k) return;
+      const m = (porMesMap[k] = porMesMap[k] || { mes: k, registros: 0, activados: 0, volvieron: 0, pagan: 0, personas: [] });
+      m.registros++;
+      if (idsActivados.has(u.id)) m.activados++;
+      if (volvio(u.id)) m.volvieron++;
+      if (vigentesIds.has(u.id)) m.pagan++;
+      m.personas.push({ email: u.email, creado: u.created_at, activado: idsActivados.has(u.id), diasQueVolvio: actividad[u.id]?.dias_que_volvio || 0, ultimaVez: actividad[u.id]?.ultima_vez || null, paga: vigentesIds.has(u.id), plan: planDe[u.id] || "free" });
+    });
+    // Meses sin registros también aparecen, para que un hueco se vea.
+    const claves = Object.keys(porMesMap).sort();
+    const porMes = [];
+    if (claves.length) {
+      let [y, m] = claves[0].split("-").map(Number);
+      const fin = new Date().toISOString().slice(0, 7);
+      for (let guard = 0; guard < 120; guard++) {
+        const k = `${y}-${String(m).padStart(2, "0")}`;
+        const v = porMesMap[k] || { mes: k, registros: 0, activados: 0, volvieron: 0, pagan: 0, personas: [] };
+        v.personas.sort((a, b) => new Date(b.creado) - new Date(a.creado));
+        porMes.push(v);
+        if (k >= fin) break;
+        m++; if (m > 12) { m = 1; y++; }
+      }
+    }
+
     const ultimos = [...usuarios]
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 10)
@@ -146,6 +270,13 @@ exports.handler = async (event) => {
         total,
         activados,
         pagos,
+        pagosPorVia,
+        pagadores,
+        cortesia,
+        mercadoPago,
+        porMes,
+        losQueMasVuelven,
+        hayActividad: Object.keys(actividad).length > 0,
         trials,
         cuentasLeidas,
         diag,
