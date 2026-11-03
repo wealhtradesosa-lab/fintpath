@@ -24,8 +24,8 @@ function Nodo({ x, y, width, height, payload }) {
   return (
     <g>
       <rect x={x} y={y} width={width} height={Math.max(2, height)} fill={color} rx={2} />
-      {height > 6 && <text x={centro ? x + width / 2 : tx} y={centro ? y - 6 : y + height / 2} textAnchor={centro ? "middle" : izq ? "end" : "start"} dominantBaseline="middle" fill={INF.tx} fontSize={11}>
-        {String(payload.name).slice(0, 30)} <tspan fill={INF.tx2}>{fmM(payload.valor)}</tspan>
+      {height > 6 && <text x={centro ? x + width / 2 : tx} y={centro ? y - 6 : y + height / 2} textAnchor={centro ? "middle" : izq ? "end" : "start"} dominantBaseline="middle" style={{ fill: INF.tx }} fontSize={11}>
+        {String(payload.name).slice(0, 30)} <tspan style={{ fill: INF.tx2 }}>{fmM(payload.valor)}</tspan>
       </text>}
     </g>
   );

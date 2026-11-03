@@ -138,7 +138,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
 
   const Ficha = ({ l, v, s, col }) => <div style={{ ...card, marginBottom: 0, padding: 14 }}>
     <div style={{ fontSize: 12, color: INF.tx2 }}>{l}</div>
-    <div style={{ fontSize: 22, fontWeight: 600, color: col || INF.tx, fontFamily: "Georgia, 'Times New Roman', serif", margin: "4px 0" }}>{v}</div>
+    <div style={{ fontSize: 22, fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", margin: "4px 0" }}>{v}</div>
     <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.4 }}>{s}</div>
   </div>;
 
@@ -151,14 +151,14 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
         <Ficha l="Produce al mes" v={fmM(produceMes)} s={`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`} />
         <Ficha l="Rendimiento del patrimonio" v={fmPct(rendimiento, 1)} s="anual, sobre lo que tienes" />
         <Ficha l="Sale al mes" v={fmM(saleMes)} s="gastos + cuotas" />
-        <Ficha l={entraMes - saleMes >= 0 ? "Sobra al mes y se reinvierte" : "Falta al mes"} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || "lo que entra menos lo que sale") : "sale de tu liquidez"} col={entraMes - saleMes >= 0 ? INF.ok : INF.bad} />
-        <Ficha l="Le gana a la inflación" v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={`real al año · en ${ganaN} de ${gana.length} años`} col={real != null && real >= 0 ? INF.ok : INF.bad} />
+        <Ficha l={entraMes - saleMes >= 0 ? "Sobra al mes y se reinvierte" : "Falta al mes"} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || "lo que entra menos lo que sale") : "sale de tu liquidez"} col={entraMes - saleMes >= 0 ? INF.txOk : INF.txBad} />
+        <Ficha l="Le gana a la inflación" v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={`real al año · en ${ganaN} de ${gana.length} años`} col={real != null && real >= 0 ? INF.txOk : INF.txBad} />
       </div>
 
       {(r.desglose?.reinvierte || []).length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
         <h3 style={h3}>Lo que rinde y no te llega al mes</h3>
         <p style={lead}>Estas inversiones producen, pero todo se reinvierte: hacen crecer el patrimonio y no suman a lo que entra cada mes. Si alguna te paga (una renta fija como BTG), cámbiala en el paso 3, Tu plata → «De lo que rinde, ¿cuánto te llega?».</p>
-        {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 12 }}>· {fmPct(x.pct, 1)} al año</span></span><b style={{ color: INF.dorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}/mes se reinvierte</b></div>)}
+        {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 12 }}>· {fmPct(x.pct, 1)} al año</span></span><b style={{ color: INF.txDorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}/mes se reinvierte</b></div>)}
       </div>}
 
       <MesCompleto r={r} card={card} h3={h3} lead={lead} />
@@ -177,12 +177,12 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
             <Area type="stepAfter" dataKey="base" stackId="b" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" name=" " tooltipType="none" />
             <Area type="stepAfter" dataKey="sobra" stackId="b" stroke="none" fill={INF.franja} isAnimationActive={false} name="Sobra" />
             {marcas.map((m, i) => <ReferenceLine key={m.anio} x={anioTxt(m.anio)} stroke={INF.ref} strokeDasharray="2 3"
-              label={(q) => <text x={q.viewBox.x + 4} y={q.viewBox.y - 6 - (i % 2) * 14} fill={INF.tx2} fontSize={11}>{m.txt.length > 26 ? m.txt.slice(0, 25) + "…" : m.txt}</text>} />)}
+              label={(q) => <text x={q.viewBox.x + 4} y={q.viewBox.y - 6 - (i % 2) * 14} style={{ fill: INF.tx2 }} fontSize={11}>{m.txt.length > 26 ? m.txt.slice(0, 25) + "…" : m.txt}</text>} />)}
             <Line type="stepAfter" dataKey="entra" name="Entra" stroke={INF.azul} strokeWidth={2.5} dot={false} label={finLabel("entra", `Entra ${fmM(mes[mes.length - 1]?.entra)}`, INF.azul)} />
             <Line type="stepAfter" dataKey="sale" name="Sale" stroke={INF.teja} strokeWidth={2} strokeDasharray="5 4" dot={false} label={finLabel("sale", `Sale ${fmM(mes[mes.length - 1]?.sale)}`, INF.teja)} />
           </ComposedChart>
         </ResponsiveContainer></div></div>
-        {apretado && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 4 }}>Año más apretado: <b style={{ color: apretado.s >= 0 ? INF.tx : INF.bad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? `sobran ${fmM(apretado.s)}` : `faltan ${fmM(-apretado.s)}`} al mes ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} de cobertura)</b>.</div>}
+        {apretado && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 4 }}>Año más apretado: <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? `sobran ${fmM(apretado.s)}` : `faltan ${fmM(-apretado.s)}`} al mes ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} de cobertura)</b>.</div>}
       </div>
 
       {plataNueva.length > 0 && <div style={card}>
@@ -254,7 +254,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
           <thead><tr><th style={{ ...th, textAlign: "left" }}>Año</th><th style={th}>Llega a la cuenta</th><th style={th}>Crece invertido</th><th style={th}>Produce en total</th><th style={th}>Sale para vivir</th><th style={th}>Sobra al mes (se reinvierte)</th><th style={{ ...th, textAlign: "left" }}>Qué cambia ese año</th></tr></thead>
           <tbody>{filas.slice(1).map((f) => { const qe = ev.filter((e) => e.anio === f.anio).map((e) => e.texto); return <tr key={f.anio}>
             <td style={tdL}>{anioTxt(f.anio)}</td><td style={td}>{fmM(f.rentas / d(f))}</td><td style={td}>{fmM(f.crece / d(f))}</td><td style={td}>{fmM(f.produce / d(f))}</td><td style={td}>{fmM(f.gastos / d(f))}</td>
-            <td style={{ ...td, color: f.ingresos - f.gastos >= 0 ? INF.tx : INF.bad }}>{fmM((f.ingresos - f.gastos) / 12 / d(f))}</td>
+            <td style={{ ...td, color: f.ingresos - f.gastos >= 0 ? INF.tx : INF.txBad }}>{fmM((f.ingresos - f.gastos) / 12 / d(f))}</td>
             <td style={{ ...tdL, color: INF.tx2 }}>{qe.length ? qe.join(" · ") : "Sin cambios"}</td></tr>; })}</tbody>
         </table></div>
       </div>
@@ -294,7 +294,7 @@ export default function PlanInforme({ r, nombre = "Este escenario", inflacionPct
       <div style={card}>
         <h3 style={h3}>Le gana a la inflación, año por año</h3>
         <p style={lead}>Cada barra es cuánto crece el patrimonio neto ese año. La línea punteada es la inflación ({fmPct(inflacionPct, 1)}): por encima, el plan gana poder de compra; por debajo, lo pierde. La cifra sobre cada barra es lo que gana por encima de la inflación.</p>
-        <div style={{ fontSize: 13, marginBottom: 6 }}><span style={{ border: `1px solid ${ganaN >= gana.length / 2 ? INF.ok : INF.bad}`, color: ganaN >= gana.length / 2 ? INF.ok : INF.bad, borderRadius: 999, padding: "1px 8px", marginRight: 6, fontSize: 12 }}>{ganaN >= gana.length / 2 ? "Le gana" : "No le gana"}</span>
+        <div style={{ fontSize: 13, marginBottom: 6 }}><span style={{ border: `1px solid ${ganaN >= gana.length / 2 ? INF.ok : INF.bad}`, color: ganaN >= gana.length / 2 ? INF.txOk : INF.txBad, borderRadius: 999, padding: "1px 8px", marginRight: 6, fontSize: 12 }}>{ganaN >= gana.length / 2 ? "Le gana" : "No le gana"}</span>
           {cagr != null && <>Crece <b>{fmPct(cagr, 1)}</b> al año en 10 años: <b>{real >= 0 ? "+" : ""}{fmPct(real, 1)} real</b> por año. Le gana a la inflación en {ganaN} de {gana.length} años.</>}</div>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={240}>
           <BarChart data={gana} margin={{ top: 22, right: 90, left: 0, bottom: 0 }}>

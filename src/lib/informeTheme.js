@@ -25,13 +25,22 @@ export const INF = {
   grid: "var(--fp-raised)",
   eje: "var(--fp-line)",
   ref: "var(--fp-txt3)",
-  tx: "#ECEAE4",
+  // 2-nov-2026 (Santiago: «algunos textos no se ven, sobre todo los grises
+  // claros sobre blanco»). tx era #ECEAE4 fijo: casi blanco, invisible en modo
+  // claro. El texto va con variables del tema; los colores de series y
+  // rellenos de las gráficas siguen en hex (Safari no lee var() en atributos SVG).
+  tx: "var(--fp-txt)",
   tx2: "var(--fp-txt2)",
   ok: "#6CC58F",
   bad: "#E07A5F",
   franja: "rgba(108,197,143,0.16)",
   sobra: "#4F6B5A", // lo que sobra, reinvertido
   sobreColor: "#FFFFFF",
+  // Variantes para TEXTO (contraste ≥ 4,5:1 en claro y en oscuro).
+  txOk: "var(--fp-pos)",
+  txBad: "var(--fp-neg)",
+  txDorado: "var(--inf-dorado-tx)",
+  txTeja: "var(--inf-teja-tx)",
 };
 
 // Color estable por clase de activo (Patrimonio neto por año, Todo lo que tienes).

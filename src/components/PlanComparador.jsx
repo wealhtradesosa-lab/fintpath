@@ -124,14 +124,14 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
             <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? "Punto de partida" : `Camino ${letra}`}</div>
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
             <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? "Si nada cambia" : p.descripcion || resumenEscenario(p.r)}</div>
-            <div style={{ fontSize: 24, fontFamily: "Georgia, 'Times New Roman', serif", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
-            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.ok : INF.bad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
-            {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.teja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "Recomendado" : "Marcar como recomendado"}</button>}
+            <div style={{ fontSize: 24, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
+            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.txOk : INF.txBad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} real`}</div>
+            {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.txTeja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? "Recomendado" : "Marcar como recomendado"}</button>}
             {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}
             {!p.esHoy && (p.id ? (onEditar || onBorrar) : (onGuardarBorrador || onDescartarBorrador)) && <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
               {(p.id ? [["Editar", onEditar], ["Borrar", onBorrar]] : [["Guardar", onGuardarBorrador], ["Descartar", onDescartarBorrador]]).filter(([, fn]) => fn).map(([t, fn]) => (
                 <button key={t} onClick={(e) => { e.stopPropagation(); if (t === "Borrar" && typeof window !== "undefined" && window.confirm && !window.confirm(`¿Borrar «${p.nombre}»?`)) return; fn(p.id); }}
-                  style={{ background: "none", border: `1px solid ${t === "Borrar" || t === "Descartar" ? INF.teja : INF.linea}`, borderRadius: 999, color: t === "Borrar" || t === "Descartar" ? INF.teja : INF.tx, fontSize: 12, padding: "4px 12px", cursor: "pointer" }}>{t}</button>))}
+                  style={{ background: "none", border: `1px solid ${t === "Borrar" || t === "Descartar" ? INF.teja : INF.linea}`, borderRadius: 999, color: t === "Borrar" || t === "Descartar" ? INF.txTeja : INF.tx, fontSize: 12, padding: "4px 12px", cursor: "pointer" }}>{t}</button>))}
             </div>}
           </div>;
         })}
@@ -179,8 +179,8 @@ export default function PlanComparador({ planes, inflacionPct = 4, onVer, onReco
           <tbody>{m.map((p) => { const pe = p.med.peor, cob = pe && pe.x.gastos > 0 ? pe.x.ingresos / pe.x.gastos * 100 : null; return <tr key={p.k}>
             <td style={{ ...td, textAlign: "left", fontWeight: 600 }}><span style={{ display: "inline-block", width: 8, height: 8, background: p.color, marginRight: 6 }} />{p.nombre}</td>
             <td style={td}>{pe ? anioTxt(pe.x.anio) : "—"}</td>
-            <td style={{ ...td, color: pe && pe.s < 0 ? INF.bad : INF.tx }}>{pe ? fmM(pe.s) : "—"}</td>
-            <td style={{ ...td, fontWeight: 700, color: cob != null && cob < 100 ? INF.bad : INF.tx }}>{cob == null ? "—" : fmPct(cob, 0)}</td>
+            <td style={{ ...td, color: pe && pe.s < 0 ? INF.txBad : INF.tx }}>{pe ? fmM(pe.s) : "—"}</td>
+            <td style={{ ...td, fontWeight: 700, color: cob != null && cob < 100 ? INF.txBad : INF.tx }}>{cob == null ? "—" : fmPct(cob, 0)}</td>
             <td style={td}>{p.med.coberturaFin == null ? "—" : fmPct(p.med.coberturaFin, 0)}</td>
             <td style={{ ...td, textAlign: "left", whiteSpace: "normal", color: INF.tx2 }}>{cob == null ? "—" : cob >= 120 ? "Sí: aun en el peor año sobra plata" : cob >= 100 ? "Justo: el peor año queda por debajo de la meta de 120 %" : "No: hay años en que sale más de lo que entra"}</td>
           </tr>; })}</tbody>

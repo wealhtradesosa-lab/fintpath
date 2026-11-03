@@ -77,8 +77,8 @@ html[data-tema="claro"] .fp-app { --fp-pos: #00873c; --fp-neg: #d9480f; --fp-ale
    significado: lo que tienes y lo que producen tus activos. Verde = resultado
    a favor; naranja = cuotas y lo que pierde valor; negro/blanco = estructura.
    Las tramas se sacan con color-mix(var(--fp-azul) N%, transparent). */
-:root { --fp-azul: #3b82f6; }
-html[data-tema="claro"] .fp-app { --fp-azul: #1d5fd6; }
+:root { --fp-azul: #3b82f6; --inf-dorado-tx: #C9A962; --inf-teja-tx: #E07A5F; }
+html[data-tema="claro"] .fp-app { --fp-azul: #1d5fd6; --inf-dorado-tx: #7d6218; --inf-teja-tx: #a63f24; }
 /* bordes de tarjeta visibles en oscuro */
 .fp-app { --fp-border: rgba(var(--fp-ink),0.1); }
 /* textos verdes / rojos / ámbar → tonos de la paleta según el modo */
