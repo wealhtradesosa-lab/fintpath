@@ -8,7 +8,7 @@
  *   Schedule C Business Deductions (for self-employed)
  *   Tax Credits (non-refundable & refundable)
  *   TCJA 2017 impact notes where relevant
- *   Tax Year 2025
+ *   Tax year: US_TAX_YEAR (usStateTax.js). 2-nov-2026: cifras 2026 y cambios de la ley OBBBA.
  */
 
 import { useState, useMemo } from "react";
@@ -16,33 +16,57 @@ import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 import { exportGastosPDF } from "../lib/pdfSectionExport.js";
 import { exportGastosExcel } from "../lib/excelExport.js";
+import { STANDARD_DEDUCTION, US_LIMITS, US_TAX_YEAR, federalTax } from "../lib/jurisdictions/usStateTax.js";
 
-// ─── 2025 Constants ─────────────────────────────────────────────────────────
+// ─── Constantes del año fiscal vigente ─────────────────────────────────────
+// Fuentes 2026: IRS Rev. Proc. 2025-32 (deducción estándar, § 179, préstamos
+// estudiantiles, educadores, crédito por hijos), IRS Notice 2026-10 (millaje),
+// IRS Notice 2025-67 (IRA, HSA, SEP), ley OBBBA (SALT, bonus depreciation).
 const C = {
-  STANDARD_DEDUCTION_SINGLE:  15000,
-  STANDARD_DEDUCTION_MFJ:     30000,
-  STANDARD_DEDUCTION_HOH:     22500,
-  STANDARD_DEDUCTION_MFS:     15000,
-  SALT_CAP:                   10000,   // IRC § 164(b)(6) — TCJA 2017
-  MORTGAGE_DEBT_LIMIT:        750000,  // IRC § 163(h)(3)(B) — post-12/15/2017 loans
+  STANDARD_DEDUCTION_SINGLE:  STANDARD_DEDUCTION.single,
+  STANDARD_DEDUCTION_MFJ:     STANDARD_DEDUCTION.married_jointly,
+  STANDARD_DEDUCTION_HOH:     STANDARD_DEDUCTION.head_of_household,
+  STANDARD_DEDUCTION_MFS:     STANDARD_DEDUCTION.married_separately,
+  // SALT (§ 164(b)(6), OBBBA): tope de $40.400 en 2026 ($20.200 casados por
+  // separado), que baja 30 % del MAGI por encima de $505.000 ($252.500) hasta
+  // un piso de $10.000 ($5.000). Se calcula en topeSALT().
+  SALT_CAP:                   40400,
+  SALT_CAP_MFS:               20200,
+  SALT_MAGI_THRESHOLD:        505000,
+  SALT_MAGI_THRESHOLD_MFS:    252500,
+  SALT_FLOOR:                 10000,
+  SALT_FLOOR_MFS:             5000,
+  MORTGAGE_DEBT_LIMIT:        750000,  // IRC § 163(h)(3)(B) — permanente con OBBBA
   MEDICAL_FLOOR_PCT:          0.075,   // IRC § 213 — 7.5% of AGI
   CHARITABLE_CASH_LIMIT:      0.60,    // IRC § 170(b)(1)(G)
   CHARITABLE_PROP_LIMIT:      0.30,    // IRC § 170(e)(1)
   STUDENT_LOAN_MAX:           2500,    // IRC § 221
-  STUDENT_LOAN_PO_START:      75000,   // Phase-out start (single 2025)
-  STUDENT_LOAN_PO_END:        90000,
-  EDUCATOR_MAX:               300,     // IRC § 62(a)(2)(D)
-  HSA_INDIVIDUAL:             4150,    // IRC § 223
-  HSA_FAMILY:                 8300,
-  IRA_LIMIT:                  7000,    // IRC § 219
-  IRA_CATCHUP:                8000,    // Age 50+
-  SECTION_179_LIMIT:          1220000, // IRC § 179 — 2025
-  BONUS_DEPRECIATION:         0.40,    // 40% bonus depreciation 2025 (phasing down)
-  MILEAGE_BUSINESS:           0.70,    // Rev. Proc. 2024-25
-  MILEAGE_MEDICAL:            0.21,
+  STUDENT_LOAN_PO_START:      85000,   // Phase-out start (single 2026)
+  STUDENT_LOAN_PO_END:        100000,
+  EDUCATOR_MAX:               350,     // IRC § 62(a)(2)(D) — 2026
+  HSA_INDIVIDUAL:             US_LIMITS.hsaSelf,   // IRC § 223
+  HSA_FAMILY:                 US_LIMITS.hsaFamily,
+  IRA_LIMIT:                  US_LIMITS.ira,       // IRC § 219
+  IRA_CATCHUP:                US_LIMITS.ira + US_LIMITS.iraCatchUp50, // Age 50+
+  SECTION_179_LIMIT:          2560000, // IRC § 179 — 2026
+  BONUS_DEPRECIATION:         1.00,    // 100% permanente para bienes adquiridos desde el 20-ene-2025 (OBBBA)
+  MILEAGE_BUSINESS:           0.725,   // IRS Notice 2026-10
+  MILEAGE_MEDICAL:            0.205,
   MILEAGE_CHARITY:            0.14,
+  CHILD_TAX_CREDIT:           2200,    // IRC § 24 — 2026
+  CHILD_TAX_CREDIT_REFUND:    1700,
   QBI_RATE:                   0.20,    // IRC § 199A
 };
+
+// Tope SALT del año según MAGI y estado civil (ley OBBBA).
+export function topeSALT(magi, filingStatus = "single") {
+  const mfs = filingStatus === "mfs";
+  const base = mfs ? C.SALT_CAP_MFS : C.SALT_CAP;
+  const umbral = mfs ? C.SALT_MAGI_THRESHOLD_MFS : C.SALT_MAGI_THRESHOLD;
+  const piso = mfs ? C.SALT_FLOOR_MFS : C.SALT_FLOOR;
+  return Math.max(piso, base - 0.3 * Math.max(0, (Number(magi) || 0) - umbral));
+}
+
 
 // ─── Design Tokens ──────────────────────────────────────────────────────────
 const T = {
@@ -127,7 +151,7 @@ const EMPTY_FORM = {
   // Schedule A — Itemized Deductions
   medicalDentalGross:    0,  // IRC § 213 — only excess over 7.5% AGI
   stateTaxPaid:          0,  // SALT — income tax or sales tax (not both)
-  propertyTaxPaid:       0,  // SALT — subject to $10K combined cap
+  propertyTaxPaid:       0,  // SALT — subject to the combined cap (topeSALT)
   mortgageInterest:      0,  // IRC § 163(h) — $750K debt limit
   mortgageBalance:       0,  // To check $750K limit
   charitableCash:        0,  // IRC § 170 — up to 60% AGI
@@ -137,7 +161,7 @@ const EMPTY_FORM = {
   // Schedule C business deductions
   businessExpenses:      0,  // Ordinary & necessary IRC § 162
   homeOfficeSqFt:        0,  // IRC § 280A — simplified $5/sqft, max 300
-  businessMiles:         0,  // Rev. Proc. 2024-25 — $0.70/mile
+  businessMiles:         0,  // IRS Notice 2026-10 — $0.725/mile
   businessMeals:         0,  // IRC § 274 — 50% deductible
   section179:            0,  // IRC § 179 — immediate asset expensing
   professionalDev:       0,  // IRC § 162 — education maintaining skills
@@ -186,10 +210,11 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
     const medFloor   = adjustedAGI * C.MEDICAL_FLOOR_PCT;
     const medical    = Math.max(0, form.medicalDentalGross - medFloor);
 
-    // SALT cap $10,000 (§ 164(b)(6))
+    // SALT (§ 164(b)(6)): tope según MAGI y estado civil
+    const saltCap    = topeSALT(agi, form.filingStatus);
     const saltRaw    = form.stateTaxPaid + form.propertyTaxPaid;
-    const salt       = Math.min(saltRaw, C.SALT_CAP);
-    const saltWasted = Math.max(0, saltRaw - C.SALT_CAP);
+    const salt       = Math.min(saltRaw, saltCap);
+    const saltWasted = Math.max(0, saltRaw - saltCap);
 
     // Mortgage interest — $750K debt limit
     const mortgageRatio = form.mortgageBalance > C.MORTGAGE_DEBT_LIMIT
@@ -208,7 +233,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
     const casualty   = form.casualtyLoss;
 
     const total      = medical + salt + mortgage + charitable + casualty;
-    return { medical, medFloor, salt, saltRaw, saltWasted, mortgage, mortgageExcluded,
+    return { medical, medFloor, salt, saltCap, saltRaw, saltWasted, mortgage, mortgageExcluded,
              charitable, charCarryForward, casualty, total, adjustedAGI };
   }, [form, aboveLine, agi]);
 
@@ -236,10 +261,12 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
   // ── Credits (reduce tax dollar-for-dollar) ───────────────────────────────
   const credits = useMemo(() => {
-    const energy  = Math.min(form.energyHomeCredit * 0.30, 3200); // § 25C — 30%, cap $3,200
-    const solar   = form.solarCredit * 0.30;                        // § 25D — 30%, no cap thru 2032
-    const ev      = Math.min(form.evCredit, 7500);                  // § 30D
-    const child   = form.childTaxCredit * 2000;                     // $2,000/child
+    // OBBBA: § 25C y § 25D terminaron el 31-dic-2025 y § 30D el 30-sep-2025.
+    // Para el año fiscal vigente (2026) ya no suman.
+    const energy  = 0;
+    const solar   = 0;
+    const ev      = 0;
+    const child   = form.childTaxCredit * C.CHILD_TAX_CREDIT;       // § 24
     const care    = form.childCareCredit;
     const total   = energy + solar + ev + child + care;
     return { energy, solar, ev, child, care, total };
@@ -255,23 +282,11 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
   const adjustedAGI   = Math.max(0, agi - aboveLine.total - schedC.total);
   const taxableIncome = Math.max(0, adjustedAGI - deductionBenefit);
 
-  // Federal tax brackets (simplified single 2025)
-  const BRACKETS = [
-    {max:11925,  rate:0.10},{max:48475, rate:0.12},{max:103350,rate:0.22},
-    {max:197300, rate:0.24},{max:250525,rate:0.32},{max:626350, rate:0.35},
-    {max:Infinity,rate:0.37}
-  ];
-  function calcFedTax(income) {
-    let tax=0, prev=0;
-    for(const b of BRACKETS) {
-      if(income<=prev) break;
-      tax += (Math.min(income,b.max)-prev)*b.rate;
-      prev=b.max;
-    }
-    return Math.round(tax);
-  }
+  // Tramos federales del año vigente, por estado civil (usStateTax.js).
+  const estadoFederal = { single: "single", mfj: "married_jointly", hoh: "head_of_household", mfs: "married_separately" }[form.filingStatus] || "single";
+  const calcFedTax = (income) => Math.round(federalTax(income, estadoFederal).tax);
   const estFedTax     = calcFedTax(taxableIncome) - credits.total;
-  const marginalRate  = BRACKETS.find(b => taxableIncome <= b.max)?.rate || 0.37;
+  const marginalRate  = federalTax(taxableIncome, estadoFederal).marginalRate;
 
   // ─── TABS ────────────────────────────────────────────────────────────────
   const tabs = [
@@ -288,7 +303,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
       <div style={{marginBottom:24}}>
         <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Deductions & Expenses</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
-          Schedule A · Schedule C · Above-the-line deductions · Tax Credits — Tax Year 2025
+          Schedule A · Schedule C · Above-the-line deductions · Tax Credits — Tax Year {US_TAX_YEAR}
         </p>
         {/* 01-sep-2026: export que la version US no tenia. */}
         <button onClick={()=>exportGastosPDF(gastos, 1, true)}
@@ -375,21 +390,21 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             <Field l="Student Loan Interest (max $2,500)" value={form.studentLoanInterest}
               onChange={v=>sf("studentLoanInterest",v)}
               hint={`IRC § 221. Phases out $${C.STUDENT_LOAN_PO_START.toLocaleString("en-US")}–$${C.STUDENT_LOAN_PO_END.toLocaleString("en-US")} AGI (single). Allowed: ${fm(aboveLine.studentLoan)}`} />
-            <Field l="Educator Expenses (max $300)" value={form.educatorExpenses}
+            <Field l={`Educator Expenses (max ${fm(C.EDUCATOR_MAX)})`} value={form.educatorExpenses}
               onChange={v=>sf("educatorExpenses",v)}
               hint="IRC § 62(a)(2)(D). K-12 teachers only. Classroom supplies, professional development." />
-            <Field l="HSA Contribution (max $4,150 individual)" value={form.hsaContrib}
+            <Field l={`HSA Contribution (max ${fm(C.HSA_INDIVIDUAL)} individual)`} value={form.hsaContrib}
               onChange={v=>sf("hsaContrib",v)}
               hint={`IRC § 223. Only if enrolled in High-Deductible Health Plan. Allowed: ${fm(aboveLine.hsa)}. Triple tax advantage: deductible, grows tax-free, withdrawals tax-free for medical.`} />
             <Field l="Self-Employed Health Insurance Premium" value={form.selfEmployedHealthIns}
               onChange={v=>sf("selfEmployedHealthIns",v)}
               hint="IRC § 162(l). 100% deductible above-the-line if self-employed with net profit. Cannot exceed net SE income. Includes dental, vision, long-term care." />
-            <Field l="Traditional IRA Contribution (max $7,000)" value={form.tradIRAContrib}
+            <Field l={`Traditional IRA Contribution (max ${fm(C.IRA_LIMIT)})`} value={form.tradIRAContrib}
               onChange={v=>sf("tradIRAContrib",v)}
-              hint={`IRC § 219. Deductibility phases out if covered by workplace plan: single $77K–$87K AGI (2025). Allowed: ${fm(aboveLine.ira)}.`} />
+              hint={`IRC § 219. Deductibility phases out if covered by workplace plan: single ${fm(US_LIMITS.tradIraPhaseOutSingleCovered[0])}–${fm(US_LIMITS.tradIraPhaseOutSingleCovered[1])} AGI (${US_TAX_YEAR}). Allowed: ${fm(aboveLine.ira)}.`} />
             <Field l="SEP-IRA Contribution" value={form.sepIRAContrib}
               onChange={v=>sf("sepIRAContrib",v)}
-              hint="IRC § 408(k). Self-employed: up to 25% of net SE income, max $69,000 (2025). Most powerful retirement vehicle for self-employed — combine with QBI deduction." />
+              hint={`IRC § 408(k). Self-employed: up to 25% of net SE income, max ${fm(US_LIMITS.sep)} (${US_TAX_YEAR}). Most powerful retirement vehicle for self-employed — combine with QBI deduction.`} />
             <Field l="Alimony Paid (pre-2019 divorce only)" value={form.alimonyPaid}
               onChange={v=>sf("alimonyPaid",v)}
               hint="IRC § 215. Only deductible for divorce agreements executed before Jan 1, 2019. Post-2019 alimony is NOT deductible (TCJA 2017 change)." />
@@ -441,7 +456,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
 
             {/* SALT */}
             <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:10,padding:14}}>
-              <Label c={T.pr}>State & Local Taxes (SALT) — IRC § 164 (capped $10,000)</Label>
+              <Label c={T.pr}>State & Local Taxes (SALT) — IRC § 164 (capped {fm(schedA.saltCap)})</Label>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                 <Field l="State Income Tax Paid (or Sales Tax)" value={form.stateTaxPaid}
                   onChange={v=>sf("stateTaxPaid",v)}
@@ -452,7 +467,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               </div>
               {schedA.saltWasted > 0 && (
                 <InfoBox color={T.or}>
-                  <strong>SALT Cap Alert:</strong> Your total SALT of {fm(schedA.saltRaw)} exceeds the $10,000 cap.
+                  <strong>SALT Cap Alert:</strong> Your total SALT of {fm(schedA.saltRaw)} exceeds your {fm(schedA.saltCap)} cap.
                   You lose {fm(schedA.saltWasted)} in deductions (TCJA 2017, § 164(b)(6)).
                   Workaround: Some states offer Pass-Through Entity (PTE) tax elections to bypass SALT cap — consult your CPA.
                 </InfoBox>
@@ -514,7 +529,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           <div style={{background:T.bg3,borderRadius:12,padding:16}}>
             <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:12}}>Schedule A Summary</div>
             {schedA.medical   > 0 && <DeductRow label="Medical & Dental"   amount={schedA.medical}   irc="§ 213" note={`Gross ${fm(form.medicalDentalGross)} – floor ${fm(schedA.medFloor)}`} />}
-            {schedA.salt      > 0 && <DeductRow label="State & Local Taxes (SALT)" amount={schedA.salt} irc="§ 164" note={schedA.saltWasted>0?`Capped at $10,000 (${fm(schedA.saltWasted)} lost)`:undefined} />}
+            {schedA.salt      > 0 && <DeductRow label="State & Local Taxes (SALT)" amount={schedA.salt} irc="§ 164" note={schedA.saltWasted>0?`Capped at ${fm(schedA.saltCap)} (${fm(schedA.saltWasted)} lost)`:undefined} />}
             {schedA.mortgage  > 0 && <DeductRow label="Mortgage Interest"  amount={schedA.mortgage}  irc="§ 163(h)" />}
             {schedA.charitable> 0 && <DeductRow label="Charitable Contributions" amount={schedA.charitable} irc="§ 170" />}
             {schedA.casualty  > 0 && <DeductRow label="Casualty Loss"      amount={schedA.casualty}  irc="§ 165(h)" />}
@@ -545,13 +560,13 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               hint={`IRC § 280A. Simplified method: $5/sq ft × up to 300 sq ft = max $1,500/yr. Must be used regularly and exclusively for business. Your deduction: ${fm(schedC.homeOffice)}.`} />
             <Field l="Business Miles (annual)" value={form.businessMiles}
               onChange={v=>sf("businessMiles",v)}
-              hint={`Rev. Proc. 2024-25: $0.70/mile for business (2025). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`} />
+              hint={`IRS Notice 2026-10: $0.725/mile for business (2026). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`} />
             <Field l="Business Meals (total, before 50% limit)" value={form.businessMeals}
               onChange={v=>sf("businessMeals",v)}
               hint={`IRC § 274(n). 50% deductible. Must have business purpose and document: who, where, business discussed. Deductible: ${fm(schedC.meals)}. Entertainment is no longer deductible (TCJA 2017).`} />
             <Field l="Section 179 Asset Expensing (cost of equipment)" value={form.section179}
               onChange={v=>sf("section179",v)}
-              hint={`IRC § 179. Immediately expense up to $1,220,000 of qualifying assets (2025). Computers, equipment, furniture. Cannot create a loss (limited to net income). Deductible: ${fm(schedC.s179)}.`} />
+              hint={`IRC § 179. Immediately expense up to $2,560,000 of qualifying assets (2026). Computers, equipment, furniture. Cannot create a loss (limited to net income). Deductible: ${fm(schedC.s179)}.`} />
             <Field l="Professional Development / Education" value={form.professionalDev}
               onChange={v=>sf("professionalDev",v)}
               hint="IRC § 162. Courses, conferences, books, certifications that maintain or improve current business skills. NOT for education to qualify for a new profession." />
@@ -560,7 +575,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             <div style={{fontSize:12,fontWeight:700,color:T.or,marginBottom:12}}>Schedule C Deductions Summary</div>
             {schedC.bizExpenses > 0 && <DeductRow label={`Business Expenses (${fm(form.businessExpenses)}/mo × 12)`} amount={schedC.bizExpenses} irc="§ 162" />}
             {schedC.homeOffice  > 0 && <DeductRow label="Home Office (simplified method)"    amount={schedC.homeOffice}    irc="§ 280A" />}
-            {schedC.mileage     > 0 && <DeductRow label={`Mileage (${form.businessMiles.toLocaleString("en-US")} mi × $0.70)`} amount={schedC.mileage} irc="§ 162" />}
+            {schedC.mileage     > 0 && <DeductRow label={`Mileage (${form.businessMiles.toLocaleString("en-US")} mi × $0.725)`} amount={schedC.mileage} irc="§ 162" />}
             {schedC.meals       > 0 && <DeductRow label="Business Meals (50% of total)"     amount={schedC.meals}         irc="§ 274(n)" />}
             {schedC.s179        > 0 && <DeductRow label="Section 179 Expensing"              amount={schedC.s179}          irc="§ 179" />}
             {schedC.profDev     > 0 && <DeductRow label="Professional Development"           amount={schedC.profDev}       irc="§ 162" />}
@@ -572,8 +587,8 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           </div>
           <InfoBox color={T.or}>
             <strong>Key Rule (IRC § 162):</strong> Expenses must be "ordinary and necessary." Keep meticulous records — IRS audits Schedule C filers at higher rates.
-            <br/><strong>Bonus Depreciation (§ 168(k)):</strong> 40% bonus depreciation in 2025 (phasing down 20%/year from 80% in 2023). For assets not qualifying for § 179.
-            <br/><strong>Vehicle Actual vs. Standard Mileage:</strong> If you use actual expenses (gas, insurance, depreciation), you must apply the business-use percentage. Standard mileage ($0.70/mile) is simpler but may be less.
+            <br/><strong>Bonus Depreciation (§ 168(k)):</strong> 100% bonus depreciation, made permanent by the 2025 OBBBA for property acquired after Jan 19, 2025. For assets not qualifying for § 179.
+            <br/><strong>Vehicle Actual vs. Standard Mileage:</strong> If you use actual expenses (gas, insurance, depreciation), you must apply the business-use percentage. Standard mileage ($0.725/mile) is simpler but may be less.
             <br/><strong>Qualified Business Income (§ 199A):</strong> 20% deduction on net business income automatically calculated in your income module.
           </InfoBox>
         </div>
@@ -588,16 +603,16 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
             <Field l="Energy-Efficient Home Improvements (total cost)" value={form.energyHomeCredit}
               onChange={v=>sf("energyHomeCredit",v)}
-              hint={`IRC § 25C. 30% credit on qualifying improvements (insulation, windows, heat pumps, water heaters). Annual cap: $3,200 ($600 for windows, $2,000 for heat pumps). Credit: ${fm(credits.energy)}.`} />
+              hint="IRC § 25C. Ended for property placed in service after Dec 31, 2025 (2025 OBBBA). Not available for the current tax year." />
             <Field l="Solar Panel / Renewable Energy (installation cost)" value={form.solarCredit}
               onChange={v=>sf("solarCredit",v)}
-              hint={`IRC § 25D. 30% federal tax credit with no cap through 2032. Includes solar panels, battery storage, solar water heaters. Credit: ${fm(credits.solar)}.`} />
+              hint="IRC § 25D. Ended for installations completed after Dec 31, 2025 (2025 OBBBA). Not available for the current tax year." />
             <Field l="New Electric Vehicle (purchase price)" value={form.evCredit}
               onChange={v=>sf("evCredit",v)}
-              hint={`IRC § 30D. Up to $7,500 for qualifying new EVs. Income limits: $150K (single). Vehicle MSRP cap: $55K (cars), $80K (SUVs/trucks). Credit: ${fm(credits.ev)}.`} />
+              hint="IRC § 30D. Ended for vehicles acquired after Sep 30, 2025 (2025 OBBBA). Not available for the current tax year." />
             <Field l="Number of Qualifying Children (under 17)" value={form.childTaxCredit}
               onChange={v=>sf("childTaxCredit",v)} type="number"
-              hint={`IRC § 24. $2,000/child under 17. Phases out at $200K AGI (single). Up to $1,700 refundable (Additional Child Tax Credit). Credit: ${fm(credits.child)}.`} />
+              hint={`IRC § 24. ${fm(C.CHILD_TAX_CREDIT)}/child under 17. Phases out at $200K AGI (single). Up to ${fm(C.CHILD_TAX_CREDIT_REFUND)} refundable (Additional Child Tax Credit). Credit: ${fm(credits.child)}.`} />
             <Field l="Child & Dependent Care Credit" value={form.childCareCredit}
               onChange={v=>sf("childCareCredit",v)}
               hint="IRC § 21. 20–35% of qualifying expenses (based on AGI). Up to $3,000 for one child/$6,000 for two+. Enter the credit amount directly (20% of your care expenses if AGI > $43K)." />
@@ -607,7 +622,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             {credits.energy > 0 && <DeductRow label="Energy-Efficient Home (§ 25C)" amount={credits.energy} irc="§ 25C" color={T.gn} />}
             {credits.solar  > 0 && <DeductRow label="Solar / Renewable Energy (§ 25D)" amount={credits.solar} irc="§ 25D" color={T.gn} />}
             {credits.ev     > 0 && <DeductRow label="Electric Vehicle Credit (§ 30D)" amount={credits.ev} irc="§ 30D" color={T.gn} />}
-            {credits.child  > 0 && <DeductRow label={`Child Tax Credit (${form.childTaxCredit} children × $2,000)`} amount={credits.child} irc="§ 24" color={T.gn} />}
+            {credits.child  > 0 && <DeductRow label={`Child Tax Credit (${form.childTaxCredit} children × ${fm(C.CHILD_TAX_CREDIT)})`} amount={credits.child} irc="§ 24" color={T.gn} />}
             {credits.care   > 0 && <DeductRow label="Child & Dependent Care" amount={credits.care} irc="§ 21" color={T.gn} />}
             <div style={{display:"flex",justifyContent:"space-between",padding:"12px 0",
                          fontWeight:700,fontSize:15,color:T.gn,borderTop:`2px solid ${T.border}`,marginTop:4}}>
@@ -617,10 +632,10 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           </div>
           <InfoBox color={T.gn}>
             <strong>Other credits to explore with your CPA:</strong><br/>
-            • <strong>Earned Income Tax Credit (EITC)</strong> — § 32, refundable, up to $7,830 (2025) for low-to-moderate income<br/>
+            • <strong>Earned Income Tax Credit (EITC)</strong> — § 32, refundable, up to $8,231 (2026, three or more children) for low-to-moderate income<br/>
             • <strong>American Opportunity Credit</strong> — § 25A, up to $2,500/student for first 4 years college<br/>
             • <strong>Lifetime Learning Credit</strong> — § 25A, up to $2,000 for any higher education<br/>
-            • <strong>Retirement Savings Credit (Saver's Credit)</strong> — § 25B, up to $1,000 if AGI &lt; $38,250 (single 2025)<br/>
+            • <strong>Retirement Savings Credit (Saver's Credit)</strong> — § 25B, up to $1,000 for low-to-moderate income<br/>
             • <strong>Premium Tax Credit</strong> — § 36B, for ACA marketplace health insurance
           </InfoBox>
         </div>

@@ -1,5 +1,6 @@
 import { estimarImpuesto, DEFAULT_AG } from "./taxCO.js";
 import { calcularBase } from "./metrics.js";
+import { totalAnualItem } from "./flowHelpers.js";
 // sugerenciaPvAfc.js — fuente única del aporte sugerido a PV/AFC y su ahorro.
 // Acuerdo (Tributario, Finanzas, Cosmo): la tarjeta del simulador y las
 // recomendaciones estratégicas muestran el MISMO aporte y el MISMO ahorro.
@@ -92,7 +93,7 @@ export function sugerenciaPvAfc(user, owner, { ag = DEFAULT_AG } = {}) {
   const { u, det0, descuentos, flujoNetoAnual, faltanteEmergencia, flujoLibreAnual } = fl;
   const topeAnual = Math.round(Number(det0.pvMax) || 0);
   const motivo = flujoNetoAnual <= 0 ? "gastos" : flujoLibreAnual <= 0 ? "fondo" : null;
-  const yaAporta = Object.values(u.gas).flat().filter((g) => PV_AFC.has(g?.fiscalCode)).reduce((s, g) => s + (Number(g.m) || 0) * 12, 0);
+  const yaAporta = Object.values(u.gas).flat().filter((g) => PV_AFC.has(g?.fiscalCode)).reduce((s, g) => s + totalAnualItem(g), 0); // 2-nov-2026: por el motor (vigencia y frecuencia), no m × 12
   const espacioFiscal = Math.max(0, sugerenciaPvAfcDe(det0).aporte - yaAporta);
   const aporte = Math.round(Math.min(flujoLibreAnual, espacioFiscal));
   if (!(aporte > 0)) return { ...vacio, motivo, flujoNetoAnual, descuentos, topeAnual, sinFlujo: flujoLibreAnual <= 0, flujoLibreAnual, faltanteEmergencia, espacioFiscal };

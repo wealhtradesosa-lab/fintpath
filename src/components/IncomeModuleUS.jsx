@@ -1,7 +1,7 @@
 /**
  * IncomeModuleUS.jsx
  * CPA-grade US Income Tracker — IRC §§ 61, 71, 86, 101-140, 162, 199A, 469, 1221-1256
- * Tax Year 2025 | Prepared to the standard of a 20-year licensed CPA / CFP
+ * Tax year: US_TAX_YEAR (usStateTax.js) | Prepared to the standard of a 20-year licensed CPA / CFP
  *
  * Covers:
  *   W-2 Wages                (IRC § 61, withholding IRC § 3402)
@@ -24,6 +24,7 @@ import BarraComposicion from "./BarraComposicion";
 import { totalAnualItem } from "../lib/flowHelpers.js";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
+import { US_LIMITS, US_TAX_YEAR, fechasEstimadosUS } from "../lib/jurisdictions/usStateTax.js";
 import { exportIngresosPDF } from "../lib/pdfSectionExport.js";
 import { exportIngresosExcel } from "../lib/excelExport.js";
 
@@ -246,12 +247,7 @@ function calcTaxForSource(src, ordinaryIncome = 0) {
 // ─── Quarterly Estimated Tax Calculator ───────────────────────────────────
 function QuarterlyEstimates({ totalTax }) {
   const perQ = Math.round(totalTax / 4);
-  const quarters = [
-    {q:"Q1",due:"April 15, 2025",  amount:perQ},
-    {q:"Q2",due:"June 16, 2025",   amount:perQ},
-    {q:"Q3",due:"September 15, 2025",amount:perQ},
-    {q:"Q4",due:"January 15, 2026",amount:perQ},
-  ];
+  const quarters = fechasEstimadosUS(US_TAX_YEAR).map((f) => ({ ...f, amount: perQ }));
   return (
     <div>
       <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:4}}>Form 1040-ES — Quarterly Estimated Payments</div>
@@ -378,7 +374,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
         <div>
           <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Income</h2>
           <p style={{color:T.tx3,fontSize:12,margin:0}}>
-            All income types per IRS classification — Tax Year 2025
+            All income types per IRS classification — Tax Year {US_TAX_YEAR}
           </p>
         </div>
         {/* 01-sep-2026: los modulos US no tenian ningun export. Mismo generador
@@ -516,7 +512,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                     <div style={{fontSize:12,color:T.tx3,marginTop:3}}>{info.l} · {src.notes||info.desc.slice(0,60)+"…"}</div>
                   </div>
                   <div style={{textAlign:"right",flexShrink:0}}>
-                    <div style={{fontSize:16,fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(src.mensual||0)}<span style={{fontSize:11,color:T.tx3,fontWeight:400}}>/mo</span></div>
+                    <div style={{fontSize:16,fontWeight:700,color:T.gn,fontFamily:"monospace"}}>{fm(annual / 12)}<span style={{fontSize:11,color:T.tx3,fontWeight:400}}>/mo</span></div>
                     <div style={{fontSize:11,color:T.tx3}}>{fm(annual)}/yr</div>
                   </div>
                   <div style={{color:T.tx3,fontSize:12,marginLeft:4}}>{open?"▲":"▼"}</div>
@@ -632,7 +628,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                   <Field l="HSA Monthly Contribution" value={form.w2_hsa} onChange={v=>sf("w2_hsa",v)} type="number" placeholder="0" />
                 </div>
                 <InfoBox color={T.gn}>
-                  2025 limits: 401(k) $23,500 · HSA $4,150 (individual) / $8,300 (family) · FSA $3,300 (use-it-or-lose-it).
+                  {US_TAX_YEAR} limits: 401(k) {fm(US_LIMITS.k401)} · HSA {fm(US_LIMITS.hsaSelf)} (individual) / {fm(US_LIMITS.hsaFamily)} (family) · FSA {fm(US_LIMITS.fsa)} (use-it-or-lose-it).
                   These reduce your W-2 Box 1 taxable wages.
                 </InfoBox>
               </div>
@@ -644,11 +640,11 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                 <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:12}}>Schedule C Deductions (reduce SE income + tax)</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                   <Field l="Business Expenses / Month" value={form.se_expenses} onChange={v=>sf("se_expenses",v)} type="number" placeholder="Software, supplies, etc." />
-                  <Field l="Mileage Deduction / Month" value={form.se_mileage} onChange={v=>sf("se_mileage",v)} type="number" placeholder="$0.70/mile × biz miles" />
+                  <Field l="Mileage Deduction / Month" value={form.se_mileage} onChange={v=>sf("se_mileage",v)} type="number" placeholder="$0.725/mile × biz miles" />
                   <Field l="Home Office / Month" value={form.se_homeoffice} onChange={v=>sf("se_homeoffice",v)} type="number" placeholder="Sq ft × $5 simplified" />
                 </div>
                 <InfoBox color={T.gn}>
-                  2025: Standard mileage rate $0.70/mile (Rev. Proc. 2024-25). Home office simplified method: $5/sq ft up to 300 sq ft ($1,500 max).
+                  2026: Standard mileage rate $0.725/mile (IRS Notice 2026-10). Home office simplified method: $5/sq ft up to 300 sq ft ($1,500 max).
                   QBI deduction (§ 199A): up to 20% of qualified business income — automatic in calculation.
                   SEP-IRA: deduct up to 25% of net SE income (max $69,000).
                 </InfoBox>
@@ -702,7 +698,7 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
       {/* Bottom disclaimer */}
       {ingresos.length > 0 && (
         <div style={{marginTop:16,padding:12,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.6}}>
-          <strong>Disclaimer:</strong> Estimates based on 2025 IRS single-filer rules. State income taxes not included. 
+          <strong>Disclaimer:</strong> Estimates based on {US_TAX_YEAR} IRS single-filer rules. State income taxes not included. 
           Consult a licensed CPA or EA for your official tax return. IRC references are provided for informational purposes.
         </div>
       )}

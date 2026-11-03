@@ -17,6 +17,14 @@ describe("Vigencia de normas", () => {
   it("después de junio pide el reajuste y la tabla del año anterior", () => {
     expect(ids("2027-07-01")).toEqual(expect.arrayContaining(["art70", "art73"]));
   });
+  it("EE. UU.: desde el 10 de diciembre pide el año fiscal siguiente del IRS", () => {
+    expect(ids("2026-11-02")).not.toContain("irs");
+    expect(ids("2026-12-15")).toContain("irs");
+  });
+  it("EE. UU.: en 2027 con el año fiscal 2026 es alerta alta", () => {
+    const p = normasPendientes(new Date("2027-01-05T12:00:00")).find((x) => x.id === "irs");
+    expect(p.gravedad).toBe("alta");
+  });
   it("avisa si el revisor deja de correr", () => {
     expect(ids("2026-12-01")).toContain("revision");
   });

@@ -1,8 +1,8 @@
 // ════════════════════════════════════════════════════════════════════════════
 // FINPATHIA · usStateTax.js — Sesión 4-may-2026
 //
-// Tabla completa de impuestos estatales US 2025 + brackets federales por
-// filing status + standard deductions por filing status.
+// Tabla de impuestos estatales US 2025 (Tax Foundation) + tabla federal
+// vigente (2026) por filing status, deducción estándar y límites de retiro.
 //
 // FUENTE OFICIAL: Tax Foundation 2025 State Income Tax Rates
 // (https://taxfoundation.org/data/all/state/state-income-tax-rates/)
@@ -26,50 +26,138 @@
 //   - Local income tax (NYC, Philadelphia, etc.).
 // ════════════════════════════════════════════════════════════════════════════
 
-// ─── Federal income tax brackets 2025 ──────────────────────────────────────
-// Fuente: IRS Rev. Proc. 2024-40
-export const FEDERAL_BRACKETS_2025 = {
+// ─── Año fiscal federal vigente ────────────────────────────────────────────
+// 2-nov-2026: única tabla federal de la app. US.js, TaxPlanningUS y
+// TaxOptimizerUS leen de aquí (antes había dos tablas 2025, una solo para
+// soltero). Al cambiar de año: actualizar US_TAX_YEAR y estas cifras; la guardia
+// de lib/vigenciaNormas.js avisa cuando el año se queda atrás.
+// Fuente: IRS Rev. Proc. 2025-32 (año fiscal 2026, incluye la ley OBBBA)
+// https://www.irs.gov/pub/irs-drop/rp-25-32.pdf
+export const US_TAX_YEAR = 2026;
+
+export const FEDERAL_BRACKETS = {
   single: [
-    { max: 11925,    rate: 0.10 },
-    { max: 48475,    rate: 0.12 },
-    { max: 103350,   rate: 0.22 },
-    { max: 197300,   rate: 0.24 },
-    { max: 250525,   rate: 0.32 },
-    { max: 626350,   rate: 0.35 },
+    { max: 12400,    rate: 0.10 },
+    { max: 50400,    rate: 0.12 },
+    { max: 105700,   rate: 0.22 },
+    { max: 201775,   rate: 0.24 },
+    { max: 256225,   rate: 0.32 },
+    { max: 640600,   rate: 0.35 },
     { max: Infinity, rate: 0.37 },
   ],
   married_jointly: [
-    { max: 23850,    rate: 0.10 },
-    { max: 96950,    rate: 0.12 },
-    { max: 206700,   rate: 0.22 },
-    { max: 394600,   rate: 0.24 },
-    { max: 501050,   rate: 0.32 },
-    { max: 751600,   rate: 0.35 },
+    { max: 24800,    rate: 0.10 },
+    { max: 100800,   rate: 0.12 },
+    { max: 211400,   rate: 0.22 },
+    { max: 403550,   rate: 0.24 },
+    { max: 512450,   rate: 0.32 },
+    { max: 768700,   rate: 0.35 },
+    { max: Infinity, rate: 0.37 },
+  ],
+  married_separately: [
+    { max: 12400,    rate: 0.10 },
+    { max: 50400,    rate: 0.12 },
+    { max: 105700,   rate: 0.22 },
+    { max: 201775,   rate: 0.24 },
+    { max: 256225,   rate: 0.32 },
+    { max: 384350,   rate: 0.35 },
     { max: Infinity, rate: 0.37 },
   ],
   head_of_household: [
-    { max: 17000,    rate: 0.10 },
-    { max: 64850,    rate: 0.12 },
-    { max: 103350,   rate: 0.22 },
-    { max: 197300,   rate: 0.24 },
-    { max: 250500,   rate: 0.32 },
-    { max: 626350,   rate: 0.35 },
+    { max: 17700,    rate: 0.10 },
+    { max: 67450,    rate: 0.12 },
+    { max: 105700,   rate: 0.22 },
+    { max: 201750,   rate: 0.24 },
+    { max: 256200,   rate: 0.32 },
+    { max: 640600,   rate: 0.35 },
     { max: Infinity, rate: 0.37 },
   ],
 };
 
-// ─── Standard deduction 2025 ───────────────────────────────────────────────
-// Fuente: IRS Rev. Proc. 2024-40
-export const STANDARD_DEDUCTION_2025 = {
-  single: 15000,
-  married_jointly: 30000,
-  head_of_household: 22500,
+export const STANDARD_DEDUCTION = {
+  single: 16100,
+  married_jointly: 32200,
+  married_separately: 16100,
+  head_of_household: 24150,
 };
+
+// Ganancia de capital de largo plazo: el 0 % llega hasta `cero`, el 15 % hasta
+// `quince` y el 20 % aplica por encima (ingreso gravable total).
+export const LTCG_BREAKPOINTS = {
+  single:             { cero: 49450, quince: 545500 },
+  married_jointly:    { cero: 98900, quince: 613700 },
+  married_separately: { cero: 49450, quince: 306850 },
+  head_of_household:  { cero: 66200, quince: 579600 },
+};
+
+// Seguro Social y límites de retiro 2026.
+// SSA COLA Fact Sheet 2026: https://www.ssa.gov/cola/factsheets/2026.html
+// IRS Notice 2025-67 (límites de planes de retiro 2026).
+export const US_LIMITS = {
+  ssWageBase: 184500,
+  ssMaxBenefitFRA: 4152,   // mensual, a la edad plena de retiro
+  ssMaxBenefit70: 5181,    // mensual, reclamando a los 70 (SSA, Oficina del Actuario)
+  ssCola: 0.028,
+  ssBendPoints: [1286, 7749], // fórmula del PIA, elegibles en 2026 (SSA)
+  k401: 24500,
+  k401CatchUp50: 8000,
+  k401CatchUp6063: 11250,
+  ira: 7500,
+  iraCatchUp50: 1100,
+  rothPhaseOutSingle: [153000, 168000],
+  rothPhaseOutJoint: [242000, 252000],
+  tradIraPhaseOutSingleCovered: [81000, 91000],
+  tradIraPhaseOutJointCovered: [129000, 149000],
+  k401Total: 72000,        // 415(c): empleado + empleador + after-tax
+  sep: 72000,
+  simple: 17000,
+  simpleCatchUp50: 4000,
+  simpleCatchUp6063: 5250,
+  hsaSelf: 4400,
+  hsaFamily: 8750,
+  hsaCatchUp55: 1000,
+  fsa: 3400,
+  estateExemption: 15000000,
+};
+
+// Fechas de los 4 pagos estimados (Form 1040-ES) de un año fiscal: 15 de abril,
+// 15 de junio, 15 de septiembre y 15 de enero del año siguiente; si cae en
+// fin de semana pasa al lunes (no contempla festivos).
+export function fechasEstimadosUS(año = US_TAX_YEAR) {
+  const habil = (y, m, d) => {
+    const f = new Date(Date.UTC(y, m, d));
+    const dow = f.getUTCDay();
+    if (dow === 6) f.setUTCDate(d + 2);
+    if (dow === 0) f.setUTCDate(d + 1);
+    return f.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+  };
+  return [
+    { q: "Q1", due: habil(año, 3, 15) },
+    { q: "Q2", due: habil(año, 5, 15) },
+    { q: "Q3", due: habil(año, 8, 15) },
+    { q: "Q4", due: habil(año + 1, 0, 15) },
+  ];
+}
+
+// Impuesto federal ordinario sobre un ingreso gravable, por estado civil.
+export function federalTax(taxableIncome, filingStatus = "single") {
+  const brackets = FEDERAL_BRACKETS[filingStatus] || FEDERAL_BRACKETS.single;
+  let tax = 0, prev = 0, marginal = brackets[0].rate;
+  const base = Math.max(0, Number(taxableIncome) || 0);
+  for (const b of brackets) {
+    if (base <= prev) break;
+    tax += (Math.min(base, b.max) - prev) * b.rate;
+    marginal = b.rate;
+    prev = b.max;
+  }
+  return { tax, marginalRate: marginal };
+}
 
 // ─── Filing status labels ──────────────────────────────────────────────────
 export const FILING_STATUS_LABELS = {
   single: "Single",
   married_jointly: "Married Filing Jointly",
+  married_separately: "Married Filing Separately",
   head_of_household: "Head of Household",
 };
 

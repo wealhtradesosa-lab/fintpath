@@ -29,26 +29,26 @@
 import { useMemo, useState } from "react";
 import Disclaimer from "./Disclaimer";
 import { totalAnualItem } from "../lib/flowHelpers.js";
-import { calculateStateTax, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
+import { calculateStateTax, FEDERAL_BRACKETS, STANDARD_DEDUCTION, US_LIMITS, US_TAX_YEAR } from "../lib/jurisdictions/usStateTax.js";
 
-// 2025 limits (IRS Rev. Proc. 2024-40)
-const LIMITS_2025 = {
-  K401:           23500,
-  K401_CATCHUP_50: 7500,
-  K401_CATCHUP_60: 11250,  // SECURE 2.0 ages 60-63
-  IRA:             7000,
-  IRA_CATCHUP_50:  1000,
-  HSA_SINGLE:      4300,
-  HSA_FAMILY:      8550,
-  HSA_CATCHUP_55:  1000,
-  ROTH_IRA_PHASEOUT_SINGLE: { start: 150000, end: 165000 },
-  ROTH_IRA_PHASEOUT_MFJ:    { start: 236000, end: 246000 },
-  TRAD_IRA_DEDUCT_SINGLE:   { start: 79000,  end: 89000  },
-  TRAD_IRA_DEDUCT_MFJ:      { start: 126000, end: 146000 },
-  K401_TOTAL_LIMIT:        70000, // employee + employer + after-tax (mega backdoor)
+// Límites del año fiscal vigente: salen de usStateTax.js (US_LIMITS).
+const L = {
+  K401:           US_LIMITS.k401,
+  K401_CATCHUP_50: US_LIMITS.k401CatchUp50,
+  K401_CATCHUP_60: US_LIMITS.k401CatchUp6063,  // SECURE 2.0 ages 60-63
+  IRA:             US_LIMITS.ira,
+  IRA_CATCHUP_50:  US_LIMITS.iraCatchUp50,
+  HSA_SINGLE:      US_LIMITS.hsaSelf,
+  HSA_FAMILY:      US_LIMITS.hsaFamily,
+  HSA_CATCHUP_55:  US_LIMITS.hsaCatchUp55,
+  ROTH_IRA_PHASEOUT_SINGLE: { start: US_LIMITS.rothPhaseOutSingle[0], end: US_LIMITS.rothPhaseOutSingle[1] },
+  ROTH_IRA_PHASEOUT_MFJ:    { start: US_LIMITS.rothPhaseOutJoint[0],  end: US_LIMITS.rothPhaseOutJoint[1] },
+  TRAD_IRA_DEDUCT_SINGLE:   { start: US_LIMITS.tradIraPhaseOutSingleCovered[0], end: US_LIMITS.tradIraPhaseOutSingleCovered[1] },
+  TRAD_IRA_DEDUCT_MFJ:      { start: US_LIMITS.tradIraPhaseOutJointCovered[0],  end: US_LIMITS.tradIraPhaseOutJointCovered[1] },
+  K401_TOTAL_LIMIT:        US_LIMITS.k401Total, // employee + employer + after-tax (mega backdoor)
   SEP_IRA_RATE:            0.25,  // 25% of compensation
-  SEP_IRA_LIMIT:           70000,
-  ESTATE_EXEMPTION:        13990000, // 2025 (sunsets to ~$7M in 2026!)
+  SEP_IRA_LIMIT:           US_LIMITS.sep,
+  ESTATE_EXEMPTION:        US_LIMITS.estateExemption, // OBBBA: $15M permanente, ajustado por inflación
 };
 
 const T = {
@@ -94,9 +94,9 @@ function detectOpportunities(user) {
   const grossIncome = w2 + se + rental + divs + interest;
 
   // ── Estimar marginal tax rate del user ──────────────────────────────
-  const stdDed = STANDARD_DEDUCTION_2025[filingStatus] || 15000;
+  const stdDed = STANDARD_DEDUCTION[filingStatus] || STANDARD_DEDUCTION.single;
   const taxableIncome = Math.max(0, grossIncome - stdDed);
-  const brackets = FEDERAL_BRACKETS_2025[filingStatus] || FEDERAL_BRACKETS_2025.single;
+  const brackets = FEDERAL_BRACKETS[filingStatus] || FEDERAL_BRACKETS.single;
   const fedMarginal = brackets.find((b) => taxableIncome <= b.max)?.rate || 0.37;
   const stateRes = calculateStateTax(taxableIncome, stateCode);
   const totalMarginal = fedMarginal + stateRes.rate;
@@ -117,8 +117,8 @@ function detectOpportunities(user) {
   // ════════════════════════════════════════════════════════════════════
   if (w2 > 30000) {
     // Asume que el user contribuye 6% (default) si tiene 401k, 0% si no
-    const currentContrib = has401k ? Math.min(w2 * 0.06, LIMITS_2025.K401) : 0;
-    const maxContrib = LIMITS_2025.K401;
+    const currentContrib = has401k ? Math.min(w2 * 0.06, L.K401) : 0;
+    const maxContrib = L.K401;
     const gap = maxContrib - currentContrib;
     if (gap > 1000) {
       const taxSavings = Math.round(gap * (fedMarginal + stateRes.rate));
@@ -130,7 +130,7 @@ function detectOpportunities(user) {
         oneliner: `Save up to ${fm(taxSavings)} in taxes this year`,
         savings: taxSavings,
         savingsLabel: `${fm(taxSavings)}/year tax savings`,
-        action: `Increase 401(k) contribution by ${fm(gap)} to hit the 2025 limit of ${fm(maxContrib)}.`,
+        action: `Increase 401(k) contribution by ${fm(gap)} to hit the ${US_TAX_YEAR} limit of ${fm(maxContrib)}.`,
         why: `You're in the ${pct(fedMarginal)} federal bracket + ${pct(stateRes.rate)} ${stateRes.stateName} state tax. Every dollar you contribute pre-tax saves you ${pct(fedMarginal + stateRes.rate)} immediately.`,
         irc: "§401(k) · Internal Revenue Code",
         risk: "Reduces take-home pay until reimbursed via tax savings. Funds locked until age 59½ (10% penalty + tax for early withdrawal).",
@@ -141,9 +141,9 @@ function detectOpportunities(user) {
   // ════════════════════════════════════════════════════════════════════
   //  OPPORTUNITY #2 — Roth IRA available (income within limits)
   // ════════════════════════════════════════════════════════════════════
-  const rothPhase = filingStatus === "married_jointly" ? LIMITS_2025.ROTH_IRA_PHASEOUT_MFJ : LIMITS_2025.ROTH_IRA_PHASEOUT_SINGLE;
+  const rothPhase = filingStatus === "married_jointly" ? L.ROTH_IRA_PHASEOUT_MFJ : L.ROTH_IRA_PHASEOUT_SINGLE;
   if (grossIncome < rothPhase.end && !hasRothIRA && (w2 > 0 || se > 0)) {
-    const eligible = grossIncome < rothPhase.start ? LIMITS_2025.IRA : LIMITS_2025.IRA * (1 - (grossIncome - rothPhase.start) / (rothPhase.end - rothPhase.start));
+    const eligible = grossIncome < rothPhase.start ? L.IRA : L.IRA * (1 - (grossIncome - rothPhase.start) / (rothPhase.end - rothPhase.start));
     const futureValue30yr = Math.round(eligible * 7.61); // 30 yr at 7%
     opps.push({
       id: "roth_ira_open",
@@ -153,7 +153,7 @@ function detectOpportunities(user) {
       oneliner: `Tax-free growth on ${fm(eligible)}/year — ~${fm(futureValue30yr)} tax-free at retirement`,
       savings: 0,
       savingsLabel: `~${fm(futureValue30yr)} tax-free in 30 years`,
-      action: `You qualify to contribute ${fm(eligible)} to a Roth IRA in 2025. Open one at Fidelity, Vanguard, or Schwab (free) and fund it before April 15, 2026.`,
+      action: `You qualify to contribute ${fm(eligible)} to a Roth IRA for ${US_TAX_YEAR}. Open one at Fidelity, Vanguard, or Schwab (free) and fund it before April 15, ${US_TAX_YEAR + 1}.`,
       why: `Your income (${fm(grossIncome)}) is within the Roth phaseout (${fm(rothPhase.start)}–${fm(rothPhase.end)}). Roth contributions grow tax-free FOREVER — no tax on withdrawals in retirement, no RMDs.`,
       irc: "§408A · IRC Roth IRA",
       risk: "Contributions are after-tax (no immediate deduction). Money locked until age 59½ for earnings (contributions can be withdrawn anytime).",
@@ -164,16 +164,16 @@ function detectOpportunities(user) {
   //  OPPORTUNITY #3 — Backdoor Roth (income too high for direct Roth)
   // ════════════════════════════════════════════════════════════════════
   if (grossIncome > rothPhase.end && !hasTradIRA) {
-    const taxFreeFV = Math.round(LIMITS_2025.IRA * 7.61);
+    const taxFreeFV = Math.round(L.IRA * 7.61);
     opps.push({
       id: "backdoor_roth",
       priority: "high",
       category: "Retirement",
       title: "Use the Backdoor Roth IRA",
-      oneliner: `High income blocks direct Roth — backdoor adds ${fm(LIMITS_2025.IRA)}/yr tax-free`,
+      oneliner: `High income blocks direct Roth — backdoor adds ${fm(L.IRA)}/yr tax-free`,
       savings: 0,
       savingsLabel: `~${fm(taxFreeFV)} tax-free in 30 years`,
-      action: `1) Open Traditional IRA at Fidelity/Vanguard. 2) Contribute ${fm(LIMITS_2025.IRA)} (non-deductible). 3) Convert to Roth IRA within days. Same financial result as direct Roth.`,
+      action: `1) Open Traditional IRA at Fidelity/Vanguard. 2) Contribute ${fm(L.IRA)} (non-deductible). 3) Convert to Roth IRA within days. Same financial result as direct Roth.`,
       why: `Your income (${fm(grossIncome)}) exceeds the Roth IRA phaseout (${fm(rothPhase.end)}). The backdoor is 100% legal — confirmed by IRS in Notice 2014-54.`,
       irc: "§408A · Notice 2014-54",
       risk: "Pro-rata rule: if you have ANY pre-tax IRA balance, conversion is partly taxable. Roll existing Trad IRA into 401(k) first if possible.",
@@ -184,7 +184,7 @@ function detectOpportunities(user) {
   //  OPPORTUNITY #4 — HSA (triple tax advantage)
   // ════════════════════════════════════════════════════════════════════
   if (!hasHSA && w2 > 30000) {
-    const hsaLimit = filingStatus === "married_jointly" ? LIMITS_2025.HSA_FAMILY : LIMITS_2025.HSA_SINGLE;
+    const hsaLimit = filingStatus === "married_jointly" ? L.HSA_FAMILY : L.HSA_SINGLE;
     const taxSavings = Math.round(hsaLimit * (fedMarginal + stateRes.rate + (w2 > 0 ? 0.0765 : 0))); // also FICA on payroll
     const fv30yr = Math.round(hsaLimit * 7.61);
     opps.push({
@@ -233,7 +233,7 @@ function detectOpportunities(user) {
   //  OPPORTUNITY #6 — Self-employment retirement (SEP-IRA / Solo 401k)
   // ════════════════════════════════════════════════════════════════════
   if (se > 10000) {
-    const sepLimit = Math.min(se * 0.25, LIMITS_2025.SEP_IRA_LIMIT);
+    const sepLimit = Math.min(se * 0.25, L.SEP_IRA_LIMIT);
     const taxSavings = Math.round(sepLimit * (fedMarginal + stateRes.rate));
     opps.push({
       id: "self_employed_retirement",
@@ -522,7 +522,7 @@ export default function TaxOptimizerUS({ user }) {
         }}
       >
         <strong style={{ color: T.txt2 }}>Legal disclaimer.</strong> The strategies above are general guidance based on
-        IRS publications and the Internal Revenue Code (current as of 2025). They are not personalized tax or legal advice.
+        IRS publications and the Internal Revenue Code (current as of tax year {US_TAX_YEAR}). They are not personalized tax or legal advice.
         Specific situations may have nuances (state law, ownership structures, prior-year carryovers) that change the analysis.
         For implementation of high-dollar strategies, consult a CPA or Enrolled Agent.
       </div>

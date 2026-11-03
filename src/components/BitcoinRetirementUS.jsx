@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
+import { US_LIMITS, US_TAX_YEAR } from "../lib/jurisdictions/usStateTax.js";
 
 /**
  * BitcoinRetirementUS — Bitcoin vs. 401(k), la versión americana.
@@ -31,9 +32,9 @@ const C = {
 };
 
 const LIMITS = {
-  K401_LIMIT: 23500,        // 2025 employee deferral
-  K401_CATCHUP: 31000,      // 50+
-  SS_MAX_70: 4873,          // max monthly benefit at 70
+  K401_LIMIT: US_LIMITS.k401,                            // employee deferral, año vigente
+  K401_CATCHUP: US_LIMITS.k401 + US_LIMITS.k401CatchUp50, // 50+
+  SS_MAX_70: US_LIMITS.ssMaxBenefit70,                   // max monthly benefit at 70
   SS_FRA: 67,
   SWR: 4,                   // Bengen 1994
 };
@@ -163,11 +164,13 @@ export default function BitcoinRetirementUS({ user }) {
   // Aproximación por tramos del AIME. No reemplaza el cálculo de la SSA, y se
   // dice explícitamente en pantalla.
   const ssMonthly = useMemo(() => {
-    const aime = Math.min(salary, 176100) / 12;
+    // Base salarial y puntos de quiebre del PIA del año vigente (SSA).
+    const aime = Math.min(salary, US_LIMITS.ssWageBase) / 12;
+    const [b1, b2] = US_LIMITS.ssBendPoints;
     let pia = 0;
-    if (aime <= 1226) pia = aime * 0.9;
-    else if (aime <= 7391) pia = 1226 * 0.9 + (aime - 1226) * 0.32;
-    else pia = 1226 * 0.9 + (7391 - 1226) * 0.32 + (aime - 7391) * 0.15;
+    if (aime <= b1) pia = aime * 0.9;
+    else if (aime <= b2) pia = b1 * 0.9 + (aime - b1) * 0.32;
+    else pia = b1 * 0.9 + (b2 - b1) * 0.32 + (aime - b2) * 0.15;
     return Math.min(pia, LIMITS.SS_MAX_70);
   }, [salary]);
 
@@ -196,7 +199,7 @@ export default function BitcoinRetirementUS({ user }) {
           <Sl label="You contribute" value={pct} onChange={setPct}
             min={1} max={30} step={1} display={pct + "% = " + fFull(yourContrib) + "/yr"} color={C.bl}
             sub={yourContrib >= LIMITS.K401_LIMIT
-              ? `Capped at the ${fFull(LIMITS.K401_LIMIT)} IRS limit for 2025`
+              ? `Capped at the ${fFull(LIMITS.K401_LIMIT)} IRS limit for ${US_TAX_YEAR}`
               : `${fFull(salary - yourContrib)} of salary left`} />
           <Sl label="Employer match" value={match} onChange={setMatch}
             min={0} max={100} step={5} display={match + "% = " + fFull(employerMatch) + "/yr"} color={C.gn}
@@ -415,7 +418,7 @@ export default function BitcoinRetirementUS({ user }) {
               números es una opinión con formato de cálculo. */}
           <Cd style={{ padding: 20 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: C.tx2, marginBottom: 10 }}>Model assumptions</div>
-            <Rw l="401(k) employee limit (2025):" v={fFull(LIMITS.K401_LIMIT)} />
+            <Rw l={`401(k) employee limit (${US_TAX_YEAR}):`} v={fFull(LIMITS.K401_LIMIT)} />
             <Rw l="401(k) assumed return:" v="7% real, after inflation" />
             <Rw l="Bitcoin CAGR:" v={cagr + "% a year"} color={C.or} />
             <Rw l="Bitcoin price today:" v={fFull(pBTC)} />

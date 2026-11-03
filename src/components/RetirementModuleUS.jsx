@@ -10,41 +10,42 @@
  *   Retirement Income Projections        4% Rule (Bengen 1994), SWR
  *   Early Retirement (FIRE)              Rule 72(t) SEPP; Roth Ladder
  *
- * Tax Year 2025 | SECURE 2.0 Act of 2022
+ * Tax year: US_TAX_YEAR (usStateTax.js) | SECURE 2.0 Act of 2022
  */
 
 import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
+import { US_LIMITS, US_TAX_YEAR, STANDARD_DEDUCTION, federalTax } from "../lib/jurisdictions/usStateTax.js";
 
-// ─── 2025 Constants ──────────────────────────────────────────────────────────
+// ─── Constantes del año fiscal vigente (2-nov-2026: salen de US_LIMITS) ─────
 const C = {
   // 401(k) / 403(b) / 457
-  K401_LIMIT:           23500,
-  K401_CATCHUP_50:      31000,   // age 50-59, 64+
-  K401_CATCHUP_60_63:   34750,   // SECURE 2.0: age 60-63 super catch-up
+  K401_LIMIT:           US_LIMITS.k401,
+  K401_CATCHUP_50:      US_LIMITS.k401 + US_LIMITS.k401CatchUp50,   // age 50-59, 64+
+  K401_CATCHUP_60_63:   US_LIMITS.k401 + US_LIMITS.k401CatchUp6063, // SECURE 2.0: age 60-63 super catch-up
   // IRA
-  IRA_LIMIT:            7000,
-  IRA_CATCHUP:          8000,    // age 50+
-  // Roth IRA income phase-outs (single 2025)
-  ROTH_PHASEOUT_START:  150000,
-  ROTH_PHASEOUT_END:    165000,
+  IRA_LIMIT:            US_LIMITS.ira,
+  IRA_CATCHUP:          US_LIMITS.ira + US_LIMITS.iraCatchUp50,    // age 50+
+  // Roth IRA income phase-outs (single)
+  ROTH_PHASEOUT_START:  US_LIMITS.rothPhaseOutSingle[0],
+  ROTH_PHASEOUT_END:    US_LIMITS.rothPhaseOutSingle[1],
   // Traditional IRA deductibility phase-outs (single, covered by workplace plan)
-  TRAD_IRA_PO_START:    77000,
-  TRAD_IRA_PO_END:      87000,
+  TRAD_IRA_PO_START:    US_LIMITS.tradIraPhaseOutSingleCovered[0],
+  TRAD_IRA_PO_END:      US_LIMITS.tradIraPhaseOutSingleCovered[1],
   // SEP-IRA
-  SEP_LIMIT:            69000,
+  SEP_LIMIT:            US_LIMITS.sep,
   SEP_RATE:             0.25,
   // SIMPLE IRA
-  SIMPLE_LIMIT:         16500,
-  SIMPLE_CATCHUP:       20000,
+  SIMPLE_LIMIT:         US_LIMITS.simple,
+  SIMPLE_CATCHUP:       US_LIMITS.simple + US_LIMITS.simpleCatchUp50,
   // HSA
-  HSA_INDIVIDUAL:       4150,
-  HSA_FAMILY:           8300,
+  HSA_INDIVIDUAL:       US_LIMITS.hsaSelf,
+  HSA_FAMILY:           US_LIMITS.hsaFamily,
   // RMD
   RMD_START_AGE:        73,      // SECURE 2.0
   // Social Security
-  SS_MAX_BENEFIT_70:    4873,    // 2025 max monthly benefit at age 70
+  SS_MAX_BENEFIT_70:    US_LIMITS.ssMaxBenefit70, // max monthly benefit at age 70 (SSA)
   SS_FRA:               67,      // Full Retirement Age for born after 1960
   SS_EARLY_REDUCTION:   0.00556, // ~5/9% per month for first 36 months early
   SS_DELAYED_CREDIT:    0.08,    // 8% per year after FRA
@@ -186,8 +187,8 @@ export default function RetirementModuleUS({ user = {} }) {
     const gapHSA  = Math.max(0, hsaMax - currentHSA);
     const totalGap = gap401k + gapRoth + gapHSA;
 
-    const taxSavingsMarginal = p.annualIncome > 197300 ? 0.32
-      : p.annualIncome > 103350 ? 0.22 : p.annualIncome > 48475 ? 0.22 : 0.12;
+    // Tasa marginal federal del año vigente sobre el ingreso gravable (soltero).
+    const taxSavingsMarginal = federalTax(Math.max(0, (p.annualIncome || 0) - STANDARD_DEDUCTION.single), "single").marginalRate;
     const annualTaxSavings = (gap401k + gapHSA) * taxSavingsMarginal;
 
     return { k401Max, iraMax, hsaMax, rothEligible, rothLimit,
@@ -265,15 +266,8 @@ export default function RetirementModuleUS({ user = {} }) {
     if (!annualConvert) return null;
 
     // Tax cost of conversion (taxed as ordinary income)
-    const BRACKETS = [
-      {max:11925,rate:0.10},{max:48475,rate:0.12},{max:103350,rate:0.22},
-      {max:197300,rate:0.24},{max:250525,rate:0.32},{max:626350,rate:0.35},{max:Infinity,rate:0.37}
-    ];
-    function calcTax(income) {
-      let tax=0,prev=0;
-      for(const b of BRACKETS){if(income<=prev)break;tax+=(Math.min(income,b.max)-prev)*b.rate;prev=b.max;}
-      return Math.round(tax);
-    }
+    // Tabla federal del año vigente; se descuenta la deducción estándar.
+    const calcTax = (income) => Math.round(federalTax(Math.max(0, income - STANDARD_DEDUCTION.single), "single").tax);
     const baseIncomeTax = calcTax(p.annualIncome);
     const convertedTax  = calcTax(p.annualIncome + annualConvert);
     const yearlyTaxCost = convertedTax - baseIncomeTax;
@@ -409,7 +403,7 @@ export default function RetirementModuleUS({ user = {} }) {
       <div style={{marginBottom:24}}>
         <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Retirement Planning</h2>
         <p style={{color:T.tx3,fontSize:12,margin:0}}>
-          401(k) · IRA · Roth · RMDs · Social Security · FIRE — SECURE 2.0 / Tax Year 2025
+          401(k) · IRA · Roth · RMDs · Social Security · FIRE — SECURE 2.0 / Tax Year {US_TAX_YEAR}
         </p>
       </div>
 
@@ -507,10 +501,10 @@ export default function RetirementModuleUS({ user = {} }) {
       {tab === "contribs" && (
         <div>
           <SectionCard>
-            <div style={{fontSize:14,fontWeight:700,color:T.cy,marginBottom:16}}>2025 Contribution Limits & Your Gap</div>
+            <div style={{fontSize:14,fontWeight:700,color:T.cy,marginBottom:16}}>{US_TAX_YEAR} Contribution Limits & Your Gap</div>
             {[
               {l:"401(k) / 403(b)",    max:contribOpt.k401Max, current:contribOpt.current401k, irc:"§ 401(k)",
-               note:p.currentAge>=60&&p.currentAge<=63?"Super catch-up age 60-63: $34,750!":p.currentAge>=50?"Catch-up contribution available: $31,000":"Standard limit"},
+               note:p.currentAge>=60&&p.currentAge<=63?`Super catch-up age 60-63: ${fm(C.K401_CATCHUP_60_63)}!`:p.currentAge>=50?`Catch-up contribution available: ${fm(C.K401_CATCHUP_50)}`:"Standard limit"},
               {l:"Roth / Traditional IRA", max:contribOpt.rothLimit||contribOpt.iraMax, current:contribOpt.currentRoth, irc:"§ 408 / § 408A",
                note:!contribOpt.rothEligible?"Over income limit — use Backdoor Roth IRA (no income limit)":contribOpt.rothLimit<contribOpt.iraMax?`Phase-out: limited to ${fm(contribOpt.rothLimit)}`:"Full contribution allowed"},
               {l:"HSA",                max:C.HSA_INDIVIDUAL, current:contribOpt.currentHSA, irc:"§ 223",

@@ -12,6 +12,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 import { UVT_BY_AG } from "./taxCO.js";
 import { TABLA_ART73_AG, ULTIMO_AG_ART70, NORMA_GO_VERIFICADA } from "./normaGananciaOcasional.js";
+import { US_TAX_YEAR } from "./jurisdictions/usStateTax.js";
 
 /** Fecha de la última revisión completa de normas nuevas (la mueve el revisor semanal). */
 export const ULTIMA_REVISION_NORMATIVA = "2026-11-02";
@@ -41,6 +42,18 @@ export function normasPendientes(hoy = new Date()) {
       detalle: "Sale en el mismo decreto del reajuste. Actualiza T73 y TABLA_ART73_AG (src/lib/normaGananciaOcasional.js)." });
   }
 
+  // EE. UU. (2-nov-2026): tramos, deducción estándar y límites del IRS por año
+  // fiscal (src/lib/jurisdictions/usStateTax.js). El IRS publica los del año
+  // siguiente en octubre o noviembre (Rev. Proc. de ajustes por inflación).
+  // El motor se quedó en 2025 hasta noviembre de 2026 sin que nadie lo notara.
+  if (US_TAX_YEAR < y) {
+    out.push({ id: "irs", gravedad: "alta", titulo: `EE. UU. calcula con el año fiscal ${US_TAX_YEAR}`,
+      detalle: `Carga el año ${y} en usStateTax.js (FEDERAL_BRACKETS, STANDARD_DEDUCTION, LTCG_BREAKPOINTS, US_LIMITS y US_TAX_YEAR) con la Rev. Proc. del IRS y la hoja de COLA de la SSA.` });
+  } else if (US_TAX_YEAR < y + 1 && hoy >= d(`${y}-12-10`)) {
+    out.push({ id: "irs", gravedad: "media", titulo: `Falta el año fiscal ${y + 1} de EE. UU.`,
+      detalle: "El IRS publica los ajustes en octubre o noviembre. Cárgalos en usStateTax.js antes del 1 de enero." });
+  }
+
   // Revisión general (reformas, conceptos, sentencias): si pasan más de 21 días sin revisar, avisar.
   const dias = Math.floor((hoy - d(ULTIMA_REVISION_NORMATIVA)) / 86400000);
   if (dias > 21) out.push({ id: "revision", gravedad: dias > 45 ? "alta" : "baja", titulo: `Hace ${dias} días que no se revisan normas nuevas`,
@@ -55,4 +68,5 @@ export const RESUMEN_VIGENCIA = () => ({
   art70Hasta: ULTIMO_AG_ART70,
   art73Hasta: TABLA_ART73_AG,
   gananciaOcasionalVerificada: NORMA_GO_VERIFICADA,
+  irsAñoFiscal: US_TAX_YEAR,
 });

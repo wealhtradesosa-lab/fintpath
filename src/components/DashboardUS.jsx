@@ -367,13 +367,13 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
             <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}/mo</span>
           </div>
           {ingresos.length>0
-            ? ingresos.sort((a,b)=>(b.mensual||0)-(a.mensual||0)).slice(0,6).map((inc,i)=>(
+            ? /* 2-nov-2026: mes típico por el motor y sin mutar la lista */ ingresos.filter(x=>x&&x.sim!==false).map(x=>({...x,_mes:montoPromedioMensual(x)})).sort((a,b)=>b._mes-a._mes).slice(0,6).map((inc,i)=>(
                 <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:`1px solid ${T.border}`}}>
                   <div>
                     <div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div>
                     <div style={{fontSize:11,color:T.tx3}}>{inc.categoria}</div>
                   </div>
-                  <div style={{fontWeight:700,color:T.gn}}>{fm(inc.mensual||0)}</div>
+                  <div style={{fontWeight:700,color:T.gn}}>{fm(inc._mes)}</div>
                 </div>
               ))
             : <div style={{padding:24,textAlign:"center",color:T.tx3}}>Add income sources</div>}

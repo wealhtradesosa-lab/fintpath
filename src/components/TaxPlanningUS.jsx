@@ -13,26 +13,26 @@ import { useState, useMemo } from "react";
 import Disclaimer from "./Disclaimer";
 import { totalAnualItem } from "../lib/flowHelpers.js";
 import { US } from "../lib/jurisdictions/US.js";
-import { US_STATE_TAX, calculateStateTax, getStateName, FILING_STATUS_LABELS, FEDERAL_BRACKETS_2025, STANDARD_DEDUCTION_2025 } from "../lib/jurisdictions/usStateTax.js";
+import { US_STATE_TAX, calculateStateTax, getStateName, FILING_STATUS_LABELS, FEDERAL_BRACKETS, STANDARD_DEDUCTION, US_LIMITS, US_TAX_YEAR, fechasEstimadosUS } from "../lib/jurisdictions/usStateTax.js";
 
 const C = {
-  K401: 23500, IRA: 7000, HSA: 4150,
+  K401: US_LIMITS.k401, IRA: US_LIMITS.ira, HSA: US_LIMITS.hsaSelf,
   QBI: 0.20, NIIT_THRESH: 200000, NIIT_RATE: 0.038,
-  SS_WAGE_BASE: 176100,
+  SS_WAGE_BASE: US_LIMITS.ssWageBase,
 };
 
 function fedTax(income, filingStatus = "single") {
-  const brackets = FEDERAL_BRACKETS_2025[filingStatus] || FEDERAL_BRACKETS_2025.single;
+  const brackets = FEDERAL_BRACKETS[filingStatus] || FEDERAL_BRACKETS.single;
   let tax=0,prev=0;
   for(const b of brackets){if(income<=prev)break;tax+=(Math.min(income,b.max)-prev)*b.rate;prev=b.max;}
   return Math.max(0,Math.round(tax));
 }
 function marginalRate(income, filingStatus = "single") {
-  const brackets = FEDERAL_BRACKETS_2025[filingStatus] || FEDERAL_BRACKETS_2025.single;
+  const brackets = FEDERAL_BRACKETS[filingStatus] || FEDERAL_BRACKETS.single;
   return brackets.find(b=>income<=b.max)?.rate||0.37;
 }
 function getStdDed(filingStatus = "single") {
-  return STANDARD_DEDUCTION_2025[filingStatus] || STANDARD_DEDUCTION_2025.single;
+  return STANDARD_DEDUCTION[filingStatus] || STANDARD_DEDUCTION.single;
 }
 
 const T = {
@@ -164,8 +164,8 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
     <div>
       {/* Header */}
       <div style={{marginBottom:20}}>
-        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>US Tax Planning 2025</h2>
-        <p style={{color:T.tx3,fontSize:12,margin:0}}>Federal + State estimate · IRS brackets 2025</p>
+        <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>US Tax Planning {US_TAX_YEAR}</h2>
+        <p style={{color:T.tx3,fontSize:12,margin:0}}>Federal + State estimate · IRS brackets {US_TAX_YEAR}</p>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
@@ -425,7 +425,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
             Required if you owe ≥$1,000 · Penalty ~8%/year if underpaid (IRC § 6654)
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            {[["Q1","April 15, 2025"],["Q2","June 16, 2025"],["Q3","Sep 15, 2025"],["Q4","Jan 15, 2026"]].map(([q,d])=>(
+            {fechasEstimadosUS(US_TAX_YEAR).map(({q,due:d})=>(
               <div key={q} style={{background:T.bg3,borderRadius:10,padding:"12px 14px",
                 display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div><div style={{fontSize:12,fontWeight:700,color:T.or}}>{q}</div>
@@ -438,7 +438,7 @@ export default function TaxPlanningUS({user, onUpdateUser}) {
       )}
 
       <div style={{padding:12,background:T.bg3,borderRadius:8,fontSize:11,color:T.tx3,lineHeight:1.6}}>
-        <strong>Disclaimer:</strong> Estimates based on 2025 IRS single-filer rules. State taxes not included.
+        <strong>Disclaimer:</strong> Estimates based on {US_TAX_YEAR} IRS rules for your filing status and state of residence. Local (city) taxes not included.
         Consult a licensed CPA or EA for your official return.
       </div>
     

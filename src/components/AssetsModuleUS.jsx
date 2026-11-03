@@ -17,7 +17,7 @@
  *   Business Debt      IRC § 162 — fully deductible
  *   Auto / Personal    Not deductible
  *
- * Tax Year 2025
+ * Tax year: US_TAX_YEAR (usStateTax.js)
  */
 
 import { useState, useMemo } from "react";
@@ -28,6 +28,7 @@ import BloqueadosPorPlan from "./BloqueadosPorPlan";
 import BarraComposicion from "./BarraComposicion";
 import NumberInput from "./NumberInput";
 import { US } from "../lib/jurisdictions/US.js";
+import { US_LIMITS, US_TAX_YEAR, LTCG_BREAKPOINTS } from "../lib/jurisdictions/usStateTax.js";
 import { exportPatrimonioPDF, exportDeudasPDF } from "../lib/pdfSectionExport.js";
 import { exportInversionesExcel, exportDeudasExcel } from "../lib/excelExport.js";
 
@@ -48,9 +49,9 @@ const C = {
   CRYPTO_FIFO:               "fifo",
   // RMD ages
   RMD_START_AGE:             73,       // SECURE 2.0
-  // LTCG rates 2025 (single)
-  LTCG_0_MAX:                47025,
-  LTCG_15_MAX:               518900,
+  // LTCG (single), año vigente
+  LTCG_0_MAX:                LTCG_BREAKPOINTS.single.cero,
+  LTCG_15_MAX:               LTCG_BREAKPOINTS.single.quince,
 };
 
 // ─── Asset Types ──────────────────────────────────────────────────────────────
@@ -106,19 +107,19 @@ const ASSET_TYPES = [
    irc:"IRC § 401(k)", form:"Form 1099-R on distribution",
    desc:"Employer-sponsored pre-tax retirement plan.",
    taxNote:"Contributions pre-tax. Growth tax-deferred. Distributions taxed as ordinary income. 10% penalty if withdrawn before 59½ (exceptions exist). RMDs at age 73.",
-   planning:"Maximize contributions ($23,500 in 2025; $31,000 if 50+). Mega backdoor Roth if plan allows after-tax contributions. Roth conversions in low-income years.",
+   planning:`Maximize contributions ($${US_LIMITS.k401.toLocaleString("en-US")} in ${US_TAX_YEAR}; $${(US_LIMITS.k401 + US_LIMITS.k401CatchUp50).toLocaleString("en-US")} if 50+). Mega backdoor Roth if plan allows after-tax contributions. Roth conversions in low-income years.`,
    deprec:false},
   {v:"roth_ira",       l:"Roth IRA / Roth 401(k)",   cat:"retirement",
    irc:"IRC § 408A",   form:"Form 5498",
    desc:"After-tax retirement account. Tax-free growth and withdrawals.",
    taxNote:"Contributions are after-tax (not deductible). Qualified distributions are completely tax-free. No RMDs for Roth IRA. Roth 401(k) has RMDs (roll to Roth IRA to avoid).",
-   planning:"Backdoor Roth IRA if income too high for direct contribution ($161K–$176K single for 2025). Roth conversions in low-income years. Best account for high-growth assets.",
+   planning:`Backdoor Roth IRA if income too high for direct contribution ($${US_LIMITS.rothPhaseOutSingle[0]/1000}K–$${US_LIMITS.rothPhaseOutSingle[1]/1000}K single for ${US_TAX_YEAR}). Roth conversions in low-income years. Best account for high-growth assets.`,
    deprec:false},
   {v:"hsa",            l:"Health Savings Account",    cat:"retirement",
    irc:"IRC § 223",    form:"Form 8889",
    desc:"Triple tax-advantaged account for medical expenses.",
    taxNote:"Contributions deductible. Growth tax-free. Qualified medical withdrawals tax-free. After 65: non-medical withdrawals taxed as ordinary income (no penalty).",
-   planning:"Max HSA ($4,150 individual / $8,300 family 2025). Invest for long-term growth — pay medical expenses out-of-pocket and reimburse yourself later. Effectively a stealth IRA.",
+   planning:`Max HSA ($${US_LIMITS.hsaSelf.toLocaleString("en-US")} individual / $${US_LIMITS.hsaFamily.toLocaleString("en-US")} family ${US_TAX_YEAR}). Invest for long-term growth — pay medical expenses out-of-pocket and reimburse yourself later. Effectively a stealth IRA.`,
    deprec:false},
 
   // Business
@@ -298,7 +299,7 @@ function AssetDetail({ asset }) {
           </div>
           <InfoBox color={T.cy}>
             <strong>Cost Segregation Study:</strong> Reclassify components to 5/7/15-year property for accelerated depreciation.
-            Typical result: 20–40% of building cost accelerated to Year 1 via bonus depreciation (40% in 2025).
+            Typical result: 20–40% of building cost accelerated to Year 1 via bonus depreciation (100%, permanent since the 2025 OBBBA).
             Best for properties valued above $1M — ROI is typically 10×–20× the study cost.
           </InfoBox>
         </div>
@@ -430,7 +431,7 @@ export default function AssetsModuleUS({ inversiones = [], deudas = [], onUpdate
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
         <div>
           <h2 style={{fontSize:22,fontWeight:700,margin:"0 0 4px"}}>Assets & Liabilities</h2>
-          <p style={{color:T.tx3,fontSize:12,margin:0}}>Net Worth · Cost Basis · Depreciation · Tax Planning — 2025</p>
+          <p style={{color:T.tx3,fontSize:12,margin:0}}>Net Worth · Cost Basis · Depreciation · Tax Planning — {US_TAX_YEAR}</p>
         </div>
         <div style={{display:"flex",gap:8}}>
           <button onClick={()=>{setForm(EMPTY_ASSET);setEditing(null);setShowForm("asset")}}

@@ -6,22 +6,16 @@
  */
 import { useState, useMemo } from "react";
 import { montoPromedioMensual } from "../lib/flowHelpers.js";
+import { federalTax, STANDARD_DEDUCTION, US_LIMITS } from "../lib/jurisdictions/usStateTax.js";
 import Disclaimer from "./Disclaimer";
 import SankeyFlujo from "./SankeyFlujo";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 
-// ── Federal tax calculator (same logic as TaxPlanningUS) ──────────────────
-const BRACKETS_SIM = [
-  {max:11925,rate:0.10},{max:48475,rate:0.12},{max:103350,rate:0.22},
-  {max:197300,rate:0.24},{max:250525,rate:0.32},{max:626350,rate:0.35},
-  {max:Infinity,rate:0.37},
-];
-const STD_DED = 15000, SS_BASE = 176100, K401_LIM = 23500, HSA_LIM = 4150;
+// ── Federal tax calculator: tabla única del año vigente (usStateTax.js) ───
+const STD_DED = STANDARD_DEDUCTION.single, SS_BASE = US_LIMITS.ssWageBase, K401_LIM = US_LIMITS.k401, HSA_LIM = US_LIMITS.hsaSelf;
 function calcFedTax(income) {
-  let tax=0,prev=0;
-  for(const b of BRACKETS_SIM){if(income<=prev)break;tax+=(Math.min(income,b.max)-prev)*b.rate;prev=b.max;}
-  return Math.max(0,Math.round(tax));
+  return Math.max(0, Math.round(federalTax(income, "single").tax));
 }
 function estimateAnnualTax(incomeMap) {
   let w2=0,se=0;
@@ -229,7 +223,10 @@ export default function SimuladorUS({ user, totals }) {
   const baseIncome = useMemo(() => {
     const map = {};
     ingresos.forEach((ing, i) => {
-      const monthly = (ing.mensual||0) * (ing.moneda==="USD" ? 1 : 1/(user?.trm||1));
+      // 2-nov-2026: mes típico por el motor (vigencia, frecuencia, variables),
+      // no el campo mensual crudo. Lo apagado no entra, igual que en gastos.
+      if (ing.sim === false) return;
+      const monthly = montoPromedioMensual(ing) * (ing.moneda==="USD" ? 1 : 1/(user?.trm||1));
       map[`ing_${i}`] = { label: ing.nombre||`Income ${i+1}`, base: monthly, cat: ing.categoria };
     });
     return map;
@@ -240,7 +237,7 @@ export default function SimuladorUS({ user, totals }) {
     Object.entries(gastos).forEach(([cat, items]) => {
       (items||[]).forEach((g, j) => {
         if (g.sim === false) return;
-        map[`gf_${cat}_${j}`] = { label: g.c||cat, base: g.m||0, cat };
+        map[`gf_${cat}_${j}`] = { label: g.c||cat, base: montoPromedioMensual(g), cat };
       });
     });
     return map;
@@ -514,7 +511,7 @@ export default function SimuladorUS({ user, totals }) {
       {!noData && (()=>{ try{
         if (!(simT.ni > 0)) return null;
         const fuentes = (user.ingresos||[]).filter(i=>i.sim!==false)
-          .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:(i.mensual||0)}))
+          .map(i=>({nombre:i.nombre||i.fuente||"Income", valor:montoPromedioMensual(i) * (i.moneda==="USD" ? 1 : 1/(user?.trm||1))}))
           .filter(f=>f.valor>0).sort((a,b)=>b.valor-a.valor).slice(0,6);
         const gastosCats = Object.entries(user.gastos||{})
           .map(([cat,items])=>[cat,(items||[]).filter(g=>g.sim!==false).reduce((s,g)=>s+montoPromedioMensual(g),0)])
