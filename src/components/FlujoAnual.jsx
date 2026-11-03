@@ -648,25 +648,25 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
             const arriba = m.efecto > 0;
             const nat = NATURALEZA[m.tipo] || NATURALEZA.gasto;
             const verbo = m.tipo === "ingreso" ? (isEN ? "recibió" : "recibió") : (isEN ? "paid" : "pagó");
+            // 2-nov-2026 (Santiago: «ojo con la diagramación»). La fila era un flex
+            // con wrap: según el largo del detalle, unas veces todo cabía en una
+            // línea y otras saltaba, y la cifra quedaba flotando a mitad de la
+            // fila. Ahora todas tienen la misma estructura: a la izquierda el
+            // nombre COMPLETO (antes se cortaba: dos «COLEGIO MENSU…» iguales) y
+            // debajo el detalle; a la derecha una columna fija con la cifra.
             return (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
-                    gap: 10, padding: "7px 0", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
-                <span style={{ fontSize: 12, color: T.txt2, minWidth: 0, overflow: "hidden",
-                      textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1 1 140px" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.4,
-                        color: nat.c, background: nat.c + "1A", borderRadius: 3,
-                        padding: "1px 5px", marginRight: 6 }}>{nat.et}</span>
-                  {m.nombre}
-                  {m.cat && m.tipo === "gasto" && (
-                    <span style={{ fontSize: 11, color: T.txt3, marginLeft: 6 }}>{m.cat}</span>
-                  )}
-                </span>
-                <span style={{ display: "flex", alignItems: "baseline", gap: 9, flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, color: T.txt3 }}>
-                    {/* 27-sep-2026 — Decía "no cae este mes" para todo.
-                        Santiago: "¿qué quiere decir que no cae? eso no se
-                        entiende". Es jerga contable, y para un ingreso no
-                        significa nada. Cada naturaleza dice lo suyo. */}
+              <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", columnGap: 16,
+                    alignItems: "start", padding: "10px 0", borderBottom: `1px solid ${T.border}` }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: T.txt, lineHeight: 1.35, overflowWrap: "anywhere" }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: nat.c, background: nat.c + "1A", borderRadius: 4,
+                          padding: "1px 6px", marginRight: 8, whiteSpace: "nowrap" }}>{nat.et}</span>
+                    {m.nombre}
+                    {m.cat && m.tipo === "gasto" && (
+                      <span style={{ fontSize: 12, color: T.txt3, marginLeft: 6 }}>{m.cat}</span>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 12, color: T.txt3, marginTop: 3, lineHeight: 1.4 }}>
                     {m.monto === 0
                       ? (m.tipo === "ingreso"
                           ? (isEN ? "no income this month" : "este mes no entró")
@@ -674,7 +674,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                             ? (isEN ? "no payment this month" : "este mes no hubo cuota")
                             : (isEN ? "nothing paid this month" : "este mes no se pagó"))
                       : <>{isEN ? (m.tipo === "ingreso" ? "received" : "paid") : verbo}{" "}
-                          <span style={{ fontFamily: "monospace" }}>{fm(m.monto)}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{fm(m.monto)}</span>
                           {/* 27-sep-2026 (Santiago: "la renta tradicional Puerto
                               Madero no existía, ¿por qué dice que lo habitual
                               era 16mm?"). Tenía razón: ese concepto nunca
@@ -694,21 +694,21 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                               menos de 12 meses, se dice cuántos, que es
                               justamente el dato que faltaba para entenderla. */}
                           {" · "}{isEN ? "yearly proration" : "prorrateo del año"}{" "}
-                          <span style={{ fontFamily: "monospace" }}>{fm(m.tipico)}</span>
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>{fm(m.tipico)}</span>
                           {m.mesesActivos > 0 && m.mesesActivos < 12 && (
                             <span style={{ opacity: 0.75 }}>
                               {" "}({isEN ? `active ${m.mesesActivos} mo` : `activo ${m.mesesActivos} ${m.mesesActivos === 1 ? "mes" : "meses"}`})
                             </span>
                           )}</>}
-                  </span>
-                  <span style={{ textAlign: "right", minWidth: 104 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, fontFamily: "monospace",
-                          color: arriba ? T.gn : T.rd, display: "block" }}>
-                      {(arriba ? "+" : "−") + fm(Math.abs(m.efecto))}
-                    </span>
-                    <span style={{ fontSize: 11, color: T.txt3, display: "block" }}>{sufijo(m)}</span>
-                  </span>
-                </span>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right", minWidth: 112 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+                        color: arriba ? T.gn : T.rd }}>
+                    {(arriba ? "+" : "−") + fm(Math.abs(m.efecto))}
+                  </div>
+                  <div style={{ fontSize: 11, color: T.txt3, whiteSpace: "nowrap" }}>{sufijo(m)}</div>
+                </div>
               </div>
             );
           };
