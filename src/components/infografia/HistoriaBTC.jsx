@@ -19,7 +19,20 @@ export default function HistoriaBTC({ precioHoy, oferta, fuentePrecio }) {
   const c10 = cagrHistorico(10), c5 = cagrHistorico(5);
   const ultimo = h[h.length - 1];
   const varHoy = precioHoy && ultimo ? (precioHoy / ultimo.cierre - 1) * 100 : null;
-  const resumen = `De ${usd(h[0].cierre)} en ${h[0].año} a ${usd(ultimo.cierre)} en ${ultimo.año}: ${fmtPctEs(c10, 0)} al año en 10 años, ${fmtPctEs(c5, 0)} en los últimos 5. Con caídas de más de 60 % en 2018 y 2022.`;
+  // 4-nov-2026 (Santiago: "es difícil leer esto, seamos más claros"): la frase
+  // mezclaba cuatro cifras. Ahora una línea de contexto y tres datos grandes,
+  // cada uno con su explicación.
+  const todos = historicoConVariacion();
+  const inicio10 = todos[todos.length - 11];
+  const inicio5 = todos[todos.length - 6];
+  const peor = h.reduce((a, b) => (b.variacion < a.variacion ? b : a), h[0]);
+  const caidas = h.filter((x) => x.variacion <= -50).map((x) => x.año);
+  const resumen = `Un bitcoin valía ${usd(inicio10.cierre)} al cerrar ${inicio10.año} y ${usd(ultimo.cierre)} al cerrar ${ultimo.año}.`;
+  const datos = [
+    { cifra: `+${fmtNumEs(c10, 0)} %`, color: C.pos, que: "al año, en promedio", cuando: `Últimos 10 años (${inicio10.año}–${ultimo.año})` },
+    { cifra: `+${fmtNumEs(c5, 0)} %`, color: C.pos, que: "al año, en promedio", cuando: `Últimos 5 años (${inicio5.año}–${ultimo.año})` },
+    { cifra: `${fmtNumEs(peor.variacion, 0)} %`, color: C.neg, que: `la peor caída en un año (${peor.año})`, cuando: caidas.length > 1 ? `Cayó más de la mitad en ${caidas.join(" y ")}` : "" },
+  ];
 
   return (
     <section aria-label="Historia y oferta del bitcoin" style={{ ...tarjeta, marginBottom: 12, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -28,6 +41,16 @@ export default function HistoriaBTC({ precioHoy, oferta, fuentePrecio }) {
         <h3 style={titulo}>¿Qué ha pasado con el bitcoin?</h3>
         <div style={subtitulo}>{resumen}</div>
       </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))", gap: 12 }}>
+        {datos.map((d) => (
+          <div key={d.cuando + d.cifra} style={{ background: "var(--fp-raised)", borderRadius: 12, padding: "14px 16px" }}>
+            <div style={{ fontSize: 28, fontWeight: 600, color: d.color, ...cifra }}>{d.cifra}</div>
+            <div style={{ fontSize: 13, color: C.txt, marginTop: 2 }}>{d.que}</div>
+            {d.cuando && <div style={{ fontSize: 12, color: C.txt3, marginTop: 4 }}>{d.cuando}</div>}
+          </div>
+        ))}
+      </div>
+      <div style={{ fontSize: 13, color: C.txt2 }}>Cada barra es lo que subió (verde) o bajó (naranja) en el año; debajo, cuánto valía al cerrar.</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: 20, alignItems: "start" }}>
         <div style={{ overflowX: "auto", gridColumn: "span 2", minWidth: 0 }}>
           <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={resumen} style={{ width: "100%", minWidth: 520, height: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
