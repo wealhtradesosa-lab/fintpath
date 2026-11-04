@@ -162,9 +162,29 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ fontSize: 13, color: T.txt3, marginBottom: 8 }}>Tus escenarios guardados</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {escenariosGuardados.map((e) => (
-              <div key={e.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px", minWidth: 200, flex: "1 1 200px" }}>
+              <div key={e.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: "1 1 320px" }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.txt }}>{e.nombre}</div>
-                <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{fC(e.resultado?.valor)} · retiras {fC(e.resultado?.retiroMes)}/mes · heredan {fC(e.resultado?.heredable)}</div>
+                {/* 4-nov-2026 (Santiago: "¿qué son los 3.590 MM?"): cada cifra con su rótulo. */}
+                {(() => {
+                  const d = e.datos || {}, r = e.resultado || {};
+                  const frec = d.frecuencia === "anual" ? "cada año" : d.frecuencia === "unico" ? "una sola vez" : "cada mes";
+                  const edadFin = Number(d.edadHoy) > 0 ? Number(d.edadHoy) + Number(d.años || 0) : null;
+                  const finAño = new Date().getFullYear() + Number(d.años || 0);
+                  const Fila = ({ l, v, c }) => (
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${T.border}` }}>
+                      <span style={{ color: T.txt3 }}>{l}</span><strong style={{ color: c || T.txt, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</strong>
+                    </div>
+                  );
+                  return (
+                    <div style={{ marginTop: 8 }}>
+                      {Number(d.monto) > 0 && <Fila l={`Ahorras ${frec}${d.frecuencia === "unico" ? "" : `, ${d.años} años`}`} v={fC(Number(d.monto))} />}
+                      {d.cagr !== "" && d.cagr != null && <Fila l="Supones que el bitcoin sube" v={`${fmtNumEs(Number(d.cagr), 0)} % al año`} />}
+                      <Fila l={`Tienes al terminar de ahorrar (${finAño}${edadFin ? `, a los ${edadFin}` : ""}), en pesos de hoy`} v={fC(r.valor)} />
+                      <Fila l={`Retiras cada mes${edadFin && d.hastaEdad ? `, de los ${edadFin} a los ${d.hastaEdad}` : ""}`} v={fC(r.retiroMes)} />
+                      <Fila l={`Les queda a tus herederos${d.hastaEdad ? ` a los ${d.hastaEdad}` : " al final"}`} v={fC(r.heredable)} c={r.heredable > 0 ? T.green : T.txt} />
+                    </div>
+                  );
+                })()}
                 <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
                   <button type="button" onClick={() => abrir(e)} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 13 }}>Abrir</button>
                   <button type="button" onClick={() => borrar(e.id)} style={{ background: "none", border: 0, padding: 0, color: T.txt3, cursor: "pointer", fontSize: 13 }}>Borrar</button>
