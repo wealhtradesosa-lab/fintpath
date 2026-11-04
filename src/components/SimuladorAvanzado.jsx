@@ -168,7 +168,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 const fmCorto = (n) => { const a = Math.abs(Number(n) || 0); return "$" + (a >= 1e6 ? (a / 1e6).toLocaleString("es-CO", { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + " MM" : Math.round(a).toLocaleString("es-CO")); };
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null }) {
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null, simulado = false, nivelRealTxt = null }) {
   const [verOcultos, setVerOcultos] = useState(false);
   const [confirmados, setConfirmados] = useState(() => leerConfirmados());
   const [expandedLvl, setExpandedLvl] = useState(null);
@@ -224,7 +224,9 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           Abundancia y el cuadro de abajo «¡Independencia!». */}
       {vista && (
         <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4 }}>Tu nivel real, con tus datos guardados (los sliders y escenarios no lo cambian).</div>
+          {simulado
+            ? <div style={{ fontSize: 12, color: T.txt2, marginBottom: 4 }}><b style={{ color: T.txt }}>Con los cambios que hiciste en el simulador.</b>{nivelRealTxt ? <> {nivelRealTxt}</> : null}</div>
+            : <div style={{ fontSize: 11, color: T.txt3, marginBottom: 4 }}>Tu nivel real, con tus datos guardados. Mueve los sliders o elige un escenario y la barra se mueve con ellos.</div>}
           {trmPendiente && <div style={{ fontSize: 11, color: T.gd, marginBottom: 4 }}>Tus montos en dólares quedan fuera de este nivel: pendiente de tasa. Se suman cuando cargue la TRM.</div>}
           <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, lineHeight: 1.4, overflowWrap: "anywhere" }}>{vista.titular}</div>
           <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, overflowWrap: "anywhere" }}>
@@ -1468,10 +1470,17 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
       {/* 24-oct-2026 (QA #58) — La barra muestra el nivel REAL (metReal, datos
           guardados). Sliders y escenarios solo aparecen como «Nivel en este
           escenario», nunca reemplazan el real. */}
-      <FreedomBarLive ip={metReal.ip} ob={metReal.ob}
-        fl={metReal.fl} nivel={metReal.nivel}
+      {/* 4-nov-2026 (Santiago: "si uno altera los sliders del simulador debería
+          moverse también la barra de dónde está uno, Seguridad o Independencia;
+          muevo los sliders y eso no se mueve"). Reemplaza la decisión del 24-oct:
+          con cambios, la barra muestra el escenario y el nivel real queda escrito
+          como referencia; sin cambios, es el nivel real. */}
+      <FreedomBarLive ip={(simT.sinCambios ? metReal : simT.metMes).ip} ob={(simT.sinCambios ? metReal : simT.metMes).ob}
+        fl={(simT.sinCambios ? metReal : simT.metMes).fl} nivel={(simT.sinCambios ? metReal : simT.metMes).nivel}
         ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
-        escenarioTxt={etiquetaEscenario(metReal, simT.metMes, !simT.sinCambios)}
+        simulado={!simT.sinCambios}
+        nivelRealTxt={!simT.sinCambios && metReal.nivel?.nivel ? `Tu nivel real hoy, con tus datos guardados: ${LEVELS[metReal.nivel.nivel - 1]?.name || ""} (${fmtNumEs(metReal.ob > 0 ? (metReal.ip / metReal.ob) * 100 : 0, 0)} %).` : null}
+        escenarioTxt={null}
         trmPendiente={metReal.trmPendiente}
         pistaSeguridad={pistaEsenciales(metReal)}
         nombresIngresosOcultos={ingresosOcultos(user.ingresos, trmReal)} onNavigate={onNavigate} />
