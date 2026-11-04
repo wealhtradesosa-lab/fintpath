@@ -159,7 +159,12 @@ export function proyeccionPrecio({ precioHoy, cagr, años, añoHoy = new Date().
  * pesos de hoy, fijo) y el resto sigue invertido creciendo a la tasa real.
  * Devuelve cuánto queda heredable al final y en qué año se acabaría.
  */
-export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25, cagr, inflacionUSD = INFLACION_USD }) {
+// 4-nov-2026 (Santiago: "aquí hay un error, no quedan 432 MM de dólares").
+// La cuenta estaba bien hecha, el supuesto no: 30 % al año durante los 10 años
+// de ahorro y los 28 de retiro pone un bitcoin en cientos de millones de dólares.
+// Por eso el retiro tiene su propio crecimiento (por defecto prudente, 10 %) y
+// la simulación devuelve el precio que implica, para avisar si es irreal.
+export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25, cagr, inflacionUSD = INFLACION_USD, precioInicial = null }) {
   const real = (1 + (cagr || 0) / 100) / (1 + inflacionUSD / 100) - 1;
   const rm = Math.pow(1 + real, 1 / 12) - 1;
   const retiroMes = capital * (retiroPct / 100) / 12;
@@ -172,7 +177,13 @@ export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25,
     if (c <= 0 && agotaEn == null) agotaEn = m / 12;
     if (m % 12 === 0) serie.push({ año: m / 12, capital: Math.max(0, c) });
   }
-  return { retiroMes, capitalFinal: Math.max(0, c), totalRetirado: retirado, agotaEn, serie, real: real * 100 };
+  const precioFinal = precioInicial ? precioInicial * Math.pow(1 + (cagr || 0) / 100, años) : null;
+  const capMercado = precioFinal ? precioFinal * OFERTA_BTC : null;
+  return {
+    retiroMes, capitalFinal: Math.max(0, c), totalRetirado: retirado, agotaEn, serie, real: real * 100,
+    precioFinal, irreal: capMercado != null && capMercado > RIQUEZA_MUNDIAL_USD * 0.25,
+    vecesRiqueza: capMercado != null ? capMercado / RIQUEZA_MUNDIAL_USD : null,
+  };
 }
 
 /** Comparativo pensión vs BTC: lo que recibes en vida y lo que heredan. */

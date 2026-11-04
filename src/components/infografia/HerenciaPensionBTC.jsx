@@ -92,7 +92,12 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
             <text x={DER} y={H - 8} textAnchor="end" fontSize="11" style={{ fill: C.txt3 }}>Año {s[s.length - 1].año}</text>
           </svg>
         </div>
-        <div style={{ fontSize: 12, color: C.txt3, marginTop: 6 }}>El capital crece {fmtPctEs(retiro.real, 1)} al año sobre la inflación (el crecimiento que elegiste menos la del dólar) y cada mes sale el retiro.</div>
+        {retiro.irreal && (
+          <div style={{ fontSize: 13, color: C.neg, marginTop: 8, lineHeight: 1.5 }}>
+            Ojo, este escenario no es realista: con estos crecimientos un bitcoin valdría {retiro.precioFinal >= 1e6 ? `US$${fmtNumEs(retiro.precioFinal / 1e6, 1)} millones` : `US$${fmtNumEs(retiro.precioFinal, 0)}`} al final, y todos los bitcoin juntos {retiro.vecesRiqueza >= 1 ? `${fmtNumEs(retiro.vecesRiqueza, 1)} veces` : `el ${fmtNumEs(retiro.vecesRiqueza * 100, 0)} %`} de toda la riqueza del mundo. Baja el crecimiento al ahorrar (paso 3) o mientras retiras (paso 4).
+          </div>
+        )}
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 6 }}>El capital crece {fmtPctEs(retiro.real, 1)} al año sobre la inflación (el crecimiento que elegiste para el retiro menos la inflación del dólar) y cada mes sale el retiro.</div>
       </div>
     </section>
   );
