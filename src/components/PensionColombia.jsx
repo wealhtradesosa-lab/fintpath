@@ -185,9 +185,11 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                     </div>
                   );
                 })()}
-                <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
-                  <button type="button" onClick={() => abrir(e)} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 13 }}>Abrir</button>
-                  <button type="button" onClick={() => borrar(e.id)} style={{ background: "none", border: 0, padding: 0, color: T.txt3, cursor: "pointer", fontSize: 13 }}>Borrar</button>
+                <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                  {/* 4-nov-2026 (Santiago: "el botón Borrar parece apagado"): dos botones
+                      con borde; Borrar en naranja y con confirmación. */}
+                  <button type="button" onClick={() => abrir(e)} style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 16px", color: T.txt, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Abrir</button>
+                  <button type="button" onClick={() => { if (confirm(`¿Borrar el escenario "${e.nombre}"?`)) borrar(e.id); }} style={{ background: "transparent", border: "1px solid rgba(255,80,0,0.45)", borderRadius: 999, padding: "6px 16px", color: "var(--fp-neg)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Borrar</button>
                 </div>
               </div>
             ))}
