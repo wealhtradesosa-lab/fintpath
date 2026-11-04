@@ -1,4 +1,5 @@
 import { fmtPctEs, fmtNumEs } from "./formato.js";
+import { esUS, plata } from "./region.js";
 /**
  * hallazgosI18n — Textos del asesor proactivo por jurisdicción.
  *
@@ -16,21 +17,30 @@ import { fmtPctEs, fmtNumEs } from "./formato.js";
  * Cada entrada recibe los valores ya calculados y devuelve el string armado.
  */
 
+// 3-nov-2026: la moneda depende del PAÍS (region.js), no del idioma. Un usuario de
+// EE. UU. que lee en español ve "$1,430", no "1.430 pesos".
 const money = {
-  es: (n) => Math.round(n).toLocaleString("es-CO") + " pesos",
-  en: (n) => "$" + Math.round(n).toLocaleString("en-US"),
+  es: (n) => (esUS() ? plata(n) : Math.round(n).toLocaleString("es-CO") + " pesos"),
+  en: (n) => (esUS() ? plata(n) : "$" + Math.round(n).toLocaleString("en-US")),
 };
+// Nombre de la tasa de un crédito y de la liquidez de referencia, por país.
+const tasaEs = () => (esUS() ? "APR" : "E.A.");
+const liqEs = () => (esUS() ? "efectivo y cuentas de alto rendimiento" : "efectivo y CDT");
+const liqEn = () => (esUS() ? "cash and high-yield savings" : "cash and CDs");
+const liqBaseEs = () => (esUS() ? "Activos líquidos (caja, cuentas de ahorro de alto rendimiento, T-bills, fondos del mercado monetario) sobre gastos y cuotas del mes" : "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes");
+const liqBaseEn = () => (esUS() ? "Liquid assets (cash, high-yield savings, T-bills, money market funds) over monthly expenses" : "Liquid assets (cash, savings, CDs, on-demand funds) over monthly expenses");
 
-export const TEXTOS = {
+// Se arma en cada llamada: el país se decide en tiempo de ejecución.
+const construir = () => ({
   es: {
     deudaCara: {
       unidad: "al año en juego",
       titulo: (nombre, tasa) => `${nombre} al ${fmtPctEs(tasa, 1)}`,
       detalle: (tasa, dif, ahorro) =>
-        `Tienes liquidez disponible mientras pagas una tasa del ${fmtPctEs(tasa, 2)} E.A. ` +
+        `Tienes liquidez disponible mientras pagas una tasa del ${fmtPctEs(tasa, 2)} ${tasaEs()}. ` +
         `Abonar a capital rinde ${fmtNumEs(dif, 2)} puntos más que dejarla quieta: ${money.es(ahorro)} al año.`,
       base: (tasa, rend) =>
-        `Tasa del crédito (${fmtPctEs(tasa, 2)} E.A.) vs. rendimiento de tu efectivo y CDT (${fmtPctEs(rend, 2)} E.A.)`,
+        `Tasa del crédito (${fmtPctEs(tasa, 2)} ${tasaEs()}) vs. rendimiento de tu ${liqEs()} (${fmtPctEs(rend, 2)}${esUS() ? "" : " E.A."})`,
       accion: "Ver mis deudas",
     },
     concentracion: {
@@ -55,7 +65,7 @@ export const TEXTOS = {
       detalle: (meses, falta) =>
         `Con tus egresos actuales, tu liquidez disponible alcanza para ${fmtNumEs(meses, 1)} meses. ` +
         `Para llegar a tres meses faltan ${money.es(falta)}.`,
-      base: "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes",
+      base: liqBaseEs(),
       accion: "Ver patrimonio",
     },
     cargaDeuda: {
@@ -69,7 +79,7 @@ export const TEXTOS = {
       unidad: "meses",
       titulo: "Colchón sólido",
       detalle: "Tu liquidez cubre bien un período sin ingresos.",
-      base: "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes",
+      base: liqBaseEs(),
     },
     flujoSano: {
       unidad: "de tu ingreso",
@@ -91,10 +101,10 @@ export const TEXTOS = {
       unidad: "a year on the table",
       titulo: (nombre, tasa) => `${nombre} at ${tasa.toFixed(1)}%`,
       detalle: (tasa, dif, ahorro) =>
-        `You're holding cash while paying ${tasa.toFixed(2)}% APR. ` +
+        `You're holding cash while paying ${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual rate"}. ` +
         `Paying down principal beats leaving it idle by ${dif.toFixed(2)} points: ${money.en(ahorro)} a year.`,
       base: (tasa, rend) =>
-        `Loan rate (${tasa.toFixed(2)}% APR) vs. return on your cash and CDs (${rend.toFixed(2)}%)`,
+        `Loan rate (${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual"}) vs. return on your ${liqEn()} (${rend.toFixed(2)}%)`,
       accion: "View debts",
     },
     concentracion: {
@@ -119,7 +129,7 @@ export const TEXTOS = {
       detalle: (meses, falta) =>
         `At your current burn, your liquid assets cover ${meses.toFixed(1)} months. ` +
         `You need ${money.en(falta)} more to reach three months.`,
-      base: "Liquid assets (cash, savings, CDs, on-demand funds) over monthly expenses",
+      base: liqBaseEn(),
       accion: "View assets",
     },
     cargaDeuda: {
@@ -133,7 +143,7 @@ export const TEXTOS = {
       unidad: "months",
       titulo: "Solid cash cushion",
       detalle: "Your liquid assets comfortably cover a stretch without income.",
-      base: "Liquid assets (cash, savings, CDs, on-demand funds) over monthly expenses",
+      base: liqBaseEn(),
     },
     flujoSano: {
       unidad: "of your income",
@@ -149,6 +159,6 @@ export const TEXTOS = {
     },
     verImpuestos: "View taxes",
   },
-};
+});
 
-export const t = (idioma) => TEXTOS[idioma] || TEXTOS.es;
+export const t = (idioma) => { const T = construir(); return T[idioma] || T.es; };

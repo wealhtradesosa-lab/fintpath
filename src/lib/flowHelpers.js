@@ -1,3 +1,4 @@
+import { esUS } from "./region.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // flowHelpers.js — Motor de flujo de caja con frecuencia y estado por año
 //
@@ -532,6 +533,10 @@ export function ingresoInversionAnual(ingresos, trm = 1) {
 export const tasaMensualEq = (eaPct) => {
   const ea = Number(eaPct) || 0;
   if (ea <= 0) return 0;
+  // 3-nov-2026 — EE. UU.: los créditos se anuncian en APR (nominal anual que se
+  // compone cada mes): la tasa mensual es APR / 12. Con E.A. una tarjeta al 24,9 %
+  // daba 1,87 % al mes en vez de 2,08 %, y la fecha de quedar libre salía optimista.
+  if (esUS()) return ea / 100 / 12;
   return Math.pow(1 + ea / 100, 1 / 12) - 1;
 };
 

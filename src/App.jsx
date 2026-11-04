@@ -104,6 +104,7 @@ import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
 import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
+import { setRegion, plataCorta as plataRegion, tx, nombreMes, pct as pctR, localeCifras } from "./lib/region.js";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte, RETORNO_SUPUESTO } from "./lib/norteUnMinuto.js";
 import PrimerMinuto from "./components/PrimerMinuto.jsx";
 import AfinaTuNumero from "./components/AfinaTuNumero.jsx";
@@ -127,7 +128,7 @@ import IndicadoresSalud from "./components/infografia/IndicadoresSalud";
 import FireNumero from "./components/infografia/FireNumero";
 import CaminoIndependencia from "./components/infografia/CaminoIndependencia";
 import LineaDeudas from "./components/infografia/LineaDeudas";
-import { rentasPorMes } from "./lib/infografia.js";
+import { rentasPorMes, nombreCategoria } from "./lib/infografia.js";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid, Legend } from "recharts";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -159,7 +160,10 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveCo
 const PIONEROS_MP={url:"https://mpago.li/1EhDTCo"};
 const T={bg:"var(--fp-bg)",bg2:"var(--fp-card)",bg3:"var(--fp-raised)",card:"var(--fp-card)",border:"rgba(var(--fp-ink),0.08)",borderL:"rgba(var(--fp-ink),0.15)",tx:"var(--fp-txt)",tx2:"var(--fp-txt2)",tx3:"var(--fp-txt3)",gn:"#00c805",gnB:"rgba(0,200,5,0.08)",rd:"#ff5000",rdB:"rgba(255,80,0,0.06)",bl:"#3b82f6",pr:"#3b82f6",or:"#f59e0b",gd:"#f59e0b",ch:["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"]};
 const fm=n=>n==null?"$0":new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:0,maximumFractionDigits:0}).format(n);
-const pc=n=>fmtPctEs(n);
+// 3-nov-2026: porcentaje, meses y tasa con el formato del país de la sesión (lib/region.js). En Colombia, idénticos a antes.
+const pc=n=>pctR(n);
+const mesesR=n=>{const v=Math.round((Number(n)||0)*10)/10;return v.toLocaleString(localeCifras(),{minimumFractionDigits:0,maximumFractionDigits:1})+(v===1?tx(" mes"," month"):tx(" meses"," months"))};
+const tasaR=n=>{if(n===""||n==null)return"";const v=Number(n);if(!Number.isFinite(v))return String(n)+"%";return v.toLocaleString(localeCifras(),{minimumFractionDigits:0,maximumFractionDigits:2})+"%"};
 const SK="fp3";
 // 26-oct-2026 — La contraseña NO se guarda en el navegador (antes iba en claro
 // a localStorage "fp3_enc_key"). Vive solo en memoria y muere al recargar o
@@ -1098,6 +1102,13 @@ export default function FinPath(){
   const estTrm=estadoTrm(u,trmViva);
   const trm=estTrm.trm;
   const { regPack, jurisdiction } = useJurisdiction(u);
+  // 3-nov-2026: idioma y país de la sesión para las pantallas compartidas (lib/region.js).
+  // Va aquí, antes de los cálculos de impuesto y totales, para que en EE. UU. usen el motor de EE. UU.
+  setRegion({ idioma: u?.lang || (jurisdiction === "US" ? "en" : "es"), pais: jurisdiction });
+  // En EE. UU. las pantallas compartidas trabajan en dólares: TRM 1 (lo que esté en USD queda igual).
+  const trmPais = jurisdiction === "US" ? 1 : trm;
+  // En EE. UU. no hay "pendiente de tasa": todo está en dólares y la TRM no entra en los totales.
+  const estTrmPais = jurisdiction === "US" ? { trm: 1, modo: "sin_usd", fecha: null } : estTrm;
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(""),3000)};
   // logout: limpia COMPLETAMENTE el estado local + supabase. Debe dejar
   // la app en el mismo estado que si acabara de abrirse por primera vez.
@@ -1694,7 +1705,7 @@ export default function FinPath(){
 
   // 21-oct-2026 — El signo va ANTES del peso. Antes salía "$-35.114.710" y
   // "$-35,1M": el menos quedaba entre el símbolo y el número.
-  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";const enUSD=cur==="USD"&&trm>0;const v=enUSD?(n/trm):n;const loc=enUSD?"en-US":"es-CO";const sg=v<0?"-":"";const a=Math.abs(v);if(enUSD){if(a>=1e9)return sg+"$"+(a/1e9).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"B";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"M";}else{/* 31-oct-2026: un solo formato en pesos, en millones ($16.400 M); la «B» se confundía con billón */if(a>=1e8)return sg+"$"+Math.round(a/1e6).toLocaleString(loc)+" MM";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+" MM";}return sg+"$"+Math.round(a).toLocaleString(loc)};
+  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";/* 3-nov-2026: en EE. UU. los montos ya están en dólares (trmPais = 1); no se convierten */const baseUSD=jurisdiction==="US";const enUSD=!baseUSD&&cur==="USD"&&trm>0;const v=enUSD?(n/trm):n;const loc=(enUSD||baseUSD)?"en-US":"es-CO";const sg=v<0?"-":"";const a=Math.abs(v);if(enUSD||baseUSD){if(a>=1e9)return sg+"$"+(a/1e9).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"B";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"M";}else{/* 31-oct-2026: un solo formato en pesos, en millones ($16.400 M); la «B» se confundía con billón */if(a>=1e8)return sg+"$"+Math.round(a/1e6).toLocaleString(loc)+" MM";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+" MM";}return sg+"$"+Math.round(a).toLocaleString(loc)};
   // Commit 23 Tarea 3: feedback honesto del estado de guardado.
   // Antes 'showToast' decia 'Guardado' inmediato, pero tecnicamente solo
   // era localStorage — el upsert a Supabase tenia debounce de 2s y podia
@@ -1758,7 +1769,7 @@ export default function FinPath(){
   const calRef=useMemo(()=>{try{return u?calibracionReferente(u,{modo:"actual"}):{}}catch{return{}}},[u]);
   const calRefFuturo=useMemo(()=>{try{return u?calibracionReferente(u,{modo:"estimado"}):{}}catch{return{}}},[u]);
   const impRef=useMemo(()=>{if(!u)return{total:0,mes:0,detalle:[]};try{return estimarImpuestoReferente(u,calRef)}catch{return estimarImpuesto(u)}},[u,calRef]);
-  const t=useMemo(()=>{if(!u)return{};const base=cT(u.inv,u.deu,u.gas,u.ingresos,impRef,trm,u.inflacionPct);return totalesConTasa(base,estTrm,ultimoNivelRef.current)},[u,trm,estTrm.modo,impRef]);
+  const t=useMemo(()=>{if(!u)return{};const base=cT(u.inv,u.deu,u.gas,u.ingresos,impRef,trmPais,u.inflacionPct);return totalesConTasa(base,estTrmPais,ultimoNivelRef.current)},[u,trm,trmPais,estTrm.modo,impRef]);
   useEffect(()=>{if(t&&t.nivel&&!t.pendienteTasa){ultimoNivelRef.current=t.nivel;try{localStorage.setItem("fp3_ultimo_nivel",JSON.stringify(t.nivel))}catch{}}},[t]);
   // ═══ 11-oct-2026 — ACTIVACIÓN = «primer activo cargado» (copy v3) ═══
   // Cuando la persona tiene al menos un activo en Patrimonio (u.inv), el
@@ -2304,7 +2315,7 @@ export default function FinPath(){
   const isUS=jurisdiction==="US";
   const lang=u?.lang||(isUS?"en":"es");
   const isEN=lang==="en";
-  const nvs=[{id:"dash",i:"",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"",l:isEN?"Income":"Ingresos"},{id:"gas",i:"",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"",l:isEN?"Debts":"Deudas",hidden:isUS},{id:"tax",i:"",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"taxinf",i:"",l:"Informe para el contador",parent:"tax",hidden:isUS},{id:"contclientes",i:"",l:"Clientes que me comparten",hidden:!clientesContador.length},{id:"_sep2",sep:true,l:isEN?"TOOLS":"TU PLAN"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
+  const nvs=[{id:"dash",i:"",l:"Dashboard"},{id:"_sep1",sep:true,l:isEN?"MY MONEY":"MI DINERO"},{id:"inv",i:"",l:isEN?"Assets & Liabilities":"Patrimonio"},{id:"ing",i:"",l:isEN?"Income":"Ingresos"},{id:"gas",i:"",l:isEN?"Expenses":"Egresos"},{id:"deu",i:"",l:isEN?"Debts":"Deudas"},{id:"tax",i:"",l:isEN?"Tax Planning":"Impuestos",hasChildren:true},{id:"taxopt",i:"",l:"Tax Review",parent:"tax",hidden:!isUS},{id:"famtax",i:"",l:isEN?"Family Tax View":"Vista familiar",parent:"tax",hidden:true},{id:"prevtax",i:"",l:isEN?"Previous Returns":"Historial",parent:"tax",hidden:isUS},{id:"taxcalc",i:"",l:isEN?"Tax Planning":"Calculadora de declaración",parent:"tax",hidden:isUS},{id:"taxinf",i:"",l:"Informe para el contador",parent:"tax",hidden:isUS},{id:"contclientes",i:"",l:isEN?"Clients sharing with me":"Clientes que me comparten",hidden:!clientesContador.length},{id:"_sep2",sep:true,l:isEN?"TOOLS":"TU PLAN"},      // 21-oct-2026: Tu Norte y Metas salen del menú (no se borran: rutas y
       // datos siguen vivos) y los absorbe Mi plan. Flujo Anual (el desempeño
       // del año completo) y el Simulador del año siguiente se quedan: son el
       // corto plazo y complementan a Mi plan (10 años). Santiago: "me quitó el
@@ -2326,7 +2337,7 @@ export default function FinPath(){
       // sola —"Este año"— con sus dos vistas adentro. Las rutas no cambian
       // (`flujo` y `sim` siguen siendo las páginas): cambia la puerta.
       // `goesTo` = el padre no tiene página propia, lleva a su primera vista.
-      {id:"anio",i:"",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"",l:"Año entrante",hidden:isUS},{id:"f10",i:"",l:"Mi futuro a 10 años",hidden:isUS,hasChildren:true,goesTo:((u?.futuro10?.escenarios)||[]).length?"f10esc":"f10crear"},{id:"f10crear",i:"",l:"Creador de escenarios",parent:"f10",hidden:isUS},{id:"f10esc",i:"",l:"Escenarios creados",parent:"f10",hidden:isUS},{id:"norte",i:"",l:isEN?"Your North":"Tu Norte",hidden:!isUS},{id:"met",i:"",l:isEN?"Goals":"Metas",hidden:!isUS},{id:"trd",i:"",l:"Trading",
+      {id:"anio",i:"",l:isEN?"This Year":"Este año",hasChildren:true,goesTo:"flujo"},{id:"flujo",i:"",l:isEN?"Month by Month":"Mes a mes",parent:"anio"},{id:"sim",i:"",l:isEN?"Simulator":"Simulador",parent:"anio"},{id:"simf",i:"",l:isEN?"Next Year":"Año entrante"},{id:"f10",i:"",l:isEN?"My 10-Year Future":"Mi futuro a 10 años",hasChildren:true,goesTo:((u?.futuro10?.escenarios)||[]).length?"f10esc":"f10crear"},{id:"f10crear",i:"",l:isEN?"Scenario Builder":"Creador de escenarios",parent:"f10"},{id:"f10esc",i:"",l:isEN?"Saved Scenarios":"Escenarios creados",parent:"f10"},{id:"norte",i:"",l:isEN?"Your North":"Tu Norte",hidden:true},{id:"met",i:"",l:isEN?"Goals":"Metas",hidden:true},{id:"trd",i:"",l:"Trading",
       // 26-jul-2026 — OCULTO DEL MENÚ, NO ELIMINADO.
       // Uso real medido en la base: 2 de 86 cuentas tienen posiciones
       // cargadas, y una es la de Santiago. Contra 31 en Ingresos y 21 en
@@ -2344,7 +2355,7 @@ export default function FinPath(){
       hidden:true},// 31-oct-2026 — Menos es más: las cinco calculadoras en una sola puerta, el
       // Asesor y los Coaches en una (se cambian con la barra de arriba) y el
       // Glosario abajo, con la ayuda. Ninguna ruta cambia.
-      {id:"calc",i:"",l:isEN?"Calculators":"Calculadoras",hasChildren:true,goesTo:"pen",hidden:isUS},{id:"pen",i:"",l:isEN?"Retirement":"Pensiones",parent:isUS?undefined:"calc"},{id:"btc",i:"₿",l:isEN?"Bitcoin vs 401(k)":"Ahorro en BTC",parent:isUS?undefined:"calc"},{id:"buyvsinvest",i:"",l:isEN?"Buy vs Invest":"Comprar o arrendar",parent:isUS?undefined:"calc"},{id:"gocasional",i:"",l:"Ganancia ocasional",parent:"calc",hidden:isUS},{id:"aportes",i:"",l:"Calcula tus aportes",parent:"calc",hidden:isUS},{id:"asesor",i:"",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"",l:isEN?"AI Coaches":"Tu equipo de asesores",hidden:!isUS},{id:"_sep4",sep:true},{id:"price",i:"",l:isEN?"Plans":"Planes"},{id:"cuenta",i:"",l:isEN?"My Account":"Mi cuenta"},{id:"glosario",i:"",l:isEN?"Glossary":"Glosario",hidden:isUS},{id:"metrics",i:"",l:"Cómo va el negocio",hidden:!isAdmin}];
+      {id:"calc",i:"",l:isEN?"Calculators":"Calculadoras",hasChildren:true,goesTo:"pen"},{id:"pen",i:"",l:isEN?"Retirement":"Pensiones",parent:"calc"},{id:"btc",i:"₿",l:isEN?(isUS?"Bitcoin vs 401(k)":"Bitcoin savings"):(isUS?"Bitcoin vs 401(k)":"Ahorro en BTC"),parent:"calc"},{id:"buyvsinvest",i:"",l:isEN?"Buy vs Invest":(isUS?"Comprar o invertir":"Comprar o arrendar"),parent:"calc"},{id:"gocasional",i:"",l:"Ganancia ocasional",parent:"calc",hidden:isUS},{id:"aportes",i:"",l:"Calcula tus aportes",parent:"calc",hidden:isUS},{id:"asesor",i:"",l:isEN?"AI Advisor":"Asesor IA"},{id:"coach",i:"",l:isEN?"AI Coaches":"Tu equipo de asesores",hidden:!isUS},{id:"_sep4",sep:true},{id:"price",i:"",l:isEN?"Plans":"Planes"},{id:"cuenta",i:"",l:isEN?"My Account":"Mi cuenta"},{id:"glosario",i:"",l:isEN?"Glossary":"Glosario",hidden:isUS},{id:"metrics",i:"",l:isEN?"Business metrics":"Cómo va el negocio",hidden:!isAdmin}];
 
   const secNames={dash:"Dashboard",inv:"Patrimonio",ing:"Ingresos",gas:"Egresos",deu:"Deudas",trd:"Trading",sim:"Simulador",met:"Metas",pen:"Pensiones",tax:"Planeación Tributaria",btc:"Ahorro BTC",coach:"Coaches IA",asesor:"Asesor IA",price:"Planes",cuenta:"Mi cuenta"};
   if(typeof document!=="undefined")document.title="FINPATHIA"+(secNames[pg]?" — "+secNames[pg]:"");
@@ -2369,16 +2380,16 @@ export default function FinPath(){
       </div>
       <div style={{height:1,background:T.border,marginTop:14}}/>
     </div>;
-    if(isUS) return <DashboardUS u={u} t={t} ib={ib} pen={pen} setPg={setPg} generatePDF={generatePDF} mb={mb}/>;
+    // 3-nov-2026: EE. UU. usa este mismo Dashboard (bilingüe, en dólares). DashboardUS.jsx queda sin usar.
     // Data prep
-    const fd=[{name:"Ingresos",a:t.ti},{name:"Gastos",a:-(t.gfm+t.tg)},{name:"Deudas",a:-t.tc},{name:"Neto",a:t.cf}];
-    const pj=[0,1,3,5,10].map(y=>({yr:y===0?"Hoy":`+${y}a`,v:t.nw*Math.pow(1.08,y)+t.cf*12*y}));
+    const fd=[{name:tx("Ingresos","Income"),a:t.ti},{name:tx("Gastos","Expenses"),a:-(t.gfm+t.tg)},{name:tx("Deudas","Debts"),a:-t.tc},{name:tx("Neto","Net"),a:t.cf}];
+    const pj=[0,1,3,5,10].map(y=>({yr:y===0?tx("Hoy","Today"):`+${y}${tx("a","y")}`,v:t.nw*Math.pow(1.08,y)+t.cf*12*y}));
     // Patrimonio distribution
-    const bc={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+vaCOP(i,trm)});if(ib.tv>0)bc.Trading=ib.tv*trm/*26-jul-2026: ib.tv está en USD porque las posiciones se cargan en dólares, pero se sumaba tal cual a una distribución donde todo lo demás pasó por vaCOP y está en pesos. Categoría en dólares mezclada entre categorías en pesos, y ~3.262 veces más chica de lo real.*/;
+    const bc={};((u&&u.inv)||[]).filter(i=>i.sim!==false).forEach(i=>{const tp=inferType(i);bc[tp]=(bc[tp]||0)+vaCOP(i,trmPais)});if(ib.tv>0)bc.Trading=ib.tv*trmPais/*26-jul-2026: ib.tv está en USD porque las posiciones se cargan en dólares, pero se sumaba tal cual a una distribución donde todo lo demás pasó por vaCOP y está en pesos. Categoría en dólares mezclada entre categorías en pesos, y ~3.262 veces más chica de lo real.*/;
     const pie=Object.entries(bc).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     const totalPat=t.ab+ib.tv;
     // Income by category
-    const incByCat={};((u&&u.ingresos)||[]).filter(i=>i.sim!==false).forEach(i=>{incByCat[i.categoria||"Otro"]=(incByCat[i.categoria||"Otro"]||0)+montoPromedioMensual(i)});
+    const incByCat={};const otroI=tx("Otro","Other");((u&&u.ingresos)||[]).filter(i=>i.sim!==false).forEach(i=>{incByCat[i.categoria||otroI]=(incByCat[i.categoria||otroI]||0)+montoPromedioMensual(i)});
     const incPie=Object.entries(incByCat).map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value);
     // Expense by category
     // 25-jul-2026 — BUG DE DATOS. Esta suma usaba `g.m` crudo, mientras que el
@@ -2397,7 +2408,9 @@ export default function FinPath(){
     // Salud financiera: spec Finanzas §2 (metrics.js), 5 componentes con peso.
     const healthScore=t.salud.score;
     const healthColor=healthScore==null?T.tx3:healthScore>=80?T.gn:healthScore>=60?"#00c805":healthScore>=40?"#f59e0b":T.rd;
-    const healthLabel=t.salud.banda;
+    // 3-nov-2026: nombres de nivel y de banda (metrics.js) en el idioma de la sesión.
+    const tN=(s)=>tx(s,{Excelente:"Excellent",Buena:"Good","Frágil":"Fragile","Crítica":"Critical","Sin datos":"No data","Déficit":"Deficit",Estabilidad:"Stability",Seguridad:"Security",Independencia:"Independence",Abundancia:"Abundance"}[s]||s);
+    const healthLabel=tN(t.salud.banda);
     // 25-oct-2026 (Santiago: "el abordaje para un cliente nuevo es confuso"). Sin datos, el panel muestra
     // solo la guía de 4 pasos: nada de gráficas en $0, Resumen, PDF ni avisos sueltos.
     const sinDatos=!((u&&u.inv)||[]).length&&!((u&&u.ingresos)||[]).length&&!Object.keys((u&&u.gas)||{}).length&&!((u&&u.deu)||[]).length;
@@ -2411,11 +2424,11 @@ export default function FinPath(){
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"clamp(14px, 3vw, 24px)",flexWrap:"wrap",gap:12}}>
         <div style={{flex:"1 1 280px",minWidth:0}}>
           <PageHeader
-            label={new Date().getHours()<12?"Buenos días":new Date().getHours()<18?"Buenas tardes":"Buenas noches"}
+            label={new Date().getHours()<12?tx("Buenos días","Good morning"):new Date().getHours()<18?tx("Buenas tardes","Good afternoon"):tx("Buenas noches","Good evening")}
             title={(u?.p?.name&&u?.p?.name!=="Usuario"&&u?.p?.name!=="")?(u?.p?.name||"").split(" ")[0]:(u?.p?.email||"").split("@")[0]}
-            subtitle="Tu patrimonio y salud financiera, de un vistazo."
+            subtitle={tx("Tu patrimonio y salud financiera, de un vistazo.","Your net worth and financial health at a glance.")}
           />
-          {!sinDatos&&((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>Configura tu nombre en <strong>Config</strong> para personalizar tu experiencia</div>}
+          {!sinDatos&&((u?.p?.name)==="Usuario"||!(u?.p?.name))&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"10px 14px",marginTop:10,fontSize:12,color:T.bl,cursor:"pointer"}} onClick={()=>setPg("set")}>{tx("Configura tu nombre en ","Add your name in ")}<strong>Config</strong>{tx(" para personalizar tu experiencia"," to personalize your experience")}</div>}
           {/* Banner Pro Familiar — suscripción activa.
               11-oct-2026: Checkout ya no da prueba. Quien tiene planAccount
               === "pro_familiar" ya pagó (el primer cobro es inmediato),
@@ -2429,27 +2442,27 @@ export default function FinPath(){
               <span style={{fontSize:14,flexShrink:0}}></span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:12,fontWeight:600,color:"#3b82f6"}}>
-                  Plan Pro Familiar activo
+                  {tx("Plan Pro Familiar activo","Pro Family plan active")}
                 </div>
                 <div style={{fontSize:11,color:T.tx3,lineHeight:1.4,marginTop:1}}>
-                  Hasta 10 personas pueden compartir esta cuenta
+                  {tx("Hasta 10 personas pueden compartir esta cuenta","Up to 10 people can share this account")}
                 </div>
               </div>
             </div>
-            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#3b82f6,#3b82f6)",color:"#fff",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12,flexShrink:0}}>Mi Cuenta →</button>
+            <button onClick={()=>setPg("acc")} style={{background:"linear-gradient(135deg,#3b82f6,#3b82f6)",color:"#fff",border:"none",padding:"10px 14px",borderRadius:8,cursor:"pointer",fontWeight:600,fontSize:12,flexShrink:0}}>{tx("Mi Cuenta →","My Account →")}</button>
           </div>}
           {/* Banner Pro Trial — solo para users que NO compraron Pro Familiar.
               Flujo: registro → 14 días Pro gratis en la app (trialEnd) →
               suscripción. Desde el 11-oct-2026 Checkout cobra de inmediato:
               no hay una segunda prueba en Stripe. */}
-          {trialActive&&planAccount!=="pro_familiar"&&/* 31-oct-2026: no repetir la prueba si ya está la tarjeta de bienvenida, salvo en los últimos días */(trialDays<=5||u?.p?.bienvenidaVista||isUS||!(((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0))&&<div style={{background:trialDays<=3?"rgba(255,80,0,0.06)":trialDays<=5?"rgba(245,158,11,0.06)":"linear-gradient(135deg,rgba(0,200,5,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(255,80,0,0.15)":trialDays<=5?"rgba(245,158,11,0.15)":"rgba(0,200,5,0.15)"),borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+          {trialActive&&planAccount!=="pro_familiar"&&/* 31-oct-2026: no repetir la prueba si ya está la tarjeta de bienvenida, salvo en los últimos días */(trialDays<=5||u?.p?.bienvenidaVista||!(((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0))&&<div style={{background:trialDays<=3?"rgba(255,80,0,0.06)":trialDays<=5?"rgba(245,158,11,0.06)":"linear-gradient(135deg,rgba(0,200,5,0.08),rgba(59,130,246,0.05))",border:"1px solid "+(trialDays<=3?"rgba(255,80,0,0.15)":trialDays<=5?"rgba(245,158,11,0.15)":"rgba(0,200,5,0.15)"),borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}>
               <span style={{fontSize:18,flexShrink:0}}></span>
-              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.gn}}>Plan Pro — Trial gratuito</div><div style={{fontSize:12,color:T.tx3}}>{trialDays<=1?"¡Tu acceso Pro se vence HOY! Crea tu cuenta para no perder tus datos.":trialDays<=3?"¡Solo "+trialDays+" días! Después pierdes el Asesor IA y los Coaches.":trialDays<=5?"Tu trial Pro se vence en "+trialDays+" días — crea tu cuenta para mantener acceso":trialDays+" días de acceso Pro completo"}</div></div>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.gn}}>{tx("Plan Pro — Trial gratuito","Pro plan — free trial")}</div><div style={{fontSize:12,color:T.tx3}}>{trialDays<=1?tx("¡Tu acceso Pro se vence HOY! Crea tu cuenta para no perder tus datos.","Your Pro access ends TODAY. Create your account to keep your data."):trialDays<=3?tx("¡Solo ","Only ")+trialDays+tx(" días! Después pierdes el Asesor IA y los Coaches."," days left. After that you lose the AI Advisor and Coaches."):trialDays<=5?tx("Tu trial Pro se vence en ","Your Pro trial ends in ")+trialDays+tx(" días — crea tu cuenta para mantener acceso"," days — create your account to keep access"):trialDays+tx(" días de acceso Pro completo"," days of full Pro access")}</div></div>
             </div>
-            {(trialDays<=5||u?.p?.anonymous)&&<button onClick={()=>{if(u?.p?.anonymous)logout();else setPg("price")}} style={{background:trialDays<=3?T.rd:T.gn,color:trialDays<=3?"#fff":"#000",border:"none",padding:"10px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{u?.p?.anonymous?"Crear cuenta gratis →":"Mantener Pro →"}</button>}
+            {(trialDays<=5||u?.p?.anonymous)&&<button onClick={()=>{if(u?.p?.anonymous)logout();else setPg("price")}} style={{background:trialDays<=3?T.rd:T.gn,color:trialDays<=3?"#fff":"#000",border:"none",padding:"10px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{u?.p?.anonymous?tx("Crear cuenta gratis →","Create free account →"):tx("Mantener Pro →","Keep Pro →")}</button>}
           </div>}
-          {!trialActive&&trialEnd&&plan==="free"&&u?.p?.anonymous&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}><div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}><span style={{fontSize:18,flexShrink:0}}></span><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.bl}}>Crea tu cuenta para mantener Pro</div><div style={{fontSize:12,color:T.tx3}}>Con una cuenta, tus datos se guardan en la nube y viajan cifrados.</div></div></div><button onClick={()=>{logout()}} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>Crear cuenta →</button></div>}
+          {!trialActive&&trialEnd&&plan==="free"&&u?.p?.anonymous&&<div style={{background:"rgba(59,130,246,0.06)",border:"1px solid rgba(59,130,246,0.12)",borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}><div style={{display:"flex",alignItems:"center",gap:8,flex:"1 1 200px",minWidth:0}}><span style={{fontSize:18,flexShrink:0}}></span><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,fontWeight:700,color:T.bl}}>{tx("Crea tu cuenta para mantener Pro","Create your account to keep Pro")}</div><div style={{fontSize:12,color:T.tx3}}>{tx("Con una cuenta, tus datos se guardan en la nube y viajan cifrados.","With an account, your data is saved in the cloud and encrypted in transit.")}</div></div></div><button onClick={()=>{logout()}} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 20px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,flexShrink:0}}>{tx("Crear cuenta →","Create account →")}</button></div>}
           {!trialActive&&trialEnd&&plan==="free"&&!u?.p?.anonymous&&<div style={{background:"rgba(255,80,0,0.06)",border:"1px solid rgba(255,80,0,0.12)",borderRadius:12,padding:"14px 18px",marginTop:12,display:"flex",flexWrap:"wrap",gap:8}}>
             {/* 25-jul-2026 — Aviso de fin de prueba. Aparece cuando el trial
                 venció y la cuenta quedó en gratuito. Era código muerto hasta
@@ -2467,59 +2480,59 @@ export default function FinPath(){
               <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
                 <span style={{fontSize:18,flexShrink:0}}></span>
                 <div style={{minWidth:0}}>
-                  <div style={{fontSize:14,fontWeight:700,color:T.rd}}>{modoConsulta?"Tu prueba de 14 días terminó · estás en modo consulta":"Tu prueba gratuita del plan Pro terminó"}</div>
+                  <div style={{fontSize:14,fontWeight:700,color:T.rd}}>{modoConsulta?tx("Tu prueba de 14 días terminó · estás en modo consulta","Your 14-day trial ended · you're in view-only mode"):tx("Tu prueba gratuita del plan Pro terminó","Your free Pro trial has ended")}</div>
                   <div style={{fontSize:12,color:T.tx3,marginTop:2,lineHeight:1.5}}>
-                    {modoConsulta?<>Puedes ver todos tus datos y tu nivel. Para <strong>agregar o editar</strong>, usar el <strong>Asesor IA</strong> y simular tu futuro, activa FINPATHIA Pro: <strong>$24.900 al mes</strong> o $249.000 al año.</>:<>Para seguir usando el <strong>motor fiscal</strong>, el <strong>Asesor IA</strong> y los <strong>Coaches</strong>, activa tu plan.
-                    <br/>Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.</>}
+                    {modoConsulta?(isUS?<>{tx("Puedes ver todos tus datos y tu nivel. Para ","You can still see all your data and your level. To ")}<strong>{tx("agregar o editar","add or edit")}</strong>{tx(", usar el ",", use the ")}<strong>{tx("Asesor IA","AI Advisor")}</strong>{tx(" y simular tu futuro, activa FINPATHIA Pro: "," and project your future, activate FINPATHIA Pro: ")}<strong>{tx("US$14 al mes","$14/month")}</strong>{tx(" o US$140 al año."," or $140/year.")}</>:<>Puedes ver todos tus datos y tu nivel. Para <strong>agregar o editar</strong>, usar el <strong>Asesor IA</strong> y simular tu futuro, activa FINPATHIA Pro: <strong>$24.900 al mes</strong> o $249.000 al año.</>):<>{tx("Para seguir usando el ","To keep using the ")}<strong>{tx("motor fiscal","tax engine")}</strong>{tx(", el ",", the ")}<strong>{tx("Asesor IA","AI Advisor")}</strong>{tx(" y los "," and the ")}<strong>Coaches</strong>{tx(", activa tu plan.",", activate your plan.")}
+                    <br/>{tx("Tus datos están intactos y tu cuenta sigue activa en el plan gratuito.","Your data is intact and your account stays active on the free plan.")}</>}
                   </div>
                 </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Ver planes →</button>
+                <button onClick={()=>setPg("price")} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>{tx("Ver planes →","See plans →")}</button>
               </div>
             </div>
           </div>}
         </div>
         {!sinDatos&&<div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap"}}>
-          <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Resumen</button>
-          <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Reporte PDF</button>
+          <button onClick={()=>setPg("resumen")} style={{background:T.bl,color:"#fff",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>{tx("Resumen","Summary")}</button>
+          <button onClick={generatePDF} style={{background:T.gn,color:"#000",border:"none",padding:"10px 18px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>{tx("Reporte PDF","PDF report")}</button>
         </div>}
       </div>
 
       {/* 25-oct-2026 — Primera pantalla: tu nivel y UNA acción. Mientras dura la prueba y hasta que la cierre. */}
-      {trialActive&&!u?.p?.bienvenidaVista&&!(tieneEstimados(u)&&!u?.p?.afinaCerrada&&!isUS)&&!isUS&&((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0&&(()=>{
+      {trialActive&&!u?.p?.bienvenidaVista&&!(tieneEstimados(u)&&!u?.p?.afinaCerrada)&&((u&&u.inv)||[]).length>0&&((u&&u.ingresos)||[]).length>0&&Object.keys((u&&u.gas)||{}).length>0&&(()=>{
         const nv=t.nivel||{};
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasIng=((u&&u.ingresos)||[]).filter(i=>i.sim!==false).length>0;
         const hasGas=Object.keys((u&&u.gas)||{}).length>0;
-        const acc=!hasIng?{t:"Registra lo que te entra cada mes",b:"Agregar mis ingresos",pg:"ing"}
-          :!hasGas?{t:"Registra lo que gastas al mes",b:"Agregar mis gastos",pg:"gas"}
-          :!hasInv?{t:"Agrega lo que tienes: ahorros, inversiones, propiedades",b:"Agregar mi patrimonio",pg:"inv"}
-          :{t:"Mira cómo sería tu plata en 10 años",b:"Ver mi futuro a 10 años",pg:"f10"};
+        const acc=!hasIng?{t:tx("Registra lo que te entra cada mes","Add what comes in each month"),b:tx("Agregar mis ingresos","Add my income"),pg:"ing"}
+          :!hasGas?{t:tx("Registra lo que gastas al mes","Add what you spend each month"),b:tx("Agregar mis gastos","Add my expenses"),pg:"gas"}
+          :!hasInv?{t:tx("Agrega lo que tienes: ahorros, inversiones, propiedades","Add what you own: savings, investments, property"),b:tx("Agregar mi patrimonio","Add my assets"),pg:"inv"}
+          :{t:tx("Mira cómo sería tu plata en 10 años","See what your money could look like in 10 years"),b:tx("Ver mi futuro a 10 años","See my 10-year future"),pg:"f10"};
         const cerrar=()=>setU(p=>p?{...p,p:{...p.p,bienvenidaVista:true}}:p);
         return <div style={{marginBottom:20,border:"1px solid "+T.border,borderRadius:12,padding:"16px 20px",background:T.bg2}}>
           <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"flex-start"}}>
-            <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1}}>Bienvenido · {trialDays} días de Pro gratis</div>
-            <button onClick={cerrar} aria-label="Cerrar" style={{background:"transparent",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>
+            <div style={{fontSize:12,fontWeight:700,color:T.gn,letterSpacing:1}}>{tx("Bienvenido · ","Welcome · ")}{trialDays}{tx(" días de Pro gratis"," days of Pro free")}</div>
+            <button onClick={cerrar} aria-label={tx("Cerrar","Close")} style={{background:"transparent",border:"none",color:T.tx3,cursor:"pointer",fontSize:16}}>✕</button>
           </div>
-          <div style={{fontSize:17,fontWeight:600,margin:"4px 0 2px"}}>{nv.nivel?`Estás en el nivel ${nv.nivel} de 5 · ${nv.nombre}`:"Descubre en qué nivel de libertad financiera estás"}</div>
-          <div style={{fontSize:13,color:T.tx2,lineHeight:1.5}}>Tu siguiente paso: <strong>{acc.t}</strong>. Mientras más real sea tu información, más preciso tu nivel y tu plan.</div>
+          <div style={{fontSize:17,fontWeight:600,margin:"4px 0 2px"}}>{nv.nivel?tx("Estás en el nivel ","You're at level ")+nv.nivel+tx(" de 5 · "," of 5 · ")+tN(nv.nombre):tx("Descubre en qué nivel de libertad financiera estás","Find out your level of financial freedom")}</div>
+          <div style={{fontSize:13,color:T.tx2,lineHeight:1.5}}>{tx("Tu siguiente paso: ","Your next step: ")}<strong>{acc.t}</strong>{tx(". Mientras más real sea tu información, más preciso tu nivel y tu plan.",". The more accurate your info, the more precise your level and your plan.")}</div>
           <button onClick={()=>{track("bienvenida_accion",{pg:acc.pg});setPg(acc.pg)}} style={{marginTop:12,background:T.gn,color:"#000",border:"none",padding:"12px 20px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>{acc.b} →</button>
         </div>;
       })()}
       {/* 31-oct-2026 — Primer minuto: tres cifras en vez de un Dashboard vacío. */}
-      {sinDatos&&!pmDetalle&&!isUS&&!esDemo(u)&&<PrimerMinuto nombre={(u?.p?.name&&u.p.name!=="Usuario")?u.p.name.split(" ")[0]:""}
+      {sinDatos&&!pmDetalle&&!esDemo(u)&&<PrimerMinuto nombre={(u?.p?.name&&u.p.name!=="Usuario")?u.p.name.split(" ")[0]:""}
         onDetallar={()=>{track("primer_minuto_detalle");setPmDetalle(true)}}
         onExcel={()=>{track("primer_minuto_excel");setShowImport(true)}}
         onListo={(e)=>{
           const ownerId=(u?.owners&&u.owners[0]?.id)||"own_1";
           const it=itemsDesdeNorte(e,ownerId);
-          it.inv=it.inv.map(i=>({...i,n:"Lo que tengo (estimado)",tp:"Otros"}));
+          it.inv=it.inv.map(i=>({...i,n:tx("Lo que tengo (estimado)","What I own (estimate)"),tp:"Otros",...(isUS?{moneda:"USD"}:{})}));
           // 2-nov-2026: todas las filas del primer minuto quedan marcadas como estimadas (AfinaTuNumero las cuenta aparte).
           const est=x=>({...x,estimado:true});it.inv=it.inv.map(est);it.ingresos=it.ingresos.map(est);it.deu=it.deu.map(est);Object.keys(it.gas).forEach(k=>{it.gas[k]=it.gas[k].map(est)});
           track("afina_mostrado");
           track("primer_minuto_listo",{pasivo:Number(e.ingresoPasivo)>0,deudas:Number(e.deudas)>0});
-          setU(p=>p?{...p,owners:(p.owners&&p.owners.length)?p.owners:[{id:ownerId,name:(p.p&&p.p.name)||"Yo",type:"natural"}],ingresos:it.ingresos,gas:it.gas,inv:it.inv,deu:it.deu}:p);
+          setU(p=>p?{...p,owners:(p.owners&&p.owners.length)?p.owners:[{id:ownerId,name:(p.p&&p.p.name)||tx("Yo","Me"),type:"natural"}],ingresos:it.ingresos,gas:it.gas,inv:it.inv,deu:it.deu}:p);
           try{window.scrollTo({top:0,behavior:"smooth"})}catch{}
         }}/>}
       {(()=>{
@@ -2527,14 +2540,14 @@ export default function FinPath(){
         const hasGas=Object.keys((u&&u.gas)||{}).length>0;
         const hasInv=((u&&u.inv)||[]).filter(i=>i.sim!==false).length>0;
         const hasDeu=((u&&u.deu)||[]).length>0;
-        if(sinDatos&&!pmDetalle&&!isUS&&!esDemo(u))return null; // el primer minuto va primero
-        if(!isUS&&!esDemo(u)&&tieneEstimados(u))return null; // 2-nov-2026: con estimados manda «Ahora hazlo exacto»
+        if(sinDatos&&!pmDetalle&&!esDemo(u))return null; // el primer minuto va primero
+        if(!esDemo(u)&&tieneEstimados(u))return null; // 2-nov-2026: con estimados manda «Ahora hazlo exacto»
         // 25-oct-2026: orden y texto de Santiago — activos, ingresos, gastos y deudas.
         const steps=[
-          {id:"inv",done:hasInv,icon:"",title:"Tus activos",desc:"Lo que tienes: cuentas, CDTs, fondos, acciones, propiedades, cripto, vehículos",action:"Activos cargados",tip:"Cada uno con su valor de hoy"},
-          {id:"ing",done:hasIng,icon:"",title:"Tus ingresos mensuales",desc:"Salario, arriendos, dividendos: todo lo que te entra cada mes",action:"Ingresos cargados",tip:"Lo que recibes en un mes normal"},
-          {id:"gas",done:hasGas,icon:"",title:"Tus gastos mensuales",desc:"Vivienda, colegios, transporte, seguros, mercado, salidas",action:"Gastos cargados",tip:"Las cuotas de créditos van en deudas"},
-          {id:"deu",done:hasDeu,icon:"",title:"Tus deudas",desc:"Hipotecas, créditos y tarjetas, con su saldo y su cuota",action:"Deudas cargadas",tip:"Si no tienes deudas, sáltalo"},
+          {id:"inv",done:hasInv,icon:"",title:tx("Tus activos","Your assets"),desc:isUS?tx("Lo que tienes: cuentas, fondos, acciones, 401(k), propiedades, cripto, vehículos","What you own: accounts, funds, stocks, 401(k), property, crypto, vehicles"):tx("Lo que tienes: cuentas, CDTs, fondos, acciones, propiedades, cripto, vehículos","What you own: accounts, CDs, funds, stocks, property, crypto, vehicles"),action:tx("Activos cargados","Assets added"),tip:tx("Cada uno con su valor de hoy","Each one at today's value")},
+          {id:"ing",done:hasIng,icon:"",title:tx("Tus ingresos mensuales","Your monthly income"),desc:tx("Salario, arriendos, dividendos: todo lo que te entra cada mes","Salary, rent, dividends: everything that comes in each month"),action:tx("Ingresos cargados","Income added"),tip:tx("Lo que recibes en un mes normal","What you get in a typical month")},
+          {id:"gas",done:hasGas,icon:"",title:tx("Tus gastos mensuales","Your monthly expenses"),desc:tx("Vivienda, colegios, transporte, seguros, mercado, salidas","Housing, schools, transportation, insurance, groceries, going out"),action:tx("Gastos cargados","Expenses added"),tip:tx("Las cuotas de créditos van en deudas","Loan payments go under debts")},
+          {id:"deu",done:hasDeu,icon:"",title:tx("Tus deudas","Your debts"),desc:tx("Hipotecas, créditos y tarjetas, con su saldo y su cuota","Mortgages, loans and cards, with balance and payment"),action:tx("Deudas cargadas","Debts added"),tip:tx("Si no tienes deudas, sáltalo","No debts? Skip it")},
         ];
         const done=steps.filter(s=>s.done).length;
         const pct=Math.round((done/steps.length)*100);
@@ -2544,12 +2557,12 @@ export default function FinPath(){
           <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:T.bg3}}><div style={{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#00c805,#3b82f6)",borderRadius:3,transition:"width 0.5s"}}/></div>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24,flexWrap:"wrap",gap:12}}>
             <div>
-              <h3 style={{fontSize:22,fontWeight:700,margin:"0 0 6px",letterSpacing:"-0.02em"}}>{done===0?"Es muy fácil: 4 datos y listo":"¡Vas bien! "+done+" de 4"}</h3>
-              <p style={{color:T.tx2,fontSize:13,margin:0,lineHeight:1.5}}>Ingresa tus activos, tus ingresos mensuales, tus gastos mensuales y tus deudas. Si tienes un Excel, la IA lo lee y alimenta la plataforma; si no, llenas cada dato a mano.</p>
+              <h3 style={{fontSize:22,fontWeight:700,margin:"0 0 6px",letterSpacing:"-0.02em"}}>{done===0?tx("Es muy fácil: 4 datos y listo","It's easy: 4 things and you're done"):tx("¡Vas bien! ","Nice progress! ")+done+tx(" de 4"," of 4")}</h3>
+              <p style={{color:T.tx2,fontSize:13,margin:0,lineHeight:1.5}}>{tx("Ingresa tus activos, tus ingresos mensuales, tus gastos mensuales y tus deudas. Si tienes un Excel, la IA lo lee y alimenta la plataforma; si no, llenas cada dato a mano.","Add your assets, monthly income, monthly expenses and debts. If you have a spreadsheet, the AI reads it and fills in the platform; if not, enter each item by hand.")}</p>
             </div>
             <div style={{display:"flex",alignItems:"center",gap:12}}>
               <div style={{fontSize:13,fontWeight:700,color:T.gn}}>{pct}%</div>
-              <Bt sz="s" onClick={()=>{track("checklist_excel");setShowImport(true)}}>Subir mi Excel</Bt>
+              <Bt sz="s" onClick={()=>{track("checklist_excel");setShowImport(true)}}>{tx("Subir mi Excel","Upload my spreadsheet")}</Bt>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
@@ -2558,8 +2571,8 @@ export default function FinPath(){
                 <div style={{width:36,height:36,borderRadius:12,background:s.done?"rgba(0,200,5,0.12)":T.bg3,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{s.done?"":s.icon}</div>
                 <div style={{flex:1}}>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:11,color:s.done?T.gn:T.tx3,fontWeight:700,letterSpacing:1}}>Paso {i+1}</span>
-                    {s.done&&<span style={{fontSize:11,color:T.gn,fontWeight:600}}>✓ Listo</span>}
+                    <span style={{fontSize:11,color:s.done?T.gn:T.tx3,fontWeight:700,letterSpacing:1}}>{tx("Paso ","Step ")}{i+1}</span>
+                    {s.done&&<span style={{fontSize:11,color:T.gn,fontWeight:600}}>{tx("✓ Listo","✓ Done")}</span>}
                   </div>
                   <div style={{fontSize:14,fontWeight:700,marginTop:2,color:s.done?T.tx3:T.tx,textDecoration:s.done?"line-through":"none"}}>{s.title}</div>
                   <div style={{fontSize:12,color:T.tx3,marginTop:2,lineHeight:1.4}}>{s.done?s.action+" ✓":s.desc}</div>
@@ -2574,7 +2587,7 @@ export default function FinPath(){
       })()}
 
       <div style={{display:sinDatos?"none":undefined}}>
-      <SecH n={1} t="¿Dónde estoy?" s="Tu patrimonio hoy y qué dice tu family office"/>
+      <SecH n={1} t={tx("¿Dónde estoy?","Where am I?")} s={tx("Tu patrimonio hoy y qué dice tu family office","Your net worth today and what your family office says")}/>
       {/* ══════════ 1 · ¿DÓNDE ESTOY? ══════════
           Patrimonio neto y salud financiera. El número que resume todo. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:20,marginBottom:20}}>
@@ -2590,10 +2603,10 @@ export default function FinPath(){
           {/* Accent line vertical */}
           <div style={{position:"absolute",left:0,top:24,bottom:24,width:2,background:CHART.green,borderRadius:"0 2px 2px 0"}}/>
           <div style={{padding:"18px 20px"}}>
-            <div style={{fontSize:11,color:CHART.txt3,letterSpacing:"0.08em",fontWeight:700}}>PATRIMONIO NETO</div>
+            <div style={{fontSize:11,color:CHART.txt3,letterSpacing:"0.08em",fontWeight:700}}>{tx("PATRIMONIO NETO","NET WORTH")}</div>
             <div style={{fontFamily:CHART.fontDisplay,fontSize:"clamp(2.5rem,6vw,4rem)",fontWeight:700,letterSpacing:"-0.045em",marginTop:6,lineHeight:1.0,fontVariantNumeric:"tabular-nums",color:CHART.txt}}>{fm(t.nw)}</div>
             <div style={{display:"flex",gap:28,marginTop:24,flexWrap:"wrap"}}>
-              {[{l:"Activos",v:fm(totalPat),c:CHART.txt},{l:"Deuda",v:fm(t.td),c:CHART.txt},{l:"Ratio D/A",v:pc(t.dta),c:t.dta<50?CHART.green:CHART.red}].map(k=>
+              {[{l:tx("Activos","Assets"),v:fm(totalPat),c:CHART.txt},{l:tx("Deuda","Debt"),v:fm(t.td),c:CHART.txt},{l:tx("Ratio D/A","D/A ratio"),v:pc(t.dta),c:t.dta<50?CHART.green:CHART.red}].map(k=>
                 <div key={k.l}><div style={{fontSize:11,color:CHART.txt3,letterSpacing:"0.06em",fontWeight:600}}>{k.l}</div><div style={{fontSize:18,fontWeight:700,color:k.c,marginTop:4,fontFamily:CHART.fontMono,fontVariantNumeric:"tabular-nums"}}>{k.v}</div></div>
               )}
             </div>
@@ -2602,7 +2615,7 @@ export default function FinPath(){
                 del patrimonio, que es del número de arriba. */}
             {(()=>{
               const hs=resumenHistoria(registrarMes(u||{},{trm:trmReal(u)}).historiaPatrimonio);
-              if(!hs.mes)return null;
+              if(!hs.mes||isUS)return null; // 3-nov-2026: la historia se guarda en pesos; en EE. UU. aún no se muestra
               return<div style={{marginTop:16,fontSize:13,color:CHART.txt3}}>
                 Patrimonio <b style={{color:hs.mes.cambio>=0?CHART.green:CHART.txt}}>{hs.mes.cambio>=0?"+":""}{fm(hs.mes.cambio)}</b> frente a {etiquetaMes(hs.mes.desde)}.
               </div>;
@@ -2634,7 +2647,7 @@ export default function FinPath(){
             <div style={{fontFamily:CHART.fontDisplay,fontSize:32,fontWeight:700,color:healthColor,fontVariantNumeric:"tabular-nums"}}>{healthScore==null?"—":healthScore}</div>
           </div>
           <div style={{fontSize:13,fontWeight:700,color:healthColor,fontFamily:CHART.fontDisplay}}>{healthLabel}</div>
-          <div style={{fontSize:11,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",fontWeight:600}}>Salud Financiera</div>
+          <div style={{fontSize:11,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",fontWeight:600}}>{tx("Salud Financiera","Financial Health")}</div>
         </div>
       </div>
 
@@ -2642,12 +2655,12 @@ export default function FinPath(){
           Base «este mes» (t.metMes), la misma del nivel, el Simulador y el Asesor. */}
       {(t.ob||0)>0&&<MedidorLibertad cobertura={t.ind||0} ip={t.ingresoPasivo||0} ob={t.ob||0} nivel={t.nivel} fm={fm}
         extra={<>
-          {(t.ind||0)<100&&<div style={{fontSize:12,color:CHART.txt3}}>Para cubrirlo con rentas necesitarías unos <b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b> más invertidos al {fmtPctEs(RETORNO_SUPUESTO*100,0)} anual.</div>}
-          {(t.gfm||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>Tu número FIRE: <b style={{color:CHART.txt}}>{fm(t.gfm*12*25)}</b> · llevas el <b style={{color:CHART.txt}}>{fmtPctEs(Math.max(0,t.nw/(t.gfm*12*25)*100),0)}</b></div>}
+          {(t.ind||0)<100&&<div style={{fontSize:12,color:CHART.txt3}}>{tx("Para cubrirlo con rentas necesitarías unos ","To cover it with passive income you'd need about ")}<b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b>{tx(" más invertidos al "," more invested at ")}{pctR(RETORNO_SUPUESTO*100,0)}{tx(" anual."," a year.")}</div>}
+          {(t.gfm||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>{tx("Tu número FIRE: ","Your FIRE number: ")}<b style={{color:CHART.txt}}>{fm(t.gfm*12*25)}</b>{tx(" · llevas el "," · you're at ")}<b style={{color:CHART.txt}}>{pctR(Math.max(0,t.nw/(t.gfm*12*25)*100),0)}</b></div>}
         </>}/>}
 
       {/* 2-nov-2026 — Después del primer minuto: primero ve su número (arriba), luego el camino para volverlo exacto. */}
-      {!isUS&&!esDemo(u)&&tieneEstimados(u)&&!u?.p?.afinaCerrada&&<AfinaTuNumero u={u} T={T} mb={mb} fm={fm} c={{nw:t.nw,cf:t.cf,ing:t.ti,gas:t.te,pasivo:t.ingresoPasivo,deuda:t.td}} irA={(id)=>{track("afina_clic",{id});setPg(id)}} onCerrar={()=>setU(p=>p?{...p,p:{...p.p,afinaCerrada:true}}:p)}/>}
+      {!esDemo(u)&&tieneEstimados(u)&&!u?.p?.afinaCerrada&&<AfinaTuNumero u={u} T={T} mb={mb} fm={fm} c={{nw:t.nw,cf:t.cf,ing:t.ti,gas:t.te,pasivo:t.ingresoPasivo,deuda:t.td}} irA={(id)=>{track("afina_clic",{id});setPg(id)}} onCerrar={()=>setU(p=>p?{...p,p:{...p.p,afinaCerrada:true}}:p)}/>}
       {/* Ubicación (25-jul-2026, Santiago): "mejor el slot del patrimonio neto
           de primero y debajo lo que ve el family office". Correcto — primero
           el número, después la lectura del número. Antes iba sobre el
@@ -2655,7 +2668,7 @@ export default function FinPath(){
           que salen. */}
       {/* Posición en riqueza: le da escala al número anterior. */}
       {(() => {
-        const nwUSD = trm > 0 ? t.nw / trm : 0;
+        const nwUSD = isUS ? t.nw : trmPais > 0 ? t.nw / trmPais : 0; // 3-nov-2026: en EE. UU. t ya está en dólares
         // Colombia thresholds (Credit Suisse/UBS 2024, adjusted)
         const colPerc = nwUSD < 1000 ? 30 : nwUSD < 5000 ? 45 : nwUSD < 10000 ? 55 : nwUSD < 30000 ? 70 : nwUSD < 50000 ? 80 : nwUSD < 100000 ? 90 : nwUSD < 250000 ? 95 : nwUSD < 500000 ? 97 : nwUSD < 1000000 ? 99 : nwUSD < 5000000 ? 99.5 : 99.9;
         // Global thresholds (UBS Global Wealth Report 2024)
@@ -2666,18 +2679,18 @@ export default function FinPath(){
         const usPerc = nwUSD < 12000 ? 20 : nwUSD < 44000 ? 30 : nwUSD < 105000 ? 40 : nwUSD < 192700 ? 50 : nwUSD < 400000 ? 60 : nwUSD < 650000 ? 70 : nwUSD < 1060000 ? 80 : nwUSD < 1900000 ? 90 : nwUSD < 5000000 ? 95 : nwUSD < 11100000 ? 99 : 99.5;
         const usLabel = usPerc >= 99 ? "Top 1% en USA" : usPerc >= 95 ? "Top 5% en USA" : usPerc >= 90 ? "Top 10% en USA" : usPerc >= 80 ? "Top 20% en USA" : usPerc >= 50 ? "Top " + (100 - usPerc) + "% en USA" : "Percentil " + usPerc + " en USA";
         return (
-          trm>0&&nwUSD>0&&<Cd s={{padding:"20px 24px",marginBottom:20}}>
+          (isUS||trmPais>0)&&nwUSD>0&&<Cd s={{padding:"20px 24px",marginBottom:20}}>
             {/* 31-oct-2026 (crítica de diseño): una sola forma de decirlo —«tienes más que el X %»—, sin «Top»/«Percentil» mezclados; las fuentes, plegadas. */}
-            <div style={{fontSize:15,fontWeight:600,color:T.tx}}>Tu posición en riqueza</div>
-            <div style={{fontSize:13,color:T.tx3,marginTop:2}}>Con {fm(t.nw)} de patrimonio (unos USD {Math.round(nwUSD).toLocaleString("es-CO")}) tienes más que…</div>
+            <div style={{fontSize:15,fontWeight:600,color:T.tx}}>{tx("Tu posición en riqueza","Where your wealth ranks")}</div>
+            <div style={{fontSize:13,color:T.tx3,marginTop:2}}>{isUS?<>{tx("Con ","With ")}{fm(t.nw)}{tx(" de patrimonio tienes más que…"," in net worth you have more than…")}</>:<>{tx("Con ","With ")}{fm(t.nw)}{tx(" de patrimonio (unos USD "," in net worth (about USD ")}{Math.round(nwUSD).toLocaleString("es-CO")}{tx(") tienes más que…",") you have more than…")}</>}</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,150px),1fr))",gap:12,marginTop:14}}>
-              {[["el "+colPerc+" %","de los adultos en Colombia"],["el "+gloPerc+" %","de los adultos del mundo"],["el "+usPerc+" %","de los hogares en Estados Unidos"]].map(([v,l])=>
+              {(isUS?[[usPerc,tx("de los hogares en Estados Unidos","of US households")],[gloPerc,tx("de los adultos del mundo","of adults worldwide")]]:[[colPerc,tx("de los adultos en Colombia","of adults in Colombia")],[gloPerc,tx("de los adultos del mundo","of adults worldwide")],[usPerc,tx("de los hogares en Estados Unidos","of US households")]]).map(([p,l])=>[tx("el "+p+" %",p+"%"),l]).map(([v,l])=>
                 <div key={l} style={{borderTop:`1px solid ${T.border}`,paddingTop:10}}>
                   <div style={{fontSize:22,fontWeight:600,color:T.tx,letterSpacing:"-0.01em"}}>{v}</div>
                   <div style={{fontSize:13,color:T.tx3}}>{l}</div>
                 </div>)}
             </div>
-            <details className="fp-detalle" style={{marginTop:12}}><summary style={{fontSize:12,color:T.tx3,cursor:"pointer"}}>Fuentes</summary><div style={{fontSize:12,color:T.tx3,marginTop:6,lineHeight:1.6}}>UBS Global Wealth Report 2024 (umbral top 10%: USD $109,430 · top 1%: USD $936,430) · Credit Suisse Wealth Databook 2023 — Colombia (mediana adulto: ~USD $6,500) · Federal Reserve Survey of Consumer Finances 2022 (mediana hogar: USD $192,700 · top 10%: USD $1.9M · top 1%: USD $11.1M)</div></details>
+            <details className="fp-detalle" style={{marginTop:12}}><summary style={{fontSize:12,color:T.tx3,cursor:"pointer"}}>{tx("Fuentes","Sources")}</summary><div style={{fontSize:12,color:T.tx3,marginTop:6,lineHeight:1.6}}>{tx("UBS Global Wealth Report 2024 (umbral top 10%: USD $109,430 · top 1%: USD $936,430) · Credit Suisse Wealth Databook 2023 — Colombia (mediana adulto: ~USD $6,500) · Federal Reserve Survey of Consumer Finances 2022 (mediana hogar: USD $192,700 · top 10%: USD $1.9M · top 1%: USD $11.1M)","UBS Global Wealth Report 2024 (top 10% threshold: $109,430 · top 1%: $936,430) · Federal Reserve Survey of Consumer Finances 2022 (median household: $192,700 · top 10%: $1.9M · top 1%: $11.1M)")}</div></details>
           </Cd>
         );
       })()}
@@ -2689,7 +2702,7 @@ export default function FinPath(){
           cualquier usuario nuevo. */}
       {(()=>{ try{
         const hoy=new Date();
-        return <AnoEnCurso user={u} trm={trm} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()} totales={t}/>;
+        return <AnoEnCurso user={u} trm={trmPais} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()} totales={t}/>;
       }catch(e){ return null } })()}
 
       {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
@@ -2702,11 +2715,11 @@ export default function FinPath(){
       {(()=>{
         try{
           let recs=[];
-          try{ recs=generarRecomendaciones(u,estimarImpuesto(u))||[] }catch{ recs=[] }
+          try{ recs=isUS?[]:(generarRecomendaciones(u,estimarImpuesto(u))||[]) }catch{ recs=[] } // 3-nov-2026: recomendaciones tributarias de Colombia
           const hs=generarHallazgos({
             user:u,
             recomendaciones:recs,
-            trm,
+            trm:trmPais,
             patrimonioTotal:(t?.ab||0)+(ib?.tv||0),
             totales:t,
             descartados:hallazgosDescartados,
@@ -2720,7 +2733,7 @@ export default function FinPath(){
           Misma lógica determinística que getCoach("contrarian"); no toca Asesor IA. */}
       {hasContrarianHomeData(u) && (()=>{
         try{
-          const alert=getTopContrarianAlert(u,t,trm||u?.trm);
+          const alert=getTopContrarianAlert(u,t,trmPais||u?.trm);
           if(!alert)return <ContrarianHomeCard muted T={T}/>;
           return <ContrarianHomeCard alert={alert} T={T} onCta={()=>{
             if(alert.advId){
@@ -2735,22 +2748,22 @@ export default function FinPath(){
         }catch(e){return null}
       })()}
 
-      <SecH n={2} t="¿Cómo se mueve tu plata?" s="Lo que entra, lo que sale y lo que queda cada mes"/>
-      {t.metMes&&<FlujoDinero met={t.metMes} fm={fm} periodo={"Este mes, "+(["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][new Date().getMonth()])}/>}
+      <SecH n={2} t={tx("¿Cómo se mueve tu plata?","How does your money move?")} s={tx("Lo que entra, lo que sale y lo que queda cada mes","What comes in, what goes out and what's left each month")}/>
+      {t.metMes&&<FlujoDinero met={t.metMes} fm={fm} periodo={tx("Este mes, ","This month, ")+tx(nombreMes(new Date().getMonth()+1).toLowerCase(),nombreMes(new Date().getMonth()+1))}/>}
       {(()=>{try{
         const hoy=new Date();
-        const meses=rentasPorMes({ingresos:u.ingresos,gastos:u.gas,deudas:u.deu,inv:u.inv,trm,retencionMensual:t.retencionMensual||0,impuestoNeto:t.impuestoNeto||0},hoy.getFullYear());
+        const meses=rentasPorMes({ingresos:u.ingresos,gastos:u.gas,deudas:u.deu,inv:u.inv,trm:trmPais,retencionMensual:t.retencionMensual||0,impuestoNeto:t.impuestoNeto||0},hoy.getFullYear());
         return<RentasMesAMes meses={meses} mesActual={hoy.getMonth()+1}/>;
       }catch(e){return null}})()}
       {/* ══════════ 2 · ¿CÓMO SE MUEVE MI PLATA? ══════════
           Indicadores de flujo: entra, sale, queda. */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:20}}>
         {[
-          {l:"Ingresos/mes",v:fm(t.ti),c:T.tx,i:""},
-          {l:"Gastos/mes",v:fm(t.gfm+t.tg),c:T.tx,i:""},
-          {l:"Deudas/mes",v:fm(t.tc),c:T.tx,i:""},
-          {l:"Cash Flow",v:fm(t.cf)+"/mes",c:t.cf>=0?T.gn:T.rd,i:""},
-          {l:"Rentas cubren",v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"":""},
+          {l:tx("Ingresos/mes","Income/mo"),v:fm(t.ti),c:T.tx,i:""},
+          {l:tx("Gastos/mes","Expenses/mo"),v:fm(t.gfm+t.tg),c:T.tx,i:""},
+          {l:tx("Deudas/mes","Debt/mo"),v:fm(t.tc),c:T.tx,i:""},
+          {l:"Cash Flow",v:fm(t.cf)+tx("/mes","/mo"),c:t.cf>=0?T.gn:T.rd,i:""},
+          {l:tx("Rentas cubren","Passive income covers"),v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"":""},
         ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div></div></div></Cd>)}
       </div>
 
@@ -2769,30 +2782,30 @@ export default function FinPath(){
       <div className="fp-masonry" style={{columnCount:mb?1:2,columnGap:20,marginBottom:20}}>
         {/* Cash Flow Waterfall */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>Flujo de Caja Mensual</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>{tx("Flujo de Caja Mensual","Monthly Cash Flow")}</div>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={fd} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} width={78} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         {/* Tax Estimate */}
-        {(()=>{const tx=impRef;return tx.total>0?<Cd s={{padding:16}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>Impuestos (Anual)</div>
-          {Object.values(calRef).some(c=>c.real)&&<div style={{fontSize:12,color:T.tx3,marginBottom:8}}>Este año: según tu declaración {new Date().getFullYear()-1} (retenciones + saldo pagado).</div>}
+        {(()=>{const txD=impRef;return txD.total>0?<Cd s={{padding:16}}>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>{isUS?tx("Impuestos estimados aparte de la nómina (anual)","Estimated taxes beyond withholding (annual)"):tx("Impuestos (Anual)","Taxes (Annual)")}</div>
+          {Object.values(calRef).some(c=>c.real)&&<div style={{fontSize:12,color:T.tx3,marginBottom:8}}>{tx("Este año: según tu declaración ","This year: based on your ")}{new Date().getFullYear()-1}{tx(" (retenciones + saldo pagado)."," return (withholding + balance paid).")}</div>}
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-            <span style={{fontSize:12,color:T.tx3}}>{Object.values(calRef).some(c=>c.real)?"Total del año":"Total estimado"}</span>
-            <span style={{fontSize:18,fontWeight:700,color:T.pr,fontFamily:"monospace"}}>{fm(tx.total)}/año</span>
+            <span style={{fontSize:12,color:T.tx3}}>{Object.values(calRef).some(c=>c.real)?tx("Total del año","Total for the year"):tx("Total estimado","Estimated total")}</span>
+            <span style={{fontSize:18,fontWeight:700,color:T.pr,fontFamily:"monospace"}}>{fm(txD.total)}{tx("/año","/yr")}</span>
           </div>
-          <div style={{fontSize:12,color:T.tx3,marginBottom:8}}>{fm(tx.mes)}/mes estimado</div>
-          {tx.detalle.some(d=>(d.pensionVoluntariaManualAnual||0)>0)&&<div style={{fontSize:11,color:T.tx3,background:T.bg3,borderRadius:6,padding:"6px 8px",marginBottom:8}}>Ajustamos el cálculo de la renta exenta del 25%. Si tienes AFC o pensión voluntaria, tu valor estimado puede subir.</div>}
-          {tx.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:12}}>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:8}}>{fm(txD.mes)}{tx("/mes estimado","/mo estimated")}</div>
+          {txD.detalle.some(d=>(d.pensionVoluntariaManualAnual||0)>0)&&<div style={{fontSize:11,color:T.tx3,background:T.bg3,borderRadius:6,padding:"6px 8px",marginBottom:8}}>Ajustamos el cálculo de la renta exenta del 25%. Si tienes AFC o pensión voluntaria, tu valor estimado puede subir.</div>}
+          {txD.detalle.map((d,i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderTop:"1px solid "+T.border,fontSize:12}}>
             <span style={{color:T.tx2}}>{d.type==="juridica"?"":""} {d.name}</span>
             <div style={{textAlign:"right"}}>
-                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({fmtPctEs(d.tasa)})</span></span>
-                    <div style={{fontSize:11,color:T.tx3}}>Ingresos: {fm(d.ingreso)}/año</div>
-                    {d.ahorroOptimo>100000&&<div style={{fontSize:11,color:T.gn}}>Ajuste posible: -{fm(d.ahorroOptimo)}</div>}
+                    <span style={{color:T.tx2}}>{fm(d.impuesto)} <span style={{color:T.tx3}}>({pctR(d.tasa??d.tasaBruta??0)})</span></span>
+                    <div style={{fontSize:11,color:T.tx3}}>{tx("Ingresos: ","Income: ")}{fm(d.ingreso)}{tx("/año","/yr")}</div>
+                    {d.ahorroOptimo>100000&&<div style={{fontSize:11,color:T.gn}}>{tx("Ajuste posible: -","Possible savings: -")}{fm(d.ahorroOptimo)}</div>}
                   </div>
           </div>)}
-          <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:10,padding:"8px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:12,fontWeight:600}}>Ver detalle → Impuestos</button>
+          <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:10,padding:"8px",background:T.bg3,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:12,fontWeight:600}}>{tx("Ver detalle → Impuestos","See details → Taxes")}</button>
         </Cd>:null})()}
         {/* Patrimonio Distribution */}
         <Cd s={{padding:20}}>
@@ -2804,11 +2817,11 @@ export default function FinPath(){
               principio que hace funcionar al Sankey, la geometría carga el
               significado. Ninguna cifra se pierde: van dentro del bloque o en
               la leyenda de lo que no cupo, y el tooltip da el detalle. */}
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>Distribución Patrimonial</div>
-          <div style={{fontSize:12,color:T.tx3,marginBottom:20}}>El tamaño de cada bloque es la plata que tienes ahí</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>{tx("Distribución Patrimonial","Asset Allocation")}</div>
+          <div style={{fontSize:12,color:T.tx3,marginBottom:20}}>{tx("El tamaño de cada bloque es la plata que tienes ahí","Each block's size is how much money you have there")}</div>
           {pie.length>0
             ?<BarraComposicion datos={pie} total={totalPat} paleta={T.ch} T={T} altura={44}/>
-            :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>Agrega inversiones</div>}
+            :<div style={{height:140,display:"flex",alignItems:"center",justifyContent:"center",color:T.tx3,fontSize:13}}>{tx("Agrega inversiones","Add investments")}</div>}
           {/* 25-jul-2026 (Santiago: "veo listado en gastos pero no en
               patrimonio"). Al reemplazar la dona por el treemap me llevé
               también su leyenda, mientras que ingresos y gastos conservaron
@@ -2824,7 +2837,7 @@ export default function FinPath(){
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
                 <span style={{fontWeight:700,fontFamily:"monospace",color:T.tx}}>{fm(p.value)}</span>
-                <span style={{color:T.tx3,fontSize:12,minWidth:34,textAlign:"right"}}>{totalPat>0?fmtPctEs((p.value/totalPat)*100):""}</span>
+                <span style={{color:T.tx3,fontSize:12,minWidth:34,textAlign:"right"}}>{totalPat>0?pctR((p.value/totalPat)*100):""}</span>
               </div>
             </div>)}
           </div>}
@@ -2832,8 +2845,8 @@ export default function FinPath(){
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
           <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
-            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>Ingresos por fuente</span>
-            <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}/mes</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Ingresos por fuente","Income by source")}</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}{tx("/mes","/mo")}</span>
           </div>
           {/* 25-jul-2026: mismo tratamiento que el patrimonio. La lista sola
               obligaba a comparar cifras para ver el peso de cada fuente; el
@@ -2848,16 +2861,16 @@ export default function FinPath(){
               {/* Punto de color: la lista de gastos ya lo tenía y la de
                   ingresos no. Ata cada fila con su bloque del treemap. */}
               <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
-              <div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:11,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+fmtTasaEs(inc.tasa)+"":""}</div></div>
+              <div style={{minWidth:0}}><div style={{fontSize:13,fontWeight:600}}>{inc.nombre||"—"}</div><div style={{fontSize:11,color:T.tx3}}>{inc.categoria}{inc.capital>0?" • Capital: "+fm(inc.capital):""}{inc.tasa?" • "+tasaR(inc.tasa)+"":""}</div></div>
             </div>
             <div style={{fontWeight:700,fontFamily:"monospace",color:T.gn}}>{fm(inc.mensual||0)}</div>
-          </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega ingresos</div>}
+          </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>{tx("Agrega ingresos","Add income")}</div>}
         </Cd>
         {/* Gastos by category */}
         <Cd s={{padding:0}}>
           <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
-            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>Gastos por categoría</span>
-            <span style={{fontSize:13,fontWeight:700,color:T.rd}}>{fm(t.gfm)}/mes</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Gastos por categoría","Expenses by category")}</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.rd}}>{fm(t.gfm)}{tx("/mes","/mo")}</span>
           </div>
           {/* 25-jul-2026 (Santiago: "estos huecos que desperdician espacio"):
               14 categorías contra 5 fuentes de ingreso desbalanceaba la fila y
@@ -2872,9 +2885,9 @@ export default function FinPath(){
                 gráfico estaba arriba y la lista abajo repetía los mismos datos;
                 ahora la lista ES el gráfico y no cuesta un pixel extra. */}
             <div style={{position:"absolute",left:0,top:0,bottom:0,width:(t.gfm>0?(exp.value/t.gfm)*100:0)+"%",background:T.ch[i%T.ch.length],opacity:0.10,pointerEvents:"none"}}/>
-            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{exp.name}</span></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length]}}/><span style={{fontSize:13}}>{nombreCategoria(exp.name)}</span></div>
             <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontWeight:700,fontFamily:"monospace",color:T.rd}}>{fm(exp.value)}</span><span style={{fontSize:11,color:T.tx3}}>{t.gfm>0?pc((exp.value/t.gfm)*100):""}</span></div>
-          </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>Agrega gastos</div>}
+          </div>):<div style={{padding:28,textAlign:"center",color:T.tx3,fontSize:13}}>{tx("Agrega gastos","Add expenses")}</div>}
           {expPie.length>8&&<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 20px",fontSize:12,color:T.tx3}}>
             <span>+{expPie.length-8} categorías más</span>
             <span style={{fontFamily:"monospace",fontWeight:600}}>{fm(expPie.slice(8).reduce((s,e)=>s+e.value,0))}</span>
@@ -2890,15 +2903,15 @@ export default function FinPath(){
         {(()=>{
           const deudas=((u&&u.deu)||[])
             .filter(d=>d.sim!==false&&(d.mt||0)>0)
-            .map(d=>({name:d.n||"Crédito",value:montoPromedioMensual({...d,mensual:(d.pg||0)*(d.moneda==="USD"?trm:1)}),tasa:d.ts||0,saldo:(d.mt||0)*(d.moneda==="USD"?trm:1)}))
+            .map(d=>({name:d.n||tx("Crédito","Loan"),value:montoPromedioMensual({...d,mensual:(d.pg||0)*(d.moneda==="USD"?trmPais:1)}),tasa:d.ts||0,saldo:(d.mt||0)*(d.moneda==="USD"?trmPais:1)}))
             .filter(d=>d.value>0)
             .sort((a,b)=>b.value-a.value);
           if(!deudas.length) return null;
           const totalCuotas=deudas.reduce((s,d)=>s+d.value,0);
           return <Cd s={{padding:0}}>
             <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
-              <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>Cuotas de deuda</span>
-              <span style={{fontSize:13,fontWeight:700,color:"#f59e0b"}}>{fm(totalCuotas)}/mes</span>
+              <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Cuotas de deuda","Debt payments")}</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#f59e0b"}}>{fm(totalCuotas)}{tx("/mes","/mo")}</span>
             </div>
             <div style={{padding:"4px 20px 14px"}}>
               <BarraComposicion datos={deudas} total={totalCuotas} paleta={T.ch} T={T} altura={40}/>
@@ -2909,7 +2922,7 @@ export default function FinPath(){
                 <div style={{width:10,height:10,borderRadius:3,background:T.ch[i%T.ch.length],flexShrink:0}}/>
                 <div style={{minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:600}}>{d.name}</div>
-                  <div style={{fontSize:11,color:T.tx3}}>{d.tasa>0?fmtTasaEs(d.tasa)+" E.A. · ":""}saldo {fm(d.saldo)}</div>
+                  <div style={{fontSize:11,color:T.tx3}}>{d.tasa>0?tasaR(d.tasa)+(isUS?" APR · ":" E.A. · "):""}{tx("saldo ","balance ")}{fm(d.saldo)}</div>
                 </div>
               </div>
               <div style={{fontWeight:700,fontFamily:"monospace",color:"#f59e0b",position:"relative"}}>{fm(d.value)}</div>
@@ -2918,14 +2931,14 @@ export default function FinPath(){
         })()}
       </div>
 
-      <SecH n={3} t="¿En qué está tu patrimonio?" s="Composición, liquidez real y evolución"/>
+      <SecH n={3} t={tx("¿En qué está tu patrimonio?","What is your net worth made of?")} s={tx("Composición, liquidez real y evolución","Mix, real liquidity and growth")}/>
       {t.metMes&&<MapaPatrimonio met={t.metMes} fm={fm}/>}
       {/* ══════════ 3 · ¿EN QUÉ ESTÁ MI PATRIMONIO? ══════════
           Composición: en qué está puesta la plata. */}
       {(() => {
-        const nwUSD = trm > 0 ? t.nw / trm : 0;
+        const nwUSD = isUS ? t.nw : trmPais > 0 ? t.nw / trmPais : 0; // 3-nov-2026: en EE. UU. t ya está en dólares
         // Liquid assets (cash + investments, not real estate)
-        const liquidAssets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Acciones","Crypto","Renta Fija","Cash"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
+        const liquidAssets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => ["Investment","Fondo de Inversión","CDT","Acciones","Crypto","Renta Fija","Cash"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trmPais), 0);
         const runway = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999; // colchón único (metrics.js)
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
         const savingsRate = t.ahorroPct || 0; // misma cifra que alertas y puntaje (metrics.js, neto de retención)
@@ -2936,10 +2949,10 @@ export default function FinPath(){
         // % del ingreso que es pasivo: misma clasificación que el nivel (metrics.js).
         const passiveRatio = t.pctIngresoPasivo || 0;
         // Yield on cost
-        const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
+        const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trmPais), 0);
         const yieldOnCost = t.rentaYield.yield || 0; // renta neta ÷ costo de activos que rentan (metrics.js)
         // Concentration risk
-        const maxAsset = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
+        const maxAsset = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trmPais) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trmPais)} : max, {n:"",v:0});
         const concRisk = (t.ab+ib.tv) > 0 ? (maxAsset.v / (t.ab+ib.tv) * 100) : 0;
 
         return (<>
@@ -2949,28 +2962,28 @@ export default function FinPath(){
               el análisis detallado»): número FIRE, hitos y fecha libre de deudas.
               Mismas fórmulas de siempre; cambia la presentación. */}
           <IndicadoresSalud items={[
-            {l:"Colchón de liquidez",valor:Math.min(runway,24),texto:runway>=999?"∞":fmtMeses(runway),max:24,ideal:[6,1e9],cerca:[3,6],tip:"Líquidos ÷ gastos y cuotas del mes. Ideal: 6 meses o más."},
-            {l:"Gasto anual sobre patrimonio",valor:burnRate,texto:pc(burnRate),max:12,ideal:[0,4],cerca:[4,8],tip:"Lo que gastas al año ÷ tu patrimonio. Ideal: 4 % o menos."},
-            {l:"Tasa de ahorro",valor:savingsRate,texto:pc(savingsRate),max:50,ideal:[20,1e9],cerca:[10,20],tip:"Lo que te sobra ÷ lo que entra. Ideal: 20 % o más."},
-            {l:"Carga de deudas",valor:debtService,texto:pc(debtService),max:60,ideal:[0,30],cerca:[30,50],tip:"Cuotas ÷ lo que entra. Ideal: 30 % o menos."},
-            {l:"Ingreso que no es trabajo",valor:passiveRatio,texto:pc(passiveRatio),max:100,ideal:[80,100],cerca:[50,80],tip:"La parte de tu ingreso que no depende de trabajar."},
-            {l:t.rentaYield.etiqueta,valor:t.rentaYield.yield==null?null:yieldOnCost,texto:t.rentaYield.yield==null?"—":pc(yieldOnCost),max:16,ideal:[8,1e9],cerca:[4,8],tip:"Renta neta al año ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"lo que costaron")+" los activos que rentan."},
-            {l:"Concentración",valor:concRisk,texto:pc(concRisk),max:100,ideal:[0,30],cerca:[30,50],tip:concRisk>30?(maxAsset.n+" es el "+pc(concRisk)+" de tu patrimonio."):"Ningún activo pasa del 30 %."},
+            {l:tx("Colchón de liquidez","Cash cushion"),valor:Math.min(runway,24),texto:runway>=999?"∞":mesesR(runway),max:24,ideal:[6,1e9],cerca:[3,6],tip:tx("Líquidos ÷ gastos y cuotas del mes. Ideal: 6 meses o más.","Liquid assets ÷ monthly expenses and payments. Ideal: 6 months or more.")},
+            {l:tx("Gasto anual sobre patrimonio","Annual spending vs. net worth"),valor:burnRate,texto:pc(burnRate),max:12,ideal:[0,4],cerca:[4,8],tip:tx("Lo que gastas al año ÷ tu patrimonio. Ideal: 4 % o menos.","What you spend in a year ÷ your net worth. Ideal: 4% or less.")},
+            {l:tx("Tasa de ahorro","Savings rate"),valor:savingsRate,texto:pc(savingsRate),max:50,ideal:[20,1e9],cerca:[10,20],tip:tx("Lo que te sobra ÷ lo que entra. Ideal: 20 % o más.","What's left over ÷ what comes in. Ideal: 20% or more.")},
+            {l:tx("Carga de deudas","Debt load"),valor:debtService,texto:pc(debtService),max:60,ideal:[0,30],cerca:[30,50],tip:tx("Cuotas ÷ lo que entra. Ideal: 30 % o menos.","Payments ÷ what comes in. Ideal: 30% or less.")},
+            {l:tx("Ingreso que no es trabajo","Income not from work"),valor:passiveRatio,texto:pc(passiveRatio),max:100,ideal:[80,100],cerca:[50,80],tip:tx("La parte de tu ingreso que no depende de trabajar.","The share of your income that doesn't depend on working.")},
+            {l:tx(t.rentaYield.etiqueta,t.rentaYield.sobreValorActual?"Rental yield (on current value)":"Yield on cost"),valor:t.rentaYield.yield==null?null:yieldOnCost,texto:t.rentaYield.yield==null?"—":pc(yieldOnCost),max:16,ideal:[8,1e9],cerca:[4,8],tip:tx("Renta neta al año ÷ "+(t.rentaYield.sobreValorActual?"valor actual":"lo que costaron")+" los activos que rentan.","Net annual income ÷ "+(t.rentaYield.sobreValorActual?"current value":"what they cost")+" of income-producing assets.")},
+            {l:tx("Concentración","Concentration"),valor:concRisk,texto:pc(concRisk),max:100,ideal:[0,30],cerca:[30,50],tip:concRisk>30?tx(maxAsset.n+" es el "+pc(concRisk)+" de tu patrimonio.",maxAsset.n+" is "+pc(concRisk)+" of your net worth."):tx("Ningún activo pasa del 30 %.","No single asset is over 30%.")},
           ]}/>
           <FireNumero fireNumber={fireNumber} nw={t.nw} fm={fm} ahorroMes={Math.max(0,t.cf||0)}
             anios={añosParaMeta(t.nw,fireNumber,Math.max(0,t.cf||0),0.05)}/>
           {(()=>{
-            const liquidA=((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i=>["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0);
+            const liquidA=((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i=>["Investment","Fondo de Inversión","CDT","Cash","Renta Fija"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trmPais),0);
             const totalD=((u&&u.deu)||[]).filter(d=>d.sim!==false).reduce((s,d)=>s+(d.mt||0),0);
             return<CaminoIndependencia fm={fm} hitos={[
-              {name:"Fondo de emergencia (6 meses)",target:t.te*6,current:liquidA},
-              {name:"Libre de deudas",target:totalD>0?totalD:1,current:totalD>0?Math.max(0,totalD-t.td):1},
-              {name:"50 % independencia",target:t.gfm*12*12.5,current:t.nw},
-              {name:"Número FIRE (25× gastos)",target:fireNumber,current:t.nw},
-              {name:"Libertad absoluta (62,5× gastos)",target:t.gfm*12*62.5,current:t.nw},
+              {name:tx("Fondo de emergencia (6 meses)","Emergency fund (6 months)"),target:t.te*6,current:liquidA},
+              {name:tx("Libre de deudas","Debt-free"),target:totalD>0?totalD:1,current:totalD>0?Math.max(0,totalD-t.td):1},
+              {name:tx("50 % independencia","50% independence"),target:t.gfm*12*12.5,current:t.nw},
+              {name:tx("Número FIRE (25× gastos)","FIRE number (25× expenses)"),target:fireNumber,current:t.nw},
+              {name:tx("Libertad absoluta (62,5× gastos)","Full freedom ("+(62.5).toLocaleString(localeCifras())+"× expenses)"),target:t.gfm*12*62.5,current:t.nw},
             ]}/>;
           })()}
-          {t.td>0&&<LineaDeudas deudas={(u&&u.deu)||[]} trm={trm} fm={fm}/>}
+          {t.td>0&&<LineaDeudas deudas={(u&&u.deu)||[]} trm={trmPais} fm={fm}/>}
           <Cd s={dashMas?{padding:20,marginTop:20}:{padding:0,marginTop:20,background:"transparent",border:"none"}}>
             {/* Dos columnas (25-jul-2026, Santiago: "¿se podrá diagramar mejor
                 esta parte? tal vez aprovechando un diseño a dos columnas, no
@@ -2993,16 +3006,16 @@ export default function FinPath(){
                 (FireNumero, LineaDeudas, CaminoIndependencia). */}
             {/* CONCENTRACIÓN DE RIESGO */}
             <div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:20}}>CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?</div>
+              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:20}}>{tx("CONCENTRACIÓN DE RIESGO — ¿Qué tan diversificado estás?","CONCENTRATION RISK — How diversified are you?")}</div>
               {(() => {
-                const assets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => vaCOP(i,trm) > 0).map(i => ({name:i.n||i.nombre||"",value:vaCOP(i,trm),type:i.tp||i.tipo||"Otro"})).concat(ib.tv>0?[{name:"Trading",value:ib.tv,type:"Acciones"}]:[]);
+                const assets = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => vaCOP(i,trmPais) > 0).map(i => ({name:i.n||i.nombre||"",value:vaCOP(i,trmPais),type:i.tp||i.tipo||"Otro"})).concat(ib.tv>0?[{name:"Trading",value:ib.tv,type:"Acciones"}]:[]);
                 const totalA = assets.reduce((s,a) => s + a.value, 0);
-                if (totalA === 0) return <div style={{fontSize:12,color:T.tx3}}>Agrega activos en Patrimonio para ver el análisis.</div>;
+                if (totalA === 0) return <div style={{fontSize:12,color:T.tx3}}>{tx("Agrega activos en Patrimonio para ver el análisis.","Add assets to see this analysis.")}</div>;
                 const sorted = [...assets].sort((a,b) => b.value - a.value);
                 const top3 = sorted.slice(0,5);
                 // Herfindahl index (0-10000, lower = more diversified)
                 const hhi = assets.reduce((s,a) => s + Math.pow((a.value/totalA)*100, 2), 0);
-                const hhiLabel = hhi < 1500 ? "Bien diversificado" : hhi < 2500 ? "Moderadamente concentrado" : "Muy concentrado";
+                const hhiLabel = hhi < 1500 ? tx("Bien diversificado","Well diversified") : hhi < 2500 ? tx("Moderadamente concentrado","Moderately concentrated") : tx("Muy concentrado","Highly concentrated");
                 const hhiColor = hhi < 1500 ? T.gn : hhi < 2500 ? "#f59e0b" : T.rd;
                 // By type
                 const byType = {};
@@ -3013,7 +3026,7 @@ export default function FinPath(){
                   <>
                     <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                       <div>
-                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>Top 5 activos por valor</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>{tx("Top 5 activos por valor","Top 5 assets by value")}</div>
                         {top3.map((a,i) => {
                           const pct = (a.value / totalA * 100);
                           const risk = pct > 40;
@@ -3021,7 +3034,7 @@ export default function FinPath(){
                             <div key={i} style={{marginBottom:8}}>
                               <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8}}>
                                 <span style={{color:risk?T.rd:T.tx2}}>{risk?"":""}{a.name}</span>
-                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{fmtPctEs(pct)} — {fm(a.value)}</span>
+                                <span style={{color:risk?T.rd:T.tx3,fontWeight:600}}>{pctR(pct)} — {fm(a.value)}</span>
                               </div>
                               <div style={{height:6,background:"rgba(var(--fp-ink),0.05)",borderRadius:3,overflow:"hidden"}}>
                                 <div style={{height:"100%",width:pct+"%",background:pct>40?T.rd:pct>25?"#f59e0b":T.gn,borderRadius:3}}/>
@@ -3031,7 +3044,7 @@ export default function FinPath(){
                         })}
                       </div>
                       <div>
-                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>Diversificación por tipo</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.tx2,marginBottom:8}}>{tx("Diversificación por tipo","Diversification by type")}</div>
                         {typeArr.map(([type,val],i) => {
                           const pct = (val / totalA * 100);
                           return (
@@ -3040,20 +3053,20 @@ export default function FinPath(){
                                 <div style={{width:8,height:8,borderRadius:3,background:T.ch[i%T.ch.length]}}/>
                                 <span style={{color:T.tx2}}>{type}</span>
                               </div>
-                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{fmtPctEs(pct)} ({fm(val)})</span>
+                              <span style={{color:T.tx3,fontFamily:"monospace"}}>{pctR(pct)} ({fm(val)})</span>
                             </div>
                           );
                         })}
                         <div style={{marginTop:8,fontSize:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                          <span style={{color:T.tx3}}>Índice Herfindahl:</span>
+                          <span style={{color:T.tx3}}>{tx("Índice Herfindahl:","Herfindahl index:")}</span>
                           <span style={{fontWeight:700,color:hhiColor}}>{Math.round(hhi)} — {hhiLabel}</span>
                         </div>
-                        <div style={{fontSize:11,color:T.tx3,marginTop:2}}>&lt;1500 diversificado · 1500-2500 moderado · &gt;2500 concentrado</div>
+                        <div style={{fontSize:11,color:T.tx3,marginTop:2}}>{tx("<1500 diversificado · 1500-2500 moderado · >2500 concentrado","<1,500 diversified · 1,500–2,500 moderate · >2,500 concentrated")}</div>
                       </div>
                     </div>
                     {sorted.filter(a => (a.value/totalA*100) > 30).length > 0 && (
                       <div style={{marginTop:10,background:"rgba(255,80,0,0.06)",border:"1px solid rgba(255,80,0,0.15)",borderRadius:8,padding:10,fontSize:12,color:T.rd}}>
-                        <strong>Alerta de concentración:</strong> {sorted.filter(a => (a.value/totalA*100) > 30).map(a => a.name + " (" + fmtPctEs((a.value/totalA*100), 0)+")").join(", ")} representan más del 30% de tu patrimonio. Un family office recomendaría diversificar para reducir riesgo.
+                        <strong>{tx("Alerta de concentración:","Concentration alert:")}</strong> {sorted.filter(a => (a.value/totalA*100) > 30).map(a => a.name + " (" + pctR((a.value/totalA*100), 0)+")").join(", ")}{tx(" representan más del 30% de tu patrimonio. Un family office recomendaría diversificar para reducir riesgo."," make up more than 30% of your net worth. A family office would recommend diversifying to reduce risk.")}
                       </div>
                     )}
                   </>
@@ -3063,23 +3076,30 @@ export default function FinPath(){
 
             {/* BENCHMARK: ¿Cómo rinde tu patrimonio? */}
             <div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:20}}>BENCHMARK — ¿Cómo rinde tu patrimonio vs alternativas?</div>
+              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:20}}>{tx("BENCHMARK — ¿Cómo rinde tu patrimonio vs alternativas?","BENCHMARK — How your net worth performs vs. alternatives")}</div>
               {(() => {
-                const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trm), 0);
-                const totalValue = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vaCOP(i,trm), 0);
+                const totalInvested = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vcCOP(i,trmPais), 0);
+                const totalValue = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((s,i) => s + vaCOP(i,trmPais), 0);
                 const gain = totalValue - totalInvested;
                 const gainPct = totalInvested > 0 ? ((totalValue / totalInvested) - 1) * 100 : 0;
                 const incomeYield = t.rentaYield.yield || 0;
                 const totalReturn = gainPct + incomeYield;
                 
                 const benchmarks = [
-                  {name:"Tu portafolio (valoriz.)",pct:gainPct,color:gainPct>=0?T.gn:T.rd},
-                  {name:"Tu portafolio (total: valoriz. + renta)",pct:totalReturn,color:totalReturn>=0?T.gn:T.rd},
-                  {name:"S&P 500 (promedio 10 años)",pct:12.5,color:"#3b82f6"},
+                  {name:tx("Tu portafolio (valoriz.)","Your portfolio (appreciation)"),pct:gainPct,color:gainPct>=0?T.gn:T.rd},
+                  {name:tx("Tu portafolio (total: valoriz. + renta)","Your portfolio (total: appreciation + income)"),pct:totalReturn,color:totalReturn>=0?T.gn:T.rd},
+                  {name:tx("S&P 500 (promedio 10 años)","S&P 500 (10-year average)"),pct:12.5,color:"#3b82f6"},
+                  // 3-nov-2026: referencias de Colombia solo en Colombia; en EE. UU., T-bills y CPI.
+                  ...(isUS?[
+                  {name:tx("T-bills / cuenta de alto rendimiento (aprox.)","T-bills / high-yield savings (approx.)"),pct:4.3,color:"#3b82f6"},
+                  {name:tx("Inflación usada en tus cálculos","Inflation used in your projections"),pct:inflacionGlobal(u&&u.inflacionPct),color:"#f59e0b"},
+                  {name:tx("Inflación EE. UU. 2024 (CPI, solo referencia)","US inflation 2024 (CPI, reference only)"),pct:2.9,color:"#a16207"},
+                  ]:[
                   {name:"CDT Colombia (promedio)",pct:10.5,color:"#3b82f6"},
                   {name:"Inflación usada en tus cálculos",pct:inflacionGlobal(u&&u.inflacionPct),color:"#f59e0b"},
                   {name:"Inflación Colombia 2024 (solo referencia)",pct:5.2,color:"#a16207"},
-                  {name:"Colchón (cuenta de ahorros)",pct:1.5,color:T.tx3},
+                  ]),
+                  {name:tx("Colchón (cuenta de ahorros)","Cushion (savings account)"),pct:isUS?0.4:1.5,color:T.tx3},
                 ];
                 const maxPct = Math.max(...benchmarks.map(b => Math.abs(b.pct)), 1);
                 
@@ -3089,7 +3109,7 @@ export default function FinPath(){
                       <div key={i} style={{marginBottom:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8}}>
                           <span style={{color:i<2?T.tx:T.tx2,fontWeight:i<2?700:400}}>{b.name}</span>
-                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{fmtPctEs(b.pct)}</span>
+                          <span style={{color:b.color,fontWeight:700}}>{b.pct>=0?"+":""}{pctR(b.pct)}</span>
                         </div>
                         <div style={{height:8,background:"rgba(var(--fp-ink),0.05)",borderRadius:3,overflow:"hidden"}}>
                           <div style={{height:"100%",width:Math.max((Math.abs(b.pct)/maxPct)*100,2)+"%",background:b.color,borderRadius:3,opacity:i<2?1:0.6}}/>
@@ -3098,15 +3118,15 @@ export default function FinPath(){
                     ))}
                     <div style={{marginTop:8,fontSize:11,color:T.tx3,lineHeight:1.5}}>
                       {t.inflacion
-                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"":""} {t.inflacion.mensaje} · nominal {fmtPctEs(t.inflacion.nominal)} vs inflación usada {fmtPctEs(t.inflacion.inflacion)}</span>
-                        : <span style={{color:T.tx3}}>Carga activos para comparar contra la inflación.</span>
+                        ? <span style={{color:t.inflacion.leGana?T.gn:T.rd}}>{t.inflacion.leGana?"":""} {tx(t.inflacion.mensaje,(()=>{const r=t.inflacion.real||0,x=Math.abs(r).toFixed(1);return{gana:`Your portfolio beats inflation (+${x}% real per year)`,gana_poco:`Your portfolio barely beats inflation (+${x}% real per year)`,no_gana_poco:`Your portfolio is just short of beating inflation (${r<0?"−":""}${x}% real)`,no_gana:`Not beating inflation (−${x}% real)`}[t.inflacion.clase]||t.inflacion.mensaje})())} · nominal {pctR(t.inflacion.nominal)}{tx(" vs inflación usada "," vs. inflation used ")}{pctR(t.inflacion.inflacion)}</span>
+                        : <span style={{color:T.tx3}}>{tx("Carga activos para comparar contra la inflación.","Add assets to compare against inflation.")}</span>
                       }
                       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8}}>
-                        <label style={{fontSize:11,color:T.tx3}} htmlFor="inflacion-global">Inflación que usa la app (% anual):</label>
-                        <InputDecimalEs id="inflacion-global" value={(u&&u.inflacionPct)!=null?u.inflacionPct:4} onChange={v=>upd("inflacionPct",v)} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(var(--fp-ink),0.1)",borderRadius:6,padding:"3px 6px",fontSize:12}}/>
-                        <span style={{fontSize:11,color:T.tx3}}>Alimenta también la proyección de patrimonio.</span>
+                        <label style={{fontSize:11,color:T.tx3}} htmlFor="inflacion-global">{tx("Inflación que usa la app (% anual):","Inflation the app uses (% per year):")}</label>
+                        <InputDecimalEs id="inflacion-global" value={(u&&u.inflacionPct)!=null?u.inflacionPct:(isUS?3:4)} onChange={v=>upd("inflacionPct",v)} style={{width:64,background:T.bg3,color:T.tx,border:"1px solid rgba(var(--fp-ink),0.1)",borderRadius:6,padding:"3px 6px",fontSize:12}}/>
+                        <span style={{fontSize:11,color:T.tx3}}>{tx("Alimenta también la proyección de patrimonio.","Also drives the net worth projection.")}</span>
                       </div>
-                      <br/>Valorización: {fm(gain)} ({gainPct>=0?"+":""}{fmtPctEs(gainPct)}) · Renta neta anual: {fm(t.rentaYield.rentaAnual)} ({fmtPctEs(incomeYield)} · {t.rentaYield.etiqueta})
+                      <br/>{tx("Valorización: ","Appreciation: ")}{fm(gain)} ({gainPct>=0?"+":""}{pctR(gainPct)}){tx(" · Renta neta anual: "," · Net annual income: ")}{fm(t.rentaYield.rentaAnual)} ({pctR(incomeYield)} · {tx(t.rentaYield.etiqueta,t.rentaYield.sobreValorActual?"rental yield on current value":"yield on cost")})
                     </div>
                   </>
                 );
@@ -3114,60 +3134,60 @@ export default function FinPath(){
             </div>
 
             {/* PLANIFICACIÓN TRIBUTARIA — Usa estimarImpuesto() con propietarios + DIAN */}
-            {(()=>{const tx=impRef;if(tx.total<=0)return null;return<div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:6}}>{`IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG ${DEFAULT_AG})`}</div>
-              <div style={{fontSize:11,color:T.tx3,marginBottom:20,lineHeight:1.5}}>{`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Año gravable ${DEFAULT_AG} (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
-              {tx.sinClasificar>0&&<div style={{background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.orange}}>{tx.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
+            {(()=>{const txD=impRef;if(txD.total<=0)return null;return<div style={{marginTop:20,background:T.bg3,borderRadius:12,padding:"14px 20px"}}>
+              <div style={{fontSize:12,color:T.tx3,fontWeight:600,marginBottom:6}}>{isUS?tx("IMPUESTOS ESTIMADOS — Estados Unidos · federal + estatal + FICA","ESTIMATED TAXES — United States · federal + state + FICA"):`IMPUESTOS ESTIMADOS — Colombia · UVT $${UVT.toLocaleString("es-CO")} (AG ${DEFAULT_AG})`}</div>
+              <div style={{fontSize:11,color:T.tx3,marginBottom:20,lineHeight:1.5}}>{isUS?tx("Estimación orientativa con las cifras del IRS del año en curso. No es tu declaración ni asesoría tributaria.","A rough estimate using this year's IRS figures. Not your tax return and not tax advice."):`Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Año gravable ${DEFAULT_AG} (UVT $${UVT.toLocaleString("es-CO")}).`}</div>
+              {txD.sinClasificar>0&&<div style={{background:"rgba(245,158,11,0.06)",border:"1px solid rgba(245,158,11,0.15)",borderRadius:8,padding:"10px 14px",marginBottom:20,fontSize:12,color:T.orange}}>{txD.sinClasificar} ingreso(s) sin clasificación fiscal. Ve a <strong>Ingresos</strong> y asigna propietario + clasificación DIAN para un cálculo más preciso.</div>}
               <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:12}}>
                 <div>
-                  <div style={{fontSize:12,fontWeight:700,color:T.rd,marginBottom:8}}>Impuesto estimado a cargo por propietario</div>
-                  {tx.detalle.map((d,i)=>{const aCargo=d.impuestoACargo??d.impBruto??d.impuesto??0;return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:T.rd,marginBottom:8}}>{tx("Impuesto estimado a cargo por propietario","Estimated tax by owner")}</div>
+                  {txD.detalle.map((d,i)=>{const aCargo=d.impuestoACargo??d.impBruto??d.impuesto??0;return<div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
                     <div>
                       <div style={{fontSize:12,fontWeight:600,color:T.tx2}}>{d.type==="juridica"?"":""} {d.name}</div>
-                      <div style={{fontSize:11,color:T.tx3}}>{d.type==="juridica"?"Tarifa 35%":"Tabla Art. 241 ET"} • Ingreso: {fm(d.ingreso)}/año</div>
+                      <div style={{fontSize:11,color:T.tx3}}>{d.us?tx("Federal + estatal","Federal + state")+" ("+(d.us.estado||"")+") + FICA":(d.type==="juridica"?"Tarifa 35%":"Tabla Art. 241 ET")}{tx(" • Ingreso: "," • Income: ")}{fm(d.ingreso)}{tx("/año","/yr")}</div>
                     </div>
                     <div style={{textAlign:"right"}}>
                       <div style={{fontSize:13,fontWeight:700,color:T.rd,fontFamily:"monospace"}}>{fm(aCargo)}</div>
-                      <div style={{fontSize:11,color:T.tx3}}>Tasa: {fmtPctEs(d.tasa)}</div>
+                      <div style={{fontSize:11,color:T.tx3}}>{tx("Tasa: ","Rate: ")}{pctR(d.tasa??d.tasaBruta??0)}</div>
                     </div>
                   </div>})}
-                  {(()=>{const aCargo=tx.detalle.reduce((s,d)=>s+(d.impuestoACargo??d.impBruto??0),0);const rete=tx.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=tx.detalle.reduce((s,d)=>s+(d.saldoAPagar??d.impuesto??0),0);return<>
+                  {(()=>{const aCargo=txD.detalle.reduce((s,d)=>s+(d.impuestoACargo??d.impBruto??0),0);const rete=txD.detalle.reduce((s,d)=>s+(d.reteN||0),0);const saldo=txD.detalle.reduce((s,d)=>s+(d.saldoAPagar??d.impuesto??0),0);return<>
                   <div style={{display:"flex",justifyContent:"space-between",padding:"10px 0",fontWeight:700,fontSize:13,borderTop:"2px solid "+T.border,marginTop:4}}>
-                    <span style={{color:T.tx}}>Impuesto estimado a cargo</span>
-                    <span style={{color:T.rd}}>{fm(aCargo)}/año</span>
+                    <span style={{color:T.tx}}>{tx("Impuesto estimado a cargo","Estimated total tax")}</span>
+                    <span style={{color:T.rd}}>{fm(aCargo)}{tx("/año","/yr")}</span>
                   </div>
-                  <div style={{fontSize:12,color:T.tx2,marginTop:4}}>Equivale a: <strong style={{color:T.rd}}>{fm(aCargo/12)}/mes</strong></div>
+                  <div style={{fontSize:12,color:T.tx2,marginTop:4}}>{tx("Equivale a: ","That's about: ")}<strong style={{color:T.rd}}>{fm(aCargo/12)}{tx("/mes","/mo")}</strong></div>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"6px 0",marginTop:4}}>
-                      <span style={{color:T.tx2}}>Retenciones estimadas</span>
-                      <span style={{fontFamily:"monospace",color:T.gn}}>{fm(rete)}/año</span>
+                      <span style={{color:T.tx2}}>{isUS?tx("Retenido por tu empleador (estimado)","Withheld by your employer (estimate)"):"Retenciones estimadas"}</span>
+                      <span style={{fontFamily:"monospace",color:T.gn}}>{fm(rete)}{tx("/año","/yr")}</span>
                     </div>
                     <div style={{display:"flex",justifyContent:"space-between",fontSize:12,fontWeight:700,padding:"6px 0"}}>
-                      <span style={{color:T.tx}}>Saldo estimado a pagar</span>
-                      <span style={{fontFamily:"monospace",color:T.pr}}>{fm(saldo)}/año</span>
+                      <span style={{color:T.tx}}>{isUS?tx("A pagar con pagos estimados (1040-ES)","Due via estimated payments (1040-ES)"):"Saldo estimado a pagar"}</span>
+                      <span style={{fontFamily:"monospace",color:T.pr}}>{fm(saldo)}{tx("/año","/yr")}</span>
                     </div>
-                    <div style={{fontSize:11,color:T.tx3,marginTop:4,lineHeight:1.5}}>Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor — el motor ya resta retenciones/anticipos; no volver a restar del total post-rete.</div>
+                    <div style={{fontSize:11,color:T.tx3,marginTop:4,lineHeight:1.5}}>{isUS?tx("Impuesto total estimado antes de lo que retiene la nómina. Lo que no se retiene se paga en 4 pagos estimados (abril, junio, septiembre y enero).","Total estimated tax before payroll withholding. Whatever isn't withheld is paid in 4 estimated payments (April, June, September and January)."):"Impuesto estimado a cargo (antes de retenciones). Tu saldo a pagar suele ser menor — el motor ya resta retenciones/anticipos; no volver a restar del total post-rete."}</div>
                   </>})()}
                 </div>
                 <div>
-                  <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:8}}>Resumen fiscal</div>
+                  <div style={{fontSize:12,fontWeight:700,color:T.pr,marginBottom:8}}>{tx("Resumen fiscal","Tax summary")}</div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
-                    <span style={{color:T.tx2}}>Ingreso bruto total</span>
-                    <span style={{fontFamily:"monospace",color:T.tx2}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0))}/año</span>
+                    <span style={{color:T.tx2}}>{tx("Ingreso bruto total","Total gross income")}</span>
+                    <span style={{fontFamily:"monospace",color:T.tx2}}>{fm(txD.detalle.reduce((s,d)=>s+d.ingreso,0))}{tx("/año","/yr")}</span>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
-                    <span style={{color:T.tx2}}>Impuesto estimado a cargo</span>
-                    <span style={{fontFamily:"monospace",color:T.rd}}>{fm(tx.total)}/año</span>
+                    <span style={{color:T.tx2}}>{isUS?tx("A pagar aparte de la nómina","Due beyond withholding"):"Impuesto estimado a cargo"}</span>
+                    <span style={{fontFamily:"monospace",color:T.rd}}>{fm(txD.total)}{tx("/año","/yr")}</span>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
-                    <span style={{color:T.tx2}}>Tasa efectiva global</span>
-                    <span style={{fontFamily:"monospace",color:T.rd}}>{fmtPctEs((tx.detalle.reduce((s,d)=>s+d.ingreso,0)>0?(tx.total/tx.detalle.reduce((s,d)=>s+d.ingreso,0)*100):0), 1)}</span>
+                    <span style={{color:T.tx2}}>{tx("Tasa efectiva global","Overall effective rate")}</span>
+                    <span style={{fontFamily:"monospace",color:T.rd}}>{pctR((txD.detalle.reduce((s,d)=>s+d.ingreso,0)>0?((isUS?(txD.totalConRetenciones||txD.total):txD.total)/txD.detalle.reduce((s,d)=>s+d.ingreso,0)*100):0), 1)}</span>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontSize:12,padding:"6px 0",borderBottom:"1px solid rgba(var(--fp-ink),0.04)"}}>
-                    <span style={{color:T.tx2}}>Neto después de impuestos</span>
-                    <span style={{fontFamily:"monospace",color:T.gn}}>{fm(tx.detalle.reduce((s,d)=>s+d.ingreso,0)-tx.total)}/año</span>
+                    <span style={{color:T.tx2}}>{tx("Neto después de impuestos","Net after taxes")}</span>
+                    <span style={{fontFamily:"monospace",color:T.gn}}>{fm(txD.detalle.reduce((s,d)=>s+d.ingreso,0)-(isUS?(txD.totalConRetenciones||txD.total):txD.total))}{tx("/año","/yr")}</span>
                   </div>
-                  <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:12,padding:"10px",background:T.bg,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:12,fontWeight:600}}>Ver detalle completo y revisar → Impuestos</button>
-                  <div style={{fontSize:11,color:T.tx3,marginTop:8,lineHeight:1.5}}>Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Finpathia no presta asesoría tributaria ni jurídica. Esta cifra es un borrador con base en los datos que ingresaste. El saldo real puede cambiar por retenciones, rentas exentas, deducciones, topes en UVT y ajustes de tu contador. Presenta tu declaración solo en los canales oficiales de la DIAN.</div>
+                  <button onClick={()=>setPg("tax")} style={{width:"100%",marginTop:12,padding:"10px",background:T.bg,border:"1px solid "+T.border,borderRadius:8,color:T.pr,cursor:"pointer",fontSize:12,fontWeight:600}}>{tx("Ver detalle completo y revisar → Impuestos","See full details → Taxes")}</button>
+                  <div style={{fontSize:11,color:T.tx3,marginTop:8,lineHeight:1.5}}>{isUS?tx("Estimación orientativa. FINPATHIA no presta asesoría tributaria ni jurídica. El valor real puede cambiar por deducciones detalladas, créditos, AMT y ajustes de tu CPA. Presenta tu declaración en IRS.gov o con un preparador autorizado.","Rough estimate. FINPATHIA does not give tax or legal advice. Your actual amount can change with itemized deductions, credits, AMT and your CPA's adjustments. File through IRS.gov or an authorized preparer."):"Estimación orientativa (borrador). No es la liquidación oficial ni asesoría tributaria. Finpathia no presta asesoría tributaria ni jurídica. Esta cifra es un borrador con base en los datos que ingresaste. El saldo real puede cambiar por retenciones, rentas exentas, deducciones, topes en UVT y ajustes de tu contador. Presenta tu declaración solo en los canales oficiales de la DIAN."}</div>
                 </div>
               </div>
             </div>})()}
@@ -3178,7 +3198,7 @@ export default function FinPath(){
                 (g.c||"").toLowerCase().includes("colegio") || (g.c||"").toLowerCase().includes("universidad") || (g.c||"").toLowerCase().includes("educación")
               );
               const gastoEduMes = gastosEdu.reduce((s,g) => s + montoPromedioMensual(g), 0);
-              if (gastoEduMes === 0) return null;
+              if (gastoEduMes === 0 || isUS) return null; // 3-nov-2026: costos de universidad de Colombia; en EE. UU. no aplica
               const costoUni = 180000000; // Semestre universidad privada Colombia ~$180M
               const aniosUni = 5;
               const totalUni = costoUni * 2 * aniosUni; // 2 semestres x 5 años
@@ -3205,8 +3225,8 @@ export default function FinPath(){
                         Semestre top Colombia: <strong>~{fm(costoUni)}</strong><br/>
                         5 años (10 semestres): <strong>{fm(totalUni)}</strong><br/>
                         Con inflación educativa (8%): <strong style={{color:"#f59e0b"}}>{fm(totalUniInflado)}</strong><br/>
-                        Ahorrar mensual (6 años): <strong style={{color:"#3b82f6"}}>{fm(ahorroPorHijo)}/mes</strong><br/>
-                        Por {numHijos} hijos: <strong style={{color:T.rd}}>{fm(ahorroPorHijo * numHijos)}/mes</strong>
+                        Ahorrar mensual (6 años): <strong style={{color:"#3b82f6"}}>{fm(ahorroPorHijo)}{tx("/mes","/mo")}</strong><br/>
+                        Por {numHijos} hijos: <strong style={{color:T.rd}}>{fm(ahorroPorHijo * numHijos)}{tx("/mes","/mo")}</strong>
                       </div>
                     </div>
                   </div>
@@ -3219,29 +3239,29 @@ export default function FinPath(){
 
             {/* ACCIONES RECOMENDADAS */}
             <div style={{marginTop:20,background:"linear-gradient(135deg,rgba(0,200,5,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(0,200,5,0.1)",borderRadius:12,padding:"14px 20px"}}>
-              <div style={{fontSize:12,color:T.gn,fontWeight:700,marginBottom:20}}>ACCIONES RECOMENDADAS — Prioridades para tu situación</div>
+              <div style={{fontSize:12,color:T.gn,fontWeight:700,marginBottom:20}}>{tx("ACCIONES RECOMENDADAS — Prioridades para tu situación","RECOMMENDED ACTIONS — Priorities for your situation")}</div>
               {(() => {
                 const actions = [];
                 // Check each area
                 const runway2 = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999;
-                if (runway2 < 6) actions.push({pri:"",text:"Fondo de emergencia insuficiente. Necesitas al menos 6 meses de gastos en activos líquidos.",cat:"Liquidez"});
-                else if (runway2 < 12) actions.push({pri:"",text:"Fondo de emergencia aceptable ("+fmtMeses(runway2)+"). Ideal: 12-24 meses.",cat:"Liquidez"});
+                if (runway2 < 6) actions.push({pri:"",text:tx("Fondo de emergencia insuficiente. Necesitas al menos 6 meses de gastos en activos líquidos.","Emergency fund too small. You need at least 6 months of expenses in liquid assets."),cat:tx("Liquidez","Liquidity")});
+                else if (runway2 < 12) actions.push({pri:"",text:tx("Fondo de emergencia aceptable (","Emergency fund is OK (")+mesesR(runway2)+tx("). Ideal: 12-24 meses.","). Ideal: 12–24 months."),cat:tx("Liquidez","Liquidity")});
                 
                 const debtSrv = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
-                if (debtSrv > 50) actions.push({pri:"",text:"Más del 50% de tu ingreso va a deudas. Prioriza pagar la de mayor tasa.",cat:"Deuda"});
-                else if (debtSrv > 30) actions.push({pri:"",text:"El " + fmtPctEs(debtSrv) + " de tu ingreso neto va a deudas. Busca reducirlo debajo del 30%.",cat:"Deuda"});
+                if (debtSrv > 50) actions.push({pri:"",text:tx("Más del 50% de tu ingreso va a deudas. Prioriza pagar la de mayor tasa.","More than 50% of your income goes to debt. Pay off the highest-rate one first."),cat:tx("Deuda","Debt")});
+                else if (debtSrv > 30) actions.push({pri:"",text:tx("El " + pctR(debtSrv) + " de tu ingreso neto va a deudas. Busca reducirlo debajo del 30%.",pctR(debtSrv) + " of your net income goes to debt. Aim to get it under 30%."),cat:tx("Deuda","Debt")});
                 
-                const maxA = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
+                const maxA = ((u&&u.inv)||[]).filter(i=>i.sim!==false).reduce((max,i) => vaCOP(i,trmPais) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trmPais)} : max, {n:"",v:0});
                 const concR = (t.ab+ib.tv) > 0 ? (maxA.v / (t.ab+ib.tv) * 100) : 0;
-                if (concR > 40) actions.push({pri:"",text:maxA.n + " es " + fmtPctEs(concR, 0)+" de tu patrimonio. Diversifica para reducir riesgo.",cat:"Riesgo"});
+                if (concR > 40) actions.push({pri:"",text:maxA.n + tx(" es "," is ") + pctR(concR, 0)+tx(" de tu patrimonio. Diversifica para reducir riesgo."," of your net worth. Diversify to reduce risk."),cat:tx("Riesgo","Risk")});
                 
-                if (t.cf < 0) actions.push({pri:"",text:"Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.",cat:"Cash Flow"});
-                else if (t.ingresoNeto > 0 && t.ahorroPct < 10) actions.push({pri:"",text:"Tu tasa de ahorro es baja (" + fmtPctEs(t.ahorroPct) + "). Intenta ahorrar al menos el 20%.",cat:"Ahorro"});
+                if (t.cf < 0) actions.push({pri:"",text:tx("Tu cash flow es negativo. Gastas más de lo que ganas. Revisa gastos o busca más ingresos.","Your cash flow is negative: you spend more than you earn. Review expenses or find more income."),cat:"Cash Flow"});
+                else if (t.ingresoNeto > 0 && t.ahorroPct < 10) actions.push({pri:"",text:tx("Tu tasa de ahorro es baja (" + pctR(t.ahorroPct) + "). Intenta ahorrar al menos el 20%.","Your savings rate is low (" + pctR(t.ahorroPct) + "). Try to save at least 20%."),cat:tx("Ahorro","Savings")});
                 
                 const passPct = t.pctIngresoPasivo || 0;
-                if (t.ti > 0 && passPct < 50) actions.push({pri:"",text:"Solo el " + fmtPctEs(passPct, 0)+" de tu ingreso es pasivo. Invierte más en activos que generen renta.",cat:"Independencia"});
+                if (t.ti > 0 && passPct < 50) actions.push({pri:"",text:tx("Solo el " + pctR(passPct, 0)+" de tu ingreso es pasivo. Invierte más en activos que generen renta.","Only " + pctR(passPct, 0)+" of your income is passive. Invest more in income-producing assets."),cat:tx("Independencia","Independence")});
                 
-                if (actions.length === 0) actions.push({pri:"",text:"¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.",cat:"General"});
+                if (actions.length === 0) actions.push({pri:"",text:tx("¡Excelente situación financiera! Mantén tu estrategia actual y sigue diversificando.","Excellent financial position! Keep your current strategy and keep diversifying."),cat:"General"});
                 
                 return actions.map((a,i) => (
                   <div key={i} style={{display:"flex",gap:8,padding:"6px 0",borderBottom:i<actions.length-1?"1px solid rgba(var(--fp-ink),0.04)":"none"}}>
@@ -3256,7 +3276,7 @@ export default function FinPath(){
             </div>
             </div>
             </>}
-            <button type="button" onClick={()=>setDashMas(v=>!v)} style={{width:"100%",marginTop:4,background:"transparent",border:`1px dashed ${T.border}`,borderRadius:12,padding:"12px 14px",color:T.tx2,cursor:"pointer",fontSize:13,fontWeight:600}}>{dashMas?"▾ Ocultar el análisis detallado":"▸ Ver el análisis detallado: número FIRE, rendimiento vs alternativas, deudas, concentración, impuestos, liquidez y más"}</button>
+            <button type="button" onClick={()=>setDashMas(v=>!v)} style={{width:"100%",marginTop:4,background:"transparent",border:`1px dashed ${T.border}`,borderRadius:12,padding:"12px 14px",color:T.tx2,cursor:"pointer",fontSize:13,fontWeight:600}}>{dashMas?tx("▾ Ocultar el análisis detallado","▾ Hide detailed analysis"):tx("▸ Ver el análisis detallado: número FIRE, rendimiento vs alternativas, deudas, concentración, impuestos, liquidez y más","▸ See detailed analysis: FIRE number, returns vs. alternatives, debts, concentration, taxes, liquidity and more")}</button>
           </Cd>
 
       {dashMas&&<>
@@ -3264,17 +3284,17 @@ export default function FinPath(){
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:20,marginTop:20,alignItems:"start"}}>
         {/* LIQUIDEZ REAL */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.bl,marginBottom:20}}>Liquidez Real — ¿Cuánto puedes tener en efectivo?</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.bl,marginBottom:20}}>{tx("Liquidez Real — ¿Cuánto puedes tener en efectivo?","Real Liquidity — How much could you turn into cash?")}</div>
           {(() => {
             const cats = {
-              inmediata: {label:"Inmediata (48h)",types:["Cash","CDT","Renta Fija"],color:T.gn,icon:""},
-              corto: {label:"Corto plazo (30 días)",types:["Investment","Fondo de Inversión","Acciones","Crypto"],color:"#f59e0b",icon:""},
-              largo: {label:"Largo plazo (6+ meses)",types:["Real Estate","Bodega","Lote","Local Comercial","Negocio","Vehículo"],color:T.rd,icon:""},
+              inmediata: {label:tx("Inmediata (48h)","Immediate (48h)"),types:["Cash","CDT","Renta Fija"],color:T.gn,icon:""},
+              corto: {label:tx("Corto plazo (30 días)","Short term (30 days)"),types:["Investment","Fondo de Inversión","Acciones","Crypto"],color:"#f59e0b",icon:""},
+              largo: {label:tx("Largo plazo (6+ meses)","Long term (6+ months)"),types:["Real Estate","Bodega","Lote","Local Comercial","Negocio","Vehículo"],color:T.rd,icon:""},
             };
             const totals2 = {};
             let grandTotal = 0;
             Object.entries(cats).forEach(([key, cat]) => {
-              const val = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => cat.types.includes(i.tp||i.tipo||"")).reduce((s,i) => s + vaCOP(i,trm), 0);
+              const val = ((u&&u.inv)||[]).filter(i=>i.sim!==false).filter(i => cat.types.includes(i.tp||i.tipo||"")).reduce((s,i) => s + vaCOP(i,trmPais), 0);
               totals2[key] = val;
               grandTotal += val;
             });
@@ -3288,7 +3308,7 @@ export default function FinPath(){
                     <div key={key} style={{marginBottom:20}}>
                       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:3}}>
                         <span style={{color:T.tx2}}>{cat.icon} {cat.label}</span>
-                        <span style={{fontWeight:700,color:cat.color,fontFamily:"monospace"}}>{fm(val)} <span style={{fontWeight:400,fontSize:11}}>({fmtPctEs(pct, 0)})</span></span>
+                        <span style={{fontWeight:700,color:cat.color,fontFamily:"monospace"}}>{fm(val)} <span style={{fontWeight:400,fontSize:11}}>({pctR(pct, 0)})</span></span>
                       </div>
                       <div style={{height:8,background:T.bg3,borderRadius:3,overflow:"hidden"}}>
                         <div style={{height:"100%",width:pct+"%",background:cat.color,borderRadius:3}}/>
@@ -3298,10 +3318,10 @@ export default function FinPath(){
                 })}
                 <div style={{marginTop:8,padding:10,background:T.bg3,borderRadius:8,fontSize:12,color:T.tx2,lineHeight:1.6}}>
                   {(t.colchonMeses||0) >= 6 
-                    ? <span style={{color:T.gn}}>Tu liquidez cubre {fmtMeses(t.colchonMeses)} de gastos y cuotas. Bien protegido.</span>
-                    : <span style={{color:"#f59e0b"}}>Tu liquidez solo cubre {fmtMeses(t.colchonMeses)} de gastos y cuotas. Un asesor recomendaría al menos 6 meses en activos líquidos.</span>
+                    ? <span style={{color:T.gn}}>{tx("Tu liquidez cubre ","Your liquid assets cover ")}{mesesR(t.colchonMeses)}{tx(" de gastos y cuotas. Bien protegido."," of expenses and payments. Well protected.")}</span>
+                    : <span style={{color:"#f59e0b"}}>{tx("Tu liquidez solo cubre ","Your liquid assets only cover ")}{mesesR(t.colchonMeses)}{tx(" de gastos y cuotas. Un asesor recomendaría al menos 6 meses en activos líquidos."," of expenses and payments. An advisor would recommend at least 6 months in liquid assets.")}</span>
                   }
-                  <br/><strong>{fmtPctEs(((totals2.largo / (grandTotal||1)) * 100), 0)}</strong> de tu patrimonio está en activos ilíquidos (no puedes vender rápido).
+                  <br/><strong>{pctR(((totals2.largo / (grandTotal||1)) * 100), 0)}</strong>{tx(" de tu patrimonio está en activos ilíquidos (no puedes vender rápido)."," of your net worth is in illiquid assets (you can't sell them quickly).")}
                 </div>
               </>
             );
@@ -3310,7 +3330,7 @@ export default function FinPath(){
 
         {/* COSTO DE VIDA */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:20}}>Tu Estilo de Vida en Números</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:20}}>{tx("Tu Estilo de Vida en Números","Your Lifestyle in Numbers")}</div>
           {(() => {
             const gastoMes = t.te || 0;
             const gastoDia = gastoMes / 30;
@@ -3323,10 +3343,10 @@ export default function FinPath(){
               <>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20}}>
                   {[
-                    {l:"Por mes",v:fm(gastoMes),icon:""},
-                    {l:"Por día",v:fm(Math.round(gastoDia)),icon:""},
-                    {l:"Por hora",v:fm(Math.round(gastoHora)),icon:""},
-                    {l:"Por minuto",v:fm(Math.round(gastoMin)),icon:""},
+                    {l:tx("Por mes","Per month"),v:fm(gastoMes),icon:""},
+                    {l:tx("Por día","Per day"),v:fm(Math.round(gastoDia)),icon:""},
+                    {l:tx("Por hora","Per hour"),v:fm(Math.round(gastoHora)),icon:""},
+                    {l:tx("Por minuto","Per minute"),v:fm(Math.round(gastoMin)),icon:""},
                   ].map(k => (
                     <div key={k.l} style={{background:T.bg3,borderRadius:8,padding:"10px 14px",textAlign:"center"}}>
                       <div style={{fontSize:11,color:T.tx3}}>{k.icon} {k.l}</div>
@@ -3336,17 +3356,17 @@ export default function FinPath(){
                 </div>
                 <div className="fp-fo-ancho" style={{background:T.bg3,borderRadius:8,padding:12,marginBottom:8}}>
                   <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
-                    Tu ingreso por hora laboral: <strong style={{color:T.gn}}>{fm(Math.round(ingresoHora))}/hora</strong><br/>
-                    Necesitas trabajar <strong style={{color:"#f59e0b"}}>{horasLibertad.toFixed(1)} horas</strong> por cada hora de gastos<br/>
+                    {tx("Tu ingreso por hora laboral: ","Your income per working hour: ")}<strong style={{color:T.gn}}>{fm(Math.round(ingresoHora))}{tx("/hora","/hour")}</strong><br/>
+                    {tx("Necesitas trabajar ","You need to work ")}<strong style={{color:"#f59e0b"}}>{horasLibertad.toFixed(1)}{tx(" horas"," hours")}</strong>{tx(" por cada hora de gastos"," for every hour of expenses")}<br/>
                     {horasLibertad <= 1 
-                      ? <span style={{color:T.gn}}>Ganas más por hora de lo que gastas. Cada hora trabajada genera excedente.</span>
-                      : <span style={{color:T.rd}}>Gastas más por hora de lo que ganas. Revisa tu estructura de costos.</span>
+                      ? <span style={{color:T.gn}}>{tx("Ganas más por hora de lo que gastas. Cada hora trabajada genera excedente.","You earn more per hour than you spend. Every hour worked creates a surplus.")}</span>
+                      : <span style={{color:T.rd}}>{tx("Gastas más por hora de lo que ganas. Revisa tu estructura de costos.","You spend more per hour than you earn. Review your cost structure.")}</span>
                     }
                   </div>
                 </div>
                 <div style={{fontSize:12,color:T.tx3,lineHeight:1.6}}>
-                  Cuando evalúes un gasto, piensa: <em>"¿Esto vale {fm(Math.round(ingresoHora))} × las horas que representa?"</em>
-                  <br/>Un gasto de {fm(1000000)} = <strong>{ingresoHora > 0 ? (1000000 / ingresoHora).toFixed(1) : "∞"} horas</strong> de tu trabajo.
+                  {tx("Cuando evalúes un gasto, piensa: ","When you weigh a purchase, ask: ")}<em>{tx("\"¿Esto vale ","\"Is this worth ")}{fm(Math.round(ingresoHora))}{tx(" × las horas que representa?\""," × the hours it takes?\"")}</em>
+                  <br/>{tx("Un gasto de ","A ")}{fm(isUS?1000:1000000)}{tx(" = "," purchase = ")}<strong>{ingresoHora > 0 ? ((isUS?1000:1000000) / ingresoHora).toFixed(1) : "∞"}{tx(" horas"," hours")}</strong>{tx(" de tu trabajo."," of your work.")}
                 </div>
               </>
             );
@@ -3364,31 +3384,31 @@ export default function FinPath(){
           declaraciones: ese patrimonio es fiscal (costo) y daría un salto falso. */}
       {(()=>{
         const hs=resumenHistoria(registrarMes(u||{},{trm:trmReal(u)}).historiaPatrimonio);
-        if(hs.puntos.length<1)return null;
+        if(hs.puntos.length<1||isUS)return null; // 3-nov-2026: la historia se guarda en pesos; en EE. UU. aún no se muestra
         const pts=hs.puntos;
         const c=hs.ano?hs.ano.cambio:hs.mes?hs.mes.cambio:0;
-        const titulo=<div><div style={{fontSize:19,fontWeight:600,color:T.tx,letterSpacing:"-0.01em"}}>¿Cómo ha crecido tu patrimonio?</div><div style={{fontSize:13,color:T.tx3,marginTop:4}}>Un punto por mes con lo que tenías cargado ese mes. La historia empezó en {etiquetaMes(pts[0].k)}; cada mes se suma uno.</div></div>;
+        const titulo=<div><div style={{fontSize:19,fontWeight:600,color:T.tx,letterSpacing:"-0.01em"}}>{tx("¿Cómo ha crecido tu patrimonio?","How has your net worth grown?")}</div><div style={{fontSize:13,color:T.tx3,marginTop:4}}>{tx("Un punto por mes con lo que tenías cargado ese mes. La historia empezó en ","One point per month with what you had entered that month. History starts in ")}{etiquetaMes(pts[0].k)}{tx("; cada mes se suma uno.","; a new point is added each month.")}</div></div>;
         if(pts.length<4){
           return<Cd s={{padding:"clamp(20px,3vw,28px)",marginBottom:20,borderRadius:16}}>
             {titulo}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,160px),1fr))",gap:16,marginTop:20,alignItems:"end"}}>
               {pts.map((p,i)=>{const ult=i===pts.length-1;return<div key={p.k} style={{borderTop:`2px solid ${ult?"var(--fp-azul)":"rgba(var(--fp-ink),0.12)"}`,paddingTop:10}}>
-                <div style={{fontSize:12,color:T.tx3}}>{etiquetaMes(p.k)}{ult?" · hoy":""}</div>
+                <div style={{fontSize:12,color:T.tx3}}>{etiquetaMes(p.k)}{ult?tx(" · hoy"," · today"):""}</div>
                 <div style={{fontSize:ult?26:20,fontWeight:600,color:T.tx,fontVariantNumeric:"tabular-nums"}}>{fm(p.nw)}</div>
               </div>})}
               {pts.length>1&&<div style={{paddingTop:12}}>
-                <div style={{fontSize:12,color:T.tx3}}>Cambio</div>
+                <div style={{fontSize:12,color:T.tx3}}>{tx("Cambio","Change")}</div>
                 <div style={{fontSize:20,fontWeight:600,color:c>=0?"var(--fp-pos)":"var(--fp-neg)",fontVariantNumeric:"tabular-nums"}}>{c>=0?"+":"−"}{fm(Math.abs(c))}</div>
               </div>}
             </div>
-            <div style={{fontSize:12,color:T.tx3,marginTop:14}}>{pts.length===1?"El próximo mes verás cuánto cambió.":`Con ${4-pts.length===1?"un mes":(4-pts.length)+" meses"} más verás la curva.`}</div>
+            <div style={{fontSize:12,color:T.tx3,marginTop:14}}>{pts.length===1?tx("El próximo mes verás cuánto cambió.","Next month you'll see how much it changed."):tx(`Con ${4-pts.length===1?"un mes":(4-pts.length)+" meses"} más verás la curva.`,`${4-pts.length===1?"One more month":(4-pts.length)+" more months"} and you'll see the curve.`)}</div>
           </Cd>;
         }
         const data=pts.map(p=>({m:etiquetaMes(p.k),nw:p.nw}));
         return<Cd s={{padding:"clamp(20px,3vw,28px)",marginBottom:20,borderRadius:16}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-end",flexWrap:"wrap",gap:12,marginBottom:12}}>
             {titulo}
-            <div style={{textAlign:"right"}}><div style={{fontSize:12,color:T.tx3}}>{hs.ano?"Desde "+etiquetaMes(hs.ano.desde):"Este mes"}</div><div style={{fontSize:20,fontWeight:600,color:c>=0?"var(--fp-pos)":"var(--fp-neg)",fontVariantNumeric:"tabular-nums"}}>{c>=0?"+":"−"}{fm(Math.abs(c))}</div></div>
+            <div style={{textAlign:"right"}}><div style={{fontSize:12,color:T.tx3}}>{hs.ano?tx("Desde ","Since ")+etiquetaMes(hs.ano.desde):tx("Este mes","This month")}</div><div style={{fontSize:20,fontWeight:600,color:c>=0?"var(--fp-pos)":"var(--fp-neg)",fontVariantNumeric:"tabular-nums"}}>{c>=0?"+":"−"}{fm(Math.abs(c))}</div></div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={data} margin={MARGEN_EJE}>
@@ -3396,25 +3416,25 @@ export default function FinPath(){
               <CartesianGrid {...gridProps}/><XAxis dataKey="m" {...axisProps}/>
               <YAxis {...axisProps} width={78} domain={[v=>Math.floor(v*0.97),v=>Math.ceil(v*1.02)]} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/>
               <Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/>
-              <Area type="monotone" dataKey="nw" name="Patrimonio neto" stroke="#3b82f6" strokeWidth={2.5} fill="url(#fpGradHist)" dot={{r:3.5,fill:"#3b82f6",strokeWidth:0}} activeDot={{r:5}}/>
+              <Area type="monotone" dataKey="nw" name={tx("Patrimonio neto","Net worth")} stroke="#3b82f6" strokeWidth={2.5} fill="url(#fpGradHist)" dot={{r:3.5,fill:"#3b82f6",strokeWidth:0}} activeDot={{r:5}}/>
             </AreaChart>
           </ResponsiveContainer>
         </Cd>;
       })()}
 
-      <SecH n={4} t="¿Hacia dónde vas?" s="Proyección, independencia financiera y alertas"/>
+      <SecH n={4} t={tx("¿Hacia dónde vas?","Where are you headed?")} s={tx("Proyección, independencia financiera y alertas","Projection, financial independence and alerts")}/>
       {/* ══════════ 4 · ¿HACIA DÓNDE VOY? ══════════
           Proyección e independencia financiera. */}
       <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"2fr 1fr",gap:20}}>
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>Proyección Patrimonial (8% anual)</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>{tx("Proyección Patrimonial (8% anual)","Net Worth Projection (8% a year)")}</div>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={pj} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} width={78} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
           </ResponsiveContainer>
         </Cd>
         {/* Independence Progress */}
         <Cd s={{padding:"24px",display:"flex",flexDirection:"column",justifyContent:"center"}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:24}}>Independencia Financiera</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:24}}>{tx("Independencia Financiera","Financial Independence")}</div>
           <AvisoCambioNivel T={T}/>
           <div style={{position:"relative",height:14,background:T.bg3,borderRadius:8,overflow:"hidden",marginBottom:8}}>
             <div style={{height:"100%",width:Math.min(t.ind,150)+"%",maxWidth:"100%",background:t.ind>=100?"linear-gradient(90deg,#00c805,#3b82f6)":"linear-gradient(90deg,#ff5000,#f59e0b)",borderRadius:8,transition:"width 0.5s"}}/>
@@ -3424,66 +3444,66 @@ export default function FinPath(){
           </div>
           <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
             {t.ind>=100
-              ?<span style={{color:T.gn}}>¡Tu ingreso pasivo cubre todos tus gastos y cuotas!</span>
-              :<span>Tu ingreso pasivo ({fm(t.ingresoPasivo)}/mes) cubre el {pc(t.ind)} de tus gastos y cuotas. Te faltan {fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))}/mes de ingreso pasivo.</span>
+              ?<span style={{color:T.gn}}>{tx("¡Tu ingreso pasivo cubre todos tus gastos y cuotas!","Your passive income covers all your expenses and payments!")}</span>
+              :<span>{tx("Tu ingreso pasivo (","Your passive income (")}{fm(t.ingresoPasivo)}{tx("/mes) cubre el ","/mo) covers ")}{pc(t.ind)}{tx(" de tus gastos y cuotas. Te faltan "," of your expenses and payments. You're ")}{fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))}{tx("/mes de ingreso pasivo.","/mo short in passive income.")}</span>
             }
           </div>
           {t.ind<100&&<div style={{marginTop:8,fontSize:12,color:T.tx3}}>
-            Meta: {fm(t.ob)}/mes de ingreso pasivo (arriendos netos, intereses, dividendos) para ser independiente.
+            {tx("Meta: ","Goal: ")}{fm(t.ob)}{tx("/mes de ingreso pasivo (arriendos netos, intereses, dividendos) para ser independiente.","/mo in passive income (net rent, interest, dividends) to be independent.")}
           </div>}
         </Cd>
       </div>
       {/* Alertas de detalle. Cierra la página: son avisos puntuales, no el
           diagnóstico principal — ese lo da el bloque del family office arriba. */}
       <Cd s={{padding:20,marginTop:20,background:"linear-gradient(135deg,rgba(255,80,0,0.03),rgba(245,158,11,0.02))"}}>
-        <div style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:20}}>Alertas del Asesor — Rebalanceo y Ajustes</div>
+        <div style={{fontSize:13,fontWeight:700,color:"#f59e0b",marginBottom:20}}>{tx("Alertas del Asesor — Rebalanceo y Ajustes","Advisor Alerts — Rebalancing and Adjustments")}</div>
         {(() => {
           const alerts = [];
           const inv = ((u&&u.inv)||[]).filter(i=>i.sim!==false);
           const ing = ((u&&u.ingresos)||[]).filter(i=>i.sim!==false);
-          const totalA = inv.reduce((s,i) => s + vaCOP(i,trm), 0) + ib.tv;
+          const totalA = inv.reduce((s,i) => s + vaCOP(i,trmPais), 0) + ib.tv;
           
           // 1. Real estate concentration
-          const reVal = inv.filter(i => ["Real Estate","Bodega","Lote","Local Comercial"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trm), 0);
+          const reVal = inv.filter(i => ["Real Estate","Bodega","Lote","Local Comercial"].includes(i.tp||i.tipo)).reduce((s,i) => s + vaCOP(i,trmPais), 0);
           const rePct = totalA > 0 ? (reVal / totalA * 100) : 0;
-          if (rePct > 60) alerts.push({type:"",title:"Concentración inmobiliaria extrema",msg:"El "+fmtPctEs(rePct, 0)+" de tu patrimonio está en inmuebles. Si el mercado inmobiliario cae, tu patrimonio se impacta fuertemente. Considera diversificar al menos "+fm(reVal*0.15)+" hacia renta fija, fondos o acciones internacionales.",cat:"Diversificación"});
-          else if (rePct > 45) alerts.push({type:"",title:"Alta exposición inmobiliaria",msg:"El "+fmtPctEs(rePct, 0)+" está en inmuebles. Es común en Colombia pero te expone a riesgo de liquidez. Un portafolio balanceado tiene máximo 40% en un solo tipo de activo.",cat:"Diversificación"});
+          if (rePct > 60) alerts.push({type:"",title:tx("Concentración inmobiliaria extrema","Extreme real estate concentration"),msg:tx("El "+pctR(rePct, 0)+" de tu patrimonio está en inmuebles. Si el mercado inmobiliario cae, tu patrimonio se impacta fuertemente. Considera diversificar al menos "+fm(reVal*0.15)+" hacia renta fija, fondos o acciones internacionales.",pctR(rePct, 0)+" of your net worth is in real estate. If the property market drops, your net worth takes a big hit. Consider moving at least "+fm(reVal*0.15)+" into bonds, funds or international stocks."),cat:tx("Diversificación","Diversification")});
+          else if (rePct > 45) alerts.push({type:"",title:tx("Alta exposición inmobiliaria","High real estate exposure"),msg:tx("El "+pctR(rePct, 0)+" está en inmuebles. "+(isUS?"":"Es común en Colombia pero ")+"te expone a riesgo de liquidez. Un portafolio balanceado tiene máximo 40% en un solo tipo de activo.",pctR(rePct, 0)+" is in real estate, which exposes you to liquidity risk. A balanced portfolio keeps any single asset type at 40% or less."),cat:tx("Diversificación","Diversification")});
 
           // 2. Single asset risk
-          const maxAsset = inv.reduce((max,i) => vaCOP(i,trm) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trm)} : max, {n:"",v:0});
+          const maxAsset = inv.reduce((max,i) => vaCOP(i,trmPais) > max.v ? {n:i.n||i.nombre||"",v:vaCOP(i,trmPais)} : max, {n:"",v:0});
           const maxPct = totalA > 0 ? (maxAsset.v / totalA * 100) : 0;
-          if (maxPct > 35) alerts.push({type:"",title:maxAsset.n+" = "+fmtPctEs(maxPct, 0)+" del patrimonio",msg:"Ningún activo debería superar el 30%. Considera vender una porción o no seguir incrementando esta posición. Mover "+fm(maxAsset.v*0.1)+" a otros activos reduciría tu riesgo.",cat:"Concentración"});
+          if (maxPct > 35) alerts.push({type:"",title:maxAsset.n+" = "+pctR(maxPct, 0)+tx(" del patrimonio"," of net worth"),msg:tx("Ningún activo debería superar el 30%. Considera vender una porción o no seguir incrementando esta posición. Mover "+fm(maxAsset.v*0.1)+" a otros activos reduciría tu riesgo.","No single asset should be over 30%. Consider selling part of it or not adding more. Moving "+fm(maxAsset.v*0.1)+" to other assets would lower your risk."),cat:tx("Concentración","Concentration")});
 
           // 3. Income dependency
           const maxIng = ing.reduce((max,i) => montoPromedioMensual(i) > max.v ? {n:i.nombre||"",v:montoPromedioMensual(i)} : max, {n:"",v:0});
           const maxIngPct = t.ti > 0 ? (maxIng.v / t.ti * 100) : 0;
-          if (maxIngPct > 40) alerts.push({type:"",title:"Dependencia de ingreso: "+maxIng.n,msg:"El "+fmtPctEs(maxIngPct, 0)+" de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",cat:"Riesgo de ingreso"});
+          if (maxIngPct > 40) alerts.push({type:"",title:tx("Dependencia de ingreso: ","Income dependence: ")+maxIng.n,msg:tx("El "+pctR(maxIngPct, 0)+" de tus ingresos viene de una sola fuente. Si esa fuente falla, tu cash flow cae "+fm(maxIng.v)+"/mes. Diversifica fuentes de ingreso.",pctR(maxIngPct, 0)+" of your income comes from one source. If it stops, your cash flow drops "+fm(maxIng.v)+"/mo. Diversify your income sources."),cat:tx("Riesgo de ingreso","Income risk")});
 
           // 4. Debt-to-income
           const dti = t.cargaDeudaPct || 0;
-          if (dti > 40) alerts.push({type:"",title:"Carga de deuda alta: "+fmtPctEs(dti),msg:"Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.",cat:"Deuda"});
+          if (dti > 40) alerts.push({type:"",title:tx("Carga de deuda alta: ","High debt load: ")+pctR(dti),msg:tx("Más del 40% de tu ingreso va a cuotas. Prioriza pagar la deuda de mayor tasa. Meta: bajar a menos del 30%.","More than 40% of your income goes to payments. Pay off the highest-rate debt first. Goal: get under 30%."),cat:tx("Deuda","Debt")});
 
           // 5. Savings rate
           const savR = t.ahorroPct || 0;
-          if (savR < 10 && savR >= 0) alerts.push({type:"",title:"Tasa de ahorro baja: "+fmtPctEs(savR),msg:"Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.",cat:"Ahorro"});
-          if (savR < 0) alerts.push({type:"",title:"Ahorro negativo — estás descapitalizándote",msg:"Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas. Esto erosiona tu patrimonio. Acción urgente: recortar gastos o generar más ingresos.",cat:"Cash Flow"});
+          if (savR < 10 && savR >= 0) alerts.push({type:"",title:tx("Tasa de ahorro baja: ","Low savings rate: ")+pctR(savR),msg:tx("Los family offices recomiendan ahorrar al menos 20% del ingreso. Busca reducir gastos variables o incrementar ingresos pasivos.","Family offices recommend saving at least 20% of income. Cut variable expenses or grow passive income."),cat:tx("Ahorro","Savings")});
+          if (savR < 0) alerts.push({type:"",title:tx("Ahorro negativo — estás descapitalizándote","Negative savings — you're drawing down your capital"),msg:tx("Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas. Esto erosiona tu patrimonio. Acción urgente: recortar gastos o generar más ingresos.","You spend "+fm(Math.abs(t.cf))+"/mo more than you earn. This erodes your net worth. Urgent: cut expenses or bring in more income."),cat:"Cash Flow"});
 
           // 6. Vehicles depreciating
           const vehiculos = inv.filter(i => (i.tp||i.tipo) === "Vehículo");
-          const vehVal = vehiculos.reduce((s,i) => s + vaCOP(i,trm), 0);
+          const vehVal = vehiculos.reduce((s,i) => s + vaCOP(i,trmPais), 0);
           const vehPct = totalA > 0 ? (vehVal / totalA * 100) : 0;
-          if (vehPct > 5) alerts.push({type:"",title:"Vehículos = "+fmtPctEs(vehPct)+" del patrimonio",msg:"Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.",cat:"Depreciación"});
+          if (vehPct > 5) alerts.push({type:"",title:tx("Vehículos = ","Vehicles = ")+pctR(vehPct)+tx(" del patrimonio"," of net worth"),msg:tx("Los vehículos pierden ~15% de valor por año. "+fm(vehVal)+" en activos que se deprecian. Un family office los considera gastos, no inversiones.","Vehicles lose ~15% of their value a year. "+fm(vehVal)+" sits in depreciating assets. A family office treats them as expenses, not investments."),cat:tx("Depreciación","Depreciation")});
 
           // 7. Positive alerts
           const passR = t.pctIngresoPasivo || 0;
-          if (passR >= 80) alerts.push({type:"",title:"Ingreso pasivo "+fmtPctEs(passR, 0)+" — excelente",msg:"La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.",cat:"Independencia"});
+          if (passR >= 80) alerts.push({type:"",title:tx("Ingreso pasivo "+pctR(passR, 0)+" — excelente","Passive income "+pctR(passR, 0)+" — excellent"),msg:tx("La mayoría de tu ingreso no depende de tu trabajo. Esto te da libertad y reduce riesgo. Mantén esta estructura.","Most of your income doesn't depend on your work. That gives you freedom and lowers risk. Keep this structure."),cat:tx("Independencia","Independence")});
 
           const fireN = t.gfm * 12 * 25;
           const fireP = fireN > 0 ? (t.nw / fireN * 100) : 0;
-          if (fireP >= 100) alerts.push({type:"",title:"FIRE alcanzado — libertad financiera",msg:"Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.",cat:"Libertad"});
-          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"",title:"FIRE al "+fmtPctEs(fireP, 0)+" — muy cerca",msg:"Te falta "+fm(fireN - t.nw)+" para la independencia total. "+(aF!=null?"Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":fmtAniosEs(aF))+" años.":"Genera ahorro mensual positivo para proyectarlo."),cat:"Progreso"}); }
+          if (fireP >= 100) alerts.push({type:"",title:tx("FIRE alcanzado — libertad financiera","FIRE reached — financial freedom"),msg:tx("Tu patrimonio supera tu FIRE number. Técnicamente puedes vivir de tus activos por 25+ años sin trabajar.","Your net worth exceeds your FIRE number. In principle you can live off your assets for 25+ years without working."),cat:tx("Libertad","Freedom")});
+          else if (fireP >= 70) { const aF=añosParaMeta(t.nw,fireN,Math.max(0,t.cf),0.05); alerts.push({type:"",title:tx("FIRE al "+pctR(fireP, 0)+" — muy cerca","FIRE at "+pctR(fireP, 0)+" — very close"),msg:tx("Te falta "+fm(fireN - t.nw)+" para la independencia total. ","You're "+fm(fireN - t.nw)+" away from full independence. ")+(aF!=null?tx("Proyectado a 5% real anual, llegas en ~"+(aF<1?"menos de 1":fmtAniosEs(aF))+" años.","At 5% real a year, you get there in ~"+(aF<1?"less than 1":aF.toLocaleString(localeCifras(),{maximumFractionDigits:1}))+" years."):tx("Genera ahorro mensual positivo para proyectarlo.","Build positive monthly savings to project it.")),cat:tx("Progreso","Progress")}); }
 
-          if (alerts.length === 0) alerts.push({type:"",title:"Sin alertas",msg:"Tu situación financiera está bien balanceada. Sigue monitoreando mensualmente.",cat:"General"});
+          if (alerts.length === 0) alerts.push({type:"",title:tx("Sin alertas","No alerts"),msg:tx("Tu situación financiera está bien balanceada. Sigue monitoreando mensualmente.","Your finances are well balanced. Keep checking monthly."),cat:"General"});
 
           return (
             <div style={{display:"grid",gap:8}}>
@@ -3547,7 +3567,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 </div>}
               </div></div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0,mult:+f.mult||1});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>);
         case"gas":return isUS?<ExpensesModuleUS gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} agi={t.ti*12}/>:<GastosModule trm={trm} owners={u?.owners||[]} ingresos={u?.ingresos||[]} gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} fmt={fm} onImport={()=>setShowImport(true)} plan={plan} onUpgrade={()=>setPg("price")} user={u} authUser={authUser}/>;
-        case"deu":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u.deu)||[]} onUpdateAssets={v=>upd("inv",v)} onUpdateLiabs={v=>upd("deu",v)} initialTab="liabilities"/>:<DeudasModule trm={trm} owners={u?.owners||[]} deudas={(u&&u.deu)||[]} inversiones={(u&&u.inv)||[]} onUpdate={v=>upd("deu",v)} fmt={fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} authUser={authUser} cashFlow={t.cf} onExtraADeudasChange={setExtraADeudas}/>;
+        case"deu":return<DeudasModule trm={trmPais} owners={u?.owners||[]} deudas={(u&&u.deu)||[]} inversiones={(u&&u.inv)||[]} onUpdate={v=>upd("deu",v)} fmt={isUS?plataRegion:fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} authUser={authUser} cashFlow={t.cf} onExtraADeudasChange={setExtraADeudas}/>;
     case"met":return isUS
       ?<GoalsModuleUS
           goals={(u&&u.metas)||[]}
@@ -3559,7 +3579,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           currentAge={u?.pen?.age||35}
           retirementBalance={(u?.inv||[]).filter(i=>["Fondo de Inversión","CDT","Acciones"].includes(i.tp||i.tipo)).reduce((s,i)=>s+vaCOP(i,trm),0)}
         />
-      :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trm} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
+      :<MetasModule metas={(u&&u.metas)||[]} onUpdate={v=>upd("metas",v)} cashFlow={t.cf} fmt={fm} trm={trmPais} norte={u?.norte||null} cfFuenteLabel={"CF mensual post-cuotas (t.cf / FlujoAnual; mismo neteo que #19 / simT.cf). Extra a deudas restado si Plan a cero (P0.3) está activo."} onNavigateNorte={()=>setPg("norte")} extraADeudas={extraADeudas}/>;
     // «Escenarios a 10 años» (MiPlan) se retiró del menú: lo reemplaza «Mi futuro a 10 años».
     // Links/estado viejo con pg="plan" muestran f10. Datos guardados (perfilPlan, caminos…) se conservan.
     // 1-nov-2026 (Santiago): «Mi futuro a 10 años» se despliega en el menú como
@@ -3569,13 +3589,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     case"f10crear":
     case"f10esc":{
       const vistaF10=pg==="f10crear"?"crear":pg==="f10esc"?"creados":(((u?.futuro10?.escenarios)||[]).length?"creados":"crear");
-      return <MiFuturo10 vista={vistaF10} onCambiarVista={v=>setPg(v==="crear"?"f10crear":"f10esc")} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
+      return <MiFuturo10 vista={vistaF10} onCambiarVista={v=>setPg(v==="crear"?"f10crear":"f10esc")} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],ingresos:(u&&u.ingresos)||[],gas:(u&&u.gas)||{},deu:(u&&u.deu)||[],trm:trmPais,owners:(u&&u.owners)||[],taxConfig:u?.taxConfig}} guardado={u?.futuro10||{}} demo={!!u?.p?.demo} onGuardar={v=>{if(u?.p?.demo)return;upd("futuro10",v)}}/>;
     }
-    case"simf":return <><SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRefFuturo,_calRefHoy:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/><NotaFuenteImpuesto modo="futuro" cal={calRefFuturo} owners={(u?.owners)||[]} onNavigate={setPg}/></>;
+    case"simf":return <><SimuladorFuturo user={{gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:trmPais,taxConfig:u?.taxConfig,ingresos:(u&&u.ingresos)||[],inv:(u&&u.inv)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRefFuturo,_calRefHoy:calRef}} escenarios={u?.escenarios||[]} onUpdate={v=>upd("escenarios",v)} onNavigate={setPg}/><NotaFuenteImpuesto modo="futuro" cal={calRefFuturo} owners={(u?.owners)||[]} onNavigate={setPg}/></>;
     case"sim":return isUS?<SimuladorUS user={{ingresos:(u&&u.ingresos)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],trm:u?.trm||1}} totals={t}/>:<><SimuladorAvanzado trmReal={trm>0?trm:null} impuestoData={impRef} onInflacionChange={v=>upd("inflacionPct",v)} user={{inflacionPct:u?.inflacionPct,inv:(u&&u.inv)||[],gastos:(u&&u.gas)||{},deudas:(u&&u.deu)||[],ibkr:(u&&u.ibk)||[],trm,ingresos:(u&&u.ingresos)||[],metas:(u&&u.metas)||[],owners:(u&&u.owners)||[{id:"own_1",name:"Personal",type:"natural"}],_calRef:calRef}} totals={t} fmt={fm} onNavigate={setPg}/><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg}/></>;
     // "anio" es la puerta del menú, no una página: si alguien cae ahí, es el mes a mes.
     case"anio":
-    case"flujo":return <><FlujoAnual user={u} trm={trm} isEN={isEN}/><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg}/></>;
+    case"flujo":return <><FlujoAnual user={u} trm={trmPais} isEN={isEN}/><NotaFuenteImpuesto modo="actual" cal={calRef} owners={(u?.owners)||[]} detalle={impRef?.detalle||[]} onNavigate={setPg}/></>;
     // Panel del dueño del producto — bloqueado por email en el cliente Y en la
     // función serverless (que además valida contra su propia lista de admins).
     case"metrics":return isAdmin?<AdminMetrics email={u?.p?.email} fmt={fm} T={T}/>:<div style={{padding:40,textAlign:"center",color:T.tx3}}>No disponible.</div>;
@@ -3946,7 +3966,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 </div>
               ))}
               <div style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"6px 0",fontWeight:700}}>
-                <span>Total</span><span style={{color:T.gn}}>{fm(t.ti)}/mes</span>
+                <span>Total</span><span style={{color:T.gn}}>{fm(t.ti)}{tx("/mes","/mo")}</span>
               </div>
             </div>
             <div>
@@ -3962,7 +3982,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 <span style={{fontWeight:600,fontFamily:"monospace",color:T.rd}}>{fm(t.tc)}</span>
               </div>
               <div style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"6px 0",fontWeight:700}}>
-                <span>Total</span><span style={{color:T.rd}}>{fm(t.te)}/mes</span>
+                <span>Total</span><span style={{color:T.rd}}>{fm(t.te)}{tx("/mes","/mo")}</span>
               </div>
             </div>
           </div>
@@ -4280,14 +4300,14 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
                 if(mb)sSb(false);
               }} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:highlight?600:400,marginBottom:1,background:highlight?T.gnB:"transparent",color:highlight?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}><IconoMenu id={n.id}/></span><span style={{flex:1,textAlign:"left"}}>{n.l}</span><span style={{fontSize:11,color:T.tx3,transform:expanded?"rotate(90deg)":"none",transition:"transform 0.15s"}}>▸</span></button>;
             }
-            const a=pg===n.id||(n.id==="asesor"&&pg==="coach");return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}><IconoMenu id={n.id}/></span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:11,fontWeight:700,padding:"1px 6px",borderRadius:999}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:999,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:11,color:T.tx3}}>{plan==="free"?"Free":plan==="basico"?"Básico ":plan==="pro_familiar"?"Pro Familiar ":trialActive?"Pro Trial":"Pro "}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:11,color:T.tx3}}><span></span> Conexión cifrada · no vendemos tus datos</div><button onClick={()=>window.open("https://wa.me/?text=Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0Ahttps://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>Cerrar sesión</button></div></aside>}
+            const a=pg===n.id||(n.id==="asesor"&&pg==="coach");return<button key={n.id} onClick={()=>{setPg(n.id);if(mb)sSb(false)}} style={{width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:a?600:400,marginBottom:1,background:a?T.gnB:"transparent",color:a?T.gn:T.tx2,transition:"all .15s"}}><span style={{fontSize:14}}><IconoMenu id={n.id}/></span>{n.l}{n.id==="price"&&plan==="free"&&<span style={{marginLeft:"auto",background:T.gn,color:"#000",fontSize:11,fontWeight:700,padding:"1px 6px",borderRadius:999}}>PRO</span>}</button>})}</nav><div style={{padding:12,borderTop:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:8}}><div style={{width:28,height:28,borderRadius:999,background:T.gnB,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:T.gn}}>{(u?.p?.name||"U").charAt(0)}</div><div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{u?.p?.name||"Usuario"}</div><div style={{fontSize:11,color:T.tx3}}>{plan==="free"?"Free":plan==="basico"?"Básico ":plan==="pro_familiar"?"Pro Familiar ":trialActive?"Pro Trial":"Pro "}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",marginBottom:6,fontSize:11,color:T.tx3}}><span></span> {isEN?"Encrypted · we never sell your data":"Conexión cifrada · no vendemos tus datos"}</div><button onClick={()=>window.open("https://wa.me/?text=Encontré esta plataforma para gestionar tu patrimonio con inteligencia artificial.%0A%0APones tus inversiones, ingresos, gastos y deudas → te dice en qué nivel de libertad financiera estás, simula escenarios y un asesor IA analiza tus números reales.%0A%0A14 días gratis del plan completo, sin tarjeta.%0A%0Ahttps://finpathia.com","_blank")} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:"rgba(37,211,102,0.1)",border:"1px solid rgba(37,211,102,0.2)",color:"#25d366",cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12,marginBottom:6}}>Compartir por WhatsApp</button><button onClick={logout} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,background:T.bg3,border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"8px",borderRadius:8,fontSize:12}}>Cerrar sesión</button></div></aside>}
     {mb&&sb&&<div onClick={()=>sSb(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",zIndex:99}}/>}
-    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(59,130,246,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}></span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#3b82f6)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}></span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#3b82f6)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.08))",borderBottom:"1px solid rgba(245,158,11,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:10,flexWrap:"wrap"}}><span style={{color:T.orange}}>Estos son <strong>datos de ejemplo</strong>, no los tuyos{authUser?" — no se guardan y tu cuenta queda como estaba":""}.</span>{authUser?<button onClick={salirDemo} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Empezar con mis datos →</button>:<button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Crear cuenta para guardar →</button>}</div>}{!isLegacy&&role==="reader"&&viewMode!=="client"&&<RoleBanner accountName={displayName}/>}<AvisoTasa est={estTrm} t={t} fm={fm}/><header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" aria-label="Abrir menú" style={{background:"none",border:"none",color:T.tx,cursor:"pointer",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10}}><IconoMenuHamburguesa size={22} strokeWidth={1.8}/></button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:700,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!isLegacy&&memberships&&memberships.length>1&&viewMode!=="client"&&<AccountSwitcher memberships={memberships} activeAccountId={accountId} onSwitch={handleAccountSwitch}/>}{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",gap:4}}>Importar Excel</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg><button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#00c805",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}
+    <main style={{flex:1,minWidth:0,display:"flex",flexDirection:"column"}}>{isAdvisor&&viewMode==="client"&&currentClient&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.18),rgba(59,130,246,0.14))",borderBottom:"2px solid rgba(59,130,246,0.4)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#bfdbfe",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}></span><span><strong style={{color:"#fff"}}>Viendo como asesor:</strong> {currentClient.name||currentClient.email} <span style={{opacity:0.7}}>({currentClient.email})</span></span></span><button onClick={returnToAdvisorWorkspace} style={{background:"linear-gradient(135deg,#3b82f6,#3b82f6)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>← Volver a mis clientes</button></div>}{isAdvisor&&viewMode==="personal"&&<div style={{background:"linear-gradient(135deg,rgba(59,130,246,0.12),rgba(59,130,246,0.10))",borderBottom:"1px solid rgba(59,130,246,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:12,flexWrap:"wrap"}}><span style={{color:"#93c5fd",display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:14}}></span><span>Modo personal — gestionas tu propio patrimonio.</span></span><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setViewMode("workspace");setCurrentClientId(null)}} style={{background:"linear-gradient(135deg,#3b82f6,#3b82f6)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Ir a mis clientes</button></div></div>}{u?.p?.demo&&<div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.1),rgba(245,158,11,0.08))",borderBottom:"1px solid rgba(245,158,11,0.2)",padding:"8px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:12,gap:10,flexWrap:"wrap"}}><span style={{color:T.orange}}>Estos son <strong>datos de ejemplo</strong>, no los tuyos{authUser?" — no se guardan y tu cuenta queda como estaba":""}.</span>{authUser?<button onClick={salirDemo} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Empezar con mis datos →</button>:<button onClick={()=>{setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"6px 16px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12}}>Crear cuenta para guardar →</button>}</div>}{!isLegacy&&role==="reader"&&viewMode!=="client"&&<RoleBanner accountName={displayName}/>}<AvisoTasa est={estTrmPais} t={t} fm={fm}/><header style={{height:52,padding:"0 12px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${T.border}`,background:T.bg2,position:"sticky",top:0,zIndex:50}}><div style={{display:"flex",alignItems:"center",gap:6}}>{(!sb||mb)&&<button onClick={()=>sSb(true)} title="Abrir menú" aria-label="Abrir menú" style={{background:"none",border:"none",color:T.tx,cursor:"pointer",width:44,height:44,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10}}><IconoMenuHamburguesa size={22} strokeWidth={1.8}/></button>}{!sb&&!mb&&<span style={{fontSize:14,fontWeight:700,color:T.gn,marginLeft:4}}>FINPATHIA</span>}</div><div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"nowrap",minWidth:0}}>{!isLegacy&&memberships&&memberships.length>1&&viewMode!=="client"&&<AccountSwitcher memberships={memberships} activeAccountId={accountId} onSwitch={handleAccountSwitch}/>}{!mb&&<button onClick={()=>setShowImport(true)} style={{background:"linear-gradient(135deg,#3b82f6,#2563eb)",color:"#fff",border:"none",padding:"6px 14px",borderRadius:8,cursor:"pointer",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",gap:4}}>{isEN?"Import Excel":"Importar Excel"}</button>}<Bg cl={T.gn}>{fm(t.nw)}</Bg>{/* 3-nov-2026: en EE. UU. todo está en dólares; el cambio COP/USD es solo de Colombia */}{!isUS&&<button onClick={()=>setCur(c=>c==="COP"?"USD":"COP")} style={{background:cur==="USD"?"#3b82f6":"#00c805",border:"none",color:"#fff",padding:"4px 8px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}}
                   // 03-ago-2026 — la TRM real llega del Banco de la República
                   // pero nunca se mostraba: no había forma de saber con qué tasa
                   // se estaba convirtiendo. Ahora va en el title del botón.
                   title={estTrm.trm ? `TRM $${Math.round(estTrm.trm).toLocaleString("es-CO")}${u?.trmSrc?` — ${u.trmSrc}`:""}` : "No pudimos obtener la TRM; vuelve a intentar"}
-                  >{cur==="USD"?"USD":"COP"}</button><BotonTema/>{!mb&&<button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(var(--fp-ink),0.08)",border:"1px solid rgba(var(--fp-ink),0.15)",color:"var(--fp-txt)",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}} title="Toggle language">{isEN?"EN":"ES"}</button>}{!mb&&u.trm&&<span style={{fontSize:11,color:T.tx3}}>TRM: ${Math.round(u.trm).toLocaleString("es-CO")}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:12,display:"inline-flex",alignItems:"center"}}>{masked?<EyeOff size={15} strokeWidth={1.75}/>:<Eye size={15} strokeWidth={1.75}/>}</button>{plan==="free"&&!mb&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?"16px 14px":"36px 48px 56px",maxWidth:1280,width:"100%",margin:"0 auto"}}>{/* 31-oct-2026: ancho de lectura centrado y más margen («que se vea más descansado») */}
+                  >{cur==="USD"?"USD":"COP"}</button>}<BotonTema/>{!mb&&<button onClick={()=>setU(p=>p?{...p,lang:isEN?"es":"en"}:p)} style={{background:"rgba(var(--fp-ink),0.08)",border:"1px solid rgba(var(--fp-ink),0.15)",color:"var(--fp-txt)",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontWeight:700,fontSize:12}} title="Toggle language">{isEN?"EN":"ES"}</button>}{!mb&&u.trm&&<span style={{fontSize:11,color:T.tx3}}>TRM: ${Math.round(u.trm).toLocaleString("es-CO")}</span>}<button onClick={()=>setMasked(m=>!m)} title={masked?"Mostrar valores":"Ocultar valores"} style={{background:"none",border:"1px solid "+T.border,color:T.tx3,cursor:"pointer",padding:"4px 8px",borderRadius:6,fontSize:12,display:"inline-flex",alignItems:"center"}}>{masked?<EyeOff size={15} strokeWidth={1.75}/>:<Eye size={15} strokeWidth={1.75}/>}</button>{plan==="free"&&!mb&&<Bt sz="s" onClick={()=>setPg("price")}>Upgrade</Bt>}</div></header><div style={{flex:1,padding:mb?"16px 14px":"36px 48px 56px",maxWidth:1280,width:"100%",margin:"0 auto"}}>{/* 31-oct-2026: ancho de lectura centrado y más margen («que se vea más descansado») */}
       {/* Suspense: los módulos pesados se cargan bajo demanda (25-jul-2026).
           El respaldo es sobrio a propósito — aparece por fracciones de segundo
           al entrar a una sección por primera vez, y un spinner llamativo se
@@ -4301,7 +4321,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
         </span>
       </div>}
       <Suspense fallback={<div style={{padding:40,textAlign:"center",color:T.tx3,fontSize:13}}>Cargando…</div>}>
-        {!isUS&&u&&<NavRecorrido pg={pg} setPg={setPg} mb={mb}/>}{noSinc&&authUser?<fieldset disabled style={{border:0,margin:0,padding:0,minWidth:0}}>{rp()}</fieldset>:rp()}
+        {u&&<NavRecorrido pg={pg} setPg={setPg} mb={mb}/>}{noSinc&&authUser?<fieldset disabled style={{border:0,margin:0,padding:0,minWidth:0}}>{rp()}</fieldset>:rp()}
       </Suspense>
       </div>{paywall&&<div onClick={()=>setPaywall(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"22px 22px",maxWidth:420,width:"100%"}}>
         <div style={{fontSize:18,fontWeight:700,marginBottom:6}}>Estás en modo consulta</div>

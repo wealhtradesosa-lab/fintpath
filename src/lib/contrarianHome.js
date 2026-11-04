@@ -6,6 +6,8 @@
  * el home card usa TRM real del estado (sin hardcodear 4200).
  */
 import { montoPromedioMensual, vaCOP } from "./flowHelpers.js";
+import { tx, esUS } from "./region.js";
+import { nombreCategoria } from "./infografia.js";
 
 const num = (v) => Number(v) || 0;
 
@@ -56,7 +58,7 @@ export function getTopContrarianAlert(user, totales, trm) {
     num(t.te) > 0
       ? Math.round(
           inv
-            .filter((i) => ["Cash", "CDT", "Renta Fija"].includes(i.tp || i.tipo))
+            .filter((i) => ["Cash", "CDT", "Renta Fija"].includes(i.tp || i.tipo) || /hysa|savings|money market|t-bill/i.test(String(i.tp || i.tipo || "")))
             .reduce((s, i) => s + vaCOP(i, rate || usdMul), 0) / t.te
         )
       : 0;
@@ -83,54 +85,54 @@ export function getTopContrarianAlert(user, totales, trm) {
   if (rePct > 60) {
     alerts.push({
       id: "re_concentration",
-      message: `Concentración inmobiliaria ${rePct.toFixed(0)}% — no compres más inmuebles.`,
+      message: tx(`Concentración inmobiliaria ${rePct.toFixed(0)}% — no compres más inmuebles.`, `Real estate is ${rePct.toFixed(0)}% of your net worth — don't buy more property.`),
       ctaPage: "inv",
-      ctaLabel: "Ver patrimonio",
+      ctaLabel: tx("Ver patrimonio", "View assets"),
       advId: null,
     });
   }
   if (100 - pctPasivo > 80) {
     alerts.push({
       id: "work_dependency",
-      message: `${(100 - pctPasivo).toFixed(0)}% depende de trabajo — si te enfermas, pierdes casi todo.`,
+      message: tx(`${(100 - pctPasivo).toFixed(0)}% depende de trabajo — si te enfermas, pierdes casi todo.`, `${(100 - pctPasivo).toFixed(0)}% of your income depends on working — if you get sick, you lose almost all of it.`),
       ctaPage: "coach",
-      ctaLabel: "Ver tu nivel",
+      ctaLabel: tx("Ver tu nivel", "See your level"),
       advId: "estratega",
     });
   }
   if (runway < 6) {
     alerts.push({
       id: "runway",
-      message: `Solo ${runway} meses de runway — mínimo 6 meses líquidos.`,
+      message: tx(`Solo ${runway} meses de runway — mínimo 6 meses líquidos.`, `Only ${runway} months of runway — keep at least 6 months liquid.`),
       ctaPage: "inv",
-      ctaLabel: "Ver liquidez",
+      ctaLabel: tx("Ver liquidez", "View cash"),
       advId: null,
     });
   }
   if (worstDebt && num(worstDebt.ts) > 15) {
     alerts.push({
       id: "expensive_debt",
-      message: `Deuda al ${worstDebt.ts}% (${worstDebt.n || "crédito"}) — págala primero.`,
+      message: tx(`Deuda al ${worstDebt.ts}%${esUS() ? " APR" : ""} (${worstDebt.n || "crédito"}) — págala primero.`, `Debt at ${worstDebt.ts}%${esUS() ? " APR" : ""} (${worstDebt.n || "loan"}) — pay it off first.`),
       ctaPage: "deu",
-      ctaLabel: "Ver deudas",
+      ctaLabel: tx("Ver deudas", "View debts"),
       advId: null,
     });
   }
   if (bigG) {
     alerts.push({
       id: "big_expense",
-      message: `${bigG.cat} = ${((bigG.total / ni) * 100).toFixed(0)}% del ingreso — máx. recomendado 25%.`,
+      message: tx(`${nombreCategoria(bigG.cat)} = ${((bigG.total / ni) * 100).toFixed(0)}% del ingreso — máx. recomendado 25%.`, `${nombreCategoria(bigG.cat)} = ${((bigG.total / ni) * 100).toFixed(0)}% of income — 25% max recommended.`),
       ctaPage: "gas",
-      ctaLabel: "Ver gastos",
+      ctaLabel: tx("Ver gastos", "View expenses"),
       advId: null,
     });
   }
   if (dta > 50) {
     alerts.push({
       id: "high_da",
-      message: `Deuda/Activos ${dta.toFixed(1)}% — más de la mitad está financiada con deuda.`,
+      message: tx(`Deuda/Activos ${dta.toFixed(1)}% — más de la mitad está financiada con deuda.`, `Debt/Assets ${dta.toFixed(1)}% — more than half is financed with debt.`),
       ctaPage: "deu",
-      ctaLabel: "Revisar deudas",
+      ctaLabel: tx("Revisar deudas", "Review debts"),
       advId: null,
     });
   }

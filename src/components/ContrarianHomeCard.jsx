@@ -1,16 +1,21 @@
+import { tx } from "../lib/region.js";
 /**
  * ContrarianHomeCard — 1 error prioritario + 1 CTA en el Dashboard.
  * Copy corto en español. Sin “consulta un asesor”.
  */
 export default function ContrarianHomeCard({
-  title = "Segunda opinión",
-  subtitle = "Lo que te conviene no hacer",
+  title: titleProp,
+  subtitle: subtitleProp,
   alert,
   muted = false,
-  mutedText = "Sin alertas graves",
+  mutedText: mutedTextProp,
   onCta,
   T,
 }) {
+  // 3-nov-2026: textos por defecto en el idioma de la sesión.
+  const title = titleProp ?? tx("Segunda opinión", "Second opinion");
+  const subtitle = subtitleProp ?? tx("Lo que te conviene no hacer", "What you're better off not doing");
+  const mutedText = mutedTextProp ?? tx("Sin alertas graves", "No serious alerts");
   const accent = "#3b82f6";
   const bg = "rgba(59,130,246,0.06)";
 
@@ -75,7 +80,7 @@ export default function ContrarianHomeCard({
               flexShrink: 0,
             }}
           >
-            {alert.ctaLabel || "Ver detalle"} →
+            {alert.ctaLabel || tx("Ver detalle", "See details")} →
           </button>
         )}
       </div>

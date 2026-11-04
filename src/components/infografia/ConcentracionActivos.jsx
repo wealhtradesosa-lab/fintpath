@@ -8,9 +8,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
+import { tx, localeCifras, esUS } from "../../lib/region.js";
 
 const UMBRAL = 30;
-const pct = (n) => Math.round(n).toLocaleString("es-CO") + " %";
+const pct = (n) => Math.round(n).toLocaleString(localeCifras()) + (esUS() ? "%" : " %");
 
 export default function ConcentracionActivos({ activos, fm, max = 5 }) {
   const lista = (activos || []).filter((a) => a.valor > 0).sort((a, b) => b.valor - a.valor);
@@ -19,24 +20,24 @@ export default function ConcentracionActivos({ activos, fm, max = 5 }) {
   const top = lista.slice(0, max).map((a) => ({ ...a, pct: (a.valor / total) * 100 }));
   const resto = lista.slice(max);
   const restoValor = resto.reduce((s, a) => s + a.valor, 0);
-  const segmentos = [...top, ...(resto.length ? [{ id: "_resto", nombre: `Otros ${resto.length}`, valor: restoValor, pct: (restoValor / total) * 100, resto: true }] : [])];
+  const segmentos = [...top, ...(resto.length ? [{ id: "_resto", nombre: tx(`Otros ${resto.length}`, `${resto.length} others`), valor: restoValor, pct: (restoValor / total) * 100, resto: true }] : [])];
   const mayor = top[0];
   const alta = mayor.pct > UMBRAL;
   const tono = (s, i) => (s.resto ? "rgba(var(--fp-ink),0.14)" : i === 0 ? (alta ? C.neg : C.azul) : trama(C.azul, Math.max(22, 70 - i * 12)));
   const top3 = top.slice(0, 3).reduce((s, a) => s + a.pct, 0);
 
   return (
-    <section aria-label="Concentración del patrimonio" style={{ ...tarjeta, marginBottom: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+    <section aria-label={tx("Concentración del patrimonio", "Net worth concentration")} style={{ ...tarjeta, marginBottom: 16, display: "flex", flexDirection: "column", gap: 16 }}>
       <style>{CSS_INFOGRAFIA}</style>
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
         <div>
-          <h3 style={titulo}>¿Qué tan concentrado estás?</h3>
+          <h3 style={titulo}>{tx("¿Qué tan concentrado estás?", "How concentrated are you?")}</h3>
           <div style={subtitulo}>
-            Tus {top.length} activos más grandes sobre el total. Tus 3 mayores suman el {pct(top3)}.
+            {tx(`Tus ${top.length} activos más grandes sobre el total. Tus 3 mayores suman el ${pct(top3)}.`, `Your ${top.length} largest assets as a share of the total. Your top 3 add up to ${pct(top3)}.`)}
           </div>
         </div>
         <div style={{ fontSize: 13, fontWeight: 600, color: alta ? C.neg : C.pos }}>
-          {alta ? `${mayor.nombre} es el ${pct(mayor.pct)}` : "Ningún activo pasa del 30 %"}
+          {alta ? tx(`${mayor.nombre} es el ${pct(mayor.pct)}`, `${mayor.nombre} is ${pct(mayor.pct)}`) : tx("Ningún activo pasa del 30 %", "No single asset is over 30%")}
         </div>
       </div>
 
@@ -63,7 +64,7 @@ export default function ConcentracionActivos({ activos, fm, max = 5 }) {
       </div>
       {alta && (
         <div style={{ fontSize: 12.5, color: C.txt3, lineHeight: 1.5 }}>
-          Cuando un solo activo pesa más del 30 %, un problema en él (vacancia, una mala venta, un cambio de norma) mueve todo tu patrimonio.
+          {tx("Cuando un solo activo pesa más del 30 %, un problema en él (vacancia, una mala venta, un cambio de norma) mueve todo tu patrimonio.", "When one asset is over 30% of the total, a problem with it (vacancy, a bad sale, a rule change) moves your whole net worth.")}
         </div>
       )}
     </section>

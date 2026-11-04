@@ -17,6 +17,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { estimarImpuesto } from "./taxCO.js";
+import { esUS } from "./region.js";
+import { estimarImpuestoUS } from "./impuestoUS.js";
 import { ultimaDeclaracion, declaracionesOrdenadas, estimarDesdeDeclaracion, calculosGODelTitular, impuestoDeclarado, retencionDeclarada, lista2026DesdeIngresos, saldoDeclarado } from "./rentaDesdeDeclaracion.js";
 
 const num = (v) => Number(v) || 0;
@@ -33,6 +35,8 @@ const bruto = (d) => (d?.impBruto != null ? num(d.impBruto) : num(d?.impuesto));
  * Si el titular no tiene la declaración del año anterior, «actual» usa el estimado.
  */
 export function calibracionReferente(u, { modo = "actual", hoy = new Date() } = {}) {
+  // 3-nov-2026: EE. UU. no tiene declaraciones cargadas (F-210); calcula siempre con el motor de EE. UU.
+  if (esUS()) return {};
   const owners = (u?.owners || []).filter((o) => o && ultimaDeclaracion(o));
   if (!owners.length) return {};
   let motor;
@@ -104,6 +108,9 @@ export function aplicarReferente(est, cal) {
  * usuario simulado ya no es el de hoy.
  */
 export function estimarImpuestoReferente(u, cal) {
+  // 3-nov-2026: en una sesión de EE. UU. el impuesto sale del motor de EE. UU.
+  // (federal + estatal + FICA), con la misma forma que el de Colombia.
+  if (esUS()) return estimarImpuestoUS(u);
   const est = estimarImpuesto(u);
   return aplicarReferente(est, cal || u?._calRef || calibracionReferente(u));
 }
@@ -134,6 +141,9 @@ export function fechaPersonaNatural(nit) {
   return { mes, dia };
 }
 export function mesesDePago(owner) {
+  // EE. UU.: lo que no retiene la nómina se paga con 4 pagos estimados (Form 1040-ES):
+  // 15 de abril, 15 de junio, 15 de septiembre y 15 de enero.
+  if (esUS()) return [{ mes: 1, dia: 15, fraccion: 0.25 }, { mes: 4, dia: 15, fraccion: 0.25 }, { mes: 6, dia: 15, fraccion: 0.25 }, { mes: 9, dia: 15, fraccion: 0.25 }];
   const jur = owner?.type === "juridica";
   const fijo = Number(owner?.mesDeclaracion) || null;
   if (jur) { const m = fijo || 5; return [{ mes: m, fraccion: 0.5 }, { mes: Math.min(12, m + 2), fraccion: 0.5 }]; }

@@ -12,6 +12,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
+import { tx } from "../../lib/region.js";
 
 const dentro = (v, [a, b]) => v >= a && v <= b;
 
@@ -21,7 +22,8 @@ function estado(it) {
   if (it.cerca && dentro(it.valor, it.cerca)) return "cerca";
   return "fuera";
 }
-const ROTULO = { ok: "En rango", cerca: "Cerca del ideal", fuera: "Fuera del ideal", sin_dato: "Sin dato" };
+// 3-nov-2026: se lee al pintar, en el idioma de la sesión.
+const rotulo = (e) => ({ ok: tx("En rango", "In range"), cerca: tx("Cerca del ideal", "Near ideal"), fuera: tx("Fuera del ideal", "Off target"), sin_dato: tx("Sin dato", "No data") })[e];
 
 function Fila({ it, i }) {
   const e = estado(it);
@@ -35,7 +37,7 @@ function Fila({ it, i }) {
         <span style={{ fontSize: 13, color: C.txt }}>{it.l}</span>
         <span style={{ fontSize: 20, fontWeight: 600, color: e === "fuera" ? C.neg : C.txt, whiteSpace: "nowrap", ...cifra }}>{it.texto}</span>
       </div>
-      <div role="img" aria-label={`${it.l}: ${it.texto}. ${ROTULO[e]}. ${it.tip}`} style={{ position: "relative", height: 14 }}>
+      <div role="img" aria-label={`${it.l}: ${it.texto}. ${rotulo(e)}. ${it.tip}`} style={{ position: "relative", height: 14 }}>
         <div style={{ position: "absolute", inset: "3px 0", borderRadius: 4, background: "rgba(var(--fp-ink),0.06)" }} />
         {it.cerca && <div style={{ position: "absolute", top: 3, bottom: 3, left: pos(it.cerca[0]), width: `calc(${pos(it.cerca[1])} - ${pos(it.cerca[0])})`, background: "rgba(var(--fp-ink),0.1)" }} />}
         <div style={{ position: "absolute", top: 3, bottom: 3, left: pos(a), width: `calc(${pos(b)} - ${pos(a)})`, borderRadius: 4, background: trama(C.azul, 30) }} />
@@ -49,7 +51,7 @@ function Fila({ it, i }) {
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11.5, lineHeight: 1.35 }}>
         <span style={{ color: C.txt3 }}>{it.tip}</span>
-        <span style={{ color: colorEstado, whiteSpace: "nowrap", fontWeight: e === "fuera" ? 600 : 400 }}>{ROTULO[e]}</span>
+        <span style={{ color: colorEstado, whiteSpace: "nowrap", fontWeight: e === "fuera" ? 600 : 400 }}>{rotulo(e)}</span>
       </div>
     </div>
   );
@@ -60,15 +62,15 @@ export default function IndicadoresSalud({ items, nota }) {
   if (!lista.length) return null;
   const fuera = lista.filter((it) => estado(it) === "fuera");
   return (
-    <section aria-label="Indicadores de family office" style={{ ...tarjeta, marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+    <section aria-label={tx("Indicadores de family office", "Family office indicators")} style={{ ...tarjeta, marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
       <style>{CSS_INFOGRAFIA}</style>
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
         <div>
-          <h3 style={titulo}>¿Cómo están tus indicadores de family office?</h3>
-          <div style={subtitulo}>La franja azul es el rango ideal; la línea, tu valor. {nota}</div>
+          <h3 style={titulo}>{tx("¿Cómo están tus indicadores de family office?", "How are your family office indicators?")}</h3>
+          <div style={subtitulo}>{tx("La franja azul es el rango ideal; la línea, tu valor.", "The blue band is the ideal range; the line is your value.")} {nota}</div>
         </div>
         <div style={{ fontSize: 13, color: fuera.length ? C.neg : C.pos, ...cifra }}>
-          {fuera.length ? `${fuera.length} fuera del ideal` : "Todos en rango o cerca"}
+          {fuera.length ? tx(`${fuera.length} fuera del ideal`, `${fuera.length} off target`) : tx("Todos en rango o cerca", "All in or near range")}
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 300px), 1fr))", gap: "22px 40px" }}>

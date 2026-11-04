@@ -8,6 +8,7 @@
 // Vive en lib/ para que los componentes la importen como tokens.
 // ═══════════════════════════════════════════════════════════════════════════
 import { fmtMilesEs, fmtPctEs } from "./formato.js";
+import { esUS, pct as pctRegion, miles, tx } from "./region.js";
 
 export const INF = {
   // Series (orden de uso)
@@ -45,11 +46,21 @@ export const INF = {
 
 // Color estable por clase de activo (Patrimonio neto por año, Todo lo que tienes).
 export const COLOR_CLASE = { inmueble: INF.teja, liquido: INF.azul, acciones: INF.morado, nueva: INF.dorado, otro: INF.gris, vehiculo: INF.gris, canasta: INF.oliva };
-export const ETQ_CLASE = { inmueble: "Inmuebles", liquido: "Liquidez", acciones: "Bolsa", nueva: "Inversiones nuevas", otro: "Otros", vehiculo: "Vehículos", canasta: "Lo que sobra reinvertido" };
+// 3-nov-2026: etiqueta en el idioma de la sesión (getter: se lee al pintar, no al importar).
+const ETQ_CLASE_ES = { inmueble: "Inmuebles", liquido: "Liquidez", acciones: "Bolsa", nueva: "Inversiones nuevas", otro: "Otros", vehiculo: "Vehículos", canasta: "Lo que sobra reinvertido" };
+const ETQ_CLASE_EN = { inmueble: "Real estate", liquido: "Cash", acciones: "Stocks", nueva: "New investments", otro: "Other", vehiculo: "Vehicles", canasta: "Surplus reinvested" };
+export const ETQ_CLASE = new Proxy({}, { get: (_, k) => tx(ETQ_CLASE_ES[k], ETQ_CLASE_EN[k]), ownKeys: () => Object.keys(ETQ_CLASE_ES), getOwnPropertyDescriptor: (_, k) => (k in ETQ_CLASE_ES ? { enumerable: true, configurable: true, value: tx(ETQ_CLASE_ES[k], ETQ_CLASE_EN[k]) } : undefined) });
 
 /** $1.234 M · $12,3 mil M · $850.000 */
 export function fmM(v) {
   const n = Number(v) || 0, a = Math.abs(n), sg = n < 0 ? "−" : "";
+  // 3-nov-2026 — EE. UU.: $1.2B · $3.4M · $850,000.
+  if (esUS()) {
+    const q = (x) => x.toLocaleString("en-US", { maximumFractionDigits: 1 });
+    if (a >= 1e9) return `${sg}$${q(a / 1e9)}B`;
+    if (a >= 1e6) return `${sg}$${q(a / 1e6)}M`;
+    return `${sg}$${miles(a)}`;
+  }
   if (a >= 1e9) return `${sg}$${fmtMilesEs(Math.round(a / 1e6))}M`;
   if (a >= 1e6) return `${sg}$${(Math.round(a / 1e5) / 10).toLocaleString("es-CO")}M`;
   return `${sg}$${fmtMilesEs(Math.round(a))}`;
@@ -57,7 +68,14 @@ export function fmM(v) {
 /** Para ejes: $10.000M, $500M */
 export function fmEje(v) {
   const n = Number(v) || 0, a = Math.abs(n), sg = n < 0 ? "−" : "";
+  if (esUS()) {
+    const q = (x) => x.toLocaleString("en-US", { maximumFractionDigits: 1 });
+    if (a >= 1e9) return `${sg}$${q(a / 1e9)}B`;
+    if (a >= 1e6) return `${sg}$${q(a / 1e6)}M`;
+    if (a >= 1e3) return `${sg}$${q(a / 1e3)}K`;
+    return `${sg}$${miles(a)}`;
+  }
   if (a >= 1e6) return `${sg}$${fmtMilesEs(Math.round(a / 1e6))}M`;
   return `${sg}$${fmtMilesEs(Math.round(a))}`;
 }
-export const fmPct = (v, d = 1) => fmtPctEs(v, d);
+export const fmPct = (v, d = 1) => pctRegion(v, d);

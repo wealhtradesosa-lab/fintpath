@@ -8,6 +8,7 @@
  */
 
 import { costoCredito, tasaMensualEq } from "./flowHelpers.js";
+import { tx, esUS, plata } from "./region.js";
 import {
   proyectarPatrimonio,
   estimarAmortizacionAnual,
@@ -54,7 +55,7 @@ export function listarDeudasActivas(deudas = [], trm = 4200) {
         (saldoCOP > 0 && cuotaCOP > 0 && rMes > 0 && cuotaCOP <= interesMesCOP);
       return {
         id: d.id,
-        nombre: d.n || d.nombre || "(sin nombre)",
+        nombre: d.n || d.nombre || tx("(sin nombre)", "(no name)"),
         saldoCOP,
         cuotaCOP,
         tasaEA,
@@ -100,16 +101,16 @@ export function ordenarDeudas(deudasNorm = [], metodo = "avalanche") {
 export function fraseOrden(deudasOrdenadas = [], fmt) {
   const fm =
     fmt ||
-    ((n) => "$" + Math.round(n || 0).toLocaleString("es-CO"));
+    ((n) => (esUS() ? plata(n) : "$" + Math.round(n || 0).toLocaleString("es-CO")));
   if (!deudasOrdenadas.length) return "";
   const parts = deudasOrdenadas.map((d, i) => {
     const tasa =
       d.tasaEA > 0
-        ? `${Number(d.tasaEA).toLocaleString("es-CO", { maximumFractionDigits: 2 })}%`
-        : "sin tasa";
+        ? `${Number(d.tasaEA).toLocaleString(esUS() ? "en-US" : "es-CO", { maximumFractionDigits: 2 })}%`
+        : tx("sin tasa", "no rate");
     const chunk = `${d.nombre} (${fm(d.saldoCOP)} @ ${tasa})`;
-    if (i === 0) return `Primero ${chunk}`;
-    if (i === 1) return `Luego ${chunk}`;
+    if (i === 0) return tx(`Primero ${chunk}`, `First ${chunk}`);
+    if (i === 1) return tx(`Luego ${chunk}`, `Then ${chunk}`);
     return chunk;
   });
   if (parts.length === 1) return parts[0] + ".";
@@ -118,7 +119,7 @@ export function fraseOrden(deudasOrdenadas = [], fmt) {
     parts[0] +
     ". " +
     parts[1] +
-    ". Después: " +
+    tx(". Después: ", ". After that: ") +
     parts.slice(2).join(" · ") +
     "."
   );
@@ -151,7 +152,7 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
     return {
       meses: 0,
       converge: true,
-      labelMeses: "0 meses",
+      labelMeses: tx("0 meses", "0 months"),
       porDeuda: [],
       algunaNoAmortiza: false,
       saldoFinal: 0,
@@ -220,24 +221,24 @@ export function simularPlanACero(deudasOrdenadas = [], extraMensual = 0) {
 
   let labelMeses;
   if (!converge || months >= CAP_MESES && saldoFinal > 0) {
-    labelMeses = ">50 años";
+    labelMeses = tx(">50 años", ">50 years");
   } else if (meses === 0) {
-    labelMeses = "0 meses";
+    labelMeses = tx("0 meses", "0 months");
   } else if (meses === 1) {
-    labelMeses = "1 mes";
+    labelMeses = tx("1 mes", "1 month");
   } else if (meses < 12) {
-    labelMeses = `${meses} meses`;
+    labelMeses = tx(`${meses} meses`, `${meses} months`);
   } else {
     const y = Math.floor(meses / 12);
     const m = meses % 12;
     // 16-sep-2026 (Santiago: "3a es que 3 años?"). Si hay que preguntarlo, la
     // abreviatura no está ahorrando nada. "2a 8m" se lee rápido solo si ya
     // sabes qué significa; escrito completo no necesita traducción.
-    const añosTxt = `${y} ${y === 1 ? "año" : "años"}`;
+    const añosTxt = tx(`${y} ${y === 1 ? "año" : "años"}`, `${y} ${y === 1 ? "year" : "years"}`);
     labelMeses =
       m === 0
-        ? `${meses} meses (${añosTxt})`
-        : `${meses} meses (${añosTxt} y ${m} ${m === 1 ? "mes" : "meses"})`;
+        ? tx(`${meses} meses (${añosTxt})`, `${meses} months (${añosTxt})`)
+        : tx(`${meses} meses (${añosTxt} y ${m} ${m === 1 ? "mes" : "meses"})`, `${meses} months (${añosTxt} and ${m} ${m === 1 ? "month" : "months"})`);
   }
 
   return {
@@ -350,7 +351,7 @@ export function fraseTradeOff({
 } = {}) {
   const fm =
     fmt ||
-    ((n) => "$" + Math.round(n || 0).toLocaleString("es-CO"));
+    ((n) => (esUS() ? plata(n) : "$" + Math.round(n || 0).toLocaleString("es-CO")));
   const x = Math.round(num(extraMensual));
   if (!trade) return "";
   const verA =
@@ -368,8 +369,30 @@ export function fraseTradeOff({
   // Ahora se estructura como la decision que es -- dos opciones comparables --
   // y se cierra con la diferencia calculada, que es la respuesta.
   const difA = num(trade.escenarioA.patrimonio3a) - num(trade.escenarioB.patrimonio3a);
-  const gana = difA >= 0 ? "pagar las deudas" : "dejarlo invertido";
+  const gana = difA >= 0 ? tx("pagar las deudas", "paying off the debts") : tx("dejarlo invertido", "keeping it invested");
   const dif = fm(Math.abs(difA));
+
+  if (esUS() || tx("es", "en") === "en") {
+    const pctTxt = esUS() ? pct.toLocaleString("en-US") : String(pct);
+    return tx(
+      `Si destinas ${fm(x)} al mes a pagar deudas: quedas en cero en ${labelMeses}, ` +
+      `y a 3 años tu patrimonio sería ${fm(trade.escenarioA.patrimonio3a)}.\n` +
+      `Si en cambio dejas esa plata invertida: a 3 años tu patrimonio sería ` +
+      `${fm(trade.escenarioB.patrimonio3a)}, pero seguirías debiendo ` +
+      `${fm(trade.escenarioB.deudasRestantes3a)}.\n` +
+      `A 3 años conviene ${gana}, por una diferencia de ${dif}. ` +
+      `Supone que lo invertido se valoriza ${pctTxt}% anual, antes de impuestos. ` +
+      `Es una comparación, no una recomendación de inversión.`,
+      `If you put ${fm(x)} a month toward your debts: you're debt-free in ${labelMeses}, ` +
+      `and in 3 years your net worth would be ${fm(trade.escenarioA.patrimonio3a)}.\n` +
+      `If you keep that money invested instead: in 3 years your net worth would be ` +
+      `${fm(trade.escenarioB.patrimonio3a)}, but you'd still owe ` +
+      `${fm(trade.escenarioB.deudasRestantes3a)}.\n` +
+      `Over 3 years, ${gana} comes out ahead by ${dif}. ` +
+      `It assumes investments grow ${pctTxt}% a year, before taxes. ` +
+      `It's a comparison, not investment advice.`
+    );
+  }
 
   return (
     `Si destinas ${fm(x)} al mes a pagar deudas: quedas en cero en ${labelMeses}, ` +
@@ -411,7 +434,7 @@ export function calcularPlanDeudas({
     return {
       vacio: true,
       emptyCopy:
-        "No hay deudas activas — el CF puede ir a metas/norte.",
+        tx("No hay deudas activas — el CF puede ir a metas/norte.", "No active debts — your free cash flow can go to your goals."),
       ordenadas: [],
       frase: "",
       extra,
@@ -467,3 +490,9 @@ export const COPY_CF_NO_POSITIVO =
   "Sin CF positivo el plan es solo cuotas mínimas.";
 
 export const CHIP_NO_AMORTIZA = "No amortiza — revisa cuota/tasa";
+
+// 3-nov-2026: versiones en el idioma de la sesión (las constantes de arriba
+// quedan en español por compatibilidad).
+export const fuenteCfPlan = () => tx(FUENTE_CF_PLAN, "Monthly cash flow after debt payments (the same figure as Month by Month).");
+export const copyCfNoPositivo = () => tx(COPY_CF_NO_POSITIVO, "Without positive cash flow the plan is minimum payments only.");
+export const chipNoAmortiza = () => tx(CHIP_NO_AMORTIZA, "Not paying down — check payment/rate");

@@ -5,10 +5,10 @@ import CaminoACero from "./CaminoACero";
 import {
   calcularPlanDeudas,
   simularPlanACero,
-  FUENTE_CF_PLAN,
-  COPY_CF_NO_POSITIVO,
-  CHIP_NO_AMORTIZA,
+  fuenteCfPlan,
+  chipNoAmortiza,
 } from "../lib/planDeudas.js";
+import { tx, esUS, plata } from "../lib/region.js";
 
 const T = {
   bg3: "var(--fp-raised)",
@@ -23,7 +23,7 @@ const T = {
   orange: "#f59e0b",
 };
 
-const _fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
+const _fm = (n) => (esUS() ? plata(n) : "$" + Math.round(n || 0).toLocaleString("es-CO"));
 
 /**
  * Bloque P0.3 — Plan a cero ligado al CF.
@@ -104,13 +104,13 @@ export default function PlanDeudasACero({
               letterSpacing: 0.6,
             }}
           >
-            Plan para quedar en cero
+            {tx("Plan para quedar en cero", "Plan to reach zero")}
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.txt, marginTop: 2 }}>
-            ¿Cuándo quedas libre de deudas?
+            {tx("¿Cuándo quedas libre de deudas?", "When will you be debt-free?")}
           </div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, maxWidth: 560, lineHeight: 1.45 }}>
-            Con las cuotas que pagas hoy, y qué cambia si abonas algo extra cada mes. Cuando terminas una deuda, su cuota pasa a la siguiente.
+            {tx("Con las cuotas que pagas hoy, y qué cambia si abonas algo extra cada mes. Cuando terminas una deuda, su cuota pasa a la siguiente.", "With the payments you make today, and what changes if you pay a little extra each month. When you finish one debt, its payment rolls into the next.")}
           </div>
         </div>
 
@@ -119,17 +119,17 @@ export default function PlanDeudasACero({
             type="button"
             onClick={() => setMetodo("avalanche")}
             style={chipStyle(metodo === "avalanche")}
-            title="Primero la deuda con la tasa más alta: pagas menos intereses"
+            title={tx("Primero la deuda con la tasa más alta: pagas menos intereses", "Highest rate first: you pay the least interest")}
           >
-            Avalancha
+            {tx("Avalancha", "Avalanche")}
           </button>
           <button
             type="button"
             onClick={() => setMetodo("snowball")}
             style={chipStyle(metodo === "snowball")}
-            title="Primero la deuda más pequeña: terminas deudas más rápido"
+            title={tx("Primero la deuda más pequeña: terminas deudas más rápido", "Smallest balance first: you finish debts faster")}
           >
-            Bola de nieve
+            {tx("Bola de nieve", "Snowball")}
           </button>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default function PlanDeudasACero({
           }}
         >
           {plan.emptyCopy ||
-            "No hay deudas activas — el CF puede ir a metas/norte."}
+            tx("No hay deudas activas — el CF puede ir a metas/norte.", "No active debts — your free cash flow can go to your goals.")}
         </div>
       ) : (
         <>
@@ -182,7 +182,7 @@ export default function PlanDeudasACero({
                   fontVariantNumeric: "tabular-nums",
                 }}
               >
-                Cero en {plan.sim?.labelMeses || "—"}
+                {tx("Cero en ", "Zero in ")}{plan.sim?.labelMeses || "—"}
               </span>
               {plan.sim?.algunaNoAmortiza && (
                 <span
@@ -196,7 +196,7 @@ export default function PlanDeudasACero({
                     padding: "4px 10px",
                   }}
                 >
-                  {CHIP_NO_AMORTIZA}
+                  {chipNoAmortiza()}
                 </span>
               )}
             </div>
@@ -251,13 +251,13 @@ export default function PlanDeudasACero({
                     <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>
                       {fm(d.saldoCOP)}
                       {d.tasaEA > 0
-                        ? ` @ ${Number(d.tasaEA).toLocaleString("es-CO", {
+                        ? ` @ ${Number(d.tasaEA).toLocaleString(esUS() ? "en-US" : "es-CO", {
                             maximumFractionDigits: 2,
                           })}%`
-                        : " · sin tasa (orden por saldo)"}
-                      {" · cuota "}
+                        : tx(" · sin tasa (orden por saldo)", " · no rate (ordered by balance)")}
+                      {tx(" · cuota ", " · payment ")}
                       {fm(d.cuotaCOP)}
-                      {row?.mesCero != null ? ` · cero en mes ${row.mesCero}` : ""}
+                      {row?.mesCero != null ? tx(` · cero en mes ${row.mesCero}`, ` · zero in month ${row.mesCero}`) : ""}
                     </div>
                   </div>
                   {d.noAmortiza && (
@@ -272,7 +272,7 @@ export default function PlanDeudasACero({
                         flexShrink: 0,
                       }}
                     >
-                      {CHIP_NO_AMORTIZA}
+                      {chipNoAmortiza()}
                     </span>
                   )}
                 </div>
@@ -298,7 +298,7 @@ export default function PlanDeudasACero({
                 marginBottom: 6,
               }}
             >
-              ¿Pagar deudas o invertir? Comparación a 3 años
+              {tx("¿Pagar deudas o invertir? Comparación a 3 años", "Pay off debt or invest? 3-year comparison")}
             </div>
             {/* whiteSpace: "pre-line" respeta los saltos de línea del texto.
                 Sin esto las tres frases se pegan en un bloque corrido, que es
@@ -316,23 +316,23 @@ export default function PlanDeudasACero({
                 }}
               >
                 <MiniCard
-                  label="Si pagas deudas"
+                  label={tx("Si pagas deudas", "If you pay off debt")}
                   value={fm(plan.trade.escenarioA.patrimonio3a)}
                   sub={
-                    plan.trade.escenarioA.veredicto === "crece" ? "Crece" : "Se come"
+                    plan.trade.escenarioA.veredicto === "crece" ? tx("Crece", "Grows") : tx("Se come", "Shrinks")
                   }
                   tone={
                     plan.trade.escenarioA.veredicto === "crece" ? T.green : T.red
                   }
                 />
                 <MiniCard
-                  label="Si lo dejas invertido"
+                  label={tx("Si lo dejas invertido", "If you keep it invested")}
                   value={fm(plan.trade.escenarioB.patrimonio3a)}
                   sub={
                     (plan.trade.escenarioB.veredicto === "crece"
-                      ? "Crece"
-                      : "Se come") +
-                    ` · deudas ${fm(plan.trade.escenarioB.deudasRestantes3a)}`
+                      ? tx("Crece", "Grows")
+                      : tx("Se come", "Shrinks")) +
+                    tx(` · deudas ${fm(plan.trade.escenarioB.deudasRestantes3a)}`, ` · debt ${fm(plan.trade.escenarioB.deudasRestantes3a)}`)
                   }
                   tone={
                     plan.trade.escenarioB.veredicto === "crece" ? T.green : T.red
@@ -355,7 +355,7 @@ export default function PlanDeudasACero({
               fontWeight: 600,
             }}
           >
-            {showSupuestos ? "Ocultar supuestos" : "Ver supuestos"}
+            {showSupuestos ? tx("Ocultar supuestos", "Hide assumptions") : tx("Ver supuestos", "Show assumptions")}
           </button>
           {showSupuestos && (
             <div
@@ -370,25 +370,25 @@ export default function PlanDeudasACero({
               }}
             >
               <div>
-                <strong style={{ color: T.txt2 }}>Fuente CF:</strong> {FUENTE_CF_PLAN}
+                <strong style={{ color: T.txt2 }}>{tx("Fuente CF:", "Cash flow source:")}</strong> {fuenteCfPlan()}
               </div>
               <div style={{ marginTop: 4 }}>
-                <strong style={{ color: T.txt2 }}>Orden:</strong>{" "}
+                <strong style={{ color: T.txt2 }}>{tx("Orden:", "Order:")}</strong>{" "}
                 {metodo === "snowball"
-                  ? "bola de nieve (menor saldo primero)"
-                  : "avalancha (mayor tasa primero; tasa 0 → por saldo)"}
+                  ? tx("bola de nieve (menor saldo primero)", "snowball (smallest balance first)")
+                  : tx("avalancha (mayor tasa primero; tasa 0 → por saldo)", "avalanche (highest rate first; 0% rate → by balance)")}
                 .
               </div>
               <div style={{ marginTop: 4 }}>
-                <strong style={{ color: T.txt2 }}>Simulación:</strong> cuota mínima en
+                <strong style={{ color: T.txt2 }}>{tx("Simulación:", "Simulation:")}</strong>{tx(` cuota mínima en
                 todas; 100% del extra a la #1 hasta cero. Interés mensual ≈ tasa/12
-                Si con el aporte actual la deuda no llega a cero, se muestra “&gt;50 años”.
+                Si con el aporte actual la deuda no llega a cero, se muestra “>50 años”.`, " minimum payment on all; 100% of the extra goes to #1 until it's zero. Monthly interest ≈ rate/12. If the debt never reaches zero at the current pace, it shows “>50 years”.")}
               </div>
               <div style={{ marginTop: 4 }}>
-                <strong style={{ color: T.txt2 }}>Escenario invertir:</strong> usa la
-                misma valorización que la proyección de patrimonio (
-                {Math.round((plan.trade?.retornoExcedente || 0.06) * 1000) / 10}% anual,
-                pre-impuestos). No incluye supuestos fiscales.
+                <strong style={{ color: T.txt2 }}>{tx("Escenario invertir:", "Invest scenario:")}</strong>{tx(` usa la
+                misma valorización que la proyección de patrimonio (`, " uses the same growth as the net-worth projection (")}
+                {Math.round((plan.trade?.retornoExcedente || 0.06) * 1000) / 10}{tx(`% anual,
+                pre-impuestos). No incluye supuestos fiscales.`, "% a year, before taxes). No tax assumptions included.")}
               </div>
             </div>
           )}
@@ -396,7 +396,7 @@ export default function PlanDeudasACero({
       )}
 
       <div style={{ marginTop: 10 }}>
-        <Disclaimer variante="proyeccion" idioma="es" T={T} compacto />
+        <Disclaimer variante="proyeccion" idioma={tx("es", "en")} T={T} compacto />
       </div>
     </div>
   );
