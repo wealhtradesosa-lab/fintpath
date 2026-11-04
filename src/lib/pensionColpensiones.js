@@ -241,3 +241,114 @@ export function calcularRAIS({ saldoHoy = 0, ibcSM, rendRealPct = 4, años, apor
     rentaMes: rp.neta, heredable: true,
   };
 }
+
+/**
+ * Escenarios "como el informe actuarial" (04-nov-2026, Santiago: "ver si paro ya
+ * y por cada año adicional, y cuál es el más eficiente de todos").
+ * Un escenario por año adicional de cotización hasta la edad de pensión, más el
+ * exacto a la edad de pensión. Cada uno contra parar hoy: mesada, costo, payback
+ * y rentabilidad real. El más eficiente = la mayor rentabilidad real (cada peso
+ * extra que pones rinde más ahí); suele caer justo al completar un bloque de 50
+ * semanas.
+ */
+export function escenariosCotizacion({ sexo = "M", edad, semanasHoy, iblHoy, ibcSM, sm = SMMLV_2026 }) {
+  const falta = Math.max(0, edadPension(sexo) - edad);
+  const años = [0];
+  for (let a = 1; a < falta; a++) años.push(a);
+  if (falta > 0) años.push(Math.round(falta * 100) / 100);
+  const lista = años.map((a) => {
+    const v = valeLaPenaSeguir({ sexo, edad, semanasHoy, iblHoy, ibcSM, años: a, sm });
+    return { años: a, hastaPension: a > 0 && a === años[años.length - 1], ...v, mesada: v.seguir.neta, semanas: v.seguir.semanas, tasa: v.seguir.tasa.total };
+  });
+  const conTir = lista.filter((e) => e.años > 0 && Number.isFinite(e.tirAnual));
+  const mejor = conTir.length ? conTir.reduce((a, b) => (b.tirAnual > a.tirAnual + 1e-9 ? b : a)) : null;
+  return { lista, mejor: mejor ? mejor.años : null, falta };
+}
+
+/**
+ * Hallazgos y recomendación costo/beneficio (04-nov-2026, Santiago: "que le diga
+ * a uno cuál es el modelo más eficiente; por ejemplo, si a 7 años adicionales no
+ * hay mayor diferencia con 10, o si vale la pena, que lo diga").
+ *
+ * Para cada año adicional se calcula su rentabilidad MARGINAL: lo que cuesta ese
+ * año extra contra lo que sube la mesada por él. Un año que rinde menos que la
+ * alternativa (`alternativaRealPct`, invertir esa plata) no vale la pena. Es
+ * informativo: lo valida un actuario.
+ */
+export function hallazgosPension({ escenarios, edad, añoHoy = new Date().getFullYear(), alternativaRealPct = 4, sexo = "M", fm = (v) => String(Math.round(v)) }) {
+  const L = escenarios?.lista || [];
+  if (L.length < 2) return { recomendado: null, marginales: [], hallazgos: [] };
+  const ePension = edadPension(sexo);
+  const vida = ESPERANZA_VIDA[sexo] || ESPERANZA_VIDA.M;
+  const falta = L[L.length - 1].años;
+
+  // TIR marginal de pasar del escenario i-1 al i.
+  const tirMarginal = (a, b) => {
+    const meses = Math.round((b.años - a.años) * 12);
+    const costoMes = b.costoMes;
+    const inicio = Math.round(a.años * 12);
+    const benef = Math.max(0, b.mesada - a.mesada) * MESADAS_AÑO / 12;
+    const desde = Math.round(falta * 12);
+    const n = Math.round(vida * 12);
+    if (!(benef > 0)) return -Infinity;
+    const vpn = (r) => {
+      let v = 0;
+      for (let m = 0; m < meses; m++) v -= costoMes / Math.pow(1 + r, inicio + m);
+      for (let m = 0; m < n; m++) v += benef / Math.pow(1 + r, desde + m);
+      return v;
+    };
+    if (vpn(0) <= 0) return -Infinity;
+    let lo = 0, hi = 0.2;
+    for (let k = 0; k < 80; k++) { const mid = (lo + hi) / 2; if (vpn(mid) > 0) lo = mid; else hi = mid; }
+    return (Math.pow(1 + lo, 12) - 1) * 100;
+  };
+  const marginales = L.map((e, i) => (i === 0 ? null : { años: e.años, subeMesada: e.mesada - L[i - 1].mesada, cuesta: e.costoMes * (e.años - L[i - 1].años) * 12, tir: tirMarginal(L[i - 1], e) }));
+
+  // Recomendado: el más largo cuyos años extra rinden todos ≥ alternativa.
+  let recomendadoIdx = 0;
+  for (let i = 1; i < L.length; i++) { if (marginales[i].tir >= alternativaRealPct) recomendadoIdx = i; else break; }
+  // Si un año intermedio rinde poco pero los siguientes compensan, mira el total.
+  if (recomendadoIdx === 0) {
+    const mejor = L.findIndex((e) => e.años === escenarios.mejor);
+    if (mejor > 0 && L[mejor].tirAnual >= alternativaRealPct) recomendadoIdx = mejor;
+  }
+  const rec = L[recomendadoIdx];
+  const hasta = (e) => `${añoHoy + Math.round(e.años)}, a los ${Math.floor(edad + e.años)}`;
+  const H = [];
+
+  if (recomendadoIdx === 0) {
+    H.push({ tipo: "recomendacion", texto: `Con estos datos, seguir cotizando rinde menos del ${alternativaRealPct} % real que te daría invertir esa plata. Parar hoy es lo más eficiente; tu mesada sería ${fm(L[0].mesada)}.` });
+  } else {
+    H.push({ tipo: "recomendacion", texto: `Lo más eficiente costo/beneficio: cotizar hasta ${hasta(rec)}. Tu mesada pasa de ${fm(L[0].mesada)} a ${fm(rec.mesada)} y lo que pones rinde ${(rec.tirAnual).toFixed(1).replace(".", ",")} % al año sobre la inflación.` });
+  }
+
+  // Tope: años que ya no suben la mesada.
+  const iTope = L.findIndex((e, i) => i > 0 && e.tasa >= e.seguir.tasa.tope - 1e-9);
+  if (iTope > 0 && iTope < L.length - 1) {
+    const sobra = L[L.length - 1].años - L[iTope].años;
+    const meses = Math.round(sobra * 12);
+    H.push({ tipo: "tope", texto: `En ${añoHoy + Math.round(L[iTope].años)} llegas al tope de ${L[iTope].seguir.tasa.tope.toFixed(0)} % de tasa. Los ${meses >= 12 ? (sobra.toFixed(1).replace(".", ",") + " años") : (meses + " meses")} siguientes hasta la pensión ya no suben tu mesada: cuestan ${fm(L[L.length - 1].costoTotal - L[iTope].costoTotal)} sin beneficio en la tasa. Pregúntale a tu asesor si conviene cotizar ahí sobre un ingreso menor o reclamar el 1,5 % adicional.` });
+  }
+
+  // Comparación del recomendado con su vecino y con la edad de pensión.
+  const ultimo = L[L.length - 1];
+  if (recomendadoIdx > 0 && rec !== ultimo && !H.some((x) => x.tipo === "tope")) {
+    const sube = ultimo.mesada - rec.mesada;
+    const cuesta = ultimo.costoTotal - rec.costoTotal;
+    H.push({ tipo: "comparacion", texto: sube > 0
+      ? `Seguir de ${añoHoy + Math.round(rec.años)} a ${añoHoy + Math.ceil(ultimo.años)} cuesta ${fm(cuesta)} más y sube la mesada ${fm(sube)}: rinde menos que invertir esa plata.`
+      : `Seguir de ${añoHoy + Math.round(rec.años)} a ${añoHoy + Math.ceil(ultimo.años)} cuesta ${fm(cuesta)} más y no sube la mesada.` });
+  }
+
+  // Rendimiento de cada año extra (rango).
+  const tirs = marginales.filter((m) => m && Number.isFinite(m.tir)).map((m) => m.tir);
+  if (tirs.length > 1) {
+    H.push({ tipo: "marginal", texto: `Cada año extra rinde entre ${Math.min(...tirs).toFixed(1).replace(".", ",")} % y ${Math.max(...tirs).toFixed(1).replace(".", ",")} % real. Los años que completan un bloque de 50 semanas rinden más; los que lo dejan a medias, menos.` });
+  }
+
+  // Parar hoy: lo que se deja de ganar.
+  if (recomendadoIdx > 0) {
+    H.push({ tipo: "parar", texto: `Si paras hoy te pensionas igual en ${añoHoy + Math.ceil(falta)}, a los ${ePension}, pero con ${fm(rec.mesada - L[0].mesada)} menos al mes de por vida.` });
+  }
+  return { recomendado: rec.años, recomendadoIdx, marginales, hallazgos: H, alternativaRealPct };
+}

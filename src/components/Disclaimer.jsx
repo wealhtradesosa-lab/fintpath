@@ -36,6 +36,10 @@ const TEXTOS = {
       t: "Una proyección no es un pronóstico",
       p: "Los resultados dependen enteramente de los supuestos que elegiste — rendimientos, plazos, inflación. Rentabilidades pasadas no garantizan rentabilidades futuras. Ningún activo tiene retorno asegurado y los mercados pueden caer de forma prolongada. Este ejercicio sirve para comparar escenarios, no para predecir cuánto vas a tener.",
     },
+    pension: {
+      t: "Informativo: no es una asesoría pensional",
+      p: "Este cálculo es solo informativo. Aplica las reglas de la Ley 100 y la Ley 797 sobre los datos que escribiste; Colpensiones o tu fondo liquidan con tu historia laboral real, mes a mes, y con sus propias tablas. No constituye asesoría financiera ni pensional. Antes de trasladarte de régimen, seguir o dejar de cotizar, o reclamar, valídalo con un experto: un actuario o un asesor pensional (el traslado exige la doble asesoría).",
+    },
     cripto: {
       t: "Bitcoin es un activo de altísimo riesgo",
       p: "Bitcoin ha caído más del 70% en varias ocasiones y puede volver a hacerlo. Esta comparación usa una tasa de crecimiento que tú elegiste: no es una predicción ni una recomendación de invertir. No inviertas dinero que no puedas permitirte perder, y considera el tratamiento fiscal de las ganancias en tu jurisdicción.",
@@ -57,6 +61,10 @@ const TEXTOS = {
     proyeccion: {
       t: "A projection is not a forecast",
       p: "Results depend entirely on the assumptions you chose — returns, timeframes, inflation. Past performance does not guarantee future results. No asset has a guaranteed return and markets can decline for extended periods. This exercise is for comparing scenarios, not for predicting what you will have.",
+    },
+    pension: {
+      t: "For information only: not pension advice",
+      p: "This calculation is informational. It applies Colombia's Law 100 and Law 797 rules to the data you entered; the pension fund settles with your actual work history and its own tables. It is not financial or pension advice. Before switching regimes, contributing more or stopping, validate it with an expert (an actuary or a pension advisor).",
     },
     cripto: {
       t: "Bitcoin is an extremely high-risk asset",

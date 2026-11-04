@@ -63,13 +63,17 @@ const Fila = ({ l, v, color }) => (
 );
 const inputSt = { width: "100%", maxWidth: 320, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px", color: T.txt, fontSize: 16 };
 
-export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensionCalculada, irAPensiones }) {
+export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones = {}, owners = [], irAPensiones }) {
+  // Pensiones guardadas por persona en Pensiones (u.pensiones[ownerId]).
+  const guardadas = Object.entries(pensiones || {})
+    .filter(([, v]) => v?.resultado?.neta > 0)
+    .map(([id, v]) => ({ id, nombre: (owners || []).find((o) => o.id === id)?.name || v.nombre || "Tú", neta: v.resultado.neta, edadPension: v.resultado.edadPension }));
   const g = guardado || {};
   const [frecuencia, setFrecuencia] = useState(g.frecuencia || "mensual");
   const [monto, setMonto] = useState(g.monto || "");
   const [años, setAños] = useState(g.años || "");
   const [escenario, setEscenario] = useState(g.escenario || "moderado");
-  const [pensionFuente, setPensionFuente] = useState(g.pensionFuente || (pensionCalculada?.neta > 0 ? "calculada" : ""));
+  const [pensionFuente, setPensionFuente] = useState(g.pensionFuente || (guardadas[0] ? "calc:" + guardadas[0].id : ""));
   const [pensionManual, setPensionManual] = useState(g.pensionManual || "");
   const [precio, setPrecio] = useState(null);
   const [precioFuente, setPrecioFuente] = useState("");
@@ -104,7 +108,8 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensionCalc
   const base = { frecuencia, monto: montoN, años: añosN, precioHoy, trm };
   const r = useMemo(() => simularAhorroBTC({ ...base, cagr: esc.cagr }), [frecuencia, montoN, añosN, precioHoy, trm, esc.cagr]); // eslint-disable-line react-hooks/exhaustive-deps
   const todos = useMemo(() => (r ? escenariosAhorroBTC(base) : []), [r]); // eslint-disable-line react-hooks/exhaustive-deps
-  const pension = pensionParaComparar({ fuente: pensionFuente, calculada: pensionCalculada, manual: pensionManual });
+  const elegida = guardadas.find((p) => "calc:" + p.id === pensionFuente);
+  const pension = pensionParaComparar({ fuente: elegida ? "calculada" : pensionFuente, calculada: elegida, manual: pensionManual });
   const listo4 = pensionFuente === "ninguna" || !!pension;
 
   const textoFrecuencia = frecuencia === "mensual" ? "cada mes" : frecuencia === "anual" ? "cada año" : "una sola vez";
@@ -155,9 +160,9 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensionCalc
       {listo1 && listo2 && (
         <Paso n={4} titulo="¿Contra qué pensión lo comparas?" listo={listo4}>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            {pensionCalculada?.neta > 0 && (
-              <Chip activo={pensionFuente === "calculada"} onClick={() => setPensionFuente("calculada")} sub={fC(pensionCalculada.neta) + " al mes · calculada en Pensiones"}>La que ya calculé</Chip>
-            )}
+            {guardadas.map((p) => (
+              <Chip key={p.id} activo={pensionFuente === "calc:" + p.id} onClick={() => setPensionFuente("calc:" + p.id)} sub={fC(p.neta) + " al mes · a los " + p.edadPension}>{guardadas.length > 1 ? "La de " + p.nombre : "La que ya calculé"}</Chip>
+            ))}
             <Chip activo={pensionFuente === "manual"} onClick={() => setPensionFuente("manual")} sub="Ya estoy pensionado o la conozco">Escribirla</Chip>
             <Chip activo={pensionFuente === "ninguna"} onClick={() => setPensionFuente("ninguna")} sub="Solo quiero ver el ahorro">No comparar</Chip>
           </div>
@@ -165,9 +170,9 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensionCalc
             <div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>Mesada neta al mes, en pesos de hoy</div>
             <NumberInput value={pensionManual} onChange={(v) => setPensionManual(v === "" ? "" : v)} placeholder="Ej. 8.000.000" style={inputSt} />
           </>}
-          {!(pensionCalculada?.neta > 0) && irAPensiones && (
+          {guardadas.length === 0 && irAPensiones && (
             <div style={{ fontSize: 12, color: T.txt3, marginTop: 10 }}>
-              ¿No sabes cuánto sería tu pensión? <button type="button" onClick={irAPensiones} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>Calcúlala en Pensiones</button> y guárdala; aquí aparece sola.
+              ¿No sabes cuánto sería tu pensión? <button type="button" onClick={irAPensiones} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>Calcúlala en Pensiones</button> y aquí aparece sola.
             </div>
           )}
         </Paso>
@@ -190,7 +195,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensionCalc
               </div>
               {pension && (
                 <div style={{ background: T.bg3, borderRadius: 10, padding: 16 }}>
-                  <div style={{ fontSize: 12, color: T.txt3 }}>Tu pensión {pension.origen === "calculada" ? "calculada" : ""}</div>
+                  <div style={{ fontSize: 12, color: T.txt3 }}>{elegida ? (guardadas.length > 1 ? "Pensión de " + elegida.nombre : "Tu pensión calculada") : "Tu pensión"}</div>
                   <div style={{ fontSize: 28, fontWeight: 700, color: T.blue, fontVariantNumeric: "tabular-nums" }}>{fC(pension.promedioMes)}<span style={{ fontSize: 14, color: T.txt3, fontWeight: 500 }}> /mes</span></div>
                   <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>{fC(pension.mesada)} × 13 mesadas ÷ 12. Vitalicia, exenta y con sustitución al cónyuge.</div>
                 </div>
@@ -256,6 +261,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensionCalc
         </div>
       )}
 
+      <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.6, margin: "16px 0 8px" }}>Informativo, no es asesoría financiera. Antes de invertir o dejar de cotizar, valídalo con un experto.</div>
       <Disclaimer variante="cripto" idioma="es" T={T} />
     </div>
   );

@@ -119,3 +119,39 @@ describe("fondo privado (RAIS), en pesos de hoy", () => {
     expect(calcularRAIS({ saldoHoy: 0, ibcSM: 1, años: 1 }).retiroProgramadoBruta).toBe(1_750_905);
   });
 });
+
+import { escenariosCotizacion } from "../../src/lib/pensionColpensiones.js";
+describe("escenarios por año adicional", () => {
+  const e = escenariosCotizacion({ sexo: "M", edad: 51.12, semanasHoy: 1310.9, iblHoy: 32_126_945, ibcSM: 25 });
+  it("parar hoy, cada año y el exacto a los 62", () => {
+    expect(e.lista[0].años).toBe(0);
+    expect(e.lista.at(-1).hastaPension).toBe(true);
+    expect(e.lista.at(-1).años).toBeCloseTo(10.88, 2);
+    expect(Math.abs(e.lista.at(-1).seguir.bruta - 30_640_838)).toBeLessThan(2);
+  });
+  it("la mesada nunca baja al cotizar un año más", () => {
+    for (let i = 1; i < e.lista.length; i++) expect(e.lista[i].mesada).toBeGreaterThanOrEqual(e.lista[i - 1].mesada - 1);
+  });
+  it("marca el más eficiente (mayor rentabilidad real)", () => {
+    const max = Math.max(...e.lista.filter((x) => x.años > 0).map((x) => x.tirAnual));
+    expect(e.lista.find((x) => x.años === e.mejor).tirAnual).toBe(max);
+  });
+});
+
+import { hallazgosPension } from "../../src/lib/pensionColpensiones.js";
+describe("hallazgos costo/beneficio", () => {
+  const esc = escenariosCotizacion({ sexo: "M", edad: 51.12, semanasHoy: 1310.9, iblHoy: 32_126_945, ibcSM: 25 });
+  const h = hallazgosPension({ escenarios: esc, edad: 51.12, añoHoy: 2026 });
+  it("recomienda cotizar 10 años (hasta llegar al tope), no hasta los 62", () => {
+    expect(h.recomendado).toBe(10);
+    expect(h.hallazgos[0].tipo).toBe("recomendacion");
+  });
+  it("avisa que los meses después del tope no suben la mesada", () => {
+    expect(h.hallazgos.some((x) => x.tipo === "tope")).toBe(true);
+    expect(h.marginales.at(-1).tir).toBe(-Infinity);
+  });
+  it("con una alternativa más rentable recomienda menos años", () => {
+    const h2 = hallazgosPension({ escenarios: esc, edad: 51.12, añoHoy: 2026, alternativaRealPct: 30 });
+    expect(h2.recomendado).toBe(0);
+  });
+});

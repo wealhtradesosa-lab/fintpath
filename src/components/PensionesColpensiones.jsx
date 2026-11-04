@@ -1,11 +1,14 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
-import { calcularRAIS, iblProyectado, liquidarPension, tasaReemplazo, pctDescuentoMesada, valeLaPenaSeguir, SEMANAS_POR_AÑO, SEMANAS_MINIMAS, MESADAS_AÑO, TOPE_IBC_SM, TOPE_MINIMO } from "../lib/pensionColpensiones.js";
+import EscenariosPension from "./infografia/EscenariosPension.jsx";
+import RecuperacionCotizar from "./infografia/RecuperacionCotizar.jsx";
+import HallazgosPension from "./infografia/HallazgosPension.jsx";
+import { hallazgosPension, escenariosCotizacion, calcularRAIS, iblProyectado, liquidarPension, tasaReemplazo, pctDescuentoMesada, valeLaPenaSeguir, SEMANAS_POR_AÑO, SEMANAS_MINIMAS, MESADAS_AÑO, TOPE_IBC_SM, TOPE_MINIMO } from "../lib/pensionColpensiones.js";
 
 /* ═══════════════════════════════════════════════════
    MÓDULO PENSIONES COLOMBIA — Cálculo Actuarial
@@ -102,7 +105,15 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, 
   return calcularRAIS({ saldoHoy: saldoActual, ibcSM, rendRealPct: rendAnual, años: aniosCotizar, aportesVolMes, bono: bonoPensional, sexo, conyuge, sm: SM_2026 });
 }
 
-export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarPension }) {
+// 04-nov-2026 (Santiago: "que quede guardada la pensión de cada miembro de la
+// familia, por ejemplo la de Sosa o la de Echavarría"). Una pensión por titular
+// persona natural, en u.pensiones[ownerId] = { datos, resultado }. Los datos se
+// cargan al elegir la persona y se guardan solos al cambiarlos.
+export default function PensionesColpensiones({ trm, owners = [], pensiones = {}, onGuardarPension }) {
+  const personas = (owners || []).filter((o) => o && o.type !== "juridica" && o.type !== "sociedad");
+  const lista = personas.length ? personas : [{ id: "yo", name: "Tú" }];
+  const [titular, setTitular] = useState(lista[0].id);
+  const persona = lista.find((o) => o.id === titular) || lista[0];
   const [sexo, setSexo] = useState("M");
   const [edad, setEdad] = useState(40);
   const [semanas, setSemanas] = useState(800);
@@ -141,6 +152,51 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
     saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo, conyuge: conyugeRAIS,
   }), [privSaldo, ibcSM, ibcFuturoSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo, tieneConyuge, edadConyuge, edad]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Escenarios año por año, como el informe actuarial.
+  const escenarios = useMemo(() => escenariosCotizacion({
+    sexo, edad, semanasHoy: semanas, iblHoy: iblPromSM > 0 ? iblPromSM * SM_2026 : ibcSM * SM_2026,
+    ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, sm: SM_2026,
+  }), [sexo, edad, semanas, iblPromSM, ibcSM, ibcFuturoSM]);
+  const analisis = useMemo(() => hallazgosPension({ escenarios, edad, sexo, fm: fCOP }), [escenarios, edad, sexo]);
+  const [escSel, setEscSel] = useState(null);
+  const escElegido = escenarios.lista.find((e) => e.años === (escSel ?? analisis.recomendado)) || escenarios.lista[escenarios.lista.length - 1];
+
+  // Cargar los datos guardados de la persona elegida.
+  const datosActuales = { sexo, edad, semanas, ibcSM, iblPromSM, ibcFuturoSM, privSaldo, privRend, tieneConyuge, edadConyuge, aportesVol, bonoPensional };
+  const cargado = useRef(null);
+  useEffect(() => {
+    const d = pensiones?.[titular]?.datos;
+    if (d) {
+      if (d.sexo) setSexo(d.sexo); if (d.edad != null) setEdad(d.edad); if (d.semanas != null) setSemanas(d.semanas);
+      if (d.ibcSM != null) setIbcSM(d.ibcSM); setIblPromSM(d.iblPromSM || 0); setIbcFuturoSM(d.ibcFuturoSM || 0);
+      setPrivSaldo(d.privSaldo || 0); setPrivRend(d.privRend ?? 4); setTieneConyuge(d.tieneConyuge ?? true);
+      setEdadConyuge(d.edadConyuge || 0); setAportesVol(d.aportesVol || 0); setBonoPensional(d.bonoPensional || 0);
+    }
+    cargado.current = titular;
+    setEscSel(null);
+  }, [titular]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Guardar solo (con una pausa) cuando cambian los datos de esa persona.
+  useEffect(() => {
+    if (!onGuardarPension || cargado.current !== titular) return;
+    const previo = pensiones?.[titular]?.datos;
+    if (previo && JSON.stringify(previo) === JSON.stringify(datosActuales)) return;
+    if (!previo && semanas === 800 && edad === 40 && ibcSM === 10) return; // valores de ejemplo sin tocar
+    const t = setTimeout(() => onGuardarPension(titular, {
+      nombre: persona.name, datos: datosActuales,
+      resultado: {
+        neta: Math.round(colpJub.pensionFinal), bruta: Math.round(colpJub.pensionAplicada), tasa: colpJub.tasaTotal,
+        semanas: colpJub.semanasTotales, edadPension: edadJub, netaSiParaHoy: Math.round(colp.pensionFinal),
+        raisNeta: privSaldo > 0 ? Math.round(rais.retiroProgramado) : null, masEficiente: escenarios.mejor,
+        recomendado: analisis.recomendado, añoPension: new Date().getFullYear() + Math.ceil(aniosFaltantes),
+        mesadaRecomendada: Math.round((escenarios.lista.find((e) => e.años === analisis.recomendado) || {}).mesada || 0),
+        hallazgos: analisis.hallazgos.map((h) => h.texto),
+        fecha: new Date().toISOString().slice(0, 10),
+      },
+    }), 800);
+    return () => clearTimeout(t);
+  }, [JSON.stringify(datosActuales), titular]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const tabs = [
     { id: "colp", icon: "", label: "Colpensiones" },
     { id: "rais", icon: "", label: "Fondo Privado" },
@@ -157,15 +213,29 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
       />
 
             <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
-        <strong style={{ color: T.gold }}>Simulación Ley 100 (legado).</strong>{" "}
-        Esta pantalla modela Colpensiones/RAIS bajo Ley 100/1993 y normas relacionadas.
-        La reforma de pilares (Ley 2381) aún no está modelada aquí.
+        <strong style={{ color: T.gold }}>Informativo, no es asesoría.</strong>{" "}
+        Calcula con las reglas de la Ley 100 y la Ley 797 (régimen de transición) sobre los datos que escribes. La reforma de pilares (Ley 2381) no está modelada aquí. Antes de decidir, valídalo con un actuario o asesor pensional.
       </div>
 
 {/* ═══ PERFIL ═══ */}
       <Cd style={{ padding: 24, marginBottom: 20 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>Tu información</h3>
-        <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Datos básicos para calcular tu pensión estimada</p>
+        {lista.length > 1 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
+            {lista.map((o) => {
+              const r = pensiones?.[o.id]?.resultado;
+              const a = o.id === titular;
+              return (
+                <button key={o.id} type="button" onClick={() => setTitular(o.id)} style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `1px solid ${a ? T.blue : T.border}`, background: a ? T.blue + "15" : T.bg3, cursor: "pointer", color: T.txt, minWidth: 150 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600 }}>{o.name}</div>
+                  <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{r?.neta ? fCOP(r.neta) + "/mes a los " + r.edadPension : "Sin calcular"}</div>
+                  {r?.recomendado != null && <div style={{ fontSize: 12, color: T.green, marginTop: 2 }}>{r.recomendado === 0 ? "Recomendado: parar hoy" : "Recomendado: cotizar " + Math.round(r.recomendado) + " años más"}</div>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>{lista.length > 1 ? "Datos de " + persona.name : "Tu información"}</h3>
+        <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>{onGuardarPension ? "Se guardan solos; la próxima vez no tienes que volver a escribirlos." : "Datos básicos para calcular tu pensión estimada"}</p>
         
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, alignItems: "start" }}>
           <div>
@@ -315,6 +385,13 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
       {/* ═══ COLPENSIONES ═══ */}
       {tab === "colp" && (
         <div>
+          {/* 04-nov-2026: escenarios del informe actuarial y curva de recuperación */}
+          {escenarios.lista.length > 1 && colp.cumpleRequisitos !== undefined && <>
+            <HallazgosPension hallazgos={analisis.hallazgos} alternativaRealPct={analisis.alternativaRealPct} nombre={lista.length > 1 ? persona.name : null} />
+            <EscenariosPension lista={escenarios.lista} mejor={escenarios.mejor} recomendado={analisis.recomendado} marginales={analisis.marginales} seleccion={escElegido?.años} onSeleccionar={setEscSel} fm={fCOP} edadPension={edadJub} edad={edad} />
+            <RecuperacionCotizar v={escElegido} edad={edad} fm={fCOP} etiqueta={escElegido?.hastaPension ? "Cotizando hasta los " + edadJub : escElegido ? "Cotizando " + fmtNumEs(escElegido.años, 0) + (escElegido.años === 1 ? " año" : " años") + " más" : ""} />
+          </>}
+
           {/* Requisitos */}
           <Cd style={{ padding: 20, marginBottom: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Requisitos de Pensión — Colpensiones</h3>
@@ -360,19 +437,6 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
                   <div style={{ fontSize: 36, fontWeight: 700, color: T.green, letterSpacing: "-0.04em", marginTop: 4 }}>{fCOP(colpJub.pensionFinal)}</div>
                   <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Tasa: {pc(colpJub.tasaTotal)} • {colpJub.semanasTotales.toLocaleString("es-CO")} semanas</div>
                 </div>}
-                {/* 04-nov-2026: se guarda para usarla en Ahorro en Bitcoin y en los
-                    planes sin volver a calcularla. */}
-                {onGuardarPension && colpJub.pensionFinal > 0 && (() => {
-                  const yaGuardada = pensionGuardada && Math.round(pensionGuardada.neta) === Math.round(colpJub.pensionFinal);
-                  return (
-                    <button type="button" disabled={yaGuardada} onClick={() => onGuardarPension({
-                      neta: Math.round(colpJub.pensionFinal), bruta: Math.round(colpJub.pensionAplicada), tasa: colpJub.tasaTotal,
-                      semanas: colpJub.semanasTotales, edadPension: edadJub, edadHoy: edad, ibcSM, fecha: new Date().toISOString().slice(0, 10), fuente: "calculadora",
-                    })} style={{ marginTop: 14, padding: "8px 16px", borderRadius: 999, border: `1px solid ${yaGuardada ? T.border : T.blue}`, background: yaGuardada ? "transparent" : T.blue, color: yaGuardada ? T.txt3 : "#fff", fontSize: 13, fontWeight: 600, cursor: yaGuardada ? "default" : "pointer" }}>
-                      {yaGuardada ? "Guardada como tu pensión" : "Guardar como mi pensión"}
-                    </button>
-                  );
-                })()}
                 <div style={{ fontSize: 14, color: T.txt3, marginTop: 8 }}>≈ {fUSD(colp.pensionFinal, trm)}</div>
                 <div style={{ fontSize: 13, color: T.txt2, marginTop: 8 }}>Tasa de reemplazo: <strong style={{ color: T.blue }}>{pc(colp.tasaTotal)}</strong></div>
               </Cd>
@@ -476,26 +540,6 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
                     Pensión proyectada: <strong style={{ color: T.blue }}>{fCOP(colp.pensionFinal)}/mes</strong>
                   </div>
                 </div>
-                {/* 04-nov-2026: análisis incremental contra parar hoy. Antes: costo de un año
-                    contra 1,5 % × 12 × 20 sin descontar, que inflaba el retorno. Cuenta solo
-                    lo que la decisión cambia: pensión 16 % + solidaridad (la salud se paga
-                    igual) contra la DIFERENCIA de mesada neta, 13 mesadas, en pesos de hoy. */}
-                <div style={{ background: T.bg3, borderRadius: 12, padding: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 8 }}>Cotizar hasta los {edadJub} vs parar hoy</div>
-                  {valeLaPena ? (
-                    <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
-                      Pagas: <strong>{fCOP(valeLaPena.costoMes)}/mes</strong> ({fmtPctEs(valeLaPena.pctCosto * 100, 1)} del IBC: pensión + solidaridad; la salud la pagas igual)<br/>
-                      Durante {fmtNumEs(aniosFaltantes, 1)} años: <strong>{fCOP(valeLaPena.costoTotal)}</strong><br/><br/>
-                      Tu mesada neta pasa de {fCOP(valeLaPena.parar.neta)} a <strong style={{ color: T.green }}>{fCOP(valeLaPena.seguir.neta)}</strong><br/>
-                      Ganas <strong style={{ color: T.green }}>+{fCOP(valeLaPena.beneficioMesNeto)}/mes</strong> × 13 mesadas, de por vida<br/><br/>
-                      Recuperas lo pagado en <strong>{Number.isFinite(valeLaPena.paybackAños) ? fmtNumEs(valeLaPena.paybackAños, 1) + " años" : "—"}</strong> de pensión<br/>
-                      Rentabilidad real: <strong style={{ color: valeLaPena.tirAnual > 4 ? T.green : T.orange }}>{valeLaPena.tirAnual != null && Number.isFinite(valeLaPena.tirAnual) ? fmtPctEs(valeLaPena.tirAnual, 1) + " al año" : "—"}</strong>
-                      <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>Sobre inflación, con esperanza de vida de {fmtNumEs(valeLaPena.mesesBeneficio / 12, 1)} años al pensionarte. Compárala con lo que te rendiría esa plata invertida.</div>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 12, color: T.txt2 }}>Ya tienes la edad de pensión.</div>
-                  )}
-                </div>
               </div>
               <div>
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
@@ -536,66 +580,6 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
                   </div>
                 </div>
               </div>
-            </div>
-          </Cd>
-
-          {/* ═══ ESCENARIOS: SI SIGO PAGANDO X AÑOS MÁS ═══ */}
-          <Cd style={{ padding: 24, marginTop: 16 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>¿Qué pasa si sigo cotizando X años más?</h3>
-            <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
-              Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString("es-CO")} semanas</strong>. Cada año sumas ~51,4 semanas (Colpensiones cuenta 360 días ÷ 7). Mira cómo cambia tu pensión:
-            </p>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr>
-                    {["Si pago...","Tendrás","Semanas","Extras","Bloques","Tasa","Pensión neta","Ganas vs hoy","En 20 años"].map(h => (
-                      <th key={h} style={{ padding: "10px 8px", textAlign: h === "Si pago..." ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {(() => {
-                    const base = { sexo, edad, semanasActuales: semanas, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, edadJub };
-                    const hoy = calcColpensiones(base);
-                    const aniosArr = [0, 1, 2, 3, 5, 7, 10, 15, Math.max(0, edadJub - edad)].filter((v, i, a) => v >= 0 && a.indexOf(v) === i).sort((a, b) => a - b);
-                    return aniosArr.map(a => {
-                      const sc = calcColpensiones({ ...base, aniosMas: a });
-                      const semFuturas = sc.semanasTotales;
-                      const diff = sc.pensionFinal - hoy.pensionFinal;
-                      const esHoy = a === 0;
-                      const esJub = a === Math.max(0, edadJub - edad);
-                      const total20 = sc.pensionFinal * MESADAS_AÑO * 20;
-                      return (
-                        <tr key={a} style={{ background: esJub ? T.blue + "10" : esHoy ? T.bg3 : "transparent", borderBottom: "1px solid " + T.border }}>
-                          <td style={{ padding: "10px 8px", fontWeight: 700, color: esJub ? T.blue : esHoy ? T.orange : T.txt }}>
-                            {esHoy ? "Paro hoy" : esJub ? "Hasta jubilación (" + a + "a)" : a + " año" + (a > 1 ? "s" : "") + " más"}
-                          </td>
-                          <td style={{ padding: "10px 8px", textAlign: "right" }}>{edad + a} años</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 600 }}>{semFuturas.toLocaleString("es-CO")}</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", color: sc.semanasExtra > 0 ? T.green : T.txt3 }}>{sc.semanasExtra > 0 ? "+" + sc.semanasExtra : "—"}</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", color: T.green }}>{Math.floor(sc.semanasExtra / 50)}</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontSize: 13, color: sc.tasaTotal >= 70 ? T.green : sc.tasaTotal >= 60 ? T.blue : T.orange }}>{pc(sc.tasaTotal)}</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue, fontSize: 14 }}>{fCOP(sc.pensionFinal)}/mes</td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", color: diff > 0 ? T.green : T.txt3, fontWeight: 600 }}>
-                            {esHoy ? "—" : diff > 0 ? "+" + fCOP(diff) + "/mes" : "igual"}
-                          </td>
-                          <td style={{ padding: "10px 8px", textAlign: "right", fontFamily: "monospace", color: T.txt2 }}>{fCOP(total20)}</td>
-                        </tr>
-                      );
-                    });
-                  })()}
-                </tbody>
-              </table>
-            </div>
-            <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-              <strong style={{ color: T.green }}>Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString("es-CO")} semanas y pagas <strong>5 años más</strong>, acumulas {Math.round(semanas + 5 * SEMANAS_POR_AÑO).toLocaleString("es-CO")} semanas.
-              {(() => {
-                const b5 = { sexo, edad, semanasActuales: semanas, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, edadJub };
-                const sc5 = calcColpensiones({ ...b5, aniosMas: 5 });
-                const hoy2 = calcColpensiones(b5);
-                return ` Tu tasa sube de ${pc(hoy2.tasaTotal)} a ${pc(sc5.tasaTotal)} y tu pensión pasa de ${fCOP(hoy2.pensionFinal)} a ${fCOP(sc5.pensionFinal)}/mes — una diferencia de ${fCOP(sc5.pensionFinal - hoy2.pensionFinal)}/mes de por vida.`;
-              })()}
             </div>
           </Cd>
 
@@ -811,7 +795,7 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
       <div style={{ textAlign: "center", marginTop: 24, padding: "12px 0", borderTop: `1px solid ${T.border}` }}>
         <p style={{ fontSize: 12, color: T.txt3 }}>Simulador educativo • Los cálculos son aproximados • Consulta un asesor pensional certificado • Ley 100/1993 • Ley 797/2003</p>
       </div>
-      <Disclaimer variante="proyeccion" T={T} />
+      <Disclaimer variante="pension" T={T} />
     </div>
   );
 }
