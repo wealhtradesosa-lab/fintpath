@@ -18,7 +18,7 @@
 // Motor en lib/ahorroBTC.js. Respuestas y escenarios en u.ahorroBTC.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
 import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
@@ -101,6 +101,13 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const [altura, setAltura] = useState(null);
   const [verProyeccion, setVerProyeccion] = useState(false);
   const [nombreEsc, setNombreEsc] = useState("");
+  // 4-nov-2026 (Santiago: "diligencié mi escenario y usted pone otro"; "¿cuál es
+  // el sentido del botón Abrir si no abre nada?"). Un escenario guardado era una
+  // foto: lo que se cambiaba después (p. ej. retirar 6 % en vez de 10 %) quedaba
+  // solo en el formulario y la tarjeta seguía con lo viejo. Ahora el escenario
+  // abierto se actualiza solo con cada cambio, Abrir baja al resultado y lo dice.
+  const [escAbierto, setEscAbierto] = useState(g0.abierto && escenariosGuardados.some((x) => x.id === g0.abierto) ? g0.abierto : null);
+  const resultadoRef = useRef(null);
   const trm = pTrm || 4200;
 
   // Precio de hoy (misma función de precios del portafolio) y altura de bloque (mempool.space).
@@ -123,13 +130,15 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const aPesosDe = (valorHoy, añosAdelante) => valorHoy * Math.pow(1 + infN / 100, añosAdelante);
   const añoHoy = new Date().getFullYear();
   const datos = { frecuencia, monto, años, cagr, retiroPct, crecRetiro, edadHoy, hastaEdad, pensionFuente, pensionManual, inflacionCOP };
-  const guardar = (extra = {}) => onGuardar && onGuardar({ borrador: datos, escenarios: escenariosGuardados, ...extra });
+  const guardar = (extra = {}) => onGuardar && onGuardar({ borrador: datos, escenarios: escenariosGuardados, abierto: escAbierto, ...extra });
   useEffect(() => {
     if (!onGuardar) return;
-    if (JSON.stringify(g) === JSON.stringify({ ...g, ...datos }) && g0.borrador) return;
-    const t = setTimeout(() => guardar(), 600);
+    const abiertoE = escenariosGuardados.find((x) => x.id === escAbierto);
+    const alDia = JSON.stringify(g) === JSON.stringify({ ...g, ...datos }) && g0.borrador && (g0.abierto || null) === (escAbierto || null) && (!abiertoE || JSON.stringify(abiertoE.datos) === JSON.stringify(datos));
+    if (alDia) return;
+    const t = setTimeout(() => guardar(abiertoE ? { escenarios: escenariosGuardados.map((x) => (x.id === escAbierto ? { ...x, datos, fecha: new Date().toISOString().slice(0, 10) } : x)) } : {}), 600);
     return () => clearTimeout(t);
-  }, [JSON.stringify(datos)]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(datos), escAbierto]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const montoN = Number(monto) || 0;
   const añosN = Number(años) || 0;
@@ -152,15 +161,18 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
     const nombre = nombreEsc.trim() || `${fC(montoN)} ${textoFrecuencia} · ${añosN} años · ${fmtNumEs(cagrN, 0)} %`;
     const nuevo = { id: "b" + Date.now(), nombre, fecha: new Date().toISOString().slice(0, 10), datos,
       resultado: { valor: Math.round(r.valorCOPHoy), btc: r.btc, retiroMes: Math.round(retiro.retiroMes), heredable: Math.round(retiro.capitalFinal), invertido: r.invertido } };
-    guardar({ escenarios: [nuevo, ...escenariosGuardados].slice(0, 20) });
-    setNombreEsc("");
+    guardar({ escenarios: [nuevo, ...escenariosGuardados].slice(0, 20), abierto: nuevo.id });
+    setNombreEsc(""); setEscAbierto(nuevo.id);
   };
   const abrir = (e) => {
     const d = e.datos || {};
     setFrecuencia(d.frecuencia || "mensual"); setMonto(d.monto || ""); setAños(d.años || ""); setCagr(d.cagr ?? "");
     setRetiroPct(d.retiroPct ?? 4); setCrecRetiro(d.crecRetiro ?? 10); setInflacionCOP(d.inflacionCOP ?? 4); if (d.edadHoy) setEdadHoy(d.edadHoy); setHastaEdad(d.hastaEdad || 90); setPensionFuente(d.pensionFuente || ""); setPensionManual(d.pensionManual || "");
+    setEscAbierto(e.id);
+    setTimeout(() => { try { resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* sin scroll */ } }, 200);
   };
-  const borrar = (id) => guardar({ escenarios: escenariosGuardados.filter((e) => e.id !== id) });
+  const borrar = (id) => { if (id === escAbierto) setEscAbierto(null); guardar({ escenarios: escenariosGuardados.filter((e) => e.id !== id), abierto: id === escAbierto ? null : escAbierto }); };
+  const abiertoEsc = escenariosGuardados.find((x) => x.id === escAbierto) || null;
 
   return (
     <div style={{ maxWidth: 860, margin: "0 auto" }}>
@@ -171,8 +183,8 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ fontSize: 13, color: T.txt3, marginBottom: 8 }}>Tus escenarios guardados</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {escenariosGuardados.map((e) => (
-              <div key={e.id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: "1 1 320px" }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: T.txt }}>{e.nombre}</div>
+              <div key={e.id} style={{ background: T.card, border: `1px solid ${e.id === escAbierto ? T.green : T.border}`, borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: "1 1 320px" }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: T.txt }}>{e.nombre}{e.id === escAbierto && <span style={{ fontSize: 12, fontWeight: 500, color: T.green, marginLeft: 8 }}>abierto · se actualiza con lo que cambies abajo</span>}</div>
                 {/* 4-nov-2026 (Santiago: "¿qué son los 3.590 MM?"): cada cifra con su rótulo. */}
                 {(() => {
                   // 4-nov-2026 (Santiago: "sigo viendo este error, no quedan 400 MM de
@@ -201,6 +213,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                       {d.cagr !== "" && d.cagr != null && <Fila l="Supones que el bitcoin sube mientras ahorras" v={`${fmtNumEs(Number(d.cagr), 0)} % al año`} />}
                       <Fila l={d.crecRetiro != null ? "Y mientras retiras" : "Y mientras retiras (prudente; guardado antes de poder elegirlo)"} v={`${fmtNumEs(crecR, 0)} % al año`} />
                       <Fila l={`Tienes al terminar de ahorrar (${finAño}${edadFin ? `, a los ${edadFin}` : ""}), en pesos de hoy`} v={fC(r.valor)} />
+                      <Fila l="Retiras del capital cada año" v={`${fmtNumEs(Number(d.retiroPct) || 4, 0)} %`} />
                       <Fila l={`Retiras cada mes${edadFin && d.hastaEdad ? `, de los ${edadFin} a los ${d.hastaEdad}` : ""}`} v={fC(r.retiroMes)} />
                       <Fila l={`Les queda a tus herederos${d.hastaEdad ? ` a los ${d.hastaEdad}` : " al final"}`} v={fC(r.heredable)} c={r.heredable > 0 ? T.green : T.txt} />
                       {r.agotaEn != null && edadIni && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>El bitcoin se acaba a los {Math.round(edadIni + r.agotaEn)}: desde ahí no hay retiro.</div>}
@@ -211,7 +224,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                 <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                   {/* 4-nov-2026 (Santiago: "el botón Borrar parece apagado"): dos botones
                       con borde; Borrar en naranja y con confirmación. */}
-                  <button type="button" onClick={() => abrir(e)} style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 16px", color: T.txt, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Abrir</button>
+                  <button type="button" onClick={() => abrir(e)} disabled={e.id === escAbierto} style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 16px", color: T.txt, cursor: "pointer", fontSize: 13, fontWeight: 600, opacity: e.id === escAbierto ? 0.5 : 1 }}>{e.id === escAbierto ? "Abierto" : "Abrir"}</button>
                   <button type="button" onClick={() => { if (confirm(`¿Borrar el escenario "${e.nombre}"?`)) borrar(e.id); }} style={{ background: "transparent", border: "1px solid rgba(255,80,0,0.45)", borderRadius: 999, padding: "6px 16px", color: "var(--fp-neg)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Borrar</button>
                 </div>
               </div>
@@ -341,7 +354,13 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
 
       {/* ═══ RESULTADO — al final ═══ */}
       {r && listo4 && listo5 && (
-        <div style={{ marginTop: 24 }}>
+        <div ref={resultadoRef} style={{ marginTop: 24, scrollMarginTop: 80 }}>
+          {abiertoEsc && (
+            <div style={{ border: `1px solid ${T.green}`, borderRadius: 12, padding: "10px 14px", marginBottom: 12, fontSize: 14, color: T.txt2, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+              <span>Estás viendo <strong style={{ color: T.txt }}>{abiertoEsc.nombre}</strong>. Lo que cambies arriba se guarda en este escenario.</span>
+              <button type="button" onClick={() => setEscAbierto(null)} style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 14px", color: T.txt, cursor: "pointer", fontSize: 13 }}>Cerrar escenario</button>
+            </div>
+          )}
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24, marginBottom: 12 }}>
             <div style={{ fontSize: 14, color: T.txt2 }}>Pones {fC(r.invertido)} en {añosN} años y, si sube {fmtPctEs(cagrN, 0)} al año, terminas con</div>
             <div style={{ fontSize: 48, fontWeight: 700, color: T.txt, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{fC(r.valorCOPHoy)}</div>
@@ -384,7 +403,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
 
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 12, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
             <input value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} placeholder="Nombre del escenario (opcional)" style={{ ...inputSt, maxWidth: 360, fontSize: 14 }} />
-            <button type="button" onClick={guardarEscenario} disabled={!onGuardar} style={{ padding: "10px 18px", borderRadius: 999, border: 0, background: T.txt, color: "var(--fp-bg)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Guardar escenario</button>
+            <button type="button" onClick={guardarEscenario} disabled={!onGuardar} style={{ padding: "10px 18px", borderRadius: 999, border: 0, background: T.txt, color: "var(--fp-bg)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>{abiertoEsc ? "Guardar como escenario nuevo" : "Guardar escenario"}</button>
           </div>
         </div>
       )}
