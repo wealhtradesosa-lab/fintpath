@@ -25,7 +25,7 @@
 // Los datos reales NO se tocan. Los escenarios viven en user.escenarios y se
 // guardan con la cuenta.
 // ═══════════════════════════════════════════════════════════════════════════
-import { fmtPctEs, fmtTasaEs, fmtPlataCortaEs } from "../lib/formato.js";
+import { tx, esUS, esEN, plata, plataCorta, pct, nombreMes, monedaBase, localeCifras } from "../lib/region.js";
 import { useState, useMemo, useEffect, useRef } from "react";
 import PageHeader from "./PageHeader";
 import { estimarImpuestoReferente, pagosDeclaracion } from "../lib/impuestoReferente";
@@ -37,15 +37,52 @@ import { snapshotPatrimonio, estimarAmortizacionAnual } from "../lib/proyeccionP
 import { montoDelMes, promedioMesActivo, getFrecuencia, MESES, getMesActual, rangoEfectivo } from "../lib/flowHelpers.js";
 import { cuotaDeudaDelMes, retencionDelMes } from "./SimuladorAvanzado";
 
-const fm = (n) => (n < 0 ? "−$" : "$") + Math.abs(Math.round(n || 0)).toLocaleString("es-CO");
-const mesL = (m) => (MESES.find((x) => x.v === m) || {}).l || "";
+// 3-nov-2026: cifras y meses según la región de la sesión (region.js). Colombia
+// sale igual que antes; EE. UU. con formato $1,234 / $2.5M y meses en el idioma.
+const fm = (n) => plata(n);
+const mesL = (m) => (m >= 1 && m <= 12 ? nombreMes(m) : "");
+// Mes dentro de una frase: en español va en minúscula ("desde marzo"); en inglés, con mayúscula.
+const mesF = (m) => (esEN() ? mesL(m) : mesL(m).toLowerCase());
+// Tasa con hasta 2 decimales en el formato del país: 14% · 1,5% (CO) · 1.5% (US).
+const fmtTasa = (n) => { if (n === "" || n == null) return ""; const v = Number(n); if (!Number.isFinite(v)) return String(n) + "%"; return v.toLocaleString(localeCifras(), { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + "%"; };
+const anualMensualTxt = (modo) => (modo === "mensual" ? tx("mensual", "monthly") : tx("anual", "yearly"));
+// Frecuencia (clave interna en español) para mostrar.
+const FREC_EN = { mensual: "monthly", variable: "variable", anual: "yearly", trimestral: "quarterly", semestral: "every 6 months", unico: "one-time", bimestral: "every 2 months", cuatrimestral: "every 4 months" };
+const frecTxt = (f) => tx(f, FREC_EN[f] || f);
+// Moneda base: Colombia convierte dólares a pesos con la TRM (como siempre);
+// EE. UU. trabaja en dólares y convierte lo que esté en pesos.
+const aBase = (moneda, trm) => {
+  if (!esUS()) return moneda === "USD" ? trm : 1;
+  const t = Number(trm) || 0;
+  return String(moneda || "").toUpperCase() === "COP" && t > 1 ? 1 / t : 1;
+};
+// Cuota de una deuda en un mes, en la moneda base. En EE. UU. no se deja que
+// cuotaDeudaDelMes multiplique los dólares por la TRM.
+const cuotaMes = (d, cuota, año, mes, trm) => (esUS()
+  ? cuotaDeudaDelMes({ ...d, moneda: undefined }, cuota, año, mes, trm) * aBase(d?.moneda, trm)
+  : cuotaDeudaDelMes(d, cuota, año, mes, trm));
+// Patrimonio y amortización (proyeccionPatrimonio.js) convierten dólares con la
+// TRM. En EE. UU. se les pasa todo ya en dólares y sin moneda.
+function usuarioEnBase(user = {}) {
+  if (!esUS()) return user;
+  const t = Number(user?.trm) || 0;
+  const k = (x) => (String(x?.moneda || "").toUpperCase() === "COP" && t > 1 ? 1 / t : 1);
+  const inv = (user.inv || []).map((i) => ({ ...i, moneda: undefined, va: (Number(i.va) || 0) * k(i), vc: (Number(i.vc) || 0) * k(i) }));
+  const deudas = (user.deudas || []).map((d) => ({ ...d, moneda: undefined, mt: (Number(d.mt) || 0) * k(d), pg: (Number(d.pg) || 0) * k(d), pago: d.pago != null ? (Number(d.pago) || 0) * k(d) : d.pago }));
+  return { ...user, inv, deudas };
+}
 // Renta mensual que sale de un capital y una tasa (anual o mensual).
 const rentaDe = (cap, tasa, modo) => { const c = Number(cap) || 0, t = Number(tasa) || 0; return c > 0 && t > 0 ? Math.round(modo === "mensual" ? c * t / 100 : c * t / 100 / 12) : 0; };
 // Formato corto para las barras: $12,3 M · $850 K
-const fmC = fmtPlataCortaEs;
+const fmC = (n) => plataCorta(n);
 const uid = () => "c_" + Math.random().toString(36).slice(2, 9);
 
 const CATS_ING = ["Salario", "Honorarios", "Arriendo", "Dividendos", "Intereses bancarios", "Rendimiento", "Pensión", "Negocio", "Otro"];
+// Las categorías se guardan con su clave en español (el motor de impuestos de cada
+// país las lee así); solo cambia lo que se muestra.
+const CAT_ING_EN = { "Salario": "Salary (W-2)", "Honorarios": "Freelance (1099)", "Arriendo": "Rent", "Dividendos": "Dividends", "Intereses bancarios": "Bank interest", "Rendimiento": "Investment return", "Pensión": "Pension / Social Security", "Negocio": "Business", "Otro": "Other" };
+const CAT_ING_US_ES = { "Salario": "Salario (W-2)", "Honorarios": "Freelance (1099)", "Pensión": "Pensión / Seguro Social" };
+const catTxt = (c) => (esEN() ? CAT_ING_EN[c] || c : esUS() ? CAT_ING_US_ES[c] || c : c);
 const FISCAL_ING = {
   "Salario": "LAB_SALARIO", "Honorarios": "LAB_HONORARIOS_SIN_EMPLEADOS", "Arriendo": "NOL_ARRIENDO_INMUEBLE",
   "Dividendos": "DIV_ART49_GRAVADOS", "Intereses bancarios": "CAP_INTERESES_BANCARIOS",
@@ -91,27 +128,27 @@ export function construirBase(user) {
   // simulador también aparece, sin contar, para poder llevarlo al año entrante con un toque.
   const vigA = (item) => item.sim === false ? { ...vig(item), termina: true, apagado: true } : vig(item);
   (user.ingresos || []).forEach((i, idx) => {
-    const fx = i.moneda === "USD" ? trm : 1;
+    const fx = aBase(i.moneda, trm);
     const v = vigA(i);
     out.push({
       key: claveEstable("ing", i, i.nombre || i.fuente), oldKey: `ing_${idx}`, kind: "ing", ref: i, vig: v,
-      nombre: i.nombre || i.fuente || "Ingreso", cat: i.categoria || "",
+      nombre: i.nombre || i.fuente || tx("Ingreso", "Income"), cat: i.categoria || "",
       capital: Number(i.capital) || 0, tasa: Number(i.tasa) || 0, tasaModo: i.tasaModo || "anual",
       montoTipico: (getFrecuencia(i) === "variable" ? supuestoVariable(i).monto : promedioMesActivo(i)) * fx,
-      supuesto: getFrecuencia(i) === "variable" ? supuestoVariable(i).texto : (getFrecuencia(i) === "mensual" ? "" : `${getFrecuencia(i)} · cae en su mes`),
+      supuesto: getFrecuencia(i) === "variable" ? supuestoVariable(i).texto : (getFrecuencia(i) === "mensual" ? "" : tx(`${getFrecuencia(i)} · cae en su mes`, `${frecTxt(getFrecuencia(i))} · falls in its month`)),
       porMes: (año) => proyectarPorMes(i, año, fx),
       porMesReal: (año) => MESES.map((m) => (montoDelMes(i, año, m.v) || 0) * fx),
     });
   });
   Object.entries(user.gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g, idx) => {
-      const fx = g.moneda === "USD" ? trm : 1;
+      const fx = aBase(g.moneda, trm);
       const v = vigA(g);
       out.push({
         key: claveEstable(`gas:${cat}`, g, g.c), oldKey: `gas_${cat}_${idx}`, kind: "gas", ref: g, vig: v,
-        nombre: g.c || "Gasto", cat,
+        nombre: g.c || tx("Gasto", "Expense"), cat,
         montoTipico: (getFrecuencia(g) === "variable" ? supuestoVariable(g).monto : promedioMesActivo(g)) * fx,
-        supuesto: getFrecuencia(g) === "variable" ? supuestoVariable(g).texto : (getFrecuencia(g) === "mensual" ? "" : `${getFrecuencia(g)} · cae en su mes`),
+        supuesto: getFrecuencia(g) === "variable" ? supuestoVariable(g).texto : (getFrecuencia(g) === "mensual" ? "" : tx(`${getFrecuencia(g)} · cae en su mes`, `${frecTxt(getFrecuencia(g))} · falls in its month`)),
         porMes: (año) => proyectarPorMes(g, año, fx),
         porMesReal: (año) => MESES.map((m) => (montoDelMes(g, año, m.v) || 0) * fx),
       });
@@ -125,10 +162,10 @@ export function construirBase(user) {
     const dFull = { ...d, desdeMes: 1, hastaMes: 12 };
     out.push({
       key: claveEstable("deu", d, d.n || d.nombre), oldKey: `deu_${idx}`, kind: "deu", ref: d, vig: v,
-      nombre: d.n || d.nombre || "Deuda", cat: d.tipo || "",
-      montoTipico: cuotaDeudaDelMes(dFull, cuota, getMesActual().año, 1, trm) || cuota * (d.moneda === "USD" ? trm : 1),
-      porMes: (año) => MESES.map((m) => cuotaDeudaDelMes(dFull, cuota, año, m.v, trm)),
-      porMesReal: (año) => MESES.map((m) => cuotaDeudaDelMes(d, cuota, año, m.v, trm)),
+      nombre: d.n || d.nombre || tx("Deuda", "Debt"), cat: d.tipo || "",
+      montoTipico: cuotaMes(dFull, cuota, getMesActual().año, 1, trm) || cuota * aBase(d.moneda, trm),
+      porMes: (año) => MESES.map((m) => cuotaMes(dFull, cuota, año, m.v, trm)),
+      porMesReal: (año) => MESES.map((m) => cuotaMes(d, cuota, año, m.v, trm)),
     });
   });
   return out;
@@ -144,18 +181,18 @@ export function construirBase(user) {
 function supuestoVariable(item) {
   const montos = (Array.isArray(item?.montosMensuales) ? item.montosMensuales : []).map((v) => Number(v) || 0);
   const conMonto = montos.map((v, i) => ({ v, mes: i + 1 })).filter((x) => x.v > 0);
-  if (!conMonto.length) return { monto: 0, texto: "sin montos este año" };
+  if (!conMonto.length) return { monto: 0, texto: tx("sin montos este año", "no amounts this year") };
   const primero = conMonto[0].mes;
   if (primero <= 3) {
     const total = montos.reduce((a, v) => a + v, 0);
-    return { monto: total / 12, texto: `${fm(total)} de este año repartidos en 12` };
+    return { monto: total / 12, texto: tx(`${fm(total)} de este año repartidos en 12`, `${fm(total)} from this year spread over 12 months`) };
   }
   const vals = conMonto.map((x) => x.v).sort((a, b) => a - b);
   const med = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
   // 28-oct-2026 (Santiago: "son ingresos de todo 2027, ¿por qué dice desde septiembre si no di esa instrucción?").
   // El cálculo ya cuenta los 12 meses; el texto daba a entender que empezaba en septiembre. Ahora dice de dónde
   // sale el valor: lo que recibes desde ese mes de ESTE año.
-  return { monto: med, texto: `todo el año · valor típico de lo que recibes desde ${mesL(primero).toLowerCase()} de este año (${conMonto.length} ${conMonto.length === 1 ? "mes" : "meses"})` };
+  return { monto: med, texto: tx(`todo el año · valor típico de lo que recibes desde ${mesL(primero).toLowerCase()} de este año (${conMonto.length} ${conMonto.length === 1 ? "mes" : "meses"})`, `whole year · typical amount you've received since ${mesL(primero)} this year (${conMonto.length} ${conMonto.length === 1 ? "month" : "months"})`) };
 }
 
 // Un ítem de hoy, en cada mes del año futuro. "unico" no se repite; "variable"
@@ -184,7 +221,7 @@ export function aplicarCambios(base, cambios, año, incluidos) {
     if (c.tipo === "nuevo") {
       const desde = Number(c.desdeMes) || 1, hasta = Number(c.hastaMes) || 12;
       filas.push({
-        key: c.id, kind: c.kind, nombre: c.nombre || "Nuevo", cat: c.cat || "",
+        key: c.id, kind: c.kind, nombre: c.nombre || tx("Nuevo", "New"), cat: c.cat || "",
         capital: Number(c.capital) || 0, tasa: Number(c.tasa) || 0, tasaModo: c.tasaModo || "anual",
         montoTipico: Number(c.monto) || 0, origen: "nuevo", cambio: c,
         meses: MESES.map((m) => (m.v >= desde && m.v <= hasta ? Number(c.monto) || 0 : 0)),
@@ -225,7 +262,8 @@ export function usuarioFuturo(user, filas) {
   filas.forEach((f) => {
     const avg = f.meses.reduce((s, v) => s + v, 0) / 12;
     const base = f.ref || {};
-    const comun = { frecuencia: "variable", montosMensuales: f.meses, moneda: "COP", sim: true, desdeMes: 1, hastaMes: 12 };
+    // Las filas ya están en la moneda base del país (pesos en Colombia, dólares en EE. UU.).
+    const comun = { frecuencia: "variable", montosMensuales: f.meses, moneda: monedaBase(), sim: true, desdeMes: 1, hastaMes: 12 };
     if (f.kind === "ing") {
       ing.push({ ...base, ...comun, nombre: f.nombre, mensual: avg, capital: f.capital || base.capital, tasa: f.tasa || base.tasa,
         categoria: base.categoria || f.cat || "Otro",
@@ -240,7 +278,8 @@ export function usuarioFuturo(user, filas) {
         owner: dueño(base, f) });
     }
   });
-  return { owners: user.owners || [], ingresos: ing, gas, deu, inv: user.inv || [], trm: user.trm || 4200, _calRef: user._calRef, _calRefHoy: user._calRefHoy };
+  // taxConfig: estado civil y estado de residencia (EE. UU.); el motor de EE. UU. lo necesita.
+  return { owners: user.owners || [], ingresos: ing, gas, deu, inv: user.inv || [], trm: user.trm || 4200, taxConfig: user.taxConfig, _calRef: user._calRef, _calRefHoy: user._calRefHoy };
 }
 
 export function impuestoAnual(u) {
@@ -263,7 +302,10 @@ export function cuadro(filas, mesesIdx, imp, pagoMes) {
   const ingresos = suma("ing"), gastos = suma("gas"), cuotas = suma("deu");
   const brutoAnual = filas.filter((f) => f.kind === "ing").reduce((s, f) => s + f.meses.reduce((a, v) => a + v, 0), 0);
   const retencion = retencionDelMes(ingresos, brutoAnual / 12, imp.rete / 12);
-  const impuesto = pagoMes ? (mesesIdx.length === 1 ? pagoMes[mesesIdx[0]] || 0 : 0) : imp.neto / 12;
+  // 3-nov-2026 — EE. UU.: los pagos estimados son 4 al año, todos los años: en el mes
+  // típico se prorratean (sin ellos el mes típico se vería mejor de lo que es).
+  // En Colombia la declaración es un pago de una vez y no entra al mes típico.
+  const impuesto = pagoMes ? (mesesIdx.length === 1 ? pagoMes[mesesIdx[0]] || 0 : (esUS() ? pagoMes.reduce((a, v) => a + (v || 0), 0) / 12 : 0)) : imp.neto / 12;
   const egresos = gastos + cuotas + impuesto;
   const queda = ingresos - retencion - egresos;
   return { ingresos, retencion, gastos, cuotas, impuesto, egresos, queda };
@@ -297,11 +339,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const actualizar = (patch) => guardar(escenarios.map((e) => (e.id === selId ? { ...e, ...patch } : e)));
   const nuevoEscenario = () => {
     const b0 = construirBase(user);
-    const e = { id: uid(), nombre: `Mi ${añoHoy + 1}`, año: añoHoy + 1, cambios: [], activos: Object.fromEntries(b0.map((b) => [b.key, !b.vig?.termina])), conocidos: b0.map((b) => b.key), creado: new Date().toISOString() };
+    const e = { id: uid(), nombre: tx(`Mi ${añoHoy + 1}`, `My ${añoHoy + 1}`), año: añoHoy + 1, cambios: [], activos: Object.fromEntries(b0.map((b) => [b.key, !b.vig?.termina])), conocidos: b0.map((b) => b.key), creado: new Date().toISOString() };
     guardar([...escenarios, e]); setSelId(e.id); setMesFoco(null);
   };
   const borrarEscenario = () => {
-    if (!esc || !window.confirm(`¿Borrar el escenario "${esc.nombre}"?`)) return;
+    if (!esc || !window.confirm(tx(`¿Borrar el escenario "${esc.nombre}"?`, `Delete the scenario "${esc.nombre}"?`))) return;
     const resto = escenarios.filter((e) => e.id !== selId);
     guardar(resto); setSelId(resto[0]?.id || null);
   };
@@ -346,7 +388,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const impHoy = useMemo(() => impuestoAnual(usuarioFuturo(user, filasHoy)), [user, filasHoy]);
   // Renta que se paga de un golpe: en el año simulado, la de año−1 (Calculadora de declaración);
   // hoy, la de la declaración del año pasado. Por titular (persona natural y sociedades).
-  const pagoFut = useMemo(() => pagosDeclaracion(user.owners, user._calRef || {}, impHoy.detalle, año - 1), [user, impHoy, año]);
+  // EE. UU. (3-nov-2026): lo que no retiene la nómina se paga en 4 pagos estimados
+  // del MISMO año (Form 1040-ES), así que sale del impuesto del escenario, no del de hoy.
+  const pagoFut = useMemo(() => (esUS()
+    ? pagosDeclaracion(user.owners, {}, impFut.detalle, año)
+    : pagosDeclaracion(user.owners, user._calRef || {}, impHoy.detalle, año - 1)), [user, impHoy, impFut, año]);
   const pagoHoy = useMemo(() => pagosDeclaracion(user.owners, user._calRefHoy || {}, impHoy.detalle, añoHoy - 1), [user, impHoy, añoHoy]);
   const hoy = useMemo(() => cuadro(filasHoy, MESES.map((_, i) => i), impHoy, pagoHoy.porMes), [filasHoy, impHoy, pagoHoy]);
   const porMesHoy = useMemo(() => MESES.map((_, i) => cuadro(filasHoy, [i], impHoy, pagoHoy.porMes)), [filasHoy, impHoy, pagoHoy]);
@@ -363,21 +409,21 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   // Qué pasa en cada mes: lo que entra, termina o cambia justo ahí.
   const eventosMes = useMemo(() => {
     const ev = MESES.map(() => []);
-    const nombreDe = (c) => c.tipo === "nuevo" ? (c.nombre || "Nuevo") : (filas.find((f) => f.key === c.ref)?.nombre || base.find((b) => b.key === c.ref)?.nombre || "—");
+    const nombreDe = (c) => c.tipo === "nuevo" ? (c.nombre || tx("Nuevo", "New")) : (filas.find((f) => f.key === c.ref)?.nombre || base.find((b) => b.key === c.ref)?.nombre || "—");
     cambios.forEach((c) => {
       const d = Number(c.desdeMes) || 1;
       if (c.tipo === "nuevo") {
-        if (d >= 1 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: `entra ${nombreDe(c)} (${fm(c.monto)}/mes)` });
+        if (d >= 1 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: tx(`entra ${nombreDe(c)} (${fm(c.monto)}/mes)`, `${nombreDe(c)} starts (${fm(c.monto)}/mo)`) });
         const h = Number(c.hastaMes) || 12;
-        if (h < 12) ev[h].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
+        if (h < 12) ev[h].push({ tipo: "sale", texto: tx(`termina ${nombreDe(c)}`, `${nombreDe(c)} ends`) });
       } else if (c.tipo === "meses") {
-        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: `arranca ${nombreDe(c)}` });
+        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "entra", texto: tx(`arranca ${nombreDe(c)}`, `${nombreDe(c)} starts`) });
         const h = Number(c.hastaMes) || 12;
-        if (h < 12) ev[h].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
+        if (h < 12) ev[h].push({ tipo: "sale", texto: tx(`termina ${nombreDe(c)}`, `${nombreDe(c)} ends`) });
       } else if (c.tipo === "termina") {
-        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "sale", texto: `termina ${nombreDe(c)}` });
+        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "sale", texto: tx(`termina ${nombreDe(c)}`, `${nombreDe(c)} ends`) });
       } else if (c.tipo === "cambia") {
-        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "cambia", texto: `${nombreDe(c)} pasa a ${fm(c.monto)}/mes` });
+        if (d >= 2 && d <= 12) ev[d - 1].push({ tipo: "cambia", texto: tx(`${nombreDe(c)} pasa a ${fm(c.monto)}/mes`, `${nombreDe(c)} changes to ${fm(c.monto)}/mo`) });
       }
     });
     // Ítems de hoy que se agotan dentro del año (créditos que se pagan, contratos que acaban)
@@ -391,14 +437,14 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
       if (activos === 0) return;
       if (activos === 1) { unaVez[ms.findIndex((v) => v > 0)].push(f); return; }
       for (let i = 1; i < 12; i++) {
-        if (ms[i - 1] > 0 && !(ms[i] > 0)) ev[i].push({ tipo: "sale", texto: `${f.nombre} ya no cuenta (${f.kind === "deu" ? "crédito pagado" : "termina"})` });
-        if (!(ms[i - 1] > 0) && ms[i] > 0) ev[i].push({ tipo: "entra", texto: `arranca ${f.nombre} (${fm(ms[i])}/mes)` });
+        if (ms[i - 1] > 0 && !(ms[i] > 0)) ev[i].push({ tipo: "sale", texto: tx(`${f.nombre} ya no cuenta (${f.kind === "deu" ? "crédito pagado" : "termina"})`, `${f.nombre} no longer counts (${f.kind === "deu" ? "loan paid off" : "ends"})`) });
+        if (!(ms[i - 1] > 0) && ms[i] > 0) ev[i].push({ tipo: "entra", texto: tx(`arranca ${f.nombre} (${fm(ms[i])}/mes)`, `${f.nombre} starts (${fm(ms[i])}/mo)`) });
       }
     });
     unaVez.forEach((lista, i) => {
       if (!lista.length) return;
       const tot = lista.reduce((a, f) => a + (f.meses[i] || 0), 0);
-      ev[i].push({ tipo: "cambia", texto: `${lista.length === 1 ? "pago de una vez" : lista.length + " pagos de una vez"} (${fm(tot)}): ${lista.map((f) => f.nombre).join(", ")}` });
+      ev[i].push({ tipo: "cambia", texto: tx(`${lista.length === 1 ? "pago de una vez" : lista.length + " pagos de una vez"} (${fm(tot)}): ${lista.map((f) => f.nombre).join(", ")}`, `${lista.length === 1 ? "one-time payment" : lista.length + " one-time payments"} (${fm(tot)}): ${lista.map((f) => f.nombre).join(", ")}`) });
     });
     return ev;
   }, [cambios, filas, base]);
@@ -413,11 +459,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
     const sum = (k) => porMesHoy.reduce((a, m) => a + m[k], 0);
     return { ingresos: sum("ingresos"), gastos: sum("gastos"), cuotas: sum("cuotas"), impuestos: sum("impuesto") + sum("retencion"), ret: sum("retencion"), decl: sum("impuesto"), queda: sum("queda") };
   }, [porMesHoy]);
-  const snap = useMemo(() => snapshotPatrimonio(user), [user]);
-  const amortMes = useMemo(() => estimarAmortizacionAnual(user.deudas, user.trm) / 12, [user]);
+  const snap = useMemo(() => snapshotPatrimonio(usuarioEnBase(user)), [user]);
+  const amortMes = useMemo(() => estimarAmortizacionAnual(usuarioEnBase(user).deudas, user.trm) / 12, [user]);
   const curvaPat = useMemo(() => {
     let pat = snap.patrimonioNeto, acum = 0;
-    const pts = [{ m: "Hoy", pat, queda: 0, amort: 0, acum: 0 }];
+    const pts = [{ m: tx("Hoy", "Today"), pat, queda: 0, amort: 0, acum: 0 }];
     porMes.forEach((m) => {
       const amort = Math.min(amortMes, Math.max(0, m.cuotas)); // si ya no hay cuotas, no baja deuda
       pat += m.queda + amort; acum += m.queda;
@@ -433,7 +479,9 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const quitarCambio = (id) => actualizar({ cambios: cambios.filter((c) => c.id !== id) });
 
   const owners = user.owners || [];
-  const kindL = { ing: "ingreso", gas: "gasto", deu: "deuda" };
+  const kindL = { ing: tx("ingreso", "income"), gas: tx("gasto", "expense"), deu: tx("deuda", "debt") };
+  // Plural del grupo ("ingresos · 4"). En español es kindL + "s", como antes.
+  const kindPl = { ing: tx("ingresos", "income"), gas: tx("gastos", "expenses"), deu: tx("deudas", "debts") };
   const colorK = { ing: C.ok, gas: C.danger, deu: C.warn };
 
   // ─── UI ───────────────────────────────────────────────────────────────
@@ -454,34 +502,34 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
       <span style={{ width: 16, height: 16, borderRadius: 999, background: "#fff", boxShadow: "0 1px 2px rgba(0,0,0,.3)", display: "block" }} />
     </button>
   );
-  const motivoExcluido = (f) => activos[f.key] === false ? `apagado en este escenario`
-    : f.vig?.apagado ? "apagado en el simulador de hoy · tócalo para contarlo en " + año
-    : f.vig?.termina ? `terminó en ${mesL(f.vig.hasta).toLowerCase()} de ${añoHoy} · tócalo si sigue en ${año}` : "no cuenta";
+  const motivoExcluido = (f) => activos[f.key] === false ? tx(`apagado en este escenario`, "turned off in this scenario")
+    : f.vig?.apagado ? tx("apagado en el simulador de hoy · tócalo para contarlo en " + año, `turned off in today's simulator · tap it to count it in ${año}`)
+    : f.vig?.termina ? tx(`terminó en ${mesL(f.vig.hasta).toLowerCase()} de ${añoHoy} · tócalo si sigue en ${año}`, `ended in ${mesL(f.vig.hasta)} ${añoHoy} · tap it if it continues in ${año}`) : tx("no cuenta", "doesn't count");
   const renderFila = (f) => { const k = f.kind;
                   if (f.excluido) return (
                     <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.border}`, opacity: 0.55, flexWrap: "wrap" }}>
-                      <Interruptor on={false} onClick={() => setActivo([f.key], true)} titulo={`Contar en ${año}`} />
+                      <Interruptor on={false} onClick={() => setActivo([f.key], true)} titulo={tx(`Contar en ${año}`, `Count in ${año}`)} />
                       <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-                        <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "line-through" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                        <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: "line-through" }}>{f.nombre} <span style={F.caption}>· {catTxt(f.cat)}</span></div>
                         <div style={F.caption}>{motivoExcluido(f)}</div>
                       </div>
-                      <div style={{ ...F.mono, color: C.muted, whiteSpace: "nowrap" }}>{fm(f.montoTipico)}/mes</div>
+                      <div style={{ ...F.mono, color: C.muted, whiteSpace: "nowrap" }}>{fm(f.montoTipico)}{tx("/mes", "/mo")}</div>
                     </div>
                   );
                   const anual = f.meses.reduce((s, v) => s + v, 0);
                   const c = f.cambio;
                   const editando = form && form.tipo !== "nuevo" && form.ref === f.key;
                   const estado = !c ? null
-                    : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
-                    : c.tipo === "meses" ? `cuenta solo de ${mesL(Number(c.desdeMes) || 1).toLowerCase()} a ${mesL(Number(c.hastaMes) || 12).toLowerCase()} de ${año}`
-                    : c.tipo === "cambia" ? `pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}${c.modo === "capital" && rentaDe(c.capital, c.tasa, c.tasaModo) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`
-                    : c.tipo === "continua" ? `sigue en ${año}` : "";
+                    : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? tx("no cuenta en todo el año", "doesn't count all year") : tx(`cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`, `counts through ${mesL(Number(c.desdeMes) - 1)}, then ends`))
+                    : c.tipo === "meses" ? tx(`cuenta solo de ${mesL(Number(c.desdeMes) || 1).toLowerCase()} a ${mesL(Number(c.hastaMes) || 12).toLowerCase()} de ${año}`, `counts only ${mesL(Number(c.desdeMes) || 1)} to ${mesL(Number(c.hastaMes) || 12)} ${año}`)
+                    : c.tipo === "cambia" ? `${tx(`pasa a ${fm(c.monto)}/mes desde ${mesL(c.desdeMes).toLowerCase()}`, `changes to ${fm(c.monto)}/mo from ${mesL(c.desdeMes)}`)}${c.modo === "capital" && rentaDe(c.capital, c.tasa, c.tasaModo) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasa(c.tasa)} ${anualMensualTxt(c.tasaModo)})` : ""}`
+                    : c.tipo === "continua" ? tx(`sigue en ${año}`, `continues in ${año}`) : "";
                   return (
                     <div key={f.key} style={{ padding: "8px 0", borderTop: `1px solid ${C.border}`, background: editando ? Cα.accent08 : "transparent", borderRadius: editando ? R.md : 0, paddingLeft: editando ? 8 : 0, paddingRight: editando ? 8 : 0 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                        {f.origen !== "nuevo" && <Interruptor on onClick={() => setActivo([f.key], false)} titulo={`No contar en ${año}`} />}
+                        {f.origen !== "nuevo" && <Interruptor on onClick={() => setActivo([f.key], false)} titulo={tx(`No contar en ${año}`, `Don't count in ${año}`)} />}
                         <div style={{ flex: "1 1 220px", minWidth: 0 }}>
-                          <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
+                          <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {catTxt(f.cat)}</span></div>
                           {/* 11-oct-2026 (Santiago: "¿cuánto es entonces mi arriendo?").
                               Con un cambio aplicado, primero el valor que rige en el año
                               futuro; el supuesto anterior, tachado y en pequeño. */}
@@ -497,22 +545,22 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                                 if (!(cap > 0)) return null;
                                 const mensual = anual / 12;
                                 const tasaImpl = cap > 0 && mensual > 0 ? (mensual * 12 / cap) * 100 : 0;
-                                const tasaTxt = capC ? `${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"}` : `${fmtTasaEs(tasaImpl)} anual implícito`;
+                                const tasaTxt = capC ? `${fmtTasa(c.tasa)} ${anualMensualTxt(c.tasaModo)}` : tx(`${fmtTasa(tasaImpl)} anual implícito`, `${fmtTasa(tasaImpl)} implied yearly`);
                                 return <>Capital <b style={{ color: C.text }}>{fm(cap)}</b> × {tasaTxt} → </>;
                               })()}
-                              <b style={{ color: C.text }}>{fm(anual / 12)}/mes en {año}</b> · {fm(anual)} en el año
-                              <span style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.7 }}>antes {fm(f.montoTipico)}/mes</span>
+                              <b style={{ color: C.text }}>{tx(`${fm(anual / 12)}/mes en ${año}`, `${fm(anual / 12)}/mo in ${año}`)}</b> · {tx(`${fm(anual)} en el año`, `${fm(anual)} for the year`)}
+                              <span style={{ marginLeft: 8, textDecoration: "line-through", opacity: 0.7 }}>{tx(`antes ${fm(f.montoTipico)}/mes`, `was ${fm(f.montoTipico)}/mo`)}</span>
                             </div>
                           ) : (
                             <div style={F.caption}>
-                              {f.capital > 0 && f.tasa > 0 ? <>Capital <b style={{ color: C.text }}>{fm(f.capital)}</b> × {fmtTasaEs(f.tasa)} {f.tasaModo === "mensual" ? "mensual" : "anual"} → </> : ""}
-                              {fm(f.montoTipico)}/mes · {fm(anual)} en {año}{f.supuesto ? ` · ${f.supuesto}` : (f.meses.every((v) => v > 0) ? " · todo el año" : "")}
+                              {f.capital > 0 && f.tasa > 0 ? <>Capital <b style={{ color: C.text }}>{fm(f.capital)}</b> × {fmtTasa(f.tasa)} {anualMensualTxt(f.tasaModo)} → </> : ""}
+                              {tx(`${fm(f.montoTipico)}/mes · ${fm(anual)} en ${año}`, `${fm(f.montoTipico)}/mo · ${fm(anual)} in ${año}`)}{f.supuesto ? ` · ${f.supuesto}` : (f.meses.every((v) => v > 0) ? tx(" · todo el año", " · all year") : "")}
                             </div>
                           )}
                           {estado && (
                             <div style={{ marginTop: 4, display: "inline-flex", alignItems: "center", gap: 8, padding: "2px 10px", borderRadius: R.pill, background: Cα.warn15, color: C.warn, fontSize: 12, fontWeight: 700 }}>
                               {estado}
-                              <button onClick={() => quitarCambio(c.id)} style={{ background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}>deshacer</button>
+                              <button onClick={() => quitarCambio(c.id)} style={{ background: "none", border: "none", color: C.warn, cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0 }}>{tx("deshacer", "undo")}</button>
                             </div>
                           )}
                         </div>
@@ -523,39 +571,39 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                           const col = k === "ing" ? C.ok : k === "deu" ? C.warn : C.danger;
                           return (
                             <div style={{ textAlign: "right", flexShrink: 0, minWidth: 120 }}>
-                              <div style={{ ...F.mono, fontSize: 16, fontWeight: 700, color: col, lineHeight: 1.1 }}>{k === "ing" ? "+" : "−"}{fm(mensual)}<span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>/mes</span></div>
-                              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{fm(anual)} en {año}</div>
+                              <div style={{ ...F.mono, fontSize: 16, fontWeight: 700, color: col, lineHeight: 1.1 }}>{k === "ing" ? "+" : "−"}{fm(mensual)}<span style={{ fontSize: 12, fontWeight: 600, color: C.muted }}>{tx("/mes", "/mo")}</span></div>
+                              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{tx(`${fm(anual)} en ${año}`, `${fm(anual)} in ${año}`)}</div>
                             </div>
                           );
                         })()}
                         {!c && !editando && (<>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "meses", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, hastaMes: 12 })}>Unos meses</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>Termina</button>
-                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico), modo: k === "ing" && f.capital > 0 ? "capital" : "monto", capital: f.capital || "", tasa: f.tasa || "", tasaModo: f.tasaModo || "anual" })}>Cambia</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "meses", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, hastaMes: 12 })}>{tx("Unos meses", "Some months")}</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "termina", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 7 })}>{tx("Termina", "Ends")}</button>
+                          <button style={{ ...btn(false), padding: "4px 10px", fontSize: 12 }} onClick={() => setForm({ tipo: "cambia", kind: k, ref: f.key, nombre: f.nombre, desdeMes: 1, monto: Math.round(f.montoTipico), modo: k === "ing" && f.capital > 0 ? "capital" : "monto", capital: f.capital || "", tasa: f.tasa || "", tasaModo: f.tasaModo || "anual" })}>{tx("Cambia", "Changes")}</button>
                         </>)}
                       </div>
                       {editando && (
                         <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
                           {form.tipo === "meses" ? (<>
-                            <div style={{ flex: "1 1 100%", ...F.caption }}>¿En qué meses de {año} cuenta? Fuera de ese rango, en cero.</div>
+                            <div style={{ flex: "1 1 100%", ...F.caption }}>{tx(`¿En qué meses de ${año} cuenta? Fuera de ese rango, en cero.`, `Which months of ${año} does it count? Outside that range, zero.`)}</div>
                             <div style={{ flex: "0 1 140px" }}>
-                              <div style={F.label}>Desde</div>
+                              <div style={F.label}>{tx("Desde", "From")}</div>
                               <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value), hastaMes: Math.max(Number(e.target.value), Number(form.hastaMes) || 12) })}>
-                                {MESES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                                {MESES.map((m) => <option key={m.v} value={m.v}>{mesL(m.v)}</option>)}
                               </select>
                             </div>
                             <div style={{ flex: "0 1 140px" }}>
-                              <div style={F.label}>Hasta</div>
+                              <div style={F.label}>{tx("Hasta", "To")}</div>
                               <select style={input} value={form.hastaMes} onChange={(e) => setForm({ ...form, hastaMes: Number(e.target.value) })}>
-                                {MESES.filter((m) => m.v >= (Number(form.desdeMes) || 1)).map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                                {MESES.filter((m) => m.v >= (Number(form.desdeMes) || 1)).map((m) => <option key={m.v} value={m.v}>{mesL(m.v)}</option>)}
                               </select>
                             </div>
                           </>) : form.tipo === "termina" ? (
                             <div style={{ flex: "1 1 160px" }}>
-                              <div style={F.label}>Último mes que cuenta en {año}</div>
+                              <div style={F.label}>{tx(`Último mes que cuenta en ${año}`, `Last month it counts in ${año}`)}</div>
                               <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
-                                <option value={1}>Ninguno — no cuenta en {año}</option>
-                                {MESES.filter((m) => m.v < 12).map((m) => <option key={m.v} value={m.v + 1}>{m.l}</option>)}
+                                <option value={1}>{tx(`Ninguno — no cuenta en ${año}`, `None — doesn't count in ${año}`)}</option>
+                                {MESES.filter((m) => m.v < 12).map((m) => <option key={m.v} value={m.v + 1}>{mesL(m.v)}</option>)}
                               </select>
                             </div>
                           ) : (<>
@@ -564,7 +612,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                                 puede cambiar por capital × tasa o por monto directo. */}
                             {k === "ing" && (
                               <div style={{ flex: "1 1 100%", display: "flex", gap: 6 }}>
-                                {[["capital", "Capital y % rentabilidad"], ["monto", "Monto directo"]].map(([m, l]) => (
+                                {[["capital", tx("Capital y % rentabilidad", "Capital and % return")], ["monto", tx("Monto directo", "Direct amount")]].map(([m, l]) => (
                                   <button key={m} type="button" onClick={() => setForm({ ...form, modo: m, monto: m === "capital" && rentaDe(form.capital, form.tasa, form.tasaModo) > 0 ? String(rentaDe(form.capital, form.tasa, form.tasaModo)) : form.monto })}
                                     style={{ ...btn(form.modo === m), padding: "4px 10px", fontSize: 12 }}>{l}</button>
                                 ))}
@@ -572,41 +620,41 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                             )}
                             {k === "ing" && form.modo === "capital" ? (<>
                               <div style={{ flex: "1 1 150px" }}>
-                                <div style={F.label}>Capital invertido</div>
-                                <input style={input} type="number" autoFocus value={form.capital || ""} placeholder="Ej: 500000000"
+                                <div style={F.label}>{tx("Capital invertido", "Capital invested")}</div>
+                                <input style={input} type="number" autoFocus value={form.capital || ""} placeholder={ejCapital()}
                                   onChange={(e) => setForm({ ...form, capital: e.target.value, monto: String(rentaDe(e.target.value, form.tasa, form.tasaModo) || form.monto) })} />
                               </div>
                               <div style={{ flex: "0 1 120px" }}>
-                                <div style={F.label}>% {form.tasaModo === "mensual" ? "mensual" : "anual"}</div>
-                                <input style={input} type="number" step="0.1" value={form.tasa || ""} placeholder="Ej: 14"
+                                <div style={F.label}>% {anualMensualTxt(form.tasaModo)}</div>
+                                <input style={input} type="number" step="0.1" value={form.tasa || ""} placeholder={tx("Ej: 14", "e.g. ") + (esUS() ? "5" : "14")}
                                   onChange={(e) => setForm({ ...form, tasa: e.target.value, monto: String(rentaDe(form.capital, e.target.value, form.tasaModo) || form.monto) })} />
                               </div>
                               <div style={{ flex: "0 1 120px" }}>
-                                <div style={F.label}>Tasa</div>
+                                <div style={F.label}>{tx("Tasa", "Rate")}</div>
                                 <select style={input} value={form.tasaModo || "anual"} onChange={(e) => setForm({ ...form, tasaModo: e.target.value, monto: String(rentaDe(form.capital, form.tasa, e.target.value) || form.monto) })}>
-                                  <option value="anual">anual</option><option value="mensual">mensual</option>
+                                  <option value="anual">{tx("anual", "yearly")}</option><option value="mensual">{tx("mensual", "monthly")}</option>
                                 </select>
                               </div>
                               <div style={{ flex: "1 1 100%", ...F.caption }}>
                                 {rentaDe(form.capital, form.tasa, form.tasaModo) > 0
-                                  ? <>{fm(Number(form.capital))} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = <b style={{ color: C.text }}>{fm(rentaDe(form.capital, form.tasa, form.tasaModo))}/mes</b> · {fm(rentaDe(form.capital, form.tasa, form.tasaModo) * 12)} al año{f.capital > 0 ? ` · hoy: ${fm(f.capital)} × ${fmtTasaEs(f.tasa)} = ${fm(f.montoTipico)}/mes` : ""}</>
-                                  : "Pon capital y tasa y el monto mensual sale solo."}
+                                  ? <>{fm(Number(form.capital))} × {fmtTasa(form.tasa)} {anualMensualTxt(form.tasaModo)} = <b style={{ color: C.text }}>{fm(rentaDe(form.capital, form.tasa, form.tasaModo))}{tx("/mes", "/mo")}</b> · {fm(rentaDe(form.capital, form.tasa, form.tasaModo) * 12)} {tx("al año", "a year")}{f.capital > 0 ? tx(` · hoy: ${fm(f.capital)} × ${fmtTasa(f.tasa)} = ${fm(f.montoTipico)}/mes`, ` · today: ${fm(f.capital)} × ${fmtTasa(f.tasa)} = ${fm(f.montoTipico)}/mo`) : ""}</>
+                                  : tx("Pon capital y tasa y el monto mensual sale solo.", "Enter capital and rate and the monthly amount is calculated for you.")}
                               </div>
                             </>) : (
                               <div style={{ flex: "1 1 160px" }}>
-                                <div style={F.label}>{k === "deu" ? "Nueva cuota mensual" : "Nuevo monto mensual (COP)"}</div>
+                                <div style={F.label}>{k === "deu" ? tx("Nueva cuota mensual", "New monthly payment") : tx(`Nuevo monto mensual (${monedaBase()})`, `New monthly amount (${monedaBase()})`)}</div>
                                 <input style={input} type="number" autoFocus value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
                               </div>
                             )}
                             <div style={{ flex: "0 1 140px" }}>
-                              <div style={F.label}>Desde</div>
+                              <div style={F.label}>{tx("Desde", "From")}</div>
                               <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
-                                {MESES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                                {MESES.map((m) => <option key={m.v} value={m.v}>{mesL(m.v)}</option>)}
                               </select>
                             </div>
                           </>)}
-                          <button style={btn(true)} onClick={() => agregarCambio(form)}>Aplicar</button>
-                          <button style={btn(false)} onClick={() => setForm(null)}>Cancelar</button>
+                          <button style={btn(true)} onClick={() => agregarCambio(form)}>{tx("Aplicar", "Apply")}</button>
+                          <button style={btn(false)} onClick={() => setForm(null)}>{tx("Cancelar", "Cancel")}</button>
                         </div>
                       )}
                     </div>

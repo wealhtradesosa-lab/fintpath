@@ -19,45 +19,80 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { calcularBase, tipoActivo, esLiquido, tipoIngreso, INFLACION_DEFAULT_PCT } from "./metrics.js";
 import { montoPromedioMensual } from "./flowHelpers.js";
+import { esUS, tx } from "./region.js";
 
 export const SUPUESTOS_F10 = {
   validadoPor: "Finpathia · Finanzas, 24-oct-2026",
   anios: 10,
   colchonMeses: 6, // colchón de liquidez, aparte de las mezclas
   escenarios: {
-    pesimista: { nombre: "Prudentes", inflacionPct: 6, ingresosSpread: 0, gastosSpread: 1, retornoSpread: -1.5, spRealPct: 3.5 },
-    base: { nombre: "Normales", inflacionPct: null /* = user.inflacionPct (4%) */, ingresosSpread: 1, gastosSpread: 0, retornoSpread: 0, spRealPct: 6.5 },
-    optimista: { nombre: "Favorables", inflacionPct: 3, ingresosSpread: 2, gastosSpread: 0, retornoSpread: 1, spRealPct: 8 },
+    pesimista: { nombre: "Prudentes", nombreEn: "Cautious", inflacionPct: 6, ingresosSpread: 0, gastosSpread: 1, retornoSpread: -1.5, spRealPct: 3.5 },
+    base: { nombre: "Normales", nombreEn: "Typical", inflacionPct: null /* = user.inflacionPct (4%) */, ingresosSpread: 1, gastosSpread: 0, retornoSpread: 0, spRealPct: 6.5 },
+    optimista: { nombre: "Favorables", nombreEn: "Favorable", inflacionPct: 3, ingresosSpread: 2, gastosSpread: 0, retornoSpread: 1, spRealPct: 8 },
   },
   // Presets de retorno. realSpread = puntos sobre la inflación del escenario.
   presets: {
-    rfCorto: { nombre: "Renta fija corto plazo", realSpread: 2.5 },
-    rfLargo: { nombre: "Renta fija largo plazo", realSpread: 3.5, topeSpread: 4.5 },
-    fincaRaiz: { nombre: "Finca raíz", rentaNetaPct: 4.5, valorizacionSpread: 0 },
-    sp500: { nombre: "S&P 500 (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
+    rfCorto: { nombre: "Renta fija corto plazo", nombreEn: "Short-term fixed income", realSpread: 2.5 },
+    rfLargo: { nombre: "Renta fija largo plazo", nombreEn: "Long-term fixed income", realSpread: 3.5, topeSpread: 4.5 },
+    fincaRaiz: { nombre: "Finca raíz", nombreEn: "Real estate", rentaNetaPct: 4.5, valorizacionSpread: 0 },
+    sp500: { nombre: "S&P 500 (USD)", nombreEn: "S&P 500 (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
   },
   vehiculo: { depAnios1a3Pct: -12, depDespuesPct: -8 },
   otrosRealSpread: 0, // crypto, otros: sin supuesto validado → solo inflación
   // Canasta → preset
   canastas: { liquidez: "rfCorto", renta: "rfLargo", crecimiento: "sp500" },
   nortes: {
-    rentas: { nombre: "Vivir de rentas", liquidez: 10, renta: 65, crecimiento: 25 },
-    equilibrio: { nombre: "Equilibrio", liquidez: 10, renta: 45, crecimiento: 45 },
-    crecer: { nombre: "Crecer", liquidez: 10, renta: 20, crecimiento: 70 },
+    rentas: { nombre: "Vivir de rentas", nombreEn: "Live off income", liquidez: 10, renta: 65, crecimiento: 25 },
+    equilibrio: { nombre: "Equilibrio", nombreEn: "Balanced", liquidez: 10, renta: 45, crecimiento: 45 },
+    crecer: { nombre: "Crecer", nombreEn: "Grow", liquidez: 10, renta: 20, crecimiento: 70 },
   },
 };
 
+// 3-nov-2026 — Supuestos de EE. UU. (moneda base dólar). Mismas llaves que los
+// de Colombia para que el motor no cambie; cambian los números:
+//   · Inflación: 3 % normal, 4,5 % prudente, 2,5 % favorable.
+//   · Renta fija: T-bills y cuentas ≈ inflación + 1 %; bonos ≈ inflación + 2 %
+//     (tope + 3 %). En Colombia el diferencial real es más alto (TES, CDT).
+//   · Finca raíz: renta neta 4 % + valorización = inflación + 0,5 %.
+//   · S&P 500: es la moneda de casa, sin riesgo cambiario ni devaluación.
+//   · Vehículos: −15 % los años 1 a 3 y −10 % después.
+// Son supuestos de referencia de FINPATHIA, ajustables por el usuario en cada paso.
+export const SUPUESTOS_F10_US = {
+  ...SUPUESTOS_F10,
+  validadoPor: "Finpathia · supuestos EE. UU., 3-nov-2026",
+  inflacionDefaultPct: 3,
+  sinRiesgoCambiario: true,
+  escenarios: {
+    pesimista: { nombre: "Prudentes", nombreEn: "Cautious", inflacionPct: 4.5, ingresosSpread: 0, gastosSpread: 1, retornoSpread: -1.5, spRealPct: 3.5 },
+    base: { nombre: "Normales", nombreEn: "Typical", inflacionPct: null, ingresosSpread: 1, gastosSpread: 0, retornoSpread: 0, spRealPct: 6.5 },
+    optimista: { nombre: "Favorables", nombreEn: "Favorable", inflacionPct: 2.5, ingresosSpread: 1.5, gastosSpread: 0, retornoSpread: 1, spRealPct: 8 },
+  },
+  presets: {
+    rfCorto: { nombre: "Efectivo y T-bills", nombreEn: "Cash & T-bills", realSpread: 1 },
+    rfLargo: { nombre: "Bonos", nombreEn: "Bonds", realSpread: 2, topeSpread: 3 },
+    fincaRaiz: { nombre: "Finca raíz", nombreEn: "Real estate", rentaNetaPct: 4, valorizacionSpread: 0.5 },
+    sp500: { nombre: "S&P 500", nombreEn: "S&P 500", usd: false, devaluacionRealPct: 0 },
+  },
+  vehiculo: { depAnios1a3Pct: -15, depDespuesPct: -10 },
+};
+
+/** Supuestos del país de la sesión (region.js). Colombia por defecto. */
+export const supuestosF10 = () => (esUS() ? SUPUESTOS_F10_US : SUPUESTOS_F10);
+
+/** Nombre de un escenario, preset o norte en el idioma de la sesión. */
+export const nombreSup = (x) => (x ? tx(x.nombre, x.nombreEn) : "");
+
 const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
-export function resolverEscenario(clave = "base", user = {}, sup = SUPUESTOS_F10) {
+export function resolverEscenario(clave = "base", user = {}, sup = supuestosF10()) {
   const e = sup.escenarios[clave] || sup.escenarios.base;
-  const infUser = user.inflacionPct != null && user.inflacionPct !== "" ? n(user.inflacionPct) : INFLACION_DEFAULT_PCT;
+  const infUser = user.inflacionPct != null && user.inflacionPct !== "" ? n(user.inflacionPct) : (sup.inflacionDefaultPct ?? INFLACION_DEFAULT_PCT);
   const inflacionPct = e.inflacionPct == null ? infUser : e.inflacionPct;
   return { ...e, clave, inflacionPct };
 }
 
 /** Retorno total NOMINAL anual (%) de un preset bajo un escenario. Fisher: (1+i)(1+r)−1. */
-export function retornoNominalPreset(clave, esc, sup = SUPUESTOS_F10, override = {}) {
+export function retornoNominalPreset(clave, esc, sup = supuestosF10(), override = {}) {
   const p = { ...sup.presets[clave], ...override };
   const i = esc.inflacionPct / 100;
   let real;
@@ -91,7 +126,7 @@ export function claseActivo(a) {
 export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const cfg = migrarClaves(cfgIn, userIn);
   const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
-  const sup = cfg.supuestos || SUPUESTOS_F10;
+  const sup = cfg.supuestos || supuestosF10();
   const esc = resolverEscenario(cfg.escenario || "base", user, sup);
   const N = n(cfg.anios) || sup.anios;
   const inf = esc.inflacionPct / 100;
@@ -783,7 +818,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
     // Inversiones de las que puede salir plata más adelante (casa propia, obras).
     fuentes: [...activos.filter((a) => a.clase !== "vehiculo" && a.clase !== "inmueble").map((a) => ({ id: a.id, nombre: a.nombre })), ...nuevas.map((x) => ({ id: x.id, nombre: x.nombre })), ...personalizadas.map((c) => ({ id: c.id, nombre: c.nombre })), ...(filas[0].porActivo || []).filter((x) => x.id === "c_crecimiento" || x.id === "c_renta").map((x) => ({ id: x.id, nombre: x.nombre }))],
-    hayUSD: todos.some((a) => a.usd && a.valor > 0) || [...activos, ...nuevas, ...personalizadas].some((a) => a.usd && (a.valor || a.monto) > 0) || expUSD,
+    hayUSD: !sup.sinRiesgoCambiario && (todos.some((a) => a.usd && a.valor > 0) || [...activos, ...nuevas, ...personalizadas].some((a) => a.usd && (a.valor || a.monto) > 0) || expUSD),
     final: fin,
     // Comparativo contra la inflación: solo lo invertible (sin vehículos).
     vsInflacionReal: fila0.invertible > 0 ? (fin.invertibleReal / fila0.invertible - 1) * 100 : null,
@@ -791,7 +826,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
 }
 
 /** Valorización NOMINAL anual por defecto (fracción) de un activo según su clase. */
-export function crecimientoDefault(a, esc, sup = SUPUESTOS_F10, rentaAnual = 0) {
+export function crecimientoDefault(a, esc, sup = supuestosF10(), rentaAnual = 0) {
   const inf = esc.inflacionPct / 100;
   const clase = claseActivo(a);
   if (clase === "vehiculo") return null; // depreciación por año
@@ -803,7 +838,7 @@ export function crecimientoDefault(a, esc, sup = SUPUESTOS_F10, rentaAnual = 0) 
 }
 
 /** Hint en % nominal para «¿Cuánto crees que se valoriza al año?». Vehículo: depreciación años 1–3. */
-export function valorizacionHintPct(a, esc, sup = SUPUESTOS_F10) {
+export function valorizacionHintPct(a, esc, sup = supuestosF10()) {
   const c = crecimientoDefault(a, esc, sup);
   return c == null ? sup.vehiculo.depAnios1a3Pct : c * 100;
 }
@@ -830,10 +865,10 @@ export function leerModifica(d = {}, esc) {
 }
 
 /** Hint (% nominal) para una inversión personalizada: renta fija corto plazo del escenario. */
-export function rendimientoHintPct(esc, sup = SUPUESTOS_F10) { return retornoNominalPreset("rfCorto", esc, sup); }
+export function rendimientoHintPct(esc, sup = supuestosF10()) { return retornoNominalPreset("rfCorto", esc, sup); }
 
 /** Normaliza una inversión «Otra (personalizada)». Rendimiento en % NOMINAL. */
-export function leerPersonalizada(x = {}, esc, sup = SUPUESTOS_F10) {
+export function leerPersonalizada(x = {}, esc, sup = supuestosF10()) {
   const rend = vacio(x.rendimientoNomPct) ? rendimientoHintPct(esc, sup) : n(x.rendimientoNomPct);
   return {
     nombre: String(x.nombre || "").trim() || "Inversión personalizada",
@@ -856,7 +891,7 @@ export function leerPersonalizada(x = {}, esc, sup = SUPUESTOS_F10) {
  *            pagos?:[{monto, anio}], rentaMensual (pesos de hoy), rentaDesde, valorizacionNomPct}]
  * Pagos en pesos de cada año. Si no hay `pagos`, se arma: cuota inicial en su año y el resto en la entrega.
  */
-export function leerFuturos(f = {}, esc, sup = SUPUESTOS_F10) {
+export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
   const inf = esc.inflacionPct / 100;
   const anio = (v, d = 1) => Math.min(10, Math.max(1, Math.round(n(v) || d)));
   const ingresos = (f?.ingresos || []).map((x) => {
@@ -903,7 +938,7 @@ export function normalizarMezcla(m = {}) {
 }
 
 /** Paso 6: cuánto dan $100M (u otro monto) a 3, 5 y 10 años, nominal y en pesos de hoy. */
-export function cienMillones(presetClave, esc, monto = 100e6, sup = SUPUESTOS_F10) {
+export function cienMillones(presetClave, esc, monto = 100e6, sup = supuestosF10()) {
   const r = retornoNominalPreset(presetClave, esc, sup) / 100;
   const inf = esc.inflacionPct / 100;
   return [3, 5, 10].map((a) => { const nom = monto * Math.pow(1 + r, a); return { anios: a, nominal: nom, hoy: nom / Math.pow(1 + inf, a) }; });
@@ -1080,7 +1115,7 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
     const corr = (cfg.rentaHoy || {})[a.id];
     const usada = corr != null && corr !== "" ? Math.max(0, n(corr)) : neta;
     const esc = resolverEscenario(cfg.escenario || "base", user);
-    const def = crecimientoDefault(a, esc, SUPUESTOS_F10, usada * 12);
+    const def = crecimientoDefault(a, esc, supuestosF10(), usada * 12);
     const ch = (cfg.crecHoy || {})[a.id];
     return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || "Activo", clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
   });
@@ -1130,12 +1165,26 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
 //  · Sociedad (SAS) → tarifa general de renta 35 % (Art. 240 ET).
 //  · Bien poseído 2 años o más → ganancia ocasional 15 % (Arts. 313-316 ET).
 export const TARIFA_CICLO = {
-  natural: { pct: 39, nombre: "Persona natural · menos de 2 años (renta)", nota: "Tarifa marginal de renta: hasta 39 %. Si tus ingresos son menores puede ser 33–37 %." },
-  sociedad: { pct: 35, nombre: "Sociedad (SAS) · renta", nota: "Tarifa general de renta de sociedades: 35 %." },
-  ocasional: { pct: 15, nombre: "Ganancia ocasional · 2 años o más", nota: "Si el bien se tuvo 2 años o más: ganancia ocasional al 15 %." },
-  otro: { pct: 0, nombre: "Otro / ya lo incluí", nota: "Pon el % que te indique tu contador." },
+  natural: { pct: 39, nombre: "Persona natural · menos de 2 años (renta)", nombreEn: "Individual · under 2 years (income tax)", nota: "Tarifa marginal de renta: hasta 39 %. Si tus ingresos son menores puede ser 33–37 %.", notaEn: "Marginal income tax rate: up to 39%. With lower income it can be 33–37%." },
+  sociedad: { pct: 35, nombre: "Sociedad (SAS) · renta", nombreEn: "Company (SAS) · income tax", nota: "Tarifa general de renta de sociedades: 35 %.", notaEn: "General corporate income tax rate: 35%." },
+  ocasional: { pct: 15, nombre: "Ganancia ocasional · 2 años o más", nombreEn: "Occasional gain · 2 years or more", nota: "Si el bien se tuvo 2 años o más: ganancia ocasional al 15 %.", notaEn: "If the asset was held 2 years or more: occasional gain at 15%." },
+  otro: { pct: 0, nombre: "Otro / ya lo incluí", nombreEn: "Other / already included", nota: "Pon el % que te indique tu contador.", notaEn: "Enter the rate your accountant gives you." },
 };
-export const regimenSugerido = (meses) => (Number(meses) >= 24 ? "ocasional" : "natural");
+// 3-nov-2026 — EE. UU. (año fiscal vigente). Mismas llaves que Colombia para no
+// romper escenarios guardados: natural = corto plazo, ocasional = largo plazo.
+//  · Menos de 1 año → ganancia de corto plazo, tributa como ingreso ordinario
+//    (24 % es el tramo típico de quien hace estos negocios; editable).
+//  · 1 año o más → largo plazo, 15 % para la mayoría (0 % o 20 % según ingreso).
+//  · Empresa (C-corp) → 21 % federal.
+export const TARIFA_CICLO_US = {
+  natural: { pct: 24, nombre: "Corto plazo · menos de 1 año (ingreso ordinario)", nombreEn: "Short-term · under 1 year (ordinary income)", nota: "Tributa con tu tramo federal; 24 % es el típico. Súmale el impuesto de tu estado si aplica.", notaEn: "Taxed at your federal bracket; 24% is typical. Add your state tax if any." },
+  sociedad: { pct: 21, nombre: "Empresa (C-corp) · 21 % federal", nombreEn: "Company (C-corp) · 21% federal", nota: "Tarifa federal de sociedades: 21 %, más el impuesto estatal.", notaEn: "Federal corporate rate: 21%, plus state tax." },
+  ocasional: { pct: 15, nombre: "Largo plazo · 1 año o más", nombreEn: "Long-term · 1 year or more", nota: "Ganancia de largo plazo: 15 % para la mayoría; 0 % o 20 % según tu ingreso.", notaEn: "Long-term capital gain: 15% for most people; 0% or 20% depending on income." },
+  otro: { pct: 0, nombre: "Otro / ya lo incluí", nombreEn: "Other / already included", nota: "Pon el % que te indique tu CPA.", notaEn: "Enter the rate your CPA gives you." },
+};
+/** Tabla de impuestos del negocio que se repite, según el país de la sesión. */
+export const tarifaCiclo = () => (esUS() ? TARIFA_CICLO_US : TARIFA_CICLO);
+export const regimenSugerido = (meses) => (Number(meses) >= (esUS() ? 12 : 24) ? "ocasional" : "natural");
 /** Negocios que se repiten: [{nombre, capital, valorFinal, meses, desde, hasta?, costosPct?, fuente, destino}] */
 export function leerCiclos(lista = [], N = 10) {
   return (Array.isArray(lista) ? lista : []).map((x) => {
@@ -1146,8 +1195,9 @@ export function leerCiclos(lista = [], N = 10) {
     const costosPct = Math.min(100, Math.max(0, n(x.costosPct)));
     // 25-oct-2026 (Santiago: "debe existir una franja para calcular el impuesto
     // de este tipo de negocios… que se sugiera pero se pueda editar").
-    const regimen = TARIFA_CICLO[x.regimen] ? x.regimen : regimenSugerido(meses);
-    const impuestoPct = vacio(x.impuestoPct) ? TARIFA_CICLO[regimen].pct : Math.min(100, Math.max(0, n(x.impuestoPct)));
+    const TC = tarifaCiclo();
+    const regimen = TC[x.regimen] ? x.regimen : regimenSugerido(meses);
+    const impuestoPct = vacio(x.impuestoPct) ? TC[regimen].pct : Math.min(100, Math.max(0, n(x.impuestoPct)));
     const bruta = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
     const impuestoCiclo = bruta * impuestoPct / 100;
     const gananciaCiclo = bruta - impuestoCiclo;

@@ -9,6 +9,9 @@
 import { Sankey, Tooltip, ResponsiveContainer } from "recharts";
 import { INF, fmM } from "../lib/informeTheme.js";
 import { anioCal } from "../lib/futuro10.js";
+// 3-nov-2026: textos según el idioma de la sesión. Se importa como «tr» porque
+// «tx» ya es la coordenada x de la etiqueta en Nodo.
+import { tx as tr } from "../lib/region.js";
 
 const MAX = 6;
 // Ingresos en tonos de azul y verde (lo que entra): nunca el rojo de los gastos.
@@ -50,18 +53,18 @@ export default function MesCompleto({ r, card, h3, lead }) {
   const d = r.desglose || {};
   const f1 = (r.filas || [])[1] || {};
   const sobra = (f1.cf || 0) / 12;
-  const entra = agrupar(d.entra, "Otros ingresos");
-  const sale = agrupar(d.sale, "Otros gastos");
+  const entra = agrupar(d.entra, tr("Otros ingresos", "Other income"));
+  const sale = agrupar(d.sale, tr("Otros gastos", "Other expenses"));
   if (!entra.length && !sale.length) return null;
   const nodes = [], links = [];
   const add = (name, valor, lado, color) => { nodes.push({ name, valor, lado, color }); return nodes.length - 1; };
-  const centro = add(sobra < -0.5 ? "Total del mes" : "Lo que entra al mes", entra.reduce((s, x) => s + x.mensual, 0) + Math.max(0, -sobra), "centro", INF.navy);
+  const centro = add(sobra < -0.5 ? tr("Total del mes", "Monthly total") : tr("Lo que entra al mes", "Monthly income"), entra.reduce((s, x) => s + x.mensual, 0) + Math.max(0, -sobra), "centro", INF.navy);
   entra.forEach((x, i) => links.push({ source: add(x.nombre, x.mensual, "izq", TONOS_ENTRA[i % TONOS_ENTRA.length]), target: centro, value: x.mensual }));
-  if (sobra < -0.5) links.push({ source: add("Sale de tu liquidez", -sobra, "izq", INF.bad), target: centro, value: -sobra });
+  if (sobra < -0.5) links.push({ source: add(tr("Sale de tu liquidez", "From your cash"), -sobra, "izq", INF.bad), target: centro, value: -sobra });
   sale.forEach((x) => links.push({ source: centro, target: add(x.nombre, x.mensual, "der", INF.teja), value: x.mensual }));
   if (sobra > 0.5) {
-    const lista = (r.destinoSobraLista && r.destinoSobraLista.length ? r.destinoSobraLista : [{ nombre: "Se reinvierte", pct: 100 }]);
-    lista.forEach((dd) => { const v = sobra * dd.pct / 100; if (v > 0.5) links.push({ source: centro, target: add(`Sobra → ${dd.nombre}`, v, "der", INF.oliva), value: v }); });
+    const lista = (r.destinoSobraLista && r.destinoSobraLista.length ? r.destinoSobraLista : [{ nombre: tr("Se reinvierte", "Reinvested"), pct: 100 }]);
+    lista.forEach((dd) => { const v = sobra * dd.pct / 100; if (v > 0.5) links.push({ source: centro, target: add(`${tr("Sobra", "Surplus")} → ${dd.nombre}`, v, "der", INF.oliva), value: v }); });
   }
   const alto = Math.max(280, Math.max(entra.length + 1, sale.length + 4) * 44);
   const tip = ({ active, payload }) => {
@@ -73,8 +76,8 @@ export default function MesCompleto({ r, card, h3, lead }) {
   };
   return (
     <div style={card}>
-      <h3 style={h3}>El mes completo: de dónde viene la plata y a dónde se va</h3>
-      <p style={lead}>En {anioCal(1)}, al mes. A la izquierda, cada renta e ingreso; a la derecha, en qué se va: gastos y cuotas en rojo, y lo que sobra en verde con la inversión a la que va.</p>
+      <h3 style={h3}>{tr("El mes completo: de dónde viene la plata y a dónde se va", "The full month: where money comes from and where it goes")}</h3>
+      <p style={lead}>{tr(`En ${anioCal(1)}, al mes. A la izquierda, cada renta e ingreso; a la derecha, en qué se va: gastos y cuotas en rojo, y lo que sobra en verde con la inversión a la que va.`, `In ${anioCal(1)}, per month. Left: each source of income. Right: where it goes — expenses and loan payments in red, and the surplus in green with the investment it goes to.`)}</p>
       <style>{`.fpm-banda { stroke-opacity: .42; transition: stroke-opacity .2s ease; } html[data-tema="claro"] .fpm-banda { stroke-opacity: .5; } .fpm-flujo:hover .fpm-banda { stroke-opacity: .18; } .fpm-flujo .fpm-banda:hover { stroke-opacity: .75; }`}</style>
       <div className="fpm-flujo" style={{ overflowX: "auto" }}><div style={{ minWidth: 820 }}>
         <ResponsiveContainer width="100%" height={alto}>

@@ -16,14 +16,18 @@
 
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
 import { resumenEscenario, anioCal } from "../../lib/futuro10.js";
+import { tx, esUS, plataCorta, num } from "../../lib/region.js";
 
+// 3-nov-2026: en EE. UU. las cifras van con el formato del país ($2.5M); en
+// Colombia se queda exactamente como estaba ($2,5 MM).
 const fm = (n) => {
+  if (esUS()) return plataCorta(n);
   const v = Number(n) || 0, a = Math.abs(v), sg = v < 0 ? "−" : "";
   if (a >= 1e8) return sg + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " MM";
   if (a >= 1e6) return sg + "$" + (a / 1e6).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " MM";
   return sg + "$" + Math.round(a).toLocaleString("es-CO");
 };
-const pct = (n, d = 1) => (n == null ? "—" : n.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %");
+const pct = (n, d = 1) => (n == null ? "—" : esUS() ? num(n, d) + "%" : n.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %");
 
 function medir(r, inflacionPct) {
   const f = (r && r.filas) || [];
@@ -63,12 +67,12 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
 
   if (!creados.length) {
     return (
-      <section aria-label="Escenarios creados" style={{ ...tarjeta, textAlign: "center", padding: "40px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-        <h3 style={titulo}>Todavía no tienes escenarios creados</h3>
+      <section aria-label={tx("Escenarios creados", "Saved scenarios")} style={{ ...tarjeta, textAlign: "center", padding: "40px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+        <h3 style={titulo}>{tx("Todavía no tienes escenarios creados", "You don't have any scenarios yet")}</h3>
         <div style={{ ...subtitulo, maxWidth: 520 }}>
-          Un escenario es una forma de mover tu plata: vender algo, invertir en otra cosa, pagar una deuda. Arma el primero en cuatro pasos y aquí lo vas a ver junto a «seguir como vas».
+          {tx("Un escenario es una forma de mover tu plata: vender algo, invertir en otra cosa, pagar una deuda. Arma el primero en cuatro pasos y aquí lo vas a ver junto a «seguir como vas».", "A scenario is a way to move your money: sell something, invest in something else, pay off a debt. Build your first one in four steps and you'll see it here next to \"staying the course.\"")}
         </div>
-        {!demo && <button type="button" onClick={onCrear} style={{ marginTop: 8, minHeight: 44, padding: "0 22px", borderRadius: 10, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Crear mi primer escenario</button>}
+        {!demo && <button type="button" onClick={onCrear} style={{ marginTop: 8, minHeight: 44, padding: "0 22px", borderRadius: 10, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>{tx("Crear mi primer escenario", "Create my first scenario")}</button>}
       </section>
     );
   }
@@ -89,16 +93,17 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
     <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 16 }}>
       <style>{CSS_INFOGRAFIA}</style>
 
-      <section aria-label="Cuál escenario deja más patrimonio" style={{ ...tarjeta, display: "flex", flexDirection: "column", gap: 18 }}>
+      <section aria-label={tx("Cuál escenario deja más patrimonio", "Which scenario leaves the most net worth")} style={{ ...tarjeta, display: "flex", flexDirection: "column", gap: 18 }}>
         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, alignItems: "flex-end" }}>
           <div>
-            <h3 style={titulo}>¿Cuál deja más patrimonio en {anioFin}?</h3>
+            <h3 style={titulo}>{tx(`¿Cuál deja más patrimonio en ${anioFin}?`, `Which leaves the most net worth in ${anioFin}?`)}</h3>
             <div style={subtitulo}>
-              {mHoy ? <>La línea punteada es seguir como vas ({fm(mHoy.fin)}). </> : null}
-              «{mejor.p.nombre}» lleva la delantera{mHoy ? <> con <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> frente a hoy</> : null}.
+              {mHoy ? tx(<>La línea punteada es seguir como vas ({fm(mHoy.fin)}). </>, <>The dashed line is staying the course ({fm(mHoy.fin)}). </>) : null}
+              {tx(<>«{mejor.p.nombre}» lleva la delantera{mHoy ? <> con <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> frente a hoy</> : null}.</>,
+                <>"{mejor.p.nombre}" is ahead{mHoy ? <> by <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> vs. today</> : null}.</>)}
             </div>
           </div>
-          {!demo && <button type="button" onClick={onCrear} style={{ minHeight: 44, padding: "0 18px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Crear un escenario nuevo</button>}
+          {!demo && <button type="button" onClick={onCrear} style={{ minHeight: 44, padding: "0 18px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{tx("Crear un escenario nuevo", "Create a new scenario")}</button>}
         </div>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
           {ranking.map(({ p, m }, i) => {
@@ -113,7 +118,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
                 </div>
                 <div style={{ textAlign: "right", minWidth: 120 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div>
-                  {dif != null && <div style={{ fontSize: 11.5, color: dif >= 0 ? C.pos : C.neg, ...cifra }}>{dif >= 0 ? "+" : "−"}{fm(Math.abs(dif))} vs hoy</div>}
+                  {dif != null && <div style={{ fontSize: 11.5, color: dif >= 0 ? C.pos : C.neg, ...cifra }}>{dif >= 0 ? "+" : "−"}{fm(Math.abs(dif))} {tx("vs hoy", "vs. today")}</div>}
                 </div>
               </div>
             );
@@ -129,21 +134,21 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
             <article key={p.id} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12, borderColor: esMejor ? "color-mix(in srgb, var(--fp-azul) 45%, transparent)" : undefined }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
                 <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.txt, lineHeight: 1.3 }}>{p.nombre}</h4>
-                {p.recomendado && <span style={{ fontSize: 11, fontWeight: 600, color: C.pos, border: `1px solid ${C.pos}`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Recomendado</span>}
+                {p.recomendado && <span style={{ fontSize: 11, fontWeight: 600, color: C.pos, border: `1px solid ${C.pos}`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>{tx("Recomendado", "Recommended")}</span>}
               </div>
               <div title={p.descripcion || ""} style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, minHeight: 54, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion || resumenEscenario(p.r)}</div>
               <Curva serie={m.serie} min={minSerie} max={maxSerie} color={esMejor ? "var(--fp-azul)" : "color-mix(in srgb, var(--fp-azul) 60%, var(--fp-txt3))"} id={"fpi-esc-" + i} />
               <div>
-                <div style={{ fontSize: 12, color: C.txt2 }}>Patrimonio en {m.anioFin}</div>
+                <div style={{ fontSize: 12, color: C.txt2 }}>{tx(`Patrimonio en ${m.anioFin}`, `Net worth in ${m.anioFin}`)}</div>
                 <div style={{ fontSize: 24, fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>
-                <div><div style={{ fontSize: 11.5, color: C.txt2 }}>Crece al año (real)</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>
-                <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{alcanza ? "Te alcanza" : "Hay años justos"}</div><div style={{ fontSize: 15, fontWeight: 600, color: alcanza ? C.pos : C.neg }}>{alcanza ? "Todos los años" : "Revisa el flujo"}</div></div>
+                <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("Crece al año (real)", "Annual growth (real)")}</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>
+                <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{alcanza ? tx("Te alcanza", "It's enough") : tx("Hay años justos", "Some years are tight")}</div><div style={{ fontSize: 15, fontWeight: 600, color: alcanza ? C.pos : C.neg }}>{alcanza ? tx("Todos los años", "Every year") : tx("Revisa el flujo", "Check cash flow")}</div></div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
-                <button type="button" onClick={() => onVer && onVer(p)} style={{ flex: 1, minHeight: 44, borderRadius: 10, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Ver completo</button>
-                {onEditar && <button type="button" onClick={() => onEditar(p.id)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, cursor: "pointer" }}>Editar</button>}
+                <button type="button" onClick={() => onVer && onVer(p)} style={{ flex: 1, minHeight: 44, borderRadius: 10, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{tx("Ver completo", "View full report")}</button>
+                {onEditar && <button type="button" onClick={() => onEditar(p.id)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, cursor: "pointer" }}>{tx("Editar", "Edit")}</button>}
               </div>
             </article>
           );

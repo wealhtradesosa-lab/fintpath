@@ -10,6 +10,24 @@
 
 import { tipoActivo, calcularMetricas } from "./metrics.js";
 import { tasaMensualEq } from "./flowHelpers.js";
+import { tx } from "./region.js";
+
+// 3-nov-2026: nombres de categorías de gasto de la app (se guardan en español)
+// para mostrarlos en inglés cuando la sesión está en inglés. Lo que el usuario
+// escribió a mano queda como lo escribió.
+const CAT_EN = { Vivienda: "Housing", Servicios: "Utilities", Mantenimiento: "Maintenance", Transporte: "Transportation", "Alimentación": "Food", "Educación": "Education", Salud: "Health", Seguros: "Insurance", Entretenimiento: "Entertainment", Personal: "Personal", Vestimenta: "Clothing", Mascotas: "Pets", Deporte: "Fitness", Ahorro: "Savings", "Representación": "Business meals", "Nómina": "Payroll", Honorarios: "Professional fees", Impuestos: "Taxes", Otros: "Other", Hogar: "Home", Viajes: "Travel", Suscripciones: "Subscriptions", "Tecnología": "Technology", Donaciones: "Donations", "Créditos": "Loans" };
+export const nombreCategoria = (cat) => tx(cat, CAT_EN[cat] || cat);
+
+// Niveles de libertad (metrics.js NIVELES) en el idioma de la sesión.
+const NIVEL_EN = {
+  deficit: { nombre: "Deficit", desc: "You spend more than you make" },
+  estabilidad: { nombre: "Stability", desc: "You cover your costs, but by working" },
+  seguridad: { nombre: "Security", desc: "Your assets pay for the essentials" },
+  independencia: { nombre: "Independence", desc: "Your assets pay for your whole lifestyle" },
+  abundancia: { nombre: "Abundance", desc: "They pay for it twice" },
+};
+export const nombreNivel = (lv) => (lv ? tx(lv.nombre, NIVEL_EN[lv.clave]?.nombre) : "");
+export const descNivel = (lv) => (lv ? tx(lv.desc, NIVEL_EN[lv.clave]?.desc) : "");
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 // Etiquetas del Sankey: caben ~24 caracteres a cada lado.
@@ -24,16 +42,16 @@ export function flujoDinero(met, { maxDestinos = 5 } = {}) {
   if (!met) return null;
   const g = met.ingresosPorGrupo || {};
   const entradas = [
-    { key: "inmuebles", nombre: "Rentas de inmuebles", valor: num(g.inmuebles), tono: "pos" },
-    { key: "financieros", nombre: "Fondos y dividendos", valor: num(g.financieros), tono: "pos" },
-    { key: "trabajo", nombre: "Trabajo", valor: num(g.trabajo), tono: "neutro" },
+    { key: "inmuebles", nombre: tx("Rentas de inmuebles", "Rental income"), valor: num(g.inmuebles), tono: "pos" },
+    { key: "financieros", nombre: tx("Fondos y dividendos", "Funds & dividends"), valor: num(g.financieros), tono: "pos" },
+    { key: "trabajo", nombre: tx("Trabajo", "Work"), valor: num(g.trabajo), tono: "neutro" },
   ].filter((e) => e.valor > 0.5);
 
   const cats = { ...(met.gastosPorCategoria || {}) };
   const impuestos = num(met.retencionMensual) + num(met.impuestoNeto) + num(cats.Impuestos);
   delete cats.Impuestos;
   const gastos = Object.entries(cats)
-    .map(([cat, v]) => ({ key: "cat:" + cat, nombre: corto(cat), valor: num(v), tono: "neutro" }))
+    .map(([cat, v]) => ({ key: "cat:" + cat, nombre: corto(nombreCategoria(cat)), valor: num(v), tono: "neutro" }))
     .filter((d) => d.valor > 0.5)
     .sort((a, b) => b.valor - a.valor);
   const principales = gastos.slice(0, maxDestinos);
@@ -41,18 +59,18 @@ export function flujoDinero(met, { maxDestinos = 5 } = {}) {
   const salidas = [...principales];
   if (resto.length) {
     salidas.push({
-      key: "otros", nombre: resto.length === 1 ? resto[0].nombre : `Otros ${resto.length} gastos`,
+      key: "otros", nombre: resto.length === 1 ? resto[0].nombre : tx(`Otros ${resto.length} gastos`, `${resto.length} other expenses`),
       valor: resto.reduce((s, d) => s + d.valor, 0), tono: "neutro",
     });
   }
-  if (num(met.sd) > 0.5) salidas.push({ key: "cuotas", nombre: "Cuotas de deudas", valor: num(met.sd), tono: "neg" });
-  if (impuestos > 0.5) salidas.push({ key: "impuestos", nombre: "Impuestos", valor: impuestos, tono: "neutro" });
+  if (num(met.sd) > 0.5) salidas.push({ key: "cuotas", nombre: tx("Cuotas de deudas", "Debt payments"), valor: num(met.sd), tono: "neg" });
+  if (impuestos > 0.5) salidas.push({ key: "impuestos", nombre: tx("Impuestos", "Taxes"), valor: impuestos, tono: "neutro" });
 
   const totalEntra = entradas.reduce((s, e) => s + e.valor, 0);
   const totalSale = salidas.reduce((s, d) => s + d.valor, 0);
   const saldo = totalEntra - totalSale; // = met.fl
-  if (saldo > 0.5) salidas.push({ key: "sobra", nombre: "Te sobra", valor: saldo, tono: "pos", destacado: true });
-  else if (saldo < -0.5) entradas.push({ key: "falta", nombre: "Te falta", valor: -saldo, tono: "neg", destacado: true });
+  if (saldo > 0.5) salidas.push({ key: "sobra", nombre: tx("Te sobra", "Left over"), valor: saldo, tono: "pos", destacado: true });
+  else if (saldo < -0.5) entradas.push({ key: "falta", nombre: tx("Te falta", "Shortfall"), valor: -saldo, tono: "neg", destacado: true });
 
   return { entradas, salidas, totalEntra, totalSale, saldo, total: Math.max(totalEntra, totalSale) };
 }
@@ -87,11 +105,11 @@ export function geometriaSankey(flujo, { ancho = 760, alto = 380, arriba = 24, a
 
 // ─── Mapa del patrimonio (treemap) ─────────────────────────────────────────
 const CLASES = [
-  { key: "inmuebles", nombre: "Inmuebles", tipos: ["Real Estate", "Local Comercial", "Bodega", "Lote"] },
-  { key: "fondos", nombre: "Fondos y renta fija", tipos: ["Fondo de Inversión", "CDT", "Renta Fija"] },
-  { key: "acciones", nombre: "Acciones y cripto", tipos: ["Acciones", "ETF", "Crypto"] },
-  { key: "efectivo", nombre: "Efectivo", tipos: ["Cash"] },
-  { key: "vehiculos", nombre: "Vehículos", tipos: ["Vehículo"] },
+  { key: "inmuebles", nombre: "Inmuebles", en: "Real estate", tipos: ["Real Estate", "Local Comercial", "Bodega", "Lote"] },
+  { key: "fondos", nombre: "Fondos y renta fija", en: "Funds & fixed income", tipos: ["Fondo de Inversión", "CDT", "Renta Fija"] },
+  { key: "acciones", nombre: "Acciones y cripto", en: "Stocks & crypto", tipos: ["Acciones", "ETF", "Crypto"] },
+  { key: "efectivo", nombre: "Efectivo", en: "Cash", tipos: ["Cash"] },
+  { key: "vehiculos", nombre: "Vehículos", en: "Vehicles", tipos: ["Vehículo"] },
 ];
 
 /**
@@ -120,8 +138,8 @@ export function mapaPatrimonio(met) {
     const va = valor(i);
     if (!(va > 0)) return;
     const tp = tipoActivo(i);
-    const clase = CLASES.find((c) => c.tipos.includes(tp)) || { key: "otros", nombre: "Otros" };
-    const g = grupos[clase.key] || (grupos[clase.key] = { key: clase.key, nombre: clase.nombre, valor: 0, costo: 0, rentaAnual: 0, n: 0 });
+    const clase = CLASES.find((c) => c.tipos.includes(tp)) || { key: "otros", nombre: "Otros", en: "Other" };
+    const g = grupos[clase.key] || (grupos[clase.key] = { key: clase.key, nombre: tx(clase.nombre, clase.en), valor: 0, costo: 0, rentaAnual: 0, n: 0 });
     g.valor += va; g.costo += costo(i); g.n += 1;
     g.rentaAnual += rentaMensual(i) > 0 ? rentaMensual(i) * 12 : va * (num(i.tasa) / 100);
   });
@@ -217,7 +235,7 @@ export function planDeudas(deudas, { trm = 4200, hoy = new Date() } = {}) {
     const meses = Math.ceil(n);
     const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + meses, 1);
     const fx = d.moneda === "USD" ? trm : 1;
-    filas.push({ nombre: d.n || d.nombre || "Deuda", meses, fecha, cuota: P * fx, saldo: B * fx, tasa: num(d.ts) });
+    filas.push({ nombre: d.n || d.nombre || tx("Deuda", "Debt"), meses, fecha, cuota: P * fx, saldo: B * fx, tasa: num(d.ts) });
   });
   filas.sort((a, b) => a.meses - b.meses);
   const meses = filas.length ? filas[filas.length - 1].meses : 0;

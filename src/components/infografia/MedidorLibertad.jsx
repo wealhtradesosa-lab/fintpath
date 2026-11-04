@@ -7,11 +7,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { NIVELES } from "../../lib/metrics.js";
-import { escalaMedidor, puntoArco } from "../../lib/infografia.js";
+import { escalaMedidor, puntoArco, nombreNivel, descNivel } from "../../lib/infografia.js";
+import { tx, localeCifras } from "../../lib/region.js";
 import { C, trama, tarjeta, cifra, CSS_INFOGRAFIA } from "./estilos.js";
 
 const R = 128, CX = 160, CY = 160;
-const fmtPct = (n) => Math.round(n || 0).toLocaleString("es-CO") + " %";
+const fmtPct = (n) => Math.round(n || 0).toLocaleString(localeCifras()) + (localeCifras() === "en-US" ? "%" : " %");
 
 export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, fm, extra = null }) {
   if (!(ob > 0)) return null;
@@ -28,17 +29,17 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
   // esencial), Independencia (100 %) y Abundancia (200 %).
   const pctEsencial = nivel && nivel.obEsencial > 0 && nivel.obEsencial < ob ? (nivel.obEsencial / ob) * 100 : null;
   const marcas = [
-    pctEsencial != null && { pct: pctEsencial, et: "Seguridad" },
-    { pct: 100, et: "Independencia" },
-    { pct: (NIVELES[4].factor || 2) * 100, et: "Abundancia" },
+    pctEsencial != null && { pct: pctEsencial, et: nombreNivel(NIVELES[2]) },
+    { pct: 100, et: nombreNivel(NIVELES[3]) },
+    { pct: (NIVELES[4].factor || 2) * 100, et: nombreNivel(NIVELES[4]) },
   ].filter(Boolean);
 
   return (
-    <section aria-label="Nivel de libertad financiera" style={{ ...tarjeta, display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center", marginBottom: 20 }}>
+    <section aria-label={tx("Nivel de libertad financiera", "Financial freedom level")} style={{ ...tarjeta, display: "flex", flexWrap: "wrap", gap: 28, alignItems: "center", marginBottom: 20 }}>
       <style>{CSS_INFOGRAFIA}</style>
 
       <svg viewBox="-28 -44 376 252" role="img"
-        aria-label={`Tus rentas cubren el ${fmtPct(cobertura)} de tus gastos y cuotas${n ? `; nivel ${NIVELES[n - 1].nombre}` : ""}`}
+        aria-label={tx(`Tus rentas cubren el ${fmtPct(cobertura)} de tus gastos y cuotas${n ? `; nivel ${NIVELES[n - 1].nombre}` : ""}`, `Your passive income covers ${fmtPct(cobertura)} of your expenses and debt payments${n ? `; level ${nombreNivel(NIVELES[n - 1])}` : ""}`)}
         style={{ flex: "1 1 260px", maxWidth: 340, width: "100%", height: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
         <defs>
           <linearGradient id="fpi-grad-arco" x1="0" y1="0" x2="1" y2="0">
@@ -70,27 +71,27 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
         <circle className="fpi-fade" cx={p.x} cy={p.y} r="8" strokeWidth="3"
           style={{ fill: "var(--fp-card)", stroke: ok ? C.pos : C.neg, filter: `drop-shadow(0 0 8px ${ok ? "var(--fp-pos)" : "var(--fp-neg)"})` }} />
         <text x={CX} y={CY - 26} textAnchor="middle" fontSize="46" fontWeight="600" style={{ fill: C.txt, ...cifra }}>{fmtPct(cobertura)}</text>
-        <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" style={{ fill: C.txt2 }}>de tus gastos y cuotas</text>
-        <text x={ini.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>0 %</text>
-        <text x={fin.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>{max} %</text>
-        {marcas.some((m) => m.pct >= max * 0.97) && <text x={fin.x} y={CY + 41} textAnchor="middle" fontSize="12" style={{ fill: C.txt3 }}>Abundancia</text>}
+        <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" style={{ fill: C.txt2 }}>{tx("de tus gastos y cuotas", "of your expenses and payments")}</text>
+        <text x={ini.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>{fmtPct(0)}</text>
+        <text x={fin.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>{fmtPct(max)}</text>
+        {marcas.some((m) => m.pct >= max * 0.97) && <text x={fin.x} y={CY + 41} textAnchor="middle" fontSize="12" style={{ fill: C.txt3 }}>{nombreNivel(NIVELES[4])}</text>}
       </svg>
 
       <div style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ fontSize: 13, color: C.txt2 }}>Tu nivel de libertad</div>
-        <div style={{ fontSize: 28, fontWeight: 600, color: C.txt, letterSpacing: "-0.02em" }}>{n ? NIVELES[n - 1].nombre : nivel?.nombre || "—"}</div>
+        <div style={{ fontSize: 13, color: C.txt2 }}>{tx("Tu nivel de libertad", "Your freedom level")}</div>
+        <div style={{ fontSize: 28, fontWeight: 600, color: C.txt, letterSpacing: "-0.02em" }}>{n ? nombreNivel(NIVELES[n - 1]) : nivel?.nombre || "—"}</div>
         <div style={{ fontSize: 14, lineHeight: 1.55, color: C.txt }}>
-          {n ? NIVELES[n - 1].desc + ". " : ""}
-          {ok ? <>Te sobran <b style={{ color: C.pos, ...cifra }}>{fm(dif)}</b> de rentas al mes.</>
-            : <>A tus rentas les faltan <b style={{ ...cifra }}>{fm(-dif)}</b> al mes para pagar todo tu nivel de vida.</>}
+          {n ? descNivel(NIVELES[n - 1]) + ". " : ""}
+          {ok ? tx(<>Te sobran <b style={{ color: C.pos, ...cifra }}>{fm(dif)}</b> de rentas al mes.</>, <>You have <b style={{ color: C.pos, ...cifra }}>{fm(dif)}</b> of passive income to spare each month.</>)
+            : tx(<>A tus rentas les faltan <b style={{ ...cifra }}>{fm(-dif)}</b> al mes para pagar todo tu nivel de vida.</>, <>Your passive income is <b style={{ ...cifra }}>{fm(-dif)}</b> a month short of covering your whole lifestyle.</>)}
         </div>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap", paddingTop: 12, borderTop: `1px solid ${C.linea}` }}>
-          <div><div style={{ fontSize: 12, color: C.txt2 }}>Rentas al mes</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ip)}</div></div>
-          <div><div style={{ fontSize: 12, color: C.txt2 }}>Gastos y cuotas al mes</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ob)}</div></div>
+          <div><div style={{ fontSize: 12, color: C.txt2 }}>{tx("Rentas al mes", "Passive income / mo")}</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ip)}</div></div>
+          <div><div style={{ fontSize: 12, color: C.txt2 }}>{tx("Gastos y cuotas al mes", "Expenses & payments / mo")}</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ob)}</div></div>
         </div>
         {nivel?.siguiente && nivel.faltaIPSiguiente > 0 && (
           <div style={{ fontSize: 13, color: C.txt2 }}>
-            Siguiente nivel, {nivel.siguiente.nombre}: <b style={{ color: C.txt, ...cifra }}>{fm(nivel.faltaIPSiguiente)}</b> más de renta al mes.
+            {tx(<>Siguiente nivel, {nivel.siguiente.nombre}: <b style={{ color: C.txt, ...cifra }}>{fm(nivel.faltaIPSiguiente)}</b> más de renta al mes.</>, <>Next level, {nombreNivel(nivel.siguiente)}: <b style={{ color: C.txt, ...cifra }}>{fm(nivel.faltaIPSiguiente)}</b> more passive income a month.</>)}
           </div>
         )}
         {extra}
@@ -110,7 +111,7 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
                 boxShadow: actual ? "0 0 16px color-mix(in srgb, var(--fp-pos) 35%, transparent)" : "none",
                 display: "flex", justifyContent: "center", paddingTop: 6,
               }}>
-                {actual && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--fp-card)" }}>Tú</span>}
+                {actual && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--fp-card)" }}>{tx("Tú", "You")}</span>}
               </div>
             </div>
           );
@@ -118,7 +119,7 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
         {NIVELES.map((lv) => {
           const actual = n === lv.id;
           return (
-            <div key={"e" + lv.id} style={{ gridRow: 2, fontSize: 11, lineHeight: 1.2, whiteSpace: "nowrap", color: actual ? C.txt : C.txt3, fontWeight: actual ? 600 : 400 }}>{lv.nombre}</div>
+            <div key={"e" + lv.id} style={{ gridRow: 2, fontSize: 11, lineHeight: 1.2, whiteSpace: "nowrap", color: actual ? C.txt : C.txt3, fontWeight: actual ? 600 : 400 }}>{nombreNivel(lv)}</div>
           );
         })}
       </div>

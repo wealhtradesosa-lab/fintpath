@@ -9,6 +9,7 @@
 
 import { flujoDinero, geometriaSankey } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
+import { tx } from "../../lib/region.js";
 
 const TONO_ENTRADA = { inmuebles: [C.azul, 34], financieros: [C.azul, 22], trabajo: ["rgb(var(--fp-ink))", 16], falta: [C.neg, 30] };
 const relleno = (it, lado) => {
@@ -24,12 +25,13 @@ const solido = (it, lado) => {
   return C.txt3;
 };
 
-export default function FlujoDinero({ met, fm, periodo = "Este mes" }) {
+export default function FlujoDinero({ met, fm, periodo: periodoProp }) {
+  const periodo = periodoProp || tx("Este mes", "This month");
   const flujo = flujoDinero(met);
   const g = geometriaSankey(flujo);
   if (!g) return null;
   const { saldo, totalEntra, totalSale } = flujo;
-  const resumen = `${periodo}: entran ${fm(totalEntra)} y salen ${fm(totalSale)}; ${saldo >= 0 ? `te sobran ${fm(saldo)}` : `te faltan ${fm(-saldo)}`}.`;
+  const resumen = tx(`${periodo}: entran ${fm(totalEntra)} y salen ${fm(totalSale)}; ${saldo >= 0 ? `te sobran ${fm(saldo)}` : `te faltan ${fm(-saldo)}`}.`, `${periodo}: ${fm(totalEntra)} in and ${fm(totalSale)} out; ${saldo >= 0 ? `${fm(saldo)} left over` : `${fm(-saldo)} short`}.`);
 
   const etiquetaE = (e) => {
     const cy = e.y + e.h / 2, x = g.xE - 10;
@@ -64,17 +66,17 @@ export default function FlujoDinero({ met, fm, periodo = "Este mes" }) {
   };
 
   return (
-    <section aria-label="De dónde viene y a dónde va tu plata" style={{ ...tarjeta, marginBottom: 20 }}>
+    <section aria-label={tx("De dónde viene y a dónde va tu plata", "Where your money comes from and where it goes")} style={{ ...tarjeta, marginBottom: 20 }}>
       <style>{CSS_INFOGRAFIA}</style>
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, alignItems: "baseline", marginBottom: 16 }}>
         <div>
-          <h3 style={titulo}>¿De dónde viene y a dónde va tu plata?</h3>
-          <div style={subtitulo}>{periodo}. El grosor de cada banda es su peso; pasa el mouse para aislarla.</div>
+          <h3 style={titulo}>{tx("¿De dónde viene y a dónde va tu plata?", "Where does your money come from, and where does it go?")}</h3>
+          <div style={subtitulo}>{periodo}. {tx("El grosor de cada banda es su peso; pasa el mouse para aislarla.", "Each band's width is its share; hover to isolate it.")}</div>
         </div>
-        <div style={{ fontSize: 13, color: C.txt2, ...cifra }}>Entra {fm(totalEntra)} · Sale {fm(totalSale)}</div>
+        <div style={{ fontSize: 13, color: C.txt2, ...cifra }}>{tx("Entra", "In")} {fm(totalEntra)} · {tx("Sale", "Out")} {fm(totalSale)}</div>
       </div>
       <div className="fpi-solo-movil" style={{ flexDirection: "column", gap: 18 }}>
-        {[["Entra", flujo.entradas, "e"], ["Sale", flujo.salidas, "s"]].map(([rot, lista, lado]) => (
+        {[[tx("Entra", "In"), flujo.entradas, "e"], [tx("Sale", "Out"), flujo.salidas, "s"]].map(([rot, lista, lado]) => (
           <div key={rot} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 12, color: C.txt2 }}>{rot}</div>
             {lista.map((it) => (
@@ -100,7 +102,7 @@ export default function FlujoDinero({ met, fm, periodo = "Este mes" }) {
           <rect x={g.xM0} y={g.arriba} width={g.xM1 - g.xM0} height={g.H} rx="4" style={{ fill: C.txt }} />
           {g.salidas.map((s) => <rect key={"n" + s.key} x={g.xS} y={s.y} width={g.nodo} height={s.h} rx="3"
             style={{ fill: solido(s, "s"), filter: s.key === "sobra" ? "drop-shadow(0 0 6px var(--fp-pos))" : "none" }} />)}
-          <text x={(g.xM0 + g.xM1) / 2} y={g.arriba - 9} textAnchor="middle" fontSize="11" style={{ fill: C.txt2 }}>Tu mes</text>
+          <text x={(g.xM0 + g.xM1) / 2} y={g.arriba - 9} textAnchor="middle" fontSize="11" style={{ fill: C.txt2 }}>{tx("Tu mes", "Your month")}</text>
           {g.entradas.map(etiquetaE)}
           {g.salidas.map(etiquetaS)}
         </svg>

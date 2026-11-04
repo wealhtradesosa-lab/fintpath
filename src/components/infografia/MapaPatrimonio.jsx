@@ -9,9 +9,10 @@
 
 import { mapaPatrimonio, squarify, corto } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
+import { tx, localeCifras, esUS } from "../../lib/region.js";
 
 const W = 760, H = 300;
-const fmtPct = (n, d = 0) => (n || 0).toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %";
+const fmtPct = (n, d = 0) => (n || 0).toLocaleString(localeCifras(), { minimumFractionDigits: d, maximumFractionDigits: d }) + (esUS() ? "%" : " %");
 
 // Tramo de color por rentabilidad anual.
 const tono = (c) => {
@@ -21,21 +22,21 @@ const tono = (c) => {
   if (c.rentaPct >= 5) return { fill: trama(C.azul, 55), txt: C.txt, sub: C.txt2 };
   return { fill: trama(C.azul, 30), txt: C.txt, sub: C.txt2 };
 };
-const lectura = (c) => (c.estado === "renta" ? `renta ${fmtPct(c.rentaPct, 1)} al año` : c.estado === "pierde" ? "pierde valor" : "sin renta");
+const lectura = (c) => (c.estado === "renta" ? tx(`renta ${fmtPct(c.rentaPct, 1)} al año`, `yields ${fmtPct(c.rentaPct, 1)} a year`) : c.estado === "pierde" ? tx("pierde valor", "losing value") : tx("sin renta", "no income"));
 
 export default function MapaPatrimonio({ met, fm }) {
   const mapa = mapaPatrimonio(met);
   if (!mapa || mapa.clases.length === 0) return null;
   const bloques = squarify(mapa.clases, { w: W, h: H, gap: 4 });
   const mayor = mapa.clases[0];
-  const resumen = `Tu patrimonio de ${fm(mapa.total)}: ${mapa.clases.map((c) => `${c.nombre} ${fmtPct(c.pct)} (${lectura(c)})`).join("; ")}.`;
+  const resumen = tx(`Tu patrimonio de ${fm(mapa.total)}: `, `Your ${fm(mapa.total)} net worth: `) + `${mapa.clases.map((c) => `${c.nombre} ${fmtPct(c.pct)} (${lectura(c)})`).join("; ")}.`;
 
   return (
-    <section aria-label="En qué está tu patrimonio" style={{ ...tarjeta, marginBottom: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+    <section aria-label={tx("En qué está tu patrimonio", "What your net worth is made of")} style={{ ...tarjeta, marginBottom: 20, display: "flex", flexDirection: "column", gap: 16 }}>
       <style>{CSS_INFOGRAFIA}</style>
       <div>
-        <h3 style={titulo}>¿En qué está tu patrimonio?</h3>
-        <div style={subtitulo}>El área es lo que vale; el color, cuánto renta al año sobre lo que vale. {mayor.nombre} es el {fmtPct(mayor.pct)} de tus activos.</div>
+        <h3 style={titulo}>{tx("¿En qué está tu patrimonio?", "What is your net worth made of?")}</h3>
+        <div style={subtitulo}>{tx(<>El área es lo que vale; el color, cuánto renta al año sobre lo que vale. {mayor.nombre} es el {fmtPct(mayor.pct)} de tus activos.</>, <>Area is value; color is the yearly yield on that value. {mayor.nombre} is {fmtPct(mayor.pct)} of your assets.</>)}</div>
       </div>
       <svg className="fpi-mapa" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={resumen} style={{ width: "100%", height: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
         {bloques.map((b, i) => {
