@@ -86,7 +86,7 @@ export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar" }) {
   }, [abierto]);
   const item = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", color: "var(--fp-txt)", borderRadius: 6 };
   return (
-    <span ref={ref} style={{ position: "relative", display: "inline-block" }}>
+    <span ref={ref} style={{ position: "relative", display: "inline-block", flexShrink: 0 }}>
       <button type="button" aria-label="Más opciones" title="Editar o eliminar" aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
         style={{ background: abierto ? "rgba(var(--fp-ink),0.08)" : "rgba(var(--fp-ink),0.04)", border: "1px solid rgba(var(--fp-ink),0.16)", borderRadius: 8, padding: "4px 8px", cursor: "pointer", color: "var(--fp-txt)", display: "inline-flex" }}>
         <MoreHorizontal size={18} strokeWidth={2.25} />

@@ -382,11 +382,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     lista.forEach(it => { const c = claseIngreso(it); (porCat[c.id] = porCat[c.id] || { c, items: [] }).items.push(it); });
     const grupos = Object.values(porCat)
       .map(({ c, items: its }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...its].sort((a, b) => mes(b) - mes(a)),
-        sub: its.filter(i => i.sim !== false).reduce((s, i) => s + mes(i), 0) }))
+        sub: its.filter(i => i.sim !== false).reduce((s, i) => s + mes(i), 0),
+        // 3-nov-2026: lo que entra ESTE mes en el grupo, junto al promedio.
+        subMes: its.filter(i => i.sim !== false).reduce((s, i) => s + montoDelMes(i, _añoHoy, _mesHoy) * (i.moneda === "USD" ? (trm || 4200) : 1), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
-      { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
+      { __cat: gr.cat, __sub: gr.sub, __subMes: gr.subMes, __n: gr.items.length,
         __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.id },
       ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
@@ -859,8 +861,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               hayCerrados={Object.values(cerrados).some(Boolean)} onAlternar={() => setCerrados(Object.values(cerrados).some(Boolean) ? {} : Object.fromEntries(CLASES_INGRESO.map((c) => ["__h_" + c.id, true])))} />
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
               <thead><tr>
-                {["Nombre", "Categoría", "Tipo", "Mensual", "Capital / Fuente", "On/Off", ""].map((h) => (
-                  <th key={h} style={{ padding: "12px 14px", textAlign: h === "Mensual" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                {/* 3-nov-2026: lo que entra este mes y el promedio del año, como en Egresos. */}
+                {["Nombre", "Categoría", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio del año", "Capital / Fuente", "On/Off", ""].map((h, k) => (
+                  <th key={h || k} style={{ padding: "12px 14px", textAlign: k === 3 || k === 4 ? "right" : "left", whiteSpace: "nowrap", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr></thead>
               <tbody>
@@ -890,13 +893,13 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 ) : conEncabezados(separarPorLimite(allItems, plan).visibles).map((item) => (
                   item.__cat ? (
                     <tr key={item.id} onClick={() => setCerrados((c) => ({ ...c, [item.id]: !c[item.id] }))} title={cerrados[item.id] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
-                      <td colSpan={8} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                      <td colSpan={9} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.id] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>
-                            {fm(item.__sub)}/mes
+                            {fm(item.__subMes)} <span style={{ color: T.txt3, fontWeight: 500 }}>este mes · prom. {fm(item.__sub)}</span>
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
                           </span>
                         </div>
@@ -978,8 +981,23 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                     </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.categoria}</span></td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.tipo}</span></td>
+                    {(() => {
+                      // Este mes: lo que de verdad entra en el mes en curso (vigencia, variables,
+                      // primas y bonos en su mes). Si no entra nada este mes, se dice.
+                      const fx = item.moneda === "USD" ? (trm || 4200) : 1;
+                      const hoy = montoDelMes(item, _añoHoy, _mesHoy) * fx, prom = (esPrimaBono(item) ? mensualPrimaBono(item) : promedioMesActivo(item)) * fx;
+                      const distinto = prom > 0 && Math.abs(hoy - prom) / prom >= 0.03;
+                      return (
+                        <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
+                          {hoy > 0
+                            ? <div style={{ fontWeight: 700, color: T.green }}>{fm(hoy)}</div>
+                            : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>no entra</div>}
+                          {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, color: hoy > prom ? T.green : T.orange }}>{hoy > prom ? "▲" : "▼"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
+                        </td>
+                      );
+                    })()}
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
-                      <div style={{ fontWeight: 700, color: T.green }}>
+                      <div style={{ fontWeight: 600, color: T.txt2 }}>
                         {/* 25-jul-2026: en variables usamos el promedio de meses
                             ACTIVOS, no item.mensual (que el motor ignora para
                             esa frecuencia y confundía la lectura). */}

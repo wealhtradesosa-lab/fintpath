@@ -19,7 +19,7 @@ import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
 import TablaMensual from "./TablaMensual";
 import BarraComposicion from "./BarraComposicion";
-import { MESES, costoCredito, montoPromedioMensual, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
+import { MESES, costoCredito, montoPromedioMensual, montoDelMes, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 import { tx, esUS, plata, pct as pctR, monedaBase, nombreMes } from "../lib/region.js";
 
 const T = {
@@ -434,8 +434,10 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
             <thead>
               <tr>
-                {["Deuda", "Tipo", "Saldo", "Cuota", "Tasa", "Interés/año", "Activo", "On/Off", ""].map((h) => (
-                  <th key={h} style={{ padding: "12px 14px", textAlign: ["Deuda", "Activo", ""].includes(h) ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{tx(h, { Deuda: "Debt", Tipo: "Type", Saldo: "Balance", Cuota: "Payment", Tasa: esUS() ? "APR" : "Rate", "Interés/año": "Interest/yr", Activo: "Asset", "On/Off": "On/Off", "": "" }[h])}</th>
+                {/* 3-nov-2026: la cuota de este mes y la cuota promedio del año (abonos, cuotas que
+                    terminan o arrancan, pagos variables), como en Ingresos y Egresos. */}
+                {["Deuda", "Tipo", "Saldo", "Cuota este mes", "Tasa", "Interés/año", "Activo", "On/Off", ""].map((h) => (
+                  <th key={h} style={{ padding: "12px 9px", textAlign: ["Deuda", "Activo", "On/Off", ""].includes(h) ? "left" : "right", whiteSpace: "nowrap", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{tx(h, { Deuda: "Debt", Tipo: "Type", Saldo: "Balance", "Cuota este mes": "Payment this month", Tasa: esUS() ? "APR" : "Rate", "Interés/año": "Interest/yr", Activo: "Asset", "On/Off": "On/Off", "": "" }[h])}</th>
                 ))}
               </tr>
             </thead>
@@ -486,7 +488,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 const lk = d.la ? (inversiones || []).find((i) => i.id === d.la) : null;
                 return (
                   <tr key={d.id} style={{ borderBottom: `1px solid ${T.border}`, background: "transparent" }}>
-                    <td style={{ padding: "10px 14px" }}>
+                    <td style={{ padding: "10px 9px" }}>
                       <div style={{fontWeight: 600, display: "flex", alignItems: "center", gap: 6}}>
                         {!esUS() && deudasSinOwnerIds.has(d.id) && (
                           <span
@@ -519,16 +521,28 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         return ow ? <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>{ow.type==="juridica"?"":""} {ow.name}</div> : null;
                       })()}
                     </td>
-                    <td style={{ padding: "10px 14px", textAlign: "right" }}>
-                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{esUS() ? (nombreTipo(d.tp) || d.tp) : (tx({ mortgage: "Hipoteca", vehiculo: "Vehículo", loan: "Libre inversión", card: "Tarjeta", tarjeta: "Tarjeta", leasing: "Leasing" }[d.tp], nombreTipo(d.tp)) || d.tp)}</span>
+                    <td style={{ padding: "10px 9px", textAlign: "right" }}>
+                      <span style={{ background: T.orange + "15", color: T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>{esUS() ? (nombreTipo(d.tp) || d.tp) : (tx({ mortgage: "Hipoteca", vehiculo: "Vehículo", loan: "Libre inversión", card: "Tarjeta", tarjeta: "Tarjeta", leasing: "Leasing" }[d.tp], nombreTipo(d.tp)) || d.tp)}</span>
                     </td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", fontWeight: 600, color: T.txt, whiteSpace: "nowrap" }}>{fm(d.mt)}</td>
-                    <td style={{ padding: "10px 14px", textAlign: "right", whiteSpace: "nowrap" }}>{fm(d.pg)}</td>
-                    <td style={{ padding: "10px 14px", textAlign: "right" }}>{tasaFmt(d.ts)}</td>
+                    <td style={{ padding: "10px 9px", textAlign: "right", fontWeight: 600, color: T.txt, whiteSpace: "nowrap" }}>{fm(d.mt)}</td>
+                    {(() => {
+                      const ah = new Date(), base = { ...d, mensual: Number(d.pg) || 0, m: undefined };
+                      const hoy = d.pagada ? 0 : montoDelMes(base, ah.getFullYear(), ah.getMonth() + 1);
+                      const prom = d.pagada ? 0 : montoPromedioMensual(base);
+                      const distinto = prom > 0 && Math.abs(hoy - prom) / prom >= 0.03;
+                      return <>
+                        <td style={{ padding: "10px 9px", textAlign: "right", whiteSpace: "nowrap" }}>
+                          {hoy > 0 ? <span style={{ fontWeight: 700 }}>{fm(hoy)}</span> : <span style={{ fontSize: 12, color: T.txt3 }}>{d.pagada ? tx("pagada", "paid off") : tx("no se paga", "no payment")}</span>}
+                          {/* Promedio del año debajo (una columna aparte desbordaba la tabla). */}
+                          {prom > 0 && <div style={{ fontSize: 11, marginTop: 2, color: distinto ? (hoy < prom ? T.green : T.orange) : T.txt3 }}>{distinto && hoy > 0 ? (hoy < prom ? "▼ " : "▲ ") : ""}{tx("prom.", "avg.")} {fm(prom)}</div>}
+                        </td>
+                      </>;
+                    })()}
+                    <td style={{ padding: "10px 9px", textAlign: "right" }}>{tasaFmt(d.ts)}</td>
                     {(() => {
                       const cc = costoCredito(d);
                       return (
-                        <td style={{ padding: "10px 14px", textAlign: "right", whiteSpace: "nowrap" }}
+                        <td style={{ padding: "10px 9px", textAlign: "right", whiteSpace: "nowrap" }}
                           title={cc.meses != null && !cc.noAmortiza ? tx(`Cuota: ${fm(cc.interesMes)} de interés y ${fm(cc.capitalMes)} de capital (${Math.round(cc.pctCapital)}% baja la deuda).${cc.interesTotal > 0 ? ` Interés que falta pagar: ${fm(cc.interesTotal)}.` : ""}`, `Payment: ${fm(cc.interesMes)} interest and ${fm(cc.capitalMes)} principal (${Math.round(cc.pctCapital)}% lowers the debt).${cc.interesTotal > 0 ? ` Interest left to pay: ${fm(cc.interesTotal)}.` : ""}`) : undefined}>
                           {/* 31-oct-2026 (crítica de diseño): una cifra y una línea; el desglose, al pasar el mouse. */}
                           <div style={{ fontWeight: 600, color: "#ff5000" }}>{fm(cc.interesAnual)}</div>
@@ -538,8 +552,8 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                         </td>
                       );
                     })()}
-                    <td style={{ padding: "10px 14px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
-                    <td style={{ padding: "10px 14px" }}>
+                    <td style={{ padding: "10px 9px" }}>{lk ? <span style={{ background: T.blue + "15", color: T.blue, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{lk.n || lk.nombre || lk.name || "—"}</span> : <span style={{ color: T.txt3 }}>—</span>}</td>
+                    <td style={{ padding: "10px 9px" }}><div style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(deudas.map(x => x.id===d.id ? {...x, sim: !(d.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={d.sim===false?tx("Mostrar", "Show"):tx("Ocultar", "Hide")}><Interruptor on={d.sim!==false} /></button>
                       {/* 15-sep-2026 (Santiago: "ya pagué una deuda que era un
                           crédito de Bancolombia, ¿debería borrarla o que quede
@@ -612,7 +626,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                             whiteSpace: "nowrap" }}>{tx("Marcar pagada", "Mark paid")}</button>
                       )}
                       <MenuFila onEditar={() => openEdit(d)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm(tx("¿Eliminar este registro?", "Delete this record?"))) onUpdate(items.filter((i) => i.id !== d.id)); }} />
-                    </td>
+                    </div></td>
                   </tr>
                 );
               })}

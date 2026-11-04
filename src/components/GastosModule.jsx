@@ -348,11 +348,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     lista.forEach(it => { const c = claseGasto(it); (porCat[c.id] = porCat[c.id] || { c, items: [] }).items.push(it); });
     const grupos = Object.values(porCat)
       .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => montoPromedioMensual(b) - montoPromedioMensual(a)),
-        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g), 0) }))
+        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g), 0),
+        // 3-nov-2026: lo que sale ESTE mes en el grupo, junto al promedio.
+        subMes: items.filter(g => g.sim !== false).reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
-      { __cat: gr.cat, __sub: gr.sub, __n: gr.items.length,
+      { __cat: gr.cat, __sub: gr.sub, __subMes: gr.subMes, __n: gr.items.length,
         __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, key: "__h_" + gr.id },
       ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
@@ -671,8 +673,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600, color: T.txt }}>
           <thead>
             <tr>
-              {["Concepto", "Categoría", "DIAN", "Monto/mes", "On/Off", ""].map((h) => (
-                <th key={h} style={{ padding: "12px 14px", textAlign: h === "Monto/mes" ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{h}</th>
+              {/* 3-nov-2026 (Santiago: "uno debería tener promedio año y valor mes actual: el
+                  arriendo promedia 16 MM pero hoy pago 10 MM"). Dos columnas: lo que sale este
+                  mes y el promedio del año. */}
+              {["Concepto", "Categoría", "DIAN", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio del año", "On/Off"].map((h, k) => (
+                <th key={h || k} style={{ padding: "12px 14px", textAlign: k === 4 || k === 5 ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -703,13 +708,13 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             ) : conEncabezados(separarPorLimite(itemsFiltrados, plan).visibles).map((item) => (
                   item.__cat ? (
                     <tr key={item.key} onClick={() => setCerrados((c) => ({ ...c, [item.key]: !c[item.key] }))} title={cerrados[item.key] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
-                      <td colSpan={6} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                      <td colSpan={7} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.key] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.red, fontFamily: "monospace" }}>
-                            {fm(item.__sub)}/mes
+                            {fm(item.__subMes)} <span style={{ color: T.txt3, fontWeight: 500 }}>este mes · prom. {fm(item.__sub)}</span>
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
                           </span>
                         </div>
@@ -801,8 +806,22 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 <td style={{ padding: "10px 14px" }}>
                   <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.t === "f" ? "fijo" : "variable"}</span>
                 </td>
+                {(() => {
+                  // Este mes: lo que de verdad sale en el mes en curso (vigencia, variables,
+                  // pagos anuales). Si no sale nada este mes, se dice en vez de poner $0.
+                  const hoy = montoDelMes(item, _añoHoy, _mesHoy), prom = promedioMesActivo(item);
+                  const distinto = prom > 0 && Math.abs(hoy - prom) / prom >= 0.03;
+                  return (
+                    <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
+                      {hoy > 0
+                        ? <div style={{ fontWeight: 700, color: T.red }}>{fm(hoy)}</div>
+                        : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>no sale</div>}
+                      {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, whiteSpace: "nowrap", color: hoy < prom ? T.green : T.orange }}>{hoy < prom ? "▼" : "▲"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
+                    </td>
+                  );
+                })()}
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
-                  <div style={{ fontWeight: 700, color: T.red }}>{fm(promedioMesActivo(item))}</div>
+                  <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(promedioMesActivo(item))}</div>
                   {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                   {(() => {
                     const badge = labelVigenciaBadge(item);
