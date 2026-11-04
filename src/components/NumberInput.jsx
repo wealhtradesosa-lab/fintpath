@@ -22,6 +22,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useRef } from "react";
+import { esUS } from "../lib/region.js";
 
 // ── Formateo: número → "39.500.000.000" ─────────────────────────────────
 const formatNumber = (value) => {
@@ -29,6 +30,8 @@ const formatNumber = (value) => {
   const num = typeof value === "string" ? parseFloat(value) : value;
   if (isNaN(num)) return "";
   const parts = num.toString().split(".");
+  // 3-nov-2026: en EE. UU. miles con coma y decimal con punto (39,500,000.5).
+  if (esUS()) { parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ","); return parts.join("."); }
   // Separador de miles con punto (formato Colombia)
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   // Separador decimal con coma (formato Colombia)
@@ -40,6 +43,14 @@ const parseNumber = (str) => {
   if (typeof str !== "string") return typeof str === "number" ? str : "";
   const trimmed = str.trim();
   if (!trimmed) return "";
+  // 3-nov-2026 — EE. UU.: la coma es separador de miles y el punto, decimal.
+  // "1,500" → 1500 · "22.99" → 22.99 · "250K" → 250000 · "1.5M" → 1500000.
+  if (esUS()) {
+    const us = trimmed.replace(/,/g, "");
+    const k = us.match(/^([\d.]+)\s*[kK]$/); if (k) { const v = parseFloat(k[1]); return isNaN(v) ? "" : Math.round(v * 1000); }
+    const m = us.match(/^([\d.]+)\s*[mM]$/); if (m) { const v = parseFloat(m[1]); return isNaN(v) ? "" : Math.round(v * 1000000); }
+    const v = parseFloat(us); return isNaN(v) ? "" : v;
+  }
 
   // Shortcut K → miles (500K = 500.000)
   const kMatch = trimmed.match(/^([\d.,]+)\s*[kK]$/);

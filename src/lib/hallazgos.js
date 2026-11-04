@@ -1,6 +1,12 @@
 import { t as textos } from "./hallazgosI18n.js";
 import { fmtPctEs, fmtNumEs } from "./formato.js";
 import { calcularBase } from "./metrics.js";
+import { esUS, getRegion, tx, plata, plataCorta, pct as pctR, num as numR } from "./region.js";
+
+// 3-nov-2026 — Cifras por país: en EE. UU. los montos son dólares y no se
+// redondean a millones (una tarjeta de $6.500 mostraba "$0 MM"). Colombia queda igual.
+const millones = (v, neg = false) => (esUS() ? (neg ? "−" : "") + (Math.abs(v) >= 1e6 ? plataCorta(v) : plata(v)) : (neg ? "−$" : "$") + Math.round(v / 1e6).toLocaleString("es-CO") + " MM");
+const pctPais = (v, d) => (esUS() ? pctR(v, d) : fmtPctEs(v, d));
 // ════════════════════════════════════════════════════════════════════════════
 // hallazgos.js — Lo que el asesor VE sin que se lo pregunten.
 //
@@ -52,7 +58,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
   // Modelo corregido: liquidez = dinero DISPONIBLE y sin comprometer (Cash,
   // CDT, cuentas de ahorro). Un fondo, acciones o crypto son posiciones
   // tomadas, no plata esperando destino.
-  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro"];
+  const LIQUIDOS = ["cash", "cdt", "efectivo", "cuenta", "ahorro", "hysa", "savings", "money market", "t-bill"];
   // 02-ago-2026 — leía SOLO `i.tipo`, pero los activos de US guardan el tipo en
   // `i.tp` (cash_equiv, hysa...). Resultado: el demo US con $85.000 en el fondo
   // de emergencia mostraba "No safety net". Se leen ambos campos y se agregan
@@ -90,7 +96,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
       const saldo = num(d.mt), tasa = num(d.ts ?? d.ta);
       const dif = tasa - RENDIMIENTO_TIPICO;
       return {
-        nombre: d.n || d.nombre || "Crédito",
+        nombre: d.n || d.nombre || tx("Crédito", "Loan"),
         saldo, tasa, dif,
         impacto: dif > 0 ? costoAnualDeuda(Math.min(liquidez, saldo), dif) : 0,
       };
@@ -105,12 +111,14 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
 
   return {
     id: "deuda_cara_vs_ahorro",
-    metrica: "$" + Math.round(impacto / 1e6).toLocaleString("es-CO") + " MM",
+    metrica: millones(impacto),
     unidad: L.deudaCara.unidad,
     titulo: L.deudaCara.titulo(cara.nombre, cara.tasa),
     detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto),
     impactoAnual: impacto,
-    base: `Tasa del crédito (${fmtPctEs(cara.tasa, 2)} E.A.) vs. rendimiento de tu efectivo y CDT (${fmtPctEs(RENDIMIENTO_TIPICO, 2)} E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
+    base: esUS() || getRegion().idioma === "en"
+      ? L.deudaCara.base(cara.tasa, RENDIMIENTO_TIPICO) + tx(", ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.", ", weighted by amount. Funds and stocks are excluded: they're positions already taken, not cash on hand.")
+      : `Tasa del crédito (${fmtPctEs(cara.tasa, 2)} E.A.) vs. rendimiento de tu efectivo y CDT (${fmtPctEs(RENDIMIENTO_TIPICO, 2)} E.A.), ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.`,
     accion: { label: L.deudaCara.accion, pagina: "deu" },
     tono: "oportunidad",
   };
@@ -125,7 +133,7 @@ function concentracion(user, trm, patrimonioTotal, L = textos("es")) {
   if (invs.length < 2 || patrimonioTotal <= 0) return null;
 
   const mayor = invs
-    .map((i) => ({ nombre: i.nombre || i.n || "Activo", valor: i.moneda === "USD" ? num(i.va) * trm : num(i.va) }))
+    .map((i) => ({ nombre: i.nombre || i.n || tx("Activo", "Asset"), valor: i.moneda === "USD" ? num(i.va) * trm : num(i.va) }))
     .sort((a, b) => b.valor - a.valor)[0];
   if (!mayor || mayor.valor <= 0) return null;
 
@@ -134,15 +142,15 @@ function concentracion(user, trm, patrimonioTotal, L = textos("es")) {
 
   return {
     id: "concentracion",
-    metrica: fmtPctEs(pct, 0),
+    metrica: pctPais(pct, 0),
     unidad: L.concentracion.unidad,
     titulo: mayor.nombre,
     detalle: L.concentracion.detalle,
     // Sin cifra de ahorro: no es una oportunidad de plata sino de riesgo.
     impactoAnual: 0,
     riesgo: true,
-    base: `${mayor.nombre} sobre patrimonio total calculado`,
-    accion: { label: "Ver patrimonio", pagina: "inv" },
+    base: tx(`${mayor.nombre} sobre patrimonio total calculado`, `${mayor.nombre} over your total net worth`),
+    accion: { label: L.concentracion.accion, pagina: "inv" },
     tono: "riesgo",
   };
 }
@@ -158,12 +166,12 @@ function flujoNegativo(t, L = textos("es")) {
   const deficit = Math.abs(cf);
   // 02-ago-2026 — mismo caso: en dólares 100.000 sería un déficit enorme. Se
   // detecta la moneda por la magnitud del ingreso bruto.
-  const enUSD = num(t?.brutoTotal) > 0 && num(t?.brutoTotal) < 500_000;
+  const enUSD = esUS() || (num(t?.brutoTotal) > 0 && num(t?.brutoTotal) < 500_000);
   if (deficit < (enUSD ? 100_000 / 4200 : 100_000)) return null; // ruido de redondeo
   return {
     id: "flujo_negativo",
-    metrica: "−$" + Math.round(deficit / 1e6).toLocaleString("es-CO") + " MM",
-    unidad: "por mes",
+    metrica: millones(deficit, true),
+    unidad: L.flujoNegativo.unidad,
     titulo: L.flujoNegativo.titulo,
     detalle: L.flujoNegativo.detalle(deficit),
     impactoAnual: deficit * 12,
@@ -196,13 +204,13 @@ function fondoEmergencia(user, t, trm, L = textos("es")) {
   const faltante = egresos * 3 - liquidez;
   return {
     id: "fondo_emergencia",
-    metrica: fmtNumEs(meses, 1),
+    metrica: esUS() ? numR(meses, 1) : fmtNumEs(meses, 1),
     unidad: L.fondoEmergencia.unidad,
     titulo: L.fondoEmergencia.titulo(meses),
     detalle: L.fondoEmergencia.detalle(meses, faltante),
     impactoAnual: 0,
-    base: "Activos líquidos (caja, cuentas, CDT, fondos a la vista) sobre gastos y cuotas del mes. El umbral de 3 meses es una convención de planeación financiera, no una norma",
-    accion: { label: "Ver patrimonio", pagina: "inv" },
+    base: L.fondoEmergencia.base + tx(". El umbral de 3 meses es una convención de planeación financiera, no una norma", ". The 3-month threshold is a financial-planning convention, not a rule"),
+    accion: { label: L.fondoEmergencia.accion, pagina: "inv" },
     tono: "riesgo",
   };
 }
@@ -220,12 +228,12 @@ function cargaDeuda(t, L = textos("es")) {
   if (pct < 35) return null;
   return {
     id: "carga_deuda",
-    metrica: fmtPctEs(pct, 0),
-    unidad: "de tu ingreso",
+    metrica: pctPais(pct, 0),
+    unidad: L.cargaDeuda.unidad,
     titulo: L.cargaDeuda.titulo,
     detalle: L.cargaDeuda.detalle,
     impactoAnual: 0,
-    base: "Cuotas de deudas sobre ingreso neto de retención. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento",
+    base: tx("Cuotas de deudas sobre ingreso neto de retención. El umbral de 35% es el criterio habitual de la banca para capacidad de endeudamiento", "Debt payments over income after withholding. 35% is the usual lender threshold for borrowing capacity"),
     accion: { label: L.cargaDeuda.accion, pagina: "deu" },
     tono: "riesgo",
   };
@@ -247,7 +255,7 @@ function colchonSolido(user, t, trm, L = textos("es")) {
   return {
     id: "colchon_solido", bueno: true, tono: "bueno",
     metrica: meses >= 24 ? "24+" : meses.toFixed(0),
-    unidad: "meses",
+    unidad: L.colchonSolido.unidad,
     titulo: L.colchonSolido.titulo,
     detalle: L.colchonSolido.detalle,
     base: L.colchonSolido.base,
@@ -262,8 +270,8 @@ function flujoSano(t, L = textos("es")) {
   if (tasa < 15) return null;
   return {
     id: "flujo_sano", bueno: true, tono: "bueno",
-    metrica: fmtPctEs(tasa, 0),
-    unidad: "de tu ingreso",
+    metrica: pctPais(tasa, 0),
+    unidad: L.flujoSano.unidad,
     titulo: L.flujoSano.titulo,
     detalle: L.flujoSano.detalle(cf),
     base: L.flujoSano.base,
@@ -278,8 +286,8 @@ function deudaControlada(t, L = textos("es")) {
   if (pct >= 25) return null;
   return {
     id: "deuda_controlada", bueno: true, tono: "bueno",
-    metrica: fmtPctEs(pct, 0),
-    unidad: "de tu ingreso",
+    metrica: pctPais(pct, 0),
+    unidad: L.deudaControlada.unidad,
     titulo: L.deudaControlada.titulo,
     detalle: L.deudaControlada.detalle,
     base: L.deudaControlada.base,
@@ -298,7 +306,7 @@ function deudaControlada(t, L = textos("es")) {
  * @param {string[]} p.descartados   ids que el usuario ya descartó
  * @param {number} p.max
  */
-export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, baseNormativa = "Estatuto Tributario", idioma = "es", totales = null, descartados = [], max = 3 } = {}) {
+export function generarHallazgos({ user, recomendaciones = [], trm = 4200, patrimonioTotal = 0, baseNormativa = "Estatuto Tributario", idioma = getRegion().idioma, totales = null, descartados = [], max = 3 } = {}) {
   // 02-ago-2026 — diccionario de textos según jurisdicción. Ver hallazgosI18n.js
   const L = textos(idioma);
   if (!user) return [];

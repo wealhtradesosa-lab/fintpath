@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { parseDecimalEs } from "../lib/formato.js";
+import { esUS } from "../lib/region.js";
 
 /**
  * Campo numérico que acepta coma o punto al escribir (es-CO) y entrega SIEMPRE
  * un número (o "") a onChange. El texto se muestra con coma decimal.
  */
 export default function InputDecimalEs({ value, onChange, ...rest }) {
-  const show = (v) => (v === "" || v == null || !Number.isFinite(Number(v)) ? "" : String(Number(v)).replace(".", ","));
+  const show = (v) => (v === "" || v == null || !Number.isFinite(Number(v)) ? "" : (esUS() ? String(Number(v)) : String(Number(v)).replace(".", ",")));
   const [txt, setTxt] = useState(show(value));
   useEffect(() => {
     // Sincroniza solo si el valor externo cambió por otra vía.

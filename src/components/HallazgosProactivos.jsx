@@ -86,17 +86,17 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
         <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>
-          Tu family office analiz&oacute; tus n&uacute;meros
+          {tx("Tu family office analizó tus números", "Your family office reviewed your numbers")}
         </div>
       </div>
       <div style={{ fontSize: 12, color: T.tx3, marginBottom: 14 }}>
-        Toc&aacute; cualquier tarjeta para ver el detalle
+        {tx("Toca cualquier tarjeta para ver el detalle", "Tap any card to see the details")}
       </div>
 
       {alertas.length > 0 && (
         <>
           <div style={{ fontSize: 11, fontWeight: 700, color: T.tx3, letterSpacing: 1, marginBottom: 8 }}>
-            Para mirar
+            {tx("Para mirar", "Worth a look")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10, marginBottom: buenas.length ? 16 : 0 }}>
             {alertas.map((h) => <Tarjeta key={h.id} h={h} />)}
@@ -107,7 +107,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
       {buenas.length > 0 && (
         <>
           <div style={{ fontSize: 11, fontWeight: 700, color: T.tx3, letterSpacing: 1, marginBottom: 8 }}>
-            Vas bien ac&aacute;
+            {tx("Vas bien acá", "Doing well")}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
             {buenas.map((h) => <Tarjeta key={h.id} h={h} compacta />)}
