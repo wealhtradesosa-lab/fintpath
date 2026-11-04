@@ -823,7 +823,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       {(() => {
         const { mes: mesHoy, año: añoHoy } = getMesActual();
         const pagosAnuales = [];
-        Object.entries(user.gastos || {}).forEach(([cat, items]) => {
+        Object.entries(user?.gas || user?.gastos || {}).forEach(([cat, items]) => {
           (items || []).forEach(g => {
             if (g.sim === false) return;
             const freq = getFrecuencia(g);
