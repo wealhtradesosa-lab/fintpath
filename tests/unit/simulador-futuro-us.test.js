@@ -63,8 +63,8 @@ describe("Año entrante · pinta en EE. UU. (inglés y español)", () => {
   it("en inglés: impuestos de EE. UU., sin DIAN ni retención en la fuente", () => {
     setRegion({ idioma: "en", pais: "US" });
     const html = renderToString(createElement(SimuladorFuturo, { user, escenarios: esc }));
-    expect(html).toContain("Estimated tax payments");
-    expect(html).toContain("Payroll withholding");
+    // 4-nov-2026: el detalle de impuestos quedó plegado; arriba va el resumen.
+    expect(html).toContain("Taxes per month");
     expect(html).not.toMatch(/DIAN|declaraci|Retención en la fuente|COP/);
     const nota = renderToString(createElement(NotaFuenteImpuesto, { modo: "futuro", owners: user.owners, detalle: estimarImpuestoReferente(user).detalle }));
     expect(nota).toContain("Form 1040-ES");
@@ -73,7 +73,7 @@ describe("Año entrante · pinta en EE. UU. (inglés y español)", () => {
   it("en español con país EE. UU.: textos en español, conceptos de EE. UU.", () => {
     setRegion({ idioma: "es", pais: "US" });
     const html = renderToString(createElement(SimuladorFuturo, { user, escenarios: esc }));
-    expect(html).toContain("Pagos estimados");
+    expect(html).toContain("Impuestos al mes");
     expect(html).not.toMatch(/Retención en la fuente|Declaración de renta/);
   });
 });

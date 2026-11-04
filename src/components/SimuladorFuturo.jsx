@@ -331,6 +331,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const añoHoy = getMesActual().año;
   const [selId, setSelId] = useState(escenarios[0]?.id || null);
   const [mesFoco, setMesFoco] = useState(null); // null = mes típico
+  // 4-nov-2026 (Santiago: "se ve atacada gráficamente, no hay jerarquía; todo
+  // tiene la misma importancia y uno no sabe por dónde empezar"). La respuesta
+  // va primero y grande; luego por qué cambia, el mes a mes y el año. La tabla
+  // concepto por concepto y el detalle ítem por ítem quedan plegados.
+  const [verTabla, setVerTabla] = useState(false);
+  const [verDetalle, setVerDetalle] = useState(false);
   const [mesHover, setMesHover] = useState(null);
   const [form, setForm] = useState(null);       // formulario de cambio abierto
 
@@ -500,7 +506,24 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
   const colorK = { ing: C.ok, gas: C.danger, deu: C.warn };
 
   // ─── UI ───────────────────────────────────────────────────────────────
-  const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 18, marginBottom: 16 };
+  const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 22, marginBottom: 16 };
+  // 4-nov-2026 (Santiago: "toda esta página es muy pesada; la información está
+  // bien, se trata de separarla por temas, darle títulos a cada sección"). Cada
+  // tema va en su propia tarjeta con número, título-pregunta y una línea de qué
+  // muestra. Arriba los resultados (1–4); abajo, aparte, lo que se edita (5–6).
+  const Sec = ({ n, titulo, sub }) => (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 12, color: C.subtle, fontWeight: 600, marginBottom: 2 }}>{n}</div>
+      <div style={{ fontSize: 20, fontWeight: 600, color: C.text, letterSpacing: "-0.01em" }}>{titulo}</div>
+      {sub && <div style={{ ...F.caption, marginTop: 2 }}>{sub}</div>}
+    </div>
+  );
+  const Grupo = ({ titulo, sub }) => (
+    <div style={{ margin: "32px 0 12px", paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: C.muted }}>{titulo}</div>
+      {sub && <div style={F.caption}>{sub}</div>}
+    </div>
+  );
   const input = { background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, color: C.text, padding: "8px 10px", fontSize: 13, width: "100%", boxSizing: "border-box" };
   const btn = (primary) => ({ background: primary ? C.accent : C.raised, color: primary ? "#fff" : C.text, border: `1px solid ${primary ? C.accent : C.border}`, borderRadius: R.md, padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" });
   const Celda = ({ etiqueta, valor, color, tenue }) => (
@@ -728,6 +751,36 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
         {/* ── Veredicto ── */}
         <div style={card} ref={veredictoRef}>
+          {/* ── 1 · La respuesta ── */}
+          <Sec n={tx("1 · La respuesta", "1 · The answer")} titulo={tx(`¿Te alcanza en ${año}?`, `Does it cover ${año}?`)} />
+          <div style={{ ...F.caption, marginBottom: 4 }}>{foco ? `${mesL(foco.mes)} ${año}` : tx(`Un mes típico de ${año}`, `A typical month in ${año}`)}{cambios.length ? tx(` · con ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"}`, ` · with ${cambios.length} ${cambios.length === 1 ? "change" : "changes"}`) : ""}</div>
+          <div style={{ fontSize: 15, color: C.muted }}>{vista.queda >= 0 ? tx("Cada mes te quedan", "Each month you have left") : tx("Cada mes te faltan", "Each month you're short")}</div>
+          <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: "-0.03em", color: vista.queda >= 0 ? C.ok : C.danger, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{fm(Math.abs(vista.queda))}</div>
+          <div style={{ ...F.body, marginTop: 4 }}>
+            {Math.abs(vista.queda - hoy.queda) < 1 ? tx("Igual que hoy.", "Same as today.") : tx(`${vista.queda > hoy.queda ? "Mejor" : "Peor"} que hoy por ${fm(Math.abs(vista.queda - hoy.queda))} al mes`, `${vista.queda > hoy.queda ? "Better" : "Worse"} than today by ${fm(Math.abs(vista.queda - hoy.queda))} a month`)}
+            {vista.ingresos > 0 && vista.queda >= 0 ? tx(` · es el ${Math.round((vista.queda / vista.ingresos) * 100)} % de lo que entra.`, ` · ${Math.round((vista.queda / vista.ingresos) * 100)}% of what comes in.`) : "."}
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginTop: 16 }}>
+            {[
+              [tx("Entra al mes", "Comes in per month"), vista.ingresos, hoy.ingresos, true],
+              [tx("Gastos al mes", "Expenses per month"), vista.gastos, hoy.gastos, false],
+              [tx("Cuotas de créditos al mes", "Loan payments per month"), vista.cuotas, hoy.cuotas, false],
+              [tx("Impuestos al mes", "Taxes per month"), (vista.retencion || 0) + (vista.impuesto || 0), (hoy.retencion || 0) + (hoy.impuesto || 0), false],
+            ].map(([l, v, h, sube]) => {
+              const d = v - h, bueno = sube ? d >= 0 : d <= 0;
+              return (
+                <div key={l} style={{ background: C.raised, borderRadius: R.md, padding: "10px 12px" }}>
+                  <div style={F.caption}>{l}</div>
+                  <div style={{ fontSize: 18, fontWeight: 600, color: C.text, fontVariantNumeric: "tabular-nums" }}>{fm(v)}</div>
+                  <div style={{ ...F.caption, color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? tx("igual que hoy", "same as today") : `${d > 0 ? "+" : "−"}${fm(Math.abs(d))} ${tx("vs hoy", "vs today")}`}</div>
+                </div>
+              );
+            })}
+          </div>
+          <button type="button" onClick={() => setVerTabla((v) => !v)} style={{ background: "none", border: 0, padding: 0, marginTop: 12, color: C.muted, cursor: "pointer", fontSize: 13, textDecoration: "underline", textUnderlineOffset: 2 }}>
+            {verTabla ? tx("Ocultar la comparación con hoy", "Hide the comparison with today") : tx("Ver la comparación con hoy, concepto por concepto", "See the comparison with today, line by line")}
+          </button>
+          {verTabla && <div style={{ marginTop: 10 }}>
           {/* 11-oct-2026 (Santiago: "ingresos y cuotas no podrían estar en una sola
               franja y así liberar espacio para gráficos"). Hoy vs futuro en una
               sola tabla: una fila por año, una columna por concepto. */}
@@ -812,6 +865,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             </div>
           </div>
 
+          </div>}
+
+        </div>
+
+          {/* ── 2 · Por qué cambia ── */}
           {/* 28-oct-2026 (Santiago: "no sé de dónde sale que en 2027 tengo ingresos superiores a 150 M").
               Lo que más mueve los ingresos y los gastos frente a hoy, ítem por ítem. */}
           {(() => {
@@ -849,8 +907,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             };
             if (!difs.length) return null;
             return (
-              <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.surface }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>{tx("¿Por qué cambia frente a hoy?", "Why is it different from today?")}</div>
+              <div style={card}>
+                <Sec n={tx("2 · Qué cambia", "2 · What changes")} titulo={tx("¿Por qué cambia frente a hoy?", "Why is it different from today?")} sub={tx("Lo que más mueve tus ingresos y tus gastos, al mes.", "What moves your income and expenses the most, per month.")} />
                 <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
                   {bloqueK("ing", tx("Ingresos", "Income"), vista.ingresos - hoy.ingresos)}
                   {bloqueK("gas", tx("Gastos", "Expenses"), vista.gastos - hoy.gastos)}
@@ -863,10 +921,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               vacíos"). Orden: barras a todo el ancho (son bajitas), y debajo el
               Sankey y el desglose ítem por ítem lado a lado, que tienen alturas
               parecidas y se llenan mutuamente. */}
-          <div style={{ marginTop: 16 }}>
-          {/* 12 meses: ingresos vs egresos, con lo que pasa en cada uno */}
+        <div style={card}>
+          <div>
+          {/* ── 3 · Mes a mes ── */}
+          <Sec n={tx("3 · Mes a mes", "3 · Month by month")} titulo={tx(`¿Cómo te va cada mes de ${año}?`, `How does each month of ${año} go?`)} />
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 0, flexWrap: "wrap" }}>
-            <div style={F.label}>{tx(`Mes a mes en ${año}`, `Month by month in ${año}`)}</div>
             <div style={{ display: "flex", gap: 10, ...F.caption }}>
               <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.ok, borderRadius: 3, marginRight: 4 }} />{tx("Ingresos", "Income")}</span>
               <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.danger, borderRadius: 3, marginRight: 4 }} />{esUS() ? tx("Gastos + cuotas + impuestos", "Expenses + loan payments + taxes") : tx("Gastos + cuotas + impuestos y retención", "Expenses + loan payments + taxes and withholding")}</span>
@@ -927,7 +986,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             );
           })()}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: 16, marginTop: 16, alignItems: "stretch" }}>
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${C.border}` }}>
+            <button type="button" onClick={() => setVerDetalle((v) => !v)} style={{ background: "none", border: 0, padding: 0, color: C.text, cursor: "pointer", fontSize: 15, fontWeight: 600 }}>
+              {verDetalle ? "▾ " : "▸ "}{tx("De dónde sale cada número: flujo e ítem por ítem", "Where each number comes from: flow and item by item")}
+            </button>
+          </div>
+          {verDetalle && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(380px, 100%), 1fr))", gap: 16, marginTop: 16, alignItems: "stretch" }}>
         {(() => {
           const idx = foco ? [foco.mes - 1] : idxRegimen;
           const prom = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / (idx.length || 1);
@@ -1034,13 +1098,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               </div>
             );
           })()}
-          </div>
+          </div>}
         </div>
 
-        {/* ── Acumulado del año y patrimonio ── */}
+        {/* ── 4 · El año completo ── */}
         <div style={card}>
-          <div style={F.h2}>{tx(`Lo que suma ${año} y a dónde llega tu patrimonio`, `${año} totals and where your net worth ends up`)}</div>
-          <div style={F.caption}>{tx("Los 12 meses del escenario sumados, comparados con tu vida de hoy llevada a un año completo.", "The scenario's 12 months added up, compared with your life today over a full year.")}</div>
+          <Sec n={tx("4 · El año completo", "4 · The full year")} titulo={tx(`Lo que suma ${año} y a dónde llega tu patrimonio`, `${año} totals and where your net worth ends up`)} sub={tx("Los 12 meses del escenario sumados, comparados con tu vida de hoy llevada a un año completo.", "The scenario's 12 months added up, compared with your life today over a full year.")} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10, marginTop: 12 }}>
             {[
               [tx("Ingresos del año", "Income for the year"), anual.ingresos, anualHoy.ingresos, C.ok, true],
@@ -1118,13 +1181,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           </div>
         </div>
 
+        <Grupo titulo={tx("Arma tu escenario", "Build your scenario")} sub={tx("Aquí cambias lo que va a pasar; los resultados de arriba se actualizan solos.", "Change what's going to happen here; the results above update on their own.")} />
         {/* ── Cambios ── */}
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-            <div>
-              <div style={F.h2}>{tx(`Lo que cambia en ${año}`, `What changes in ${año}`)}</div>
-              <div style={F.caption}>{tx("Tres verbos: algo termina, algo cambia de monto, algo nuevo entra.", "Three verbs: something ends, something changes amount, something new comes in.")}</div>
-            </div>
+            <Sec n={tx("5 · Tus cambios", "5 · Your changes")} titulo={tx(`Lo que cambia en ${año}`, `What changes in ${año}`)} sub={tx("Tres verbos: algo termina, algo cambia de monto, algo nuevo entra.", "Three verbs: something ends, something changes amount, something new comes in.")} />
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {["ing", "gas", "deu"].map((k) => (
                 <button key={k} style={btn(false)} onClick={() => setForm({ tipo: "nuevo", kind: k, desdeMes: 1, hastaMes: 12, cat: k === "ing" ? "Salario" : "" })}>
@@ -1224,7 +1285,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
         {/* ── Base: la vida de hoy ── */}
         <div style={card}>
-          <div style={F.h2}>{tx(`Tu vida de hoy, llevada a ${año}`, `Your life today, carried into ${año}`)}</div>
+          <Sec n={tx("6 · Tu base", "6 · Your baseline")} titulo={tx(`Tu vida de hoy, llevada a ${año}`, `Your life today, carried into ${año}`)} />
           {nuevosHoy.length > 0 && (
             <div style={{ margin: "4px 0 14px", padding: "10px 12px", borderRadius: R.md, background: Cα.accent08, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>

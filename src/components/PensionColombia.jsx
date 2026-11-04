@@ -175,7 +175,18 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                 <div style={{ fontSize: 14, fontWeight: 600, color: T.txt }}>{e.nombre}</div>
                 {/* 4-nov-2026 (Santiago: "¿qué son los 3.590 MM?"): cada cifra con su rótulo. */}
                 {(() => {
-                  const d = e.datos || {}, r = e.resultado || {};
+                  // 4-nov-2026 (Santiago: "sigo viendo este error, no quedan 400 MM de
+                  // dólares"): la tarjeta mostraba el resultado congelado al guardar,
+                  // calculado con el 30 % también en el retiro. Ahora se recalcula con
+                  // el motor de hoy y, si el escenario es de antes de poder elegir el
+                  // crecimiento del retiro, usa el prudente (10 %) y lo dice.
+                  const d = e.datos || {};
+                  const crecR = d.crecRetiro != null ? Number(d.crecRetiro) : 10;
+                  const rv = simularAhorroBTC({ frecuencia: d.frecuencia || "mensual", monto: Number(d.monto) || 0, años: Number(d.años) || 0, precioHoy, trm, cagr: Number(d.cagr) || 0, retiroPct: Number(d.retiroPct) || 4 });
+                  const edadIni = Number(d.edadHoy) > 0 ? Number(d.edadHoy) + Number(d.años || 0) : null;
+                  const añosRet = edadIni && d.hastaEdad ? Math.max(1, Number(d.hastaEdad) - edadIni) : 25;
+                  const ret = rv ? simularRetiro({ capital: rv.valorCOPHoy, retiroPct: Number(d.retiroPct) || 4, años: añosRet, cagr: crecR, precioInicial: rv.precioFinal }) : null;
+                  const r = rv && ret ? { valor: rv.valorCOPHoy, retiroMes: ret.retiroMes, heredable: ret.capitalFinal, agotaEn: ret.agotaEn, irreal: ret.irreal || rv.irreal } : (e.resultado || {});
                   const frec = d.frecuencia === "anual" ? "cada año" : d.frecuencia === "unico" ? "una sola vez" : "cada mes";
                   const edadFin = Number(d.edadHoy) > 0 ? Number(d.edadHoy) + Number(d.años || 0) : null;
                   const finAño = new Date().getFullYear() + Number(d.años || 0);
@@ -188,10 +199,12 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                     <div style={{ marginTop: 8 }}>
                       {Number(d.monto) > 0 && <Fila l={`Ahorras ${frec}${d.frecuencia === "unico" ? "" : `, ${d.años} años`}`} v={fC(Number(d.monto))} />}
                       {d.cagr !== "" && d.cagr != null && <Fila l="Supones que el bitcoin sube mientras ahorras" v={`${fmtNumEs(Number(d.cagr), 0)} % al año`} />}
-                      <Fila l="Y mientras retiras" v={d.crecRetiro != null ? `${fmtNumEs(Number(d.crecRetiro), 0)} % al año` : `${fmtNumEs(Number(d.cagr || 0), 0)} % al año (guardado antes del cambio)`} />
+                      <Fila l={d.crecRetiro != null ? "Y mientras retiras" : "Y mientras retiras (prudente; guardado antes de poder elegirlo)"} v={`${fmtNumEs(crecR, 0)} % al año`} />
                       <Fila l={`Tienes al terminar de ahorrar (${finAño}${edadFin ? `, a los ${edadFin}` : ""}), en pesos de hoy`} v={fC(r.valor)} />
                       <Fila l={`Retiras cada mes${edadFin && d.hastaEdad ? `, de los ${edadFin} a los ${d.hastaEdad}` : ""}`} v={fC(r.retiroMes)} />
                       <Fila l={`Les queda a tus herederos${d.hastaEdad ? ` a los ${d.hastaEdad}` : " al final"}`} v={fC(r.heredable)} c={r.heredable > 0 ? T.green : T.txt} />
+                      {r.agotaEn != null && edadIni && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>El bitcoin se acaba a los {Math.round(edadIni + r.agotaEn)}: desde ahí no hay retiro.</div>}
+                      {r.irreal && <div style={{ fontSize: 12, color: T.red, marginTop: 4 }}>Escenario no realista: con estos crecimientos un bitcoin valdría más de lo que el mundo puede pagar.</div>}
                     </div>
                   );
                 })()}
