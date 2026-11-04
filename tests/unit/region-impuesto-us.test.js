@@ -60,3 +60,44 @@ describe("tasa mensual de una deuda por país", () => {
     expect(tasaMensualEq(24.9)).toBeCloseTo(0.02075, 6);
   });
 });
+
+import { tipoActivo, tipoIngreso, esLaboral } from "../../src/lib/metrics.js";
+describe("tipos de EE. UU. en el motor compartido", () => {
+  it("activos de AssetsModuleUS", () => {
+    expect(tipoActivo({ tp: "primary_home" })).toBe("Real Estate");
+    expect(tipoActivo({ tp: "rental_res" })).toBe("Real Estate");
+    expect(tipoActivo({ tp: "401k_trad" })).toBe("Acciones");
+    expect(tipoActivo({ tp: "cash_equiv" })).toBe("Cash");
+    expect(tipoActivo({ tp: "vehicle" })).toBe("Vehículo");
+  });
+  it("ingresos por tipo del IRS: arriendo y dividendos son pasivos, W-2 es laboral", () => {
+    expect(tipoIngreso({ tipo: "rental" })).toBe("pasivo");
+    expect(tipoIngreso({ tipo: "qual_div" })).toBe("pasivo");
+    expect(tipoIngreso({ tipo: "social_sec" })).toBe("pasivo");
+    expect(esLaboral({ tipo: "w2" })).toBe(true);
+    expect(tipoIngreso({ tipo: "1099nec" })).toBe("activo");
+    expect(tipoIngreso({ categoria: "Rental" })).toBe("pasivo");
+  });
+});
+
+import { sugerirVinculados } from "../../src/lib/futuro10.js";
+describe("lo que se va con una venta", () => {
+  const user = {
+    inv: [{ id: "a1", n: "Rental duplex — East Austin", tp: "rental_res", va: 500000 }, { id: "a2", n: "Local comercial Medellín", tp: "Local Comercial", va: 1 }],
+    ingresos: [
+      { id: "i1", nombre: "Salary — Alex (Austin Tech Co.)", categoria: "Salario", tipo: "w2", mensual: 18500 },
+      { id: "i2", nombre: "Short-term rental — Orlando condo", categoria: "Arriendo", tipo: "rental", mensual: 2700 },
+      { id: "i3", nombre: "Salario Empresa Medellín", categoria: "Salario", mensual: 9000000 },
+      { id: "i4", nombre: "Arriendo local Medellín", categoria: "Arriendo", mensual: 4000000 },
+    ],
+    gas: {},
+  };
+  it("vender el dúplex no se lleva el salario ni la renta de otro inmueble", () => {
+    const s = sugerirVinculados(user, "a1");
+    expect(s.ingresos.filter((x) => x.sugerido)).toEqual([]);
+  });
+  it("vender un local sugiere su arriendo, nunca un salario", () => {
+    const s = sugerirVinculados(user, "a2").ingresos.filter((x) => x.sugerido).map((x) => x.nombre);
+    expect(s).toEqual(["Arriendo local Medellín"]);
+  });
+});

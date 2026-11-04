@@ -52,7 +52,18 @@ const CATS_LABORALES = new Set([
   "Bonificaciones", "Intereses cesantías", "Intereses sobre cesantías", "Vacaciones",
   "Horas extra", "Auxilio", "Prestaciones",
 ]);
+// 3-nov-2026 — Ingresos de EE. UU. (IncomeModuleUS guarda el tipo del IRS en
+// `tipo`, sin categoría en español). Sin esto el arriendo, los dividendos y el
+// Seguro Social de un usuario de EE. UU. contaban como ingreso de trabajo y su
+// ingreso pasivo — el centro del medidor de libertad — salía en cero.
+const US_LABORAL = new Set(["w2", "1099nec", "k1"]);
+const US_PASIVO = new Set(["rental", "qual_div", "ord_div", "interest", "retirement", "social_sec"]);
+// Categorías en inglés que también pueden llegar (Excel, datos viejos).
+const CATS_PASIVAS_EN = new Set(["Rental", "Rent", "Dividends", "Interest", "Pension", "Social Security", "Royalties"]);
+const CATS_LABORALES_EN = new Set(["Salary", "Wages", "Bonus", "Self-employed", "Freelance", "Consulting", "Commissions", "Business"]);
 export function esLaboral(i) {
+  const tUS = String(i?.tipo || "").toLowerCase();
+  if (US_LABORAL.has(tUS) || CATS_LABORALES_EN.has(String(i?.categoria || "").trim())) return true;
   const fc = String(i?.fiscalCode || "");
   if (fc.startsWith("LAB_") || fc === "NOL_HONORARIOS_INDEP" || fc === "NOL_NEGOCIO") return true;
   return CATS_LABORALES.has(String(i?.categoria || "").trim());
@@ -71,6 +82,7 @@ export function tipoIngreso(i) {
   const cat = String(i?.categoria || "").trim();
   if (CATS_ACTIVAS.has(cat)) return "activo";
   if (CATS_PASIVAS.has(cat)) return "pasivo";
+  if (US_PASIVO.has(String(i?.tipo || "").toLowerCase()) || CATS_PASIVAS_EN.has(cat)) return "pasivo";
   // Un ingreso vinculado a un activo (creado desde Patrimonio) es renta del
   // activo, salvo que sea laboral (eso ya salió arriba).
   if (i?.activoId) return "pasivo";
@@ -124,7 +136,14 @@ const cuotaDeuda = (d, trm, mens) => {
 };
 
 // ─── Clasificación de activos (liquidez / invertibles) ─────────────────────
-const TYPE_MAP = { Other: "Otro", Investment: "Fondo de Inversión", Income: "Otro", Trading: "Acciones", Lote: "Real Estate" };
+const TYPE_MAP = { Other: "Otro", Investment: "Fondo de Inversión", Income: "Otro", Trading: "Acciones", Lote: "Real Estate",
+  // 3-nov-2026 — Tipos de AssetsModuleUS. Sin este mapa la casa de un usuario de
+  // EE. UU. no contaba como inmueble y su 401(k) no contaba como inversión en el
+  // Dashboard ni en Mi futuro a 10 años. Las cuentas de retiro no son líquidas
+  // (penalidad antes de los 59½): van como bolsa, igual que las acciones.
+  primary_home: "Real Estate", rental_res: "Real Estate", rental_com: "Local Comercial", land: "Real Estate",
+  stocks_etf: "ETF", qsbs: "Acciones", crypto: "Crypto", "401k_trad": "Acciones", roth_ira: "Acciones", hsa: "Acciones",
+  cash_equiv: "Cash", business: "Otro", other_asset: "Otro", vehicle: "Vehículo" };
 export function tipoActivo(i) {
   let tp = String(i?.tp || i?.tipo || i?.type || "").trim();
   if (TYPE_MAP[tp]) tp = TYPE_MAP[tp];

@@ -17,7 +17,7 @@
 //     gastos vinculados).
 // Supuestos de referencia definidos con Finpathia · Finanzas (24-oct-2026); centralizados en SUPUESTOS_F10.
 // ═══════════════════════════════════════════════════════════════════════════
-import { calcularBase, tipoActivo, esLiquido, tipoIngreso, INFLACION_DEFAULT_PCT } from "./metrics.js";
+import { calcularBase, tipoActivo, esLiquido, tipoIngreso, esLaboral, INFLACION_DEFAULT_PCT } from "./metrics.js";
 import { montoPromedioMensual } from "./flowHelpers.js";
 import { esUS, tx, plataCorta, localeCifras } from "./region.js";
 
@@ -1044,7 +1044,11 @@ export function leerFuentesPago(x = {}) {
 // lleva una palabra propia del activo (Orlando, Madero…) se sugieren; el
 // usuario confirma o corrige en Decide. Claves: ingresos "i:<índice>",
 // gastos "<categoría>::<índice>" (las mismas de «Gastos que se acaban»).
-const GENERICAS = new Set(["renta", "rentas", "local", "locales", "apto", "apartamento", "casa", "lote", "bodega", "oficina", "finca", "cuenta", "fondo", "credito", "inversion", "inversiones", "arriendo", "edificio", "proyecto", "tradicional", "airbnb", "acciones", "unidad"]);
+const GENERICAS = new Set(["renta", "rentas", "local", "locales", "apto", "apartamento", "casa", "lote", "bodega", "oficina", "finca", "cuenta", "fondo", "credito", "inversion", "inversiones", "arriendo", "edificio", "proyecto", "tradicional", "airbnb", "acciones", "unidad",
+  // 3-nov-2026 — Palabras genéricas en inglés (demo y usuarios de EE. UU.): «Rental duplex —
+  // East Austin» se llevaba todo lo que dijera "rental" o "east".
+  "rental", "rentals", "rent", "home", "house", "property", "condo", "apartment", "duplex", "fourplex", "unit", "units", "land", "building", "office", "account", "fund", "loan",
+  "short", "term", "long", "vacation", "east", "west", "north", "south", "primary", "residence"]);
 const sinTilde = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 export function sugerirVinculados(user = {}, activoId) {
   const a = (user.inv || []).find((x) => x && x.id === activoId);
@@ -1057,6 +1061,10 @@ export function sugerirVinculados(user = {}, activoId) {
   const suelto = (x) => !x.activoId || !existe.has(x.activoId);
   (user.ingresos || []).forEach((i, k) => {
     if (!i || i.sim === false) return;
+    // 3-nov-2026: un salario u honorario nunca se va con la venta de un activo. Antes
+    // «Rental duplex — East Austin» se llevaba el salario de «Austin Tech Co.» (y en
+    // Colombia, vender un «Local Medellín» podía llevarse un salario de «Empresa Medellín»).
+    if (esLaboral(i) && i.activoId !== activoId) return;
     const nombre = i.nombre || i.categoria || tx("Ingreso", "Income"), item = { key: claveIngreso(user.ingresos, k), nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
     if (i.activoId === activoId) out.auto.ingresos.push(item);
     else out.ingresos.push({ ...item, sugerido: suelto(i) && pega(`${nombre} ${i.categoria || ""}`) });

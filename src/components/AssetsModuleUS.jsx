@@ -143,6 +143,14 @@ const ASSET_TYPES = [
    taxNote:"Collectibles: max 28% LTCG rate (coins, art, wine, antiques). Vehicles depreciate — not an investment. Personal property losses are non-deductible.",
    planning:"Collectibles are taxed at max 28% even if in lower bracket. Document provenance and insurance appraisals for estate purposes.",
    deprec:false},
+  // 3-nov-2026: vehículo como tipo propio, para que el Dashboard y Mi futuro lo
+  // deprecien (antes iba como "Other Asset" y se proyectaba como si no perdiera valor).
+  {v:"vehicle",        l:"Vehicle",                   cat:"other",
+   irc:"IRC § 165(c)",  form:"—",
+   desc:"Car, truck or motorcycle for personal use.",
+   taxNote:"Personal-use vehicles lose value every year and a loss on sale is not deductible. Business use: depreciation or standard mileage on Schedule C.",
+   planning:"Treat it as a cost, not an investment. Keep the auto loan short and the payment under 10% of take-home pay.",
+   deprec:false},
 ];
 
 const LIAB_TYPES = [
