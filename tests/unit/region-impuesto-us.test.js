@@ -49,3 +49,14 @@ describe("impuesto de EE. UU.", () => {
     expect(mesesDePago({ type: "natural" }).map((m) => m.mes)).toEqual([1, 4, 6, 9]);
   });
 });
+
+import { tasaMensualEq } from "../../src/lib/flowHelpers.js";
+describe("tasa mensual de una deuda por país", () => {
+  it("Colombia: E.A. (Sufi 22,99 % → 1,7394 %)", () => {
+    expect(tasaMensualEq(22.99)).toBeCloseTo(0.017394, 5);
+  });
+  it("EE. UU.: APR / 12 (24,9 % → 2,075 %)", () => {
+    setRegion({ idioma: "en", pais: "US" });
+    expect(tasaMensualEq(24.9)).toBeCloseTo(0.02075, 6);
+  });
+});
