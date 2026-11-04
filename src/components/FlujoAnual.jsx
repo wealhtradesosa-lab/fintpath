@@ -20,6 +20,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { fmtNumEs, fmtPctEs, fmtVolatilidadTextoEs } from "../lib/formato.js";
+import { tx, esUS, esEN, plata, plataCorta, pct as pctR, num as numR, nombreMes } from "../lib/region.js";
+import { nombreCategoria } from "../lib/infografia.js";
 import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -41,33 +43,47 @@ const T = {
   bl: "#3b82f6", pr: "#3b82f6", or: "#f59e0b", gd: "#f59e0b",
 };
 
-const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
-const fmShort = (n) => {
+// 3-nov-2026: en EE. UU. dólares con formato de EE. UU. (region.js); en Colombia, igual que antes.
+const fm = (n) => (esUS() ? plata(n) : "$" + Math.round(n || 0).toLocaleString("es-CO"));
+const fmMonto = (n) => (esUS() ? plata(n) : "$" + Math.round(n || 0).toLocaleString("es-CO"));
+const fmPct = (n, d) => (esUS() ? pctR(n, d) : fmtPctEs(n, d));
+const fmVol = (v) => {
+  if (!esUS() && !esEN()) return fmtVolatilidadTextoEs(v);
+  const a = Math.abs(Number(v) || 0);
+  if (a > 1) return tx("más de ±100 % del promedio", "over ±100% of average");
+  return tx("±", "±") + (esUS() ? numR(a * 100, 0) + "%" : fmtNumEs(a * 100, 0) + " %") + tx(" del promedio", " of average");
+};
+// Nombre visible de una categoría (las llaves se guardan en español).
+const nomCat = (n) => {
+  if (n === "Cuotas de deudas") return tx("Cuotas de deudas", "Debt payments");
+  if (n === "Impuesto de renta") return esUS() ? tx("Impuestos estimados", "Estimated taxes") : tx("Impuesto de renta", "Income tax");
+  const ING = { Salario: "Salary", Arriendo: "Rent", Dividendos: "Dividends", Rendimiento: "Interest", "Intereses bancarios": "Interest", Pensión: "Pension", "Inversión": "Investment" };
+  return ING[n] ? tx(n, ING[n]) : nombreCategoria(n);
+};
+const nomFrecuencia = (v, l) => tx(l, { mensual: "Monthly", variable: "Variable", anual: "Yearly", trimestral: "Quarterly", semestral: "Twice a year", unico: "One-time" }[v] || l);
+const fmShortCO = (n) => {
   const abs = Math.abs(n || 0);
   if (abs >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
   if (abs >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
   if (abs >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
   return "$" + Math.round(n || 0).toString();
 };
+const fmShort = (n) => (esUS() ? plataCorta(n) : fmShortCO(n));
 
 export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
   // 01-sep-2026: esta sección se le mostraba entera en español a los usuarios
   // de Estados Unidos. Son 18 cadenas; se traducen con un diccionario local en
   // vez de un sistema de i18n, que sería sobreingeniería para este tamaño.
-  const L = isEN ? {
-    titulo: "Annual Detail", ingresos: "Income", aportes: "Contributions",
-    gastosFam: "Household", cuotas: "Loan payments", impuesto: "Tax",
-    egresos: "Outflows", cashflow: "Cash Flow", saldo: "Cum. balance",
-    mes: "Month", alta: "High", baja: "Low", media: "Avg", otros: "Other",
-    pagado: "Paid", proximoMes: "Next month", seguridadSocial: "Payroll taxes",
-    sePagaEsteMes: "DUE THIS MONTH", vencido: "OVERDUE",
-  } : {
-    titulo: "Detalle anual", ingresos: "Ingresos", aportes: "Aportes",
-    gastosFam: "Gastos fam.", cuotas: "Cuotas cr\u00e9ditos", impuesto: "Impuesto",
-    egresos: "Egresos", cashflow: "Cash Flow", saldo: "Saldo acum.",
-    mes: "Mes", alta: "Alta", baja: "Baja", media: "Media", otros: "Otros",
-    pagado: "Pagado", proximoMes: "Pr\u00f3ximo mes", seguridadSocial: "Seguridad Social",
-    sePagaEsteMes: "SE PAGA ESTE MES", vencido: "VENCIDO",
+  // 3-nov-2026: el idioma sale de la sesión (region.js); el prop isEN se conserva por compatibilidad.
+  isEN = esEN();
+  const L = {
+    titulo: tx("Detalle anual", "Annual Detail"), ingresos: tx("Ingresos", "Income"), aportes: tx("Aportes", "Contributions"),
+    gastosFam: tx("Gastos fam.", "Household"), cuotas: tx("Cuotas cr\u00e9ditos", "Loan payments"),
+    impuesto: esUS() ? tx("Impuestos est.", "Est. taxes") : tx("Impuesto", "Tax"),
+    egresos: tx("Egresos", "Outflows"), cashflow: "Cash Flow", saldo: tx("Saldo acum.", "Cum. balance"),
+    mes: tx("Mes", "Month"), alta: tx("Alta", "High"), baja: tx("Baja", "Low"), media: tx("Media", "Avg"), otros: tx("Otros", "Other"),
+    pagado: tx("Pagado", "Paid"), proximoMes: tx("Pr\u00f3ximo mes", "Next month"),
+    sePagaEsteMes: tx("SE PAGA ESTE MES", "DUE THIS MONTH"), vencido: tx("VENCIDO", "OVERDUE"),
   };
   const { año: añoDefault, mes: mesActualHoy } = getMesActual();
   const [año, setAño] = useState(añoDefault);
@@ -140,7 +156,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         (items || []).forEach(g => {
           if (g.sim === false) return;
           const monto = montoDelMes(g, año, mes);
-          if (cat === L.seguridadSocial) aportesObligatorios += monto;
+          if (cat === "Seguridad Social") aportesObligatorios += monto;
           else gastosFamiliares += monto;
         });
       });
@@ -153,8 +169,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
 
       return {
         mes,
-        mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "",
-        mesLabelFull: MESES.find(m => m.v === mes)?.l || "",
+        mesLabel: tx(MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", nombreMes(mes, true)),
+        mesLabelFull: tx(MESES.find(m => m.v === mes)?.l || "", nombreMes(mes)),
         ingresos: ingresosMes,
         egresos: egresosMes,
         cashFlow,
@@ -434,14 +450,14 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     return (
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px", boxShadow: "0 8px 24px rgba(0,0,0,0.5)", minWidth: 220 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: T.txt, marginBottom: 8 }}>
-          {d.mesLabelFull} {año}{d.esMesActual ? " (actual)" : ""}
+          {d.mesLabelFull} {año}{d.esMesActual ? tx(" (actual)", " (current)") : ""}
         </div>
         <div style={{ fontSize: 12, color: T.txt2, display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-          <span style={{ color: T.gn }}>▲ Ingresos</span>
+          <span style={{ color: T.gn }}>▲ {L.ingresos}</span>
           <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{fm(d.ingresos)}</span>
         </div>
         <div style={{ fontSize: 12, color: T.txt2, display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-          <span style={{ color: T.rd }}>▼ Egresos</span>
+          <span style={{ color: T.rd }}>▼ {L.egresos}</span>
           <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{fm(d.egresos)}</span>
         </div>
         <div style={{ borderTop: `1px solid ${T.border}`, marginTop: 6, paddingTop: 6, display: "flex", justifyContent: "space-between", fontSize: 12, fontWeight: 700 }}>
@@ -456,11 +472,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     <div>
       <PageHeader
         label={L.titulo}
-        title={isEN ? `How your ${año} behaves` : `Cómo se comporta tu año ${año}`}
+        title={tx(`Cómo se comporta tu año ${año}`, `How your ${año} behaves`)}
         // 21-oct-2026 — Decía "Planifica con datos reales", la misma mala
         // interpretación del nombre viejo ("Este año · lo real"): acá no hay
         // datos más reales que en el simulador, son los mismos que cargaste.
-        subtitle={isEN ? "See the peaks and valleys of your income and outflows month by month." : "Mes a mes, los picos y valles de lo que entra y lo que sale, con lo que tienes cargado."}
+        subtitle={tx("Mes a mes, los picos y valles de lo que entra y lo que sale, con lo que tienes cargado.", "See the peaks and valleys of your income and outflows month by month.")}
         rightSlot={
           <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
             <button onClick={() => setAño(año - 1)}
@@ -476,49 +492,49 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 20 }}>
         {/* Mejor mes */}
         <div style={{ background: T.card, border: `1px solid ${T.gn}30`, borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Mejor mes</div>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>{tx("Mejor mes", "Best month")}</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.gn, marginTop: 6 }}>{highlights.mejorMes?.mesLabelFull}</div>
           <div style={{ fontSize: 13, color: T.txt2, fontFamily: "monospace", marginTop: 2 }}>{fm(highlights.mejorMes?.cashFlow)}</div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-            +{fm((highlights.mejorMes?.cashFlow || 0) - highlights.promedio)} vs promedio
+            +{fm((highlights.mejorMes?.cashFlow || 0) - highlights.promedio)} {tx("vs promedio", "vs average")}
           </div>
         </div>
 
         {/* Peor mes */}
         <div style={{ background: T.card, border: `1px solid ${T.rd}30`, borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Peor mes</div>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>{tx("Peor mes", "Worst month")}</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: T.rd, marginTop: 6 }}>{highlights.peorMes?.mesLabelFull}</div>
           <div style={{ fontSize: 13, color: T.txt2, fontFamily: "monospace", marginTop: 2 }}>{fm(highlights.peorMes?.cashFlow)}</div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-            {fm((highlights.peorMes?.cashFlow || 0) - highlights.promedio)} vs promedio
+            {fm((highlights.peorMes?.cashFlow || 0) - highlights.promedio)} {tx("vs promedio", "vs average")}
           </div>
         </div>
 
         {/* Volatilidad */}
         <div style={{ background: T.card, border: `1px solid ${highlights.volatilidadColor}30`, borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Volatilidad</div>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>{tx("Volatilidad", "Volatility")}</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: highlights.volatilidadColor, marginTop: 6 }}>{highlights.volatilidadLabel}</div>
           <div style={{ fontSize: 13, color: T.txt2, marginTop: 2 }}>
-            {fmtVolatilidadTextoEs(highlights.volatilidadPct)}
+            {fmVol(highlights.volatilidadPct)}
           </div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-            Meses varían {fm(Math.abs((highlights.mejorMes?.cashFlow || 0) - (highlights.peorMes?.cashFlow || 0)) / 2)} arriba/abajo
+            {tx("Meses varían", "Months swing")} {fm(Math.abs((highlights.mejorMes?.cashFlow || 0) - (highlights.peorMes?.cashFlow || 0)) / 2)} {tx("arriba/abajo", "up/down")}
           </div>
         </div>
 
         {/* Meses positivos/negativos */}
         <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
-          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>Balance de meses</div>
+          <div style={{ fontSize: 11, color: T.txt3, letterSpacing: 1, fontWeight: 700 }}>{tx("Balance de meses", "Month balance")}</div>
           <div style={{ display: "flex", gap: 10, alignItems: "baseline", marginTop: 6 }}>
             <span style={{ fontSize: 22, fontWeight: 700, color: T.gn }}>{highlights.positivos}</span>
-            <span style={{ fontSize: 12, color: T.txt3 }}>positivos</span>
+            <span style={{ fontSize: 12, color: T.txt3 }}>{tx("positivos", "positive")}</span>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "baseline" }}>
             <span style={{ fontSize: 16, fontWeight: 700, color: T.rd }}>{highlights.negativos}</span>
-            <span style={{ fontSize: 12, color: T.txt3 }}>negativos</span>
+            <span style={{ fontSize: 12, color: T.txt3 }}>{tx("negativos", "negative")}</span>
           </div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>
-            Saldo fin año: <span style={{ color: highlights.saldoFinAño >= 0 ? T.gn : T.rd, fontWeight: 700 }}>{fm(highlights.saldoFinAño)}</span>
+            {tx("Saldo fin año:", "Year-end balance:")} <span style={{ color: highlights.saldoFinAño >= 0 ? T.gn : T.rd, fontWeight: 700 }}>{fm(highlights.saldoFinAño)}</span>
           </div>
         </div>
       </div>
@@ -531,12 +547,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 20 }}></span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: T.or, fontWeight: 700, letterSpacing: 0.5 }}>PRÓXIMO VALLE</div>
+                  <div style={{ fontSize: 12, color: T.or, fontWeight: 700, letterSpacing: 0.5 }}>{tx("PRÓXIMO VALLE", "NEXT LOW")}</div>
                   <div style={{ fontSize: 13, color: T.txt, fontWeight: 600, marginTop: 2 }}>
-                    {highlights.proximoValle.mesLabelFull}: cash flow de {fm(highlights.proximoValle.cashFlow)}
+                    {highlights.proximoValle.mesLabelFull}: {tx("cash flow de", "cash flow of")} {fm(highlights.proximoValle.cashFlow)}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    {fm(highlights.proximoValle.cashFlow - highlights.promedio)} vs promedio — prevé buffer
+                    {fm(highlights.proximoValle.cashFlow - highlights.promedio)} {tx("vs promedio — prevé buffer", "vs average — keep a buffer")}
                   </div>
                 </div>
               </div>
@@ -547,12 +563,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 20 }}></span>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, color: T.gn, fontWeight: 700, letterSpacing: 0.5 }}>PRÓXIMO PICO</div>
+                  <div style={{ fontSize: 12, color: T.gn, fontWeight: 700, letterSpacing: 0.5 }}>{tx("PRÓXIMO PICO", "NEXT HIGH")}</div>
                   <div style={{ fontSize: 13, color: T.txt, fontWeight: 600, marginTop: 2 }}>
-                    {highlights.proximoPico.mesLabelFull}: cash flow de {fm(highlights.proximoPico.cashFlow)}
+                    {highlights.proximoPico.mesLabelFull}: {tx("cash flow de", "cash flow of")} {fm(highlights.proximoPico.cashFlow)}
                   </div>
                   <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>
-                    +{fm(highlights.proximoPico.cashFlow - highlights.promedio)} vs promedio — buen mes para invertir
+                    +{fm(highlights.proximoPico.cashFlow - highlights.promedio)} {tx("vs promedio — buen mes para invertir", "vs average — a good month to invest")}
                   </div>
                 </div>
               </div>
@@ -565,17 +581,17 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Ingresos vs Egresos por mes</div>
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>Cada mes muestra ingresos brutos (verde) y egresos totales (rojo). La línea amarilla es el cash flow.</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{tx("Ingresos vs Egresos por mes", "Income vs outflows by month")}</div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("Cada mes muestra ingresos brutos (verde) y egresos totales (rojo). La línea amarilla es el cash flow.", "Each month shows gross income (green) and total outflows (red). The yellow line is cash flow.")}</div>
           </div>
           <div style={{ display: "flex", gap: 12, fontSize: 12 }}>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 10, height: 10, background: T.gn, borderRadius: 3 }}></span>
-              <span style={{ color: T.txt2 }}>Ingresos</span>
+              <span style={{ color: T.txt2 }}>{L.ingresos}</span>
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 10, height: 10, background: T.rd, borderRadius: 3 }}></span>
-              <span style={{ color: T.txt2 }}>Egresos</span>
+              <span style={{ color: T.txt2 }}>{L.egresos}</span>
             </span>
             <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 10, height: 2, background: T.gd, marginTop: 4 }}></span>
@@ -599,10 +615,10 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               <YAxis stroke={T.txt3} fontSize={11} width={84} axisLine={false} tickLine={false} tickFormatter={(v) => sinCorte(fmShort(v))} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(var(--fp-ink),0.03)" }} />
               <ReferenceLine y={0} stroke={T.border} strokeDasharray="3 3" />
-              <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: `Cash Flow promedio ${fmShort(highlights.promedio)}`, position: "insideTopRight", fill: T.txt3, fontSize: 11 }} />
-              <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name={L.ingresos} />
-              <Bar dataKey="egresos" fill={T.rd} radius={[4, 4, 0, 0]} name={L.egresos} />
-              <Line type="monotone" dataKey="cashFlow" stroke={T.gd} strokeWidth={2.5} dot={{ r: 4, fill: T.gd }} activeDot={{ r: 6 }} name="Cash Flow" />
+              <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: tx(`Cash Flow promedio ${fmShort(highlights.promedio)}`, `Avg cash flow ${fmShort(highlights.promedio)}`), position: "insideTopRight", fill: T.txt3, fontSize: 11 }} />
+              <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name={L.ingresos} isAnimationActive={false} />
+              <Bar dataKey="egresos" fill={T.rd} radius={[4, 4, 0, 0]} name={L.egresos} isAnimationActive={false} />
+              <Line type="monotone" dataKey="cashFlow" stroke={T.gd} strokeWidth={2.5} dot={{ r: 4, fill: T.gd }} activeDot={{ r: 6 }} name="Cash Flow" isAnimationActive={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -647,7 +663,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           const Fila = ({ m }) => {
             const arriba = m.efecto > 0;
             const nat = NATURALEZA[m.tipo] || NATURALEZA.gasto;
-            const verbo = m.tipo === "ingreso" ? (isEN ? "recibió" : "recibió") : (isEN ? "paid" : "pagó");
+            const verbo = m.tipo === "ingreso" ? "recibió" : "pagó";
             // 2-nov-2026 (Santiago: «ojo con la diagramación»). La fila era un flex
             // con wrap: según el largo del detalle, unas veces todo cabía en una
             // línea y otras saltaba, y la cifra quedaba flotando a mitad de la
@@ -663,7 +679,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                           padding: "1px 6px", marginRight: 8, whiteSpace: "nowrap" }}>{nat.et}</span>
                     {m.nombre}
                     {m.cat && m.tipo === "gasto" && (
-                      <span style={{ fontSize: 12, color: T.txt3, marginLeft: 6 }}>{m.cat}</span>
+                      <span style={{ fontSize: 12, color: T.txt3, marginLeft: 6 }}>{nomCat(m.cat)}</span>
                     )}
                   </div>
                   <div style={{ fontSize: 12, color: T.txt3, marginTop: 3, lineHeight: 1.4 }}>
@@ -840,27 +856,27 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Próximos pagos del año</div>
-                <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>Seguros, impuestos y pagos puntuales — marca el chip Pagado en Egresos al cubrirlos.</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{tx("Próximos pagos del año", "Upcoming payments this year")}</div>
+                <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("Seguros, impuestos y pagos puntuales — marca el chip Pagado en Egresos al cubrirlos.", "Insurance, taxes and one-off payments — mark them Paid in Expenses once covered.")}</div>
               </div>
               <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
-                Pendiente: <span style={{ color: "#f59e0b", fontWeight: 700 }}>${Math.round(totalPendiente).toLocaleString("es-CO")}</span> · {pendientes.length} {pendientes.length === 1 ? "pago" : "pagos"}
+                {tx("Pendiente:", "Pending:")} <span style={{ color: "#f59e0b", fontWeight: 700 }}>{fmMonto(totalPendiente)}</span> · {pendientes.length} {pendientes.length === 1 ? tx("pago", "payment") : tx("pagos", "payments")}
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 8 }}>
               {pagosAnuales.map((p, i) => {
                 const c = conf[p.urgencia];
-                const fLabel = FRECUENCIAS.find(f => f.v === p.freq)?.l || p.freq;
-                const mesL = MESES.find(m => m.v === p.mp)?.l || p.mp;
+                const fLabel = nomFrecuencia(p.freq, FRECUENCIAS.find(f => f.v === p.freq)?.l || p.freq);
+                const mesL = tx(MESES.find(m => m.v === p.mp)?.l || p.mp, nombreMes(p.mp));
                 return (
                   <div key={i} style={{ background: c.bg || T.bg3, border: `1px solid ${p.urgencia <= 1 ? c.color + "50" : T.border}`, borderRadius: 10, padding: "10px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, opacity: p.pagado ? 0.5 : 1, minWidth: 0 }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textDecoration: p.pagado ? "line-through" : "none" }} title={p.nombre}>{p.nombre}</div>
                       <div style={{ fontSize: 11, color: c.color, fontWeight: p.urgencia <= 1 ? 700 : 500, marginTop: 2 }}>
-                        {c.emoji} {p.urgencia === 0 ? `${c.label} — era en ${mesL}` : p.urgencia === 4 ? `${c.label} ${añoHoy}` : (c.label ? `${c.label} (${mesL})` : `${fLabel} · ${mesL}`)}
+                        {c.emoji} {p.urgencia === 0 ? `${c.label} — ${tx("era en", "was due in")} ${mesL}` : p.urgencia === 4 ? `${c.label} ${añoHoy}` : (c.label ? `${c.label} (${mesL})` : `${fLabel} · ${mesL}`)}
                       </div>
                     </div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: p.pagado ? T.txt3 : T.txt, fontFamily: "monospace", flexShrink: 0 }}>${Math.round(p.monto).toLocaleString("es-CO")}</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: p.pagado ? T.txt3 : T.txt, fontFamily: "monospace", flexShrink: 0 }}>{fmMonto(p.monto)}</div>
                   </div>
                 );
               })}
@@ -874,8 +890,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           los gastos en % y valor". */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Composición del año {año}</div>
-          <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>De dónde vienen tus ingresos y a dónde van tus egresos, en % y valor absoluto.</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{tx("Composición del año", "Your year by category")} {año}</div>
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("De dónde vienen tus ingresos y a dónde van tus egresos, en % y valor absoluto.", "Where your income comes from and where your outflows go, in % and dollars.")}</div>
         </div>
 
         {/* Layout responsive: 2 columnas cuando hay espacio (min 320px cada una),
@@ -884,15 +900,15 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           {/* ─── INGRESOS ─── */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>Ingresos</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.gn }}>{L.ingresos}</div>
               <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
-                Total: <span style={{ color: T.gn, fontWeight: 700 }}>${Math.round(composicion.totalIng).toLocaleString("es-CO")}</span>
+                Total: <span style={{ color: T.gn, fontWeight: 700 }}>{fmMonto(composicion.totalIng)}</span>
               </div>
             </div>
 
             {composicion.dataIngresos.length === 0 ? (
               <div style={{ padding: 40, textAlign: "center", color: T.txt3, fontSize: 12 }}>
-                Aún no hay ingresos registrados
+                {tx("Aún no hay ingresos registrados", "No income added yet")}
               </div>
             ) : (
               <>
@@ -920,7 +936,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
                           <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-                            {fmtPctEs(pct, 0)}
+                            {fmPct(pct, 0)}
                           </text>
                         );
                       }}
@@ -933,7 +949,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         texto en negro sobre nuestro fondo oscuro ("no se lee
                         nada"). Se usa el del sistema como el resto de gráficos. */}
                     <Tooltip content={<ChartTooltip formatter={(v, n, p) =>
-                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${fmtPctEs(p.payload.pct, 1)})` : ""}`} />} />
+                      `${fmMonto(v)}${p?.payload?.pct != null ? ` (${fmPct(p.payload.pct, 1)})` : ""}`} />} />
                   </PieChart>
                 </ResponsiveContainer>
 
@@ -946,12 +962,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       {/* Fila 1: cuadrado color + nombre (con truncate si es largo) */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                         <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }}></div>
-                        <span title={d.name} style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{d.name}</span>
+                        <span title={nomCat(d.name)} style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{nomCat(d.name)}</span>
                       </div>
                       {/* Fila 2: % + valor absoluto — siempre visibles */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 16 }}>
-                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{fmtPctEs(d.pct, 1)}</span>
-                        <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 11 }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
+                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{fmPct(d.pct, 1)}</span>
+                        <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 11 }}>{fmMonto(d.value)}</span>
                       </div>
                     </div>
                   ))}
@@ -963,15 +979,15 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           {/* ─── EGRESOS ─── */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10, paddingBottom: 8, borderBottom: `1px solid ${T.border}`, flexWrap: "wrap", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>Egresos</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: T.rd }}>{L.egresos}</div>
               <div style={{ fontSize: 12, color: T.txt3, fontFamily: "monospace" }}>
-                Total: <span style={{ color: T.rd, fontWeight: 700 }}>${Math.round(composicion.totalEgr).toLocaleString("es-CO")}</span>
+                Total: <span style={{ color: T.rd, fontWeight: 700 }}>{fmMonto(composicion.totalEgr)}</span>
               </div>
             </div>
 
             {composicion.dataEgresos.length === 0 ? (
               <div style={{ padding: 40, textAlign: "center", color: T.txt3, fontSize: 12 }}>
-                Aún no hay egresos registrados
+                {tx("Aún no hay egresos registrados", "No outflows added yet")}
               </div>
             ) : (
               <>
@@ -995,7 +1011,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         const y = cy + radius * Math.sin(-midAngle * RADIAN);
                         return (
                           <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={800} style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}>
-                            {fmtPctEs(pct, 0)}
+                            {fmPct(pct, 0)}
                           </text>
                         );
                       }}
@@ -1008,7 +1024,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         texto en negro sobre nuestro fondo oscuro ("no se lee
                         nada"). Se usa el del sistema como el resto de gráficos. */}
                     <Tooltip content={<ChartTooltip formatter={(v, n, p) =>
-                      `$${Math.round(v).toLocaleString("es-CO")}${p?.payload?.pct != null ? ` (${fmtPctEs(p.payload.pct, 1)})` : ""}`} />} />
+                      `${fmMonto(v)}${p?.payload?.pct != null ? ` (${fmPct(p.payload.pct, 1)})` : ""}`} />} />
                   </PieChart>
                 </ResponsiveContainer>
 
@@ -1018,12 +1034,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       {/* Fila 1: cuadrado color + nombre (con truncate si es largo) */}
                       <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                         <div style={{ width: 10, height: 10, borderRadius: 3, background: d.color, flexShrink: 0 }}></div>
-                        <span title={d.name} style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{d.name}</span>
+                        <span title={nomCat(d.name)} style={{ color: T.txt, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontWeight: 600 }}>{nomCat(d.name)}</span>
                       </div>
                       {/* Fila 2: % + valor absoluto */}
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", paddingLeft: 16 }}>
-                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{fmtPctEs(d.pct, 1)}</span>
-                        <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 11 }}>${Math.round(d.value).toLocaleString("es-CO")}</span>
+                        <span style={{ color: T.txt2, fontWeight: 700, fontFamily: "monospace" }}>{fmPct(d.pct, 1)}</span>
+                        <span style={{ color: T.txt3, fontFamily: "monospace", fontSize: 11 }}>{fmMonto(d.value)}</span>
                       </div>
                     </div>
                   ))}
@@ -1037,11 +1053,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         {composicion.totalIng > 0 && (
           <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, borderRadius: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
             <div style={{ fontSize: 12, color: T.txt3 }}>
-              <span style={{ fontWeight: 700, color: T.txt2 }}>Excedente/Déficit del año:</span>
-              {" "}el {fmtPctEs(composicion.totalIng > 0 ? ((composicion.totalIng - composicion.totalEgr) / composicion.totalIng * 100) : 0, 1)} de tus ingresos queda libre después de todos los egresos.
+              <span style={{ fontWeight: 700, color: T.txt2 }}>{tx("Excedente/Déficit del año:", "Year surplus/deficit:")}</span>
+              {" "}{tx("el", "")} {fmPct(composicion.totalIng > 0 ? ((composicion.totalIng - composicion.totalEgr) / composicion.totalIng * 100) : 0, 1)} {tx("de tus ingresos queda libre después de todos los egresos.", "of your income is left after all outflows.")}
             </div>
             <div style={{ fontSize: 14, fontWeight: 700, fontFamily: "monospace", color: (composicion.totalIng - composicion.totalEgr) >= 0 ? T.gn : T.rd }}>
-              ${Math.round(composicion.totalIng - composicion.totalEgr).toLocaleString("es-CO")}
+              {fmMonto(composicion.totalIng - composicion.totalEgr)}
             </div>
           </div>
         )}
@@ -1050,8 +1066,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       {/* ═══ TABLA DE DETALLE POR MES ═══ */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 0, overflow: "hidden" }}>
         <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}` }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>Detalle mes a mes</div>
-          <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>Desglose completo: ingresos, egresos por categoría, cash flow y saldo acumulado.</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{tx("Detalle mes a mes", "Month-by-month detail")}</div>
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("Desglose completo: ingresos, egresos por categoría, cash flow y saldo acumulado.", "Full breakdown: income, outflows by category, cash flow and running balance.")}</div>
         </div>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -1069,7 +1085,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                   <tr key={d.mes} style={{ borderBottom: `1px solid ${T.border}`, background: d.esMesActual ? "rgba(59,130,246,0.05)" : "transparent" }}>
                     <td style={{ padding: "10px 12px", fontWeight: 600, color: T.txt, whiteSpace: "nowrap" }}>
                       {d.mesLabelFull}
-                      {d.esMesActual && <span style={{ fontSize: 11, color: T.bl, marginLeft: 6, fontWeight: 700 }}>(actual)</span>}
+                      {d.esMesActual && <span style={{ fontSize: 11, color: T.bl, marginLeft: 6, fontWeight: 700 }}>{tx("(actual)", "(current)")}</span>}
                     </td>
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.gn }}>{fm(d.ingresos)}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.or }}>{fm(d.aportesObligatorios)}</td>
