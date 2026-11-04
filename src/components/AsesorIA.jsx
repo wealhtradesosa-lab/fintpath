@@ -143,7 +143,15 @@ function renderMD(txt) {
   });
 }
 
-export default function AsesorIA({ user, totals }) {
+// 4-nov-2026 (Santiago: "¿por qué no me funcionan los agentes en el modo demo?
+// Tiene sentido que no esté abierto a todo el mundo, pero que diga que solo
+// funciona una vez registrado"). La IA exige sesión verificada en el servidor
+// (desde el 28-sep, por costo y abuso); el demo sin cuenta no tiene sesión y
+// el asesor respondía un error seco. Ahora, sin cuenta, la pantalla lo dice y
+// lleva a crear la cuenta.
+const MSG_SIN_CUENTA = "El asesor con IA funciona solo con una cuenta registrada. Crea tu cuenta gratis (14 días de Pro) y conversa con él sobre tus propios datos.";
+
+export default function AsesorIA({ user, totals, sinCuenta = false, onCrearCuenta }) {
   const [msgs, setMsgs] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -155,6 +163,7 @@ export default function AsesorIA({ user, totals }) {
   const [restantes, setRestantes] = useState(null);
   useEffect(() => {
     try { localStorage.removeItem("fp3_ai_usage"); } catch { /* sin storage */ }
+    if (sinCuenta) return;
     let vivo = true;
     fetchAuth("/api/ai-chat", {
       method: "POST",
@@ -204,7 +213,9 @@ export default function AsesorIA({ user, totals }) {
       try { data = JSON.parse(texto); }
       catch { setError(res.status === 504 || res.status === 502 ? "El asesor tardó demasiado en responder. Intenta de nuevo o haz la pregunta más concreta (por ejemplo, sobre un plan)." : "No pude leer la respuesta del asesor. Intenta de nuevo."); setLoading(false); return; }
       if (typeof data.restantes === "number") setRestantes(data.restantes);
-      if (data.error) {
+      if (data.error === "sesion_requerida") {
+        setError(MSG_SIN_CUENTA);
+      } else if (data.error) {
         setError(data.mensaje || data.error);
       } else {
         setMsgs([...newMsgs, { role: "assistant", content: data.reply }]);
@@ -214,6 +225,22 @@ export default function AsesorIA({ user, totals }) {
     }
     setLoading(false);
   };
+
+  if (sinCuenta) {
+    return (
+      <div>
+        <PageHeader label="Asesor IA" title="Conversa con tu family office" subtitle="Análisis de tus datos con inteligencia artificial." />
+        <div style={{ background: T.card, border: "1px solid " + T.border, borderRadius: 16, padding: "32px 28px", textAlign: "center", maxWidth: 560, margin: "0 auto" }}>
+          <div style={{ fontSize: 19, fontWeight: 600, color: T.txt, marginBottom: 8 }}>Disponible con tu cuenta</div>
+          <div style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, marginBottom: 20 }}>{MSG_SIN_CUENTA} En el demo puedes recorrer todo lo demás.</div>
+          {onCrearCuenta && (
+            <button type="button" onClick={onCrearCuenta} style={{ background: T.txt, color: "var(--fp-bg)", border: 0, padding: "12px 22px", borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Crear mi cuenta gratis</button>
+          )}
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 16 }}>Al crear la cuenta empiezas con tus datos; los de ejemplo no se guardan.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

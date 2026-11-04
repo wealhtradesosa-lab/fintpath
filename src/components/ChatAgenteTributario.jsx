@@ -191,7 +191,7 @@ export default function ChatAgenteTributario({ user, estimacion, selectedOwner, 
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        setError(data.mensaje || data.error || "Error desconocido");
+        setError(data.error === "sesion_requerida" ? "El agente tributario con IA funciona solo con una cuenta registrada. Crea tu cuenta gratis para usarlo con tus datos." : (data.mensaje || data.error || "Error desconocido"));
         // Quitar el mensaje del user del historial si la API falló
         // (así el user puede reintentar sin duplicar)
         return;
