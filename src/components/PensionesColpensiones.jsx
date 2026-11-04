@@ -25,7 +25,7 @@ const T = {
   orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const SM_2026 = 1_750_905;
-const fCOP = (v) => {
+const fCOPLocal = (v) => {
   if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
   if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
   return "$" + Math.round(v).toLocaleString("es-CO");
@@ -109,7 +109,11 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, 
 // familia, por ejemplo la de Sosa o la de Echavarría"). Una pensión por titular
 // persona natural, en u.pensiones[ownerId] = { datos, resultado }. Los datos se
 // cargan al elegir la persona y se guardan solos al cambiarlos.
-export default function PensionesColpensiones({ trm, owners = [], pensiones = {}, onGuardarPension }) {
+// 4-nov-2026 (Santiago: "le di al botón de arriba dólares/pesos y no cambió nada
+// en esta sección"): las cifras usan el formateador de la app (`fm`), que
+// respeta el botón COP/USD y el modo oculto; el local queda de respaldo.
+export default function PensionesColpensiones({ trm, owners = [], pensiones = {}, onGuardarPension, fm }) {
+  const fCOP = fm || fCOPLocal;
   const personas = (owners || []).filter((o) => o && o.type !== "juridica" && o.type !== "sociedad");
   const lista = personas.length ? personas : [{ id: "yo", name: "Tú" }];
   const [titular, setTitular] = useState(lista[0].id);

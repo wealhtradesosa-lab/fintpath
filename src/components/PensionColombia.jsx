@@ -33,7 +33,7 @@ import {
 const T = { card: "var(--fp-card)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805", red: "#ff5000", blue: "#3b82f6", orange: "#f59e0b" };
 const PRECIO_RESPALDO = 77_647; // USD, cierre del 3-nov-2026 (Yahoo); solo si no se pudo traer el de hoy
 
-const fC = (v) => {
+const fCLocal = (v) => {
   const a = Math.abs(v || 0);
   if (a >= 1e9) return "$" + fmtNumEs(v / 1e6, 0) + " MM";
   if (a >= 1e6) return "$" + fmtNumEs(v / 1e6, 1) + " MM";
@@ -64,7 +64,15 @@ const Pct = ({ value, onChange, placeholder }) => (
   </div>
 );
 
-export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones = {}, owners = [], irAPensiones }) {
+export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones = {}, owners = [], irAPensiones, fm, enDolares = false }) {
+  // 4-nov-2026 (Santiago: "que uno pueda ver el valor en dólares también"; "le
+  // di al botón dólares/pesos y no cambió nada"): las cifras usan el
+  // formateador de la app, que respeta el botón COP/USD.
+  const trmV = pTrm || 4200;
+  // En dólares, con "US$" y la palabra "millones" para que no se confunda con pesos.
+  const fC = enDolares
+    ? (v) => { const u = (v || 0) / trmV, a = Math.abs(u); return (u < 0 ? "−" : "") + "US$" + (a >= 1e6 ? fmtNumEs(a / 1e6, 1) + " millones" : fmtNumEs(a, 0)); }
+    : (fm || fCLocal);
   // Compatibilidad: antes u.ahorroBTC eran las respuestas sueltas; ahora { borrador, escenarios }.
   const g0 = guardado || {};
   const g = g0.borrador || (g0.escenarios ? {} : g0);
@@ -172,7 +180,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                   const finAño = new Date().getFullYear() + Number(d.años || 0);
                   const Fila = ({ l, v, c }) => (
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${T.border}` }}>
-                      <span style={{ color: T.txt3 }}>{l}</span><strong style={{ color: c || T.txt, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</strong>
+                      <span style={{ color: T.txt3, flex: "1 1 auto", minWidth: 0 }}>{l}</span><strong style={{ color: c || T.txt, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</strong>
                     </div>
                   );
                   return (
@@ -198,7 +206,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
       )}
 
       <div style={{ fontSize: 14, color: T.txt2, lineHeight: 1.6, marginBottom: 16 }}>
-        Responde cinco preguntas. El resultado aparece al final, en pesos de hoy.
+        Responde cinco preguntas. El resultado aparece al final, en {enDolares ? "dólares (convertidos a la TRM de hoy, " + fCLocal(trm) + ")" : "pesos de hoy"}. Cambias pesos o dólares con el botón COP/USD de arriba.
       </div>
 
       <Paso n={1} titulo="¿Cuánto vas a poner?" listo={listo1}>
@@ -314,7 +322,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24, marginBottom: 12 }}>
             <div style={{ fontSize: 14, color: T.txt2 }}>Pones {fC(r.invertido)} en {añosN} años y, si sube {fmtPctEs(cagrN, 0)} al año, terminas con</div>
             <div style={{ fontSize: 48, fontWeight: 700, color: T.txt, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{fC(r.valorCOPHoy)}</div>
-            <div style={{ fontSize: 14, color: T.txt2 }}>{fmtNumEs(r.btc, 4)} BTC · {fmtNumEs(r.multiplo, 1)} veces lo que pusiste · <strong style={{ color: T.txt }}>en pesos de hoy</strong></div>
+            <div style={{ fontSize: 14, color: T.txt2 }}>{fmtNumEs(r.btc, 4)} BTC · {fmtNumEs(r.multiplo, 1)} veces lo que pusiste · <strong style={{ color: T.txt }}>{enDolares ? "en dólares de hoy" : "en pesos de hoy"}</strong></div>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 14, color: T.txt2 }}>
               <span>En pesos de {añoHoy + añosN}, con inflación de</span>
               <NumberInput value={inflacionCOP} onChange={(v) => setInflacionCOP(v === "" ? "" : Math.min(30, Number(v)))} style={{ width: 64, background: "var(--fp-card)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px", color: T.txt, fontSize: 14, textAlign: "right" }} />
