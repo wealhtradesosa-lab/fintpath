@@ -40,11 +40,16 @@ const Row = ({ l, v, color, bold, sub }) => (
     <span style={{ fontSize: 14, fontWeight: bold ? 700 : 600, color: color || T.txt, fontFamily: "monospace" }}>{v}</span>
   </div>
 );
+// 04-nov-2026 (Santiago: "todo está desalineado"): el rótulo ocupa siempre el
+// mismo alto (dos líneas) y el texto de ayuda va debajo con el mismo margen, así
+// las cajas quedan en una sola línea aunque un rótulo sea más largo que otro.
+const LABEL = { fontSize: 12, fontWeight: 600, color: T.txt2, display: "flex", alignItems: "flex-end", minHeight: 34, marginBottom: 6, lineHeight: 1.4 };
+const AYUDA = { fontSize: 12, color: T.txt3, marginTop: 6, lineHeight: 1.5 };
 const In = ({ label, value, onChange, unit, min, max, step }) => {
   const isMonetary = unit === "COP" || unit === "$/mes" || unit === "$/año";
   return (
-    <div style={{ marginBottom: 12 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{label}</label>
+    <div>
+      <label style={LABEL}>{label}</label>
       <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {isMonetary
           ? <NumberInput value={value} onChange={(v) => onChange(v === "" ? 0 : Number(v) || 0)}
@@ -52,7 +57,7 @@ const In = ({ label, value, onChange, unit, min, max, step }) => {
           : <input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)}
               min={min} max={max} step={step || 1}
               style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 600, textAlign: "right", outline: "none" }} />}
-        {unit && <span style={{ fontSize: 12, color: T.txt3, minWidth: 44 }}>{unit}</span>}
+        {unit && <span style={{ fontSize: 12, color: T.txt3, width: 56, flexShrink: 0 }}>{unit}</span>}
       </div>
     </div>
   );
@@ -166,7 +171,7 @@ function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, 
   };
 }
 
-export default function PensionesColpensiones({ trm }) {
+export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarPension }) {
   const [sexo, setSexo] = useState("M");
   const [edad, setEdad] = useState(40);
   const [semanas, setSemanas] = useState(800);
@@ -228,30 +233,30 @@ export default function PensionesColpensiones({ trm }) {
         <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>Tu información</h3>
         <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Datos básicos para calcular tu pensión estimada</p>
         
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 6 }}>Sexo</label>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, alignItems: "start" }}>
+          <div>
+            <label style={LABEL}>Sexo</label>
             <div style={{ display: "flex", gap: 8 }}>
               {[{ v: "M", l: "Hombre", c: T.blue }, { v: "F", l: "Mujer", c: "#64748b" }].map((g) => (
                 <button key={g.v} onClick={() => setSexo(g.v)} style={{
-                  flex: 1, padding: "12px", borderRadius: 10,
+                  flex: 1, padding: "10px 12px", borderRadius: 8,
                   border: `2px solid ${sexo === g.v ? g.c : T.border}`,
                   background: sexo === g.v ? g.c + "15" : T.bg3,
                   color: sexo === g.v ? g.c : T.txt2, cursor: "pointer", fontWeight: 600, fontSize: 14,
                 }}>{g.l}</button>
               ))}
             </div>
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>Te pensionas a los {edadJub} años</div>
+            <div style={AYUDA}>Te pensionas a los {edadJub} años</div>
           </div>
 
           <div>
-            <In label="¿Qué edad tienes?" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Te faltan <strong style={{color: T.blue}}>{aniosFaltantes} años</strong> para pensionarte</div>
+            <In label="Edad" value={edad} onChange={setEdad} unit="años" min={18} max={70} />
+            <div style={AYUDA}>Te faltan <strong style={{color: T.blue}}>{aniosFaltantes} años</strong> para pensionarte</div>
           </div>
 
           <div>
-            <In label="¿Cuántas semanas tienes cotizadas?" value={semanas} onChange={setSemanas} unit="semanas" min={0} max={3000} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Están en tu historia laboral de Colpensiones. {semanas >= 1300 ? <span style={{color:T.green}}>Cumples el mínimo</span> : <span style={{color:T.orange}}>Necesitas {fmtNumEs(1300-semanas, 0)} más</span>}</div>
+            <In label="Semanas cotizadas" value={semanas} onChange={setSemanas} unit="semanas" min={0} max={3000} />
+            <div style={AYUDA}>Salen de tu historia laboral. {semanas >= 1300 ? <span style={{color:T.green}}>Cumples el mínimo</span> : <span style={{color:T.orange}}>Necesitas {fmtNumEs(1300-semanas, 0)} más</span>}</div>
             {/* Régimen de transición de la reforma (Ley 2381/2024): con menos de 900
                 semanas (hombres) o 750 (mujeres) aplican las reglas nuevas, en las que
                 Colpensiones solo cubre hasta 2,3 SMMLV. Este cálculo usa la Ley 100. */}
@@ -259,9 +264,8 @@ export default function PensionesColpensiones({ trm }) {
           </div>
 
           <div>
-            <In label="¿Sobre cuántos salarios mínimos cotizas? (IBC)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Equivale a {fCOP(ibcSM * SM_2026)}/mes. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
-            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Revisa tu desprendible de nómina o planilla PILA</div>
+            <In label="Salarios mínimos sobre los que cotizas (IBC)" value={ibcSM} onChange={(v) => setIbcSM(Math.min(25, Math.max(1, v)))} unit="SMMLV" min={1} max={25} step={0.5} />
+            <div style={AYUDA}><strong style={{ color: T.txt2 }}>Máximo 25</strong> (tope legal). {fmtNumEs(ibcSM, ibcSM % 1 ? 1 : 0)} = {fCOP(ibcSM * SM_2026)}/mes; a pensión van {fCOP(ibcSM * SM_2026 * 0.16)}/mes. Lo ves en tu planilla PILA.</div>
           </div>
         </div>
       </Cd>
@@ -271,14 +275,14 @@ export default function PensionesColpensiones({ trm }) {
         <h3 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 4px" }}>Tu fondo privado</h3>
         <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Si estás en un fondo como Porvenir, Protección, Colfondos o Skandia</p>
         
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, alignItems: "start" }}>
           <div>
             <In label="¿Cuánto tienes ahorrado?" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} step={1000000} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Consulta tu extracto del fondo</div>
+            <div style={AYUDA}>Consulta tu extracto del fondo</div>
           </div>
           <div>
             <In label="Rendimiento esperado anual" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Promedio histórico fondos Colombia: 7-10%</div>
+            <div style={AYUDA}>Promedio histórico fondos Colombia: 7-10%</div>
           </div>
         </div>
       </Cd>
@@ -311,7 +315,7 @@ export default function PensionesColpensiones({ trm }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
               <div>
                 <In label="¿Piensas subir tu cotización antes de pensionarte? (IBC futuro)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
-                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>
+                <div style={AYUDA}>
                   {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM
                     ? <>Proyección: cotizarás sobre {ibcFuturoSM} SMMLV ({fCOP(ibcFuturoSM * SM_2026)}/mes) los próximos {aniosFaltantes} años</>
                     : <>Déjalo en 0 si planeas seguir cotizando igual</>}
@@ -320,15 +324,15 @@ export default function PensionesColpensiones({ trm }) {
               </div>
               <div>
                 <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
-                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
+                <div style={AYUDA}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
               </div>
               <div>
                 <In label="¿Aportas voluntario a pensión?" value={aportesVol} onChange={setAportesVol} unit="$/mes" min={0} step={100000} />
-                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Solo aplica para fondo privado. Aumenta tu ahorro y tu pensión.</div>
+                <div style={AYUDA}>Solo aplica para fondo privado. Aumenta tu ahorro y tu pensión.</div>
               </div>
               <div>
                 <In label="¿Te cambiaste de fondo alguna vez? (bono pensional)" value={bonoPensional} onChange={setBonoPensional} unit="COP" min={0} step={1000000} />
-                <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Si te trasladaste de Colpensiones a fondo privado, tienes un bono. Si nunca te cambiaste, déjalo en $0.</div>
+                <div style={AYUDA}>Si te trasladaste de Colpensiones a fondo privado, tienes un bono. Si nunca te cambiaste, déjalo en $0.</div>
               </div>
             </div>
           </div>
@@ -409,6 +413,19 @@ export default function PensionesColpensiones({ trm }) {
                   <div style={{ fontSize: 36, fontWeight: 700, color: T.green, letterSpacing: "-0.04em", marginTop: 4 }}>{fCOP(colpJub.pensionFinal)}</div>
                   <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>Tasa: {pc(colpJub.tasaTotal)} • {colpJub.semanasTotales.toLocaleString("es-CO")} semanas</div>
                 </div>}
+                {/* 04-nov-2026: se guarda para usarla en Ahorro en Bitcoin y en los
+                    planes sin volver a calcularla. */}
+                {onGuardarPension && colpJub.pensionFinal > 0 && (() => {
+                  const yaGuardada = pensionGuardada && Math.round(pensionGuardada.neta) === Math.round(colpJub.pensionFinal);
+                  return (
+                    <button type="button" disabled={yaGuardada} onClick={() => onGuardarPension({
+                      neta: Math.round(colpJub.pensionFinal), bruta: Math.round(colpJub.pensionAplicada), tasa: colpJub.tasaTotal,
+                      semanas: colpJub.semanasTotales, edadPension: edadJub, edadHoy: edad, ibcSM, fecha: new Date().toISOString().slice(0, 10), fuente: "calculadora",
+                    })} style={{ marginTop: 14, padding: "8px 16px", borderRadius: 999, border: `1px solid ${yaGuardada ? T.border : T.blue}`, background: yaGuardada ? "transparent" : T.blue, color: yaGuardada ? T.txt3 : "#fff", fontSize: 13, fontWeight: 600, cursor: yaGuardada ? "default" : "pointer" }}>
+                      {yaGuardada ? "Guardada como tu pensión" : "Guardar como mi pensión"}
+                    </button>
+                  );
+                })()}
                 <div style={{ fontSize: 14, color: T.txt3, marginTop: 8 }}>≈ {fUSD(colp.pensionFinal, trm)}</div>
                 <div style={{ fontSize: 13, color: T.txt2, marginTop: 8 }}>Tasa de reemplazo: <strong style={{ color: T.blue }}>{pc(colp.tasaTotal)}</strong></div>
               </Cd>
