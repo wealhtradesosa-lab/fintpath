@@ -534,7 +534,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           <div style={{ fontWeight: 600, color: "#ff5000" }}>{fm(cc.interesAnual)}</div>
                           {cc.noAmortiza
                             ? <div style={{ fontSize: 12, color: "#ff5000", marginTop: 2 }}>{tx("la cuota no cubre el interés", "payment doesn't cover the interest")}</div>
-                            : cc.meses != null && <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("termina en ", "ends in ")}{cc.meses >= 12 ? tx(`${Math.floor(cc.meses / 12)} a ${cc.meses % 12} m`, `${Math.floor(cc.meses / 12)} y ${cc.meses % 12} m`) : `${cc.meses} m`}</div>}
+                            : cc.meses != null && <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("termina en ", "ends in ")}{cc.meses >= 12 ? tx(`${Math.floor(cc.meses / 12)} a ${cc.meses % 12} m`, `${Math.floor(cc.meses / 12)}y ${cc.meses % 12}m`) : `${cc.meses} m`}</div>}
                         </td>
                       );
                     })()}

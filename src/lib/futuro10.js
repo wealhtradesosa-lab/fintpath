@@ -19,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import { calcularBase, tipoActivo, esLiquido, tipoIngreso, INFLACION_DEFAULT_PCT } from "./metrics.js";
 import { montoPromedioMensual } from "./flowHelpers.js";
-import { esUS, tx } from "./region.js";
+import { esUS, tx, plataCorta, localeCifras } from "./region.js";
 
 export const SUPUESTOS_F10 = {
   validadoPor: "Finpathia · Finanzas, 24-oct-2026",
@@ -81,6 +81,21 @@ export const supuestosF10 = () => (esUS() ? SUPUESTOS_F10_US : SUPUESTOS_F10);
 
 /** Nombre de un escenario, preset o norte en el idioma de la sesión. */
 export const nombreSup = (x) => (x ? tx(x.nombre, x.nombreEn) : "");
+
+// 3-nov-2026 — Textos del motor en el idioma de la sesión (region.js).
+// Monto corto para las alertas: CO «1.350 M» (millones de pesos, como siempre); US «$350K».
+const mmTxt = (v) => (esUS() ? plataCorta(v) : `${Math.round(v / 1e6).toLocaleString("es-CO")} M`);
+const FREC_EN = { mensual: "monthly", variable: "variable", anual: "annual", trimestral: "quarterly", semestral: "semiannual", unico: "one-time" };
+const MES_EN = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+// Nota de vigencia/frecuencia de un ingreso o gasto (paso 1 de Mi futuro).
+function notaVigencia(x, MES, dondeEs, dondeEn, conVariable) {
+  if (x._vigencia?.ultimo) return tx("cambió en el año: se toma lo que paga hoy", "changed during the year: today's amount is used");
+  if (x._vigencia?.variable) return tx(`variable: promedio de los ${x._vigencia.meses} meses cargados`, `variable: average of the ${x._vigencia.meses} months entered`);
+  if (x._vigencia) return tx(`en ${dondeEs} va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo`, `on ${dondeEn} it runs ${MES_EN[x._vigencia.desde]} to ${MES_EN[x._vigencia.hasta]}; here the full month counts`);
+  if (x.frecuencia && !(conVariable ? ["mensual", "variable"] : ["mensual"]).includes(x.frecuencia)) return tx(`pago ${x.frecuencia}, repartido por mes`, `${FREC_EN[x.frecuencia] || x.frecuencia} payment, spread per month`);
+  if (conVariable && x.frecuencia === "variable") return tx("variable: promedio de lo cargado en el año", "variable: average of what was entered this year");
+  return "";
+}
 
 const n = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 
@@ -164,7 +179,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         rentaMensual: mod.rentaNuevaMensual, rentaDesdeMes: mod.rentaNuevaDesdeMes,
         rentaPctAnual: total > 0 ? mod.rentaNuevaMensual * 12 / total * 100 : 0, valorizacionPct: crec == null ? null : crec * 100 };
     }
-    activos.push({ id: a.id, nombre: a.n || a.nombre || "Activo", clase, valor, crec, rentaAnual, usd: fxA(a) !== 1, invertible: clase !== "vehiculo",
+    activos.push({ id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase, valor, crec, rentaAnual, usd: fxA(a) !== 1, invertible: clase !== "vehiculo",
       invMonto: mod ? mod.inversionMonto : 0, invAnio: mod ? mod.inversionAnio : 0,
       rentaNuevaAnual: mod ? mod.rentaNuevaMensual * 12 : 0, rentaDesdeMes: mod ? mod.rentaNuevaDesdeMes : 0, valorHoy: valor });
   });
@@ -188,7 +203,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const deudas = deudasUser.map((d) => {
     const activoId = d.la || d.link || null;
     const porVenta = !!activoId && vendidos.has(activoId);
-    return { id: d.id, nombre: d.n || d.nombre || "Deuda", saldo: n(d.mt) * fxA(d), activoId, porVenta, pagar: porVenta || !!pagarCfg[d.id], pagado: 0, _d: d };
+    return { id: d.id, nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), activoId, porVenta, pagar: porVenta || !!pagarCfg[d.id], pagado: 0, _d: d };
   }).filter((d) => d.saldo > 0);
   [...deudas.filter((d) => d.porVenta), ...deudas.filter((d) => !d.porVenta && d.pagar)].forEach((d) => {
     const m = Math.min(bolsa, d.saldo);
@@ -229,7 +244,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const m = tomar(monto, null, "venta");
     usos.push({ seccion, nombre, monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: 0, anio, fuente: "venta", apartado: true, resto: monto - m });
     reservadoTotal += m;
-    const h = { id: "apartado_" + apartados.length, nombre: `Apartado para ${nombre}`, clase: "otro", valor: m, crec: rNom("rfCorto"), usd: false, invertible: true, apartadoDe: nombre };
+    const h = { id: "apartado_" + apartados.length, nombre: tx(`Apartado para ${nombre}`, `Set aside for ${nombre}`), clase: "otro", valor: m, crec: rNom("rfCorto"), usd: false, invertible: true, apartadoDe: nombre };
     apartados.push(h);
     return h;
   };
@@ -431,7 +446,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // (Tu plata → Pagar deudas) o de una vez en el año `pagoUnicoAnio`.
   const anioHoy = new Date().getFullYear();
   const esUnica = (d) => d && d.tipoInteres === "sin_interes" && !(n(d.pg ?? d.pago) > 0);
-  const unicas = deudasVivas.filter(esUnica).map((d) => ({ nombre: d.n || d.nombre || "Deuda", saldo: n(d.mt) * fxA(d), t: n(d.pagoUnicoAnio) > 0 ? Math.min(N, Math.max(1, n(d.pagoUnicoAnio) - anioHoy + 1)) : null }));
+  const unicas = deudasVivas.filter(esUnica).map((d) => ({ nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), t: n(d.pagoUnicoAnio) > 0 ? Math.min(N, Math.max(1, n(d.pagoUnicoAnio) - anioHoy + 1)) : null }));
   let deudaUnica = unicas.reduce((sm, d) => sm + d.saldo, 0);
   let deuda = bDeuda.deudaTotal - deudaUnica; const cuotaAnual = bDeuda.sd * 12;
   const aniosDeuda = cuotaAnual > 0 ? deuda / cuotaAnual : 0;
@@ -472,7 +487,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   (user.ingresos || []).forEach((i, k) => {
     if (!i || i.sim === false || (i.activoId && vendidosIds.has(i.activoId)) || fuera.has(claveIngreso(user.ingresos, k))) return;
     const v = montoPromedioMensual(i) * fxIng(i); if (!(v > 0.5)) return;
-    ingresosHoy.push({ key: claveIngreso(user.ingresos, k), nombre: i.nombre || i.categoria || "Ingreso", mensual: v, pasivo: tipoIngreso(i) === "pasivo", activoId: i.activoId || null });
+    ingresosHoy.push({ key: claveIngreso(user.ingresos, k), nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), mensual: v, pasivo: tipoIngreso(i) === "pasivo", activoId: i.activoId || null });
   });
   const ingTerminan = cfg.ingresosTerminan || {};
   const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => ({ ...x, desde: Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)) }));
@@ -506,9 +521,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   fila0.ingresosReal = ingresos; fila0.gastosReal = fila0.gastos;
   fila0.porActivo = [
     ...todos.map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: a.rentaReemplazada ? 0 : (a.rentaAnual || 0), crece: 0, crec: a.crec, rentaPct: a.rentaPct || 0 })),
-    { id: "c_liquidez", nombre: "Liquidez y colchón", clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: rCan.liquidez },
-    { id: "c_renta", nombre: "Renta fija (lo que sobra)", clase: "canasta", valor: canasta.renta, renta: 0, crece: 0, crec: rCan.renta },
-    { id: "c_crecimiento", nombre: "Crecimiento (lo que sobra)", clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: 0, crec: rCan.crecimiento },
+    { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: rCan.liquidez },
+    { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: 0, crec: rCan.renta },
+    { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: 0, crec: rCan.crecimiento },
   ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
   filas.push(fila0);
   let liqAgotadaAnio = null;
@@ -550,11 +565,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         else if (a.holder) { const usa = Math.min(a.holder.valor, K); a.holder.valor -= usa; if (K - usa > 0.5) retirar(K - usa); colchon += Math.max(0, a.holder.valor); a.holder.valor = 0; }
         else retirar(K);
         a.valor = K; a.tomado = true;
-        alertas.push({ tipo: "ciclo_inicio", anio: t, texto: `En ${anioCal(t)} arrancas «${c.nombre}» con ${Math.round(K / 1e6).toLocaleString("es-CO")} M.` });
+        alertas.push({ tipo: "ciclo_inicio", anio: t, texto: tx(`En ${anioCal(t)} arrancas «${c.nombre}» con ${mmTxt(K)}.`, `In ${anioCal(t)} you start "${c.nombre}" with ${mmTxt(K)}.`) });
       }
       if (a.tomado && c.hasta < N && t === c.hasta + 1 && a.valor > 0) {
         Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
-        alertas.push({ tipo: "ciclo_fin", anio: t, texto: `En ${anioCal(t)} termina «${c.nombre}»: el capital vuelve y se reparte.` });
+        alertas.push({ tipo: "ciclo_fin", anio: t, texto: tx(`En ${anioCal(t)} termina «${c.nombre}»: el capital vuelve y se reparte.`, `In ${anioCal(t)} "${c.nombre}" ends: the capital comes back and is allocated.`) });
         a.valor = 0;
       }
     });
@@ -629,13 +644,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (restoPct > 0) { if (disponible) colchon += cf * restoPct / 100; else Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; }); }
     } else {
       retirar(-cf);
-      alertas.push({ tipo: "cf_negativo", anio: t, texto: `En ${anioCal(t)} sale más de lo que entra; se usa tu liquidez.` });
+      alertas.push({ tipo: "cf_negativo", anio: t, texto: tx(`En ${anioCal(t)} sale más de lo que entra; se usa tu liquidez.`, `In ${anioCal(t)} more goes out than comes in; your cash covers it.`) });
     }
     // Deuda sin intereses que se paga de una vez este año: sale de tu liquidez.
     unicas.forEach((d) => {
       if (d.t !== t || d.saldo <= 0) return;
       retirar(d.saldo); deudaUnica -= d.saldo;
-      alertas.push({ tipo: "pago_unico", anio: t, texto: `En ${anioCal(t)} pagas ${d.nombre} de una vez con tu liquidez.` });
+      alertas.push({ tipo: "pago_unico", anio: t, texto: tx(`En ${anioCal(t)} pagas ${d.nombre} de una vez con tu liquidez.`, `In ${anioCal(t)} you pay off ${d.nombre} in one go with your cash.`) });
       d.saldo = 0;
     });
     // Pagos de un activo futuro: pasan de tu liquidez al activo (no cambia el patrimonio).
@@ -649,7 +664,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       let falta = pg.monto; const partes = [];
       (a.fuentesPago || []).forEach((fp) => {
         const quiero = pg.monto * fp.pct / 100; let saco = 0, nom = "";
-        if (fp.id === "c_crecimiento" || fp.id === "c_renta") { const k = fp.id.slice(2); saco = Math.min(Math.max(0, canasta[k]), quiero); canasta[k] -= saco; nom = "lo que sobra reinvertido"; }
+        if (fp.id === "c_crecimiento" || fp.id === "c_renta") { const k = fp.id.slice(2); saco = Math.min(Math.max(0, canasta[k]), quiero); canasta[k] -= saco; nom = tx("lo que sobra reinvertido", "the reinvested surplus"); }
         else { const src = todos.find((y) => y.id === fp.id); if (src) {
           const antes = Math.max(0, src.valor);
           saco = Math.min(antes, quiero); src.valor -= saco; nom = src.nombre;
@@ -658,14 +673,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
           if (antes > 0 && saco > 0 && src.rentaAnual > 0 && !src.rentaReemplazada) {
             const fr = saco / antes, menos = src.rentaAnual * Math.pow(1 + gIng, t - 1) * fr;
             ingresos = Math.max(0, ingresos - menos); pasivo = Math.max(0, pasivo - menos); src.rentaAnual *= 1 - fr;
-            if (menos > 0.5) alertas.push({ tipo: "renta_baja", anio: t, texto: `Desde ${anioCal(t + 1)}, ${src.nombre} renta ${Math.round(menos / 12 / 1e6).toLocaleString("es-CO")} M menos al mes porque sacaste plata de ahí.` });
+            if (menos > 0.5) alertas.push({ tipo: "renta_baja", anio: t, texto: tx(`Desde ${anioCal(t + 1)}, ${src.nombre} renta ${mmTxt(menos / 12)} menos al mes porque sacaste plata de ahí.`, `From ${anioCal(t + 1)}, ${src.nombre} earns ${mmTxt(menos / 12)} less a month because you withdrew money from it.`) });
           }
         } }
-        if (saco > 0) { falta -= saco; partes.push(`${Math.round(saco / 1e6).toLocaleString("es-CO")} M de ${nom}`); }
+        if (saco > 0) { falta -= saco; partes.push(tx(`${mmTxt(saco)} de ${nom}`, `${mmTxt(saco)} from ${nom}`)); }
       });
       if (falta > 0.5) retirar(falta);
       a.valor += pg.monto;
-      alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? `En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.` : `En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.` });
+      alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? tx(`En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.`, `In ${anioCal(t)} you pay for ${a.nombre}: ${partes.join(" and ")}${falta > 0.5 ? ", and the rest from your cash" : ""}.`) : tx(`En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.`, `In ${anioCal(t)} you pay part of ${a.nombre} with your cash.`) });
     }));
     // Inversión adicional (pesos de ese año): pasa de tu liquidez al activo. No cambia el patrimonio.
     todos.forEach((a) => {
@@ -678,13 +693,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
           if (x.monto - usa > 0.5) retirar(x.monto - usa);
         } else if (!x.nuevo) retirar(x.monto);
         a.valor += x.monto;
-        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.` });
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
         // lo apartado entra al activo; lo que rindió mientras tanto vuelve al colchón
         if (a.reserva > 0) { a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
         if (a.invMonto > 0) { retirar(a.invMonto); a.valor += a.invMonto; }
-        alertas.push({ tipo: "inversion_adicional", anio: t, texto: `En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.` });
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       }
     });
     // Salto de valor al terminar una obra o al recibir lo que se construye
@@ -692,7 +707,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // de forma muy alta y después cada año"). Desde ahí sigue su % anual.
     todos.forEach((a) => (a.saltos || []).forEach((sx) => {
       if (sx.t !== t || !(sx.valor > a.valor)) return;
-      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: `En ${anioCal(t)} ${a.nombre} queda valiendo ${Math.round(sx.valor / 1e6).toLocaleString("es-CO")} M al terminar.` });
+      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: tx(`En ${anioCal(t)} ${a.nombre} queda valiendo ${mmTxt(sx.valor)} al terminar.`, `In ${anioCal(t)} ${a.nombre} is worth ${mmTxt(sx.valor)} once finished.`) });
       a.valor = sx.valor;
     }));
     if (canasta.crecimiento > 0) expUSD = true;
@@ -710,9 +725,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         const cg = a.ciclo ? a.cicloG || 0 : 0;
         return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0) };
       }),
-      { id: "c_liquidez", nombre: "Liquidez y colchón", clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
-      { id: "c_renta", nombre: "Renta fija (lo que sobra)", clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
-      { id: "c_crecimiento", nombre: "Crecimiento (lo que sobra)", clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: creceCan.crecimiento },
+      { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
+      { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
+      { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: creceCan.crecimiento },
     ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
     // 24-oct-2026 (Santiago: "no me queda claro qué son otras rentas y se ve un
     // valor grande"). Las rentas que no están ligadas a un activo (PACAMANA,
@@ -727,8 +742,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.invertibleReal = f.invertible / deflactor;
     f.ingresosReal = (ingresos + rentaNueva + cicloFlujo) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)
     f.gastosReal = f.gastos / deflactor;
-    if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: `En ${anioCal(t)} un activo o tu liquidez queda en negativo.` });
-    else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: `En ${anioCal(t)} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.` });
+    if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: tx(`En ${anioCal(t)} un activo o tu liquidez queda en negativo.`, `In ${anioCal(t)} an asset or your cash goes negative.`) });
+    else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: tx(`En ${anioCal(t)} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.`, `In ${anioCal(t)} your cash covers less than ${sup.colchonMeses} months of expenses.`) });
     filas.push(f);
   }
   const fin = filas[filas.length - 1];
@@ -743,26 +758,26 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const mesDe = (x, campo = "mensual") => montoPromedioMensual({ ...x, mensual: n(x?.[campo]) * fxI(x) });
     const sigue = (x) => x && x.sim !== false && !(x.activoId && vendidosIds.has(x.activoId));
     const conRenta = new Set(Object.keys(bOp.rentaNetaPorActivo || {}));
-    const nombreActivo = (id) => { const a = (user.inv || []).find((y) => y.id === id); return a ? a.n || a.nombre : "un activo"; };
+    const nombreActivo = (id) => { const a = (user.inv || []).find((y) => y.id === id); return a ? a.n || a.nombre : tx("un activo", "an asset"); };
     const entra = [];
     (user.ingresos || []).filter((i, k) => sigue(i) && !fuera.has(claveIngreso(user.ingresos, k)) && !ingSeVan.some((x) => x.key === claveIngreso(user.ingresos, k) && x.desde <= 1)).forEach((i) => {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
-      const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || "Ingreso", mensual: v, nota: tipoIngreso(i) === "pasivo" ? "renta · de tu página Ingresos" : "trabajo · de tu página Ingresos" });
+      const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), mensual: v, nota: tipoIngreso(i) === "pasivo" ? tx("renta · de tu página Ingresos", "passive · from your Income page") : tx("trabajo · de tu página Ingresos", "work · from your Income page") });
     });
-    activos.filter((a) => a.rentaCorregida && a.rentaAnual > 0).forEach((a) => entra.push({ nombre: `Renta de ${a.nombre}`, mensual: a.rentaAnual / 12 * Math.pow(1 + gIng, 0), nota: "la corregiste en el paso Hoy" }));
-    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada || a?.rentaCorregida) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => `$${(Math.round(x / 1e5) / 10).toLocaleString("es-CO")}M`;
+    activos.filter((a) => a.rentaCorregida && a.rentaAnual > 0).forEach((a) => entra.push({ nombre: tx(`Renta de ${a.nombre}`, `Income from ${a.nombre}`), mensual: a.rentaAnual / 12 * Math.pow(1 + gIng, 0), nota: tx("la corregiste en el paso Hoy", "you edited it in step 1") }));
+    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada || a?.rentaCorregida) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => (esUS() ? plataCorta(x) : `$${(Math.round(x / 1e5) / 10).toLocaleString("es-CO")}M`);
       // 24-oct-2026 (Santiago: "Rapicredit me da el 21 % de 3.288 M"): se muestra la cuenta, no solo el neto.
-      entra.push({ nombre: `Renta de ${nombreActivo(id)}`, mensual: v, nota: br - v > 0.5 ? `${mm(br)} de renta − ${mm(br - v)} de gastos ligados en Egresos` : "renta de tu página Ingresos" }); } });
+      entra.push({ nombre: tx(`Renta de ${nombreActivo(id)}`, `Income from ${nombreActivo(id)}`), mensual: v, nota: br - v > 0.5 ? tx(`${mm(br)} de renta − ${mm(br - v)} de gastos ligados en Egresos`, `${mm(br)} income − ${mm(br - v)} linked expenses on Expenses`) : tx("renta de tu página Ingresos", "income from your Income page") }); } });
     const ff = 1 + inf;
     todos.forEach((a) => {
       const p0 = (filas[0].porActivo || []).find((x) => x.id === a.id);
-      if (a.rentaPct) { const v = (p0 ? p0.valor : a.valor) * a.rentaPct / 12; if (v > 0.5) entra.push({ nombre: a.nombre, mensual: v, nota: `${(a.rentaPct * 100).toFixed(1).replace(".", ",")} % al año que te llega` }); }
+      if (a.rentaPct) { const v = (p0 ? p0.valor : a.valor) * a.rentaPct / 12; if (v > 0.5) entra.push({ nombre: a.nombre, mensual: v, nota: tx(`${(a.rentaPct * 100).toFixed(1).replace(".", ",")} % al año que te llega`, `${(a.rentaPct * 100).toFixed(1)}% a year paid to you`) }); }
       const frac = (m) => Math.min(1, Math.max(0, (12 - n(m)) / 12));
-      if (a.rentaNuevaAnual > 0 && frac(a.rentaDesdeMes) > 0) entra.push({ nombre: `${a.nombre} (renta nueva)`, mensual: a.rentaNuevaAnual * frac(a.rentaDesdeMes) * ff / 12, nota: n(a.rentaDesdeMes) > 0 ? `desde el mes ${n(a.rentaDesdeMes)}` : "" });
-      (a.rentasExtra || []).forEach((x) => { if (frac(x.desdeMes) > 0) entra.push({ nombre: `${a.nombre} (renta nueva)`, mensual: x.anual * frac(x.desdeMes) * ff / 12, nota: n(x.desdeMes) > 0 ? `desde el mes ${n(x.desdeMes)}; promedio del año 1` : "" }); });
+      if (a.rentaNuevaAnual > 0 && frac(a.rentaDesdeMes) > 0) entra.push({ nombre: `${a.nombre} ${tx("(renta nueva)", "(new income)")}`, mensual: a.rentaNuevaAnual * frac(a.rentaDesdeMes) * ff / 12, nota: n(a.rentaDesdeMes) > 0 ? tx(`desde el mes ${n(a.rentaDesdeMes)}`, `from month ${n(a.rentaDesdeMes)}`) : "" });
+      (a.rentasExtra || []).forEach((x) => { if (frac(x.desdeMes) > 0) entra.push({ nombre: `${a.nombre} ${tx("(renta nueva)", "(new income)")}`, mensual: x.anual * frac(x.desdeMes) * ff / 12, nota: n(x.desdeMes) > 0 ? tx(`desde el mes ${n(x.desdeMes)}; promedio del año 1`, `from month ${n(x.desdeMes)}; year-1 average`) : "" }); });
     });
-    fut.ingresos.filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => entra.push({ nombre: x.nombre, mensual: x.mensual * ff, nota: "ingreso futuro" }));
-    ciclos.filter((c) => c.destino === "flujo" && c.desde <= 1).forEach((c) => entra.push({ nombre: c.nombre, mensual: c.gananciaAnual / 12, nota: "ganancia del negocio que se repite" }));
+    fut.ingresos.filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => entra.push({ nombre: x.nombre, mensual: x.mensual * ff, nota: tx("ingreso futuro", "future income") }));
+    ciclos.filter((c) => c.destino === "flujo" && c.desde <= 1).forEach((c) => entra.push({ nombre: c.nombre, mensual: c.gananciaAnual / 12, nota: tx("ganancia del negocio que se repite", "profit from the repeating deal") }));
     const sale = [];
     Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
       if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
@@ -770,9 +785,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (fuera.has(key)) return;
       if (seVan.some((x) => x.key === key && x.desde <= 1)) return;
       if (v > 0.5) sale.push({ nombre: g.c || g.n || g.nombre || cat, mensual: v, nota: (g.c || g.n || g.nombre) ? cat : "" }); }));
-    deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d)).forEach((d) => { const v = montoPromedioMensual({ ...d, mensual: n(d.pg ?? d.pago) * fxI(d) }); if (v > 0.5) sale.push({ nombre: `Cuota ${d.n || d.nombre || "deuda"}`, mensual: v, nota: "deuda" }); });
-    (fut.gastos || []).filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => sale.push({ nombre: x.nombre, mensual: x.anual * ff / 12, nota: "gasto futuro" }));
-    const cuadra = (lista, total) => { const s = lista.reduce((t, x) => t + x.mensual, 0); const dif = total - s; if (Math.abs(dif) > Math.max(1, total * 0.005)) lista.push({ nombre: "Ajustes (crecimiento del año, cuotas que terminan, costos)", mensual: dif, nota: "" }); return lista.sort((a, b) => b.mensual - a.mensual); };
+    deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d)).forEach((d) => { const v = montoPromedioMensual({ ...d, mensual: n(d.pg ?? d.pago) * fxI(d) }); if (v > 0.5) sale.push({ nombre: tx(`Cuota ${d.n || d.nombre || "deuda"}`, `${d.n || d.nombre || "Loan"} payment`), mensual: v, nota: tx("deuda", "debt") }); });
+    (fut.gastos || []).filter((x) => x.desde <= 1 && x.hasta >= 1).forEach((x) => sale.push({ nombre: x.nombre, mensual: x.anual * ff / 12, nota: tx("gasto futuro", "future expense") }));
+    const cuadra = (lista, total) => { const s = lista.reduce((t, x) => t + x.mensual, 0); const dif = total - s; if (Math.abs(dif) > Math.max(1, total * 0.005)) lista.push({ nombre: tx("Ajustes (crecimiento del año, cuotas que terminan, costos)", "Adjustments (growth during the year, payments ending, costs)"), mensual: dif, nota: "" }); return lista.sort((a, b) => b.mensual - a.mensual); };
     // Lo que rinde y NO te llega al mes (se reinvierte): BTG, IBKR, fondos…
     const reinvierte = (filas[1].porActivo || []).map((x) => { const a = todos.find((y) => y.id === x.id); return a && a.clase !== "inmueble" && a.clase !== "vehiculo" && (x.crece || 0) > 0.5 && !(a.rentaPct > 0) && !(a.rentaAnual > 0) ? { id: a.id, nombre: a.nombre, mensual: x.crece / 12, pct: (a.crec || 0) * 100 } : null; }).filter(Boolean).sort((a, b) => b.mensual - a.mensual);
     return { entra: cuadra(entra, f1.ingresos / 12), sale: cuadra(sale, f1.gastos / 12), reinvierte };
@@ -781,7 +796,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const defl = fin.deflactor || 1;
   const repartoFinal = [
     ...todos.filter((a) => Math.abs(a.valor) > 0.5).map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor, valorReal: a.valor / defl })),
-    ...[["colchon", "Colchón de liquidez", colchon], ["liquidez", "Canasta liquidez", canasta.liquidez], ["renta", "Canasta renta", canasta.renta], ["crecimiento", "Canasta crecimiento", canasta.crecimiento]]
+    ...[["colchon", tx("Colchón de liquidez", "Cash cushion"), colchon], ["liquidez", tx("Canasta liquidez", "Cash bucket"), canasta.liquidez], ["renta", tx("Canasta renta", "Income bucket"), canasta.renta], ["crecimiento", tx("Canasta crecimiento", "Growth bucket"), canasta.crecimiento]]
       .filter(([, , v]) => Math.abs(v) > 0.5).map(([id, nombre, v]) => ({ id, nombre, clase: "canasta", valor: v, valorReal: v / defl })),
   ].sort((x, y) => y.valor - x.valor);
   return {
@@ -790,23 +805,24 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
-    vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || "Activo", valor: n(x.va) * fxA(x) })),
+    vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x) })),
     reinversionesDetalle,
     ciclosDetalle,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
     // si se reinvierte"): a dónde va lo que sobra, en palabras.
     destinoSobraLista: (() => {
-      const nom = (id) => id === "c_disponible" ? "Disponible" : id === "c_liquidez" ? "Liquidez" : id === "c_renta" ? "Renta fija" : id === "c_crecimiento" ? "Crecimiento" : ((todos.find((x) => x.id === id) || {}).nombre || id);
+      const DISP = tx("Disponible", "Available"), LIQ = tx("Liquidez", "Cash"), RF = tx("Renta fija", "Fixed income"), CREC = tx("Crecimiento", "Growth");
+      const nom = (id) => id === "c_disponible" ? DISP : id === "c_liquidez" ? LIQ : id === "c_renta" ? RF : id === "c_crecimiento" ? CREC : ((todos.find((x) => x.id === id) || {}).nombre || id);
       const l = sobraDestinos.map((d) => ({ nombre: nom(d.id), pct: d.pct }));
       const resto = 100 - sobraDestinos.reduce((sm, d) => sm + d.pct, 0);
-      if (resto > 0.5) { if (disponible) l.push({ nombre: "Disponible", pct: resto }); else ["liquidez", "renta", "crecimiento"].forEach((k) => { if (mezcla[k] > 0) l.push({ nombre: k === "liquidez" ? "Liquidez" : k === "renta" ? "Renta fija" : "Crecimiento", pct: resto * mezcla[k] / 100 }); }); }
+      if (resto > 0.5) { if (disponible) l.push({ nombre: DISP, pct: resto }); else ["liquidez", "renta", "crecimiento"].forEach((k) => { if (mezcla[k] > 0) l.push({ nombre: k === "liquidez" ? LIQ : k === "renta" ? RF : CREC, pct: resto * mezcla[k] / 100 }); }); }
       return l;
     })(),
     destinoSobra: (() => {
-      const nom = (id) => id === "c_disponible" ? "disponible" : id === "c_liquidez" ? "liquidez" : id === "c_renta" ? "renta fija" : id === "c_crecimiento" ? "crecimiento" : ((todos.find((x) => x.id === id) || {}).nombre || id);
-      const partes = sobraDestinos.map((d) => `${Math.round(d.pct)} % a ${nom(d.id)}`);
+      const nom = (id) => id === "c_disponible" ? tx("disponible", "available") : id === "c_liquidez" ? tx("liquidez", "cash") : id === "c_renta" ? tx("renta fija", "fixed income") : id === "c_crecimiento" ? tx("crecimiento", "growth") : ((todos.find((x) => x.id === id) || {}).nombre || id);
+      const partes = sobraDestinos.map((d) => tx(`${Math.round(d.pct)} % a ${nom(d.id)}`, `${Math.round(d.pct)}% to ${nom(d.id)}`));
       const resto = 100 - sobraDestinos.reduce((sm, d) => sm + d.pct, 0);
-      if (resto > 0.5) partes.push(disponible ? `${Math.round(resto)} % queda disponible` : `${Math.round(resto)} % se reparte (${Math.round(mezcla.liquidez)} % liquidez, ${Math.round(mezcla.renta)} % renta fija, ${Math.round(mezcla.crecimiento)} % crecimiento)`);
+      if (resto > 0.5) partes.push(disponible ? tx(`${Math.round(resto)} % queda disponible`, `${Math.round(resto)}% stays available`) : tx(`${Math.round(resto)} % se reparte (${Math.round(mezcla.liquidez)} % liquidez, ${Math.round(mezcla.renta)} % renta fija, ${Math.round(mezcla.crecimiento)} % crecimiento)`, `${Math.round(resto)}% is split (${Math.round(mezcla.liquidez)}% cash, ${Math.round(mezcla.renta)}% fixed income, ${Math.round(mezcla.crecimiento)}% growth)`));
       return partes.join(" · ");
     })(),
     nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
@@ -871,7 +887,7 @@ export function rendimientoHintPct(esc, sup = supuestosF10()) { return retornoNo
 export function leerPersonalizada(x = {}, esc, sup = supuestosF10()) {
   const rend = vacio(x.rendimientoNomPct) ? rendimientoHintPct(esc, sup) : n(x.rendimientoNomPct);
   return {
-    nombre: String(x.nombre || "").trim() || "Inversión personalizada",
+    nombre: String(x.nombre || "").trim() || tx("Inversión personalizada", "Custom investment"),
     monto: Math.max(0, n(x.monto)), anio: Math.min(10, Math.max(1, Math.round(n(x.anio) || 1))),
     rendNom: rend / 100, usd: String(x.moneda || "COP").toUpperCase() === "USD",
     // 24-oct-2026 (Santiago: "¿cómo así que los ingresos el primer año son 95 M?
@@ -896,7 +912,7 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
   const anio = (v, d = 1) => Math.min(10, Math.max(1, Math.round(n(v) || d)));
   const ingresos = (f?.ingresos || []).map((x) => {
     const desde = anio(x.desde);
-    return { nombre: String(x.nombre || "").trim() || "Ingreso futuro", mensual: Math.max(0, n(x.mensual)), desde, hasta: vacio(x.hasta) ? 99 : Math.max(desde, anio(x.hasta)), titular: x.titular || null, activoId: x.activoId || null, valorizacionNomPct: vacio(x.valorizacionNomPct) ? null : n(x.valorizacionNomPct) };
+    return { nombre: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), mensual: Math.max(0, n(x.mensual)), desde, hasta: vacio(x.hasta) ? 99 : Math.max(desde, anio(x.hasta)), titular: x.titular || null, activoId: x.activoId || null, valorizacionNomPct: vacio(x.valorizacionNomPct) ? null : n(x.valorizacionNomPct) };
   }).filter((x) => x.mensual > 0);
   const activos = (f?.activos || []).map((x) => {
     const entrega = anio(x.entrega);
@@ -907,7 +923,7 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
       pagos = [{ monto: cuota, anio: Math.min(anio(x.anioCuota), entrega) }, { monto: valor - cuota, anio: entrega }];
     }
     const def = ["inmueble", "vivienda", "lote"].includes(x.clase) ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
-    return { nombre: String(x.nombre || "").trim() || "Activo futuro", clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos,
+    return { nombre: String(x.nombre || "").trim() || tx("Activo futuro", "Future asset"), clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos,
       crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100,
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
@@ -917,7 +933,7 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
   const gastos = (f?.gastos || []).map((x) => {
     const desde = anio(x.desde);
     const anios = vacio(x.anios) ? null : Math.max(1, Math.round(n(x.anios)));
-    return { nombre: String(x.nombre || "").trim() || "Gasto futuro", anual: Math.max(0, n(x.anual)), desde, hasta: anios == null ? 99 : desde + anios - 1 };
+    return { nombre: String(x.nombre || "").trim() || tx("Gasto futuro", "Future expense"), anual: Math.max(0, n(x.anual)), desde, hasta: anios == null ? 99 : desde + anios - 1 };
   }).filter((x) => x.anual > 0);
   return { ingresos, activos, gastos };
 }
@@ -927,7 +943,7 @@ export function validarMezcla(m) {
   if (!m) return null;
   const s = ["liquidez", "renta", "crecimiento"].reduce((t, k) => t + (Number(m[k]) || 0), 0);
   if (Math.abs(s - 100) < 0.01) return null;
-  return `La mezcla suma ${String(Math.round(s * 10) / 10).replace(".", ",")}%. Ajústala para que sume 100%.`;
+  return tx(`La mezcla suma ${String(Math.round(s * 10) / 10).replace(".", ",")}%. Ajústala para que sume 100%.`, `The mix adds up to ${Math.round(s * 10) / 10}%. Adjust it to total 100%.`);
 }
 
 export function normalizarMezcla(m = {}) {
@@ -993,17 +1009,17 @@ export function migrarModifica(cfg = {}, esc) {
  */
 export function resumenEscenario(r) {
   if (!r) return "";
-  const corto = (v) => `$${Math.round(Math.abs(Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`;
+  const corto = (v) => (esUS() ? plataCorta(Math.abs(Number(v) || 0)) : `$${Math.round(Math.abs(Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`);
   const partes = [];
-  if ((r.vendidos || []).length) partes.push(`Vende ${r.vendidos.map((v) => v.nombre).join(" y ")}`);
+  if ((r.vendidos || []).length) partes.push(tx(`Vende ${r.vendidos.map((v) => v.nombre).join(" y ")}`, `Sell ${r.vendidos.map((v) => v.nombre).join(" and ")}`));
   const inv = [...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ n: x.nombre, v: x.aporte })), ...(r.nuevasDetalle || []).map((x) => ({ n: x.nombre, v: x.monto }))].sort((a, b) => b.v - a.v);
   if (inv.length) partes.push(inv.slice(0, 2).map((x) => `${x.n} ${corto(x.v)}`).join(" + "));
-  (r.ciclosDetalle || []).forEach((c) => partes.push(`${c.nombre} ${corto(c.capital)} cada ${c.meses === 12 ? "año" : c.meses + " meses"}`));
+  (r.ciclosDetalle || []).forEach((c) => partes.push(tx(`${c.nombre} ${corto(c.capital)} cada ${c.meses === 12 ? "año" : c.meses + " meses"}`, `${c.nombre} ${corto(c.capital)} every ${c.meses === 12 ? "year" : c.meses + " months"}`)));
   const pagadas = (r.deudas || []).filter((d) => d.pagado > 0);
-  if (pagadas.length) partes.push(pagadas.length === 1 ? `paga ${pagadas[0].nombre}` : `paga ${pagadas.length} deudas`);
+  if (pagadas.length) partes.push(pagadas.length === 1 ? tx(`paga ${pagadas[0].nombre}`, `pay off ${pagadas[0].nombre}`) : tx(`paga ${pagadas.length} deudas`, `pay off ${pagadas.length} debts`));
   const fut = r.futuros || { ingresos: [] };
-  if ((fut.ingresos || []).length) partes.push(`${fut.ingresos[0].nombre} desde ${anioCal(fut.ingresos[0].desde)}`);
-  if (!partes.length) return "Todo sigue como está hoy.";
+  if ((fut.ingresos || []).length) partes.push(tx(`${fut.ingresos[0].nombre} desde ${anioCal(fut.ingresos[0].desde)}`, `${fut.ingresos[0].nombre} from ${anioCal(fut.ingresos[0].desde)}`));
+  if (!partes.length) return tx("Todo sigue como está hoy.", "Everything stays as it is today.");
   const t = partes.join(" · ");
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
@@ -1041,7 +1057,7 @@ export function sugerirVinculados(user = {}, activoId) {
   const suelto = (x) => !x.activoId || !existe.has(x.activoId);
   (user.ingresos || []).forEach((i, k) => {
     if (!i || i.sim === false) return;
-    const nombre = i.nombre || i.categoria || "Ingreso", item = { key: claveIngreso(user.ingresos, k), nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
+    const nombre = i.nombre || i.categoria || tx("Ingreso", "Income"), item = { key: claveIngreso(user.ingresos, k), nombre, mensual: montoPromedioMensual(i), moneda: i.moneda };
     if (i.activoId === activoId) out.auto.ingresos.push(item);
     else out.ingresos.push({ ...item, sugerido: suelto(i) && pega(`${nombre} ${i.categoria || ""}`) });
   });
@@ -1107,9 +1123,9 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
   const trm = b.trm, fx = (x) => (String(x?.moneda || x?.currency || "").toUpperCase() === "USD" ? trm : 1);
   const MES = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-  const nota = (x) => x._vigencia?.ultimo ? "cambió en el año: se toma lo que paga hoy" : x._vigencia?.variable ? `variable: promedio de los ${x._vigencia.meses} meses cargados` : x._vigencia ? `en Ingresos/Egresos va de ${MES[x._vigencia.desde]} a ${MES[x._vigencia.hasta]}; aquí cuenta el mes completo` : (x.frecuencia && x.frecuencia !== "mensual" ? `pago ${x.frecuencia}, repartido por mes` : "");
+  const nota = (x) => notaVigencia(x, MES, "Ingresos/Egresos", "Income/Expenses", false);
   return (user.inv || []).filter((a) => a && a.sim !== false).map((a) => {
-    const ingresos = (user.ingresos || []).filter((i) => i && i.sim !== false && i.activoId === a.id).map((i) => ({ nombre: i.nombre || i.categoria || "Ingreso", mensual: montoPromedioMensual(i) * fx(i), nota: nota(i) }));
+    const ingresos = (user.ingresos || []).filter((i) => i && i.sim !== false && i.activoId === a.id).map((i) => ({ nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), mensual: montoPromedioMensual(i) * fx(i), nota: nota(i) }));
     const gastos = []; Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g) => { if (g && g.sim !== false && g.activoId === a.id) gastos.push({ nombre: g.c || g.n || g.nombre || cat, mensual: montoPromedioMensual(g) * fx(g), nota: nota(g) }); }));
     const valor = n(a.va) * fx(a), bruta = n(b.rentaPorActivo?.[a.id]), neta = n(b.rentaNetaPorActivo?.[a.id]);
     const corr = (cfg.rentaHoy || {})[a.id];
@@ -1117,7 +1133,7 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
     const esc = resolverEscenario(cfg.escenario || "base", user);
     const def = crecimientoDefault(a, esc, supuestosF10(), usada * 12);
     const ch = (cfg.crecHoy || {})[a.id];
-    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || "Activo", clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
+    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
   });
 }
 
@@ -1150,10 +1166,10 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
     if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
     const o = base.ingresos[k];
     const enIngresos = montoPromedioMensual(o) * fx(o);
-    const nota = o._vigencia?.ultimo ? "cambió en el año: se toma lo que paga hoy" : o._vigencia?.variable ? `variable: promedio de los ${o._vigencia.meses} meses cargados` : o._vigencia ? `en Ingresos va de ${MES[o._vigencia.desde]} a ${MES[o._vigencia.hasta]}; aquí cuenta el mes completo` : (o.frecuencia && !["mensual", "variable"].includes(o.frecuencia) ? `pago ${o.frecuencia}, repartido por mes` : o.frecuencia === "variable" ? "variable: promedio de lo cargado en el año" : "");
+    const nota = notaVigencia(o, MES, "Ingresos", "Income", true);
     const key = claveIngreso(user.ingresos, k);
     const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : term[key] ? "acaba" : null;
-    return { key, seVa, acabaAnio: term[key] || null, nombre: i.nombre || i.categoria || "Ingreso", renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
+    return { key, seVa, acabaAnio: term[key] || null, nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
 }
 
@@ -1201,7 +1217,7 @@ export function leerCiclos(lista = [], N = 10) {
     const bruta = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
     const impuestoCiclo = bruta * impuestoPct / 100;
     const gananciaCiclo = bruta - impuestoCiclo;
-    return { nombre: String(x.nombre || "").trim() || "Negocio que se repite", capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
+    return { nombre: String(x.nombre || "").trim() || tx("Negocio que se repite", "Repeating deal"), capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
 }
 

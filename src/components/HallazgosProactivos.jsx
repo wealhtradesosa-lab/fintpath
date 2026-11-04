@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { tx } from "../lib/region.js";
 
 /**
  * HallazgosProactivos — Lo que ve tu family office, en tarjetas.
@@ -55,7 +56,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
           <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}` }}>
             <div style={{ fontSize: 12, color: T.tx2, lineHeight: 1.55 }}>{h.detalle}</div>
             <div style={{ fontSize: 12, color: T.tx3, marginTop: 8, lineHeight: 1.5 }}>
-              <strong style={{ color: T.tx2 }}>De dónde sale:</strong> {h.base}
+              <strong style={{ color: T.tx2 }}>{tx("De dónde sale:", "Where it comes from:")}</strong> {h.base}
             </div>
             <div style={{ display: "flex", gap: 14, marginTop: 10, flexWrap: "wrap" }}>
               {h.accion && (
@@ -71,7 +72,7 @@ export default function HallazgosProactivos({ hallazgos, T, onIr, onDescartar })
                   onClick={(e) => { e.stopPropagation(); onDescartar && onDescartar(h.id); }}
                   style={{ background: "transparent", border: "none", padding: 0, color: T.tx3, fontSize: 12, cursor: "pointer" }}
                 >
-                  Ya lo s&eacute;
+                  {tx("Ya lo sé", "I know")}
                 </button>
               )}
             </div>

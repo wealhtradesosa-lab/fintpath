@@ -1224,31 +1224,31 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
         {/* ── Base: la vida de hoy ── */}
         <div style={card}>
-          <div style={F.h2}>Tu vida de hoy, llevada a {año}</div>
+          <div style={F.h2}>{tx(`Tu vida de hoy, llevada a ${año}`, `Your life today, carried into ${año}`)}</div>
           {nuevosHoy.length > 0 && (
             <div style={{ margin: "4px 0 14px", padding: "10px 12px", borderRadius: R.md, background: Cα.accent08, border: `1px solid ${C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <div style={F.h3}>{nuevosHoy.length} {nuevosHoy.length === 1 ? "cosa nueva" : "cosas nuevas"} en tus datos de hoy · ¿{nuevosHoy.length === 1 ? "cuenta" : "cuentan"} en {año}?</div>
+                <div style={F.h3}>{tx(`${nuevosHoy.length} ${nuevosHoy.length === 1 ? "cosa nueva" : "cosas nuevas"} en tus datos de hoy · ¿${nuevosHoy.length === 1 ? "cuenta" : "cuentan"} en ${año}?`, `${nuevosHoy.length} new ${nuevosHoy.length === 1 ? "item" : "items"} in your data today · ${nuevosHoy.length === 1 ? "does it" : "do they"} count in ${año}?`)}</div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button style={{ ...btn(true), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), true)}>Contar todas</button>
-                  <button style={{ ...btn(false), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), false)}>Ninguna</button>
+                  <button style={{ ...btn(true), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), true)}>{tx("Contar todas", "Count all")}</button>
+                  <button style={{ ...btn(false), padding: "5px 12px", fontSize: 12 }} onClick={() => setActivo(nuevosHoy.map((b) => b.key), false)}>{tx("Ninguna", "None")}</button>
                 </div>
               </div>
-              <div style={{ ...F.caption, margin: "4px 0 6px" }}>Las registraste después de crear este escenario. No se suman solas: tú decides.</div>
+              <div style={{ ...F.caption, margin: "4px 0 6px" }}>{tx("Las registraste después de crear este escenario. No se suman solas: tú decides.", "You added them after creating this scenario. They aren't added automatically: you decide.")}</div>
               {nuevosHoy.map((f) => (
                 <div key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
                   <span style={{ ...F.label, color: colorK[f.kind], minWidth: 56 }}>{kindL[f.kind]}</span>
                   <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-                    <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {f.cat}</span></div>
-                    <div style={F.caption}>{fm(f.montoTipico)}/mes</div>
+                    <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre} <span style={F.caption}>· {catTxt(f.cat)}</span></div>
+                    <div style={F.caption}>{fm(f.montoTipico)}{tx("/mes", "/mo")}</div>
                   </div>
-                  <button style={{ ...btn(true), padding: "3px 10px", fontSize: 12 }} onClick={() => setActivo([f.key], true)}>Contar</button>
+                  <button style={{ ...btn(true), padding: "3px 10px", fontSize: 12 }} onClick={() => setActivo([f.key], true)}>{tx("Contar", "Count")}</button>
                   <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12 }} onClick={() => setActivo([f.key], false)}>No</button>
                 </div>
               ))}
             </div>
           )}
-          <div style={{ ...F.caption, marginBottom: 8 }}>Todo lo que tienes hoy, llevado a {año}. <b style={{ color: C.text }}>Este escenario tiene sus propios interruptores</b>: prender o apagar aquí no cambia tus datos ni el simulador, y apagar algo allá no lo saca de aquí. Usa Cambia, Unos meses o Termina para ajustar una fila.</div>
+          <div style={{ ...F.caption, marginBottom: 8 }}>{tx(`Todo lo que tienes hoy, llevado a ${año}. `, `Everything you have today, carried into ${año}. `)}<b style={{ color: C.text }}>{tx("Este escenario tiene sus propios interruptores", "This scenario has its own switches")}</b>{tx(": prender o apagar aquí no cambia tus datos ni el simulador, y apagar algo allá no lo saca de aquí. Usa Cambia, Unos meses o Termina para ajustar una fila.", ": turning things on or off here doesn't change your data or the simulator, and turning something off there doesn't remove it here. Use Changes, Some months or Ends to adjust a row.")}</div>
           {["ing", "gas", "deu"].map((k) => {
             const grupoIn = filas.filter((f) => f.kind === k && f.origen === "hoy" || (f.kind === k && f.cambio && f.origen !== "nuevo"));
             const grupoEx = excluidos.filter((b) => b.kind === k).map((b) => ({ ...b, excluido: true, meses: MESES.map(() => 0) }));
@@ -1261,15 +1261,15 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   const anualGrupo = grupo.reduce((a, f) => a + f.meses.reduce((x, v) => x + v, 0), 0);
                   return (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
-                      <span style={{ ...F.label, color: colorK[k] }}>{kindL[k]}s · {grupoIn.length}{grupoEx.length ? ` de ${grupo.length}` : ""}</span>
-                      <span style={{ ...F.mono, fontSize: 13, color: colorK[k] }}>{fm(anualGrupo / 12)}/mes <span style={{ ...F.caption, color: C.subtle }}>· {fm(anualGrupo)} en {año}</span></span>
+                      <span style={{ ...F.label, color: colorK[k] }}>{kindPl[k]} · {grupoIn.length}{grupoEx.length ? tx(` de ${grupo.length}`, ` of ${grupo.length}`) : ""}</span>
+                      <span style={{ ...F.mono, fontSize: 13, color: colorK[k] }}>{fm(anualGrupo / 12)}{tx("/mes", "/mo")} <span style={{ ...F.caption, color: C.subtle }}>· {tx(`${fm(anualGrupo)} en ${año}`, `${fm(anualGrupo)} in ${año}`)}</span></span>
                     </div>
                   );
                 })()}
                 {/* 11-oct-2026 (Santiago: "más separados, por categorías"). */}
                 {(() => {
                   const porCat = {};
-                  grupo.forEach((f) => { const cat = f.cat || "Sin categoría"; (porCat[cat] = porCat[cat] || []).push(f); });
+                  grupo.forEach((f) => { const cat = f.cat || tx("Sin categoría", "Uncategorized"); (porCat[cat] = porCat[cat] || []).push(f); });
                   // 21-oct-2026 (Santiago: "lo más importante, saber cuánto invertí, no se ve").
                   // Capital por categoría: el del cambio si se cambió por capital, si no el del ítem.
                   const capitalDe = (f) => { if (f.excluido) return 0; const c = f.cambio; return (c && c.tipo === "cambia" && c.modo === "capital" && Number(c.capital) > 0) ? Number(c.capital) : (Number(f.capital) || 0); };
@@ -1277,8 +1277,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   return cats.map(({ cat, fs, anual: anualCat, capital: capCat }) => (
                     <div key={cat} style={{ marginTop: 6 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "6px 8px", background: C.raised, borderRadius: R.sm, marginBottom: 2, gap: 10, flexWrap: "wrap" }}>
-                        <span style={{ ...F.h3, fontSize: 12 }}>{cat} <span style={F.caption}>· {fs.length}</span>{capCat > 0 && <span style={{ ...F.caption, marginLeft: 8 }}>capital invertido <b style={{ color: C.text }}>{fm(capCat)}</b></span>}</span>
-                        <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(anualCat / 12)}/mes{capCat > 0 && anualCat > 0 && <span style={{ ...F.caption, marginLeft: 6 }}>· {fmtTasaEs((anualCat / capCat) * 100)} anual</span>}</span>
+                        <span style={{ ...F.h3, fontSize: 12 }}>{catTxt(cat)} <span style={F.caption}>· {fs.length}</span>{capCat > 0 && <span style={{ ...F.caption, marginLeft: 8 }}>{tx("capital invertido ", "capital invested ")}<b style={{ color: C.text }}>{fm(capCat)}</b></span>}</span>
+                        <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(anualCat / 12)}{tx("/mes", "/mo")}{capCat > 0 && anualCat > 0 && <span style={{ ...F.caption, marginLeft: 6 }}>· {fmtTasa((anualCat / capCat) * 100)} {tx("anual", "yearly")}</span>}</span>
                       </div>
                       {fs.map((f) => renderFila(f))}
                     </div>
@@ -1291,7 +1291,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           <GrupoImpuestos pago={pagoFut} año={año} porMes={porMes} onNavigate={onNavigate} onVerMes={(m) => setMesFoco(m)} />
 
           {filas.filter((f) => f.origen === "hoy").length === 0 && (
-            <div style={F.body}>No hay nada encendido para simular. Revisa los interruptores "simular" en Ingresos, Egresos y Deudas{onNavigate ? "" : "."}</div>
+            <div style={F.body}>{tx(`No hay nada encendido para simular. Revisa los interruptores "simular" en Ingresos, Egresos y Deudas${onNavigate ? "" : "."}`, `Nothing is turned on to simulate. Check the "simulate" switches in Income, Expenses and Debts${onNavigate ? "" : "."}`)}</div>
           )}
         </div>
       </>)}
@@ -1303,8 +1303,14 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 // 29-oct-2026 (Santiago: "en la proyección del año siguiente uno no ve el impuesto del 2026,
 // el que se generó"; "se paga en un solo mes"; "por persona natural y por jurídica").
 function fechaPago(t) {
-  const f = (m) => (m.dia ? `el ${m.dia} de ${mesL(m.mes).toLowerCase()}` : `en ${mesL(m.mes).toLowerCase()}`);
-  return t.meses.length > 1 ? `en dos cuotas: ${t.meses.map((m) => mesL(m.mes).toLowerCase()).join(" y ")}` : f(t.meses[0]);
+  // EE. UU.: 4 pagos estimados (Form 1040-ES), 15 de enero, abril, junio y septiembre.
+  if (esUS()) {
+    const lista = t.meses.map((m) => tx(`${m.dia || 15} ${mesL(m.mes).slice(0, 3).toLowerCase()}`, `${mesL(m.mes).slice(0, 3)} ${m.dia || 15}`));
+    const unir = (xs) => xs.length > 1 ? xs.slice(0, -1).join(", ") + tx(" y ", " and ") + xs[xs.length - 1] : xs[0] || "";
+    return tx(`en ${t.meses.length} pagos: ${unir(lista)}`, `in ${t.meses.length} payments: ${unir(lista)}`);
+  }
+  const f = (m) => (m.dia ? tx(`el ${m.dia} de ${mesL(m.mes).toLowerCase()}`, `on ${mesL(m.mes)} ${m.dia}`) : tx(`en ${mesL(m.mes).toLowerCase()}`, `in ${mesL(m.mes)}`));
+  return t.meses.length > 1 ? tx(`en dos cuotas: ${t.meses.map((m) => mesL(m.mes).toLowerCase()).join(" y ")}`, `in two installments: ${t.meses.map((m) => mesL(m.mes)).join(" and ")}`) : f(t.meses[0]);
 }
 // 29-oct-2026 (Santiago: "cómo dejar claro que la declaración es cobro y la retención no;
 // así como está uno cree que también se la están cobrando"). Dos bloques separados:
@@ -1339,17 +1345,29 @@ function GrupoImpuestos({ pago, año, porMes, onNavigate, onVerMes }) {
   return (
     <div style={{ marginTop: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "6px 0" }}>
-        <span style={{ ...F.label, color: C.purple, whiteSpace: "nowrap" }}>impuestos de renta</span>
-        <span style={{ ...F.caption }}>en total, tu renta de {año} pesa {fm(ret + alDeclarar)}</span>
+        <span style={{ ...F.label, color: C.purple, whiteSpace: "nowrap" }}>{esUS() ? tx("impuestos (IRS y estado)", "taxes (IRS & state)") : tx("impuestos de renta", "income taxes")}</span>
+        <span style={{ ...F.caption }}>{esUS() ? tx(`en total, tus impuestos de ${año} pesan ${fm(ret + alDeclarar)}`, `in total, your ${año} taxes come to ${fm(ret + alDeclarar)}`) : tx(`en total, tu renta de ${año} pesa ${fm(ret + alDeclarar)}`, `in total, your ${año} income tax comes to ${fm(ret + alDeclarar)}`)}</span>
       </div>
-      {bloque("1 · Ya te lo descuentan al pagarte", "Retención en la fuente. No es un cobro aparte: es parte de tu impuesto, pagado por adelantado. Por eso a tu cuenta llega menos de lo que registraste como ingreso.", `${fm(ret / 12)}/mes`, C.muted,
-        fila("ret", "Retención en la fuente", `${fm(ret)} en ${año} · sale de las retenciones de tu última declaración, ajustadas a tus ingresos de este escenario. Al declarar se resta del impuesto.`, "ya descontada", C.muted))}
-      {bloque("2 · Lo que pagas de tu bolsillo al declarar", `La declaración de ${año - 1}: impuesto − lo que ya te retuvieron + anticipo. Sale de una vez, en la fecha de cada uno.`, fm(alDeclarar), alDeclarar > 0 ? C.danger : C.ok,
-        tit.map((t) => fila(t.name, `${t.name} · ${t.type === "juridica" ? "sociedad" : "persona natural"}`,
-          <>{t.total > 0 ? `Paga ${fechaPago(t)}` : "Lo retenido cubre su impuesto"}{" · "}{t.fuente === "motor" ? "aproximado (sin declaración)" : <button type="button" onClick={() => onNavigate?.("taxcalc")} style={link}>de la Calculadora</button>}
-            {t.total > 0 && <>{" · "}<button type="button" onClick={() => onVerMes(t.meses[0].mes)} style={link}>ver ese mes</button></>}</>,
-          t.total > 0 ? `paga ${fm(t.total)}` : t.saldo < 0 ? `no paga · saldo a favor ${fm(-t.saldo)}` : "no paga", t.total > 0 ? C.danger : C.ok)))}
-      {falta.length > 0 && <div style={{ ...F.caption, color: C.danger, padding: "6px 2px" }}>{falta.map((x) => `En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`).join("; ")}: conviene ir apartando desde antes.</div>}
+      {esUS() ? (<>
+        {/* 3-nov-2026 — EE. UU.: la nómina retiene federal, estatal y FICA del W-2; lo demás
+            (freelance, arriendos, inversiones) se paga en 4 pagos estimados del mismo año. */}
+        {bloque(tx("1 · Ya te lo retiene tu nómina", "1 · Already withheld from your paycheck"), tx("Federal, estatal y FICA que tu empleador descuenta de tu salario (W-2). No es un cobro aparte: por eso a tu cuenta llega menos de lo que registraste como ingreso.", "Federal, state and FICA your employer takes out of your salary (W-2). It isn't a separate charge: that's why less reaches your account than the income you entered."), `${fm(ret / 12)}${tx("/mes", "/mo")}`, C.muted,
+          fila("ret", tx("Retención de nómina (W-2)", "Payroll withholding (W-2)"), tx(`${fm(ret)} en ${año} · estimada con tus salarios de este escenario, tu estado civil, tu estado y las tablas vigentes del IRS.`, `${fm(ret)} in ${año} · estimated from this scenario's wages, your filing status, your state and current IRS tables.`), tx("ya descontada", "already withheld"), C.muted))}
+        {bloque(tx("2 · Lo que pagas aparte: pagos estimados", "2 · What you pay separately: estimated taxes"), tx(`Lo que no cubre la nómina (freelance, arriendos, inversiones) se paga en 4 cuotas con el Form 1040-ES. Si a fin de año falta o sobra, se ajusta al declarar en abril de ${año + 1}.`, `What your paycheck doesn't cover (freelance, rentals, investments) is paid in 4 installments with Form 1040-ES. Any difference is settled when you file in April ${año + 1}.`), fm(alDeclarar), alDeclarar > 0 ? C.danger : C.ok,
+          tit.length ? tit.map((t) => fila(t.name, t.name,
+            <>{t.total > 0 ? tx(`Paga ${fechaPago(t)}`, `Pays ${fechaPago(t)}`) : tx("La nómina cubre su impuesto", "Payroll withholding covers the tax")}{" · "}<button type="button" onClick={() => onNavigate?.("tax")} style={link}>{tx("ver en Impuestos", "see Tax Planning")}</button>
+              {t.total > 0 && <>{" · "}<button type="button" onClick={() => onVerMes(t.meses[0].mes)} style={link}>{tx("ver ese mes", "see that month")}</button></>}</>,
+            t.total > 0 ? tx(`paga ${fm(t.total)}`, `pays ${fm(t.total)}`) : tx("no paga", "nothing due"), t.total > 0 ? C.danger : C.ok)) : fila("nada", tx("Sin pagos estimados", "No estimated payments"), tx("La nómina cubre tu impuesto en este escenario.", "Payroll withholding covers your tax in this scenario."), tx("no paga", "nothing due"), C.ok))}
+      </>) : (<>
+      {bloque(tx("1 · Ya te lo descuentan al pagarte", "1 · Already deducted when you're paid"), tx("Retención en la fuente. No es un cobro aparte: es parte de tu impuesto, pagado por adelantado. Por eso a tu cuenta llega menos de lo que registraste como ingreso.", "Income tax withheld at source. It isn't a separate charge: it's part of your tax, paid in advance. That's why less reaches your account than the income you entered."), `${fm(ret / 12)}${tx("/mes", "/mo")}`, C.muted,
+        fila("ret", tx("Retención en la fuente", "Income tax withheld at source"), tx(`${fm(ret)} en ${año} · sale de las retenciones de tu última declaración, ajustadas a tus ingresos de este escenario. Al declarar se resta del impuesto.`, `${fm(ret)} in ${año} · based on the withholding in your last tax return, adjusted to this scenario's income. It's subtracted from the tax when you file.`), tx("ya descontada", "already deducted"), C.muted))}
+      {bloque(tx("2 · Lo que pagas de tu bolsillo al declarar", "2 · What you pay out of pocket when you file"), tx(`La declaración de ${año - 1}: impuesto − lo que ya te retuvieron + anticipo. Sale de una vez, en la fecha de cada uno.`, `The ${año - 1} tax return: tax − what was already withheld + advance payment. Paid once, on each person's due date.`), fm(alDeclarar), alDeclarar > 0 ? C.danger : C.ok,
+        tit.map((t) => fila(t.name, `${t.name} · ${t.type === "juridica" ? tx("sociedad", "company") : tx("persona natural", "individual")}`,
+          <>{t.total > 0 ? tx(`Paga ${fechaPago(t)}`, `Pays ${fechaPago(t)}`) : tx("Lo retenido cubre su impuesto", "Withholding covers the tax")}{" · "}{t.fuente === "motor" ? tx("aproximado (sin declaración)", "approximate (no tax return)") : <button type="button" onClick={() => onNavigate?.("taxcalc")} style={link}>{tx("de la Calculadora", "from the Calculator")}</button>}
+            {t.total > 0 && <>{" · "}<button type="button" onClick={() => onVerMes(t.meses[0].mes)} style={link}>{tx("ver ese mes", "see that month")}</button></>}</>,
+          t.total > 0 ? tx(`paga ${fm(t.total)}`, `pays ${fm(t.total)}`) : t.saldo < 0 ? tx(`no paga · saldo a favor ${fm(-t.saldo)}`, `nothing due · refund ${fm(-t.saldo)}`) : tx("no paga", "nothing due"), t.total > 0 ? C.danger : C.ok)))}
+      </>)}
+      {falta.length > 0 && <div style={{ ...F.caption, color: C.danger, padding: "6px 2px" }}>{falta.map((x) => tx(`En ${mesL(x.i + 1).toLowerCase()} te faltan ${fm(-x.queda)}`, `In ${mesL(x.i + 1)} you're short ${fm(-x.queda)}`)).join("; ")}{tx(": conviene ir apartando desde antes.", ": it's worth setting money aside ahead of time.")}</div>}
     </div>
   );
 }
