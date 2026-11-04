@@ -79,7 +79,13 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const [años, setAños] = useState(g.años || "");
   const [cagr, setCagr] = useState(g.cagr ?? "");
   const [retiroPct, setRetiroPct] = useState(g.retiroPct ?? 4);
-  const [añosRetiro, setAñosRetiro] = useState(g.añosRetiro || 25);
+  // 4-nov-2026 (Santiago: "que uno pueda calcular hasta qué edad va a vivir:
+  // 80, 90, 100 años"). Los años de retiro salen de la edad de hoy, los años de
+  // ahorro y la edad hasta la que se calcula. La edad se toma de Pensiones si
+  // está guardada.
+  const edadGuardada = Math.floor(Object.values(pensiones || {}).find((v) => v?.datos?.edad)?.datos?.edad || 0) || "";
+  const [edadHoy, setEdadHoy] = useState(g.edadHoy || edadGuardada);
+  const [hastaEdad, setHastaEdad] = useState(g.hastaEdad || 90);
   const [pensionFuente, setPensionFuente] = useState(g.pensionFuente || (guardadas[0] ? "calc:" + guardadas[0].id : ""));
   const [pensionManual, setPensionManual] = useState(g.pensionManual || "");
   const [precio, setPrecio] = useState(null);
@@ -98,7 +104,9 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const precioHoy = precio || PRECIO_RESPALDO;
   const oferta = useMemo(() => ofertaBTC(altura || alturaEstimada()), [altura]);
 
-  const datos = { frecuencia, monto, años, cagr, retiroPct, añosRetiro, pensionFuente, pensionManual };
+  const edadRetiro = Number(edadHoy) > 0 ? Number(edadHoy) + (Number(años) || 0) : null;
+  const añosRetiro = edadRetiro ? Math.max(1, Number(hastaEdad) - edadRetiro) : 25;
+  const datos = { frecuencia, monto, años, cagr, retiroPct, edadHoy, hastaEdad, pensionFuente, pensionManual };
   const guardar = (extra = {}) => onGuardar && onGuardar({ borrador: datos, escenarios: escenariosGuardados, ...extra });
   useEffect(() => {
     if (!onGuardar) return;
@@ -116,8 +124,8 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const elegida = guardadas.find((p) => "calc:" + p.id === pensionFuente);
   const pension = pensionParaComparar({ fuente: elegida ? "calculada" : pensionFuente, calculada: elegida, manual: pensionManual });
   const listo5 = pensionFuente === "ninguna" || !!pension;
-  const retiro = useMemo(() => (r ? simularRetiro({ capital: r.valorCOPHoy, retiroPct: Number(retiroPct) || 4, años: Number(añosRetiro) || 25, cagr: cagrN }) : null), [r, retiroPct, añosRetiro, cagrN]);
-  const comp = retiro ? comparativoHerencia({ pensionMes: pension?.mesada || 0, añosVida: Number(añosRetiro) || 25, retiro }) : null;
+  const retiro = useMemo(() => (r ? simularRetiro({ capital: r.valorCOPHoy, retiroPct: Number(retiroPct) || 4, años: añosRetiro, cagr: cagrN }) : null), [r, retiroPct, añosRetiro, cagrN]);
+  const comp = retiro ? comparativoHerencia({ pensionMes: pension?.mesada || 0, añosVida: añosRetiro, retiro }) : null;
   const proy = useMemo(() => (r ? proyeccionPrecio({ precioHoy, cagr: cagrN, años: añosN }) : []), [r, precioHoy, cagrN, añosN]);
 
   const c10 = cagrHistorico(10), c5 = cagrHistorico(5);
@@ -134,7 +142,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const abrir = (e) => {
     const d = e.datos || {};
     setFrecuencia(d.frecuencia || "mensual"); setMonto(d.monto || ""); setAños(d.años || ""); setCagr(d.cagr ?? "");
-    setRetiroPct(d.retiroPct ?? 4); setAñosRetiro(d.añosRetiro || 25); setPensionFuente(d.pensionFuente || ""); setPensionManual(d.pensionManual || "");
+    setRetiroPct(d.retiroPct ?? 4); if (d.edadHoy) setEdadHoy(d.edadHoy); setHastaEdad(d.hastaEdad || 90); setPensionFuente(d.pensionFuente || ""); setPensionManual(d.pensionManual || "");
   };
   const borrar = (id) => guardar({ escenarios: escenariosGuardados.filter((e) => e.id !== id) });
 
@@ -211,13 +219,23 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
               <Pct value={retiroPct} onChange={setRetiroPct} placeholder="4" />
             </div>
             <div>
-              <div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>¿Durante cuántos años?</div>
+              <div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>¿Qué edad tienes hoy?</div>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <NumberInput value={añosRetiro} onChange={(v) => setAñosRetiro(v === "" ? "" : Math.min(50, Number(v)))} style={{ ...inputSt, maxWidth: 100 }} />
+                <NumberInput value={edadHoy} onChange={(v) => setEdadHoy(v === "" ? "" : Math.min(100, Number(v)))} placeholder="Ej. 45" style={{ ...inputSt, maxWidth: 100 }} />
                 <span style={{ fontSize: 14, color: T.txt2 }}>años</span>
               </div>
             </div>
           </div>
+          <div style={{ fontSize: 13, color: T.txt3, margin: "14px 0 6px" }}>¿Hasta qué edad calculamos?</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[80, 90, 100].map((e) => <Chip key={e} activo={Number(hastaEdad) === e} onClick={() => setHastaEdad(e)}>{e} años</Chip>)}
+          </div>
+          {edadRetiro && (
+            <div style={{ fontSize: 14, color: T.txt, marginTop: 12, lineHeight: 1.5 }}>
+              Dejas de ahorrar a los <strong>{edadRetiro}</strong> y calculamos el retiro hasta los <strong>{hastaEdad}</strong>: <strong>{añosRetiro} años</strong> retirando.
+              {Number(hastaEdad) <= edadRetiro && <span style={{ color: T.orange }}> Sube la edad: ya pasaste de los {hastaEdad} al terminar de ahorrar.</span>}
+            </div>
+          )}
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 8, lineHeight: 1.5 }}>Retiras ese porcentaje del capital con que empiezas, en pesos fijos cada mes; lo demás sigue invertido. Con 4 % el capital suele durar; con 10 % o 20 % puede acabarse.</div>
         </Paso>
       )}
@@ -254,7 +272,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
             {r.irreal && <div style={{ fontSize: 12, color: T.red, marginTop: 10 }}>Ojo: con este crecimiento el bitcoin valdría más que una cuarta parte de toda la riqueza del mundo. Tómalo con pinzas.</div>}
           </div>
 
-          <HerenciaPensionBTC comp={comp} retiro={retiro} retiroPct={Number(retiroPct)} añosRetiro={Number(añosRetiro) || 25} fm={fC}
+          <HerenciaPensionBTC comp={comp} retiro={retiro} retiroPct={Number(retiroPct)} añosRetiro={añosRetiro} edadRetiro={edadRetiro} hastaEdad={edadRetiro ? Number(hastaEdad) : null} fm={fC}
             nombrePension={elegida ? (guardadas.length > 1 ? "Pensión de " + elegida.nombre : "Tu pensión") : "Tu pensión"} />
 
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 12 }}>

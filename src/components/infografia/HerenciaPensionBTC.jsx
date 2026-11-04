@@ -13,7 +13,7 @@ import { fmtNumEs, fmtPctEs } from "../../lib/formato.js";
 
 const W = 640, H = 170, IZQ = 8, DER = 632, ARR = 24, ABA = 140;
 
-export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetiro, edadRetiro, fm, nombrePension = "Pensión" }) {
+export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetiro, edadRetiro, hastaEdad, fm, nombrePension = "Pensión" }) {
   if (!comp || !retiro) return null;
   const filas = [
     comp.pension.enVida > 0 ? { k: "p", nombre: nombrePension, mes: comp.pension.mes, vida: comp.pension.enVida, hereda: 0 } : null,
@@ -26,7 +26,7 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
   const y = (v) => ABA - (v / yMax) * (ABA - ARR);
   const d = s.map((p, i) => `${i ? "L" : "M"}${x(p.año).toFixed(1)},${y(p.capital).toFixed(1)}`).join(" ");
   const conclusion = retiro.agotaEn != null
-    ? `Retirando ${fmtPctEs(retiroPct, 0)} al año el bitcoin se acaba en ${fmtNumEs(retiro.agotaEn, 0)} años: no queda herencia.`
+    ? `Retirando ${fmtPctEs(retiroPct, 0)} al año el bitcoin se acaba en ${fmtNumEs(retiro.agotaEn, 0)} años${edadRetiro ? `, a los ${Math.round(edadRetiro + retiro.agotaEn)}` : ""}: no queda herencia.`
     : `Retirando ${fmtPctEs(retiroPct, 0)} al año, después de ${añosRetiro} años quedan ${fm(retiro.capitalFinal)} para tus herederos.${comp.pension.enVida > 0 ? " La pensión no deja capital: solo sigue a tu cónyuge mientras viva." : ""}`;
 
   return (
@@ -34,7 +34,7 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
       <style>{CSS_INFOGRAFIA}</style>
       <div>
         <h3 style={titulo}>¿Qué recibes tú y qué heredan los tuyos?</h3>
-        <div style={subtitulo}>Comparado en {añosRetiro} años de retiro{edadRetiro ? `, desde los ${edadRetiro}` : ""} (lo cambias en el paso 4), en pesos de hoy. {conclusion}</div>
+        <div style={subtitulo}>Comparado en {añosRetiro} años de retiro{edadRetiro ? `, de los ${edadRetiro} a los ${hastaEdad}` : ""} (lo cambias en el paso 4), en pesos de hoy. {conclusion}</div>
       </div>
 
       {/* 4-nov-2026 (Santiago: "no entiendo eso de que recibo 8.600 MM, ¿por cuánto
@@ -52,7 +52,7 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
                 <div style={{ fontSize: 28, fontWeight: 600, color: C.txt, ...cifra }}>{fm(f.mes)}</div>
                 <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>
                   {esBtc
-                    ? (retiro.agotaEn != null ? `Solo durante ${fmtNumEs(dura, 0)} años: ahí se acaba el bitcoin y no recibes más.` : `Durante los ${añosRetiro} años, y el capital sigue invertido.`)
+                    ? (retiro.agotaEn != null ? `Solo durante ${fmtNumEs(dura, 0)} años${edadRetiro ? `, hasta los ${Math.round(edadRetiro + dura)}` : ""}: ahí se acaba el bitcoin y no recibes más.` : `Durante los ${añosRetiro} años${hastaEdad ? `, hasta los ${hastaEdad}` : ""}, y el capital sigue invertido.`)
                     : "De por vida (13 mesadas al año, promediadas por mes)."}
                 </div>
               </div>
@@ -62,7 +62,7 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
                   <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, ...cifra }}>{fm(f.vida)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: C.txt3 }}>Les queda a tus herederos</div>
+                  <div style={{ fontSize: 12, color: C.txt3 }}>Les queda a tus herederos{hastaEdad ? ` a los ${hastaEdad}` : ""}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: f.hereda > 0 ? C.pos : C.txt, ...cifra }}>{f.hereda > 0 ? fm(f.hereda) : "$0"}</div>
                   {!esBtc && <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>Solo tu cónyuge sigue recibiendo la mesada.</div>}
                 </div>
