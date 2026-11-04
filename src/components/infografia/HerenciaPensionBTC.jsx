@@ -50,7 +50,7 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
           const tramo = edadRetiro ? `de los ${edadRetiro} a los ${Math.round(edadRetiro + dura)}` : `en ${fmtNumEs(dura, 0)} años`;
           const nota = esBtc
             ? (retiro.agotaEn != null ? `Solo ${tramo}: ahí se acaba el bitcoin y no recibes más.` : `Durante todo el retiro, ${tramo}; el capital sigue invertido.`)
-            : "De por vida (13 mesadas al año, promediadas por mes). Si faltas, solo tu cónyuge sigue recibiéndola.";
+            : "Es tu mesada de Pensiones. Llegan 13 al año (una extra), de por vida. Si faltas, solo tu cónyuge sigue recibiéndola.";
           return (
             <div key={f.k}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>

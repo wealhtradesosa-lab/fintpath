@@ -27,7 +27,7 @@ import HistoriaBTC from "./infografia/HistoriaBTC.jsx";
 import HerenciaPensionBTC from "./infografia/HerenciaPensionBTC.jsx";
 import {
   simularAhorroBTC, pensionParaComparar, INFLACION_USD, cagrHistorico, ofertaBTC, alturaEstimada,
-  proyeccionPrecio, simularRetiro, comparativoHerencia, HISTORICO_BTC,
+  proyeccionPrecio, simularRetiro, comparativoHerencia, HISTORICO_BTC, PROYECCIONES_ANALISTAS, cagrHacia,
 } from "../lib/ahorroBTC.js";
 
 const T = { card: "var(--fp-card)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805", red: "#ff5000", blue: "#3b82f6", orange: "#f59e0b" };
@@ -106,7 +106,14 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
 
   const edadRetiro = Number(edadHoy) > 0 ? Number(edadHoy) + (Number(años) || 0) : null;
   const añosRetiro = edadRetiro ? Math.max(1, Number(hastaEdad) - edadRetiro) : 25;
-  const datos = { frecuencia, monto, años, cagr, retiroPct, edadHoy, hastaEdad, pensionFuente, pensionManual };
+  // 4-nov-2026 (Santiago: "¿cómo ponemos valores del dinero de hoy y proyectado
+  // en el tiempo con X inflación proyectada?"). Todo se calcula en pesos de hoy;
+  // con la inflación que el usuario escribe se muestra también en pesos de cada año.
+  const [inflacionCOP, setInflacionCOP] = useState(g.inflacionCOP ?? 4);
+  const infN = Number(inflacionCOP) || 0;
+  const aPesosDe = (valorHoy, añosAdelante) => valorHoy * Math.pow(1 + infN / 100, añosAdelante);
+  const añoHoy = new Date().getFullYear();
+  const datos = { frecuencia, monto, años, cagr, retiroPct, edadHoy, hastaEdad, pensionFuente, pensionManual, inflacionCOP };
   const guardar = (extra = {}) => onGuardar && onGuardar({ borrador: datos, escenarios: escenariosGuardados, ...extra });
   useEffect(() => {
     if (!onGuardar) return;
@@ -142,7 +149,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const abrir = (e) => {
     const d = e.datos || {};
     setFrecuencia(d.frecuencia || "mensual"); setMonto(d.monto || ""); setAños(d.años || ""); setCagr(d.cagr ?? "");
-    setRetiroPct(d.retiroPct ?? 4); if (d.edadHoy) setEdadHoy(d.edadHoy); setHastaEdad(d.hastaEdad || 90); setPensionFuente(d.pensionFuente || ""); setPensionManual(d.pensionManual || "");
+    setRetiroPct(d.retiroPct ?? 4); setInflacionCOP(d.inflacionCOP ?? 4); if (d.edadHoy) setEdadHoy(d.edadHoy); setHastaEdad(d.hastaEdad || 90); setPensionFuente(d.pensionFuente || ""); setPensionManual(d.pensionManual || "");
   };
   const borrar = (id) => guardar({ escenarios: escenariosGuardados.filter((e) => e.id !== id) });
 
@@ -194,10 +201,28 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
       {listo1 && listo2 && <>
         <HistoriaBTC precioHoy={precioHoy} oferta={oferta} fuentePrecio={precio ? "precio de hoy en vivo" : "precio de referencia del 3-nov-2026"} />
         <Paso n={3} titulo="¿Cuánto crees que va a subir al año?" listo={listo3}>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-            <Chip activo={cagrN === Math.round(c10)} onClick={() => setCagr(Math.round(c10))} sub={`${fmtPctEs(c10, 0)} al año (${HISTORICO_BTC.at(-11).año}–${HISTORICO_BTC.at(-1).año})`}>Últimos 10 años</Chip>
-            <Chip activo={cagrN === Math.round(c5)} onClick={() => setCagr(Math.round(c5))} sub={`${fmtPctEs(c5, 0)} al año (${HISTORICO_BTC.at(-6).año}–${HISTORICO_BTC.at(-1).año})`}>Últimos 5 años</Chip>
+          {/* 4-nov-2026 (Santiago: "uno puede elegir el promedio pasado o el futuro
+              proyectado; ese también debería estar, y con qué fuente"). */}
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Según lo que pasó</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+            <Chip activo={cagrN === Math.round(c10)} onClick={() => setCagr(Math.round(c10))} sub={`${fmtNumEs(c10, 0)} % al año (${HISTORICO_BTC.at(-11).año}–${HISTORICO_BTC.at(-1).año})`}>Últimos 10 años</Chip>
+            <Chip activo={cagrN === Math.round(c5)} onClick={() => setCagr(Math.round(c5))} sub={`${fmtNumEs(c5, 0)} % al año (${HISTORICO_BTC.at(-6).año}–${HISTORICO_BTC.at(-1).año})`}>Últimos 5 años</Chip>
             <Chip activo={cagrN === 10} onClick={() => setCagr(10)} sub="10 % al año">Prudente</Chip>
+          </div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Según lo que proyectan los analistas (precio en 2030)</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {PROYECCIONES_ANALISTAS.map((p) => {
+              const c = cagrHacia({ precioHoy, precio: p.precio, año: p.año });
+              if (c == null) return null;
+              return <Chip key={p.id} activo={cagrN === Math.round(c)} onClick={() => setCagr(Math.round(c))} sub={`${fU(p.precio)} en ${p.año} → ${fmtNumEs(c, 0)} % al año`}>{p.fuente}</Chip>;
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.6, marginBottom: 16 }}>
+            Metas de terceros, no de FINPATHIA, calculadas desde el precio de hoy ({fU(precioHoy)}). Fuentes:{" "}
+            {PROYECCIONES_ANALISTAS.filter((p, i, a) => a.findIndex((x) => x.url === p.url) === i).map((p, i) => (
+              <span key={p.id}>{i ? " · " : ""}<a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: T.txt2 }}>{p.fuente.split(" · ")[0]} ({p.detalle})</a></span>
+            ))}.
+            {añosN > 4 && <> Ojo: apuntan a 2030; usar ese crecimiento por {añosN} años lo extiende más allá de lo que ellos proyectan.</>}
           </div>
           <div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>O escribe el tuyo</div>
           <Pct value={cagr} onChange={setCagr} placeholder="Ej. 25" />
@@ -267,7 +292,14 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24, marginBottom: 12 }}>
             <div style={{ fontSize: 14, color: T.txt2 }}>Pones {fC(r.invertido)} en {añosN} años y, si sube {fmtPctEs(cagrN, 0)} al año, terminas con</div>
             <div style={{ fontSize: 48, fontWeight: 700, color: T.txt, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{fC(r.valorCOPHoy)}</div>
-            <div style={{ fontSize: 14, color: T.txt2 }}>{fmtNumEs(r.btc, 4)} BTC · {fmtNumEs(r.multiplo, 1)} veces lo que pusiste · en pesos de hoy</div>
+            <div style={{ fontSize: 14, color: T.txt2 }}>{fmtNumEs(r.btc, 4)} BTC · {fmtNumEs(r.multiplo, 1)} veces lo que pusiste · <strong style={{ color: T.txt }}>en pesos de hoy</strong></div>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 14, color: T.txt2 }}>
+              <span>En pesos de {añoHoy + añosN}, con inflación de</span>
+              <NumberInput value={inflacionCOP} onChange={(v) => setInflacionCOP(v === "" ? "" : Math.min(30, Number(v)))} style={{ width: 64, background: "var(--fp-card)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "4px 8px", color: T.txt, fontSize: 14, textAlign: "right" }} />
+              <span>% al año, serían</span>
+              <strong style={{ color: T.txt, fontSize: 16, fontVariantNumeric: "tabular-nums" }}>{fC(aPesosDe(r.valorCOPHoy, añosN))}</strong>
+              <span style={{ fontSize: 12, color: T.txt3, flexBasis: "100%" }}>Es la misma plata: los pesos de {añoHoy + añosN} valen menos. Para comparar con lo de hoy, mira la cifra grande.</span>
+            </div>
             <div style={{ fontSize: 13, color: T.txt3, marginTop: 10 }}>Si el bitcoin cae 50 % justo ese año, tendrías {fC(r.valorCOPHoy * 0.5)}. Ha pasado varias veces.</div>
             {r.irreal && <div style={{ fontSize: 12, color: T.red, marginTop: 10 }}>Ojo: con este crecimiento el bitcoin valdría más que una cuarta parte de toda la riqueza del mundo. Tómalo con pinzas.</div>}
           </div>
@@ -281,14 +313,15 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
             </button>
             {verProyeccion && (
               <div style={{ overflowX: "auto", marginTop: 12 }}>
-                <table style={{ width: "100%", minWidth: 420, borderCollapse: "collapse", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
-                  <thead><tr>{["Año", "Precio del BTC", "Tus BTC", "Lo que vale (pesos de hoy)"].map((h, i) => <th key={h} style={{ textAlign: i ? "right" : "left", padding: "6px 8px", color: T.txt3, fontWeight: 500, fontSize: 12, borderBottom: `1px solid ${T.border}` }}>{h}</th>)}</tr></thead>
+                <table style={{ width: "100%", minWidth: 560, borderCollapse: "collapse", fontSize: 13, fontVariantNumeric: "tabular-nums" }}>
+                  <thead><tr>{["Año", "Precio del BTC", "Tus BTC", "Lo que vale en pesos de hoy", `En pesos de ese año (${fmtNumEs(infN, 1)} % inflación)`].map((h, i) => <th key={h} style={{ textAlign: i ? "right" : "left", padding: "6px 8px", color: T.txt3, fontWeight: 500, fontSize: 12, borderBottom: `1px solid ${T.border}` }}>{h}</th>)}</tr></thead>
                   <tbody>{proy.map((p, i) => (
                     <tr key={p.año} style={{ borderBottom: `1px solid ${T.border}` }}>
                       <td style={{ padding: "8px" }}>{p.año}</td>
                       <td style={{ padding: "8px", textAlign: "right" }}>{fU(p.precio)}</td>
                       <td style={{ padding: "8px", textAlign: "right", color: T.txt2 }}>{fmtNumEs(r.serie[i]?.btc || 0, 4)}</td>
                       <td style={{ padding: "8px", textAlign: "right", fontWeight: 600 }}>{fC(r.serie[i]?.valorCOPHoy || 0)}</td>
+                      <td style={{ padding: "8px", textAlign: "right", color: T.txt2 }}>{fC(aPesosDe(r.serie[i]?.valorCOPHoy || 0, i + 1))}</td>
                     </tr>
                   ))}</tbody>
                 </table>

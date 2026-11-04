@@ -179,8 +179,30 @@ export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25,
 export function comparativoHerencia({ pensionMes, añosVida, retiro }) {
   const pensionEnVida = (pensionMes || 0) * MESADAS_POR_AÑO_PENSION * añosVida;
   return {
-    pension: { mes: (pensionMes || 0) * MESADAS_POR_AÑO_PENSION / 12, enVida: pensionEnVida, heredable: 0 },
+    // 4-nov-2026 (Santiago: "en BTC me muestra 28 MM y en Pensiones 26,5 MM; deberían
+    // ser iguales"): se muestra la misma mesada de Pensiones; las 13 mesadas van
+    // en el total y en la nota, no promediadas en el valor mensual.
+    pension: { mes: pensionMes || 0, mesadasAño: MESADAS_POR_AÑO_PENSION, enVida: pensionEnVida, heredable: 0 },
     btc: { mes: retiro.retiroMes, enVida: retiro.totalRetirado, heredable: retiro.capitalFinal },
   };
 }
 export const MESADAS_POR_AÑO_PENSION = 13;
+
+// ── Proyecciones de analistas (4-nov-2026) ──────────────────────────────────
+// Santiago: "¿cuál es el futuro proyectado del BTC? Uno puede elegir el promedio
+// pasado o el futuro; ese también debería estar, y basado en qué fuente".
+// Son metas de terceros, no de FINPATHIA. Todas apuntan a 2030: el crecimiento
+// anual implícito se calcula desde el precio de hoy hasta esa fecha.
+export const PROYECCIONES_ANALISTAS = [
+  { id: "sc", fuente: "Standard Chartered", detalle: "Geoff Kendrick, nota del 12-ene-2026", fecha: "2026-01-12", año: 2030, precio: 500_000, url: "https://sherwood.news/crypto/standard-chartered-still-sees-bitcoin-hitting-usd150-000-in-2026" },
+  { id: "ark-bajista", fuente: "ARK Invest · escenario bajista", detalle: "Big Ideas, actualizado el 25-abr-2025", fecha: "2025-04-25", año: 2030, precio: 500_000, url: "https://cointelegraph.com/news/ark-invest-predicts-bitcoin-could-rise-to-over-2-million-by-2030" },
+  { id: "ark-base", fuente: "ARK Invest · escenario base", detalle: "Big Ideas, actualizado el 25-abr-2025", fecha: "2025-04-25", año: 2030, precio: 1_200_000, url: "https://cointelegraph.com/news/ark-invest-predicts-bitcoin-could-rise-to-over-2-million-by-2030" },
+  { id: "ark-alcista", fuente: "ARK Invest · escenario alcista", detalle: "Big Ideas, actualizado el 25-abr-2025", fecha: "2025-04-25", año: 2030, precio: 2_400_000, url: "https://cointelegraph.com/news/ark-invest-predicts-bitcoin-could-rise-to-over-2-million-by-2030" },
+];
+
+/** Crecimiento anual que lleva del precio de hoy a `precio` al cierre de `año`. */
+export function cagrHacia({ precioHoy, precio, año, hoy = Date.now() }) {
+  const años = (Date.UTC(año, 11, 31) - hoy) / (365.25 * 86_400_000);
+  if (!(años > 0) || !(precioHoy > 0)) return null;
+  return (Math.pow(precio / precioHoy, 1 / años) - 1) * 100;
+}

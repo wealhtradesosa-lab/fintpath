@@ -83,3 +83,14 @@ describe("retiro y herencia", () => {
     expect(c.btc.heredable).toBeGreaterThan(0);
   });
 });
+
+import { PROYECCIONES_ANALISTAS, cagrHacia } from "../../src/lib/ahorroBTC.js";
+describe("proyecciones de analistas", () => {
+  it("todas tienen fuente, fecha, año y url", () => {
+    for (const p of PROYECCIONES_ANALISTAS) { expect(p.fuente).toBeTruthy(); expect(p.url).toMatch(/^https:/); expect(p.año).toBe(2030); }
+  });
+  it("crecimiento implícito: de 77.647 hoy (4-nov-2026) a 500 mil en 2030 ≈ 57 % al año", () => {
+    const c = cagrHacia({ precioHoy: 77_647, precio: 500_000, año: 2030, hoy: Date.UTC(2026, 10, 4) });
+    expect(c).toBeGreaterThan(54); expect(c).toBeLessThan(60);
+  });
+});
