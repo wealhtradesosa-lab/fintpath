@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaCh
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
+import { iblProyectado, liquidarPension, tasaReemplazo, pctDescuentoMesada, valeLaPenaSeguir, SEMANAS_POR_AÑO, SEMANAS_MINIMAS, MESADAS_AÑO, TOPE_IBC_SM, TOPE_MINIMO } from "../lib/pensionColpensiones.js";
 
 /* ═══════════════════════════════════════════════════
    MÓDULO PENSIONES COLOMBIA — Cálculo Actuarial
@@ -62,73 +63,33 @@ const In = ({ label, value, onChange, unit, min, max, step }) => {
    ═══════════════════════════════════════════════════ */
 
 // Régimen de Prima Media — Colpensiones
-function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ibcFuturo, iblProm, ipc, edadJub }) {
+// 04-nov-2026: el cálculo vive en lib/pensionColpensiones.js (validado contra el
+// análisis actuarial de Destina PFT). Aquí solo se adapta a la pantalla.
+// `aniosMas` = años que se sigue cotizando desde hoy (0 = parar hoy): suma
+// semanas a 51,43 por año y corre la ventana de 10 años del IBL.
+function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ibcFuturo, iblProm, edadJub, aniosMas = 0 }) {
   const IBC = ibcSM * SM_2026;
   const aniosFaltantes = Math.max(0, edadJub - edad);
-
-  // semanasTotales = lo que se pasa (la tabla ya suma las futuras)
-  const semanasTotales = semanasActuales;
-  const cumpleSemanas = semanasTotales >= 1300;
-  const cumpleRequisitos = cumpleSemanas;
-
-  // IBL = Promedio IBC últimos 10 años (Art. 21 Ley 100)
-  // Prioridad: 1) promedio histórico real, 2) proyección con IBC futuro, 3) IBC actual
-  let IBL = IBC;
-  if (iblProm > 0) {
-    IBL = iblProm; // Usuario ingresó su promedio real
-  } else if (ibcFuturo > 0 && ibcFuturo !== IBC) {
-    // Proyectar: combinar años pasados con IBC actual + años futuros con IBC futuro
-    const aniosEnUlt10 = Math.min(10, aniosFaltantes);
-    const aniosPasadosEn10 = 10 - aniosEnUlt10;
-    IBL = (aniosPasadosEn10 * IBC + aniosEnUlt10 * ibcFuturo) / 10;
-  }
-
-  // ═══ TASA DE REEMPLAZO — Ley 797/2003 Art. 10 ═══
-  // Base: 65.50% - 0.50% por cada SMMLV adicional del IBC sobre el primero
-  // Se usa ibcSM (nivel de cotización), NO IBL/SMMLV
-  const s = ibcSM; // SMMLV del IBC (lo que cotiza)
-  let tasaBase = 65.50 - 0.50 * Math.max(0, s - 1);
-  if (tasaBase < 40) tasaBase = 40;
-
-  // Bonus: +1.5% por cada 50 semanas adicionales sobre 1300
-  const semanasExtra = Math.max(0, semanasTotales - 1300);
-  const bloques50 = Math.floor(semanasExtra / 50);
-  const bonusSemanas = bloques50 * 1.5;
-  let tasaTotal = tasaBase + bonusSemanas;
-  if (tasaTotal > 80) tasaTotal = 80; // Tope legal
-
-  // Pensión bruta
-  const pensionBruta = IBL * (tasaTotal / 100);
-  const pensionTope = 25 * SM_2026;
-  const pensionAplicada = Math.min(pensionBruta, pensionTope);
-
-  // ═══ DESCUENTOS — Salud 12% + Fondo Solidaridad ═══
-  // Fondo Solidaridad Pensional para pensiones altas:
-  const pensionSMLV = pensionAplicada / SM_2026;
-  let pctDescuento = 0.12; // Salud base 12%
-  if (pensionSMLV > 20) pctDescuento += 0.02; // >20 SMMLV: +2% solidaridad
-  else if (pensionSMLV > 10) pctDescuento += 0.01 + (pensionSMLV - 10) / 10 * 0.01; // 10-20: gradual
-  const descuentoSalud = pensionAplicada * pctDescuento;
-  const pensionNeta = pensionAplicada - descuentoSalud;
-
-  // Pensión mínima
-  const pensionMinima = SM_2026;
-  const pensionFinal = cumpleRequisitos ? Math.max(pensionNeta, pensionMinima) : 0;
-
-  const total20Anios = pensionFinal * 12 * 20;
-  const mesesFaltantes = aniosFaltantes * 12;
-  const semanasQueFaltan = Math.max(0, 1300 - semanasActuales);
-
+  const iblHoy = iblProm > 0 ? iblProm : IBC;
+  const ibcSiguiente = ibcFuturo > 0 ? ibcFuturo : IBC;
+  const IBL = iblProyectado({ iblHoy, ibcFuturo: Math.min(ibcSiguiente, TOPE_IBC_SM * SM_2026), años: aniosMas });
+  const semanasTotales = Math.round(semanasActuales + Math.max(0, aniosMas) * SEMANAS_POR_AÑO);
+  const r = liquidarPension({ ibl: IBL, semanas: semanasTotales, sm: SM_2026 });
+  const pensionFinal = r.neta;
   return {
-    IBC, IBL, tasaBase, bonusSemanas, tasaTotal,
-    pensionBruta, pensionTope, pensionAplicada, descuentoSalud, pensionNeta, pensionFinal,
-    semanasTotales, semanasExtra, semanasQueFaltan, bloques50, pctDescuento,
-    cumpleSemanas, cumpleRequisitos,
-    aniosFaltantes, mesesFaltantes, total20Anios, saltoIBC: typeof saltoIBC !== "undefined" ? saltoIBC : 1, edadJub, pensionMinima,
+    IBC, IBL,
+    tasaBase: r.tasa.base, bonusSemanas: r.tasa.bonus, tasaTotal: r.tasa.total, tasaTope: r.tasa.tope, recortadaPorTope: r.tasa.recortadaPorTope,
+    pensionBruta: IBL * r.tasa.total / 100, pensionTope: TOPE_IBC_SM * SM_2026, pensionAplicada: r.bruta,
+    descuentoSalud: r.descuento, pensionNeta: r.neta, pensionFinal,
+    semanasTotales, semanasExtra: Math.round(r.tasa.semanasExtra), semanasQueFaltan: Math.max(0, Math.ceil(SEMANAS_MINIMAS - semanasTotales)),
+    bloques50: r.tasa.bloques, pctDescuento: r.pctDescuento,
+    cumpleSemanas: r.cumple, cumpleRequisitos: r.cumple,
+    aniosFaltantes, mesesFaltantes: aniosFaltantes * 12,
+    total20Anios: pensionFinal * MESADAS_AÑO * 20, // 13 mesadas al año
+    edadJub, pensionMinima: SM_2026,
   };
 }
 
-// RAIS — Régimen de Ahorro Individual con Solidaridad (Fondos Privados)
 function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, bonoPensional, sexo, ibcFuturo }) {
   const IBC = ibcSM * SM_2026;
 
@@ -228,8 +189,14 @@ export default function PensionesColpensiones({ trm }) {
   }), [sexo, edad, semanas, ibcSM, ibcFuturoSM, iblPromSM, ipc, edadJub]);
 
   const colpJub = useMemo(() => calcColpensiones({
-    sexo, edad, semanasActuales: semanas + aniosFaltantes * 52, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
+    sexo, edad, semanasActuales: semanas, aniosMas: aniosFaltantes, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, ipc, edadJub,
   }), [sexo, edad, semanas, ibcSM, ibcFuturoSM, iblPromSM, ipc, edadJub, aniosFaltantes]);
+
+  // ¿Vale la pena seguir cotizando hasta la edad de pensión? (incremental vs parar hoy)
+  const valeLaPena = useMemo(() => aniosFaltantes > 0 ? valeLaPenaSeguir({
+    sexo, edad, semanasHoy: semanas, iblHoy: iblPromSM > 0 ? iblPromSM * SM_2026 : ibcSM * SM_2026,
+    ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, años: aniosFaltantes, sm: SM_2026,
+  }) : null, [sexo, edad, semanas, iblPromSM, ibcSM, ibcFuturoSM, aniosFaltantes]);
 
   const rais = useMemo(() => calcRAIS({
     saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0,
@@ -283,12 +250,16 @@ export default function PensionesColpensiones({ trm }) {
           </div>
 
           <div>
-            <In label="¿Cuántos años llevas trabajando?" value={Math.round(semanas/52)} onChange={v => setSemanas(v * 52)} unit="años" min={0} max={45} />
-            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{semanas} semanas cotizadas {semanas >= 1300 ? <span style={{color:T.green}}>Cumples el mínimo</span> : <span style={{color:T.orange}}>Necesitas {1300-semanas} más</span>}</div>
+            <In label="¿Cuántas semanas tienes cotizadas?" value={semanas} onChange={setSemanas} unit="semanas" min={0} max={3000} />
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Están en tu historia laboral de Colpensiones. {semanas >= 1300 ? <span style={{color:T.green}}>Cumples el mínimo</span> : <span style={{color:T.orange}}>Necesitas {fmtNumEs(1300-semanas, 0)} más</span>}</div>
+            {/* Régimen de transición de la reforma (Ley 2381/2024): con menos de 900
+                semanas (hombres) o 750 (mujeres) aplican las reglas nuevas, en las que
+                Colpensiones solo cubre hasta 2,3 SMMLV. Este cálculo usa la Ley 100. */}
+            {semanas < (sexo === "F" ? 750 : 900) && <div style={{ fontSize: 11, color: T.orange, marginTop: 4, lineHeight: 1.5 }}>Con menos de {sexo === "F" ? 750 : 900} semanas te pueden aplicar las reglas de la reforma pensional, donde Colpensiones cubre hasta 2,3 salarios mínimos y el resto va a ahorro individual. Este cálculo usa las reglas de la Ley 100.</div>}
           </div>
 
           <div>
-            <In label="¿Sobre cuántos salarios mínimos cotizas? (IBC) (IBC)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
+            <In label="¿Sobre cuántos salarios mínimos cotizas? (IBC)" value={ibcSM} onChange={setIbcSM} unit="SMMLV" min={1} max={25} step={0.5} />
             <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>Equivale a {fCOP(ibcSM * SM_2026)}/mes. Aporte pensión: {fCOP(ibcSM * SM_2026 * 0.16)}/mes</div>
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Revisa tu desprendible de nómina o planilla PILA</div>
           </div>
@@ -339,7 +310,7 @@ export default function PensionesColpensiones({ trm }) {
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>Ajustes opcionales para mayor precisión. Si no estás seguro, déjalos como están.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
               <div>
-                <In label="¿Piensas subir tu cotización antes de pensionarte? (IBC futuro) (IBC futuro)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
+                <In label="¿Piensas subir tu cotización antes de pensionarte? (IBC futuro)" value={ibcFuturoSM} onChange={setIbcFuturoSM} unit="SMMLV" min={0} max={25} step={0.5} />
                 <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>
                   {ibcFuturoSM > 0 && ibcFuturoSM !== ibcSM
                     ? <>Proyección: cotizarás sobre {ibcFuturoSM} SMMLV ({fCOP(ibcFuturoSM * SM_2026)}/mes) los próximos {aniosFaltantes} años</>
@@ -348,7 +319,7 @@ export default function PensionesColpensiones({ trm }) {
                 {ibcFuturoSM > 0 && ibcFuturoSM > ibcSM * 2 && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>Un salto de más del doble puede ser revisado por la UGPP. Mejor aumentar gradualmente.</div>}
               </div>
               <div>
-                <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL) (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
+                <In label="¿Sobre cuántos SMMLV cotizabas en promedio los últimos 10 años? (IBL)" value={iblPromSM} onChange={setIblPromSM} unit="SMMLV" min={0} max={25} step={0.5} />
                 <div style={{ fontSize: 12, color: T.txt3, marginTop: -8 }}>{iblPromSM > 0 ? "Promedio: " + fCOP(iblPromSM * SM_2026) + "/mes" : "Déjalo en 0 si siempre has cotizado parecido"}</div>
               </div>
               <div>
@@ -372,7 +343,7 @@ export default function PensionesColpensiones({ trm }) {
         <span><strong>Faltan:</strong> {aniosFaltantes} años</span>
         <span><strong>Salario:</strong> {fCOP(ibcSM * SM_2026)}/mes</span>
         <span><strong>Aporte:</strong> {fCOP(ibcSM * SM_2026 * 0.16)}/mes</span>
-        <span><strong>Semanas al jubilarse:</strong> {semanas + aniosFaltantes * 52}</span>
+        <span><strong>Semanas al jubilarse:</strong> {colpJub.semanasTotales.toLocaleString("es-CO")}</span>
       </div>
 
       {/* Tabs */}
@@ -424,7 +395,7 @@ export default function PensionesColpensiones({ trm }) {
               <Row l="Pensión bruta" v={fCOP(colp.pensionBruta)} color={T.txt} />
               <Row l="Tope máximo (25 SMMLV)" v={fCOP(colp.pensionTope)} />
               <Row l="Pensión aplicada" v={fCOP(colp.pensionAplicada)} bold />
-              <Row l="Descuento salud (12%)" v={"-" + fCOP(colp.descuentoSalud)} color={T.red} />
+              <Row l={"Descuento salud 12 %" + (colp.pctDescuento > 0.12 ? " + solidaridad " + fmtPctEs((colp.pctDescuento - 0.12) * 100, 1) : "")} v={"-" + fCOP(colp.descuentoSalud)} color={T.red} />
             </Cd>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -460,7 +431,7 @@ export default function PensionesColpensiones({ trm }) {
                 {[
                   { t: "No heredable — al fallecer se pierde (excepto sustitución pensional)", c: T.red },
                   { t: "Sujeta a reformas pensionales futuras", c: T.orange },
-                  { t: "Ajuste anual por IPC (no pierde poder adquisitivo)", c: T.green },
+                  { t: "13 mesadas al año; ya pensionado se reajusta por IPC (la pensión mínima, por salario mínimo)", c: T.green },
                   { t: "Garantía estatal — respaldada por el gobierno", c: T.blue },
                   colp.cumpleRequisitos ? { t: "Cumples requisitos de edad y semanas", c: T.green } : { t: `Faltan ${aniosFaltantes} años y ${Math.max(0, 1300 - semanas)} semanas`, c: T.orange },
                 ].map((a, i) => (
@@ -476,7 +447,7 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 24, marginTop: 16 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>Hitos de Semanas — ¿Cuánto ganas por seguir cotizando?</h3>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 8px" }}>
-              Por cada <strong>50 semanas</strong> adicionales después de 1,300 → tu tasa sube <strong>1.5%</strong>. Tope: 80%.
+              Por cada <strong>50 semanas</strong> completas después de 1.300 → tu tasa sube <strong>1,5 %</strong>. Tope para tu nivel de ingreso: <strong>{pc(colp.tasaTope)}</strong> (80 % en ingresos bajos, {TOPE_MINIMO} % en los altos).
             </p>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
               Con IBL topado en 25 SMMLV, cada bloque de 50 semanas agrega ~<strong>{fCOP(colp.IBL * 0.015)}</strong>/mes a tu pensión.
@@ -487,28 +458,24 @@ export default function PensionesColpensiones({ trm }) {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
                   <tr>
-                    {["Semanas","Extras","Bloques×50","Bonus","Tasa total","Pensión bruta","Neta (−12%)","Estado"].map(h => (
+                    {["Semanas","Extras","Bloques×50","Bonus","Tasa total","Pensión bruta","Neta","Estado"].map(h => (
                       <th key={h} style={{ padding: "8px 6px", textAlign: h === "Estado" ? "left" : "right", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: "2px solid " + T.border, whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {[1300,1350,1400,1450,1500,1550,1600,1650,1700,1750,1800,1850,1900,1950,2000,2100,2150].map(sem => {
+                    const lq = liquidarPension({ ibl: colp.IBL, semanas: sem, sm: SM_2026 });
                     const extras = Math.max(0, sem - 1300);
-                    const bloques = Math.floor(extras / 50);
-                    const bonus = bloques * 1.5;
-                    const s = colp.IBL / SM_2026;
-                    let tasaB = 65.50 - 0.50 * s;
-                    if (tasaB < 55) tasaB = 55;
-                    const tasaT = Math.min(tasaB + bonus, 80);
-                    const bruta = colp.IBL * tasaT / 100;
-                    const tope = 25 * SM_2026;
-                    const aplicada = Math.min(bruta, tope);
-                    const neta = aplicada * 0.88;
+                    const bloques = lq.tasa.bloques;
+                    const bonus = lq.tasa.bonus;
+                    const tasaT = lq.tasa.total;
+                    const bruta = lq.bruta;
+                    const neta = lq.neta;
                     const esActual = Math.abs(sem - colp.semanasTotales) < 25;
-                    const esAlcanzable = sem <= colp.semanasTotales + aniosFaltantes * 52;
+                    const esAlcanzable = sem <= colpJub.semanasTotales;
                     const yaAlcanzo = sem <= colp.semanasTotales;
-                    const esTope = tasaT >= 80;
+                    const esTope = lq.tasa.recortadaPorTope || tasaT >= lq.tasa.tope;
                     return (
                       <tr key={sem} style={{ background: esActual ? T.blue + "15" : esTope ? T.green + "08" : "transparent", borderBottom: "1px solid " + T.border }}>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: esActual ? 800 : 600, color: esActual ? T.blue : T.txt }}>{sem.toLocaleString("es-CO")}</td>
@@ -519,7 +486,7 @@ export default function PensionesColpensiones({ trm }) {
                         <td style={{ padding: "8px 6px", textAlign: "right", fontFamily: "monospace" }}>{fCOP(bruta)}</td>
                         <td style={{ padding: "8px 6px", textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: T.blue }}>{fCOP(neta)}</td>
                         <td style={{ padding: "8px 6px", fontSize: 12, color: yaAlcanzo ? T.green : esAlcanzable ? T.orange : T.txt3 }}>
-                          {esActual ? "← Tú estás aquí" : yaAlcanzo ? "Ya alcanzado" : esAlcanzable ? "Alcanzable" : esTope ? "Tope 80%" : ""}
+                          {esActual ? "← Tú estás aquí" : yaAlcanzo ? "Ya alcanzado" : esAlcanzable ? "Alcanzable" : esTope ? "Tope " + pc(lq.tasa.tope) : ""}
                         </td>
                       </tr>
                     );
@@ -545,35 +512,43 @@ export default function PensionesColpensiones({ trm }) {
                     Pensión proyectada: <strong style={{ color: T.blue }}>{fCOP(colp.pensionFinal)}/mes</strong>
                   </div>
                 </div>
+                {/* 04-nov-2026: análisis incremental contra parar hoy. Antes: costo de un año
+                    contra 1,5 % × 12 × 20 sin descontar, que inflaba el retorno. Cuenta solo
+                    lo que la decisión cambia: pensión 16 % + solidaridad (la salud se paga
+                    igual) contra la DIFERENCIA de mesada neta, 13 mesadas, en pesos de hoy. */}
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 8 }}>Costo de cada bloque</div>
-                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
-                    Cada 50 semanas (~1 año) te compra:<br/>
-                    <strong style={{ color: T.green }}>+1.5% de tasa = +{fCOP(colp.IBL * 0.015 * 0.88)}/mes neto</strong><br/><br/>
-                    Aportas: {fCOP(colp.IBC * 0.16)}/mes × 12 = <strong>{fCOP(colp.IBC * 0.16 * 12)}/año</strong><br/><br/>
-                    Ganancia: {fCOP(colp.IBL * 0.015 * 0.88)} × 12 meses × 20 años =<br/>
-                    <strong style={{ color: T.green }}>{fCOP(colp.IBL * 0.015 * 0.88 * 12 * 20)} en pensión total</strong><br/><br/>
-                    vs Costo: {fCOP(colp.IBC * 0.16 * 12)}<br/>
-                    <strong style={{ color: T.green }}>Retorno: {((colp.IBL * 0.015 * 0.88 * 12 * 20) / (colp.IBC * 0.16 * 12)).toFixed(1)}x tu inversión</strong>
-                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.orange, marginBottom: 8 }}>Cotizar hasta los {edadJub} vs parar hoy</div>
+                  {valeLaPena ? (
+                    <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
+                      Pagas: <strong>{fCOP(valeLaPena.costoMes)}/mes</strong> ({fmtPctEs(valeLaPena.pctCosto * 100, 1)} del IBC: pensión + solidaridad; la salud la pagas igual)<br/>
+                      Durante {fmtNumEs(aniosFaltantes, 1)} años: <strong>{fCOP(valeLaPena.costoTotal)}</strong><br/><br/>
+                      Tu mesada neta pasa de {fCOP(valeLaPena.parar.neta)} a <strong style={{ color: T.green }}>{fCOP(valeLaPena.seguir.neta)}</strong><br/>
+                      Ganas <strong style={{ color: T.green }}>+{fCOP(valeLaPena.beneficioMesNeto)}/mes</strong> × 13 mesadas, de por vida<br/><br/>
+                      Recuperas lo pagado en <strong>{Number.isFinite(valeLaPena.paybackAños) ? fmtNumEs(valeLaPena.paybackAños, 1) + " años" : "—"}</strong> de pensión<br/>
+                      Rentabilidad real: <strong style={{ color: valeLaPena.tirAnual > 4 ? T.green : T.orange }}>{valeLaPena.tirAnual != null && Number.isFinite(valeLaPena.tirAnual) ? fmtPctEs(valeLaPena.tirAnual, 1) + " al año" : "—"}</strong>
+                      <div style={{ fontSize: 11, color: T.txt3, marginTop: 6 }}>Sobre inflación, con esperanza de vida de {fmtNumEs(valeLaPena.mesesBeneficio / 12, 1)} años al pensionarte. Compárala con lo que te rendiría esa plata invertida.</div>
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: T.txt2 }}>Ya tienes la edad de pensión.</div>
+                  )}
                 </div>
               </div>
               <div>
                 <div style={{ background: T.bg3, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>Para llegar al 80% (tope máximo)</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>Para llegar a tu tope ({pc(colp.tasaTope)})</div>
                   {(() => {
                     const tasaActual = colp.tasaTotal;
-                    const falta = Math.max(0, 80 - tasaActual);
+                    const falta = Math.max(0, colp.tasaTope - tasaActual);
                     const bloquesNecesarios = Math.ceil(falta / 1.5);
                     const semanasNecesarias = bloquesNecesarios * 50;
-                    const aniosNecesarios = (semanasNecesarias / 52).toFixed(1);
-                    const pensionAl80 = Math.min(colp.IBL * 0.80, 25 * SM_2026) * 0.88;
+                    const aniosNecesarios = fmtNumEs(semanasNecesarias / SEMANAS_POR_AÑO, 1);
+                    const pensionAl80 = liquidarPension({ ibl: colp.IBL, semanas: colp.semanasTotales + semanasNecesarias, sm: SM_2026 }).neta;
                     return (
                       <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.8 }}>
-                        Te falta: <strong style={{ color: T.orange }}>{pc(falta)}</strong> para llegar al 80%<br/>
+                        Te falta: <strong style={{ color: T.orange }}>{pc(falta)}</strong> para llegar a tu tope<br/>
                         Necesitas: <strong>{bloquesNecesarios} bloques</strong> × 50 = <strong>{semanasNecesarias.toLocaleString("es-CO")} semanas</strong><br/>
                         Equivale a: <strong>~{aniosNecesarios} años</strong> más cotizando<br/><br/>
-                        Pensión al 80%: <strong style={{ color: T.green }}>{fCOP(pensionAl80)}/mes</strong><br/>
+                        Pensión en el tope: <strong style={{ color: T.green }}>{fCOP(pensionAl80)}/mes</strong><br/>
                         vs tu actual: {fCOP(colp.pensionFinal)}/mes<br/>
                         Diferencia: <strong style={{ color: T.green }}>+{fCOP(pensionAl80 - colp.pensionFinal)}/mes</strong>
                       </div>
@@ -583,10 +558,10 @@ export default function PensionesColpensiones({ trm }) {
                 <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.08), rgba(59,130,246,0.05))", border: "1px solid " + T.green + "20", borderRadius: 12, padding: 16 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>Recomendación actuarial</div>
                   <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-                    {colp.tasaTotal >= 75 ? (
-                      <span>Estás muy cerca del tope. <strong style={{ color: T.green }}>Sigue cotizando al tope de 25 SMMLV</strong> hasta alcanzar el 80%. La diferencia es significativa.</span>
+                    {colp.tasaTotal >= colp.tasaTope - 3 ? (
+                      <span>Estás muy cerca del tope. <strong style={{ color: T.green }}>Sigue cotizando al tope de 25 SMMLV</strong> hasta alcanzar tu tope. La diferencia es significativa.</span>
                     ) : colp.tasaTotal >= 65 ? (
-                      <span>Tu tasa es buena. Cada año adicional agrega ~{fCOP(colp.IBL * 0.015 * 0.88)}/mes a tu pensión. <strong style={{ color: T.blue }}>Vale la pena seguir al tope si puedes.</strong></span>
+                      <span>Tu tasa es buena. Cada año adicional agrega ~{fCOP(colp.IBL * 0.015 * (1 - colp.pctDescuento))}/mes a tu pensión. <strong style={{ color: T.blue }}>Vale la pena seguir al tope si puedes.</strong></span>
                     ) : colp.tasaTotal >= 55 ? (
                       <span>Tu tasa está en el rango base. <strong style={{ color: T.orange }}>Cada 50 semanas extras son valiosas</strong> — no dejes de cotizar si puedes mantener el IBC alto.</span>
                     ) : (
@@ -604,7 +579,7 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 24, marginTop: 16 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 6 }}>¿Qué pasa si sigo cotizando X años más?</h3>
             <p style={{ fontSize: 12, color: T.txt3, margin: "0 0 16px" }}>
-              Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString("es-CO")} semanas</strong>. Cada año sumas ~52 semanas. Mira cómo cambia tu pensión:
+              Hoy tienes <strong style={{ color: T.blue }}>{semanas.toLocaleString("es-CO")} semanas</strong>. Cada año sumas ~51,4 semanas (Colpensiones cuenta 360 días ÷ 7). Mira cómo cambia tu pensión:
             </p>
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
@@ -617,15 +592,16 @@ export default function PensionesColpensiones({ trm }) {
                 </thead>
                 <tbody>
                   {(() => {
-                    const hoy = calcColpensiones({ sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub });
+                    const base = { sexo, edad, semanasActuales: semanas, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, edadJub };
+                    const hoy = calcColpensiones(base);
                     const aniosArr = [0, 1, 2, 3, 5, 7, 10, 15, Math.max(0, edadJub - edad)].filter((v, i, a) => v >= 0 && a.indexOf(v) === i).sort((a, b) => a - b);
                     return aniosArr.map(a => {
-                      const semFuturas = semanas + a * 52;
-                      const sc = calcColpensiones({ sexo, edad, semanasActuales: semFuturas, ibcSM, ipc, edadJub });
+                      const sc = calcColpensiones({ ...base, aniosMas: a });
+                      const semFuturas = sc.semanasTotales;
                       const diff = sc.pensionFinal - hoy.pensionFinal;
                       const esHoy = a === 0;
                       const esJub = a === Math.max(0, edadJub - edad);
-                      const total20 = sc.pensionFinal * 12 * 20;
+                      const total20 = sc.pensionFinal * MESADAS_AÑO * 20;
                       return (
                         <tr key={a} style={{ background: esJub ? T.blue + "10" : esHoy ? T.bg3 : "transparent", borderBottom: "1px solid " + T.border }}>
                           <td style={{ padding: "10px 8px", fontWeight: 700, color: esJub ? T.blue : esHoy ? T.orange : T.txt }}>
@@ -649,10 +625,11 @@ export default function PensionesColpensiones({ trm }) {
               </table>
             </div>
             <div style={{ marginTop: 12, padding: 14, background: T.bg3, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-              <strong style={{ color: T.green }}>Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString("es-CO")} semanas y pagas <strong>5 años más</strong>, acumulas {(semanas + 5 * 52).toLocaleString("es-CO")} semanas.
+              <strong style={{ color: T.green }}>Cómo leer esta tabla:</strong> Si hoy tienes {semanas.toLocaleString("es-CO")} semanas y pagas <strong>5 años más</strong>, acumulas {Math.round(semanas + 5 * SEMANAS_POR_AÑO).toLocaleString("es-CO")} semanas.
               {(() => {
-                const sc5 = calcColpensiones({ sexo, edad, semanasActuales: semanas + 5 * 52, ibcSM, ipc, edadJub });
-                const hoy2 = calcColpensiones({ sexo, edad, semanasActuales: semanas, ibcSM, ipc, edadJub });
+                const b5 = { sexo, edad, semanasActuales: semanas, ibcSM, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0, iblProm: iblPromSM > 0 ? iblPromSM * SM_2026 : 0, edadJub };
+                const sc5 = calcColpensiones({ ...b5, aniosMas: 5 });
+                const hoy2 = calcColpensiones(b5);
                 return ` Tu tasa sube de ${pc(hoy2.tasaTotal)} a ${pc(sc5.tasaTotal)} y tu pensión pasa de ${fCOP(hoy2.pensionFinal)} a ${fCOP(sc5.pensionFinal)}/mes — una diferencia de ${fCOP(sc5.pensionFinal - hoy2.pensionFinal)}/mes de por vida.`;
               })()}
             </div>
@@ -677,7 +654,7 @@ export default function PensionesColpensiones({ trm }) {
                     <span style={{ color: T.txt3 }}>Tus semanas extras: {colp.semanasExtra} → +{pc(colp.bonusSemanas)}</span>
                   </div>
                   <div style={{ background: T.bg3, borderRadius: 10, padding: 14 }}>
-                    <strong style={{ color: T.orange }}>Tope máximo:</strong> 80% (no puede pasar de ahí)<br/>
+                    <strong style={{ color: T.orange }}>Tope máximo:</strong> baja con el ingreso — 80 % en ingresos bajos, {TOPE_MINIMO} % en los altos. El tuyo: {pc(colp.tasaTope)}<br/>
                     <span style={{ color: T.txt3 }}>Tu tasa final: <strong style={{ color: T.blue, fontSize: 16 }}>{pc(colp.tasaTotal)}</strong></span>
                   </div>
                 </div>
@@ -695,8 +672,8 @@ export default function PensionesColpensiones({ trm }) {
                     </div>
                   </div>
                 </div>
-                {colp.tasaTotal < 80 && <div style={{ marginTop: 8, fontSize: 12, color: T.green }}>
-                  Si cotizas {Math.ceil((80 - colp.tasaTotal) / 1.5) * 50} semanas más llegas al tope de 80%
+                {colp.tasaTotal < colp.tasaTope && <div style={{ marginTop: 8, fontSize: 12, color: T.green }}>
+                  Si cotizas {Math.ceil((colp.tasaTope - colp.tasaTotal) / 1.5) * 50} semanas más llegas a tu tope de {pc(colp.tasaTope)}
                 </div>}
               </div>
             </div>
@@ -706,14 +683,14 @@ export default function PensionesColpensiones({ trm }) {
           <Cd style={{ padding: 20, marginTop: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Tu tasa de reemplazo vs máximos</div>
             <div style={{ position: "relative", height: 32, background: T.bg3, borderRadius: 12, overflow: "hidden", marginBottom: 8 }}>
-              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / 80 * 100, 100) + "%", background: "linear-gradient(90deg, #ff5000 0%, #f59e0b 30%, #00c805 60%, #3b82f6 100%)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
+              <div style={{ height: "100%", width: Math.min(colp.tasaTotal / colp.tasaTope * 100, 100) + "%", background: "linear-gradient(90deg, #ff5000 0%, #f59e0b 30%, #00c805 60%, #3b82f6 100%)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: 12, minWidth: 60 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: "#000" }}>{pc(colp.tasaTotal)}</span>
               </div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: T.txt3 }}>
               <span>55% mínimo</span>
-              <span>65.5% base</span>
-              <span>80% máximo</span>
+              <span>55–65,5 % base</span>
+              <span>{pc(colp.tasaTope)} máximo</span>
             </div>
           </Cd>
         </div>
