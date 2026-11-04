@@ -87,3 +87,35 @@ describe("¿vale la pena seguir cotizando? (incremental, no el payback del infor
     expect(v.tirAnual).toBeLessThan(8);
   });
 });
+
+describe("serie de recuperación", () => {
+  const v = valeLaPenaSeguir({ sexo: "M", edad: 51.12, semanasHoy: 1310.9, iblHoy: 32_126_945, ibcSM: 25, años: 10.88 });
+  it("baja hasta la pensión, luego sube y cruza el cero en el año de recuperación", () => {
+    const fondo = Math.min(...v.serie.map((p) => p.acumulado));
+    expect(fondo).toBeCloseTo(-v.costoTotal, -3);
+    expect(Math.abs(v.añoRecupera - v.añosHastaPension - v.paybackAños)).toBeLessThan(1 / 12 + 1e-9); // resolución mensual
+    expect(v.ganaTotal).toBeCloseTo(v.beneficioTotal - v.costoTotal, -3);
+  });
+});
+
+import { calcularRAIS, capitalPorPesoDeMesada, añosDePago } from "../../src/lib/pensionColpensiones.js";
+describe("fondo privado (RAIS), en pesos de hoy", () => {
+  it("13 mesadas: el capital por peso de mesada es 13 × la anualidad", () => {
+    expect(capitalPorPesoDeMesada(1, 0)).toBe(13);
+  });
+  it("el cónyuge alarga los años de pago (sustitución)", () => {
+    expect(añosDePago({ sexo: "M", edadPension: 62, conyuge: null })).toBeCloseTo(20.7, 1);
+    expect(añosDePago({ sexo: "M", edadPension: 62, conyuge: { edadAlPensionarse: 57 } })).toBeCloseTo(27.3, 1);
+  });
+  it("25 SMMLV, 200 MM de saldo, 10 años al 4 % real: mesada neta de un dígito de millones, no 20 MM", () => {
+    const r = calcularRAIS({ saldoHoy: 200e6, ibcSM: 25, rendRealPct: 4, años: 10, sexo: "M", conyuge: { edadAlPensionarse: 57 } });
+    expect(r.saldoFinal).toBeGreaterThan(1.0e9);
+    expect(r.saldoFinal).toBeLessThan(1.1e9);
+    expect(r.retiroProgramado).toBeGreaterThan(3.5e6);
+    expect(r.retiroProgramado).toBeLessThan(5.5e6);
+    expect(r.rentaVitalicia).toBeLessThan(r.retiroProgramado);
+  });
+  it("nunca baja de la pensión mínima", () => {
+    expect(calcularRAIS({ saldoHoy: 0, ibcSM: 1, años: 1 }).retiroProgramadoBruta).toBe(1_750_905);
+  });
+});

@@ -5,7 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaCh
 import PageHeader from "./PageHeader.jsx";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
-import { iblProyectado, liquidarPension, tasaReemplazo, pctDescuentoMesada, valeLaPenaSeguir, SEMANAS_POR_AÑO, SEMANAS_MINIMAS, MESADAS_AÑO, TOPE_IBC_SM, TOPE_MINIMO } from "../lib/pensionColpensiones.js";
+import { calcularRAIS, iblProyectado, liquidarPension, tasaReemplazo, pctDescuentoMesada, valeLaPenaSeguir, SEMANAS_POR_AÑO, SEMANAS_MINIMAS, MESADAS_AÑO, TOPE_IBC_SM, TOPE_MINIMO } from "../lib/pensionColpensiones.js";
 
 /* ═══════════════════════════════════════════════════
    MÓDULO PENSIONES COLOMBIA — Cálculo Actuarial
@@ -95,80 +95,11 @@ function calcColpensiones({ sexo, edad, semanasActuales, ibcSM, ibcFuturo, iblPr
   };
 }
 
-function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, bonoPensional, sexo, ibcFuturo }) {
-  const IBC = ibcSM * SM_2026;
-
-  // ═══ APORTE REAL AL AHORRO INDIVIDUAL ═══
-  // Total cotización: 16% del IBC
-  // Pero NO todo va a la cuenta individual:
-  //   - 11.5% → cuenta de ahorro individual (lo que crece)
-  //   - 1.5%  → Fondo Garantía Pensión Mínima
-  //   - 3.0%  → Administración + seguros
-  const aporteTotal = IBC * 0.16;
-  const ibcEfectivo = ibcFuturo > 0 ? ibcFuturo : IBC;
-  const aporteMes = ibcEfectivo * 0.115; // Solo lo que va a la cuenta
-  const comisionMes = IBC * 0.03; // Lo que cobra la AFP
-  const fondoGarantia = IBC * 0.015;
-
-  const rendMes = Math.pow(1 + rendAnual / 100, 1 / 12) - 1;
-
-  let saldo = saldoActual + (bonoPensional || 0);
-  const proyeccion = [];
-  for (let y = 1; y <= aniosCotizar; y++) {
-    for (let m = 0; m < 12; m++) {
-      saldo = saldo * (1 + rendMes) + aporteMes + (aportesVolMes || 0);
-    }
-    proyeccion.push({ anio: y, saldo: Math.round(saldo) });
-  }
-
-  // ═══ MODALIDADES DE PENSIÓN ═══
-
-  // 1. RETIRO PROGRAMADO
-  // Saldo queda en la AFP, se recalcula cada año
-  // Esperanza de vida hombre 62 años: ~20.7 años (tabla RV08)
-  // Rendimiento real durante retiro: ~4% anual
-  // Tabla RV08 Superfinanciera — esperanza de vida según sexo
-  // Hombre 62 años: 20.7 años | Mujer 57 años: 27.3 años
-  const esperanzaVida = sexo === "F" ? 27.3 : 20.7; // Tabla RV08 por sexo
-  const mesesVida = Math.round(esperanzaVida * 12);
-  const rRetiro = Math.pow(1.04, 1/12) - 1;
-  const factorRP = rRetiro > 0 ? (1 - Math.pow(1 + rRetiro, -mesesVida)) / rRetiro : mesesVida;
-  const retiroProgramado = saldo / factorRP;
-
-  // 2. RENTA VITALICIA
-  // Se transfiere saldo a aseguradora, pago fijo de por vida
-  // Aseguradora usa tasa más conservadora (~3%) y esperanza 22 años
-  // Resultado: ~15-20% menos que retiro programado
-  // Renta vitalicia: aseguradora usa esperanza más conservadora
-  const esperanzaVitalicia = esperanzaVida + 2; // +2 años margen aseguradora
-  const mesesVitalicia = Math.round(esperanzaVitalicia * 12);
-  const rVitalicia = Math.pow(1.03, 1/12) - 1;
-  const factorRV = rVitalicia > 0 ? (1 - Math.pow(1 + rVitalicia, -mesesVitalicia)) / rVitalicia : mesesVitalicia;
-  const rentaVitalicia = saldo / factorRV;
-
-  // Pensión mínima garantizada: si cualquier modalidad < 1 SMMLV,
-  // el Fondo de Garantía complementa hasta el mínimo
-  const pensionMinima = SM_2026;
-  const retiroFinal = Math.max(retiroProgramado, pensionMinima);
-  const rentaFinal = Math.max(rentaVitalicia, pensionMinima);
-
-  return {
-    saldoFinal: saldo,
-    aporteTotal,
-    aporteMes,
-    comisionMes,
-    fondoGarantia,
-    totalAportado: aporteMes * 12 * aniosCotizar + saldoActual,
-    totalComisiones: comisionMes * 12 * aniosCotizar,
-    rendimiento: saldo - (aporteMes * 12 * aniosCotizar + saldoActual),
-    retiroProgramado: retiroFinal,
-    rentaVitalicia: rentaFinal,
-    rentaMes: retiroFinal, // Default to retiro programado
-    proyeccion,
-    heredable: true,
-    factorRP: factorRP.toFixed(1),
-    factorRV: factorRV.toFixed(1),
-  };
+// Fondo privado (RAIS). 04-nov-2026: el cálculo vive en lib/pensionColpensiones.js
+// (calcularRAIS): pesos de hoy con rendimiento real, 13 mesadas, capital para la
+// sustitución al cónyuge y mesada neta. Antes daba mesadas de ~20 MM imposibles.
+function calcRAIS({ saldoActual, ibcSM, rendAnual, aniosCotizar, aportesVolMes, bonoPensional, sexo, conyuge }) {
+  return calcularRAIS({ saldoHoy: saldoActual, ibcSM, rendRealPct: rendAnual, años: aniosCotizar, aportesVolMes, bono: bonoPensional, sexo, conyuge, sm: SM_2026 });
 }
 
 export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarPension }) {
@@ -179,8 +110,11 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
   const [iblPromSM, setIblPromSM] = useState(0); // Promedio últimos 10 años (0 = usar IBC actual)
   const [ibcFuturoSM, setIbcFuturoSM] = useState(0); // 0 = igual al actual
   const [ipc, setIpc] = useState(5.5);
-  const [privSaldo, setPrivSaldo] = useState(200_000_000);
-  const [privRend, setPrivRend] = useState(8);
+  const [privSaldo, setPrivSaldo] = useState(0);
+  const [privRend, setPrivRend] = useState(4); // real, sobre la inflación
+  const [tieneConyuge, setTieneConyuge] = useState(true);
+  const [edadConyuge, setEdadConyuge] = useState(0); // 0 = cinco años menor
+  const conyugeRAIS = tieneConyuge ? { sexo: sexo === "F" ? "M" : "F", edadAlPensionarse: (edadConyuge > 0 ? edadConyuge : (sexo === "F" ? edad + 3 : edad - 5)) + Math.max(0, (sexo === "F" ? 57 : 62) - edad) } : null;
   const [aportesVol, setAportesVol] = useState(0); // Aportes voluntarios mensuales
   const [bonoPensional, setBonoPensional] = useState(0); // Bono si se trasladó
   const [tab, setTab] = useState("colp");
@@ -204,8 +138,8 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
   }) : null, [sexo, edad, semanas, iblPromSM, ibcSM, ibcFuturoSM, aniosFaltantes]);
 
   const rais = useMemo(() => calcRAIS({
-    saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo, ibcFuturo: ibcFuturoSM > 0 ? ibcFuturoSM * SM_2026 : 0,
-  }), [privSaldo, ibcSM, ibcFuturoSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo]);
+    saldoActual: privSaldo, ibcSM: ibcFuturoSM > 0 ? ibcFuturoSM : ibcSM, rendAnual: privRend, aniosCotizar: aniosFaltantes, aportesVolMes: aportesVol, bonoPensional, sexo, conyuge: conyugeRAIS,
+  }), [privSaldo, ibcSM, ibcFuturoSM, privRend, aniosFaltantes, aportesVol, bonoPensional, sexo, tieneConyuge, edadConyuge, edad]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tabs = [
     { id: "colp", icon: "", label: "Colpensiones" },
@@ -277,13 +211,26 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
         
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 20, alignItems: "start" }}>
           <div>
-            <In label="¿Cuánto tienes ahorrado?" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} step={1000000} />
+            <In label="Saldo de tu cuenta en el fondo" value={privSaldo} onChange={setPrivSaldo} unit="COP" min={0} step={1000000} />
             <div style={AYUDA}>Consulta tu extracto del fondo</div>
           </div>
           <div>
-            <In label="Rendimiento esperado anual" value={privRend} onChange={setPrivRend} unit="%" min={0} max={20} step={0.5} />
-            <div style={AYUDA}>Promedio histórico fondos Colombia: 7-10%</div>
+            <In label="Rendimiento por encima de la inflación" value={privRend} onChange={setPrivRend} unit="% real" min={0} max={10} step={0.5} />
+            <div style={AYUDA}>Los fondos han rentado 7–10 % nominal, unos 3–5 % sobre la inflación. Todo se muestra en pesos de hoy.</div>
           </div>
+          <div>
+            <label style={LABEL}>¿Tienes cónyuge o compañera(o)?</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[{ v: true, l: "Sí" }, { v: false, l: "No" }].map((o) => (
+                <button key={String(o.v)} type="button" onClick={() => setTieneConyuge(o.v)} style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: `2px solid ${tieneConyuge === o.v ? T.blue : T.border}`, background: tieneConyuge === o.v ? T.blue + "15" : T.bg3, color: tieneConyuge === o.v ? T.blue : T.txt2, cursor: "pointer", fontWeight: 600, fontSize: 14 }}>{o.l}</button>
+              ))}
+            </div>
+            <div style={AYUDA}>El fondo guarda plata para seguir pagándole a tu cónyuge si faltas: la mesada baja.</div>
+          </div>
+          {tieneConyuge && <div>
+            <In label="Edad de tu cónyuge" value={edadConyuge || (sexo === "F" ? edad + 3 : edad - 5)} onChange={setEdadConyuge} unit="años" min={18} max={90} />
+            <div style={AYUDA}>Mientras más joven, más años de pago y menor la mesada.</div>
+          </div>}
         </div>
       </Cd>
 
@@ -298,7 +245,7 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
         <Cd glow={rais.retiroProgramado > colpJub.pensionFinal ? T.green : null} style={{ padding: 20, textAlign: "center" }}>
           <div style={{ fontSize: 12, color: T.txt3 }}>Fondo privado</div>
           <div style={{ fontSize: 28, fontWeight: 700, color: T.blue, margin: "8px 0" }}>{fCOP(rais.retiroProgramado)}<span style={{fontSize:12,fontWeight:400,color:T.txt3}}>/mes</span></div>
-          <div style={{ fontSize: 12, color: T.txt3 }}>Retiro programado • Saldo: {fCOP(rais.saldoFinal)}</div>
+          <div style={{ fontSize: 12, color: T.txt3 }}>{privSaldo > 0 ? <>Neta, retiro programado • Saldo al pensionarte: {fCOP(rais.saldoFinal)}</> : "Escribe el saldo de tu fondo para comparar"}</div>
           {rais.retiroProgramado > colpJub.pensionFinal && <div style={{ fontSize: 12, color: T.green, fontWeight: 600, marginTop: 4 }}>Te conviene más</div>}
         </Cd>
       </div>
@@ -783,11 +730,11 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
               <div style={{ fontSize: 28, marginBottom: 8 }}></div>
               <div style={{ fontSize: 16, fontWeight: 700, color: T.blue, marginBottom: 12 }}>Colpensiones</div>
               <div style={{ fontSize: 12, color: T.txt3 }}>PENSIÓN MENSUAL</div>
-              <div style={{ fontSize: 36, fontWeight: 700, color: T.blue }}>{fCOP(colp.pensionFinal)}</div>
-              <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>{fUSD(colp.pensionFinal, trm)}</div>
+              <div style={{ fontSize: 36, fontWeight: 700, color: T.blue }}>{fCOP(colpJub.pensionFinal)}</div>
+              <div style={{ fontSize: 12, color: T.txt3, marginTop: 4 }}>{fUSD(colpJub.pensionFinal, trm)}</div>
               <div style={{ marginTop: 16, fontSize: 12, color: T.txt2, textAlign: "left" }}>
-                <Row l="Tasa reemplazo" v={pc(colp.tasaTotal)} color={T.blue} bold />
-                <Row l="En 20 años" v={fCOP(colp.total20Anios)} />
+                <Row l="Tasa reemplazo" v={pc(colpJub.tasaTotal)} color={T.blue} bold />
+                <Row l="En 20 años" v={fCOP(colpJub.total20Anios)} />
                 <Row l="Heredable" v="No" color={T.red} />
                 <Row l="Garantía" v="Estado" color={T.green} />
                 <Row l="Riesgo" v="Reformas" color={T.orange} />
@@ -814,8 +761,8 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
           <Cd style={{ padding: 24, marginBottom: 16 }}>
             <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 16 }}>Comparación Visual</div>
             {[
-              { l: "Pensión mensual", colp: colp.pensionFinal, rais: rais.rentaMes },
-              { l: "Total 20 años", colp: colp.total20Anios, rais: rais.rentaMes * 240 },
+              { l: "Pensión mensual", colp: colpJub.pensionFinal, rais: rais.rentaMes },
+              { l: "Total 20 años", colp: colpJub.total20Anios, rais: rais.rentaMes * MESADAS_AÑO * 20 },
               { l: "Capital heredable", colp: 0, rais: rais.saldoFinal },
             ].map((c) => {
               const max = Math.max(c.colp, c.rais, 1);
@@ -844,17 +791,17 @@ export default function PensionesColpensiones({ trm, pensionGuardada, onGuardarP
           </Cd>
 
           {/* Winner */}
-          <Cd glow={rais.rentaMes > colp.pensionFinal ? T.green : T.blue} style={{ padding: 32, textAlign: "center" }}>
+          <Cd glow={rais.rentaMes > colpJub.pensionFinal ? T.green : T.blue} style={{ padding: 32, textAlign: "center" }}>
             <div style={{ fontSize: 16, color: T.txt2 }}>
-              {rais.rentaMes > colp.pensionFinal ? "El Fondo Privado paga más" : "Colpensiones paga más"}
+              {rais.rentaMes > colpJub.pensionFinal ? "El Fondo Privado paga más" : "Colpensiones paga más"}
             </div>
-            <div style={{ fontSize: 56, fontWeight: 700, background: "linear-gradient(135deg, " + (rais.rentaMes > colp.pensionFinal ? T.green : T.blue) + ", " + T.cyan + ")", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              {rais.rentaMes > colp.pensionFinal ? (rais.rentaMes / Math.max(colp.pensionFinal, 1)).toFixed(1) + "x" : (colp.pensionFinal / Math.max(rais.rentaMes, 1)).toFixed(1) + "x"}
+            <div style={{ fontSize: 56, fontWeight: 700, background: "linear-gradient(135deg, " + (rais.rentaMes > colpJub.pensionFinal ? T.green : T.blue) + ", " + T.cyan + ")", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              {rais.rentaMes > colpJub.pensionFinal ? (rais.rentaMes / Math.max(colpJub.pensionFinal, 1)).toFixed(1) + "x" : (colpJub.pensionFinal / Math.max(rais.rentaMes, 1)).toFixed(1) + "x"}
             </div>
             <div style={{ fontSize: 14, color: T.txt2 }}>
-              {fCOP(Math.max(rais.rentaMes, colp.pensionFinal))}/mes vs {fCOP(Math.min(rais.rentaMes, colp.pensionFinal))}/mes
+              {fCOP(Math.max(rais.rentaMes, colpJub.pensionFinal))}/mes vs {fCOP(Math.min(rais.rentaMes, colpJub.pensionFinal))}/mes
             </div>
-            {rais.rentaMes > colp.pensionFinal && (
+            {rais.rentaMes > colpJub.pensionFinal && (
               <div style={{ fontSize: 13, color: T.green, marginTop: 8 }}>+ Capital heredable de {fCOP(rais.saldoFinal)}</div>
             )}
           </Cd>

@@ -151,5 +151,93 @@ export function valeLaPenaSeguir({ sexo = "M", edad, semanasHoy, iblHoy, ibcSM, 
     tirAnual = vpn(0) > 0 ? null : -Infinity;
   }
 
-  return { parar, seguir, pctCosto, costoMes, costoTotal, beneficioMesNeto, beneficioMes, beneficioTotal: beneficioMes * mesesBeneficio, paybackAños, tirAnual, mesesBeneficio };
+  // Acumulado año a año (pesos de hoy, sin descontar): baja mientras se cotiza,
+  // sube desde la pensión. Cruza el cero en el año en que se recupera lo pagado.
+  const totalMeses = mesesHastaPension + mesesBeneficio;
+  const serie = [{ año: 0, acumulado: 0 }];
+  let acum = 0, mesRecupera = null;
+  for (let m = 0; m < totalMeses; m++) {
+    if (m < mesesCosto) acum -= costoMes;
+    if (m >= mesesHastaPension) acum += beneficioMes;
+    if (mesRecupera == null && m >= mesesHastaPension && acum >= 0 && costoTotal > 0) mesRecupera = m + 1;
+    if ((m + 1) % 12 === 0 || m + 1 === mesesHastaPension || m === totalMeses - 1) serie.push({ año: (m + 1) / 12, acumulado: acum });
+  }
+  return {
+    parar, seguir, pctCosto, costoMes, costoTotal, beneficioMesNeto, beneficioMes, beneficioTotal: beneficioMes * mesesBeneficio, paybackAños, tirAnual, mesesBeneficio,
+    serie, añosHastaPension: mesesHastaPension / 12, añosVida: mesesBeneficio / 12,
+    añoRecupera: mesRecupera != null ? mesRecupera / 12 : null, ganaTotal: acum,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FONDO PRIVADO (RAIS) — 04-nov-2026.
+// Santiago: "los fondos privados como Protección o Porvenir jamás llegan a pagar
+// 20 MM al mes de pensión, tiene que haber un error". Lo había, cuatro:
+//  1. Se acumulaba al rendimiento NOMINAL (8 %) y la mesada salía en pesos de
+//     dentro de 10 años, al lado de una pensión de Colpensiones en pesos de hoy.
+//     Ahora todo es real: rendimiento sobre la inflación.
+//  2. La mesada se calculaba con 12 pagos al año. Son 13.
+//  3. No contaba al cónyuge: el fondo tiene que reservar capital para la
+//     sustitución pensional, que dura hasta que muera el último de los dos.
+//     Para un hombre de 62 con esposa de 57 eso pasa de ~21 a ~27 años de pago.
+//  4. Se mostraba bruta contra la neta de Colpensiones (sin el 12 % de salud).
+// ═══════════════════════════════════════════════════════════════════════════
+
+export const RAIS_APORTE_CUENTA = 0.115;   // de 16 %: 11,5 % a la cuenta
+export const RAIS_COMISION = 0.03;         // administración + seguro previsional
+export const RAIS_TASA_TECNICA_RP = 4;     // % real, retiro programado
+export const RAIS_TASA_TECNICA_RV = 3;     // % real, renta vitalicia (aseguradora)
+
+/** Esperanza de vida aproximada (tabla RV08) a una edad dada. */
+export function esperanzaVida(sexo, edad) {
+  const ref = sexo === "F" ? { e: 57, v: ESPERANZA_VIDA.F } : { e: 62, v: ESPERANZA_VIDA.M };
+  return Math.max(5, ref.v - 0.82 * ((Number(edad) || ref.e) - ref.e));
+}
+
+/** Años que el fondo debe pagar: hasta que muera el último (afiliado o cónyuge). */
+export function añosDePago({ sexo, edadPension, conyuge }) {
+  const propio = esperanzaVida(sexo, edadPension);
+  if (!conyuge) return propio;
+  const sexoC = conyuge.sexo || (sexo === "F" ? "M" : "F");
+  const edadC = Number(conyuge.edadAlPensionarse) || edadPension;
+  return Math.max(propio, esperanzaVida(sexoC, edadC));
+}
+
+/** Pesos de capital que se necesitan por cada peso de mesada mensual (13 mesadas). */
+export function capitalPorPesoDeMesada(años, tasaRealPct) {
+  const i = tasaRealPct / 100;
+  const n = Math.round(años);
+  const anualidad = i > 0 ? (1 - Math.pow(1 + i, -n)) / i * (1 + i) : n; // pago anticipado
+  return MESADAS_AÑO * anualidad;
+}
+
+export function calcularRAIS({ saldoHoy = 0, ibcSM, rendRealPct = 4, años, aportesVolMes = 0, bono = 0, sexo = "M", conyuge = null, sm = SMMLV_2026 }) {
+  const ibc = Math.min(TOPE_IBC_SM, Number(ibcSM) || 0) * sm;
+  const aporteMes = ibc * RAIS_APORTE_CUENTA;
+  const r = Math.pow(1 + rendRealPct / 100, 1 / 12) - 1;
+  const n = Math.round(Math.max(0, años) * 12);
+  let saldo = (Number(saldoHoy) || 0) + (Number(bono) || 0);
+  const proyeccion = [];
+  for (let m = 1; m <= n; m++) {
+    saldo = saldo * (1 + r) + aporteMes + (Number(aportesVolMes) || 0);
+    if (m % 12 === 0 || m === n) proyeccion.push({ anio: Math.round(m / 12 * 10) / 10, saldo: Math.round(saldo) });
+  }
+  const totalAportado = (aporteMes + (Number(aportesVolMes) || 0)) * n + (Number(saldoHoy) || 0) + (Number(bono) || 0);
+  const edadPensionX = edadPension(sexo);
+  const pago = añosDePago({ sexo, edadPension: edadPensionX, conyuge });
+  const mesada = (tasa) => {
+    const bruta = Math.max(saldo / capitalPorPesoDeMesada(pago, tasa), sm); // garantía de pensión mínima
+    const pct = pctDescuentoMesada(bruta, sm);
+    return { bruta, neta: bruta * (1 - pct), pctDescuento: pct };
+  };
+  const rp = mesada(RAIS_TASA_TECNICA_RP);
+  const rv = mesada(RAIS_TASA_TECNICA_RV);
+  return {
+    saldoFinal: saldo, aporteMes, comisionMes: ibc * RAIS_COMISION, fondoGarantia: ibc * 0.015,
+    totalAportado, totalComisiones: ibc * RAIS_COMISION * n, rendimiento: saldo - totalAportado,
+    añosDePago: pago, proyeccion,
+    retiroProgramado: rp.neta, retiroProgramadoBruta: rp.bruta,
+    rentaVitalicia: rv.neta, rentaVitaliciaBruta: rv.bruta,
+    rentaMes: rp.neta, heredable: true,
+  };
 }
