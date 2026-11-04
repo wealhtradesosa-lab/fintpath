@@ -47,3 +47,39 @@ describe("pensionParaComparar", () => {
     expect(pensionParaComparar({ fuente: "calculada", calculada: null })).toBeNull();
   });
 });
+
+import { cagrHistorico, circulanteDesdeAltura, ofertaBTC, alturaEstimada, simularRetiro, comparativoHerencia, historicoConVariacion } from "../../src/lib/ahorroBTC.js";
+describe("histórico y oferta", () => {
+  it("crecimiento de los últimos 10 años ≈ 70 % y de 5 años ≈ 25 %", () => {
+    expect(cagrHistorico(10)).toBeGreaterThan(65); expect(cagrHistorico(10)).toBeLessThan(75);
+    expect(cagrHistorico(5)).toBeGreaterThan(22); expect(cagrHistorico(5)).toBeLessThan(28);
+    expect(historicoConVariacion().find((h) => h.año === 2022).variacion).toBeLessThan(-60);
+  });
+  it("oferta: 19.687.500 BTC en el 4.º halving y nunca más de 21 millones", () => {
+    expect(circulanteDesdeAltura(840_000)).toBe(19_687_500);
+    expect(circulanteDesdeAltura(10_000_000)).toBeLessThanOrEqual(21_000_000);
+    const o = ofertaBTC(alturaEstimada(Date.UTC(2026, 10, 4)));
+    expect(o.circulante).toBeGreaterThan(20_000_000); expect(o.faltan).toBeLessThan(1_000_000);
+    expect(o.proximoHalving).toBe(1_050_000); expect(o.recompensa).toBe(3.125);
+  });
+});
+describe("retiro y herencia", () => {
+  it("con crecimiento real 0 y 4 % de retiro, en 25 años queda ~0 %… y el capital no se agota antes", () => {
+    const r = simularRetiro({ capital: 1000, retiroPct: 4, años: 25, cagr: 3, inflacionUSD: 3 });
+    expect(r.capitalFinal).toBeCloseTo(0, 6);
+    expect(r.totalRetirado).toBeCloseTo(1000, 6);
+  });
+  it("retirar 20 % agota el capital antes y deja menos herencia que 4 %", () => {
+    const a = simularRetiro({ capital: 1000, retiroPct: 4, años: 25, cagr: 10 });
+    const b = simularRetiro({ capital: 1000, retiroPct: 20, años: 25, cagr: 10 });
+    expect(b.agotaEn).not.toBeNull();
+    expect(b.capitalFinal).toBeLessThan(a.capitalFinal);
+  });
+  it("la pensión no deja capital heredable", () => {
+    const r = simularRetiro({ capital: 1000, retiroPct: 4, años: 20, cagr: 10 });
+    const c = comparativoHerencia({ pensionMes: 10, añosVida: 20, retiro: r });
+    expect(c.pension.heredable).toBe(0);
+    expect(c.pension.enVida).toBe(10 * 13 * 20);
+    expect(c.btc.heredable).toBeGreaterThan(0);
+  });
+});

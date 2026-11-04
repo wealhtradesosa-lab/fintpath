@@ -159,7 +159,7 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
   }), [sexo, edad, semanas, iblPromSM, ibcSM, ibcFuturoSM]);
   const analisis = useMemo(() => hallazgosPension({ escenarios, edad, sexo, fm: fCOP }), [escenarios, edad, sexo]);
   const [escSel, setEscSel] = useState(null);
-  const escElegido = escenarios.lista.find((e) => e.años === (escSel ?? analisis.recomendado)) || escenarios.lista[escenarios.lista.length - 1];
+  const escElegido = escenarios.lista.find((e) => e.años === (escSel ?? analisis.masEficiente)) || escenarios.lista[escenarios.lista.length - 1];
 
   // Cargar los datos guardados de la persona elegida.
   const datosActuales = { sexo, edad, semanas, ibcSM, iblPromSM, ibcFuturoSM, privSaldo, privRend, tieneConyuge, edadConyuge, aportesVol, bonoPensional };
@@ -188,8 +188,7 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
         neta: Math.round(colpJub.pensionFinal), bruta: Math.round(colpJub.pensionAplicada), tasa: colpJub.tasaTotal,
         semanas: colpJub.semanasTotales, edadPension: edadJub, netaSiParaHoy: Math.round(colp.pensionFinal),
         raisNeta: privSaldo > 0 ? Math.round(rais.retiroProgramado) : null, masEficiente: escenarios.mejor,
-        recomendado: analisis.recomendado, añoPension: new Date().getFullYear() + Math.ceil(aniosFaltantes),
-        mesadaRecomendada: Math.round((escenarios.lista.find((e) => e.años === analisis.recomendado) || {}).mesada || 0),
+        masEficiente: analisis.masEficiente, añoPension: new Date().getFullYear() + Math.ceil(aniosFaltantes),
         hallazgos: analisis.hallazgos.map((h) => h.texto),
         fecha: new Date().toISOString().slice(0, 10),
       },
@@ -228,7 +227,6 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
                 <button key={o.id} type="button" onClick={() => setTitular(o.id)} style={{ textAlign: "left", padding: "10px 14px", borderRadius: 10, border: `1px solid ${a ? T.blue : T.border}`, background: a ? T.blue + "15" : T.bg3, cursor: "pointer", color: T.txt, minWidth: 150 }}>
                   <div style={{ fontSize: 14, fontWeight: 600 }}>{o.name}</div>
                   <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{r?.neta ? fCOP(r.neta) + "/mes a los " + r.edadPension : "Sin calcular"}</div>
-                  {r?.recomendado != null && <div style={{ fontSize: 12, color: T.green, marginTop: 2 }}>{r.recomendado === 0 ? "Recomendado: parar hoy" : "Recomendado: cotizar " + Math.round(r.recomendado) + " años más"}</div>}
                 </button>
               );
             })}
@@ -270,6 +268,11 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
           <div>
             <In label="Salarios mínimos sobre los que cotizas (IBC)" value={ibcSM} onChange={(v) => setIbcSM(Math.min(25, Math.max(1, v)))} unit="SMMLV" min={1} max={25} step={0.5} />
             <div style={AYUDA}><strong style={{ color: T.txt2 }}>Máximo 25</strong> (tope legal). {fmtNumEs(ibcSM, ibcSM % 1 ? 1 : 0)} = {fCOP(ibcSM * SM_2026)}/mes; a pensión van {fCOP(ibcSM * SM_2026 * 0.16)}/mes. Lo ves en tu planilla PILA.</div>
+          </div>
+
+          <div>
+            <In label="Promedio de los últimos 10 años (IBL)" value={iblPromSM} onChange={(v) => setIblPromSM(Math.min(25, Math.max(0, v)))} unit="SMMLV" min={0} max={25} step={0.1} />
+            <div style={AYUDA}>{iblPromSM > 0 ? fCOP(iblPromSM * SM_2026) + "/mes en promedio." : "Sale de tu historia laboral. Sin él, el cálculo supone que siempre cotizaste sobre tu IBC de hoy."}</div>
           </div>
         </div>
       </Cd>
@@ -387,8 +390,9 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
         <div>
           {/* 04-nov-2026: escenarios del informe actuarial y curva de recuperación */}
           {escenarios.lista.length > 1 && colp.cumpleRequisitos !== undefined && <>
-            <HallazgosPension hallazgos={analisis.hallazgos} alternativaRealPct={analisis.alternativaRealPct} nombre={lista.length > 1 ? persona.name : null} />
-            <EscenariosPension lista={escenarios.lista} mejor={escenarios.mejor} recomendado={analisis.recomendado} marginales={analisis.marginales} seleccion={escElegido?.años} onSeleccionar={setEscSel} fm={fCOP} edadPension={edadJub} edad={edad} />
+            <HallazgosPension hallazgos={analisis.hallazgos} nombre={lista.length > 1 ? persona.name : null}
+              aviso={iblPromSM > 0 ? null : "Falta tu promedio de los últimos 10 años (IBL), arriba en tus datos: sin él, “parar hoy” se calcula como si siempre hubieras cotizado sobre tu IBC actual, y los escenarios se parecen más de lo que son."} />
+            <EscenariosPension lista={escenarios.lista} mejor={escenarios.mejor} masEficiente={analisis.masEficiente} seleccion={escElegido?.años} onSeleccionar={setEscSel} fm={fCOP} edadPension={edadJub} edad={edad} />
             <RecuperacionCotizar v={escElegido} edad={edad} fm={fCOP} etiqueta={escElegido?.hastaPension ? "Cotizando hasta los " + edadJub : escElegido ? "Cotizando " + fmtNumEs(escElegido.años, 0) + (escElegido.años === 1 ? " año" : " años") + " más" : ""} />
           </>}
 
@@ -562,22 +566,6 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
                       </div>
                     );
                   })()}
-                </div>
-                <div style={{ background: "linear-gradient(135deg, rgba(0,200,5,0.08), rgba(59,130,246,0.05))", border: "1px solid " + T.green + "20", borderRadius: 12, padding: 16 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: T.green, marginBottom: 8 }}>Recomendación actuarial</div>
-                  <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.7 }}>
-                    {colp.tasaTotal >= colp.tasaTope - 3 ? (
-                      <span>Estás muy cerca del tope. <strong style={{ color: T.green }}>Sigue cotizando al tope de 25 SMMLV</strong> hasta alcanzar tu tope. La diferencia es significativa.</span>
-                    ) : colp.tasaTotal >= 65 ? (
-                      <span>Tu tasa es buena. Cada año adicional agrega ~{fCOP(colp.IBL * 0.015 * (1 - colp.pctDescuento))}/mes a tu pensión. <strong style={{ color: T.blue }}>Vale la pena seguir al tope si puedes.</strong></span>
-                    ) : colp.tasaTotal >= 55 ? (
-                      <span>Tu tasa está en el rango base. <strong style={{ color: T.orange }}>Cada 50 semanas extras son valiosas</strong> — no dejes de cotizar si puedes mantener el IBC alto.</span>
-                    ) : (
-                      <span style={{ color: T.orange }}>Aún no cumples los requisitos mínimos. Enfócate en llegar a 1,300 semanas.</span>
-                    )}
-                    <br/><br/>
-                    <strong>Regla clave:</strong> No sobrecotizar por encima de 25 SMMLV agregados. No baja beneficio. Mantener el IBC al tope es lo que importa.
-                  </div>
                 </div>
               </div>
             </div>

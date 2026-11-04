@@ -12,6 +12,7 @@
 // nominales de dentro de N años con una mesada de hoy.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// Referencias rápidas para elegir el crecimiento (el usuario escribe el suyo).
 export const ESCENARIOS_BTC = [
   { id: "conservador", nombre: "Conservador", cagr: 5 },
   { id: "moderado", nombre: "Moderado", cagr: 10 },
@@ -88,3 +89,98 @@ export function pensionParaComparar({ fuente, calculada, manual }) {
   if (fuente === "manual" && Number(manual) > 0) return { mesada: Number(manual), promedioMes: Number(manual) * 13 / 12, origen: "manual" };
   return null;
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 04-nov-2026 (Santiago: "se perdió mucho en las proyecciones: antes teníamos lo
+// que pasó con el BTC en los últimos 10 años y lo que se proyectaba; cuántos BTC
+// faltan por minar y cuántos hay; los escenarios fijos no me gustan, que uno
+// pueda decir 25 % o 30 %; poder retirar 10 % o 20 % y ver cuánto queda
+// heredable; comparar pensión vs BTC dejando claro qué se hereda").
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Cierre anual en USD (CoinMarketCap vía StatMuse; coincide ±1 % con Yahoo).
+export const HISTORICO_BTC = [
+  { año: 2015, cierre: 430.57 }, { año: 2016, cierre: 963.74 }, { año: 2017, cierre: 14156.40 },
+  { año: 2018, cierre: 3742.70 }, { año: 2019, cierre: 7193.60 }, { año: 2020, cierre: 29001.72 },
+  { año: 2021, cierre: 46306.45 }, { año: 2022, cierre: 16547.50 }, { año: 2023, cierre: 42265.19 },
+  { año: 2024, cierre: 93429.20 }, { año: 2025, cierre: 87508.83 },
+];
+export const FUENTE_HISTORICO = "Cierres anuales de CoinMarketCap (StatMuse), en dólares";
+
+/** Lista con la variación de cada año. */
+export function historicoConVariacion() {
+  return HISTORICO_BTC.map((h, i) => ({ ...h, variacion: i ? (h.cierre / HISTORICO_BTC[i - 1].cierre - 1) * 100 : null }));
+}
+
+/** Crecimiento anual compuesto de los últimos `n` años cerrados. */
+export function cagrHistorico(n) {
+  const fin = HISTORICO_BTC[HISTORICO_BTC.length - 1];
+  const ini = HISTORICO_BTC[HISTORICO_BTC.length - 1 - n];
+  if (!ini) return null;
+  return (Math.pow(fin.cierre / ini.cierre, 1 / n) - 1) * 100;
+}
+
+// ── Oferta: cuántos BTC hay y cuántos faltan (se deriva de la altura de bloque) ──
+export const BLOQUES_POR_HALVING = 210_000;
+const ALTURA_REF = { altura: 840_000, fecha: Date.UTC(2024, 3, 20) }; // 4.º halving
+/** Altura estimada a una fecha (≈144 bloques al día) si no se pudo consultar. */
+export function alturaEstimada(fecha = Date.now()) {
+  return Math.round(ALTURA_REF.altura + ((fecha - ALTURA_REF.fecha) / 86_400_000) * 144);
+}
+/** BTC emitidos hasta una altura de bloque (recompensa 50 que se parte cada 210.000). */
+export function circulanteDesdeAltura(altura) {
+  let total = 0, recompensa = 50, restante = Math.max(0, altura);
+  while (restante > 0 && recompensa >= 1e-8) {
+    const b = Math.min(restante, BLOQUES_POR_HALVING);
+    total += b * recompensa; restante -= b; recompensa /= 2;
+  }
+  return total;
+}
+export function ofertaBTC(altura) {
+  const circulante = circulanteDesdeAltura(altura);
+  const epoca = Math.floor(altura / BLOQUES_POR_HALVING);
+  const proximo = (epoca + 1) * BLOQUES_POR_HALVING;
+  const diasHalving = (proximo - altura) / 144;
+  return {
+    altura, circulante, faltan: OFERTA_BTC - circulante, pctMinado: (circulante / OFERTA_BTC) * 100,
+    recompensa: 50 / Math.pow(2, epoca), proximoHalving: proximo,
+    fechaHalving: new Date(Date.now() + diasHalving * 86_400_000),
+  };
+}
+
+/** Proyección año a año del precio con el crecimiento elegido. */
+export function proyeccionPrecio({ precioHoy, cagr, años, añoHoy = new Date().getFullYear() }) {
+  return Array.from({ length: Math.max(0, Math.round(años)) }, (_, i) => ({ año: añoHoy + i + 1, precio: precioHoy * Math.pow(1 + cagr / 100, i + 1) }));
+}
+
+/**
+ * Fase de retiro: retiras cada mes `retiroPct` % del capital inicial ÷ 12 (en
+ * pesos de hoy, fijo) y el resto sigue invertido creciendo a la tasa real.
+ * Devuelve cuánto queda heredable al final y en qué año se acabaría.
+ */
+export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25, cagr, inflacionUSD = INFLACION_USD }) {
+  const real = (1 + (cagr || 0) / 100) / (1 + inflacionUSD / 100) - 1;
+  const rm = Math.pow(1 + real, 1 / 12) - 1;
+  const retiroMes = capital * (retiroPct / 100) / 12;
+  let c = capital, retirado = 0, agotaEn = null;
+  const serie = [{ año: 0, capital: c }];
+  for (let m = 1; m <= Math.round(años * 12); m++) {
+    c = c * (1 + rm);
+    const r = Math.min(retiroMes, c);
+    c -= r; retirado += r;
+    if (c <= 0 && agotaEn == null) agotaEn = m / 12;
+    if (m % 12 === 0) serie.push({ año: m / 12, capital: Math.max(0, c) });
+  }
+  return { retiroMes, capitalFinal: Math.max(0, c), totalRetirado: retirado, agotaEn, serie, real: real * 100 };
+}
+
+/** Comparativo pensión vs BTC: lo que recibes en vida y lo que heredan. */
+export function comparativoHerencia({ pensionMes, añosVida, retiro }) {
+  const pensionEnVida = (pensionMes || 0) * MESADAS_POR_AÑO_PENSION * añosVida;
+  return {
+    pension: { mes: (pensionMes || 0) * MESADAS_POR_AÑO_PENSION / 12, enVida: pensionEnVida, heredable: 0 },
+    btc: { mes: retiro.retiroMes, enVida: retiro.totalRetirado, heredable: retiro.capitalFinal },
+  };
+}
+export const MESADAS_POR_AÑO_PENSION = 13;

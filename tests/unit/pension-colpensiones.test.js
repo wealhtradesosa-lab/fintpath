@@ -139,19 +139,22 @@ describe("escenarios por año adicional", () => {
 });
 
 import { hallazgosPension } from "../../src/lib/pensionColpensiones.js";
-describe("hallazgos costo/beneficio", () => {
+describe("hallazgos: retorno por peso aportado, sin recomendar", () => {
   const esc = escenariosCotizacion({ sexo: "M", edad: 51.12, semanasHoy: 1310.9, iblHoy: 32_126_945, ibcSM: 25 });
   const h = hallazgosPension({ escenarios: esc, edad: 51.12, añoHoy: 2026 });
-  it("recomienda cotizar 10 años (hasta llegar al tope), no hasta los 62", () => {
-    expect(h.recomendado).toBe(10);
-    expect(h.hallazgos[0].tipo).toBe("recomendacion");
+  it("el más eficiente es el de mayor retorno por peso", () => {
+    const max = Math.max(...esc.lista.filter((e) => e.años > 0).map((e) => e.retornoPorPeso));
+    expect(esc.lista.find((e) => e.años === h.masEficiente).retornoPorPeso).toBe(max);
+    expect(h.masEficiente).toBeGreaterThan(0);
   });
-  it("avisa que los meses después del tope no suben la mesada", () => {
+  it("retorno por peso = mesada extra × 13 × años de pensión ÷ aportado", () => {
+    const e = esc.lista[5];
+    expect(e.retornoPorPeso).toBeCloseTo((e.beneficioMesNeto * 13 / 12) * e.mesesBeneficio / e.costoTotal, 6);
+  });
+  it("ningún texto usa recomendar", () => {
+    for (const x of h.hallazgos) expect(x.texto.toLowerCase()).not.toMatch(/recomend/);
+  });
+  it("avisa los meses que no suben la mesada por el tope", () => {
     expect(h.hallazgos.some((x) => x.tipo === "tope")).toBe(true);
-    expect(h.marginales.at(-1).tir).toBe(-Infinity);
-  });
-  it("con una alternativa más rentable recomienda menos años", () => {
-    const h2 = hallazgosPension({ escenarios: esc, edad: 51.12, añoHoy: 2026, alternativaRealPct: 30 });
-    expect(h2.recomendado).toBe(0);
   });
 });
