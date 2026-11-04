@@ -37,34 +37,39 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
         <div style={subtitulo}>Comparado en {añosRetiro} años de retiro{edadRetiro ? `, de los ${edadRetiro} a los ${hastaEdad}` : ""} (lo cambias en el paso 4), en pesos de hoy. {conclusion}</div>
       </div>
 
-      {/* 4-nov-2026 (Santiago: "no entiendo eso de que recibo 8.600 MM, ¿por cuánto
-          tiempo?"): cada opción dice primero cuánto recibes al mes y por cuánto
-          tiempo, y después los dos totales con su periodo escrito. */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
-        {filas.map((f) => {
+      {/* 4-nov-2026. Santiago pidió claridad en los números ("recibo 8.624 ¿qué?
+          ¿cada mes, total?") y después que volvieran las dos barras ("la gráfica
+          donde uno veía las dos líneas de cada opción"). Quedan las dos cosas:
+          por opción, lo que recibes al mes en grande, la barra con la misma
+          escala para las dos, y debajo cada color con su significado y su
+          periodo escrito. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        {filas.map((f, i) => {
           const esBtc = f.k === "b";
           const dura = esBtc && retiro.agotaEn != null ? retiro.agotaEn : añosRetiro;
+          const tramo = edadRetiro ? `de los ${edadRetiro} a los ${Math.round(edadRetiro + dura)}` : `en ${fmtNumEs(dura, 0)} años`;
+          const nota = esBtc
+            ? (retiro.agotaEn != null ? `Solo ${tramo}: ahí se acaba el bitcoin y no recibes más.` : `Durante todo el retiro, ${tramo}; el capital sigue invertido.`)
+            : "De por vida (13 mesadas al año, promediadas por mes). Si faltas, solo tu cónyuge sigue recibiéndola.";
           return (
-            <div key={f.k} style={{ background: "var(--fp-raised)", borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>{f.nombre}</div>
-              <div>
-                <div style={{ fontSize: 13, color: C.txt2 }}>Recibes cada mes</div>
-                <div style={{ fontSize: 28, fontWeight: 600, color: C.txt, ...cifra }}>{fm(f.mes)}</div>
-                <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>
-                  {esBtc
-                    ? (retiro.agotaEn != null ? `Solo durante ${fmtNumEs(dura, 0)} años${edadRetiro ? `, hasta los ${Math.round(edadRetiro + dura)}` : ""}: ahí se acaba el bitcoin y no recibes más.` : `Durante los ${añosRetiro} años${hastaEdad ? `, hasta los ${hastaEdad}` : ""}, y el capital sigue invertido.`)
-                    : "De por vida (13 mesadas al año, promediadas por mes)."}
-                </div>
+            <div key={f.k}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 15, fontWeight: 600, color: C.txt }}>{f.nombre}</span>
+                <span style={{ ...cifra }}><span style={{ fontSize: 26, fontWeight: 600, color: C.txt }}>{fm(f.mes)}</span><span style={{ fontSize: 14, color: C.txt2 }}> al mes</span></span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, borderTop: `1px solid ${C.linea}`, paddingTop: 12 }}>
-                <div>
-                  <div style={{ fontSize: 12, color: C.txt3 }}>Total que recibes en {fmtNumEs(dura, 0)} años</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: C.txt, ...cifra }}>{fm(f.vida)}</div>
+              <div style={{ fontSize: 12, color: C.txt3, margin: "2px 0 8px" }}>{nota}</div>
+              <div style={{ display: "flex", height: 28, borderRadius: 8, overflow: "hidden", background: C.pista }}>
+                <div className="fpi-barra-h" style={{ width: (f.vida / max) * 100 + "%", background: trama(C.azul, 80), animationDelay: `${i * 80}ms` }} />
+                <div className="fpi-barra-h" style={{ width: (f.hereda / max) * 100 + "%", background: C.pos, animationDelay: `${i * 80 + 120}ms` }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 8, marginTop: 8, ...cifra }}>
+                <div style={{ fontSize: 13, color: C.txt2 }}>
+                  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: trama(C.azul, 80), marginRight: 6 }} />
+                  Suma de lo que recibes {tramo}: <strong style={{ color: C.txt }}>{fm(f.vida)}</strong>
                 </div>
-                <div>
-                  <div style={{ fontSize: 12, color: C.txt3 }}>Les queda a tus herederos{hastaEdad ? ` a los ${hastaEdad}` : ""}</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: f.hereda > 0 ? C.pos : C.txt, ...cifra }}>{f.hereda > 0 ? fm(f.hereda) : "$0"}</div>
-                  {!esBtc && <div style={{ fontSize: 12, color: C.txt3, marginTop: 2 }}>Solo tu cónyuge sigue recibiendo la mesada.</div>}
+                <div style={{ fontSize: 13, color: C.txt2 }}>
+                  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: C.pos, marginRight: 6 }} />
+                  Les queda a tus herederos{hastaEdad ? ` a los ${hastaEdad}` : ""}: <strong style={{ color: f.hereda > 0 ? C.pos : C.txt }}>{f.hereda > 0 ? fm(f.hereda) : "$0"}</strong>
                 </div>
               </div>
             </div>
