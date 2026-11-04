@@ -47,7 +47,9 @@ function Campo({ label, children, ayuda }) {
   );
 }
 
-export default function BuyVsInvest({ isUS = false }) {
+// 4-nov-2026 (Santiago: "en comprar o arrendar que guarde el escenario").
+// u.buyVsInvest = { escenarios: [{ id, nombre, fecha, datos, resultado }] }.
+export default function BuyVsInvest({ isUS = false, guardado = null, onGuardar = null }) {
   // 01-sep-2026: hasta hoy un usuario de US veia esta seccion con predial
   // colombiano, ganancia ocasional del 15% y la exencion del Art. 311-1. No es
   // que faltara: mostraba cifras equivocadas para su pais.
@@ -59,7 +61,14 @@ export default function BuyVsInvest({ isUS = false }) {
   const [tasaHipotecaEA, setTasaHipotecaEA] = useState(D.tasaHipotecaEA);
   const [plazoHipotecaAnios, setPlazoHipotecaAnios] = useState(D.plazoHipotecaAnios);
   const [valorizacionCasaAnual, setValorizacion] = useState(D.valorizacionCasaAnual);
-  const [arriendoMensual, setArriendo] = useState(D.arriendoMensual);
+  // 4-nov-2026 (Santiago: "normalmente el arriendo es el 0,3 % al 0,6 % del valor
+  // de la propiedad; que uno pueda poner el porcentaje y salga el valor, o el
+  // valor y salga el porcentaje; prediligenciar con 0,4 %"). El arriendo sigue al
+  // precio con el % hasta que el usuario escribe un valor propio.
+  const [arriendoPct, setArriendoPct] = useState(isUS ? 0.6 : 0.4);
+  const [arriendoManual, setArriendoManual] = useState(null);
+  const arriendoMensual = arriendoManual != null ? arriendoManual : Math.round(((Number(precioCasa) || 0) * arriendoPct) / 100);
+  const pctEfectivo = (Number(precioCasa) || 0) > 0 ? ((Number(arriendoMensual) || 0) / Number(precioCasa)) * 100 : 0;
   const [administracionMensual, setAdmin] = useState(D.administracionMensual);
   // 15-ago-2026 (Santiago: "es importante poder considerar el predial, seguros").
   // Ya estaban en el motor, pero fijos en el codigo y sin verse en pantalla: si
@@ -112,6 +121,29 @@ export default function BuyVsInvest({ isUS = false }) {
     precioCasa, modoCompra, cuotaInicialPct, tasaHipotecaEA, plazoHipotecaAnios,
     arriendoMensual, administracionMensual, horizonteAnios, rendimiento, exencion, predialAnualPct, seguroAnualPct, mantenimientoAnualPct, gastosCompraPct, gastosVentaPct]);
 
+  const escenariosGuardados = Array.isArray(guardado?.escenarios) ? guardado.escenarios : [];
+  const [nombreEsc, setNombreEsc] = useState("");
+  const datosEsc = { precioCasa, modoCompra, cuotaInicialPct, tasaHipotecaEA, plazoHipotecaAnios, valorizacionCasaAnual,
+    arriendoPct, arriendoManual, administracionMensual, predialAnualPct, seguroAnualPct, mantenimientoAnualPct,
+    gastosCompraPct, gastosVentaPct, horizonteAnios, activo, cagrCustom, exencion, estadoCivil };
+  const guardarEscenario = () => {
+    if (!onGuardar) return;
+    const nombre = nombreEsc.trim() || `Casa de ${fm(num(precioCasa))} · ${horizonteAnios} años · ${activoSel.l}`;
+    const nuevo = { id: "c" + Date.now(), nombre, fecha: new Date().toISOString().slice(0, 10), datos: datosEsc,
+      resultado: { patrimonioComprar: r.patrimonioComprar, patrimonioArrendar: r.patrimonioArrendar, ganador: r.ganador, equilibrio, activo: activoSel.l, rendimiento, arriendo: num(arriendoMensual) } };
+    onGuardar({ escenarios: [nuevo, ...escenariosGuardados].slice(0, 20) });
+    setNombreEsc("");
+  };
+  const abrirEscenario = (e) => {
+    const x = e.datos || {};
+    setPrecioCasa(x.precioCasa); setModoCompra(x.modoCompra); setCuotaInicialPct(x.cuotaInicialPct); setTasaHipotecaEA(x.tasaHipotecaEA);
+    setPlazoHipotecaAnios(x.plazoHipotecaAnios); setValorizacion(x.valorizacionCasaAnual); setArriendoPct(x.arriendoPct ?? 0.4);
+    setArriendoManual(x.arriendoManual ?? null); setAdmin(x.administracionMensual); setPredial(x.predialAnualPct); setSeguro(x.seguroAnualPct);
+    setMantenimiento(x.mantenimientoAnualPct); setGastosCompra(x.gastosCompraPct); setGastosVenta(x.gastosVentaPct); setHorizonte(x.horizonteAnios);
+    setActivo(x.activo || "sp500"); setCagrCustom(x.cagrCustom ?? null); setExencion(!!x.exencion); if (x.estadoCivil) setEstadoCivil(x.estadoCivil);
+  };
+  const borrarEscenario = (id) => onGuardar && onGuardar({ escenarios: escenariosGuardados.filter((e) => e.id !== id) });
+
   const ganaComprar = r.ganador === "comprar";
   const d = r.detalle;
 
@@ -128,6 +160,36 @@ export default function BuyVsInvest({ isUS = false }) {
         title={isUS ? "Buy or rent and invest" : "Comprar o arrendar e invertir"}
         subtitle={isUS ? "Same money, two paths. Both scenarios spend exactly the same each month." : "La misma plata, dos caminos. Los dos escenarios desembolsan exactamente lo mismo cada mes."}
       />
+
+      {escenariosGuardados.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, color: T.txt3, marginBottom: 8 }}>Tus escenarios guardados</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {escenariosGuardados.map((e) => {
+              const x = e.datos || {}, z = e.resultado || {};
+              const Fila = ({ l, v, c }) => (
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${T.border}` }}>
+                  <span style={{ color: T.txt3, flex: "1 1 auto", minWidth: 0 }}>{l}</span><strong style={{ color: c || T.txt, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{v}</strong>
+                </div>
+              );
+              return (
+                <div key={e.id} style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", minWidth: 280, flex: "1 1 320px" }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: T.txt, marginBottom: 6 }}>{e.nombre}</div>
+                  <Fila l="Precio de la casa" v={fm(num(x.precioCasa))} />
+                  <Fila l="Arriendo de esa casa, al mes" v={fm(z.arriendo || 0)} />
+                  <Fila l={`Patrimonio si compras, a ${x.horizonteAnios} años`} v={fm(z.patrimonioComprar)} c={z.ganador === "comprar" ? T.green : T.txt} />
+                  <Fila l={`Patrimonio si arriendas e inviertes en ${z.activo} (${z.rendimiento} % al año), a ${x.horizonteAnios} años`} v={fm(z.patrimonioArrendar)} c={z.ganador === "arrendar" ? T.green : T.txt} />
+                  <Fila l="La casa se valoriza (supuesto)" v={`${x.valorizacionCasaAnual} % al año`} />
+                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                    <button type="button" onClick={() => abrirEscenario(e)} style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 16px", color: T.txt, cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Abrir</button>
+                    <button type="button" onClick={() => { if (confirm(`¿Borrar el escenario "${e.nombre}"?`)) borrarEscenario(e.id); }} style={{ background: "transparent", border: "1px solid rgba(255,80,0,0.45)", borderRadius: 999, padding: "6px 16px", color: "var(--fp-neg)", cursor: "pointer", fontSize: 13, fontWeight: 600 }}>Borrar</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── RESULTADO ──────────────────────────────────────────────────────── */}
       <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12,
@@ -173,6 +235,14 @@ export default function BuyVsInvest({ isUS = false }) {
           </div>
         )}
       </div>
+
+      {onGuardar && (
+        <div style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <input value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} placeholder="Nombre del escenario (opcional)"
+            style={{ flex: "1 1 240px", maxWidth: 360, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px", color: T.txt, fontSize: 14 }} />
+          <button type="button" onClick={guardarEscenario} style={{ padding: "10px 18px", borderRadius: 999, border: 0, background: T.txt, color: "var(--fp-bg)", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Guardar escenario</button>
+        </div>
+      )}
 
       {/* ── ENTRADAS ───────────────────────────────────────────────────────── */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 16, marginBottom: 20 }}>
@@ -272,7 +342,28 @@ export default function BuyVsInvest({ isUS = false }) {
 
           <Campo label={isUS ? "Monthly rent for that same home" : "Arriendo mensual de esa misma casa"}
             ayuda="Lo que pagarías por vivir ahí sin comprarla. Sube con el IPC cada año.">
-            <NumberInput value={arriendoMensual} onChange={setArriendo} />
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+              <NumberInput value={arriendoMensual} onChange={(v) => setArriendoManual(v === "" ? 0 : num(v))} />
+              <span style={{ fontSize: 13, color: T.txt3 }}>=</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <input type="number" step="0.05" min="0" max="3" value={Number(pctEfectivo.toFixed(2))}
+                  onChange={(e) => { setArriendoPct(Math.max(0, Number(e.target.value) || 0)); setArriendoManual(null); }}
+                  style={{ width: 76, background: T.bg3 || "var(--fp-raised)", border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 8px", color: T.txt, fontSize: 14, textAlign: "right" }} />
+                <span style={{ fontSize: 13, color: T.txt2 }}>{isUS ? "% of the price per month" : "% del precio al mes"}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+              {(isUS ? [0.5, 0.6, 0.7, 0.8] : [0.3, 0.4, 0.5, 0.6]).map((p) => {
+                const act = arriendoManual == null && Math.abs(arriendoPct - p) < 1e-9;
+                return (
+                  <button key={p} type="button" onClick={() => { setArriendoPct(p); setArriendoManual(null); }}
+                    style={{ padding: "4px 12px", borderRadius: 999, border: `1px solid ${act ? T.txt : T.border}`, background: act ? "rgba(var(--fp-ink),0.08)" : "transparent", color: act ? T.txt : T.txt2, fontSize: 12, cursor: "pointer" }}>
+                    {String(p).replace(".", ",")} %
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 6 }}>{isUS ? "Typical rents run 0.5–0.8 % of the price per month." : "En Colombia el arriendo suele estar entre 0,3 % y 0,6 % del valor de la propiedad al mes. Escribe el valor o el porcentaje: el otro se calcula solo."}</div>
           </Campo>
 
           <Campo label={isUS ? "Where do you invest the difference?" : "¿Dónde inviertes la diferencia?"}>
