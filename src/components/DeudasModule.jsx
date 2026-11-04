@@ -436,7 +436,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
               <tr>
                 {/* 3-nov-2026: la cuota de este mes y la cuota promedio del año (abonos, cuotas que
                     terminan o arrancan, pagos variables), como en Ingresos y Egresos. */}
-                {["Deuda", "Tipo", "Saldo", "Cuota este mes", "Tasa", "Interés/año", "Activo", "On/Off", ""].map((h) => (
+                {["Deuda", "Tipo", "Saldo", "Cuota este mes", "Tasa", "Interés/año", "Activo", "On/Off"].map((h) => (
                   <th key={h} style={{ padding: "12px 9px", textAlign: ["Deuda", "Activo", "On/Off", ""].includes(h) ? "left" : "right", whiteSpace: "nowrap", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{tx(h, { Deuda: "Debt", Tipo: "Type", Saldo: "Balance", "Cuota este mes": "Payment this month", Tasa: esUS() ? "APR" : "Rate", "Interés/año": "Interest/yr", Activo: "Asset", "On/Off": "On/Off", "": "" }[h])}</th>
                 ))}
               </tr>

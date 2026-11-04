@@ -862,7 +862,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
               <thead><tr>
                 {/* 3-nov-2026: lo que entra este mes y el promedio del año, como en Egresos. */}
-                {["Nombre", "Categoría", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio del año", "Capital / Fuente", "On/Off", ""].map((h, k) => (
+                {["Nombre", "Categoría", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio del año", "Capital / Fuente", "On/Off"].map((h, k) => (
                   <th key={h || k} style={{ padding: "12px 14px", textAlign: k === 3 || k === 4 ? "right" : "left", whiteSpace: "nowrap", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}` }}>{h}</th>
                 ))}
               </tr></thead>
