@@ -1,4 +1,5 @@
 import { montoDelMes } from "../lib/flowHelpers.js";
+import { tx, esUS, nombreMes } from "../lib/region.js";
 
 const num = (v) => Number(v) || 0;
 
@@ -72,8 +73,9 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   const mesesRestantes = 12 - mesActual;
 
   const maxAbs = Math.max(1, ...meses.map((x) => Math.abs(x.neto)));
-  const M = ["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-  const MESES_L = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  // 3-nov-2026: iniciales y nombres de mes en el idioma de la sesión.
+  const M = tx(["E", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"], ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]);
+  const MESES_L = tx(["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], Array.from({ length: 12 }, (_, i) => nombreMes(i + 1)));
 
   // `tenue` baja el peso visual de la columna proyectada, con el mismo criterio
   // que las barras de los meses futuros: el dato es legible, pero se lee como
@@ -107,26 +109,26 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>Cómo va {año}</div>
+        <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>{tx(`Cómo va ${año}`, `How ${año} is going`)}</div>
         <div style={{ fontSize: 12, color: T.tx3, marginTop: 1, marginBottom: 11 }}>
-          {mesActual} {mesActual === 1 ? "mes cumplido" : "meses cumplidos"}
-          {mesesRestantes > 0 && `, ${mesesRestantes} por delante`}
+          {mesActual} {mesActual === 1 ? tx("mes cumplido", "month done") : tx("meses cumplidos", "months done")}
+          {mesesRestantes > 0 && tx(`, ${mesesRestantes} por delante`, `, ${mesesRestantes} to go`)}
         </div>
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <Grupo titulo="A la fecha"
-                 sub={`Enero–${MESES_L[mesActual - 1].toLowerCase()} · ejecutado`}>
-            <Dato l="HA ENTRADO" v={entraYTD} color="#00c805" />
-            <Dato l="HA SALIDO" v={saleYTD} color="#ff5000" />
-            <Dato l="TE HA QUEDADO" v={netoYTD} color={netoYTD >= 0 ? "#00c805" : "#ff5000"} />
+          <Grupo titulo={tx("A la fecha", "Year to date")}
+                 sub={tx(`Enero–${MESES_L[mesActual - 1].toLowerCase()} · ejecutado`, `January–${MESES_L[mesActual - 1]} · actual`)}>
+            <Dato l={tx("HA ENTRADO", "IN")} v={entraYTD} color="#00c805" />
+            <Dato l={tx("HA SALIDO", "OUT")} v={saleYTD} color="#ff5000" />
+            <Dato l={tx("TE HA QUEDADO", "KEPT")} v={netoYTD} color={netoYTD >= 0 ? "#00c805" : "#ff5000"} />
           </Grupo>
 
           {mesesRestantes > 0 && (
-            <Grupo proyectado titulo={`Cierre de ${año}`}
-                   sub="Año completo · proyectado con lo cargado">
-              <Dato tenue l="ENTRARÁ" v={entraAño} color="#00c805" />
-              <Dato tenue l="SALDRÁ" v={saleAño} color="#ff5000" />
-              <Dato tenue l="QUEDARÁ" v={netoAño} color={netoAño >= 0 ? "#00c805" : "#ff5000"} />
+            <Grupo proyectado titulo={tx(`Cierre de ${año}`, `${año} year-end`)}
+                   sub={tx("Año completo · proyectado con lo cargado", "Full year · projected from your data")}>
+              <Dato tenue l={tx("ENTRARÁ", "WILL COME IN")} v={entraAño} color="#00c805" />
+              <Dato tenue l={tx("SALDRÁ", "WILL GO OUT")} v={saleAño} color="#ff5000" />
+              <Dato tenue l={tx("QUEDARÁ", "WILL BE LEFT")} v={netoAño} color={netoAño >= 0 ? "#00c805" : "#ff5000"} />
             </Grupo>
           )}
         </div>
@@ -140,7 +142,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
           const futuro = x.m > mesActual;
           const c = x.neto >= 0 ? "#00c805" : "#ff5000";
           return (
-            <div key={x.m} title={`${MESES_L[x.m - 1]}: ${fmt(x.neto)}${futuro ? " (proyectado)" : ""}`}
+            <div key={x.m} title={`${MESES_L[x.m - 1]}: ${fmt(x.neto)}${futuro ? tx(" (proyectado)", " (projected)") : ""}`}
                  style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
               <div style={{ flex: 1, display: "flex", alignItems: "flex-end" }}>
                 {x.neto >= 0 && <div style={{ width: "100%", height: `${alto}%`, background: c, opacity: futuro ? 0.28 : 0.85, borderRadius: "3px 3px 0 0" }} />}
@@ -163,9 +165,9 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
 
       <div style={{ fontSize: 12, color: T.tx3, marginTop: 10, lineHeight: 1.5 }}>
         {mesesRestantes > 0
-          ? <>Las barras sólidas son meses cumplidos; las tenues, los {mesesRestantes} que faltan. El cierre proyectado supone que {mesesRestantes === 1 ? "ese mes se comporta" : "esos meses se comportan"} según los ingresos, gastos y cuotas que tienes cargados hoy.</>
-          : <>El año está completo: las doce barras son meses cumplidos.</>}
-        {" "}Incluye retención e impuesto de renta.
+          ? tx(<>Las barras sólidas son meses cumplidos; las tenues, los {mesesRestantes} que faltan. El cierre proyectado supone que {mesesRestantes === 1 ? "ese mes se comporta" : "esos meses se comportan"} según los ingresos, gastos y cuotas que tienes cargados hoy.</>, <>Solid bars are months done; faded ones are the {mesesRestantes} still to come. The year-end projection assumes {mesesRestantes === 1 ? "that month behaves" : "those months behave"} like the income, expenses and payments you have loaded today.</>)
+          : tx(<>El año está completo: las doce barras son meses cumplidos.</>, <>The year is complete: all twelve bars are actual months.</>)}
+        {" "}{esUS() ? tx("Incluye retenciones de nómina e impuestos estimados.", "Includes payroll withholding and estimated taxes.") : tx("Incluye retención e impuesto de renta.", "Includes withholding and income tax.")}
       </div>
     </div>
   );

@@ -45,6 +45,21 @@ const mesL = (m) => (m >= 1 && m <= 12 ? nombreMes(m) : "");
 const mesF = (m) => (esEN() ? mesL(m) : mesL(m).toLowerCase());
 // Tasa con hasta 2 decimales en el formato del país: 14% · 1,5% (CO) · 1.5% (US).
 const fmtTasa = (n) => { if (n === "" || n == null) return ""; const v = Number(n); if (!Number.isFinite(v)) return String(n) + "%"; return v.toLocaleString(localeCifras(), { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + "%"; };
+// Ejemplo de capital para los campos: CO "Ej: 500000000" (igual que antes); EE. UU. 50000.
+const ejCapital = () => tx("Ej: ", "e.g. ") + (esUS() ? "50000" : "500000000");
+// Rótulos del Sankey. Colombia en español: null → los de siempre del componente.
+const labelsSankey = () => {
+  if (esUS()) return {
+    retencion: tx("Retención de nómina", "Payroll withholding"), retencionNota: tx("no llega a tu cuenta", "never hits your account"),
+    impuesto: tx("Pagos estimados", "Estimated taxes"), impuestoNota: tx("IRS y estado", "IRS & state"),
+    aportes: tx("Aportes de retiro", "Retirement contributions"), aportesNota: "401(k), IRA",
+    cuotas: tx("Cuotas de deuda", "Debt payments"), cuotasNota: tx("capital + interés", "principal + interest"),
+    titulo: tx("¿Por dónde se va tu plata?", "Where your money goes"),
+    pie: (monto) => tx(`El ancho de cada cinta es la plata: entran ${monto}.`, `Each ribbon's width is the money: ${monto} coming in.`),
+  };
+  if (!esEN()) return null;
+  return { retencion: "Income tax withheld", retencionNota: "never hits your account", impuesto: "Income tax", impuestoNota: "balance due", aportes: "Mandatory contributions", aportesNota: "health and pension", cuotas: "Debt payments", cuotasNota: "principal + interest", titulo: "Where your money goes", pie: (monto) => `Each ribbon's width is the money: ${monto} coming in.` };
+};
 const anualMensualTxt = (modo) => (modo === "mensual" ? tx("mensual", "monthly") : tx("anual", "yearly"));
 // Frecuencia (clave interna en español) para mostrar.
 const FREC_EN = { mensual: "monthly", variable: "variable", anual: "yearly", trimestral: "quarterly", semestral: "every 6 months", unico: "one-time", bimestral: "every 2 months", cuatrimestral: "every 4 months" };
@@ -663,39 +678,39 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
   return (
     <div>
-      <PageHeader label="Simulador · futuro" title="¿Me alcanza con la vida que viene?"
-        subtitle={`Tu vida de hoy proyectada a ${año}, con los cambios que sabes que vienen. Tus datos reales no se tocan.`} />
+      <PageHeader label={tx("Simulador · futuro", "Simulator · next year")} title={tx("¿Me alcanza con la vida que viene?", "Will my money cover the year ahead?")}
+        subtitle={tx(`Tu vida de hoy proyectada a ${año}, con los cambios que sabes que vienen. Tus datos reales no se tocan.`, `Your life today projected to ${año}, with the changes you know are coming. Your real data isn't touched.`)} />
 
       {/* ── Escenario ── */}
       <div style={card}>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={F.label}>Escenario</div>
+          <div style={F.label}>{tx("Escenario", "Scenario")}</div>
           <select value={selId || ""} onChange={(e) => { setSelId(e.target.value); setMesFoco(null); }} style={{ ...input, width: "auto", minWidth: 180 }}>
-            {escenarios.length === 0 && <option value="">— ninguno —</option>}
+            {escenarios.length === 0 && <option value="">{tx("— ninguno —", "— none —")}</option>}
             {escenarios.map((e) => <option key={e.id} value={e.id}>{e.nombre} · {e.año}</option>)}
           </select>
-          <button style={btn(true)} onClick={nuevoEscenario}>+ Nuevo escenario</button>
-          {esc && <button style={btn(false)} onClick={borrarEscenario}>Borrar</button>}
+          <button style={btn(true)} onClick={nuevoEscenario}>{tx("+ Nuevo escenario", "+ New scenario")}</button>
+          {esc && <button style={btn(false)} onClick={borrarEscenario}>{tx("Borrar", "Delete")}</button>}
         </div>
         {esc && (
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
             <div style={{ flex: "1 1 220px" }}>
-              <div style={F.label}>Nombre</div>
+              <div style={F.label}>{tx("Nombre", "Name")}</div>
               <input style={input} value={esc.nombre} onChange={(e) => actualizar({ nombre: e.target.value })} />
             </div>
             <div style={{ flex: "0 0 120px" }}>
-              <div style={F.label}>Año</div>
+              <div style={F.label}>{tx("Año", "Year")}</div>
               <select style={input} value={esc.año} onChange={(e) => actualizar({ año: Number(e.target.value) })}>
                 {[1, 2, 3].map((k) => <option key={k} value={añoHoy + k}>{añoHoy + k}</option>)}
               </select>
             </div>
             <div style={{ flex: "2 1 300px" }}>
-              <div style={F.label}>Qué va a pasar (para ti)</div>
-              <input style={input} placeholder="Ej: me paso a independiente en marzo, vendo el carro en junio…" value={esc.descripcion || ""} onChange={(e) => actualizar({ descripcion: e.target.value })} />
+              <div style={F.label}>{tx("Qué va a pasar (para ti)", "What's going to happen (your notes)")}</div>
+              <input style={input} placeholder={tx("Ej: me paso a independiente en marzo, vendo el carro en junio…", "e.g. I go freelance in March, sell the car in June…")} value={esc.descripcion || ""} onChange={(e) => actualizar({ descripcion: e.target.value })} />
             </div>
           </div>
         )}
-        {!esc && <div style={{ ...F.body, marginTop: 10 }}>Crea un escenario para empezar. Arranca con tu vida de hoy; después le agregas los cambios.</div>}
+        {!esc && <div style={{ ...F.body, marginTop: 10 }}>{tx("Crea un escenario para empezar. Arranca con tu vida de hoy; después le agregas los cambios.", "Create a scenario to start. It begins with your life today; then you add the changes.")}</div>}
       </div>
 
       {esc && (<>
@@ -703,11 +718,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             Santiago: "uno le da Terminar y como que no pasa nada"). */}
         {!veredictoVisible && <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", width: "min(720px, calc(100vw - 32px))", zIndex: 500, padding: "8px 12px", background: C.surface, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(255,80,0,0.25)"}`, borderRadius: R.md, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)" }}>
           <div style={{ ...F.caption, minWidth: 0 }}>
-            <b style={{ color: C.text }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`}</b> · {cambios.length} {cambios.length === 1 ? "cambio" : "cambios"}
+            <b style={{ color: C.text }}>{foco ? `${mesL(foco.mes)} ${año}` : tx(`Mes típico ${año}`, `Typical month ${año}`)}</b> · {cambios.length} {cambios.length === 1 ? tx("cambio", "change") : tx("cambios", "changes")}
           </div>
           <div style={{ ...F.mono, color: vista.queda >= 0 ? C.ok : C.danger, whiteSpace: "nowrap" }}>
-            {vista.queda >= 0 ? "quedan " : "faltan "}{fm(Math.abs(vista.queda))}/mes
-            <span style={{ ...F.caption, marginLeft: 8 }}>{Math.abs(vista.queda - hoy.queda) < 1 ? "igual que hoy" : `${vista.queda > hoy.queda ? "+" : "−"}${fm(Math.abs(vista.queda - hoy.queda))} vs hoy`}</span>
+            {vista.queda >= 0 ? tx("quedan ", "left over ") : tx("faltan ", "short ")}{fm(Math.abs(vista.queda))}{tx("/mes", "/mo")}
+            <span style={{ ...F.caption, marginLeft: 8 }}>{Math.abs(vista.queda - hoy.queda) < 1 ? tx("igual que hoy", "same as today") : `${vista.queda > hoy.queda ? "+" : "−"}${fm(Math.abs(vista.queda - hoy.queda))} ${tx("vs hoy", "vs today")}`}</span>
           </div>
         </div>}
 
@@ -718,10 +733,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               sola tabla: una fila por año, una columna por concepto. */}
           {(() => {
             // 29-oct-2026 (Santiago: "¿esto es al mes o anual? ¿cuotas qué es, créditos?").
-            const cols = [["Ingresos", (x) => x.ingresos, C.text], ["Gastos", (x) => x.gastos, C.text], ["Cuotas de créditos", (x) => x.cuotas, C.text], [foco ? "Impuestos" : "Retención de renta", (x) => x.impuesto + x.retencion, C.text], ["Te queda", (x) => x.queda, null]]; // 31-oct-2026: cifras neutras; color solo en «Te queda» y la diferencia
+            // La clave interna (k) decide el color de la diferencia; el texto va en el idioma.
+            const cols = [[tx("Ingresos", "Income"), (x) => x.ingresos, C.text, "ing"], [tx("Gastos", "Expenses"), (x) => x.gastos, C.text, "gas"], [tx("Cuotas de créditos", "Loan payments"), (x) => x.cuotas, C.text, "deu"], [foco ? tx("Impuestos", "Taxes") : esUS() ? tx("Impuestos (nómina y estimados)", "Taxes (payroll & estimated)") : tx("Retención de renta", "Income tax withholding"), (x) => x.impuesto + x.retencion, C.text, "imp"], [tx("Te queda", "Left over"), (x) => x.queda, null, "queda"]]; // 31-oct-2026: cifras neutras; color solo en «Te queda» y la diferencia
             const filasT = [
-              { k: "hoy", titulo: `Hoy · ${añoHoy}`, sub: "referencia, no cambia", d: hoy },
-              { k: "fut", titulo: foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`, sub: foco ? "ese mes en concreto" : (cambios.length ? `promedio ${mesL(mesRegimen).toLowerCase()}–dic, ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"}` : "sin cambios todavía"), d: vista, fuerte: true },
+              { k: "hoy", titulo: tx(`Hoy · ${añoHoy}`, `Today · ${añoHoy}`), sub: tx("referencia, no cambia", "reference, doesn't change"), d: hoy },
+              { k: "fut", titulo: foco ? `${mesL(foco.mes)} ${año}` : tx(`Mes típico ${año}`, `Typical month ${año}`), sub: foco ? tx("ese mes en concreto", "that specific month") : (cambios.length ? tx(`promedio ${mesL(mesRegimen).toLowerCase()}–dic, ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"}`, `average ${mesL(mesRegimen)}–Dec, ${cambios.length} ${cambios.length === 1 ? "change" : "changes"}`) : tx("sin cambios todavía", "no changes yet")), d: vista, fuerte: true },
             ];
             const th = { ...F.label, textAlign: "right", padding: "4px 8px", whiteSpace: "nowrap" };
             const td = { ...F.mono, textAlign: "right", padding: "6px 8px", whiteSpace: "nowrap" };
@@ -732,14 +748,14 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               return (
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
                   <thead><tr>
-                    <th style={{ ...th, textAlign: "left", padding: "4px 4px" }}>Al mes</th>
+                    <th style={{ ...th, textAlign: "left", padding: "4px 4px" }}>{tx("Al mes", "Per month")}</th>
                     <th style={{ ...th, padding: "4px 4px" }}>{h.titulo}</th>
                     <th style={{ ...th, padding: "4px 4px" }}>{f.titulo}</th>
                   </tr></thead>
                   <tbody>
-                    {cols.map(([t, g, col]) => {
+                    {cols.map(([t, g, col, ck]) => {
                       const a = g(h.d), b2 = g(f.d), dif = b2 - a;
-                      const bueno = t === "Ingresos" || t === "Te queda" ? dif >= 0 : dif <= 0;
+                      const bueno = ck === "ing" || ck === "queda" ? dif >= 0 : dif <= 0;
                       return (
                         <tr key={t} style={{ borderTop: `1px solid ${C.border}` }}>
                           <td style={{ ...F.body, padding: "6px 4px" }}>{t}</td>
@@ -758,7 +774,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             return (
               <div style={{ overflowX: "auto" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead><tr><th style={{ ...th, textAlign: "left" }}>Todo es <b style={{ color: C.text }}>al mes</b></th>{cols.map(([t]) => <th key={t} style={th}>{t}</th>)}</tr></thead>
+                  <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Todo es ", "Everything is ")}<b style={{ color: C.text }}>{tx("al mes", "per month")}</b></th>{cols.map(([t]) => <th key={t} style={th}>{t}</th>)}</tr></thead>
                   <tbody>
                     {filasT.map((r) => (
                       <tr key={r.k} style={{ background: r.fuerte ? Cα.ok08 : "transparent", borderTop: `1px solid ${C.border}` }}>
@@ -767,8 +783,8 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                       </tr>
                     ))}
                     <tr style={{ borderTop: `1px solid ${C.border}` }}>
-                      <td style={{ padding: "4px 8px", ...F.caption }}>Diferencia vs hoy</td>
-                      {cols.map(([t, g]) => { const d = g(vista) - g(hoy); const bueno = t === "Ingresos" || t === "Te queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 12, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
+                      <td style={{ padding: "4px 8px", ...F.caption }}>{tx("Diferencia vs hoy", "Difference vs today")}</td>
+                      {cols.map(([t, g, , ck]) => { const d = g(vista) - g(hoy); const bueno = ck === "ing" || ck === "queda" ? d >= 0 : d <= 0; return <td key={t} style={{ ...td, fontSize: 12, padding: "3px 8px", color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>{Math.abs(d) < 1 ? "=" : (d > 0 ? "+" : "−") + fm(Math.abs(d))}</td>; })}
                     </tr>
                   </tbody>
                 </table>
@@ -778,16 +794,21 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           <div style={{ marginTop: 12, padding: "10px 13px", borderRadius: R.md, background: vista.queda >= 0 ? Cα.ok08 : Cα.danger08, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(255,80,0,0.25)"}` }}>
             <div style={{ ...F.h3, color: vista.queda >= 0 ? C.ok : C.danger }}>
               {vista.queda >= 0
-                ? `Te sostienes: quedan ${fm(vista.queda)} al mes (${vista.ingresos > 0 ? Math.round((vista.queda / vista.ingresos) * 100) : 0}% de lo que entra).`
-                : `No alcanza: faltan ${fm(-vista.queda)} al mes.`}
+                ? tx(`Te sostienes: quedan ${fm(vista.queda)} al mes (${vista.ingresos > 0 ? Math.round((vista.queda / vista.ingresos) * 100) : 0}% de lo que entra).`, `You're covered: ${fm(vista.queda)} left over each month (${vista.ingresos > 0 ? Math.round((vista.queda / vista.ingresos) * 100) : 0}% of what comes in).`)
+                : tx(`No alcanza: faltan ${fm(-vista.queda)} al mes.`, `Not enough: ${fm(-vista.queda)} short each month.`)}
               {" "}
               <span style={{ color: C.muted, fontWeight: 400 }}>
-                {Math.abs(vista.queda - hoy.queda) < 1 ? "Igual que hoy." : `${vista.queda > hoy.queda ? "Mejor" : "Peor"} que hoy por ${fm(Math.abs(vista.queda - hoy.queda))}.`}
+                {Math.abs(vista.queda - hoy.queda) < 1 ? tx("Igual que hoy.", "Same as today.") : tx(`${vista.queda > hoy.queda ? "Mejor" : "Peor"} que hoy por ${fm(Math.abs(vista.queda - hoy.queda))}.`, `${vista.queda > hoy.queda ? "Better" : "Worse"} than today by ${fm(Math.abs(vista.queda - hoy.queda))}.`)}
               </span>
             </div>
             <div style={{ ...F.caption, marginTop: 4 }}>
-              Gastos {fm(vista.gastos)} + cuotas {fm(vista.cuotas)} = lo que gastas. Aparte, la retención en la fuente: {fm(vista.retencion)}{foco ? "" : "/mes"}.
-              {foco ? (vista.impuesto > 0 ? ` En ${mesL(foco.mes).toLowerCase()} además pagas la declaración de renta ${año - 1}: ${fm(vista.impuesto)}.` : "") : ` La declaración de renta ${año - 1} no entra en el mes típico: se paga de una vez (mírala abajo en Impuestos).`}
+              {esUS() ? (<>
+                {tx(`Gastos ${fm(vista.gastos)} + cuotas ${fm(vista.cuotas)} = lo que gastas. Aparte, lo que retiene tu nómina (federal, estatal y FICA): ${fm(vista.retencion)}${foco ? "" : "/mes"}.`, `Expenses ${fm(vista.gastos)} + loan payments ${fm(vista.cuotas)} = what you spend. Separately, what your paycheck withholds (federal, state and FICA): ${fm(vista.retencion)}${foco ? "" : "/mo"}.`)}
+                {foco ? (vista.impuesto > 0 ? tx(` En ${mesL(foco.mes).toLowerCase()} además haces un pago estimado al IRS y a tu estado: ${fm(vista.impuesto)}.`, ` In ${mesL(foco.mes)} you also make an estimated tax payment to the IRS and your state: ${fm(vista.impuesto)}.`) : "") : tx(` Los pagos estimados de ${año} (4 al año: enero, abril, junio y septiembre) van prorrateados en el mes típico: ${fm(vista.impuesto)}/mes. Míralos abajo en Impuestos.`, ` ${año} estimated tax payments (4 a year: January, April, June and September) are spread across the typical month: ${fm(vista.impuesto)}/mo. See them below under Taxes.`)}
+              </>) : (<>
+              {tx(`Gastos ${fm(vista.gastos)} + cuotas ${fm(vista.cuotas)} = lo que gastas. Aparte, la retención en la fuente: ${fm(vista.retencion)}${foco ? "" : "/mes"}.`, `Expenses ${fm(vista.gastos)} + loan payments ${fm(vista.cuotas)} = what you spend. Separately, income tax withheld at source: ${fm(vista.retencion)}${foco ? "" : "/mo"}.`)}
+              {foco ? (vista.impuesto > 0 ? tx(` En ${mesL(foco.mes).toLowerCase()} además pagas la declaración de renta ${año - 1}: ${fm(vista.impuesto)}.`, ` In ${mesL(foco.mes)} you also pay your ${año - 1} income tax return: ${fm(vista.impuesto)}.`) : "") : tx(` La declaración de renta ${año - 1} no entra en el mes típico: se paga de una vez (mírala abajo en Impuestos).`, ` The ${año - 1} income tax return isn't in the typical month: it's paid once (see it below under Taxes).`)}
+              </>)}
             </div>
           </div>
 
@@ -802,9 +823,9 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               const a = hoyDe(f.key), b = fut(f);
               const h = filasHoy.find((x) => x.key === f.key);
               const mesesHoy = h ? h.meses.filter((v) => v > 0).length : 0;
-              const motivo = f.origen === "nuevo" ? "nuevo en tu escenario"
-                : f.cambio ? (f.cambio.tipo === "cambia" ? "lo cambiaste" : f.cambio.tipo === "meses" ? "solo unos meses" : f.cambio.tipo === "termina" ? "termina" : "")
-                : (mesesHoy > 0 && mesesHoy < 12 && b > a ? `en ${añoHoy} solo contó ${mesesHoy} ${mesesHoy === 1 ? "mes" : "meses"}; en ${año} cuenta todo el año` : "");
+              const motivo = f.origen === "nuevo" ? tx("nuevo en tu escenario", "new in your scenario")
+                : f.cambio ? (f.cambio.tipo === "cambia" ? tx("lo cambiaste", "you changed it") : f.cambio.tipo === "meses" ? tx("solo unos meses", "only some months") : f.cambio.tipo === "termina" ? tx("termina", "ends") : "")
+                : (mesesHoy > 0 && mesesHoy < 12 && b > a ? tx(`en ${añoHoy} solo contó ${mesesHoy} ${mesesHoy === 1 ? "mes" : "meses"}; en ${año} cuenta todo el año`, `in ${añoHoy} it only counted ${mesesHoy} ${mesesHoy === 1 ? "month" : "months"}; in ${año} it counts all year`) : "");
               return { nombre: f.nombre, kind: f.kind, a, b, d: b - a, motivo };
             }).filter((x) => Math.abs(x.d) >= 1000).sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
             const top = (k) => difs.filter((x) => x.kind === k).slice(0, 5);
@@ -813,12 +834,12 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               if (!lst.length) return null;
               return (
                 <div style={{ flex: "1 1 320px", minWidth: 0 }}>
-                  <div style={{ ...F.label, marginBottom: 6 }}>{titulo} {total >= 0 ? "suben" : "bajan"} {fm(Math.abs(total))}/mes — lo que más pesa</div>
+                  <div style={{ ...F.label, marginBottom: 6 }}>{tx(`${titulo} ${total >= 0 ? "suben" : "bajan"} ${fm(Math.abs(total))}/mes — lo que más pesa`, `${titulo} ${total >= 0 ? "go up" : "go down"} ${fm(Math.abs(total))}/mo — biggest drivers`)}</div>
                   {lst.map((x, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 10, padding: "5px 0", borderTop: i ? `1px solid ${C.border}` : "none" }}>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ ...F.body, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</div>
-                        <div style={F.caption}>{fm(x.a)} hoy → {fm(x.b)} en {año}{x.motivo ? ` · ${x.motivo}` : ""}</div>
+                        <div style={F.caption}>{tx(`${fm(x.a)} hoy → ${fm(x.b)} en ${año}`, `${fm(x.a)} today → ${fm(x.b)} in ${año}`)}{x.motivo ? ` · ${x.motivo}` : ""}</div>
                       </div>
                       <div style={{ ...F.mono, fontWeight: 700, color: (k === "ing") === (x.d > 0) ? C.ok : C.danger, whiteSpace: "nowrap" }}>{x.d > 0 ? "+" : "−"}{fm(Math.abs(x.d))}</div>
                     </div>
@@ -829,10 +850,10 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             if (!difs.length) return null;
             return (
               <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: R.md, border: `1px solid ${C.border}`, background: C.surface }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>¿Por qué cambia frente a hoy?</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 8 }}>{tx("¿Por qué cambia frente a hoy?", "Why is it different from today?")}</div>
                 <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-                  {bloqueK("ing", "Ingresos", vista.ingresos - hoy.ingresos)}
-                  {bloqueK("gas", "Gastos", vista.gastos - hoy.gastos)}
+                  {bloqueK("ing", tx("Ingresos", "Income"), vista.ingresos - hoy.ingresos)}
+                  {bloqueK("gas", tx("Gastos", "Expenses"), vista.gastos - hoy.gastos)}
                 </div>
               </div>
             );
@@ -845,18 +866,18 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           <div style={{ marginTop: 16 }}>
           {/* 12 meses: ingresos vs egresos, con lo que pasa en cada uno */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 0, flexWrap: "wrap" }}>
-            <div style={F.label}>Mes a mes en {año}</div>
+            <div style={F.label}>{tx(`Mes a mes en ${año}`, `Month by month in ${año}`)}</div>
             <div style={{ display: "flex", gap: 10, ...F.caption }}>
-              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.ok, borderRadius: 3, marginRight: 4 }} />Ingresos</span>
-              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.danger, borderRadius: 3, marginRight: 4 }} />Gastos + cuotas + impuestos y retención</span>
-              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.warn, borderRadius: "50%", marginRight: 4 }} />algo entra, termina o cambia</span>
+              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.ok, borderRadius: 3, marginRight: 4 }} />{tx("Ingresos", "Income")}</span>
+              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.danger, borderRadius: 3, marginRight: 4 }} />{esUS() ? tx("Gastos + cuotas + impuestos", "Expenses + loan payments + taxes") : tx("Gastos + cuotas + impuestos y retención", "Expenses + loan payments + taxes and withholding")}</span>
+              <span><span style={{ display: "inline-block", width: 9, height: 9, background: C.warn, borderRadius: "50%", marginRight: 4 }} />{tx("algo entra, termina o cambia", "something starts, ends or changes")}</span>
             </div>
-            {mesFoco && <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12, marginLeft: "auto" }} onClick={() => setMesFoco(null)}>← volver al mes típico</button>}
+            {mesFoco && <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12, marginLeft: "auto" }} onClick={() => setMesFoco(null)}>{tx("← volver al mes típico", "← back to the typical month")}</button>}
           </div>
           <div style={{ ...F.caption, marginTop: 4 }}>
             {mesesIguales
-              ? "Todos los meses salen iguales en este escenario: nada entra, termina ni cambia a mitad de año. El número de cada barra es lo que te queda ese mes."
-              : "El número sobre cada mes es lo que te queda. Pásate por encima para ver el detalle y haz clic para que el veredicto de arriba muestre ese mes."}
+              ? tx("Todos los meses salen iguales en este escenario: nada entra, termina ni cambia a mitad de año. El número de cada barra es lo que te queda ese mes.", "Every month comes out the same in this scenario: nothing starts, ends or changes mid-year. The number on each bar is what's left over that month.")
+              : tx("El número sobre cada mes es lo que te queda. Pásate por encima para ver el detalle y haz clic para que el veredicto de arriba muestre ese mes.", "The number above each month is what's left over. Hover to see the detail and click so the summary above shows that month.")}
           </div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginTop: 10, height: 128 }} onMouseLeave={() => setMesHover(null)}>
             {porMes.map((m, i) => {
@@ -879,7 +900,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
             {MESES.map((m, i) => (
               <div key={m.v} style={{ flex: 1, textAlign: "center", ...F.caption, fontSize: 11, color: mesFoco === m.v ? C.text : undefined, fontWeight: mesFoco === m.v ? 700 : 400 }}>
-                {m.l.slice(0, 3)}{eventosMes[i].length > 0 && <span style={{ display: "inline-block", width: 6, height: 6, background: C.warn, borderRadius: "50%", marginLeft: 3, verticalAlign: "middle" }} />}
+                {mesL(m.v).slice(0, 3)}{eventosMes[i].length > 0 && <span style={{ display: "inline-block", width: 6, height: 6, background: C.warn, borderRadius: "50%", marginLeft: 3, verticalAlign: "middle" }} />}
               </div>
             ))}
           </div>
@@ -891,16 +912,16 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
               <div style={{ marginTop: 10, padding: "10px 12px", background: C.raised, borderRadius: R.md, border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", gap: 18, flexWrap: "wrap", alignItems: "baseline" }}>
                   <div style={{ ...F.label, minWidth: 90 }}>{mesL(mm)} {año}</div>
-                  <Celda etiqueta="Ingresos" valor={m.ingresos} color={C.ok} />
-                  <Celda etiqueta="Gastos" valor={m.gastos} color={C.danger} />
-                  <Celda etiqueta="Cuotas" valor={m.cuotas} color={C.warn} />
-                  <Celda etiqueta="Impuestos" valor={m.impuesto + m.retencion} color={C.purple} />
-                  <Celda etiqueta="Queda" valor={m.queda} color={m.queda >= 0 ? C.ok : C.danger} />
+                  <Celda etiqueta={tx("Ingresos", "Income")} valor={m.ingresos} color={C.ok} />
+                  <Celda etiqueta={tx("Gastos", "Expenses")} valor={m.gastos} color={C.danger} />
+                  <Celda etiqueta={tx("Cuotas", "Loan payments")} valor={m.cuotas} color={C.warn} />
+                  <Celda etiqueta={tx("Impuestos", "Taxes")} valor={m.impuesto + m.retencion} color={C.purple} />
+                  <Celda etiqueta={tx("Queda", "Left over")} valor={m.queda} color={m.queda >= 0 ? C.ok : C.danger} />
                 </div>
                 <div style={{ ...F.caption, marginTop: 6 }}>
                   {ev.length === 0
-                    ? (mm === 1 ? "Arranca el año con todo lo que está activo." : `Igual que ${mesL(mm - 1).toLowerCase()}: nada entra ni termina este mes.`)
-                    : <>Este mes: {ev.map((e, k) => <span key={k} style={{ color: e.tipo === "entra" ? C.ok : e.tipo === "sale" ? C.danger : C.warn }}>{k > 0 ? " · " : ""}{e.texto}</span>)}</>}
+                    ? (mm === 1 ? tx("Arranca el año con todo lo que está activo.", "The year starts with everything that's active.") : tx(`Igual que ${mesL(mm - 1).toLowerCase()}: nada entra ni termina este mes.`, `Same as ${mesL(mm - 1)}: nothing starts or ends this month.`))
+                    : <>{tx("Este mes: ", "This month: ")}{ev.map((e, k) => <span key={k} style={{ color: e.tipo === "entra" ? C.ok : e.tipo === "sale" ? C.danger : C.warn }}>{k > 0 ? " · " : ""}{e.texto}</span>)}</>}
                 </div>
               </div>
             );
@@ -918,7 +939,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             if (f.cat === "Seguridad Social") aportes += v;
             else porCat[f.cat || "Otros"] = (porCat[f.cat || "Otros"] || 0) + v;
           });
-          const sub = foco ? `${mesL(foco.mes)} ${año} · un solo mes del escenario.` : (cambios.length ? `Mes típico ${año}: promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus cambios aplicados.` : `Mes típico ${año}: tu vida de hoy llevada a todo el año.`);
+          const sub = foco ? tx(`${mesL(foco.mes)} ${año} · un solo mes del escenario.`, `${mesL(foco.mes)} ${año} · a single month of the scenario.`) : (cambios.length ? tx(`Mes típico ${año}: promedio ${mesL(mesRegimen).toLowerCase()}–dic con tus cambios aplicados.`, `Typical month ${año}: average ${mesL(mesRegimen)}–Dec with your changes applied.`) : tx(`Mes típico ${año}: tu vida de hoy llevada a todo el año.`, `Typical month ${año}: your life today carried over the whole year.`));
           return (
             <div style={{ minWidth: 0 }}>
               <SankeyFlujo
@@ -932,10 +953,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   // Máximo 3 categorías + "Otros": con más, las etiquetas de la derecha se pisan.
                   const cs = Object.entries(porCat).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
                   if (cs.length <= 4) return cs;
-                  return [...cs.slice(0, 3), [`Otros gastos (${cs.length - 3})`, cs.slice(3).reduce((a, [, v]) => a + v, 0)]];
+                  return [...cs.slice(0, 3), [tx(`Otros gastos (${cs.length - 3})`, `Other expenses (${cs.length - 3})`), cs.slice(3).reduce((a, [, v]) => a + v, 0)]];
                 })()}
                 cashFlow={vista.queda}
                 subtitulo={sub}
+                labels={labelsSankey()}
                 fmt={fm}
                 T={{ card: C.surface, border: C.border, tx: C.text, tx2: C.muted, tx3: C.subtle }}
               />
@@ -946,11 +968,11 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
             const idx = foco ? [foco.mes - 1] : idxRegimen;
             const n = idx.length || 1;
             const valor = (f) => idx.reduce((a, i) => a + (f.meses[i] || 0), 0) / n;
-            const grupos = [["ing", "Ingresos", C.ok], ["gas", "Gastos", C.danger], ["deu", "Cuotas", C.warn]];
+            const grupos = [["ing", tx("Ingresos", "Income"), C.ok], ["gas", tx("Gastos", "Expenses"), C.danger], ["deu", tx("Cuotas", "Loan payments"), C.warn]];
             return (
               <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16, display: "flex", flexDirection: "column", minHeight: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>De dónde sale cada número</div>
-                <div style={{ ...F.caption, marginBottom: 10 }}>{foco ? `${mesL(foco.mes)} ${año}` : `Mes típico ${año}`} · ítem por ítem, ordenado de mayor a menor.</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{tx("De dónde sale cada número", "Where each number comes from")}</div>
+                <div style={{ ...F.caption, marginBottom: 10 }}>{foco ? `${mesL(foco.mes)} ${año}` : tx(`Mes típico ${año}`, `Typical month ${año}`)} · {tx("ítem por ítem, ordenado de mayor a menor.", "item by item, largest first.")}</div>
                 {/* 21-oct-2026 (Santiago, en el celular: "esta sección no se deja
                     recorrer"): el scroll interno de 400 px peleaba con el scroll de la
                     página en el móvil y la tarjeta desbordaba a lo ancho (minmax 380px
@@ -966,15 +988,15 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                           <span style={{ ...F.label, color }}>{titulo} · {lista.length}</span>
                           <span style={{ ...F.mono, fontSize: 12, color }}>{fm(total)}</span>
                         </div>
-                        {lista.length === 0 && <div style={{ ...F.caption, marginTop: 6 }}>Nada este mes.</div>}
+                        {lista.length === 0 && <div style={{ ...F.caption, marginTop: 6 }}>{tx("Nada este mes.", "Nothing this month.")}</div>}
                         {lista.map((f) => (
                           <div key={f.key} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
                             <div style={{ minWidth: 0 }}>
                               <div style={{ ...F.body, color: C.text, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                {f.nombre}{f.origen === "nuevo" ? " · nuevo" : f.cambio ? " · con cambio" : ""}
+                                {f.nombre}{f.origen === "nuevo" ? tx(" · nuevo", " · new") : f.cambio ? tx(" · con cambio", " · changed") : ""}
                               </div>
                               <div style={{ ...F.caption, fontSize: 11 }}>
-                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${fmtTasaEs(f.tasa)} ${f.tasaModo === "mensual" ? "mensual" : "anual"}` : f.cat}
+                                {f.capital > 0 && f.tasa > 0 ? `${fm(f.capital)} × ${fmtTasa(f.tasa)} ${anualMensualTxt(f.tasaModo)}` : catTxt(f.cat)}
                               </div>
                             </div>
                             <span style={{ ...F.mono, fontSize: 12, color: C.text, flexShrink: 0 }}>{fm(f.v)}</span>
@@ -986,22 +1008,22 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                 </div>
                 {(() => {
                   // 29-oct-2026 (Santiago: "así como se ven ingresos, gastos, deudas, debería verse impuestos").
-                  const decl = (pagoFut.titulares || []).filter((t) => t.total > 0).map((t) => ({ t, v: foco ? t.meses.filter((m) => m.mes === foco.mes).reduce((a, m) => a + t.total * m.fraccion, 0) : 0 }));
+                  const decl = (pagoFut.titulares || []).filter((t) => t.total > 0).map((t) => ({ t, v: foco ? t.meses.filter((m) => m.mes === foco.mes).reduce((a, m) => a + t.total * m.fraccion, 0) : (esUS() ? t.total / 12 : 0) }));
                   const total = vista.retencion + vista.impuesto;
                   return (
                     <div style={{ background: C.raised, borderRadius: R.md, padding: "8px 10px", border: `1px solid ${C.border}`, marginTop: 10 }}>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span style={{ ...F.label, color: C.purple }}>Impuestos · {1 + decl.length}</span>
+                        <span style={{ ...F.label, color: C.purple }}>{tx("Impuestos", "Taxes")} · {1 + decl.length}</span>
                         <span style={{ ...F.mono, fontSize: 12, color: C.purple }}>{fm(total)}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
-                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Retención en la fuente<div style={{ ...F.caption, fontSize: 11 }}>adelanto de tu renta que te descuentan al pagarte</div></div>
+                        <div style={{ ...F.body, color: C.text, fontSize: 12 }}>{esUS() ? tx("Retenido de tu nómina", "Payroll withholding") : tx("Retención en la fuente", "Income tax withheld at source")}<div style={{ ...F.caption, fontSize: 11 }}>{esUS() ? tx("federal, estatal y FICA que te descuentan del salario", "federal, state and FICA taken out of your paycheck") : tx("adelanto de tu renta que te descuentan al pagarte", "advance on your income tax, deducted when you're paid")}</div></div>
                         <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(vista.retencion)}</span>
                       </div>
                       {decl.map(({ t, v }) => (
                         <div key={t.name} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "5px 0", borderTop: `1px solid ${C.border}` }}>
-                          <div style={{ ...F.body, color: C.text, fontSize: 12 }}>Declaración de renta {año - 1} · {t.name}
-                            <div style={{ ...F.caption, fontSize: 11 }}>{fm(t.total)} {fechaPago(t)}{foco && !v ? " · no cae en este mes" : !foco ? " · no entra al mes típico" : ""}</div>
+                          <div style={{ ...F.body, color: C.text, fontSize: 12 }}>{esUS() ? tx(`Pagos estimados ${año}`, `Estimated tax payments ${año}`) : tx(`Declaración de renta ${año - 1}`, `Income tax return ${año - 1}`)} · {t.name}
+                            <div style={{ ...F.caption, fontSize: 11 }}>{fm(t.total)} {fechaPago(t)}{foco && !v ? tx(" · no cae en este mes", " · not due this month") : !foco ? (esUS() ? tx(" · prorrateado en el mes típico", " · spread across the typical month") : tx(" · no entra al mes típico", " · not in the typical month")) : ""}</div>
                           </div>
                           <span style={{ ...F.mono, fontSize: 12, color: C.text }}>{fm(v)}</span>
                         </div>
@@ -1017,16 +1039,16 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
 
         {/* ── Acumulado del año y patrimonio ── */}
         <div style={card}>
-          <div style={F.h2}>Lo que suma {año} y a dónde llega tu patrimonio</div>
-          <div style={F.caption}>Los 12 meses del escenario sumados, comparados con tu vida de hoy llevada a un año completo.</div>
+          <div style={F.h2}>{tx(`Lo que suma ${año} y a dónde llega tu patrimonio`, `${año} totals and where your net worth ends up`)}</div>
+          <div style={F.caption}>{tx("Los 12 meses del escenario sumados, comparados con tu vida de hoy llevada a un año completo.", "The scenario's 12 months added up, compared with your life today over a full year.")}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 10, marginTop: 12 }}>
             {[
-              ["Ingresos del año", anual.ingresos, anualHoy.ingresos, C.ok, true],
-              ["Gastos del año", anual.gastos, anualHoy.gastos, C.danger, false],
-              ["Cuotas del año", anual.cuotas, anualHoy.cuotas, C.warn, false],
-              ["Impuestos del año", anual.impuestos, anualHoy.impuestos, C.purple, false],
-              [anual.queda >= 0 ? "Te queda en el año" : "Te falta en el año", anual.queda, anualHoy.queda, anual.queda >= 0 ? C.ok : C.danger, true],
-            ].map(([t, v, vh, col, masEsMejor]) => {
+              [tx("Ingresos del año", "Income for the year"), anual.ingresos, anualHoy.ingresos, C.ok, true],
+              [tx("Gastos del año", "Expenses for the year"), anual.gastos, anualHoy.gastos, C.danger, false],
+              [tx("Cuotas del año", "Loan payments for the year"), anual.cuotas, anualHoy.cuotas, C.warn, false],
+              [tx("Impuestos del año", "Taxes for the year"), anual.impuestos, anualHoy.impuestos, C.purple, false, "imp"],
+              [anual.queda >= 0 ? tx("Te queda en el año", "Left over for the year") : tx("Te falta en el año", "Short for the year"), anual.queda, anualHoy.queda, anual.queda >= 0 ? C.ok : C.danger, true],
+            ].map(([t, v, vh, col, masEsMejor, ck]) => {
               const d = v - vh, bueno = masEsMejor ? d >= 0 : d <= 0;
               return (
                 <div key={t} style={{ background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, padding: "10px 12px" }}>
@@ -1035,35 +1057,41 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                   {/* 31-oct-2026 (Santiago: "me confunde… ¿120 MM?"). Son dos cosas
                       distintas: la retención ya te la descuentan al pagarte; la
                       declaración sí sale de tu bolsillo. Se dicen por separado. */}
-                  {t === "Impuestos del año" && (
+                  {ck === "imp" && (esUS() ? (
                     <div style={{ ...F.caption, color: C.muted, margin: "2px 0 4px", lineHeight: 1.45 }}>
-                      {fm(anual.ret)} de retención (ya te la descuentan al pagarte)<br />
-                      + {fm(anual.decl)} de declaraciones (sale de tu bolsillo)
-                      <div style={{ color: C.subtle }}>Hoy: {fm(anualHoy.ret)} de retención + {fm(anualHoy.decl)} de declaraciones</div>
+                      {tx(`${fm(anual.ret)} retenido de nómina (ya te lo descuentan)`, `${fm(anual.ret)} payroll withholding (already taken out)`)}<br />
+                      {tx(`+ ${fm(anual.decl)} de pagos estimados (sale de tu bolsillo)`, `+ ${fm(anual.decl)} estimated payments (out of your pocket)`)}
+                      <div style={{ color: C.subtle }}>{tx(`Hoy: ${fm(anualHoy.ret)} de nómina + ${fm(anualHoy.decl)} de pagos estimados`, `Today: ${fm(anualHoy.ret)} withholding + ${fm(anualHoy.decl)} estimated payments`)}</div>
                     </div>
-                  )}
+                  ) : (
+                    <div style={{ ...F.caption, color: C.muted, margin: "2px 0 4px", lineHeight: 1.45 }}>
+                      {tx(`${fm(anual.ret)} de retención (ya te la descuentan al pagarte)`, `${fm(anual.ret)} withheld (already taken out when you're paid)`)}<br />
+                      {tx(`+ ${fm(anual.decl)} de declaraciones (sale de tu bolsillo)`, `+ ${fm(anual.decl)} from tax returns (out of your pocket)`)}
+                      <div style={{ color: C.subtle }}>{tx(`Hoy: ${fm(anualHoy.ret)} de retención + ${fm(anualHoy.decl)} de declaraciones`, `Today: ${fm(anualHoy.ret)} withheld + ${fm(anualHoy.decl)} from tax returns`)}</div>
+                    </div>
+                  ))}
                   <div style={{ ...F.caption, color: Math.abs(d) < 1 ? C.subtle : bueno ? C.ok : C.danger }}>
-                    {Math.abs(d) < 1 ? "igual que hoy" : `${d > 0 ? "+" : "−"}${fm(Math.abs(d))} vs hoy (${fm(vh)})`}
+                    {Math.abs(d) < 1 ? tx("igual que hoy", "same as today") : tx(`${d > 0 ? "+" : "−"}${fm(Math.abs(d))} vs hoy (${fm(vh)})`, `${d > 0 ? "+" : "−"}${fm(Math.abs(d))} vs today (${fm(vh)})`)}
                   </div>
                 </div>
               );
             })}
           </div>
           <div style={{ ...F.caption, marginTop: 8 }}>
-            {anual.positivos === 12 ? "Los 12 meses cierran en positivo." : anual.positivos === 0 ? "Ningún mes cierra en positivo." : `${anual.positivos} meses cierran en positivo y ${12 - anual.positivos} en negativo.`}
-            {" "}Promedio mensual: {fm(anual.queda / 12)}.
+            {anual.positivos === 12 ? tx("Los 12 meses cierran en positivo.", "All 12 months end positive.") : anual.positivos === 0 ? tx("Ningún mes cierra en positivo.", "No month ends positive.") : tx(`${anual.positivos} meses cierran en positivo y ${12 - anual.positivos} en negativo.`, `${anual.positivos} months end positive and ${12 - anual.positivos} negative.`)}
+            {" "}{tx("Promedio mensual: ", "Monthly average: ")}{fm(anual.queda / 12)}.
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 8, marginTop: 20 }}>
             <div>
-              <div style={F.h3}>Curva del patrimonio en {año}</div>
-              <div style={F.caption}>Arranca en tu patrimonio neto de hoy y cada mes suma lo que queda, más el capital de las cuotas que baja la deuda. Sin valorización de activos: solo tu flujo.</div>
+              <div style={F.h3}>{tx(`Curva del patrimonio en ${año}`, `Net worth curve in ${año}`)}</div>
+              <div style={F.caption}>{tx("Arranca en tu patrimonio neto de hoy y cada mes suma lo que queda, más el capital de las cuotas que baja la deuda. Sin valorización de activos: solo tu flujo.", "Starts at your net worth today and each month adds what's left over, plus the principal your loan payments pay down. No asset appreciation: just your cash flow.")}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={F.label}>Hoy → dic {año}</div>
+              <div style={F.label}>{tx(`Hoy → dic ${año}`, `Today → Dec ${año}`)}</div>
               <div style={{ ...F.mono, fontSize: 15 }}>
                 <span style={{ color: C.muted }}>{fm(snap.patrimonioNeto)}</span> → <span style={{ color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{fm(patFin)}</span>
-                <span style={{ ...F.caption, marginLeft: 8, color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{patFin >= snap.patrimonioNeto ? "+" : "−"}{fm(Math.abs(patFin - snap.patrimonioNeto))}{snap.patrimonioNeto > 0 ? ` (${fmtPctEs(((patFin - snap.patrimonioNeto) / snap.patrimonioNeto * 100), 1)})` : ""}</span>
+                <span style={{ ...F.caption, marginLeft: 8, color: patFin >= snap.patrimonioNeto ? C.ok : C.danger }}>{patFin >= snap.patrimonioNeto ? "+" : "−"}{fm(Math.abs(patFin - snap.patrimonioNeto))}{snap.patrimonioNeto > 0 ? ` (${pct(((patFin - snap.patrimonioNeto) / snap.patrimonioNeto * 100), 1)})` : ""}</span>
               </div>
             </div>
           </div>
@@ -1077,16 +1105,16 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                 <YAxis yAxisId="oculto" hide domain={["auto", "auto"]} />
                 <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} />} />
                 <ReferenceLine y={snap.patrimonioNeto} stroke={CHART.txt3} strokeDasharray="4 4" />
-                <Area type="monotone" dataKey="pat" name="Patrimonio neto" stroke={CHART.blue} strokeWidth={2} fill="url(#gradBlue)" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+                <Area type="monotone" dataKey="pat" name={tx("Patrimonio neto", "Net worth")} stroke={CHART.blue} strokeWidth={2} fill="url(#gradBlue)" dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
                 {/* Series invisibles: solo para que el tooltip muestre el detalle del mes */}
-                <Area yAxisId="oculto" type="monotone" dataKey="queda" name="Queda ese mes" stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
-                <Area yAxisId="oculto" type="monotone" dataKey="amort" name="Deuda que baja" stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
-                <Area yAxisId="oculto" type="monotone" dataKey="acum" name="Sobrante acumulado" stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
+                <Area yAxisId="oculto" type="monotone" dataKey="queda" name={tx("Queda ese mes", "Left over that month")} stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
+                <Area yAxisId="oculto" type="monotone" dataKey="amort" name={tx("Deuda que baja", "Debt paid down")} stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
+                <Area yAxisId="oculto" type="monotone" dataKey="acum" name={tx("Sobrante acumulado", "Cumulative surplus")} stroke="none" fill="none" dot={false} activeDot={false} isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
           <div style={{ ...F.caption, marginTop: 6 }}>
-            Patrimonio neto hoy: activos {fm(snap.activos)} − deudas {fm(snap.deudasTotales)} = {fm(snap.patrimonioNeto)}.{amortMes > 0 ? ` Capital que baja la deuda: ${fm(amortMes)}/mes mientras haya cuotas.` : ""} Pásate por la curva para ver cada mes.
+            {tx(`Patrimonio neto hoy: activos ${fm(snap.activos)} − deudas ${fm(snap.deudasTotales)} = ${fm(snap.patrimonioNeto)}.`, `Net worth today: assets ${fm(snap.activos)} − debts ${fm(snap.deudasTotales)} = ${fm(snap.patrimonioNeto)}.`)}{amortMes > 0 ? tx(` Capital que baja la deuda: ${fm(amortMes)}/mes mientras haya cuotas.`, ` Principal paid down: ${fm(amortMes)}/mo while there are payments.`) : ""}{tx(" Pásate por la curva para ver cada mes.", " Hover over the curve to see each month.")}
           </div>
         </div>
 
@@ -1094,32 +1122,32 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
             <div>
-              <div style={F.h2}>Lo que cambia en {año}</div>
-              <div style={F.caption}>Tres verbos: algo termina, algo cambia de monto, algo nuevo entra.</div>
+              <div style={F.h2}>{tx(`Lo que cambia en ${año}`, `What changes in ${año}`)}</div>
+              <div style={F.caption}>{tx("Tres verbos: algo termina, algo cambia de monto, algo nuevo entra.", "Three verbs: something ends, something changes amount, something new comes in.")}</div>
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {["ing", "gas", "deu"].map((k) => (
                 <button key={k} style={btn(false)} onClick={() => setForm({ tipo: "nuevo", kind: k, desdeMes: 1, hastaMes: 12, cat: k === "ing" ? "Salario" : "" })}>
-                  + Nuevo {kindL[k]}
+                  {tx(`+ Nuevo ${kindL[k]}`, `+ New ${kindL[k]}`)}
                 </button>
               ))}
             </div>
           </div>
 
-          {cambios.length === 0 && <div style={{ ...F.body, marginTop: 10 }}>Todavía no hay cambios. Agrega algo nuevo con los botones de arriba, o baja a tu vida de hoy y marca en cada fila qué termina o qué cambia.</div>}
-          {cambios.some((c) => c.tipo === "termina" || c.tipo === "cambia" || c.tipo === "meses") && <div style={{ ...F.caption, marginTop: 8 }}>{cambios.filter((c) => c.tipo === "termina" || c.tipo === "cambia" || c.tipo === "meses").length} ajustes sobre tu vida de hoy: se ven marcados en cada fila, abajo.</div>}
+          {cambios.length === 0 && <div style={{ ...F.body, marginTop: 10 }}>{tx("Todavía no hay cambios. Agrega algo nuevo con los botones de arriba, o baja a tu vida de hoy y marca en cada fila qué termina o qué cambia.", "No changes yet. Add something new with the buttons above, or scroll down to your life today and mark on each row what ends or changes.")}</div>}
+          {cambios.some((c) => c.tipo === "termina" || c.tipo === "cambia" || c.tipo === "meses") && <div style={{ ...F.caption, marginTop: 8 }}>{cambios.filter((c) => c.tipo === "termina" || c.tipo === "cambia" || c.tipo === "meses").length}{tx(" ajustes sobre tu vida de hoy: se ven marcados en cada fila, abajo.", " adjustments to your life today: they're marked on each row below.")}</div>}
           {cambios.filter((c) => c.tipo === "nuevo" || c.tipo === "continua").map((c) => {
             const fila = filas.find((f) => f.key === c.ref) || filas.find((f) => f.key === c.id);
             const nombre = c.tipo === "nuevo" ? c.nombre : (fila?.nombre || "—");
-            const texto = c.tipo === "continua" ? (base.find((b) => b.key === c.ref)?.vig?.apagado ? `estaba apagado; cuenta en ${año}` : `sigue en ${año} aunque en ${añoHoy} terminó en ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12).toLowerCase()}`)
-              : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? "no cuenta en todo el año" : `cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`)
-              : c.tipo === "cambia" ? `pasa a ${fm(c.monto)} desde ${mesL(c.desdeMes).toLowerCase()}`
-              : `entra ${fm(c.monto)}/mes de ${mesL(c.desdeMes).toLowerCase()} a ${mesL(c.hastaMes || 12).toLowerCase()}${Number(c.capital) > 0 && Number(c.tasa) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasaEs(c.tasa)} ${c.tasaModo === "mensual" ? "mensual" : "anual"})` : ""}`;
+            const texto = c.tipo === "continua" ? (base.find((b) => b.key === c.ref)?.vig?.apagado ? tx(`estaba apagado; cuenta en ${año}`, `was turned off; counts in ${año}`) : tx(`sigue en ${año} aunque en ${añoHoy} terminó en ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12).toLowerCase()}`, `continues in ${año} even though in ${añoHoy} it ended in ${mesL(base.find((b) => b.key === c.ref)?.vig?.hasta || 12)}`))
+              : c.tipo === "termina" ? (Number(c.desdeMes) <= 1 ? tx("no cuenta en todo el año", "doesn't count all year") : tx(`cuenta hasta ${mesL(Number(c.desdeMes) - 1).toLowerCase()}, después termina`, `counts through ${mesL(Number(c.desdeMes) - 1)}, then ends`))
+              : c.tipo === "cambia" ? tx(`pasa a ${fm(c.monto)} desde ${mesL(c.desdeMes).toLowerCase()}`, `changes to ${fm(c.monto)} from ${mesL(c.desdeMes)}`)
+              : `${tx(`entra ${fm(c.monto)}/mes de ${mesL(c.desdeMes).toLowerCase()} a ${mesL(c.hastaMes || 12).toLowerCase()}`, `${fm(c.monto)}/mo from ${mesL(c.desdeMes)} to ${mesL(c.hastaMes || 12)}`)}${Number(c.capital) > 0 && Number(c.tasa) > 0 ? ` (${fm(Number(c.capital))} × ${fmtTasa(c.tasa)} ${anualMensualTxt(c.tasaModo)})` : ""}`;
             return (
               <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderTop: `1px solid ${C.border}`, marginTop: 8 }}>
                 <span style={{ ...F.label, color: colorK[c.kind], minWidth: 56 }}>{kindL[c.kind]}</span>
                 <span style={{ ...F.body, color: C.text, flex: 1 }}><b>{nombre}</b> {texto}</span>
-                <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12 }} onClick={() => quitarCambio(c.id)}>Quitar</button>
+                <button style={{ ...btn(false), padding: "3px 10px", fontSize: 12 }} onClick={() => quitarCambio(c.id)}>{tx("Quitar", "Remove")}</button>
               </div>
             );
           })}
@@ -1127,68 +1155,68 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
           {form && form.tipo === "nuevo" && (
             <div style={{ marginTop: 12, padding: 12, background: C.raised, borderRadius: R.md, border: `1px solid ${C.border}` }}>
               <div style={{ ...F.h3, marginBottom: 8 }}>
-                {form.tipo === "nuevo" ? `Nuevo ${kindL[form.kind]}` : form.tipo === "termina" ? `“${form.nombre}” termina` : `“${form.nombre}” cambia de monto`}
+                {form.tipo === "nuevo" ? tx(`Nuevo ${kindL[form.kind]}`, `New ${kindL[form.kind]}`) : form.tipo === "termina" ? tx(`“${form.nombre}” termina`, `“${form.nombre}” ends`) : tx(`“${form.nombre}” cambia de monto`, `“${form.nombre}” changes amount`)}
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
                 {form.tipo === "nuevo" && (<>
-                  <div><div style={F.label}>Nombre</div><input style={input} value={form.nombre || ""} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder={form.kind === "ing" ? "Ej: Nuevo contrato" : form.kind === "gas" ? "Ej: Arriendo nuevo" : "Ej: Crédito carro"} /></div>
-                  {form.kind === "ing" && <div><div style={F.label}>Tipo</div><select style={input} value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })}>{CATS_ING.map((c) => <option key={c}>{c}</option>)}</select></div>}
+                  <div><div style={F.label}>{tx("Nombre", "Name")}</div><input style={input} value={form.nombre || ""} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder={form.kind === "ing" ? tx("Ej: Nuevo contrato", "e.g. New contract") : form.kind === "gas" ? tx("Ej: Arriendo nuevo", "e.g. New rent") : tx("Ej: Crédito carro", "e.g. Car loan")} /></div>
+                  {form.kind === "ing" && <div><div style={F.label}>{tx("Tipo", "Type")}</div><select style={input} value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })}>{CATS_ING.map((c) => <option key={c} value={c}>{catTxt(c)}</option>)}</select></div>}
                   {form.kind === "ing" && (<>
                     {/* 11-oct-2026 (Santiago: "una inversión nueva no me deja poner
                         capital ni porcentaje y no calcula el monto"). Con capital y
                         tasa el monto mensual se deriva solo, como en Ingresos. */}
-                    <div><div style={F.label}>Capital invertido (opcional)</div>
-                      <input style={input} type="number" placeholder="Ej: 500000000" value={form.capital || ""} onChange={(e) => {
+                    <div><div style={F.label}>{tx("Capital invertido (opcional)", "Capital invested (optional)")}</div>
+                      <input style={input} type="number" placeholder={ejCapital()} value={form.capital || ""} onChange={(e) => {
                         const cap = Number(e.target.value) || 0, tas = Number(form.tasa) || 0;
                         const nf = { ...form, capital: e.target.value };
                         if (cap > 0 && tas > 0) nf.monto = String(Math.round(form.tasaModo === "mensual" ? cap * tas / 100 : cap * tas / 100 / 12));
                         setForm(nf);
                       }} /></div>
-                    <div><div style={F.label}>% rentabilidad {form.tasaModo === "mensual" ? "mensual" : "anual"}</div>
-                      <input style={input} type="number" placeholder={form.tasaModo === "mensual" ? "Ej: 1" : "Ej: 14"} value={form.tasa || ""} onChange={(e) => {
+                    <div><div style={F.label}>{tx(`% rentabilidad ${form.tasaModo === "mensual" ? "mensual" : "anual"}`, `% return ${form.tasaModo === "mensual" ? "monthly" : "yearly"}`)}</div>
+                      <input style={input} type="number" placeholder={tx("Ej: ", "e.g. ") + (form.tasaModo === "mensual" ? "1" : esUS() ? "5" : "14")} value={form.tasa || ""} onChange={(e) => {
                         const tas = Number(e.target.value) || 0, cap = Number(form.capital) || 0;
                         const nf = { ...form, tasa: e.target.value };
                         if (cap > 0 && tas > 0) nf.monto = String(Math.round(form.tasaModo === "mensual" ? cap * tas / 100 : cap * tas / 100 / 12));
                         setForm(nf);
                       }} /></div>
-                    <div><div style={F.label}>Periodicidad de la tasa</div>
+                    <div><div style={F.label}>{tx("Periodicidad de la tasa", "Rate period")}</div>
                       <select style={input} value={form.tasaModo || "anual"} onChange={(e) => {
                         const tm = e.target.value, cap = Number(form.capital) || 0, tas = Number(form.tasa) || 0;
                         const nf = { ...form, tasaModo: tm };
                         if (cap > 0 && tas > 0) nf.monto = String(Math.round(tm === "mensual" ? cap * tas / 100 : cap * tas / 100 / 12));
                         setForm(nf);
                       }}>
-                        <option value="anual">Anual (ej: 14% al año)</option>
-                        <option value="mensual">Mensual (ej: 1% al mes)</option>
+                        <option value="anual">{tx("Anual (ej: 14% al año)", "Yearly (e.g. 5% a year)")}</option>
+                        <option value="mensual">{tx("Mensual (ej: 1% al mes)", "Monthly (e.g. 1% a month)")}</option>
                       </select></div>
                   </>)}
-                  {form.kind === "gas" && <div><div style={F.label}>Categoría</div><input style={input} list="cats-gas" value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })} placeholder="Ej: Vivienda" /><datalist id="cats-gas">{Object.keys(user.gastos || {}).map((c) => <option key={c} value={c} />)}</datalist></div>}
-                  {form.kind === "deu" && <div><div style={F.label}>Saldo (opcional)</div><input style={input} type="number" value={form.saldo || ""} onChange={(e) => setForm({ ...form, saldo: e.target.value })} /></div>}
-                  {owners.length > 1 && <div><div style={F.label}>De quién</div><select style={input} value={form.owner || owners[0].id} onChange={(e) => setForm({ ...form, owner: e.target.value })}>{owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>}
+                  {form.kind === "gas" && <div><div style={F.label}>{tx("Categoría", "Category")}</div><input style={input} list="cats-gas" value={form.cat} onChange={(e) => setForm({ ...form, cat: e.target.value })} placeholder={tx("Ej: Vivienda", "e.g. Housing")} /><datalist id="cats-gas">{Object.keys(user.gastos || {}).map((c) => <option key={c} value={c} />)}</datalist></div>}
+                  {form.kind === "deu" && <div><div style={F.label}>{tx("Saldo (opcional)", "Balance (optional)")}</div><input style={input} type="number" value={form.saldo || ""} onChange={(e) => setForm({ ...form, saldo: e.target.value })} /></div>}
+                  {owners.length > 1 && <div><div style={F.label}>{tx("De quién", "Whose")}</div><select style={input} value={form.owner || owners[0].id} onChange={(e) => setForm({ ...form, owner: e.target.value })}>{owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></div>}
                 </>)}
                 {form.tipo !== "termina" && (
-                  <div><div style={F.label}>{form.kind === "deu" ? "Cuota mensual" : "Monto mensual (COP)"}</div><input style={input} type="number" value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
+                  <div><div style={F.label}>{form.kind === "deu" ? tx("Cuota mensual", "Monthly payment") : tx(`Monto mensual (${monedaBase()})`, `Monthly amount (${monedaBase()})`)}</div><input style={input} type="number" value={form.monto || ""} onChange={(e) => setForm({ ...form, monto: e.target.value })} />
                     {form.kind === "ing" && Number(form.capital) > 0 && Number(form.tasa) > 0 && (
                       <div style={{ ...F.caption, color: C.ok, marginTop: 4 }}>
-                        {fm(Number(form.capital))} × {fmtTasaEs(form.tasa)} {form.tasaModo === "mensual" ? "mensual" : "anual"} = {fm(Number(form.monto) || 0)}/mes · {fm((Number(form.monto) || 0) * 12)} al año
+                        {fm(Number(form.capital))} × {fmtTasa(form.tasa)} {anualMensualTxt(form.tasaModo)} = {fm(Number(form.monto) || 0)}{tx("/mes", "/mo")} · {fm((Number(form.monto) || 0) * 12)} {tx("al año", "a year")}
                       </div>
                     )}
                   </div>
                 )}
-                <div><div style={F.label}>{form.tipo === "termina" ? "Último mes que cuenta" : "Desde"}</div>
+                <div><div style={F.label}>{form.tipo === "termina" ? tx("Último mes que cuenta", "Last month it counts") : tx("Desde", "From")}</div>
                   <select style={input} value={form.desdeMes} onChange={(e) => setForm({ ...form, desdeMes: Number(e.target.value) })}>
-                    {MESES.map((m) => <option key={m.v} value={form.tipo === "termina" ? m.v + 1 : m.v}>{m.l}</option>)}
+                    {MESES.map((m) => <option key={m.v} value={form.tipo === "termina" ? m.v + 1 : m.v}>{mesL(m.v)}</option>)}
                   </select></div>
                 {form.tipo === "nuevo" && (
-                  <div><div style={F.label}>Hasta</div>
+                  <div><div style={F.label}>{tx("Hasta", "To")}</div>
                     <select style={input} value={form.hastaMes} onChange={(e) => setForm({ ...form, hastaMes: Number(e.target.value) })}>
-                      {MESES.map((m) => <option key={m.v} value={m.v}>{m.l}</option>)}
+                      {MESES.map((m) => <option key={m.v} value={m.v}>{mesL(m.v)}</option>)}
                     </select></div>
                 )}
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                <button style={btn(true)} disabled={form.tipo === "nuevo" && !form.nombre} onClick={() => agregarCambio(form)}>Agregar</button>
-                <button style={btn(false)} onClick={() => setForm(null)}>Cancelar</button>
+                <button style={btn(true)} disabled={form.tipo === "nuevo" && !form.nombre} onClick={() => agregarCambio(form)}>{tx("Agregar", "Add")}</button>
+                <button style={btn(false)} onClick={() => setForm(null)}>{tx("Cancelar", "Cancel")}</button>
               </div>
             </div>
           )}

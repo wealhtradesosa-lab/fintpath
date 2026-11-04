@@ -3,7 +3,7 @@ import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
 import BuscadorLista, { filtrarPorTexto as filtrarDeudas } from "./BuscadorLista";
 import { esDelTitular } from "../lib/clasesListado.js";
-import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
+import { fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
 import { separarPorLimite } from "../lib/limitePlan.js";
@@ -982,17 +982,17 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                 const isJ = ow.type === "juridica";
                 const options = isJ
                   ? [
-                      { v: "DEU_JUR_PRODUCTIVA", l: "Productiva — para actividad generadora de renta (intereses deducibles, Art. 117)" },
-                      { v: "DEU_JUR_NO_PRODUCTIVA", l: "No productiva — sin relación con la actividad (intereses NO deducibles)" },
+                      { v: "DEU_JUR_PRODUCTIVA", l: tx("Productiva — para actividad generadora de renta (intereses deducibles, Art. 117)", "Productive — for income-generating activity (interest deductible, Art. 117)") },
+                      { v: "DEU_JUR_NO_PRODUCTIVA", l: tx("No productiva — sin relación con la actividad (intereses NO deducibles)", "Non-productive — unrelated to the business (interest NOT deductible)") },
                     ]
                   : [
-                      { v: "DEU_NAT_VIVIENDA_HABITACIONAL", l: "Vivienda habitacional — donde vivo (Art. 119, intereses hasta 1.200 UVT)" },
-                      { v: "DEU_NAT_INVERSION", l: "Inversión — inmueble arrendado, negocio (intereses deducibles renta no laboral)" },
-                      { v: "DEU_NAT_CONSUMO", l: "Consumo personal — tarjeta, libre inversión (intereses NO deducibles)" },
+                      { v: "DEU_NAT_VIVIENDA_HABITACIONAL", l: tx("Vivienda habitacional — donde vivo (Art. 119, intereses hasta 1.200 UVT)", "Primary home — where I live (Art. 119, interest up to 1,200 UVT)") },
+                      { v: "DEU_NAT_INVERSION", l: tx("Inversión — inmueble arrendado, negocio (intereses deducibles renta no laboral)", "Investment — rented property, business (interest deductible against non-wage income)") },
+                      { v: "DEU_NAT_CONSUMO", l: tx("Consumo personal — tarjeta, libre inversión (intereses NO deducibles)", "Personal consumption — card, consumer loan (interest NOT deductible)") },
                     ];
                 return (
                   <div style={{ gridColumn: "1/-1", background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 10, padding: "12px 14px", marginTop: 4 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>¿Para qué usaste esta deuda? (define deducibilidad de los intereses)</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>{tx("¿Para qué usaste esta deuda? (define deducibilidad de los intereses)", "What did you use this debt for? (sets whether interest is deductible)")}</div>
                     <select value={form.fiscalCode} onChange={(e) => setForm((p) => ({ ...p, fiscalCode: e.target.value }))}
                       style={{ width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "10px 12px", borderRadius: 8, fontSize: 13, outline: "none", cursor: "pointer" }}>
                       {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
@@ -1012,46 +1012,46 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       return (
                         <div style={{ marginTop: 12, padding: "12px 14px", background: alertBg, border: `1.5px solid ${alertBorder}`, borderRadius: 8 }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: alertColor, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                            Confirma los 3 requisitos del Art. 119 ET
+                            {tx("Confirma los 3 requisitos del Art. 119 ET", "Confirm the 3 requirements of Art. 119 ET")}
                           </div>
                           <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.5, marginBottom: 10 }}>
-                            Los intereses solo son deducibles (hasta 1.200 UVT/año) si TODAS estas condiciones se cumplen. Si alguna falla, los intereses NO son deducibles como vivienda — reclasifica según corresponda.
+                            {tx("Los intereses solo son deducibles (hasta 1.200 UVT/año) si TODAS estas condiciones se cumplen. Si alguna falla, los intereses NO son deducibles como vivienda — reclasifica según corresponda.", "Interest is only deductible (up to 1,200 UVT/year) if ALL these conditions are met. If any fails, the interest is NOT deductible as housing — reclassify it.")}
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 12, color: T.txt2 }}>
                               <input type="checkbox" checked={viviendaConfirmaciones.esHabitacion} onChange={(e) => setViviendaConfirmaciones(p => ({ ...p, esHabitacion: e.target.checked }))} style={{ marginTop: 2, flexShrink: 0 }} />
-                              <span><strong>Es para mi vivienda DE HABITACIÓN</strong> (donde efectivamente vivo, no segunda vivienda ni inversión).</span>
+                              <span><strong>{tx("Es para mi vivienda DE HABITACIÓN", "It's for my PRIMARY home")}</strong>{tx(" (donde efectivamente vivo, no segunda vivienda ni inversión).", " (where I actually live, not a second home or an investment).")}</span>
                             </label>
                             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 12, color: T.txt2 }}>
                               <input type="checkbox" checked={viviendaConfirmaciones.esTitular} onChange={(e) => setViviendaConfirmaciones(p => ({ ...p, esTitular: e.target.checked }))} style={{ marginTop: 2, flexShrink: 0 }} />
-                              <span><strong>Soy titular del crédito</strong> (figuro como deudor en la escritura/pagaré). Si la deuda es solo de mi pareja sin que yo figure, no aplica.</span>
+                              <span><strong>{tx("Soy titular del crédito", "I'm the borrower")}</strong>{tx(" (figuro como deudor en la escritura/pagaré). Si la deuda es solo de mi pareja sin que yo figure, no aplica.", " (I'm named as debtor on the deed/note). If the debt is only my partner's and I'm not on it, it doesn't apply.")}</span>
                             </label>
                             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", fontSize: 12, color: T.txt2 }}>
                               <input type="checkbox" checked={viviendaConfirmaciones.noArrendado} onChange={(e) => setViviendaConfirmaciones(p => ({ ...p, noArrendado: e.target.checked }))} style={{ marginTop: 2, flexShrink: 0 }} />
-                              <span><strong>El inmueble NO está arrendado</strong> a terceros (si recibo arriendo de él, es renta de capital, no vivienda).</span>
+                              <span><strong>{tx("El inmueble NO está arrendado", "The property is NOT rented out")}</strong>{tx(" a terceros (si recibo arriendo de él, es renta de capital, no vivienda).", " to others (if I collect rent from it, it's capital income, not housing).")}</span>
                             </label>
                           </div>
                           {!todasOk && (
                             <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(255,80,0,0.08)", border: "1px solid rgba(255,80,0,0.25)", borderRadius: 6 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#ff5000", marginBottom: 6 }}>El Art. 119 ET NO aplica</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#ff5000", marginBottom: 6 }}>{tx("El Art. 119 ET NO aplica", "Art. 119 ET does NOT apply")}</div>
                               <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 8 }}>
-                                Sin las 3 condiciones, los intereses no son deducibles como vivienda. Reclasifica:
+                                {tx("Sin las 3 condiciones, los intereses no son deducibles como vivienda. Reclasifica:", "Without all 3 conditions, the interest isn't deductible as housing. Reclassify:")}
                               </div>
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                                 <button type="button" onClick={() => { setForm(p => ({ ...p, fiscalCode: "DEU_NAT_INVERSION" })); setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true }); }}
                                   style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)", color: "#a855f7", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                  → Reclasificar como Inversión
+                                  {tx("→ Reclasificar como Inversión", "→ Reclassify as Investment")}
                                 </button>
                                 <button type="button" onClick={() => { setForm(p => ({ ...p, fiscalCode: "DEU_NAT_CONSUMO" })); setViviendaConfirmaciones({ esHabitacion: true, esTitular: true, noArrendado: true }); }}
                                   style={{ background: "rgba(59,130,246,0.15)", border: "1px solid rgba(59,130,246,0.4)", color: "#3b82f6", padding: "6px 12px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                                  → Reclasificar como Consumo
+                                  {tx("→ Reclasificar como Consumo", "→ Reclassify as Consumption")}
                                 </button>
                               </div>
                             </div>
                           )}
                           {todasOk && (
                             <div style={{ marginTop: 10, fontSize: 11, color: "#00c805", fontStyle: "italic", lineHeight: 1.4 }}>
-                              Cumples el Art. 119 ET. Los intereses serán deducibles hasta 1.200 UVT/año.
+                              {tx("Cumples el Art. 119 ET. Los intereses serán deducibles hasta 1.200 UVT/año.", "You meet Art. 119 ET. The interest will be deductible up to 1,200 UVT/year.")}
                             </div>
                           )}
                         </div>

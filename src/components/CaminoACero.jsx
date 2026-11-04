@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceDot } from "recharts";
 import NumberInput from "./NumberInput";
 import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
+import { tx, esUS, esEN, nombreMes, plataCorta } from "../lib/region.js";
 
 /**
  * 31-oct-2026 — Deudas: el saldo bajando mes a mes, la fecha en que quedas
@@ -14,6 +15,8 @@ const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "
 export const fechaEnMeses = (n, hoy = new Date()) => {
   if (n == null) return null;
   const d = new Date(hoy.getFullYear(), hoy.getMonth() + n, 1);
+  // 3-nov-2026: en inglés, "April 2027" (nombre del mes en el idioma de la sesión).
+  if (esEN()) return `${nombreMes(d.getMonth() + 1)} ${d.getFullYear()}`;
   return `${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 };
 
@@ -58,10 +61,10 @@ export const deudasQueNoTerminan = (s) =>
     .map((d) => {
       const interes = (d.saldo0 || 0) * (d.rMes || 0);
       const motivo = !(d.cuota > 0)
-        ? "no tiene cuota mensual"
+        ? tx("no tiene cuota mensual", "it has no monthly payment")
         : interes > 0 && d.cuota <= interes
-          ? "su cuota no alcanza ni para los intereses"
-          : "su cuota no alcanza";
+          ? tx("su cuota no alcanza ni para los intereses", "its payment doesn't even cover the interest")
+          : tx("su cuota no alcanza", "its payment isn't enough");
       return { nombre: d.nombre, saldo: d.saldoFinal, cuota: d.cuota || 0, interes, motivo };
     });
 
@@ -105,15 +108,15 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
       <div style={{ fontSize: 12, color: V.txt3, fontWeight: 700, letterSpacing: 0.5 }}>{titulo}</div>
       {s?.converge ? (
         <>
-          <div style={{ fontSize: 18, fontWeight: 700, color: V.txt, marginTop: 4 }}>Libre en {fechaEnMeses(s.meses)}</div>
-          <div style={{ fontSize: 12, color: V.txt2, marginTop: 2 }}>{s.labelMeses} · pagas {fm(s.interesTotal)} en intereses</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: V.txt, marginTop: 4 }}>{tx("Libre en ", "Debt-free in ")}{fechaEnMeses(s.meses)}</div>
+          <div style={{ fontSize: 12, color: V.txt2, marginTop: 2 }}>{s.labelMeses}{tx(" · pagas ", " · you pay ")}{fm(s.interesTotal)}{tx(" en intereses", " in interest")}</div>
         </>
       ) : (
         <>
-          <div style={{ fontSize: 18, fontWeight: 700, color: V.txt, marginTop: 4 }}>No llegas a cero</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: V.txt, marginTop: 4 }}>{tx("No llegas a cero", "You don't reach zero")}</div>
           <div style={{ fontSize: 12, color: V.txt2, marginTop: 2, lineHeight: 1.5 }}>
             {deudasQueNoTerminan(s).map((d, k) => (
-              <div key={k}>Quedan {fm(d.saldo)} de <strong style={{ color: V.txt }}>{d.nombre}</strong>: {d.motivo}{d.cuota > 0 && d.interes > 0 ? ` (${fm(d.cuota)} de cuota frente a ${fm(d.interes)} de intereses al mes)` : ""}.</div>
+              <div key={k}>{tx("Quedan ", "")}{fm(d.saldo)}{tx(" de ", " left on ")}<strong style={{ color: V.txt }}>{d.nombre}</strong>: {d.motivo}{d.cuota > 0 && d.interes > 0 ? tx(` (${fm(d.cuota)} de cuota frente a ${fm(d.interes)} de intereses al mes)`, ` (${fm(d.cuota)} payment vs ${fm(d.interes)} of interest a month)`) : ""}.</div>
             ))}
           </div>
         </>
@@ -126,26 +129,28 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
 
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 13, fontWeight: 700, color: V.txt, marginBottom: 8 }}>¿Cuánto abonarías de más cada mes?</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: V.txt, marginBottom: 8 }}>{tx("¿Cuánto abonarías de más cada mes?", "How much extra would you pay each month?")}</div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center", marginBottom: 12 }}>
-        <button type="button" style={chip(sel === 0)} onClick={() => setExtraOverride("0")}>Nada, solo cuotas</button>
+        <button type="button" style={chip(sel === 0)} onClick={() => setExtraOverride("0")}>{tx("Nada, solo cuotas", "Nothing, just payments")}</button>
         {ops.map((v) => <button key={v} type="button" style={chip(sel === v)} onClick={() => setExtraOverride(String(v))}>+{fm(v)}</button>)}
-        {cf > 0 && <button type="button" style={chip(sel === "cf")} onClick={() => setExtraOverride(null)}>Lo que te sobra ({fm(cf)})</button>}
-        <NumberInput value={typeof sel === "number" && sel > 0 && !ops.includes(sel) ? sel : ""} placeholder="Otro monto"
+        {cf > 0 && <button type="button" style={chip(sel === "cf")} onClick={() => setExtraOverride(null)}>{tx("Lo que te sobra", "Your surplus")} ({fm(cf)})</button>}
+        <NumberInput value={typeof sel === "number" && sel > 0 && !ops.includes(sel) ? sel : ""} placeholder={tx("Otro monto", "Other amount")}
           onChange={(v) => setExtraOverride(v === "" || v == null ? "0" : String(v))}
           style={{ width: 120, background: "transparent", border: `1px solid ${V.border}`, borderRadius: 999, padding: "7px 12px", color: V.txt, fontSize: 12, outline: "none" }} />
       </div>
       {cf <= 0 && sel === "cf" && (
-        <div style={{ fontSize: 12, color: V.orange, marginBottom: 10 }}>Hoy no te sobra plata al mes ({fm(cf)}), así que el plan va solo con tus cuotas. Prueba con un abono para ver la diferencia.</div>
+        <div style={{ fontSize: 12, color: V.orange, marginBottom: 10 }}>{tx("Hoy no te sobra plata al mes", "Today you have no monthly surplus")} ({fm(cf)}){tx(", así que el plan va solo con tus cuotas. Prueba con un abono para ver la diferencia.", ", so the plan uses only your payments. Try an extra amount to see the difference.")}</div>
       )}
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
-        {caja("Solo con tus cuotas", base, V.red)}
-        {conExtra && caja(`Abonando ${fm(plan.extra)} más al mes`, sim, V.green)}
+        {caja(tx("Solo con tus cuotas", "Payments only"), base, V.red)}
+        {conExtra && caja(tx(`Abonando ${fm(plan.extra)} más al mes`, `Paying ${fm(plan.extra)} extra a month`), sim, V.green)}
       </div>
       {ahorroInt > 0 && (
         <div style={{ fontSize: 14, color: V.green, fontWeight: 700, marginBottom: 10 }}>
-          Te ahorras {fm(ahorroInt)} en intereses y terminas {ahorroMeses >= 12 ? `${Math.floor(ahorroMeses / 12)} ${Math.floor(ahorroMeses / 12) === 1 ? "año" : "años"}${ahorroMeses % 12 ? ` y ${ahorroMeses % 12} ${ahorroMeses % 12 === 1 ? "mes" : "meses"}` : ""}` : `${ahorroMeses} ${ahorroMeses === 1 ? "mes" : "meses"}`} antes.
+          {esEN()
+            ? <>You save {fm(ahorroInt)} in interest and finish {ahorroMeses >= 12 ? `${Math.floor(ahorroMeses / 12)} ${Math.floor(ahorroMeses / 12) === 1 ? "year" : "years"}${ahorroMeses % 12 ? ` and ${ahorroMeses % 12} ${ahorroMeses % 12 === 1 ? "month" : "months"}` : ""}` : `${ahorroMeses} ${ahorroMeses === 1 ? "month" : "months"}`} sooner.</>
+            : <>Te ahorras {fm(ahorroInt)} en intereses y terminas {ahorroMeses >= 12 ? `${Math.floor(ahorroMeses / 12)} ${Math.floor(ahorroMeses / 12) === 1 ? "año" : "años"}${ahorroMeses % 12 ? ` y ${ahorroMeses % 12} ${ahorroMeses % 12 === 1 ? "mes" : "meses"}` : ""}` : `${ahorroMeses} ${ahorroMeses === 1 ? "mes" : "meses"}`} antes.</>}
         </div>
       )}
 
@@ -160,26 +165,26 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
         );
         return (
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: V.txt }}>Cuánto debes en total, mes a mes</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: V.txt }}>{tx("Cuánto debes en total, mes a mes", "Total you owe, month by month")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 18px", margin: "6px 0 4px" }}>
-              {linea(V.red, "Solo con tus cuotas")}
-              {conExtra && linea(V.green, `Abonando ${fm(plan.extra)} más al mes`)}
+              {linea(V.red, tx("Solo con tus cuotas", "Payments only"))}
+              {conExtra && linea(V.green, tx(`Abonando ${fm(plan.extra)} más al mes`, `Paying ${fm(plan.extra)} extra a month`))}
             </div>
             <div style={{ height: 200 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
                   <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
                   <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={78} tickFormatter={(v) => sinCorte(fm(v).replace("$", ""))} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={78} tickFormatter={(v) => sinCorte((esUS() ? plataCorta(v) : fm(v)).replace("$", ""))} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />
-                  <Line type="monotone" dataKey="solo" name="Solo con tus cuotas" stroke={V.red} strokeWidth={2} dot={false} isAnimationActive={false} />
-                  {conExtra && <Line type="monotone" dataKey="extra" name={`Abonando ${fm(plan.extra)} más`} stroke={V.green} strokeWidth={2.5} dot={false} isAnimationActive={false} />}
+                  <Line type="monotone" dataKey="solo" name={tx("Solo con tus cuotas", "Payments only")} stroke={V.red} strokeWidth={2} dot={false} isAnimationActive={false} />
+                  {conExtra && <Line type="monotone" dataKey="extra" name={tx(`Abonando ${fm(plan.extra)} más`, `Paying ${fm(plan.extra)} extra`)} stroke={V.green} strokeWidth={2.5} dot={false} isAnimationActive={false} />}
                   {finSolo != null && <ReferenceDot x={finSolo} y={0} r={4} fill={V.red} stroke="none" />}
                   {finExtra != null && <ReferenceDot x={finExtra} y={0} r={5} fill={V.green} stroke="var(--fp-raised)" strokeWidth={2} />}
                 </LineChart>
               </ResponsiveContainer>
             </div>
-            <div style={{ fontSize: 12, color: V.txt3, marginTop: 4 }}>El punto marca el mes en que la deuda llega a cero. Pasa el dedo o el mouse sobre la gráfica para ver el saldo de cada mes.</div>
+            <div style={{ fontSize: 12, color: V.txt3, marginTop: 4 }}>{tx("El punto marca el mes en que la deuda llega a cero. Pasa el dedo o el mouse sobre la gráfica para ver el saldo de cada mes.", "The dot marks the month the debt reaches zero. Hover or tap the chart to see each month's balance.")}</div>
           </div>
         );
       })()}

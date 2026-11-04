@@ -8,6 +8,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { C, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
+import { tx, esUS } from "../../lib/region.js";
 
 const R = 26, L = 2 * Math.PI * R;
 
@@ -19,13 +20,13 @@ export default function CaminoIndependencia({ hitos, fm }) {
   const logrados = prog.filter((p) => p >= 100).length;
 
   return (
-    <section aria-label="Camino a la independencia financiera" style={{ ...tarjeta, marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+    <section aria-label={tx("Camino a la independencia financiera", "Path to financial independence")} style={{ ...tarjeta, marginTop: 20, display: "flex", flexDirection: "column", gap: 20 }}>
       <style>{CSS_INFOGRAFIA}</style>
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 12, alignItems: "baseline" }}>
         <div>
-          <h3 style={titulo}>¿En qué hito de tu independencia vas?</h3>
+          <h3 style={titulo}>{tx("¿En qué hito de tu independencia vas?", "Which independence milestone are you on?")}</h3>
           <div style={subtitulo}>
-            {siguiente === -1 ? "Lograste los cinco hitos." : `Llevas ${logrados} de ${lista.length}. El siguiente: ${lista[siguiente].name.toLowerCase()}.`}
+            {siguiente === -1 ? tx("Lograste los cinco hitos.", "You've hit all five milestones.") : tx(`Llevas ${logrados} de ${lista.length}. El siguiente: ${lista[siguiente].name.toLowerCase()}.`, `${logrados} of ${lista.length} done. Next: ${lista[siguiente].name}.`)}
           </div>
         </div>
       </div>
@@ -37,7 +38,7 @@ export default function CaminoIndependencia({ hitos, fm }) {
             const color = hecho ? C.pos : actual ? C.azul : C.txt3;
             return (
               <li key={h.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 8 }}>
-                <svg viewBox="0 0 68 68" width="68" height="68" role="img" aria-label={`${h.name}: ${hecho ? "logrado" : Math.round(p) + " %"}`}>
+                <svg viewBox="0 0 68 68" width="68" height="68" role="img" aria-label={`${h.name}: ${hecho ? tx("logrado", "done") : Math.round(p) + (esUS() ? "%" : " %")}`}>
                   <circle cx="34" cy="34" r={R + 6} style={{ fill: "var(--fp-card)" }} />
                   <circle cx="34" cy="34" r={R} fill="none" strokeWidth="6" style={{ stroke: "rgba(var(--fp-ink),0.08)" }} />
                   <circle className="fpi-arco" cx="34" cy="34" r={R} fill="none" strokeWidth="6" strokeLinecap="round"
@@ -49,7 +50,7 @@ export default function CaminoIndependencia({ hitos, fm }) {
                     : <text x="34" y="38.5" textAnchor="middle" fontSize="13" fontWeight="600" style={{ fill: actual ? C.txt : C.txt2, ...cifra }}>{Math.round(p)}%</text>}
                 </svg>
                 <div style={{ fontSize: 13, color: hecho || actual ? C.txt : C.txt2, fontWeight: actual ? 600 : 400, lineHeight: 1.3 }}>{h.name}</div>
-                <div style={{ fontSize: 12, color: hecho ? C.pos : C.txt3, ...cifra }}>{hecho ? "Logrado" : `meta ${fm(h.target)}`}</div>
+                <div style={{ fontSize: 12, color: hecho ? C.pos : C.txt3, ...cifra }}>{hecho ? tx("Logrado", "Done") : tx(`meta ${fm(h.target)}`, `goal ${fm(h.target)}`)}</div>
               </li>
             );
           })}
