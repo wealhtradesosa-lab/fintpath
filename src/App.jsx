@@ -2978,7 +2978,7 @@ export default function FinPath(){
               {name:tx("Libre de deudas","Debt-free"),target:totalD>0?totalD:1,current:totalD>0?Math.max(0,totalD-t.td):1},
               {name:tx("50 % independencia","50% independence"),target:t.gfm*12*12.5,current:t.nw},
               {name:tx("Número FIRE (25× gastos)","FIRE number (25× expenses)"),target:fireNumber,current:t.nw},
-              {name:tx("Libertad absoluta (62,5× gastos)","Full freedom (62.5× expenses)"),target:t.gfm*12*62.5,current:t.nw},
+              {name:tx("Libertad absoluta (62,5× gastos)","Full freedom ("+(62.5).toLocaleString(localeCifras())+"× expenses)"),target:t.gfm*12*62.5,current:t.nw},
             ]}/>;
           })()}
           {t.td>0&&<LineaDeudas deudas={(u&&u.deu)||[]} trm={trmPais} fm={fm}/>}
