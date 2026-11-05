@@ -3786,10 +3786,10 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
       // 25-oct-2026 (Santiago: "que quien ingrese vea los planes y decida si paga en pesos o dólares").
       const mon=monedaPago||(isCO?"cop":"usd");
-      const pagarMP=async(pl)=>{if(abriendoPago)return;setAbriendoPago(pl.n);const planMp=pl.n==="Básico"?"basico":pl.n==="Pro Familiar"?"pro_familiar":"pro";trackCheckoutStarted({plan:pl.n,billingCycle,priceId:"mp_"+planMp});
-        try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planMp,ciclo:billingCycle})});const d=await r.json();if(d&&d.url){window.location.href=d.url;setTimeout(()=>setAbriendoPago(null),15000);return}}catch{}
+      const pagarMP=async(pl,ciclo=billingCycle)=>{if(abriendoPago)return;setAbriendoPago(pl.n);const planMp=pl.n==="Básico"?"basico":pl.n==="Pro Familiar"?"pro_familiar":"pro";trackCheckoutStarted({plan:pl.n,billingCycle:ciclo,priceId:"mp_"+planMp});
+        try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planMp,ciclo})});const d=await r.json();if(d&&d.url){window.location.href=d.url;setTimeout(()=>setAbriendoPago(null),15000);return}}catch{}
         setAbriendoPago(null);
-        if(planMp==="pro"&&billingCycle==="mensual"){window.open(PIONEROS_MP.url,"_blank","noopener");return}
+        if(planMp==="pro"&&ciclo==="mensual"){window.open(PIONEROS_MP.url,"_blank","noopener");return}
         alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta pagar en dólares.")};
       // 5-nov-2026 (Santiago: "pago único anual que puedan pagar por PSE"). Checkout Pro de
       // Mercado Pago: PSE, Efecty, tarjeta o saldo. Un solo cobro, no se renueva solo.
@@ -3800,23 +3800,70 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:28,fontWeight:700,margin:"0 0 8px"}}>{isUS?"One plan, everything included":"Un solo plan, todo incluido"}</h2>
-          <p style={{color:T.tx3,fontSize:15}}>{isUS?"Pay monthly or yearly. Cancel anytime.":"Paga mes a mes o una vez al año. Cancelas cuando quieras."}</p>
-          <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
-            {["mensual","anual"].map(c=>(
-              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual · 2 months free"):(c==="mensual"?"Pago mensual":"Pago anual · 2 meses gratis")}</button>
-            ))}
-          </div>
+          <p style={{color:T.tx3,fontSize:15}}>{isUS?"Pay monthly or yearly. Cancel anytime.":"Paga un mes o un año completo. Sin letra pequeña."}</p>
         </div>
         <div style={{maxWidth:720,margin:"0 auto 24px",textAlign:"center"}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>{isUS?"How do you want to pay?":"¿Cómo quieres pagar?"}</div>
           <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
-            {[["cop","En pesos colombianos","Mercado Pago: tarjeta con cobro automático, o PSE y Efecty con un pago único. Sin cargos internacionales."],["usd","En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
+            {[["cop","En pesos colombianos","PSE, tarjeta débito o crédito, o Efecty. No necesitas cuenta de Mercado Pago."],["usd","En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
               <button key={k} onClick={()=>setMonedaPago(k)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,cursor:"pointer",border:"2px solid "+(mon===k?T.gn:T.border),background:mon===k?T.gnB:"transparent",color:T.tx}}>
                 <div style={{fontSize:14,fontWeight:700}}>{mon===k?"● ":"○ "}{t1}</div>
                 <div style={{fontSize:12,color:T.tx3,marginTop:3,lineHeight:1.4}}>{t2}</div>
               </button>)}
           </div>
         </div>
+        {mon==="cop"?(()=>{
+          // 5-nov-2026 (Santiago: "no se diferencia bien dónde se paga mensual y dónde anual",
+          // "casi nadie tiene cuenta en Mercado Pago", "necesito que puedan pagar fácilmente").
+          // En pesos, lo principal es el pago único de Mercado Pago: PSE, tarjeta o Efecty, sin
+          // cuenta de Mercado Pago. Dos tarjetas claras: un mes o un año. El débito automático
+          // (suscripción, pide cuenta de Mercado Pago) queda como opción secundaria.
+          const pr=PRECIOS_COP["Pro"],sinDesc=pr.mensual*12,ahorro=sinDesc-pr.anual,proPl=plans.find(x=>x.n==="Pro");
+          const tarjeta=(meses)=>{const anual=meses===12,clave="unico"+meses,cargando=abriendoPago===clave;return(
+            <div key={meses} style={{position:"relative",textAlign:"left",padding:"22px 20px 20px",borderRadius:16,border:anual?"2px solid var(--fp-pos)":"1px solid "+T.border,background:anual?"color-mix(in srgb, var(--fp-pos) 6%, var(--fp-card))":T.bg2,display:"flex",flexDirection:"column"}}>
+              {anual&&<div style={{position:"absolute",top:-12,left:20,fontSize:11,fontWeight:700,color:"#000",background:"var(--fp-pos)",padding:"3px 10px",borderRadius:6}}>MÁS CONVENIENTE</div>}
+              <div style={{fontSize:13,fontWeight:700,color:T.tx2,textTransform:"uppercase",letterSpacing:0.5}}>{anual?"Un año":"Un mes"}</div>
+              <div style={{display:"flex",alignItems:"baseline",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                <span style={{fontSize:32,fontWeight:700,color:T.tx}}>{fmtCOP(anual?pr.anual:pr.mensual)}</span>
+                <span style={{fontSize:14,color:T.tx3,fontWeight:600}}>{anual?"por 12 meses":"por 1 mes"}</span>
+              </div>
+              {anual?(<>
+                <div style={{fontSize:13,color:T.tx3,marginTop:2}}><span style={{textDecoration:"line-through"}}>{fmtCOP(sinDesc)}</span> · equivale a {fmtCOP(Math.round(pr.anual/12/50)*50)} al mes</div>
+                <div style={{alignSelf:"flex-start",marginTop:8,fontSize:13,fontWeight:700,color:"var(--fp-pos)",background:"color-mix(in srgb, var(--fp-pos) 12%, transparent)",padding:"4px 10px",borderRadius:6}}>Ahorras {fmtCOP(ahorro)} · 2 meses gratis</div>
+              </>):(
+                <div style={{fontSize:13,color:T.tx3,marginTop:2}}>Pagas solo este mes. Renuevas cuando quieras.</div>
+              )}
+              <div style={{flex:1,minHeight:14}}/>
+              <Bt v={anual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(meses)}>{cargando?"Abriendo Mercado Pago…":anual?`Pagar el año · ${fmtCOP(pr.anual)}`:`Pagar un mes · ${fmtCOP(pr.mensual)}`}</Bt>
+            </div>)};
+          return(<div style={{maxWidth:640,margin:"0 auto"}}>
+            {proPl&&<div style={{textAlign:"left",padding:"20px",borderRadius:16,border:"1px solid "+T.border,background:T.bg2,marginBottom:20}}>
+              <div style={{fontSize:18,fontWeight:700,color:T.tx}}>Qué incluye el plan Pro</div>
+              <div style={{fontSize:13,color:T.tx3,marginTop:4}}>{proPl.tag} · {proPl.users}</div>
+              {proPl.enTrial&&<div style={{fontSize:13,color:T.tx2,marginTop:8}}>Te {proPl.trialDays===1?"queda 1 día":`quedan ${proPl.trialDays} días`} de prueba. Al pagar sigues igual, sin perder nada de lo que cargaste.</div>}
+              <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:"8px 18px",marginTop:14}}>
+                {(proPl.f||[]).map(f=><div key={f} style={{fontSize:13,color:T.tx2,lineHeight:1.5}}><span style={{color:"var(--fp-pos)",marginRight:6,fontWeight:700}}>✓</span>{f}</div>)}
+              </div>
+            </div>}
+            <div style={{fontSize:15,fontWeight:700,color:T.tx,textAlign:"center",margin:"4px 0 18px"}}>Elige cómo pagar el Pro</div>
+            <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:16}}>{tarjeta(12)}{tarjeta(1)}</div>
+            <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,background:T.bg3,fontSize:13,color:T.tx2,lineHeight:1.6}}>
+              <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>Pagas con PSE, tarjeta débito o crédito, o Efecty</div>
+              No necesitas cuenta de Mercado Pago. Es un solo pago: no hay cobros automáticos y te avisamos por correo antes de que venza para que renueves si quieres.
+            </div>
+            {proPl&&!proPl.cur&&<div style={{marginTop:14,textAlign:"center",fontSize:13,color:T.tx3,lineHeight:1.6}}>
+              ¿Prefieres que se cobre solo cada mes con tu tarjeta?{" "}
+              <button type="button" onClick={()=>pagarMP(proPl,"mensual")} style={{background:"none",border:"none",padding:0,color:T.tx2,fontSize:13,fontWeight:600,textDecoration:"underline",cursor:abriendoPago?"default":"pointer"}}>{abriendoPago==="Pro"?"Abriendo Mercado Pago…":`Débito automático · ${fmtCOP(pr.mensual)}/mes`}</button>
+              <div style={{fontSize:12}}>Requiere entrar a Mercado Pago con tu cuenta y el mismo correo de FINPATHIA.</div>
+            </div>}
+          </div>)})():(<>
+          <div style={{textAlign:"center",marginBottom:20}}>
+          <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
+            {["mensual","anual"].map(c=>(
+              <button key={c} onClick={()=>setBillingCycle(c)} style={{padding:"8px 24px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,background:billingCycle===c?T.gn:"transparent",color:billingCycle===c?"#000":T.tx3}}>{isUS?(c==="mensual"?"Monthly":"Annual · 2 months free"):(c==="mensual"?"Pago mensual":"Pago anual · 2 meses gratis")}</button>
+            ))}
+          </div>
+          </div>
         <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"repeat(auto-fit, minmax(300px, 1fr))",gap:16,maxWidth:480,margin:"0 auto"}}>
                     {/* 25-oct-2026 (Santiago: "dejemos un plan que incluye todo, mensual o anual"). Solo Pro a la venta. */}
           {plans.filter(pl=>pl.n==="Pro"||pl.cur).map(pl=>(
@@ -3921,23 +3968,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </Cd>
           ))}
         </div>
-        {mon==="cop"&&(()=>{const pr=PRECIOS_COP["Pro"],sinDesc=pr.mensual*12,ahorro=sinDesc-pr.anual;return(
-          <div style={{maxWidth:480,margin:"16px auto 0",padding:"18px 20px",borderRadius:14,border:"1px solid "+T.border,background:T.bg2}}>
-            <div style={{fontSize:15,fontWeight:700,color:T.tx}}>¿Sin tarjeta? Paga con PSE o Efecty</div>
-            <div style={{fontSize:12,color:T.tx3,marginTop:4,lineHeight:1.5}}>Un solo pago por Mercado Pago, sin cobros automáticos. También sirve tarjeta o tu saldo de Mercado Pago. Antes de vencer te avisamos para renovar.</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"12px 0"}}>{["PSE","Efecty","Tarjeta","Saldo Mercado Pago"].map(m=><span key={m} style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:6,border:"1px solid "+T.border,color:T.tx2}}>{m}</span>)}</div>
-            <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
-              <span style={{fontSize:28,fontWeight:700,color:T.tx}}>{fmtCOP(pr.anual)}</span>
-              <span style={{fontSize:13,color:T.tx3,fontWeight:600}}>por 1 año</span>
-              <span style={{fontSize:13,color:T.tx3,textDecoration:"line-through"}}>{fmtCOP(sinDesc)}</span>
-            </div>
-            <div style={{display:"inline-block",marginTop:6,fontSize:12,fontWeight:700,color:T.gn,background:T.gnB,padding:"4px 10px",borderRadius:6}}>Ahorras {fmtCOP(ahorro)} · 2 meses gratis</div>
-            <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&abriendoPago!=="unico12"?0.55:1}} onClick={()=>pagarUnico(12)}>{abriendoPago==="unico12"?"Abriendo Mercado Pago…":`Pagar 1 año con PSE · ${fmtCOP(pr.anual)}`}</Bt>
-            <button type="button" onClick={()=>pagarUnico(1)} style={{display:"block",width:"100%",marginTop:10,background:"none",border:"none",color:T.tx2,fontSize:13,cursor:abriendoPago?"default":"pointer",textDecoration:"underline",opacity:abriendoPago&&abriendoPago!=="unico1"?0.55:1}}>{abriendoPago==="unico1"?"Abriendo Mercado Pago…":`¿Prefieres pagar solo un mes? ${fmtCOP(pr.mensual)}`}</button>
-          </div>)})()}
-        {mon==="cop"&&<div style={{maxWidth:480,margin:"16px auto 0",fontSize:12,color:T.tx2,textAlign:"center",lineHeight:1.5}}>En Mercado Pago entra con el mismo correo de tu cuenta FINPATHIA ({u?.p?.email||authUser?.email||"tu correo"}) para que tu plan se active solo.</div>}
+        </>)}
         <div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13,lineHeight:1.8}}>
-          {mon==="cop"?"Pagos seguros con Mercado Pago":"Pagos seguros con Stripe"} • Cancela cuando quieras • Sin compromisos<br/>
+          {mon==="cop"?"Pagos seguros con Mercado Pago":"Pagos seguros con Stripe"} • Cancelas en un toque desde Mi cuenta • Sin compromisos<br/>
           {mon==="usd"&&isCO&&<><span style={{fontSize:12}}>Conversión a TRM ≈ ${Math.round(trm||4200).toLocaleString("es-CO")} COP/USD · tu banco aplica su propia tasa al cargo en USD.</span><br/></>}
           ¿Preguntas? Escríbenos a soporte@finpathia.com
         </div>

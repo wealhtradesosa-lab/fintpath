@@ -278,6 +278,28 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
               {(plan === "pro_familiar" || plan === "pro" || plan === "basico") && (
                 <button
                   onClick={async () => {
+                    // 5-nov-2026 (Santiago: "me gustan las páginas que le permiten a uno salir
+                    // de las suscripciones fácilmente"). Primero se mira cómo paga: Mercado
+                    // Pago se cancela aquí mismo en un toque; Stripe abre su portal.
+                    const fecha = (iso) => iso ? new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : null;
+                    try {
+                      const rv = await fetchAuth("/api/mi-suscripcion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "ver" }) });
+                      const v = rv.ok ? await rv.json() : {};
+                      if (v.via === "pago_unico") {
+                        alert(`Tu plan es de pago único: no hay cobros automáticos que cancelar.${v.hasta ? ` Tienes acceso hasta el ${fecha(v.hasta)}.` : ""} Si no renuevas, pasa solo al plan Free y tus datos quedan guardados.`);
+                        return;
+                      }
+                      if (v.via === "mercado_pago") {
+                        if (v.cancelada) { alert(`Tu suscripción ya está cancelada. No te vamos a cobrar más.${v.hasta ? ` Tienes acceso hasta el ${fecha(v.hasta)}.` : ""}`); return; }
+                        if (!window.confirm("¿Cancelar tu suscripción de Mercado Pago?\n\nNo te volvemos a cobrar. Sigues con acceso completo 30 días y después tu cuenta pasa al plan Free. Tus datos quedan guardados.")) return;
+                        const rc = await fetchAuth("/api/mi-suscripcion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "cancelar" }) });
+                        const c = await rc.json();
+                        if (!rc.ok) { alert(c.error || "No pudimos cancelar. Escríbenos a soporte@finpathia.com."); return; }
+                        alert(`Listo, cancelada. No te vamos a cobrar más.${c.hasta ? ` Tienes acceso completo hasta el ${fecha(c.hasta)}.` : ""}`);
+                        onChange && onChange();
+                        return;
+                      }
+                    } catch { /* si falla la consulta, se intenta el portal de Stripe */ }
                     try {
                       const res = await fetchAuth("/.netlify/functions/stripe-customer-portal", {
                         method: "POST",
@@ -290,7 +312,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                       const data = await res.json();
                       if (!res.ok) {
                         if (data.error === "no_stripe_customer") {
-                          alert("No tienes una suscripción de Stripe asociada todavía. Si pagaste hace poco, espera unos minutos. Si tu plan es antiguo (sin Stripe), escríbenos a soporte@finpathia.com.");
+                          alert("No tienes una suscripción activa que cancelar. Si estás en la prueba gratis, no hay nada que hacer: al terminar pasas solo al plan Free, sin cobros. Dudas: soporte@finpathia.com.");
                         } else if (data.error === "portal_not_configured") {
                           alert("El portal de Stripe no está configurado todavía. Soporte ya fue notificado.");
                         } else {
@@ -308,9 +330,9 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                     padding: "10px 16px", borderRadius: 10, cursor: "pointer",
                     fontWeight: 600, fontSize: 12,
                   }}
-                  title="Cancelar, cambiar plan, ver facturas"
+                  title="Ver cómo pagas o cancelar en un toque"
                 >
-                  Gestionar suscripción
+                  Gestionar o cancelar suscripción
                 </button>
               )}
             </div>
@@ -343,7 +365,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
             Sigues teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
             Después, tu cuenta vuelve al plan Free.{" "}
             {isAdmin && (
-              <span>Si fue un error, click en "Gestionar suscripción" arriba para reactivar.</span>
+              <span>Si fue un error, vuelve a suscribirte desde Planes cuando quieras.</span>
             )}
           </div>
         )}

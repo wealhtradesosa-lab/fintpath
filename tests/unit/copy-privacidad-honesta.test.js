@@ -90,7 +90,7 @@ describe("copy de privacidad honesto", () => {
   it("la alerta del portal de cliente usa tuteo", () => {
     const s = readFileSync("src/components/MiCuenta.jsx", "utf8");
     expect(s).not.toMatch(/No tenés|esperá unos|contactá soporte/);
-    expect(s).toContain("No tienes una suscripción de Stripe");
+    expect(s).toContain("No tienes una suscripción activa que cancelar");
   });
 
   it("Free incluye el Simulador (la tabla de Planes no lo marca con ✗)", async () => {

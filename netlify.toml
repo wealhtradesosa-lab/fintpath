@@ -55,6 +55,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/mi-suscripcion"
+  to = "/.netlify/functions/mi-suscripcion"
+  status = 200
+
+[[redirects]]
   from = "/api/ai-chat"
   to = "/.netlify/functions/ai-chat"
   status = 200
