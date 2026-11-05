@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
-import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso } from "../lib/metrics.js";
+import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso, esSalarioEmpleado } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
@@ -2155,9 +2155,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
                                 {(() => {
                                   // Santiago: "cuando alguien ponga salario, que quede claro que no
                                   // suma en el nivel; el aumento del salario sí aumenta el cash flow".
-                                  const fcS = String(ing.fiscalCode || "");
-                                  const esSalario = fcS.startsWith("LAB_SALARIO") || fcS.startsWith("LAB_PRESTACIONES") || ["Salario", "Cesantías", "Prima", "Prima de servicios", "Intereses cesantías", "Vacaciones", "Horas extra"].includes(String(ing.categoria || "").trim());
-                                  if (esSalario) return (
+                                  if (esSalarioEmpleado(ing) && getVal("pas_"+safeIdx, null) == null && ing.rentaPasiva !== true) return (
                                     <div style={{ marginTop: 4, fontSize: 11, color: T.txt3, lineHeight: 1.4 }}>
                                       <span style={{ fontWeight: 600, border: "1px solid " + T.border, borderRadius: 999, padding: "2px 10px", display: "inline-block" }}>No suma a tu nivel de libertad: es salario</span>
                                       <div style={{ marginTop: 2 }}>Subirlo aumenta tu flujo del mes, no tu nivel.</div>

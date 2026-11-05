@@ -2,12 +2,22 @@ import { describe, it, expect } from "vitest";
 import { tipoIngreso } from "../../src/lib/metrics.js";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
 
-describe("tipoIngreso: lo laboral nunca es pasivo", () => {
-  it("prima, bono, salario, cesantías y honorarios vinculados a un activo siguen activos", () => {
-    for (const categoria of ["Prima", "Bono", "Salario", "Cesantías", "Honorarios", "Bonificación", "Intereses cesantías"])
+describe("tipoIngreso: solo el salario de empleado queda fuera del nivel (5-nov-2026)", () => {
+  it("prima, bono, salario y cesantías, aun vinculados a un activo, no suman", () => {
+    for (const categoria of ["Prima", "Bono", "Salario", "Cesantías", "Bonificación", "Intereses cesantías"])
       expect(tipoIngreso({ categoria, activoId: "a1" })).toBe("activo");
-    for (const fiscalCode of ["LAB_SALARIO", "LAB_PRESTACIONES_PRIMA", "LAB_PRESTACIONES_CESANTIAS", "NOL_HONORARIOS_INDEP"])
+    for (const fiscalCode of ["LAB_SALARIO", "LAB_PRESTACIONES_PRIMA", "LAB_PRESTACIONES_CESANTIAS"])
       expect(tipoIngreso({ fiscalCode, activoId: "a1" })).toBe("activo");
+  });
+  it("honorarios, comisiones y negocio sí suman (no son salario)", () => {
+    expect(tipoIngreso({ categoria: "Honorarios", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS" })).toBe("pasivo");
+    expect(tipoIngreso({ fiscalCode: "NOL_HONORARIOS_INDEP" })).toBe("pasivo");
+    expect(tipoIngreso({ categoria: "Negocio" })).toBe("pasivo");
+    expect(tipoIngreso({ categoria: "Otro" })).toBe("pasivo");
+  });
+  it("lo de una sola vez no suma", () => {
+    expect(tipoIngreso({ fiscalCode: "CAP_VENTA_ACTIVOS" })).toBe("activo");
+    expect(tipoIngreso({ fiscalCode: "GO_HERENCIA" })).toBe("activo");
   });
   it("un código CAP_/DIV_ no gana sobre una categoría laboral", () => {
     expect(tipoIngreso({ categoria: "Prima", fiscalCode: "CAP_RENDIMIENTO_GENERICO" })).toBe("activo");
@@ -17,7 +27,6 @@ describe("tipoIngreso: lo laboral nunca es pasivo", () => {
     expect(tipoIngreso({ categoria: "Arriendo", activoId: "a1" })).toBe("pasivo");
     expect(tipoIngreso({ fiscalCode: "CAP_FIC" })).toBe("pasivo");
     expect(tipoIngreso({ categoria: "Otro", activoId: "a1" })).toBe("pasivo");
-    expect(tipoIngreso({ categoria: "Otro" })).toBe("activo");
   });
 });
 

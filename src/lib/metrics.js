@@ -69,31 +69,41 @@ export function esLaboral(i) {
   return CATS_LABORALES.has(String(i?.categoria || "").trim());
 }
 
-/** "pasivo" | "activo". Todo lo que no es claramente pasivo es activo. */
+// ─── Salario de empleado ─────────────────────────────────────────────────
+// 5-nov-2026 (Santiago: "un ingreso que no sea salario no debe ser calificado
+// como salario; el sistema debe marcar bien cuándo es un salario de empleado,
+// de tal manera que se sepa que no altera el nivel de libertad financiera").
+// Salario, prestaciones y bonos de nómina: lo que deja de llegar el día que
+// dejas el empleo. Honorarios, comisiones y negocio NO son salario.
+const CATS_SALARIO = new Set([
+  "Salario", "Cesantías", "Intereses cesantías", "Intereses sobre cesantías", "Prima",
+  "Prima de servicios", "Vacaciones", "Horas extra", "Auxilio", "Prestaciones",
+  "Bono", "Bonos", "Bonificación", "Bonificaciones",
+]);
+const CATS_SALARIO_EN = new Set(["Salary", "Wages", "Bonus"]);
+export function esSalarioEmpleado(i) {
+  if (String(i?.tipo || "").toLowerCase() === "w2") return true;
+  const cat = String(i?.categoria || "").trim();
+  if (CATS_SALARIO.has(cat) || CATS_SALARIO_EN.has(cat)) return true;
+  const fc = String(i?.fiscalCode || "");
+  return fc === "LAB_SALARIO" || fc.startsWith("LAB_PRESTACIONES");
+}
+
+/**
+ * "pasivo" | "activo" para el nivel de libertad.
+ * 5-nov-2026 (Santiago): solo el salario de empleado (y sus prestaciones) queda
+ * fuera del nivel; "aumentar cualquier ingreso fuera del salario debe subir el
+ * nivel". También quedan fuera los ingresos de una sola vez (venta de un activo,
+ * herencia, lotería): no se repiten cada mes. La persona puede cambiar cualquier
+ * ingreso en Ingresos (rentaPasiva) y eso manda sobre la regla.
+ */
 export function tipoIngreso(i) {
-  // 5-nov-2026 (Santiago: "los fee distribuidores son ingresos pasivos por unas
-  // asesorías; pensemos en una solución universal"). La categoría tributaria no
-  // siempre dice si un ingreso llega sin tu trabajo diario (un honorario puede
-  // ser una comisión recurrente). La persona lo marca en Ingresos y manda sobre
-  // la regla automática: rentaPasiva true = cuenta en tu nivel, false = no.
   if (i?.rentaPasiva === true) return "pasivo";
   if (i?.rentaPasiva === false) return "activo";
-  if (esLaboral(i)) return "activo";
+  if (esSalarioEmpleado(i)) return "activo";
   const fc = String(i?.fiscalCode || "");
-  if (fc) {
-    if (fc === "CAP_VENTA_ACTIVOS") return "activo";
-    if (fc.startsWith("LAB_") || fc === "NOL_HONORARIOS_INDEP" || fc === "NOL_NEGOCIO") return "activo";
-    if (fc.startsWith("CAP_") || fc.startsWith("DIV_") || fc.startsWith("NOL_ARRIENDO_") || fc.startsWith("PEN_")) return "pasivo";
-    if (fc.startsWith("GO_")) return "activo"; // herencia/lotería: no recurrente
-  }
-  const cat = String(i?.categoria || "").trim();
-  if (CATS_ACTIVAS.has(cat)) return "activo";
-  if (CATS_PASIVAS.has(cat)) return "pasivo";
-  if (US_PASIVO.has(String(i?.tipo || "").toLowerCase()) || CATS_PASIVAS_EN.has(cat)) return "pasivo";
-  // Un ingreso vinculado a un activo (creado desde Patrimonio) es renta del
-  // activo, salvo que sea laboral (eso ya salió arriba).
-  if (i?.activoId) return "pasivo";
-  return "activo";
+  if (fc === "CAP_VENTA_ACTIVOS" || fc.startsWith("GO_")) return "activo";
+  return "pasivo";
 }
 
 // ─── Gasto esencial vs. prescindible ──────────────────────────────────────

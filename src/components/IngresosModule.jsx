@@ -1232,11 +1232,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               <div style={{ gridColumn: "1/-1" }}>
                 <In l="¿Cuenta para tu libertad financiera?" value={form.rentaPasiva || ""} onChange={(v) => setForm((p) => ({ ...p, rentaPasiva: v }))}
                   options={[
-                    { v: "", l: `Automático, según la categoría (hoy: ${tipoIngreso({ ...form, rentaPasiva: undefined }) === "pasivo" ? "sí cuenta" : "no cuenta"})` },
+                    { v: "", l: `Automático: ${tipoIngreso({ ...form, rentaPasiva: undefined }) === "pasivo" ? "sí suma" : "no suma (es salario de empleado o un ingreso de una sola vez)"}` },
                     { v: "si", l: "Sí: llega sin mi trabajo diario (renta, comisión recurrente, regalía)" },
                     { v: "no", l: "No: depende de que yo trabaje" },
                   ]} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Tu nivel de libertad mide cuánto de tus gastos pagan los ingresos que siguen llegando si dejas de trabajar. No cambia cómo se calcula el impuesto.</div>
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Tu nivel de libertad mide cuánto de tus gastos pagan los ingresos que no dependen de un empleo. El salario de empleado no suma: sube tu flujo del mes, no tu nivel. No cambia cómo se calcula el impuesto.</div>
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"Personal"},{v:"na",l:"N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"":"")+o.name}))]} /></div>
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
