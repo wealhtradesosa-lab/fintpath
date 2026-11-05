@@ -69,11 +69,22 @@ export function SelectorTitular({ owners, value, onChange, conGrupo = true }) {
   );
 }
 
-export function Kpi({ k, v, d, color }) {
+// 5-nov-2026 (Santiago: "a estas tarjetas darles color o fondo, se ve todo muy
+// blanco y negro"). `tono` tiñe la tarjeta según lo que significa la cifra:
+// accent = ingresos y lo que se tiene · danger = impuesto y deudas · warn =
+// tasa · ok = lo que baja el impuesto o queda a favor. Sin tono, gris como antes.
+const TONOS = {
+  accent: { c: C.accent, bg: Cα.accent08, bd: Cα.accent25 },
+  ok: { c: C.ok, bg: Cα.ok08, bd: Cα.ok25 },
+  warn: { c: C.warn, bg: Cα.warn08, bd: Cα.warn25 },
+  danger: { c: C.danger, bg: Cα.danger08, bd: Cα.danger25 },
+};
+export function Kpi({ k, v, d, color, tono }) {
+  const t = TONOS[tono];
   return (
-    <div style={{ background: C.raised, borderRadius: R.lg, padding: "12px 14px", display: "grid", gap: 3, alignContent: "start", gridTemplateRows: "auto auto 1fr" }}>
-      <span style={{ ...F.caption, fontWeight: 500, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{k}</span>
-      <span style={{ fontWeight: 600, fontSize: 20, color: color || C.text, fontVariantNumeric: "tabular-nums" }}>{v}</span>
+    <div style={{ background: t ? `linear-gradient(180deg, ${t.bg}, transparent 140%), ${C.raised}` : C.raised, border: t ? `1px solid ${t.bd}` : "1px solid transparent", borderRadius: R.lg, padding: "12px 14px", display: "grid", gap: 3, alignContent: "start", gridTemplateRows: "auto auto 1fr" }}>
+      <span style={{ ...F.caption, fontWeight: 500, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>{t && <span style={{ width: 6, height: 6, borderRadius: "50%", background: t.c, flexShrink: 0 }} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{k}</span></span>
+      <span style={{ fontWeight: 600, fontSize: 20, color: color || (t ? t.c : C.text), fontVariantNumeric: "tabular-nums" }}>{v}</span>
       {d && <span style={F.caption}>{d}</span>}
     </div>
   );
