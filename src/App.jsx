@@ -22,6 +22,7 @@ const GastosModule = lazy(() => import("./components/GastosModule"));
 const DeudasModule = lazy(() => import("./components/DeudasModule"));
 const InversionesModule = lazy(() => import("./components/InversionesModule"));
 const MiCuenta = lazy(() => import("./components/MiCuenta"));
+const TarjetaMP = lazy(() => import("./components/TarjetaMP"));
 const AdminMetrics = lazy(() => import("./components/AdminMetrics"));
 const FlujoAnual = lazy(() => import("./components/FlujoAnual"));
 const CsvImport = lazy(() => import("./components/CsvImport"));
@@ -662,6 +663,7 @@ export default function FinPath(){
   const[billingCycle,setBillingCycle]=useState("mensual");
   // 4-nov-2026: una persona tocó "Activar" 8 veces en 5 s porque el botón no daba señal; cada toque creaba una suscripción en Mercado Pago. Mientras se abre el pago, el botón dice "Abriendo Mercado Pago…" y no acepta más toques.
   const[abriendoPago,setAbriendoPago]=useState(null);
+  const[tarjetaMP,setTarjetaMP]=useState(null); // 5-nov-2026: cobro automático con tarjeta sin cuenta de Mercado Pago
   useEffect(()=>{const f=()=>setAbriendoPago(null);window.addEventListener("pageshow",f);return()=>window.removeEventListener("pageshow",f)},[]);
   const[monedaPago,setMonedaPago]=useState(null);
   const[toast,setToast]=useState("");
@@ -3859,11 +3861,11 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>Pagas con PSE, tarjeta débito o crédito, o Efecty</div>
               No necesitas cuenta de Mercado Pago. Es un solo pago: no hay cobros automáticos y te avisamos por correo antes de que venza para que renueves si quieres.
             </div>
-            {proPl&&!proPl.cur&&<div style={{marginTop:14,textAlign:"center",fontSize:13,color:T.tx3,lineHeight:1.6}}>
-              ¿Prefieres que se cobre solo cada mes con tu tarjeta?{" "}
-              <button type="button" onClick={()=>pagarMP(proPl,"mensual")} style={{background:"none",border:"none",padding:0,color:T.tx2,fontSize:13,fontWeight:600,textDecoration:"underline",cursor:abriendoPago?"default":"pointer"}}>{abriendoPago==="Pro"?"Abriendo Mercado Pago…":`Débito automático · ${fmtCOP(pr.mensual)}/mes`}</button>
-              <div style={{fontSize:12}}>Requiere entrar a Mercado Pago con tu cuenta y el mismo correo de FINPATHIA.</div>
+            {proPl&&!proPl.cur&&<div style={{marginTop:14,padding:"14px 16px",borderRadius:12,border:"1px solid "+T.border,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+              <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,flex:"1 1 240px"}}><strong style={{color:T.tx}}>¿Prefieres que se cobre solo cada mes?</strong><br/>Cobro automático con tarjeta débito o crédito, {fmtCOP(pr.mensual)}/mes. Sin cuenta de Mercado Pago. Cancelas en un toque.</div>
+              <Bt v="s" sz="m" onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>Activar cobro automático</Bt>
             </div>}
+            {tarjetaMP&&<Suspense fallback={null}><TarjetaMP ciclo={tarjetaMP.ciclo} monto={tarjetaMP.monto} email={u?.p?.email||authUser?.email||""} onCerrar={()=>setTarjetaMP(null)} onListo={()=>{track("mp_tarjeta_ok")}}/></Suspense>}
           </div>)})():(<>
           <div style={{textAlign:"center",marginBottom:20}}>
           <div style={{display:"inline-flex",background:T.bg3,borderRadius:10,padding:3,marginTop:16}}>
