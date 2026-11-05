@@ -40,7 +40,19 @@ exports.handler = async (event) => {
     }
     const via = cid.startsWith("mp_pago_") ? "pago_unico" : cid.startsWith("mp_") ? "mercado_pago" : cid.startsWith("cus_") ? "stripe" : null;
     const cancelada = cuenta?.subscription_status === "canceled";
-    if (accion === "ver" || via !== "mercado_pago") return res(200, { via, cancelada, hasta: cuenta?.grace_until || null });
+    // 5-nov-2026: con Mercado Pago, "ver" trae también el monto y el próximo cobro, para que
+    // Mi cuenta diga exactamente qué se va a cobrar y cuándo.
+    let detalle = null;
+    if (via === "mercado_pago" && accion === "ver" && process.env.MP_ACCESS_TOKEN) {
+      try {
+        const rp = await fetch(`https://api.mercadopago.com/preapproval/${cid.slice(3)}`, { headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` } });
+        if (rp.ok) {
+          const p = await rp.json();
+          detalle = { estadoMP: p.status, monto: p?.auto_recurring?.transaction_amount || null, frecuencia: p?.auto_recurring?.frequency || 1, proximoCobro: p.status === "authorized" ? p.next_payment_date || null : null };
+        }
+      } catch { /* sin detalle */ }
+    }
+    if (accion === "ver" || via !== "mercado_pago") return res(200, { via, cancelada, hasta: cuenta?.grace_until || null, ...(detalle || {}) });
 
     // Cancelar en Mercado Pago: no se vuelve a cobrar. El aviso de MP también
     // llega a mp-webhook; handle_subscription_canceled es idempotente.

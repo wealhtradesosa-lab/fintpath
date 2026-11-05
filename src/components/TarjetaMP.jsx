@@ -42,7 +42,7 @@ export default function TarjetaMP({ ciclo = "mensual", monto, email, onCerrar, o
           initialization: { amount: monto, payer: email ? { email } : undefined },
           customization: {
             paymentMethods: { maxInstallments: 1, minInstallments: 1 },
-            visual: { hideFormTitle: true, texts: { formSubmit: "Activar cobro automático" }, style: { theme: document.documentElement.getAttribute("data-tema") === "claro" ? "default" : "dark" } },
+            visual: { hideFormTitle: true, texts: { formSubmit: "Activar cobro automático" }, style: { theme: "default" } },
           },
           callbacks: {
             onReady: () => vivo && setEstado("listo"),
@@ -69,8 +69,13 @@ export default function TarjetaMP({ ciclo = "mensual", monto, email, onCerrar, o
 
   const fmt = (n) => "$" + Number(n).toLocaleString("es-CO");
   return (
-    <div role="dialog" aria-modal="true" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }} onClick={(e) => { if (e.target === e.currentTarget && estado !== "enviando") onCerrar(); }}>
-      <div style={{ width: "100%", maxWidth: 480, maxHeight: "92vh", overflowY: "auto", background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.1)", borderRadius: 16, padding: 20, color: "var(--fp-txt)" }}>
+    // 5-nov-2026 (Santiago: "cuando la gente escribe los números de la tarjeta no los ve,
+    // salen más abajo"). En el celular, una ventana centrada y fija queda tapada por el
+    // teclado. Ahora la ventana arranca arriba y toda la capa se desplaza (el navegador
+    // puede subir el campo activo por encima del teclado). El formulario de Mercado Pago
+    // va siempre en su tema claro: en el oscuro los números se leían mal.
+    <div role="dialog" aria-modal="true" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 1000, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "max(12px, env(safe-area-inset-top)) 12px 40vh" }} onClick={(e) => { if (e.target === e.currentTarget && estado !== "enviando") onCerrar(); }}>
+      <div style={{ width: "100%", maxWidth: 480, margin: "0 auto", background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.1)", borderRadius: 16, padding: 20, color: "var(--fp-txt)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>Cobro automático con tarjeta</div>

@@ -3875,6 +3875,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>No necesitas cuenta de Mercado Pago</div>
               Las dos suscripciones se cobran solas a tu tarjeta débito o crédito y las cancelas en cualquier momento desde Mi cuenta, en un toque. Antes de renovar el plan anual te avisamos por correo. Si no tienes tarjeta, puedes pagar el año con PSE o Efecty en un solo pago.
             </div>
+            {/* 5-nov-2026 (Santiago: "algo que diga puedes cancelar fácil en cualquier momento
+                ingresando a esta sección y haciendo clic aquí"). */}
+            <div style={{marginTop:12,padding:"14px 16px",borderRadius:12,border:"1px solid "+T.border,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+              <div style={{fontSize:13,color:T.tx2,lineHeight:1.6,flex:"1 1 260px"}}><strong style={{color:T.tx}}>Cancelas fácil, en cualquier momento.</strong><br/>Entra a <strong style={{color:T.tx}}>Mi cuenta</strong> → <strong style={{color:T.tx}}>Tu suscripción</strong> → <strong style={{color:T.tx}}>Cancelar suscripción</strong>. Un toque, sin llamar ni escribir a nadie.</div>
+              <button type="button" onClick={()=>setPg("cuenta")} style={{background:"transparent",color:T.tx,border:"1px solid "+T.border,padding:"10px 16px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13,flexShrink:0}}>Ir a Mi cuenta</button>
+            </div>
             {tarjetaMP&&<Suspense fallback={null}><TarjetaMP ciclo={tarjetaMP.ciclo} monto={tarjetaMP.monto} email={u?.p?.email||authUser?.email||""} onCerrar={()=>setTarjetaMP(null)} onListo={()=>{track("mp_tarjeta_ok")}}/></Suspense>}
           </div>)})():(<>
           <div style={{textAlign:"center",marginBottom:20}}>

@@ -118,6 +118,7 @@ export default function MiCuenta({
         )}
       </div>
 
+      {role !== "reader" && <TuSuscripcion plan={plan} onUpgrade={onUpgrade} onChange={onChange} />}
       {/* Contenido según tab activa */}
       {activeTab === "miembros" && showMembersTab && (
         <MiembrosTab
@@ -933,4 +934,92 @@ function RoleOption({ value, currentValue, onChange, title, description }) {
       </div>
     </div>
   );
+}
+
+
+// 5-nov-2026 (Santiago: "cómo cancela para que no cobren más… que los clientes también
+// puedan cancelar sin mayor problema"). Arriba de todo en Mi cuenta, sin buscar en
+// pestañas: cómo pagas, cuánto y cuándo es el próximo cobro, y cancelar en un toque.
+function TuSuscripcion({ plan, onUpgrade, onChange }) {
+  const [info, setInfo] = useState(null);
+  const [paso, setPaso] = useState("ver"); // ver | confirmar | cancelando | listo
+  const [error, setError] = useState(null);
+  const cargar = async () => {
+    try {
+      const r = await fetchAuth("/api/mi-suscripcion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "ver" }) });
+      setInfo(r.ok ? await r.json() : { via: null });
+    } catch { setInfo({ via: null }); }
+  };
+  useEffect(() => { cargar(); }, []);
+  if (!info) return null;
+  const fecha = (iso) => iso ? new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" }) : null;
+  const plata = (n) => "$" + Number(n || 0).toLocaleString("es-CO");
+  const pagado = ["pro", "pro_familiar", "basico"].includes(plan);
+  const caja = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 };
+  const titulo = <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 6 }}>Tu suscripción</div>;
+  const texto = { fontSize: 13, color: T.txt2, lineHeight: 1.6 };
+  const btnCancelar = { background: "transparent", color: T.txt, border: `1px solid ${T.border}`, padding: "10px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 };
+
+  const cancelar = async () => {
+    setPaso("cancelando"); setError(null);
+    try {
+      if (info.via === "stripe") {
+        const res = await fetchAuth("/.netlify/functions/stripe-customer-portal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ returnUrl: window.location.href }) });
+        const d = await res.json();
+        if (res.ok && d.url) { window.location.href = d.url; return; }
+        setError("No pudimos abrir la página de cancelación. Escríbenos a soporte@finpathia.com y la cancelamos hoy."); setPaso("confirmar"); return;
+      }
+      const r = await fetchAuth("/api/mi-suscripcion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "cancelar" }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(d.error || "No pudimos cancelar. Escríbenos a soporte@finpathia.com y la cancelamos hoy."); setPaso("confirmar"); return; }
+      setInfo({ ...info, cancelada: true, hasta: d.hasta, proximoCobro: null }); setPaso("listo");
+      onChange && onChange();
+    } catch { setError("Error de red. Intenta de nuevo."); setPaso("confirmar"); }
+  };
+
+  if (info.via === "mercado_pago" || info.via === "stripe") {
+    const activa = !info.cancelada && info.estadoMP !== "cancelled";
+    return (
+      <div style={caja}>
+        {titulo}
+        {activa ? (<>
+          <div style={texto}>
+            <strong style={{ color: T.txt }}>Pro con cobro automático</strong>
+            {info.monto ? <> · {plata(info.monto)} {info.frecuencia === 12 ? "al año" : "al mes"}</> : null}
+            {info.via === "mercado_pago" ? " a tu tarjeta, por Mercado Pago." : " a tu tarjeta, en dólares (Stripe)."}
+            {info.proximoCobro && <><br />Próximo cobro: <strong style={{ color: T.txt }}>{fecha(info.proximoCobro)}</strong>.</>}
+          </div>
+          {paso === "ver" && <button type="button" onClick={() => setPaso("confirmar")} style={{ ...btnCancelar, marginTop: 14 }}>Cancelar suscripción</button>}
+          {(paso === "confirmar" || paso === "cancelando") && (
+            <div style={{ marginTop: 14, padding: 14, borderRadius: 10, background: T.bg3, ...texto }}>
+              <strong style={{ color: T.txt }}>¿Cancelar tu suscripción?</strong> No te volvemos a cobrar.
+              {info.via === "mercado_pago" ? " Sigues con acceso completo 30 días; después tu cuenta queda en modo consulta y tus datos se guardan." : " Stripe te muestra hasta cuándo tienes acceso."}
+              <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <button type="button" disabled={paso === "cancelando"} onClick={cancelar} style={{ background: "#ff5000", color: "#fff", border: "none", padding: "10px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>{paso === "cancelando" ? "Cancelando…" : "Sí, cancelar"}</button>
+                <button type="button" onClick={() => { setPaso("ver"); setError(null); }} style={{ background: "none", border: "none", color: T.txt2, cursor: "pointer", fontSize: 13 }}>No, seguir con Pro</button>
+              </div>
+              {error && <div style={{ marginTop: 8, color: "#ff5000" }}>{error}</div>}
+            </div>
+          )}
+        </>) : (
+          <div style={texto}>
+            {paso === "listo" ? <strong style={{ color: T.txt }}>Listo, cancelada. </strong> : <strong style={{ color: T.txt }}>Suscripción cancelada. </strong>}
+            No te vamos a cobrar más.{info.hasta ? ` Tienes acceso completo hasta el ${fecha(info.hasta)}.` : ""}
+            {onUpgrade && <> <button type="button" onClick={onUpgrade} style={{ background: "none", border: "none", padding: 0, color: T.txt, fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 13 }}>Volver a suscribirme</button></>}
+          </div>
+        )}
+      </div>
+    );
+  }
+  if (info.via === "pago_unico") {
+    return (
+      <div style={caja}>{titulo}
+        <div style={texto}><strong style={{ color: T.txt }}>Pro con pago único</strong>{info.hasta ? `, pagado hasta el ${fecha(info.hasta)}` : ""}. No hay cobros automáticos que cancelar: si no renuevas, tu cuenta queda en modo consulta y tus datos se guardan.
+          {onUpgrade && <> <button type="button" onClick={onUpgrade} style={{ background: "none", border: "none", padding: 0, color: T.txt, fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 13 }}>Renovar</button></>}
+        </div>
+      </div>
+    );
+  }
+  if (!pagado) return null;
+  return null;
 }
