@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · correos del pago único (PSE / Efecty / tarjeta por Mercado Pago)
-// 5-nov-2026. "confirmacion" al aprobarse el pago; "por_vencer" 5 días antes.
+// 5-nov-2026. "confirmacion" al aprobarse el pago; "por_vencer" 5 días antes;
+// "renovacion_anual" 7 días antes de que Mercado Pago renueve una suscripción anual.
 // ═══════════════════════════════════════════════════════════════════════════
 const { emailShell } = require("../functions/send-email.cjs");
 
@@ -13,6 +14,15 @@ const B = (t) => `<strong style="color:#fafafa;">${t}</strong>`;
 function correoPagoUnico({ tipo, plan, meses, hasta }) {
   const n = NOMBRE[plan] || "Pro";
   const f = fechaLarga(hasta);
+  if (tipo === "renovacion_anual") {
+    const subject = `Tu plan anual de FINPATHIA se renueva el ${f}`;
+    const html = emailShell(
+      H("Tu plan anual se renueva en 7 días") +
+      P(`El ${B(f)} renovamos tu plan ${B(n)} por un año más: Mercado Pago cobrará ${B("$249.000")} a tu tarjeta.`) +
+      P(`No tienes que hacer nada para seguir. Si prefieres no renovar, cancélalo en un toque desde Mi cuenta antes de esa fecha y no se cobra nada.`),
+      { ctaText: "Ir a Mi cuenta", ctaUrl: "https://finpathia.com/?ir=set", preheader: `Renovación automática el ${f}. Cancelas en un toque si no quieres seguir.` });
+    return { subject, html, text: `Tu plan anual de FINPATHIA se renueva el ${f} por $249.000. Para cancelar: Mi cuenta en finpathia.com.` };
+  }
   if (tipo === "por_vencer") {
     const subject = `Tu plan ${n} de FINPATHIA vence el ${f}`;
     const html = emailShell(

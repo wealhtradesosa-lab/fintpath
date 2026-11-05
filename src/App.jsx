@@ -1896,7 +1896,7 @@ export default function FinPath(){
     try{
       const ps=new URLSearchParams(window.location.search);
       const ir=ps.get("ir");
-      if(ir&&["dash","sim","inv","price"].includes(ir))setPg(ir);
+      if(ir&&["dash","sim","inv","price","set"].includes(ir))setPg(ir);
       if(ir){ps.delete("ir");const q=ps.toString();window.history.replaceState({},"",window.location.pathname+(q?"?"+q:""));}
     }catch{}
   },[u]);
@@ -3850,8 +3850,11 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               {/* 5-nov-2026 (Santiago: "prefiero que de una vez queden enganchados a cobro automático").
                   El mes se paga solo con cobro automático; el pago único (PSE/Efecty) queda para el año. */}
               {anual?<>
-                <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(12)}>{cargando?"Abriendo Mercado Pago…":`Pagar el año · ${fmtCOP(pr.anual)}`}</Bt>
-                <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>PSE, tarjeta o Efecty · un solo pago</div>
+                {/* 5-nov-2026 (Santiago: "el pago anual también que sea suscripción que se renueve automático").
+                    Principal: suscripción anual con tarjeta. Sin tarjeta: el año con PSE/Efecty, sin renovación. */}
+                <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago?0.55:1}} onClick={()=>setTarjetaMP({ciclo:"anual",monto:pr.anual})}>{`Suscribirme · ${fmtCOP(pr.anual)}/año`}</Bt>
+                <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>Se renueva cada año a tu tarjeta · te avisamos antes</div>
+                <button type="button" onClick={()=>pagarUnico(12)} style={{display:"block",width:"100%",marginTop:10,background:"none",border:"none",padding:0,color:T.tx2,fontSize:12,fontWeight:600,textDecoration:"underline",cursor:abriendoPago?"default":"pointer",opacity:abriendoPago&&!cargando?0.55:1}}>{cargando?"Abriendo Mercado Pago…":"¿Sin tarjeta? Paga el año con PSE o Efecty"}</button>
               </>:<>
                 <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago?0.55:1}} onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>{`Suscribirme · ${fmtCOP(pr.mensual)}/mes`}</Bt>
                 <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>Cobro automático a tu tarjeta débito o crédito</div>
@@ -3870,7 +3873,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:16}}>{tarjeta(12)}{tarjeta(1)}</div>
             <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,background:T.bg3,fontSize:13,color:T.tx2,lineHeight:1.6}}>
               <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>No necesitas cuenta de Mercado Pago</div>
-              El plan anual es un solo pago con PSE, tarjeta o Efecty, sin cobros automáticos: te avisamos antes de que venza. El mensual se cobra solo cada mes a tu tarjeta y lo cancelas en cualquier momento desde Mi cuenta, en un toque.
+              Las dos suscripciones se cobran solas a tu tarjeta débito o crédito y las cancelas en cualquier momento desde Mi cuenta, en un toque. Antes de renovar el plan anual te avisamos por correo. Si no tienes tarjeta, puedes pagar el año con PSE o Efecty en un solo pago.
             </div>
             {tarjetaMP&&<Suspense fallback={null}><TarjetaMP ciclo={tarjetaMP.ciclo} monto={tarjetaMP.monto} email={u?.p?.email||authUser?.email||""} onCerrar={()=>setTarjetaMP(null)} onListo={()=>{track("mp_tarjeta_ok")}}/></Suspense>}
           </div>)})():(<>

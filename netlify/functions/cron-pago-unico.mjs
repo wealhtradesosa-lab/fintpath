@@ -39,6 +39,33 @@ export default async () => {
       } catch (e) { console.error(`[cron-pago-unico] cuenta ${uidCorto ? uidCorto(c.owner_user_id) : ""}`, errorParaLog(e)); }
     }
   } catch (e) { console.error("[cron-pago-unico] error", errorParaLog(e)); }
+
+  // 5-nov-2026 · Aviso de renovación de suscripciones ANUALES con tarjeta (Santiago: "el pago
+  // anual también que sea suscripción que se renueve automático"). Mercado Pago no avisa antes
+  // de cobrar un año completo: lo hacemos nosotros 7 días antes (ventana de 24 h, un correo).
+  const token = process.env.MP_ACCESS_TOKEN;
+  if (!token) return;
+  try {
+    const d7 = Date.now() + 7 * 864e5, d8 = Date.now() + 8 * 864e5;
+    for (let offset = 0; offset < 1000; offset += 100) {
+      const r = await fetch(`https://api.mercadopago.com/preapproval/search?status=authorized&limit=100&offset=${offset}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) { console.error(`[cron-pago-unico] MP search ${r.status}`); break; }
+      const lista = (await r.json()).results || [];
+      for (const sus of lista) {
+        if (!/FINPATHIA/.test(sus.reason || "") || Number(sus?.auto_recurring?.frequency) !== 12) continue;
+        const prox = new Date(sus.next_payment_date || 0).getTime();
+        if (!(prox >= d7 && prox < d8)) continue;
+        const uid = String(sus.external_reference || "").split("|")[0];
+        let email = null;
+        if (uid) { const ru = await fetch(`${url}/auth/v1/admin/users/${uid}`, { headers: h }); if (ru.ok) email = (await ru.json()).email; }
+        email = email || sus.payer_email;
+        if (!email) continue;
+        const m = correoPagoUnico({ tipo: "renovacion_anual", plan: "pro", hasta: sus.next_payment_date });
+        await sendRendered({ to: email, ...m, etiqueta: "renovacion_anual", idempotencyKey: `renov_${sus.id}_${String(sus.next_payment_date).slice(0, 10)}` });
+      }
+      if (lista.length < 100) break;
+    }
+  } catch (e) { console.error("[cron-pago-unico] aviso renovación anual", errorParaLog(e)); }
 };
 
 export const config = { schedule: "30 14 * * *" };
