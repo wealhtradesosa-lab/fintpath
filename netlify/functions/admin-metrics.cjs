@@ -277,6 +277,36 @@ exports.handler = async (event) => {
         plan: planDe[u.id] || "free",
       }));
 
+    // ── 5-nov-2026 (Santiago: "cómo saber quién está cargando la información,
+    // quiénes son los más activos que realmente usan la plataforma"). Una fila por
+    // cliente (sin cuentas propias ni de prueba): qué cargó, cuántos días volvió,
+    // cuándo fue la última vez, cuántas consultas con IA lleva en el total y en qué
+    // estado está (pagando, en prueba con días restantes, o en consulta).
+    const usoIA = {};
+    try {
+      const ru = await fetch(`${URL}/rest/v1/ai_usage?select=user_id,usos`, { headers: h });
+      if (ru.ok) (await ru.json()).forEach((x) => { usoIA[x.user_id] = (usoIA[x.user_id] || 0) + (Number(x.usos) || 0); });
+    } catch { /* sin uso de IA: columna en 0 */ }
+    const filaDe = Object.fromEntries(filas.map((r) => [r.id, r]));
+    const hoyISO = new Date().toISOString().slice(0, 10);
+    const clientes = usuarios.filter((u) => !internos.has(u.id)).map((u) => {
+      const d = filaDe[u.id]?.data || {};
+      const nGas = Object.values(d.gas || {}).reduce((s2, its) => s2 + (its || []).length, 0);
+      const secciones = { patrimonio: (d.inv || []).length, ingresos: (d.ingresos || []).length, gastos: nGas, deudas: (d.deu || []).length };
+      const registros = Object.values(secciones).reduce((a2, b2) => a2 + b2, 0);
+      const trialEnd = String(d?.p?.trialEnd || "").slice(0, 10);
+      const diasPrueba = trialEnd && trialEnd >= hoyISO ? Math.max(0, Math.ceil((new Date(trialEnd) - new Date(hoyISO)) / 864e5)) : null;
+      const estado = vigentesIds.has(u.id) ? "pagando" : diasPrueba != null ? "prueba" : "consulta";
+      const dias = actividad[u.id]?.dias_que_volvio || 0;
+      return {
+        email: u.email, registro: u.created_at, nombre: d?.p?.name && d.p.name !== "Usuario" ? d.p.name : null,
+        secciones, registros, declaraciones: (d.declaraciones || []).length,
+        diasQueVolvio: dias, ultimaVez: actividad[u.id]?.ultima_vez || u.last_sign_in_at || null,
+        consultasIA: usoIA[u.id] || 0, estado, diasPrueba,
+        puntaje: dias * 3 + Math.min(registros, 40) + Math.min(usoIA[u.id] || 0, 20),
+      };
+    }).sort((a2, b2) => b2.puntaje - a2.puntaje || String(b2.ultimaVez || "").localeCompare(String(a2.ultimaVez || "")));
+
     const total = usuarios.length;
     const activados = idsActivados.size;
 
@@ -293,6 +323,7 @@ exports.handler = async (event) => {
         mercadoPago,
         porMes,
         losQueMasVuelven,
+        clientes,
         hayActividad: Object.keys(actividad).length > 0,
         trials,
         cuentasLeidas,

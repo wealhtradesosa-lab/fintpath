@@ -195,27 +195,9 @@ export default function AdminMetrics({ email, fmt, T }) {
         </div>
       )}
 
-      {/* Los que más vuelven */}
-      {d.hayActividad && (
-        <div style={card}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: T.tx }}>Los que más vuelven</div>
-          <div style={{ fontSize: 12, color: T.tx3, marginBottom: 10 }}>Días distintos que abrieron la app después del día en que se registraron. Sin tus cuentas ni las de prueba. Aproximado: una pestaña que se queda abierta también cuenta.</div>
-          {(d.losQueMasVuelven || []).length === 0 ? (
-            <div style={{ fontSize: 13, color: T.tx2 }}>Nadie ha vuelto todavía después de registrarse.</div>
-          ) : (
-            d.losQueMasVuelven.map((u, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none", fontSize: 12, gap: 8, flexWrap: "wrap" }}>
-                <span style={{ color: T.tx, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{u.email}</span>
-                <span style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
-                  <span style={{ color: T.tx, fontWeight: 700, fontFamily: "monospace" }}>{u.diasQueVolvio} {u.diasQueVolvio === 1 ? "día" : "días"}</span>
-                  <span style={{ color: u.activado ? "#00c805" : T.tx3 }}>{u.activado ? "cargó datos" : "sin datos"}</span>
-                  <span style={{ color: T.tx3 }}>última vez {u.ultimaVez ? new Date(u.ultimaVez + "T12:00:00").toLocaleDateString("es-CO", { day: "2-digit", month: "short" }) : "—"}</span>
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      )}
+      {/* 5-nov-2026 (Santiago: "cómo saber quién está cargando la información, quiénes son
+          los más activos que realmente usan la plataforma"). Una fila por cliente. */}
+      <Clientes clientes={d.clientes || []} hayActividad={d.hayActividad} T={T} card={card} num={num} />
 
       {/* Quién ha pagado: Stripe y Mercado Pago */}
       <div style={card}>
@@ -272,6 +254,69 @@ export default function AdminMetrics({ email, fmt, T }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+// ── Tus clientes, del más activo al menos activo ──────────────────────────
+function Clientes({ clientes, hayActividad, T, card, num }) {
+  const [filtro, setFiltro] = useState("todos");
+  const [todos, setTodos] = useState(false);
+  const FILTROS = [
+    ["todos", "Todos"], ["activos", "Usan la app"], ["prueba", "En prueba"], ["pagando", "Pagando"], ["consulta", "En consulta"], ["sindatos", "Sin datos"],
+  ];
+  const pasa = (c) => filtro === "todos" ? true
+    : filtro === "activos" ? (c.registros > 0 && c.diasQueVolvio > 0)
+    : filtro === "sindatos" ? c.registros === 0
+    : c.estado === filtro;
+  const lista = clientes.filter(pasa);
+  const visibles = todos ? lista : lista.slice(0, 25);
+  const fecha = (v) => { if (!v) return "—"; const d = new Date(String(v).length <= 10 ? v + "T12:00:00" : v); return d.toLocaleDateString("es-CO", { day: "2-digit", month: "short" }); };
+  const ESTADO = {
+    pagando: ["Pagando", "var(--fp-pos)"],
+    prueba: ["Prueba", T.tx],
+    consulta: ["Consulta", T.tx3],
+  };
+  const resumen = {
+    usan: clientes.filter((c) => c.registros > 0 && c.diasQueVolvio > 0).length,
+    cargaron: clientes.filter((c) => c.registros > 0).length,
+    ia: clientes.filter((c) => c.consultasIA > 0).length,
+  };
+  const chip = (n, l) => <span key={l} style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, background: n > 0 ? "rgba(var(--fp-ink),0.07)" : "transparent", color: n > 0 ? T.tx2 : T.tx3, border: n > 0 ? "none" : `1px dashed ${T.border}` }}>{l} {n}</span>;
+  return (
+    <div style={card}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: T.tx }}>Tus clientes, del más activo al menos activo</div>
+      <div style={{ fontSize: 12, color: T.tx3, marginBottom: 10, lineHeight: 1.5 }}>
+        {num(clientes.length)} clientes · {num(resumen.cargaron)} cargaron datos · {num(resumen.usan)} cargaron y volvieron otro día · {num(resumen.ia)} usaron la IA. Sin tus cuentas ni las de prueba.
+        {!hayActividad && " (Aún no hay registro de días de uso: se ordena por lo que cargaron.)"}
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+        {FILTROS.map(([k, l]) => (
+          <button key={k} type="button" onClick={() => setFiltro(k)} style={{ fontSize: 12, padding: "5px 10px", borderRadius: 8, cursor: "pointer", border: `1px solid ${filtro === k ? "var(--fp-pos)" : T.border}`, background: filtro === k ? "color-mix(in srgb, var(--fp-pos) 12%, transparent)" : "transparent", color: T.tx, fontWeight: filtro === k ? 700 : 500 }}>{l}</button>
+        ))}
+      </div>
+      {visibles.length === 0 ? <div style={{ fontSize: 13, color: T.tx2 }}>Nadie en este grupo todavía.</div> : visibles.map((c, i) => (
+        <div key={c.email + i} style={{ padding: "10px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none", fontSize: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
+            <span style={{ color: T.tx, fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{c.email}{c.nombre ? <span style={{ color: T.tx3, fontWeight: 400 }}> · {c.nombre}</span> : null}</span>
+            <span style={{ display: "flex", gap: 12, color: T.tx3, flexShrink: 0 }}>
+              <span style={{ color: ESTADO[c.estado]?.[1], fontWeight: 700 }}>{ESTADO[c.estado]?.[0]}{c.estado === "prueba" && c.diasPrueba != null ? ` · ${c.diasPrueba} ${c.diasPrueba === 1 ? "día" : "días"}` : ""}</span>
+              <span title="Días distintos que volvió después de registrarse"><strong style={{ color: T.tx }}>{c.diasQueVolvio}</strong> {c.diasQueVolvio === 1 ? "día de uso" : "días de uso"}</span>
+              <span title="Consultas con IA (asesor y lecturas de documentos)"><strong style={{ color: T.tx }}>{c.consultasIA}</strong> IA</span>
+              <span>última vez {fecha(c.ultimaVez)}</span>
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
+            {c.registros === 0 ? <span style={{ fontSize: 11, color: T.tx3 }}>No ha cargado nada · se registró el {fecha(c.registro)}</span> : <>
+              {chip(c.secciones.patrimonio, "Patrimonio")}{chip(c.secciones.ingresos, "Ingresos")}{chip(c.secciones.gastos, "Gastos")}{chip(c.secciones.deudas, "Deudas")}
+              {c.declaraciones > 0 && chip(c.declaraciones, "Declaraciones")}
+              <span style={{ fontSize: 11, color: T.tx3 }}>· se registró el {fecha(c.registro)}</span>
+            </>}
+          </div>
+        </div>
+      ))}
+      {lista.length > 25 && <button type="button" onClick={() => setTodos(!todos)} style={{ marginTop: 10, background: "none", border: "none", color: T.tx2, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>{todos ? "Ver menos" : `Ver los ${lista.length}`}</button>}
     </div>
   );
 }
