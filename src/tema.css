@@ -137,6 +137,9 @@ html[data-tema="claro"] .fp-app { --fp-azul: #1d5fd6; --inf-dorado-tx: #7d6218; 
   .fp-tm-gas th:nth-child(2), .fp-tm-gas td:nth-child(2):not([colspan]), .fp-tm-gas th:nth-child(3), .fp-tm-gas td:nth-child(3):not([colspan]), .fp-tm-gas th:nth-child(4), .fp-tm-gas td:nth-child(4):not([colspan]),
   .fp-tm-deu th:nth-child(2), .fp-tm-deu td:nth-child(2):not([colspan]) { display: none; }
   .fp-tm { min-width: 0 !important; }
+  /* Nombres largos: parten en varias líneas en vez de montarse sobre el monto. */
+  .fp-tm td:first-child:not([colspan]), .fp-tm td:first-child:not([colspan]) * { white-space: normal !important; overflow-wrap: anywhere; }
+  .fp-tm td:first-child:not([colspan]) { overflow: hidden; width: 48vw; }
   /* Campos nativos sin estilo (números, fechas, listas) quedaban blancos en el tema oscuro. */
   .fp-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([style*="background"]),
   .fp-app select:not([style*="background"]) { background: var(--fp-raised); color: var(--fp-txt); border: 1px solid rgba(var(--fp-ink),0.15); border-radius: 8px; }
