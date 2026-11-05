@@ -9,7 +9,7 @@ import { estimarImpuestoReferente, mesesDePago } from "../lib/impuestoReferente"
 import SankeyFlujo from "./SankeyFlujo";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
-import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, getMonto, getMontosMensuales, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
 import PageHeader from "./PageHeader";
 import { ChartGradients, ChartTooltip, axisProps, gridProps, CHART } from "../lib/chartTheme.jsx";
 import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
@@ -168,7 +168,25 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
 const fmCorto = (n) => { const a = Math.abs(Number(n) || 0); return "$" + (a >= 1e6 ? (a / 1e6).toLocaleString("es-CO", { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + " MM" : Math.round(a).toLocaleString("es-CO")); };
 
 // ─── FREEDOM BAR (inline, reactive) ───
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null, simulado = false, nivelRealTxt = null }) {
+// 5-nov-2026 (Santiago: "muevo los sliders y la barra de libertad parece fija,
+// estática"). Dos fugas hacían que el motor ignorara el slider: getMonto lee
+// `mensual` antes que `m` (los gastos con los dos campos no se movían) y, en
+// ingresos en modo tasa, recalcula capital × tasa sin mirar el monto (las
+// rentas de CDT, fondos, etc. no se movían). Con un valor distinto al real, el
+// ítem pasa a modo monto con ese valor; los variables se escalan mes a mes.
+export function conSlider(item, nuevo, base) {
+  const v = Number(nuevo) || 0, b = Number(base) || 0;
+  // Sin cambio: el mismo valor en las unidades que pide quien llama (los
+  // ingresos en dólares llegan ya en pesos); en modo tasa, el ítem tal cual.
+  if (Math.abs(v - b) <= 0.5) return item.montoModo === "tasa" && item.moneda !== "USD" ? item : { ...item, mensual: v, m: v };
+  if (getFrecuencia(item) === "variable") {
+    const r = b > 0 ? v / b : 1;
+    return { ...item, montosMensuales: getMontosMensuales(item).map((x) => x * r) };
+  }
+  return { ...item, montoModo: "monto", mensual: v, m: v };
+}
+
+function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null, simulado = false, nivelRealTxt = null, real = null }) {
   const [verOcultos, setVerOcultos] = useState(false);
   const [confirmados, setConfirmados] = useState(() => leerConfirmados());
   const [expandedLvl, setExpandedLvl] = useState(null);
@@ -233,6 +251,41 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
             Tu ingreso pasivo (bruto): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
           </div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
+          {/* 5-nov-2026 (Santiago: "si subo o bajo ingresos o gastos esto debería
+              moverse en consecuencia"; "debería moverse con el cash flow"). Con
+              cambios, se ve qué movió cada slider: cobertura, rentas, gastos y el
+              flujo del mes, contra el real. El sueldo mueve el flujo; el nivel
+              mide lo que pagan tus activos sin trabajar. */}
+          {simulado && real && (() => {
+            const cobR = real.ob > 0 ? (real.ip / real.ob) * 100 : 0, cobS = ob > 0 ? (ip / ob) * 100 : 0;
+            const filas = [
+              { l: "Cobertura de tus rentas", a: `${fmtNumEs(cobR, 0)} %`, b: `${fmtNumEs(cobS, 0)} %`, d: cobS - cobR, pos: true, pct: true },
+              { l: "Rentas de tus activos al mes", a: fm(real.ip), b: fm(ip), d: ip - real.ip, pos: true },
+              { l: "Gastos y cuotas al mes", a: fm(real.ob), b: fm(ob), d: ob - real.ob, pos: false },
+              { l: "Flujo del mes (lo que entra menos lo que sale, sueldo incluido)", a: fm(real.fl || 0), b: fm(fl || 0), d: (fl || 0) - (real.fl || 0), pos: true },
+            ];
+            return (
+              <div data-testid="nivel-comparado" style={{ marginTop: 10, border: "1px solid " + T.border, borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 1fr 1fr", gap: 8, padding: "6px 12px", fontSize: 11, color: T.txt3, background: "rgba(var(--fp-ink),0.03)" }}>
+                  <span></span><span style={{ textAlign: "right" }}>Real hoy</span><span style={{ textAlign: "right" }}>Con tus cambios</span>
+                </div>
+                {filas.map((f) => {
+                  const bueno = f.pos ? f.d > 0 : f.d < 0;
+                  const igual = Math.abs(f.d) < (f.pct ? 0.5 : 1);
+                  return (
+                    <div key={f.l} style={{ display: "grid", gridTemplateColumns: "minmax(0,2fr) 1fr 1fr", gap: 8, padding: "6px 12px", fontSize: 12, borderTop: "1px solid " + T.border, fontVariantNumeric: "tabular-nums" }}>
+                      <span style={{ color: T.txt2 }}>{f.l}</span>
+                      <span style={{ textAlign: "right", color: T.txt3 }}>{f.a}</span>
+                      <span style={{ textAlign: "right", fontWeight: 700, color: igual ? T.txt : bueno ? T.gn : T.rd }}>{f.b}</span>
+                    </div>
+                  );
+                })}
+                <div style={{ padding: "6px 12px", fontSize: 11, color: T.txt3, borderTop: "1px solid " + T.border, lineHeight: 1.5 }}>
+                  La barra se mueve con tus rentas y tus gastos. El sueldo y otros ingresos activos mueven el flujo del mes: si te sobra, lo que inviertas se vuelve renta y ahí sí sube el nivel.
+                </div>
+              </div>
+            );
+          })()}
           {escenarioTxt && (
             <div data-testid="nivel-escenario" style={{ marginTop: 8, fontSize: 12, color: T.txt2, border: "1px dashed " + T.border, borderRadius: 8, padding: "6px 8px" }}>{escenarioTxt}</div>
           )}
@@ -462,7 +515,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
 
     (user.ingresos || []).forEach((ing, ii) => {
-      const base = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? (tasa(user)) : 1);
+      const base = getMonto(ing) * (ing.moneda === "USD" ? (tasa(user)) : 1);
       nv[`ing_${ii}`] = Math.round(base * f.i);
     });
     // Conservador "gas +10%": el factor de gastos (f.g) se calculaba y nunca se
@@ -532,10 +585,10 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // ─── PASO 1: Ingresos con overrides de sliders + moneda ──────────────
     const ingSim = (user.ingresos || []).map((ing, ii) => {
       if (ing.sim === false) return ing;
-      const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      const baseCop = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
       const overrideCop = gv(`ing_${ii}`, baseCop);
       const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
-      return { ...ing, mensual: newMensual };
+      return conSlider(ing, newMensual, getMonto(ing));
     });
     let brutoTotal = 0;
     ingSim.forEach(ing => {
@@ -543,7 +596,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       // NUEVO (18-jul-2026): usa promedio mensualizado según frecuencia
       // Ej: dividendo trimestral $3M → cuenta como $1M/mes en el promedio
       // Retrocompat: ing sin `frecuencia` se asume "mensual" (idéntico al viejo)
-      const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      const montoBase = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
       brutoTotal += montoPromedioMensual({ ...ing, mensual: montoBase });
     });
 
@@ -557,8 +610,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       gasSim[cat] = (items || []).map((g, gi) => {
         if (g.sim === false) return g;
-        const newM = gv(`gf_${cat}_${gi}`, g.m || 0);
-        return { ...g, m: newM };
+        const newM = gv(`gf_${cat}_${gi}`, getMonto(g));
+        return conSlider(g, newM, getMonto(g));
       });
       gasSim[cat].forEach(g => {
         if (g.sim === false) return;
@@ -713,16 +766,16 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // Ingresos del mes: aplicar overrides de sliders y frecuencia
     const ingSim = (user.ingresos || []).map((ing, ii) => {
       if (ing.sim === false) return ing;
-      const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
+      const baseCop = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
       const overrideCop = getVal(`ing_${ii}`, baseCop);
       const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
-      return { ...ing, mensual: newMensual };
+      return conSlider(ing, newMensual, getMonto(ing));
     });
     let brutoDelMes = 0;
     ingSim.forEach(ing => {
       if (ing.sim === false) return;
-      const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-      brutoDelMes += montoDelMes({ ...ing, mensual: montoBase }, añoActual, mes);
+      const montoBase = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
+      brutoDelMes += montoDelMes(conSlider(ing, montoBase, getMonto(ing)), añoActual, mes);
     });
 
     // Gastos del mes: aportes obligatorios vs familiares
@@ -731,8 +784,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     Object.entries(user.gastos || {}).forEach(([cat, items]) => {
       const gasWithOverrides = (items || []).map((g, gi) => {
         if (g.sim === false) return g;
-        const newM = getVal(`gf_${cat}_${gi}`, g.m || 0);
-        return { ...g, m: newM };
+        const newM = getVal(`gf_${cat}_${gi}`, getMonto(g));
+        return conSlider(g, newM, getMonto(g));
       });
       gasWithOverrides.forEach(g => {
         if (g.sim === false) return;
@@ -928,14 +981,14 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       // impuesto, y no cambiaba entre Actual / Conservador / Optimista / Crisis.
       (user.ingresos || []).forEach((ing, ii) => {
         if (ing.sim === false) return;
-        const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-        ingresosMes += montoDelMes({ ...ing, mensual: ov(`ing_${ii}`, montoBase) }, año, mes);
+        const montoBase = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
+        ingresosMes += montoDelMes(conSlider(ing, ov(`ing_${ii}`, montoBase), montoBase), año, mes);
       });
       let aportesObl = 0, gastosFam = 0;
       Object.entries(user.gastos || {}).forEach(([cat, items]) => {
         (items || []).forEach((g, gi) => {
           if (g.sim === false) return;
-          const monto = montoDelMes({ ...g, m: ov(`gf_${cat}_${gi}`, g.m || 0) }, año, mes) * (g.moneda === "USD" ? trm : 1);
+          const monto = montoDelMes(conSlider(g, ov(`gf_${cat}_${gi}`, getMonto(g)), getMonto(g)), año, mes) * (g.moneda === "USD" ? trm : 1);
           if (cat === "Seguridad Social") aportesObl += monto;
           else gastosFam += monto;
         });
@@ -1067,15 +1120,15 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let bruto = 0;
     (user?.ingresos || []).forEach((ing, ii) => {
       if (ing.sim === false) return;
-      const baseCop = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-      bruto += montoDelMes({ ...ing, mensual: vg(`ing_${ii}`, baseCop) }, añoActual, mes);
+      const baseCop = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
+      bruto += montoDelMes(conSlider(ing, vg(`ing_${ii}`, baseCop), baseCop), añoActual, mes);
     });
 
     let aportes = 0, gastosFam = 0;
     Object.entries(user?.gastos || {}).forEach(([cat, items]) => {
       (items || []).forEach((g, gi) => {
         if (g.sim === false) return;
-        const monto = montoDelMes({ ...g, m: vg(`gf_${cat}_${gi}`, g.m || 0) }, añoActual, mes);
+        const monto = montoDelMes(conSlider(g, vg(`gf_${cat}_${gi}`, getMonto(g)), getMonto(g)), añoActual, mes);
         if (cat === "Seguridad Social") aportes += monto; else gastosFam += monto;
       });
     });
@@ -1188,7 +1241,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
               // (por si todos los items estaban apagados).
               const gasCats = Object.entries(user.gastos||{}).map(([cat,items])=>{
                 // Mismo criterio que ingresos: lo del mes visualizado, con slider.
-                const active = (items||[]).map((g, gi) => g.sim === false ? null : ({ ...g, _v: montoDelMes({ ...g, m: getVal("gf_"+cat+"_"+gi, g.m || 0) }, añoPdf, mesVisualizado) * (g.moneda === "USD" ? trmPdf : 1) })).filter(Boolean).filter(g => g._v > 0);
+                const active = (items||[]).map((g, gi) => g.sim === false ? null : ({ ...g, _v: montoDelMes(conSlider(g, getVal("gf_"+cat+"_"+gi, getMonto(g)), getMonto(g)), añoPdf, mesVisualizado) * (g.moneda === "USD" ? trmPdf : 1) })).filter(Boolean).filter(g => g._v > 0);
                 return {cat,total:active.reduce((s,g)=>s+g._v,0),items:active};
               }).filter(g=>g.total>0).sort((a,b)=>b.total-a.total);
               const gasRows = gasCats.map(g => {
@@ -1479,6 +1532,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
         fl={(simT.sinCambios ? metReal : simT.metMes).fl} nivel={(simT.sinCambios ? metReal : simT.metMes).nivel}
         ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
         simulado={!simT.sinCambios}
+        real={{ ip: metReal.ip, ob: metReal.ob, fl: metReal.fl }}
         nivelRealTxt={!simT.sinCambios && metReal.nivel?.nivel ? `Tu nivel real hoy, con tus datos guardados: ${LEVELS[metReal.nivel.nivel - 1]?.name || ""} (${fmtNumEs(metReal.ob > 0 ? (metReal.ip / metReal.ob) * 100 : 0, 0)} %).` : null}
         escenarioTxt={null}
         trmPendiente={metReal.trmPendiente}
@@ -2462,7 +2516,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
               .filter(([cat]) => cat !== "Seguridad Social")
               .map(([cat, its]) => [cat, (its || []).map((g, gi) => g.sim === false ? null : ({
                 nombre: g.c || g.n || g.nombre || cat,
-                valor: montoDelMes({ ...g, m: getVal(`gf_${cat}_${gi}`, g.m || 0) }, simTMes.añoActual, simTMes.mes) * (g.moneda === "USD" ? trm : 1),
+                valor: montoDelMes(conSlider(g, getVal(`gf_${cat}_${gi}`, getMonto(g)), getMonto(g)), simTMes.añoActual, simTMes.mes) * (g.moneda === "USD" ? trm : 1),
               })).filter((x) => x && x.valor > 0)]);
             const gastosCats = itemsMes.map(([cat, its]) => [NOMBRE_CAT[cat] || cat, its.reduce((s0, x) => s0 + x.valor, 0)]);
             return (
