@@ -19,7 +19,7 @@ function correoPagoUnico({ tipo, plan, meses, hasta }) {
       H("Tu plan vence en 5 días") +
       P(`Pagaste tu plan ${B(n)} con pago único y tienes acceso completo hasta el ${B(f)}.`) +
       P(`Para seguir sin interrupciones, renuévalo en un toque con PSE, Efecty o tarjeta. Lo que pagues se suma desde esa fecha: no pierdes ni un día.`) +
-      P(`El plan anual te ahorra dos meses frente a pagar mes a mes. Si no renuevas, tu cuenta pasa al plan Free y tus datos quedan guardados.`),
+      P(`El plan anual te ahorra dos meses frente a pagar mes a mes. Si no renuevas, tu cuenta queda en modo consulta: ves todos tus datos y para editar renuevas cuando quieras.`),
       { ctaText: "Renovar mi plan", ctaUrl: "https://finpathia.com/?ir=price", preheader: `Acceso completo hasta el ${f}. Renueva con PSE en un toque.` });
     return { subject, html, text: `Tu plan ${n} de FINPATHIA vence el ${f}. Renueva en https://finpathia.com/?ir=price` };
   }

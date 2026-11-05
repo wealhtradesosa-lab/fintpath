@@ -286,12 +286,12 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                       const rv = await fetchAuth("/api/mi-suscripcion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "ver" }) });
                       const v = rv.ok ? await rv.json() : {};
                       if (v.via === "pago_unico") {
-                        alert(`Tu plan es de pago único: no hay cobros automáticos que cancelar.${v.hasta ? ` Tienes acceso hasta el ${fecha(v.hasta)}.` : ""} Si no renuevas, pasa solo al plan Free y tus datos quedan guardados.`);
+                        alert(`Tu plan es de pago único: no hay cobros automáticos que cancelar.${v.hasta ? ` Tienes acceso hasta el ${fecha(v.hasta)}.` : ""} Si no renuevas, tu cuenta queda en modo consulta: ves todos tus datos y para editar renuevas.`);
                         return;
                       }
                       if (v.via === "mercado_pago") {
                         if (v.cancelada) { alert(`Tu suscripción ya está cancelada. No te vamos a cobrar más.${v.hasta ? ` Tienes acceso hasta el ${fecha(v.hasta)}.` : ""}`); return; }
-                        if (!window.confirm("¿Cancelar tu suscripción de Mercado Pago?\n\nNo te volvemos a cobrar. Sigues con acceso completo 30 días y después tu cuenta pasa al plan Free. Tus datos quedan guardados.")) return;
+                        if (!window.confirm("¿Cancelar tu suscripción de Mercado Pago?\n\nNo te volvemos a cobrar. Sigues con acceso completo 30 días. Después tu cuenta queda en modo consulta: ves todos tus datos y para editar vuelves a pagar.")) return;
                         const rc = await fetchAuth("/api/mi-suscripcion", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "cancelar" }) });
                         const c = await rc.json();
                         if (!rc.ok) { alert(c.error || "No pudimos cancelar. Escríbenos a soporte@finpathia.com."); return; }
@@ -312,7 +312,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
                       const data = await res.json();
                       if (!res.ok) {
                         if (data.error === "no_stripe_customer") {
-                          alert("No tienes una suscripción activa que cancelar. Si estás en la prueba gratis, no hay nada que hacer: al terminar pasas solo al plan Free, sin cobros. Dudas: soporte@finpathia.com.");
+                          alert("No tienes una suscripción activa que cancelar. Si estás en la prueba gratis, no hay nada que hacer: al terminar tu cuenta queda en modo consulta, sin cobros. Dudas: soporte@finpathia.com.");
                         } else if (data.error === "portal_not_configured") {
                           alert("El portal de Stripe no está configurado todavía. Soporte ya fue notificado.");
                         } else {
@@ -363,7 +363,7 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
           }}>
             <strong>Tu plan {PLAN_LABELS[plan] || plan} fue cancelado.</strong>{" "}
             Sigues teniendo acceso completo hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.
-            Después, tu cuenta vuelve al plan Free.{" "}
+            Después, tu cuenta queda en modo consulta: ves tus datos y para editar vuelves a pagar.{" "}
             {isAdmin && (
               <span>Si fue un error, vuelve a suscribirte desde Planes cuando quieras.</span>
             )}
