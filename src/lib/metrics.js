@@ -89,21 +89,73 @@ export function esSalarioEmpleado(i) {
   return fc === "LAB_SALARIO" || fc.startsWith("LAB_PRESTACIONES");
 }
 
-/**
- * "pasivo" | "activo" para el nivel de libertad.
- * 5-nov-2026 (Santiago): solo el salario de empleado (y sus prestaciones) queda
- * fuera del nivel; "aumentar cualquier ingreso fuera del salario debe subir el
- * nivel". También quedan fuera los ingresos de una sola vez (venta de un activo,
- * herencia, lotería): no se repiten cada mes. La persona puede cambiar cualquier
- * ingreso en Ingresos (rentaPasiva) y eso manda sobre la regla.
- */
-export function tipoIngreso(i) {
-  if (i?.rentaPasiva === true) return "pasivo";
-  if (i?.rentaPasiva === false) return "activo";
-  if (esSalarioEmpleado(i)) return "activo";
+// ─── La pregunta universal (5-nov-2026) ──────────────────────────────────
+// Santiago: "¿cómo lo hacemos universal y entendible?". Ya no se decide por la
+// categoría tributaria sino por una sola pregunta, igual para todos:
+//   «Si mañana dejas de trabajar, ¿este ingreso sigue llegando?»
+// Cuatro grupos, con el mismo nombre en toda la app:
+//   renta     → sigue llegando sin ti: suma a tu nivel
+//   trabajo   → depende de ti (salario de empleado y sus prestaciones): mueve
+//               tu flujo del mes, no tu nivel
+//   unica     → de una sola vez (venta de un activo, herencia): no suma
+//   pregunta  → honorarios, comisiones, negocio, "otro": depende del caso, así
+//               que se le pregunta a la persona. Mientras no responda NO suma:
+//               es peor prometer libertad a quien vive de su tiempo que pedir
+//               un clic para confirmarla.
+// La respuesta queda en el ingreso (rentaPasiva: true/false) y manda siempre.
+const CATS_DUDOSAS = new Set(["Honorarios", "Comisiones", "Freelance", "Negocio", "Otro", "Otros", "", "Consulting", "Self-employed", "Business", "Commissions"]);
+export function grupoIngreso(i) {
+  if (i?.rentaPasiva === true) return "renta";
+  if (i?.rentaPasiva === false) return esUnaSolaVez(i) ? "unica" : "trabajo";
+  if (esSalarioEmpleado(i)) return "trabajo";
+  if (esUnaSolaVez(i)) return "unica";
   const fc = String(i?.fiscalCode || "");
-  if (fc === "CAP_VENTA_ACTIVOS" || fc.startsWith("GO_")) return "activo";
-  return "pasivo";
+  const cat = String(i?.categoria || "").trim();
+  const tUS = String(i?.tipo || "").toLowerCase();
+  if (fc.startsWith("CAP_") || fc.startsWith("DIV_") || fc.startsWith("NOL_ARRIENDO_") || fc.startsWith("PEN_") || fc === "LAB_PENSIONES") return "renta";
+  if (CATS_PASIVAS.has(cat) || CATS_PASIVAS_EN.has(cat) || US_PASIVO.has(tUS)) return "renta";
+  if (fc.startsWith("LAB_HONORARIOS") || fc === "NOL_HONORARIOS_INDEP" || fc === "NOL_NEGOCIO" || fc === "NOL_OTROS" || tUS === "1099nec" || tUS === "k1") return "pregunta";
+  if (CATS_DUDOSAS.has(cat)) return i?.activoId ? "renta" : "pregunta";
+  // Cualquier otra categoría: vinculada a un activo es renta; si no, se pregunta.
+  return i?.activoId ? "renta" : "pregunta";
+}
+function esUnaSolaVez(i) {
+  const fc = String(i?.fiscalCode || "");
+  return fc === "CAP_VENTA_ACTIVOS" || fc.startsWith("GO_");
+}
+/** Textos de cada grupo (es/en), los mismos en Ingresos, simulador y PDF. */
+export const GRUPOS_INGRESO = {
+  renta: {
+    corto: { es: "Suma a tu libertad financiera", en: "Counts toward your financial freedom" },
+    es: "Este ingreso se tiene en cuenta en tu nivel de libertad financiera: sigue llegando aunque dejes de trabajar.",
+    en: "This income counts toward your financial freedom level: it keeps coming even if you stop working.",
+  },
+  trabajo: {
+    corto: { es: "No suma: es salario", en: "Doesn't count: it's a salary" },
+    es: "Este ingreso no se tiene en cuenta en tu nivel de libertad financiera, porque el objetivo de la libertad financiera es no depender de un salario. Sí suma a tu flujo de caja del mes.",
+    en: "This income doesn't count toward your financial freedom level, because the goal of financial freedom is not depending on a salary. It does add to your monthly cash flow.",
+  },
+  unica: {
+    corto: { es: "No suma: es de una sola vez", en: "Doesn't count: one-time" },
+    es: "Este ingreso es de una sola vez, así que no se tiene en cuenta en tu nivel de libertad financiera. Suma a tu flujo de caja del mes en que llega.",
+    en: "This is one-time income, so it doesn't count toward your financial freedom level. It adds to your cash flow in the month it arrives.",
+  },
+  pregunta: {
+    corto: { es: "Por confirmar", en: "To confirm" },
+    es: "Si mañana dejas de trabajar, ¿este ingreso sigue llegando? Hasta que respondas, no se tiene en cuenta en tu nivel de libertad financiera.",
+    en: "If you stopped working tomorrow, would this income keep coming? Until you answer, it doesn't count toward your financial freedom level.",
+  },
+};
+export const PREGUNTA_RENTA = { es: "Si mañana dejas de trabajar, ¿este ingreso sigue llegando?", en: "If you stopped working tomorrow, would this income keep coming?" };
+
+/** "pasivo" | "activo" para el nivel de libertad: solo la renta suma. */
+export function tipoIngreso(i) {
+  return grupoIngreso(i) === "renta" ? "pasivo" : "activo";
+}
+
+/** Ingresos activos que la persona aún no ha respondido (para la tarjeta de confirmación). */
+export function ingresosPorConfirmar(ingresos = []) {
+  return (ingresos || []).map((i, idx) => ({ i, idx })).filter(({ i }) => i && i.sim !== false && grupoIngreso(i) === "pregunta");
 }
 
 // ─── Gasto esencial vs. prescindible ──────────────────────────────────────

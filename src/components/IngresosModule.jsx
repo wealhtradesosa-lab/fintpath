@@ -18,7 +18,8 @@ import TablaMensual from "./TablaMensual";
 import FiltroListado from "./FiltroListado";
 import { CLASES_INGRESO, claseIngreso, esDelTitular } from "../lib/clasesListado.js";
 import { corteTrabajo } from "../lib/lecturasListado.js";
-import { tipoIngreso } from "../lib/metrics.js";
+import { grupoIngreso, GRUPOS_INGRESO, PREGUNTA_RENTA } from "../lib/metrics.js";
+import ConfirmarIngresos from "./ConfirmarIngresos";
 import { CorteTrabajo } from "./LecturasListado";
 import { textoRevisarPrima, MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
@@ -743,6 +744,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
           </button>
         </>}
       />
+      <ConfirmarIngresos ingresos={items} fmt={fm} onMarcar={(idx, v) => onUpdate(items.map((x, n) => (n === idx ? { ...x, rentaPasiva: v } : x)))} />
 
       {/* Banner contextual: warnings fiscales de esta sección con lista navegable */}
       {fiscalWarnings.length > 0 && (
@@ -1230,13 +1232,25 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
 
 
               <div style={{ gridColumn: "1/-1" }}>
-                <In l="¿Cuenta para tu libertad financiera?" value={form.rentaPasiva || ""} onChange={(v) => setForm((p) => ({ ...p, rentaPasiva: v }))}
-                  options={[
-                    { v: "", l: `Automático: ${tipoIngreso({ ...form, rentaPasiva: undefined }) === "pasivo" ? "sí suma" : "no suma (es salario de empleado o un ingreso de una sola vez)"}` },
-                    { v: "si", l: "Sí: llega sin mi trabajo diario (renta, comisión recurrente, regalía)" },
-                    { v: "no", l: "No: depende de que yo trabaje" },
-                  ]} />
-                <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Tu nivel de libertad mide cuánto de tus gastos pagan los ingresos que no dependen de un empleo. El salario de empleado no suma: sube tu flujo del mes, no tu nivel. No cambia cómo se calcula el impuesto.</div>
+                {(() => {
+                  // 5-nov-2026: la pregunta universal. Salario de empleado y lo de una
+                  // sola vez se responden solos; lo dudoso queda sin responder.
+                  const auto = grupoIngreso({ ...form, rentaPasiva: undefined });
+                  const actual = grupoIngreso({ ...form, rentaPasiva: form.rentaPasiva === "si" ? true : form.rentaPasiva === "no" ? false : undefined });
+                  const textoAuto = auto === "renta" ? "Sí, sigue llegando (según la categoría)"
+                    : auto === "trabajo" ? "No: es salario de empleado"
+                    : auto === "unica" ? "No: es de una sola vez"
+                    : "Sin responder";
+                  return (<>
+                    <In l={PREGUNTA_RENTA.es} value={form.rentaPasiva || ""} onChange={(v) => setForm((p) => ({ ...p, rentaPasiva: v }))}
+                      options={[
+                        { v: "", l: textoAuto },
+                        { v: "si", l: "Sí, sigue llegando aunque yo no trabaje" },
+                        { v: "no", l: "No, depende de mi trabajo" },
+                      ]} />
+                    <div style={{ fontSize: 12, color: actual === "renta" ? T.green : actual === "pregunta" ? "#f59e0b" : T.txt3, marginTop: 6, lineHeight: 1.5 }}>{GRUPOS_INGRESO[actual].es}</div>
+                  </>);
+                })()}
               </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"Personal"},{v:"na",l:"N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"":"")+o.name}))]} /></div>
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />

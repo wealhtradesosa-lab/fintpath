@@ -1,7 +1,8 @@
 import { useState, useMemo, useCallback } from "react";
 import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
-import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso, esSalarioEmpleado } from "../lib/metrics.js";
+import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso, grupoIngreso, GRUPOS_INGRESO, PREGUNTA_RENTA } from "../lib/metrics.js";
+import ConfirmarIngresos from "./ConfirmarIngresos";
 import Disclaimer from "./Disclaimer";
 import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
@@ -251,6 +252,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
             Tu ingreso pasivo (bruto): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
           </div>
           <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 6 }}>Tu nivel de libertad financiera = lo que te pagan tus rentas ÷ lo que gastas. El salario paga el mes; las rentas compran tu libertad.</div>
           {/* 5-nov-2026 (Santiago: "si subo o bajo ingresos o gastos esto debería
               moverse en consecuencia"; "debería moverse con el cash flow"). Con
               cambios, se ve qué movió cada slider: cobertura, rentas, gastos y el
@@ -281,7 +283,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
                   );
                 })}
                 <div style={{ padding: "6px 12px", fontSize: 11, color: T.txt3, borderTop: "1px solid " + T.border, lineHeight: 1.5 }}>
-                  La barra se mueve con tus rentas y tus gastos. El sueldo y otros ingresos activos mueven el flujo del mes: si te sobra, lo que inviertas se vuelve renta y ahí sí sube el nivel.
+                  La barra se mueve con tus rentas, tus gastos y tus cuotas. El salario no se tiene en cuenta en tu nivel de libertad financiera (el objetivo es no depender de él): mueve tu flujo del mes, y lo que te sobre e inviertas se vuelve renta.
                 </div>
               </div>
             );
@@ -460,7 +462,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
 // ═══════════════════════════════════════
 // MAIN SIMULATOR
 // ═══════════════════════════════════════
-export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange, trmReal}) {
+export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onNavigate, onInflacionChange, trmReal, onMarcarRenta }) {
 
   // 30-ago-2026 — CAUSA RAIZ de "algo salió mal" al abrir el simulador:
   // ReferenceError: trm is not defined.
@@ -1542,6 +1544,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
           muevo los sliders y eso no se mueve"). Reemplaza la decisión del 24-oct:
           con cambios, la barra muestra el escenario y el nivel real queda escrito
           como referencia; sin cambios, es el nivel real. */}
+      <ConfirmarIngresos ingresos={user.ingresos} fmt={fm} onMarcar={onMarcarRenta} />
       <FreedomBarLive ip={(simT.sinCambios ? metReal : simT.metMes).ip} ob={(simT.sinCambios ? metReal : simT.metMes).ob}
         fl={(simT.sinCambios ? metReal : simT.metMes).fl} nivel={(simT.sinCambios ? metReal : simT.metMes).nivel}
         ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
@@ -2150,26 +2153,28 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
                               <div>
                                 <div style={{fontSize:13,fontWeight:700}}>{ing.nombre||"Ingreso"}</div>
                                 <div style={{fontSize:11,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+fmtTasaEs(simTasa)+" anual":""}</div>
-                                {/* 5-nov-2026: si este ingreso cuenta en tu nivel de libertad (llega sin tu trabajo).
-                                    Aquí se prueba; para dejarlo fijo se marca en Ingresos. */}
+                                {/* 5-nov-2026: la pregunta universal. «Si mañana dejas de trabajar, ¿este
+                                    ingreso sigue llegando?» Mismo texto que en Ingresos. */}
                                 {(() => {
-                                  // Santiago: "cuando alguien ponga salario, que quede claro que no
-                                  // suma en el nivel; el aumento del salario sí aumenta el cash flow".
-                                  if (esSalarioEmpleado(ing) && getVal("pas_"+safeIdx, null) == null && ing.rentaPasiva !== true) return (
-                                    <div style={{ marginTop: 4, fontSize: 11, color: T.txt3, lineHeight: 1.4 }}>
-                                      <span style={{ fontWeight: 600, border: "1px solid " + T.border, borderRadius: 999, padding: "2px 10px", display: "inline-block" }}>No suma a tu nivel de libertad: es salario</span>
-                                      <div style={{ marginTop: 2 }}>Subirlo aumenta tu flujo del mes, no tu nivel.</div>
+                                  const v = getVal("pas_"+safeIdx, null);
+                                  const g = grupoIngreso(v == null ? ing : { ...ing, rentaPasiva: v === "si" });
+                                  const color = g === "renta" ? T.gn : g === "pregunta" ? "#f59e0b" : T.txt3;
+                                  const chip = { fontWeight: 600, border: "1px solid " + (g === "renta" ? T.gn : g === "pregunta" ? "rgba(245,158,11,0.5)" : T.border), borderRadius: 999, padding: "2px 10px", display: "inline-block", color };
+                                  if (g === "pregunta" && onMarcarRenta) return (
+                                    <div style={{ marginTop: 4, fontSize: 11, lineHeight: 1.4, maxWidth: 360 }}>
+                                      <span style={chip}>{GRUPOS_INGRESO.pregunta.corto.es}</span>
+                                      <div style={{ marginTop: 4, color: T.txt2 }}>{PREGUNTA_RENTA.es}</div>
+                                      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                                        <button type="button" onClick={() => onMarcarRenta(safeIdx, true)} style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, color: T.txt }}>Sí, sigue llegando</button>
+                                        <button type="button" onClick={() => onMarcarRenta(safeIdx, false)} style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "3px 10px", cursor: "pointer", background: "transparent", border: "1px solid " + T.border, color: T.txt }}>No, depende de mi trabajo</button>
+                                      </div>
                                     </div>
                                   );
-                                  const auto = tipoIngreso(ing) === "pasivo";
-                                  const v = getVal("pas_"+safeIdx, null);
-                                  const cuenta = v == null ? auto : v === "si";
                                   return (
-                                    <button type="button" onClick={() => setVal("pas_"+safeIdx, cuenta ? "no" : "si")}
-                                      title="Cuenta en tu nivel si sigue llegando aunque dejes de trabajar. Para dejarlo fijo, márcalo en Ingresos."
-                                      style={{ marginTop: 4, fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "2px 10px", cursor: "pointer", background: "transparent", border: "1px solid " + (cuenta ? T.gn : T.border), color: cuenta ? T.gn : T.txt3 }}>
-                                      {cuenta ? "Suma a tu nivel de libertad" : "No suma a tu nivel (depende de tu trabajo)"}
-                                    </button>
+                                    <div style={{ marginTop: 4, fontSize: 11, lineHeight: 1.4, maxWidth: 360 }}>
+                                      <span style={chip}>{GRUPOS_INGRESO[g].corto.es}</span>
+                                      {g !== "renta" && <div style={{ marginTop: 2, color: T.txt3 }}>{GRUPOS_INGRESO[g].es}</div>}
+                                    </div>
                                   );
                                 })()}
                               </div>

@@ -75,7 +75,7 @@ describe("tipos de EE. UU. en el motor compartido", () => {
     expect(tipoIngreso({ tipo: "qual_div" })).toBe("pasivo");
     expect(tipoIngreso({ tipo: "social_sec" })).toBe("pasivo");
     expect(esLaboral({ tipo: "w2" })).toBe(true);
-    expect(tipoIngreso({ tipo: "1099nec" })).toBe("pasivo"); // 5-nov-2026: solo el W-2 (salario) queda fuera del nivel
+    expect(tipoIngreso({ tipo: "1099nec" })).toBe("activo"); // 5-nov-2026: se pregunta; sin respuesta no suma
     expect(tipoIngreso({ tipo: "w2" })).toBe("activo");
     expect(tipoIngreso({ categoria: "Rental" })).toBe("pasivo");
   });

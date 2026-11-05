@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { tipoIngreso } from "../../src/lib/metrics.js";
+import { tipoIngreso, grupoIngreso } from "../../src/lib/metrics.js";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
 
 describe("tipoIngreso: solo el salario de empleado queda fuera del nivel (5-nov-2026)", () => {
@@ -9,11 +9,17 @@ describe("tipoIngreso: solo el salario de empleado queda fuera del nivel (5-nov-
     for (const fiscalCode of ["LAB_SALARIO", "LAB_PRESTACIONES_PRIMA", "LAB_PRESTACIONES_CESANTIAS"])
       expect(tipoIngreso({ fiscalCode, activoId: "a1" })).toBe("activo");
   });
-  it("honorarios, comisiones y negocio sí suman (no son salario)", () => {
-    expect(tipoIngreso({ categoria: "Honorarios", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS" })).toBe("pasivo");
-    expect(tipoIngreso({ fiscalCode: "NOL_HONORARIOS_INDEP" })).toBe("pasivo");
-    expect(tipoIngreso({ categoria: "Negocio" })).toBe("pasivo");
-    expect(tipoIngreso({ categoria: "Otro" })).toBe("pasivo");
+  it("honorarios, comisiones, negocio y «otro» se preguntan: sin respuesta no suman; con «sí», suman", () => {
+    for (const x of [{ categoria: "Honorarios", fiscalCode: "LAB_HONORARIOS_SIN_EMPLEADOS" }, { fiscalCode: "NOL_HONORARIOS_INDEP" }, { categoria: "Negocio" }, { categoria: "Otro" }]) {
+      expect(grupoIngreso(x)).toBe("pregunta");
+      expect(tipoIngreso(x)).toBe("activo");
+      expect(tipoIngreso({ ...x, rentaPasiva: true })).toBe("pasivo");
+    }
+  });
+  it("salario es trabajo y lo de una sola vez es «unica»", () => {
+    expect(grupoIngreso({ categoria: "Salario", fiscalCode: "LAB_SALARIO" })).toBe("trabajo");
+    expect(grupoIngreso({ fiscalCode: "CAP_VENTA_ACTIVOS" })).toBe("unica");
+    expect(grupoIngreso({ categoria: "Arriendo" })).toBe("renta");
   });
   it("lo de una sola vez no suma", () => {
     expect(tipoIngreso({ fiscalCode: "CAP_VENTA_ACTIVOS" })).toBe("activo");
