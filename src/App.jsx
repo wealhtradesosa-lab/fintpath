@@ -765,6 +765,7 @@ export default function FinPath(){
   // Default 'admin' garantiza que el flujo legacy (sin provider envolvente)
   // o el primer mount (antes de que useAccount resuelva) NO bloquee saves.
   const roleRef=useRef("admin");
+  const modoConsultaRef=useRef(false);
   useEffect(()=>{accountIdRef.current=accountId;isLegacyRef.current=isLegacy;roleRef.current=role||"admin";},[accountId,isLegacy,role]);
   // Handler del AccountSwitcher (Fase 2 commit 2): persistir elección,
   // limpiar cache local de la cuenta vieja, forzar refetch del hook, y
@@ -1022,6 +1023,9 @@ export default function FinPath(){
     // (no en modo asesor-viendo-cliente, donde el save va contra el row del
     // cliente vía advisor_client_data y no aplica el flujo multi-cuenta).
     const isAdvisorViewingClient=isAdvisor&&viewMode==="client"&&currentClientId;
+    // 5-nov-2026 (Santiago: "si no paga debería tener limitación de uso"). En modo consulta no se
+    // guarda nada en el servidor, aunque una sección cambie los datos sin pasar por upd().
+    if(!isAdvisorViewingClient&&modoConsultaRef.current)return;
     if(isAdvisorViewingClient){
       sS(u,targetId);
     }else{
@@ -1810,6 +1814,7 @@ export default function FinPath(){
   // (pago único sin renovar, suscripción cancelada) también queda en consulta, no en un Free con funciones.
   const planVencido=subscriptionStatus==="expired";
   const modoConsulta=!isAdmin&&plan==="free"&&!u?.p?.anonymous&&(planVencido||(!!trialEnd&&!trialActive&&String(trialEnd).slice(0,10)>=CONSULTA_DESDE));
+  modoConsultaRef.current=modoConsulta;
   const ultimoNivelRef=useRef((()=>{try{return JSON.parse(localStorage.getItem("fp3_ultimo_nivel")||"null")}catch{return null}})());
   // 29-oct-2026: el impuesto de toda la plataforma es el «referente»: anclado en la
   // declaración de cada titular cuando la hay (ver lib/impuestoReferente.js).
