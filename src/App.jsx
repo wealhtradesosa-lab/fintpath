@@ -649,6 +649,9 @@ export default function FinPath(){
   // abrir una ventana recarga la página (main.jsx) y volvía al Dashboard. Ahora vuelve a la misma sección.
   const[pg,setPg]=useState(()=>{try{const v=sessionStorage.getItem("fp3_volver_a");if(v){sessionStorage.removeItem("fp3_volver_a");return v}}catch{}return "dash"});
   useEffect(()=>{try{window.__fpPg=pg}catch{}},[pg]);
+  // 5-nov-2026 · Ganchos para la auditoría automática en celular (Playwright): ir a una sección y
+  // cargar los datos de ejemplo (solo en memoria; el modo demo no guarda nada).
+  useEffect(()=>{try{window.__fpQA={ir:(x)=>setPg(x),demo:()=>demoRef.current&&demoRef.current()}}catch{}},[]);
   const[md,setMd]=useState(null);
   const[f,sF]=useState({});
   const[aM,sAM]=useState("login");
@@ -1400,6 +1403,7 @@ export default function FinPath(){
     });
     setU(real);setPg("dash");showToast("Listo — volviste a tu cuenta");
   };
+  const demoRef=useRef(null);
   const demo=()=>{showToast("Datos de ejemplo cargados");window.gtag?.("event","demo_opened",{method:"button"});guardarReal(realAntesDemoRef,uRef.current);setU(p=>{
     // 25-jul-2026 (Santiago: "si la gente ingresa y ve un nombre que no es, eso
     // es extraño"): antes la demo pisaba SIEMPRE el perfil con "Pedro Pérez" y
@@ -1571,6 +1575,7 @@ export default function FinPath(){
   // simulaciones del año entrante. Cifras verosímiles, no reales; nombres genéricos.
   // Categorías y tipos: claves canónicas (Salario/Arriendo… y tipo del IRS) para que
   // las pantallas de EE. UU. y las compartidas lean lo mismo.
+  demoRef.current=demo;
   const demoUS=()=>{
     guardarReal(realAntesDemoRef,uRef.current);
     window.gtag?.("event","demo_opened",{method:"button",pais:"US"});
