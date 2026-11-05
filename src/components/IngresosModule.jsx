@@ -18,6 +18,7 @@ import TablaMensual from "./TablaMensual";
 import FiltroListado from "./FiltroListado";
 import { CLASES_INGRESO, claseIngreso, esDelTitular } from "../lib/clasesListado.js";
 import { corteTrabajo } from "../lib/lecturasListado.js";
+import { tipoIngreso } from "../lib/metrics.js";
 import { CorteTrabajo } from "./LecturasListado";
 import { textoRevisarPrima, MARCA_REVISAR_PRIMA, MARCA_SUGERIR_PRIMA, debeSugerirPrimaBono, descartarSugerenciaPrimaBono, esPrimaBono, normalizarPrimaBono, mensualPrimaBono, notaPrimaBono, ayudaPrimaBono, labelCategoria } from "../lib/primaBono.js";
 import { togglePagado, getFrecuencia, estaPagadoEnAño, factorDeFrecuencia, labelVigenciaBadge, totalAnualItem, getMontosMensuales, promedioMesActivo, mesesVaciosFuturos, montoPromedioMensual, montoDelMes } from "../lib/flowHelpers.js";
@@ -217,7 +218,7 @@ export const DEFAULT_FISCAL_CODE = {
 
 // Estado inicial del form (centralizado para evitar repetición y drift)
 const INITIAL_FORM = {
-  nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO",
+  nombre: "", categoria: "Salario", fiscalCode: "LAB_SALARIO", rentaPasiva: "",
   mensual: "", tipo: "fijo", fuente: "",
   capital: "", tasa: "", tasaModo: "anual", moneda: "COP", owner: "",
   // 14-sep-2026 — Vínculo ingreso → activo.
@@ -484,6 +485,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // respétalos", creyendo que el arreglo es un dato bueno.
     // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
     const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
+    // 5-nov-2026: "¿cuenta para tu libertad financiera?" — automático no se guarda.
+    if (form.rentaPasiva === "si") item.rentaPasiva = true;
+    else if (form.rentaPasiva === "no") item.rentaPasiva = false;
+    else delete item.rentaPasiva;
     // Prima/Bono: siempre total anual (taxCO lo toma una sola vez; el flujo ÷ 12).
     if (esPrimaBono(item)) { Object.assign(item, normalizarPrimaBono(item)); delete item.pagos; delete item.desdeMes; delete item.hastaMes; item.migPrimaBonoAnual = true; item.revisarFrecuencia = false; item.mesSupuesto = false; }
     // Commit 1.5: persistir aportes obligatorios en shape anidado, sólo para Salario
@@ -631,6 +636,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       // donde editar un gasto en USD lo devolvía a COP.
       // En GastosModule sí lo cubrí al implementarlo; acá se me pasó.
       activoId: item.activoId || "",
+      rentaPasiva: item.rentaPasiva === true ? "si" : item.rentaPasiva === false ? "no" : "",
       nombre: item.nombre,
       categoria: item.categoria,
       fiscalCode: item.fiscalCode || DEFAULT_FISCAL_CODE[item.categoria] || "NOL_OTROS",
@@ -1223,6 +1229,15 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               )}
 
 
+              <div style={{ gridColumn: "1/-1" }}>
+                <In l="¿Cuenta para tu libertad financiera?" value={form.rentaPasiva || ""} onChange={(v) => setForm((p) => ({ ...p, rentaPasiva: v }))}
+                  options={[
+                    { v: "", l: `Automático, según la categoría (hoy: ${tipoIngreso({ ...form, rentaPasiva: undefined }) === "pasivo" ? "sí cuenta" : "no cuenta"})` },
+                    { v: "si", l: "Sí: llega sin mi trabajo diario (renta, comisión recurrente, regalía)" },
+                    { v: "no", l: "No: depende de que yo trabaje" },
+                  ]} />
+                <div style={{ fontSize: 11, color: T.txt3, marginTop: 4, lineHeight: 1.5 }}>Tu nivel de libertad mide cuánto de tus gastos pagan los ingresos que siguen llegando si dejas de trabajar. No cambia cómo se calcula el impuesto.</div>
+              </div>
               <div style={{ gridColumn: "1/-1" }}><In l="Propietario fiscal" value={form.owner} onChange={(v) => setForm((p) => ({ ...p, owner: v }))} options={[{v:"",l:"— Sin asignar (no calcula impuesto)"},{v:"own_1",l:"Personal"},{v:"na",l:"N/A — No aplica (exterior)"},...(owners||[]).filter(o=>o.id!=="own_1").map(o=>({v:o.id,l:(o.type==="juridica"?"":"")+o.name}))]} /></div>
               <In l="Moneda" value={form.moneda} onChange={(v)=>setForm(p=>({...p,moneda:v}))} options={["COP","USD"]} />
 

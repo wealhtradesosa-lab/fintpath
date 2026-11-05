@@ -71,6 +71,13 @@ export function esLaboral(i) {
 
 /** "pasivo" | "activo". Todo lo que no es claramente pasivo es activo. */
 export function tipoIngreso(i) {
+  // 5-nov-2026 (Santiago: "los fee distribuidores son ingresos pasivos por unas
+  // asesorías; pensemos en una solución universal"). La categoría tributaria no
+  // siempre dice si un ingreso llega sin tu trabajo diario (un honorario puede
+  // ser una comisión recurrente). La persona lo marca en Ingresos y manda sobre
+  // la regla automática: rentaPasiva true = cuenta en tu nivel, false = no.
+  if (i?.rentaPasiva === true) return "pasivo";
+  if (i?.rentaPasiva === false) return "activo";
   if (esLaboral(i)) return "activo";
   const fc = String(i?.fiscalCode || "");
   if (fc) {

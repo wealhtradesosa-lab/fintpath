@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
-import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs } from "../lib/metrics.js";
+import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso } from "../lib/metrics.js";
 import Disclaimer from "./Disclaimer";
 import { metricasReales, impuestoBase, pistaEsenciales, etiquetaEscenario, vistaNivel, estadoNivel, llevaCheck, pctPiso, TOPE_BARRA, metaNivel, ingresosOcultos, sumaOcultos, leerConfirmados, confirmarRenta } from "../lib/nivelVista.js";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
@@ -588,7 +588,11 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const baseCop = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
       const overrideCop = gv(`ing_${ii}`, baseCop);
       const newMensual = ing.moneda === "USD" ? (overrideCop / trm) : overrideCop;
-      return conSlider(ing, newMensual, getMonto(ing));
+      const it = conSlider(ing, newMensual, getMonto(ing));
+      // 5-nov-2026: «Cuenta en tu nivel» probado en el simulador (pas_<idx>).
+      const pas = getVal(`pas_${ii}`, null);
+      if (pas != null && (pas === "si") !== (tipoIngreso(ing) === "pasivo")) { cambio = true; return { ...it, rentaPasiva: pas === "si" }; }
+      return it;
     });
     let brutoTotal = 0;
     ingSim.forEach(ing => {
@@ -2146,6 +2150,30 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
                               <div>
                                 <div style={{fontSize:13,fontWeight:700}}>{ing.nombre||"Ingreso"}</div>
                                 <div style={{fontSize:11,color:T.txt3}}>{ing.categoria||""}{simTasa>0?" • "+fmtTasaEs(simTasa)+" anual":""}</div>
+                                {/* 5-nov-2026: si este ingreso cuenta en tu nivel de libertad (llega sin tu trabajo).
+                                    Aquí se prueba; para dejarlo fijo se marca en Ingresos. */}
+                                {(() => {
+                                  // Santiago: "cuando alguien ponga salario, que quede claro que no
+                                  // suma en el nivel; el aumento del salario sí aumenta el cash flow".
+                                  const fcS = String(ing.fiscalCode || "");
+                                  const esSalario = fcS.startsWith("LAB_SALARIO") || fcS.startsWith("LAB_PRESTACIONES") || ["Salario", "Cesantías", "Prima", "Prima de servicios", "Intereses cesantías", "Vacaciones", "Horas extra"].includes(String(ing.categoria || "").trim());
+                                  if (esSalario) return (
+                                    <div style={{ marginTop: 4, fontSize: 11, color: T.txt3, lineHeight: 1.4 }}>
+                                      <span style={{ fontWeight: 600, border: "1px solid " + T.border, borderRadius: 999, padding: "2px 10px", display: "inline-block" }}>No suma a tu nivel de libertad: es salario</span>
+                                      <div style={{ marginTop: 2 }}>Subirlo aumenta tu flujo del mes, no tu nivel.</div>
+                                    </div>
+                                  );
+                                  const auto = tipoIngreso(ing) === "pasivo";
+                                  const v = getVal("pas_"+safeIdx, null);
+                                  const cuenta = v == null ? auto : v === "si";
+                                  return (
+                                    <button type="button" onClick={() => setVal("pas_"+safeIdx, cuenta ? "no" : "si")}
+                                      title="Cuenta en tu nivel si sigue llegando aunque dejes de trabajar. Para dejarlo fijo, márcalo en Ingresos."
+                                      style={{ marginTop: 4, fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "2px 10px", cursor: "pointer", background: "transparent", border: "1px solid " + (cuenta ? T.gn : T.border), color: cuenta ? T.gn : T.txt3 }}>
+                                      {cuenta ? "Suma a tu nivel de libertad" : "No suma a tu nivel (depende de tu trabajo)"}
+                                    </button>
+                                  );
+                                })()}
                               </div>
                               <div style={{textAlign:"right"}}>
                                 <div style={{fontSize:16,fontWeight:700,color:"#94a3b8"}}>{fm(simRenta)}<span style={{fontSize:11,fontWeight:400,color:T.txt3}}>/mes</span></div>
