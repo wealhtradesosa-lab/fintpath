@@ -70,7 +70,7 @@ export const F = {
   h3:      { fontSize: 13, fontWeight: 700, color: C.text, margin: 0, lineHeight: 1.4 },
   body:    { fontSize: 13, fontWeight: 400, color: C.muted, margin: 0, lineHeight: 1.5 },
   caption: { fontSize: 11, fontWeight: 400, color: C.subtle, margin: 0, lineHeight: 1.4 },
-  label:   { fontSize: 10, fontWeight: 600, color: C.subtle, margin: 0, lineHeight: 1.4, textTransform: "uppercase", letterSpacing: 0.5 },
+  label:   { fontSize: 11, fontWeight: 600, color: C.subtle, margin: 0, lineHeight: 1.4, textTransform: "uppercase", letterSpacing: 0.5 },
   mono:    { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 14, fontWeight: 700 },
   monoLg:  { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 18, fontWeight: 700 },
   monoXl:  { fontFamily: "ui-monospace, 'SF Mono', Menlo, monospace", fontSize: 22, fontWeight: 700 },

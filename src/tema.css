@@ -123,3 +123,21 @@ html[data-tema="claro"] .fp-app { --fp-azul: #1d5fd6; --inf-dorado-tx: #7d6218; 
 .fp-range::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 3px solid var(--fp-r-c, #00c805); box-shadow: 0 1px 3px rgba(0,0,0,.35); }
 .fp-range::-moz-range-track { background: transparent; }
 .fp-range:focus-visible { box-shadow: 0 0 0 3px rgba(var(--fp-ink), 0.18); }
+
+/* ═══ 5-nov-2026 · Auditoría móvil (Santiago: "auditoría completa de que el sitio esté bien
+   diagramado para celular") ═══ */
+@media (max-width: 640px) {
+  /* Encabezados de sección: los botones van debajo del título, no al lado (el título y el
+     resumen quedaban en una columna angosta, una palabra por línea). */
+  .fp-ph { grid-template-columns: 1fr !important; gap: 14px !important; align-items: start !important; }
+  /* Tablas de Ingresos, Gastos y Deudas: el nombre queda fijo a la izquierda y se ocultan
+     las columnas de clasificación, para que el monto se vea sin deslizar. */
+  .fp-tm th:first-child, .fp-tm td:first-child:not([colspan]) { position: sticky; left: 0; z-index: 1; background: var(--fp-card); max-width: 48vw; }
+  .fp-tm-ing th:nth-child(2), .fp-tm-ing td:nth-child(2):not([colspan]), .fp-tm-ing th:nth-child(3), .fp-tm-ing td:nth-child(3):not([colspan]),
+  .fp-tm-gas th:nth-child(2), .fp-tm-gas td:nth-child(2):not([colspan]), .fp-tm-gas th:nth-child(3), .fp-tm-gas td:nth-child(3):not([colspan]), .fp-tm-gas th:nth-child(4), .fp-tm-gas td:nth-child(4):not([colspan]),
+  .fp-tm-deu th:nth-child(2), .fp-tm-deu td:nth-child(2):not([colspan]) { display: none; }
+  .fp-tm { min-width: 0 !important; }
+  /* Campos nativos sin estilo (números, fechas, listas) quedaban blancos en el tema oscuro. */
+  .fp-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([style*="background"]),
+  .fp-app select:not([style*="background"]) { background: var(--fp-raised); color: var(--fp-txt); border: 1px solid rgba(var(--fp-ink),0.15); border-radius: 8px; }
+}

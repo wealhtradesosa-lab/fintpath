@@ -214,7 +214,7 @@ export default function PWAInstallPrompt() {
               Instalar FINPATHIA
             </div>
             <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.3 }}>
-              {isOnIOS ? "Tenela como app en tu iPhone" : "Acceso directo desde tu pantalla de inicio"}
+              {isOnIOS ? "Tenla como app en tu iPhone" : "Acceso directo desde tu pantalla de inicio"}
             </div>
           </div>
 

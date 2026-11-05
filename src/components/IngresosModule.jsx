@@ -868,7 +868,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
               total={items.length} filtrados={allItems.length} />
             <FiltroListado owners={owners || []} titular={titularFiltro} onTitular={setTitularFiltro} T={T}
               hayCerrados={Object.values(cerrados).some(Boolean)} onAlternar={() => setCerrados(Object.values(cerrados).some(Boolean) ? {} : Object.fromEntries(CLASES_INGRESO.map((c) => ["__h_" + c.id, true])))} />
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
+            <table className="fp-tm fp-tm-ing" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
               <thead><tr>
                 {/* 3-nov-2026: lo que entra este mes y el promedio del año, como en Egresos. */}
                 {["Nombre", "Categoría", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio del año", "Capital / Fuente", "On/Off"].map((h, k) => (

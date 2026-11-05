@@ -739,7 +739,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
       {esc && (<>
         {/* Tira fija: el resultado a la vista mientras se edita abajo (10-oct-2026,
             Santiago: "uno le da Terminar y como que no pasa nada"). */}
-        {!veredictoVisible && <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", width: "min(720px, calc(100vw - 32px))", zIndex: 500, padding: "8px 12px", background: C.surface, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(255,80,0,0.25)"}`, borderRadius: R.md, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)" }}>
+        {/* 5-nov-2026 (auditoría móvil): abajo, no arriba; arriba tapaba la barra de la app. */}{!veredictoVisible && <div style={{ position: "fixed", bottom: "max(12px, env(safe-area-inset-bottom))", left: "50%", transform: "translateX(-50%)", width: "min(720px, calc(100vw - 32px))", zIndex: 500, padding: "8px 12px", background: C.surface, border: `1px solid ${vista.queda >= 0 ? Cα.ok25 : "rgba(255,80,0,0.25)"}`, borderRadius: R.md, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, boxShadow: "0 6px 20px rgba(0,0,0,0.35)" }}>
           <div style={{ ...F.caption, minWidth: 0 }}>
             <b style={{ color: C.text }}>{foco ? `${mesL(foco.mes)} ${año}` : tx(`Mes típico ${año}`, `Typical month ${año}`)}</b> · {cambios.length} {cambios.length === 1 ? tx("cambio", "change") : tx("cambios", "changes")}
           </div>

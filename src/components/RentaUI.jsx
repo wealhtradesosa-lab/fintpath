@@ -62,7 +62,7 @@ export function SelectorTitular({ owners, value, onChange, conGrupo = true }) {
           // 5-nov-2026 (Santiago: "para saber cuál está presionada, marcar con verde").
           // Antes el seleccionado era azul claro y tema.css lo volvía transparente:
           // no se distinguía. Ahora verde del tema, con borde de 2px y un check.
-          style={{ textAlign: "left", cursor: "pointer", minWidth: 180, padding: value === it.id ? "9px 13px" : "10px 14px", borderRadius: R.lg,
+          style={{ textAlign: "left", cursor: "pointer", minWidth: 180, flex: "1 1 180px", padding: value === it.id ? "9px 13px" : "10px 14px", borderRadius: R.lg,
             border: value === it.id ? "2px solid var(--fp-pos)" : `1px solid ${C.border}`, background: value === it.id ? "color-mix(in srgb, var(--fp-pos) 12%, transparent)" : C.raised, color: C.text }}>
           <div style={{ ...F.h3, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>{value === it.id && <span aria-hidden style={{ color: "var(--fp-pos)" }}>✓</span>}{it.nombre}</div>
           <div style={F.caption}>{it.sub}</div>

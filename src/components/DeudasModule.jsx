@@ -432,7 +432,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       {/* Table */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
+          <table className="fp-tm fp-tm-deu" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: T.txt }}>
             <thead>
               <tr>
                 {/* 3-nov-2026: la cuota de este mes y la cuota promedio del año (abonos, cuotas que

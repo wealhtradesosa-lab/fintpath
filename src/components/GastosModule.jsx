@@ -671,7 +671,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           total={allItems.length} filtrados={itemsFiltrados.length} />
         <FiltroListado owners={owners || []} titular={titularFiltro} onTitular={setTitularFiltro} T={T}
           hayCerrados={Object.values(cerrados).some(Boolean)} onAlternar={() => setCerrados(Object.values(cerrados).some(Boolean) ? {} : Object.fromEntries(CLASES_GASTO.map((c) => ["__h_" + c.id, true])))} />
-        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600, color: T.txt }}>
+        <div style={{ overflowX: "auto" }}><table className="fp-tm fp-tm-gas" style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 600, color: T.txt }}>
           <thead>
             <tr>
               {/* 3-nov-2026 (Santiago: "uno debería tener promedio año y valor mes actual: el

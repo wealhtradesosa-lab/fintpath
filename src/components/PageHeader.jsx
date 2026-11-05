@@ -36,7 +36,7 @@ export default function PageHeader({
     : "clamp(1.625rem, 4vw, 2rem)"; // 31-oct-2026: 32 px máx (crítica de diseño; antes 56)
 
   return (
-    <div style={{
+    <div className="fp-ph" style={{
       marginBottom: compact ? "clamp(16px, 4vw, 24px)" : "clamp(20px, 5vw, 36px)",
       paddingBottom: compact ? 0 : 4,
       display: "grid",
