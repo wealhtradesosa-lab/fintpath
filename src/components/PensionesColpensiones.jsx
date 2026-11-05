@@ -212,7 +212,7 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
         label="Pensiones"
         title="Cálculo actuarial"
         subtitle={`Ley 100/1993 · Ley 797/2003 · SMMLV 2026: ${fCOP(SM_2026)}`}
-        rightSlot={<button onClick={() => { document.body.setAttribute("data-date", new Date().toLocaleDateString("es-CO")); window.print(); }} style={{ background: T.blue, color: "#fff", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>Exportar PDF</button>}
+        
       />
 
             <div style={{ padding: "10px 14px", marginBottom: 16, borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", color: T.txt2, fontSize: 13, lineHeight: 1.5 }}>
