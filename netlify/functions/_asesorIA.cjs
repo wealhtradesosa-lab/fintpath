@@ -271,7 +271,10 @@ function mensajeCuotaAsesor({ tope, plan, idioma = "es", ahora = new Date() } = 
   // El mes de la cuota se corta en hora de Colombia (ver _cuotaIA).
   const col = new Date(ahora.getTime() - 5 * 3600000);
   const sig = new Date(Date.UTC(col.getUTCFullYear(), col.getUTCMonth() + 1, 1));
-  const enPago = plan && plan !== "free";
+  const enPago = plan && plan !== "free" && plan !== "prueba";
+  // 5-nov-2026: sin pago no hay IA; en la prueba, un tope chico.
+  if (plan === "free") return idioma === "en" ? "The AI Advisor is included in the Pro plan. Subscribe to use it." : "El Asesor IA está incluido en el plan Pro. Suscríbete para usarlo.";
+  if (plan === "prueba") return idioma === "en" ? `You've used the ${tope} AI requests included in your free trial. Subscribe to Pro to get 150 a month.` : `Usaste las ${tope} consultas con IA de tu prueba gratis. Suscríbete al Pro y tienes 150 al mes.`;
   if (idioma === "en") {
     return `You've used your ${tope} AI requests for this month (advisor questions and AI document reads). They renew on ${sig.toISOString().slice(0, 10)}.` +
       (enPago ? " If you need more, write to soporte@finpathia.com." : " Upgrade your plan to get more.");

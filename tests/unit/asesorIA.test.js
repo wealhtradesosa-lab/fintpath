@@ -147,8 +147,8 @@ describe("cuota", () => {
     expect(A.resumenCuota({ permitido: true, usos: 0, tope: 10, motivo: "rpc_fallo" })).toEqual({ permitido: true, restantes: null, tope: 10 });
   });
   it("la prueba de 14 días cuenta como Pro", () => {
-    expect(C.planEfectivo({ planCuenta: "free", trialEnd: "2026-11-10", hoy: "2026-11-02" })).toBe("pro");
-    expect(C.planEfectivo({ planCuenta: "free", trialEnd: "2026-11-02", hoy: "2026-11-02" })).toBe("pro");
+    expect(C.planEfectivo({ planCuenta: "free", trialEnd: "2026-11-10", hoy: "2026-11-02" })).toBe("prueba");
+    expect(C.planEfectivo({ planCuenta: "free", trialEnd: "2026-11-02", hoy: "2026-11-02" })).toBe("prueba");
     expect(C.planEfectivo({ planCuenta: "free", trialEnd: "2026-11-01", hoy: "2026-11-02" })).toBe("free");
     expect(C.planEfectivo({ planCuenta: "free", trialEnd: "basura", hoy: "2026-11-02" })).toBe("free");
     expect(C.planEfectivo({ planCuenta: "pro_familiar", trialEnd: "2026-11-10", hoy: "2026-11-02" })).toBe("pro_familiar");

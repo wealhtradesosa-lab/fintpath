@@ -62,20 +62,28 @@ describe("ai-chat handler", () => {
   });
 
   it("al pasar el tope responde 429 sin llamar a Anthropic", async () => {
-    plan = "free"; usos = 10;
+    plan = "basico"; usos = 30;
     const r = await pedir(pregunta);
     expect(r.statusCode).toBe(429);
     const b = JSON.parse(r.body);
-    expect(b).toMatchObject({ error: "cuota_ia_agotada", restantes: 0, remaining: 0, tope: 10 });
-    expect(b.mensaje).toContain("Ya usaste tus 10 consultas con IA de este mes");
+    expect(b).toMatchObject({ error: "cuota_ia_agotada", restantes: 0, remaining: 0, tope: 30 });
+    expect(b.mensaje).toContain("Ya usaste tus 30 consultas con IA de este mes");
     expect(anthropicLlamado()).toBe(false);
   });
 
-  it("en la prueba de 14 días tiene el tope de Pro", async () => {
+  // 5-nov-2026: la prueba tiene un tope chico (20) y sin pago no hay IA.
+  it("en la prueba de 14 días tiene el tope de prueba (20)", async () => {
     plan = "free"; trialEnd = "2999-01-01"; usos = 10;
     const r = await pedir(pregunta);
     expect(r.statusCode).toBe(200);
-    expect(JSON.parse(r.body)).toMatchObject({ restantes: 139, tope: 150 });
+    expect(JSON.parse(r.body)).toMatchObject({ restantes: 9, tope: 20 });
+  });
+  it("sin pago ni prueba no hay IA", async () => {
+    plan = "free"; usos = 0;
+    const r = await pedir(pregunta);
+    expect(r.statusCode).toBe(429);
+    expect(JSON.parse(r.body).mensaje).toContain("Suscríbete");
+    expect(anthropicLlamado()).toBe(false);
   });
 
   it("accion=cuota lee sin consumir", async () => {

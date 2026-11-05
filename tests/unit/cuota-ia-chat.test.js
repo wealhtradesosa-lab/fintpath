@@ -46,16 +46,19 @@ describe("cuota de IA", () => {
   });
 
   it("el mensaje nombra lo que se consumió, sin romper a los otros llamadores", () => {
-    expect(mensajeCuota({ usos: 11, tope: 10, plan: "free" }).mensaje).toContain("10 lecturas con IA");
+    expect(mensajeCuota({ usos: 31, tope: 30, plan: "basico" }).mensaje).toContain("30 lecturas con IA");
     expect(mensajeCuota({ usos: 151, tope: 150, plan: "pro" }, "consultas al asesor").mensaje)
       .toContain("150 consultas al asesor");
     // Quien paga no recibe la invitación a mejorar el plan.
     expect(mensajeCuota({ usos: 151, tope: 150, plan: "pro" }).mensaje).not.toContain("mejorar tu plan");
-    expect(mensajeCuota({ usos: 11, tope: 10, plan: "free" }).mensaje).toContain("mejorar tu plan");
+    // 5-nov-2026: sin pago no hay IA; en la prueba, invitación a suscribirse.
+    expect(mensajeCuota({ usos: 1, tope: 0, plan: "free" }).mensaje).toContain("Suscríbete");
+    expect(mensajeCuota({ usos: 21, tope: 20, plan: "prueba" }).mensaje).toContain("prueba gratis");
   });
 
   it("los topes por plan son los del catálogo", () => {
-    expect(TOPES.free).toBe(10);
+    expect(TOPES.free).toBe(0);
+    expect(TOPES.prueba).toBe(20);
     expect(topeDe("pro")).toBe(150);
     expect(topeDe("plan_que_no_existe")).toBe(TOPES.free);
   });

@@ -26,8 +26,15 @@
 //   familiar $27→ 400 → ~$12   · margen ~$15
 // Son un punto de partida conservador. Si el consumo real se queda corto,
 // subirlos es una línea; bajarlos después de prometerlos, no.
+// 5-nov-2026 (Santiago: "me da miedo lo de los agentes de IA porque pueden
+// usarlo sin haber pagado"). Ya no hay plan gratis a la venta:
+//   free   → 0: sin pago y sin prueba (prueba vencida, plan vencido) no hay IA.
+//   prueba → 20: la prueba de 14 días deja probar el Asesor IA y leer un Excel,
+//            con un tope chico (~USD 0,60 de costo máximo por persona). Al pagar
+//            sube a 150 al mes.
 const TOPES = {
-  free: 10,
+  free: 0,
+  prueba: 20,
   basico: 30,
   pro: 150,
   pro_familiar: 400,
@@ -59,14 +66,10 @@ async function consumirCuota({ url, serviceKey, userId, plan: planDado }) {
 
   // Quien llama puede pasar el plan ya resuelto (ai-chat lo resuelve con la
   // prueba de 14 días incluida, ver leerPlanIA).
+  // 5-nov-2026: sin plan dado se resuelve con la prueba incluida (leerPlanIA). Antes leía
+  // solo accounts.plan: con free en 0, quien está en la prueba no podría leer su Excel.
   let plan = planDado || "free";
-  if (!planDado) try {
-    const r = await fetch(`${url}/rest/v1/accounts?select=plan&owner_user_id=eq.${userId}`, { headers: h });
-    if (r.ok) {
-      const filas = await r.json();
-      if (filas?.[0]?.plan) plan = filas[0].plan;
-    }
-  } catch { /* queda en free, el tope más restrictivo */ }
+  if (!planDado) plan = await leerPlanIA({ url, serviceKey, userId });
 
   const tope = topeDe(plan);
 
@@ -91,7 +94,7 @@ async function consumirCuota({ url, serviceKey, userId, plan: planDado }) {
 function planEfectivo({ planCuenta, trialEnd, hoy }) {
   const plan = planCuenta || "free";
   const enPrueba = typeof trialEnd === "string" && /^\d{4}-\d{2}-\d{2}/.test(trialEnd) && trialEnd.slice(0, 10) >= hoy;
-  if (enPrueba && (plan === "free" || plan === "basico")) return "pro";
+  if (enPrueba && (plan === "free" || plan === "basico")) return "prueba";
   return plan;
 }
 
@@ -141,7 +144,9 @@ async function consultarUsos({ url, serviceKey, userId }) {
  *  `concepto` nombra lo que se consumió: por defecto "lecturas con IA" (lectura
  *  de documentos e imágenes), y el chat del asesor pasa el suyo. 26-oct-2026. */
 function mensajeCuota({ usos, tope, plan }, concepto = "lecturas con IA") {
-  const enPago = plan !== "free";
+  const enPago = plan !== "free" && plan !== "prueba";
+  if (plan === "free") return { error: "cuota_ia_agotada", mensaje: "La IA está incluida en el plan Pro. Suscríbete para usarla.", usos, tope, plan };
+  if (plan === "prueba") return { error: "cuota_ia_agotada", mensaje: `Usaste las ${tope} consultas con IA de tu prueba gratis. Suscríbete al Pro y tienes 150 al mes.`, usos, tope, plan };
   return {
     error: "cuota_ia_agotada",
     mensaje: `Llegaste al tope de ${tope} ${concepto} de este mes (llevas ${usos}).` +
