@@ -75,14 +75,14 @@ export default function TarjetaMP({ ciclo = "mensual", monto, email, onCerrar, o
           <div>
             <div style={{ fontSize: 18, fontWeight: 700 }}>Cobro automático con tarjeta</div>
             <div style={{ fontSize: 13, color: "var(--fp-txt2)", marginTop: 4, lineHeight: 1.5 }}>
-              {fmt(monto)} {ciclo === "anual" ? "cada año" : "cada mes"}, débito o crédito Visa o Mastercard. No necesitas cuenta de Mercado Pago. Cancelas en un toque desde Mi cuenta.
+              {fmt(monto)} {ciclo === "anual" ? "cada año" : "cada mes"}, débito o crédito Visa o Mastercard. No necesitas cuenta de Mercado Pago. Cancelas en cualquier momento desde Mi cuenta.
             </div>
           </div>
           {estado !== "enviando" && <button type="button" onClick={onCerrar} aria-label="Cerrar" style={{ background: "none", border: "none", color: "var(--fp-txt3)", fontSize: 22, cursor: "pointer", lineHeight: 1 }}>×</button>}
         </div>
         {estado === "hecho" ? (
           <div style={{ marginTop: 18, padding: 16, borderRadius: 12, background: "color-mix(in srgb, var(--fp-pos) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--fp-pos) 30%, transparent)", fontSize: 14, lineHeight: 1.6 }}>
-            <strong>¡Listo! Tu plan Pro está activo.</strong> Mercado Pago cobrará {fmt(monto)} {ciclo === "anual" ? "cada año" : "cada mes"} a tu tarjeta. Puedes cancelar cuando quieras desde Mi cuenta.
+            <strong>¡Listo! Tu plan Pro está activo.</strong> Mercado Pago cobrará {fmt(monto)} {ciclo === "anual" ? "cada año" : "cada mes"} a tu tarjeta. Puedes cancelar en cualquier momento desde Mi cuenta.
             <div><button type="button" onClick={() => window.location.reload()} style={{ marginTop: 12, background: "var(--fp-txt)", color: "var(--fp-bg)", border: "none", borderRadius: 10, padding: "10px 16px", fontWeight: 700, cursor: "pointer" }}>Empezar a usar Pro</button></div>
           </div>
         ) : (

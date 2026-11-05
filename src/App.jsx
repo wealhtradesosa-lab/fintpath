@@ -3835,26 +3835,26 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           const tarjeta=(meses)=>{const anual=meses===12,clave="unico"+meses,cargando=abriendoPago===clave;return(
             <div key={meses} style={{position:"relative",textAlign:"left",padding:"22px 20px 20px",borderRadius:16,border:anual?"2px solid var(--fp-pos)":"1px solid "+T.border,background:anual?"color-mix(in srgb, var(--fp-pos) 6%, var(--fp-card))":T.bg2,display:"flex",flexDirection:"column"}}>
               {anual&&<div style={{position:"absolute",top:-12,left:20,fontSize:11,fontWeight:700,color:"#000",background:"var(--fp-pos)",padding:"3px 10px",borderRadius:6}}>MÁS CONVENIENTE</div>}
-              <div style={{fontSize:13,fontWeight:700,color:T.tx2,textTransform:"uppercase",letterSpacing:0.5}}>{anual?"Un año":"Un mes"}</div>
+              <div style={{fontSize:13,fontWeight:700,color:T.tx2,textTransform:"uppercase",letterSpacing:0.5}}>{anual?"Un año":"Mensual"}</div>
               <div style={{display:"flex",alignItems:"baseline",gap:6,marginTop:6,flexWrap:"wrap"}}>
                 <span style={{fontSize:32,fontWeight:700,color:T.tx}}>{fmtCOP(anual?pr.anual:pr.mensual)}</span>
-                <span style={{fontSize:14,color:T.tx3,fontWeight:600}}>{anual?"por 12 meses":"por 1 mes"}</span>
+                <span style={{fontSize:14,color:T.tx3,fontWeight:600}}>{anual?"por 12 meses":"al mes"}</span>
               </div>
               {anual?(<>
                 <div style={{fontSize:13,color:T.tx3,marginTop:2}}><span style={{textDecoration:"line-through"}}>{fmtCOP(sinDesc)}</span> · equivale a {fmtCOP(Math.round(pr.anual/12/50)*50)} al mes</div>
                 <div style={{alignSelf:"flex-start",marginTop:8,fontSize:13,fontWeight:700,color:"var(--fp-pos)",background:"color-mix(in srgb, var(--fp-pos) 12%, transparent)",padding:"4px 10px",borderRadius:6}}>Ahorras {fmtCOP(ahorro)} · 2 meses gratis</div>
               </>):(
-                <div style={{fontSize:13,color:T.tx3,marginTop:2}}>Pagas solo este mes. Renuevas cuando quieras.</div>
+                <div style={{fontSize:13,color:T.tx3,marginTop:2}}>Se cobra solo cada mes. Sin permanencia: cancelas en cualquier momento.</div>
               )}
               <div style={{flex:1,minHeight:14}}/>
-              <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(meses)}>{cargando?"Abriendo Mercado Pago…":anual?`Pagar el año · ${fmtCOP(pr.anual)}`:`Pagar un mes · ${fmtCOP(pr.mensual)}`}</Bt>
-              <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>PSE, tarjeta o Efecty · un solo pago</div>
-              {/* 5-nov-2026 (Santiago: "no veo dónde es lo del cobro automático"). Va dentro de la
-                  tarjeta del mes, como segunda forma de pagarlo, en vez de un recuadro aparte abajo. */}
-              {!anual&&<>
-                <div style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 10px",fontSize:11,color:T.tx3}}><div style={{flex:1,height:1,background:T.border}}/>o<div style={{flex:1,height:1,background:T.border}}/></div>
-                <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center",border:"1.5px solid var(--fp-txt)",color:"var(--fp-txt)",background:"transparent"}} onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>Cobro automático cada mes</Bt>
-                <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>Con tarjeta débito o crédito · cancelas cuando quieras</div>
+              {/* 5-nov-2026 (Santiago: "prefiero que de una vez queden enganchados a cobro automático").
+                  El mes se paga solo con cobro automático; el pago único (PSE/Efecty) queda para el año. */}
+              {anual?<>
+                <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(12)}>{cargando?"Abriendo Mercado Pago…":`Pagar el año · ${fmtCOP(pr.anual)}`}</Bt>
+                <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>PSE, tarjeta o Efecty · un solo pago</div>
+              </>:<>
+                <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago?0.55:1}} onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>{`Suscribirme · ${fmtCOP(pr.mensual)}/mes`}</Bt>
+                <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>Cobro automático a tu tarjeta débito o crédito</div>
               </>}
             </div>)};
           return(<div style={{maxWidth:640,margin:"0 auto"}}>
@@ -3870,7 +3870,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:16}}>{tarjeta(12)}{tarjeta(1)}</div>
             <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,background:T.bg3,fontSize:13,color:T.tx2,lineHeight:1.6}}>
               <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>No necesitas cuenta de Mercado Pago</div>
-              Con el pago único no hay cobros automáticos: te avisamos por correo antes de que venza. Si eliges el cobro automático, se cobra solo cada mes a tu tarjeta y lo cancelas en un toque desde Mi cuenta.
+              El plan anual es un solo pago con PSE, tarjeta o Efecty, sin cobros automáticos: te avisamos antes de que venza. El mensual se cobra solo cada mes a tu tarjeta y lo cancelas en cualquier momento desde Mi cuenta, en un toque.
             </div>
             {tarjetaMP&&<Suspense fallback={null}><TarjetaMP ciclo={tarjetaMP.ciclo} monto={tarjetaMP.monto} email={u?.p?.email||authUser?.email||""} onCerrar={()=>setTarjetaMP(null)} onListo={()=>{track("mp_tarjeta_ok")}}/></Suspense>}
           </div>)})():(<>
@@ -4457,7 +4457,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
       </Suspense>
       </div>{paywall&&<div onClick={()=>setPaywall(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:"1px solid "+T.border,borderRadius:12,padding:"22px 22px",maxWidth:420,width:"100%"}}>
         <div style={{fontSize:18,fontWeight:700,marginBottom:6}}>Estás en modo consulta</div>
-        <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,marginBottom:14}}>{planVencido?"Tu plan Pro venció.":"Tu prueba de 14 días terminó."} Tus datos siguen aquí y puedes verlos cuando quieras. Para agregar o editar, {planVencido?"renueva":"activa"} FINPATHIA Pro: <strong>$24.900 un mes</strong> o $249.000 el año (2 meses gratis), con PSE, tarjeta o Efecty.</div>
+        <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,marginBottom:14}}>{planVencido?"Tu plan Pro venció.":"Tu prueba de 14 días terminó."} Tus datos siguen aquí y puedes verlos cuando quieras. Para agregar o editar, {planVencido?"renueva":"activa"} FINPATHIA Pro: <strong>$24.900 al mes</strong> con tarjeta, o $249.000 el año (2 meses gratis) con PSE, tarjeta o Efecty.</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button onClick={()=>{setPaywall(false);track("paywall_consulta_click");setPg("price")}} style={{background:T.gn,color:"#000",border:"none",padding:"11px 18px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:13}}>Ver planes →</button><button onClick={()=>setPaywall(false)} style={{background:"transparent",color:T.tx3,border:"1px solid "+T.border,padding:"11px 18px",borderRadius:10,cursor:"pointer",fontSize:13}}>Ahora no</button><button onClick={async()=>{const{exportarMisDatos}=await import("./lib/excelExport.js");await exportarMisDatos(u,isEN)}} style={{background:"transparent",color:T.tx2,border:"1px solid "+T.border,padding:"11px 14px",borderRadius:10,cursor:"pointer",fontWeight:600,fontSize:13}}>Descargar mis datos</button></div>
       </div></div>}{showImport&&<Suspense fallback={null}><CsvImport onImport={handleImport} onClose={()=>setShowImport(false)}/></Suspense>}<PWAInstallPrompt/>{showOnboarding&&<OnboardingTour open={showOnboarding} userName={u?.p?.name||authUser?.user_metadata?.name||""} isPioneros={sessionStorage.getItem("fp3_promo_code")==="PIONEROS2026"} onSelectDemo={()=>{setShowOnboarding(false);setPg("dash");(u?.jurisdiction==="US"?demoUS:demo)();showToast("Datos de ejemplo cargados — explora tranquilo")}} onSelectImport={()=>{setShowOnboarding(false);setShowImport(true)}} onSelectManual={()=>{setShowOnboarding(false);setPg("inv");showToast("Paso 1 de 4: agrega tus activos")}} onClose={()=>setShowOnboarding(false)}/>}{pagoEstado&&<div style={{position:"fixed",top:0,left:0,right:0,zIndex:9999,display:"flex",justifyContent:"center",padding:"14px 12px",pointerEvents:"none"}}>
       <div style={{pointerEvents:"auto",maxWidth:520,width:"100%",background:pagoEstado.tipo==="exito"?"#0f2a1a":pagoEstado.tipo==="cancelado"?"#2a2416":"#12203a",border:"1px solid "+(pagoEstado.tipo==="exito"?"rgba(0,200,5,0.4)":pagoEstado.tipo==="cancelado"?"rgba(245,158,11,0.35)":"rgba(59,130,246,0.35)"),borderRadius:12,padding:"14px 16px",display:"flex",gap:12,alignItems:"flex-start",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}>
