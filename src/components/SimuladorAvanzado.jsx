@@ -156,7 +156,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <input type="range" min="0" max={max} step={Math.max(Math.round(max * 0.01), 5)} value={value}
+        <input type="range" min="0" max={max} step={base > 0 ? base / 100 : Math.max(Math.round(max * 0.01), 5)} /* 5-nov-2026: pasos del 1 % del valor real, para que el slider arranque EXACTO en tu valor (antes mostraba 99 % y al tocarlo bajaba) */ value={value}
           onChange={(e) => onChange(Number(e.target.value))} className="fp-range"
           style={{ flex: 1, "--fp-r-c": color, "--fp-r-p": (max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0) + "%" }} />
         <span style={{ fontSize: 11, color: T.txt3, minWidth: 32, textAlign: "right" }}>{perc}%</span>
@@ -257,12 +257,12 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               flujo del mes, contra el real. El sueldo mueve el flujo; el nivel
               mide lo que pagan tus activos sin trabajar. */}
           {simulado && real && (() => {
-            const cobR = real.ob > 0 ? (real.ip / real.ob) * 100 : 0, cobS = ob > 0 ? (ip / ob) * 100 : 0;
+            const cobR = pctPiso(real.ip, real.ob), cobS = pctPiso(ip, ob); // mismo redondeo que el titular
             const filas = [
               { l: "Cobertura de tus rentas", a: `${fmtNumEs(cobR, 0)} %`, b: `${fmtNumEs(cobS, 0)} %`, d: cobS - cobR, pos: true, pct: true },
               { l: "Rentas de tus activos al mes", a: fm(real.ip), b: fm(ip), d: ip - real.ip, pos: true },
               { l: "Gastos y cuotas al mes", a: fm(real.ob), b: fm(ob), d: ob - real.ob, pos: false },
-              { l: "Flujo del mes (lo que entra menos lo que sale, sueldo incluido)", a: fm(real.fl || 0), b: fm(fl || 0), d: (fl || 0) - (real.fl || 0), pos: true },
+              { l: "Flujo del mes (lo que entra menos lo que sale, sueldo incluido; impuesto como el real)", a: fm(real.fl || 0), b: fm(fl || 0), d: (fl || 0) - (real.fl || 0), pos: true },
             ];
             return (
               <div data-testid="nivel-comparado" style={{ marginTop: 10, border: "1px solid " + T.border, borderRadius: 10, overflow: "hidden" }}>
@@ -657,6 +657,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     let impuestoBrutoAnual = 0;
     let retencionAnual = 0;
     const saldoPorMes = Array(12).fill(0);
+    let deltaImpuestoManual = 0; // lo que el usuario movió a mano en impuestos (slider u optimización)
     (dynTax.detalle || []).forEach(td => {
       const isOpt = !!taxOptimizado[td.name];
       const anualBase = isOpt
@@ -664,6 +665,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
         : (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       const mesBase = Math.round(anualBase / 12);
       const simImpBrutoMes = gv(`tax_${td.name}`, mesBase);
+      const mesSinOpt = Math.round((td.impBruto != null ? td.impBruto : (td.impuesto || 0)) / 12);
+      deltaImpuestoManual += simImpBrutoMes - mesSinOpt;
       impuestoBrutoAnual += simImpBrutoMes * 12;
       retencionAnual += (td.reteN || 0);
       // El saldo sale en el mes de la declaración de ese titular, no repartido en 12.
@@ -698,12 +701,19 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // reclamo del 10-oct sobre el PDF ("si estoy analizando dic por qué me sale
     // arriendo hasta sept"), en la tarjeta.
     const sinCambios = !cambio && !Object.values(taxOptimizado || {}).some(Boolean);
-    let metMes = calcularMetricas(argsMet, { base: "mes", mes: mesVisualizado });
-    if (sinCambios) {
-      // Mismo cálculo que el nivel real (metricasReales + impuesto de los datos
-      // guardados, igual que baseT): mismo % sí o sí.
-      metMes = metricasReales(user, { ...impuestoBase(impuestoData), mes: mesVisualizado, trm: trmReal });
-    }
+    // 5-nov-2026 (Santiago: "subí un gasto y antes subió; subí un ingreso y
+    // antes bajó: está súper loco"). Con cualquier cambio el nivel pasaba a otro
+    // cálculo: otra TRM (tasa(user) en vez de la real) y el impuesto re-estimado
+    // desde cero, en vez del de tus datos. Ese salto de impuesto pesaba más que
+    // el slider y movía la barra al revés. Ahora el escenario usa EXACTAMENTE el
+    // cálculo del nivel real con los montos de los sliders; el impuesto queda el
+    // real más lo que muevas a mano en impuestos.
+    const impReal = impuestoBase(impuestoData);
+    const metMes = metricasReales(sinCambios ? user : { ...user, ingresos: ingSim, gastos: gasSim, deudas: deuSim }, {
+      retencionMensual: impReal.retencionMensual,
+      impuestoNeto: sinCambios ? impReal.impuestoNeto : Math.max(0, impReal.impuestoNeto + deltaImpuestoManual),
+      mes: mesVisualizado, trm: trmReal,
+    });
     // La cobertura sale de la MISMA base que el nivel. Quedaba en el promedio
     // del año mientras el nivel ya era del mes, así que el KPI "Independencia"
     // de esta misma pantalla contradecía a la tarjeta de abajo.
@@ -1533,7 +1543,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
         ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
         simulado={!simT.sinCambios}
         real={{ ip: metReal.ip, ob: metReal.ob, fl: metReal.fl }}
-        nivelRealTxt={!simT.sinCambios && metReal.nivel?.nivel ? `Tu nivel real hoy, con tus datos guardados: ${LEVELS[metReal.nivel.nivel - 1]?.name || ""} (${fmtNumEs(metReal.ob > 0 ? (metReal.ip / metReal.ob) * 100 : 0, 0)} %).` : null}
+        nivelRealTxt={!simT.sinCambios && metReal.nivel?.nivel ? `Tu nivel real hoy, con tus datos guardados: ${LEVELS[metReal.nivel.nivel - 1]?.name || ""} (${fmtNumEs(pctPiso(metReal.ip, metReal.ob), 0)} %).` : null}
         escenarioTxt={null}
         trmPendiente={metReal.trmPendiente}
         pistaSeguridad={pistaEsenciales(metReal)}
