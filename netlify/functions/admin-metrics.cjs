@@ -172,6 +172,16 @@ exports.handler = async (event) => {
     // Mercado Pago en vivo: las suscripciones (preapprovals) y su estado. Así se
     // ven también las que quedaron "pending" (la persona abrió el pago y no lo
     // terminó), que nunca llegan a la base. Si MP no responde, se sigue sin esto.
+    //
+    // 4-nov-2026 (Santiago: "¿será que no pueden pagar?"). El panel listaba una
+    // fila por suscripción creada, y una sola persona que tocó el botón 8 veces
+    // en 5 segundos aparecía como 7 intentos fallidos. Ahora es una fila por
+    // persona: su mejor estado, cuántas veces abrió el pago y la última vez. Las
+    // cuentas propias y de prueba (incluidos alias "+test") van aparte.
+    const correoBase = (e) => String(e || "").toLowerCase().replace(/\+[^@]*@/, "@");
+    const PROPIAS_MP = [...ADMINS, "santisosa@feelingcompany.com", "wealhtradesosa@gmail.com"].map(correoBase);
+    const esInterno = (e) => PROPIAS_MP.includes(correoBase(e)) || /^qa\./i.test(e || "") || /@example\.com$/i.test(e || "");
+    const RANGO_MP = { authorized: 4, paused: 3, cancelled: 2, pending: 1 };
     let mercadoPago = null;
     if (process.env.MP_ACCESS_TOKEN) {
       try {
@@ -179,22 +189,27 @@ exports.handler = async (event) => {
         if (r.ok) {
           const j = await r.json();
           const lista = (j.results || []).filter((x) => String(x.reason || "").includes("FINPATHIA"));
+          const porPersona = {};
+          lista.forEach((x) => {
+            const uid = String(x.external_reference || "").split("|")[0];
+            const email = correoDe[uid] || x.payer_email || "(sin correo)";
+            const k = uid || correoBase(email);
+            const p = porPersona[k] || (porPersona[k] = { email, estado: x.status, plan: x.reason, monto: x?.auto_recurring?.transaction_amount || null, moneda: x?.auto_recurring?.currency_id || "COP", intentos: 0, primera: x.date_created, ultima: x.date_created, interno: esInterno(email) });
+            p.intentos += 1;
+            if ((RANGO_MP[x.status] || 0) > (RANGO_MP[p.estado] || 0)) { p.estado = x.status; p.plan = x.reason; p.monto = x?.auto_recurring?.transaction_amount || p.monto; }
+            if (x.date_created > p.ultima) p.ultima = x.date_created;
+            if (x.date_created < p.primera) p.primera = x.date_created;
+          });
+          const personas = Object.values(porPersona).sort((a, b) => Number(a.interno) - Number(b.interno) || (RANGO_MP[b.estado] || 0) - (RANGO_MP[a.estado] || 0) || String(b.ultima).localeCompare(String(a.ultima)));
+          const externas = personas.filter((p) => !p.interno);
           const porEstado = {};
-          lista.forEach((x) => { porEstado[x.status] = (porEstado[x.status] || 0) + 1; });
+          externas.forEach((p) => { porEstado[p.estado] = (porEstado[p.estado] || 0) + 1; });
           mercadoPago = {
-            total: lista.length,
+            total: externas.length,
+            totalSuscripciones: lista.length,
+            internas: personas.length - externas.length,
             porEstado,
-            lista: lista.slice(0, 50).map((x) => {
-              const uid = String(x.external_reference || "").split("|")[0];
-              return {
-                email: correoDe[uid] || x.payer_email || "(sin correo)",
-                estado: x.status,
-                plan: x.reason,
-                monto: x?.auto_recurring?.transaction_amount || null,
-                moneda: x?.auto_recurring?.currency_id || "COP",
-                creada: x.date_created,
-              };
-            }),
+            lista: personas.slice(0, 50).map((p) => ({ ...p, creada: p.ultima })),
           };
         } else mercadoPago = { error: `Mercado Pago respondió ${r.status}` };
       } catch (e) { mercadoPago = { error: "No se pudo consultar Mercado Pago" }; }

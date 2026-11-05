@@ -50,6 +50,26 @@ exports.handler = async (event) => {
     back_url: "https://finpathia.com/?mp=ok",
     status: "pending",
   };
+  // 4-nov-2026: si la misma persona ya abrió este mismo plan hace poco y no lo
+  // terminó, se le devuelve ese link en vez de crear otra suscripción. Una
+  // persona tocó el botón 8 veces en 5 segundos y quedaron 7 suscripciones
+  // "pending" en Mercado Pago. Si la búsqueda falla, se crea una nueva.
+  try {
+    const qs = new URLSearchParams({ external_reference: body.external_reference, status: "pending", sort: "date_created:desc", limit: "10" });
+    const rb = await fetch(`https://api.mercadopago.com/preapproval/search?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (rb.ok) {
+      const jb = await rb.json();
+      const hace30min = Date.now() - 30 * 60 * 1000;
+      const previa = (jb.results || []).find((x) =>
+        x.init_point && new Date(x.date_created).getTime() > hace30min &&
+        Number(x?.auto_recurring?.transaction_amount) === precio &&
+        Number(x?.auto_recurring?.frequency) === body.auto_recurring.frequency);
+      if (previa) {
+        console.log(`[mp-suscribir] reutiliza preapproval ${previa.id} para ${quien.id}`);
+        return { statusCode: 200, headers, body: JSON.stringify({ url: previa.init_point, id: previa.id }) };
+      }
+    }
+  } catch { /* sin búsqueda: se crea una nueva */ }
   try {
     const r = await fetch("https://api.mercadopago.com/preapproval", {
       method: "POST",

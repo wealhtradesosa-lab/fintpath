@@ -241,16 +241,19 @@ export default function AdminMetrics({ email, fmt, T }) {
             <div style={{ fontSize: 13, fontWeight: 700, color: T.tx, marginBottom: 4 }}>Mercado Pago en vivo</div>
             {d.mercadoPago.error ? (
               <div style={{ fontSize: 12, color: T.tx3 }}>{d.mercadoPago.error}. Lo de arriba sigue siendo correcto: sale de la base.</div>
-            ) : d.mercadoPago.total === 0 ? (
+            ) : (d.mercadoPago.lista || []).length === 0 ? (
               <div style={{ fontSize: 12, color: T.tx2 }}>Nadie ha abierto todavía una suscripción de FINPATHIA en Mercado Pago.</div>
             ) : (
               <>
-                <div style={{ fontSize: 12, color: T.tx2, marginBottom: 8 }}>
-                  {Object.entries(d.mercadoPago.porEstado).map(([k, v]) => `${ESTADO_MP[k]?.[0] || k}: ${v}`).join(" · ")}
+                <div style={{ fontSize: 12, color: T.tx2, marginBottom: 8, lineHeight: 1.5 }}>
+                  {d.mercadoPago.total === 0
+                    ? "Ningún cliente externo ha abierto el pago todavía."
+                    : `${num(d.mercadoPago.total)} ${d.mercadoPago.total === 1 ? "persona" : "personas"}: ` + Object.entries(d.mercadoPago.porEstado || {}).map(([k, v]) => `${ESTADO_MP[k]?.[0] || k} ${v}`).join(" · ")}
+                  {d.mercadoPago.internas > 0 ? ` · ${num(d.mercadoPago.internas)} ${d.mercadoPago.internas === 1 ? "cuenta tuya o de prueba" : "cuentas tuyas o de prueba"}, aparte` : ""}
                 </div>
                 {d.mercadoPago.lista.map((x, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "7px 0", borderTop: i > 0 ? `1px solid ${T.border}` : "none", fontSize: 12, gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ color: T.tx2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{x.email}</span>
+                    <span style={{ color: x.interno ? T.tx3 : T.tx2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>{x.email}{x.interno ? " · tuya o de prueba" : ""}{x.intentos > 1 ? ` · abrió el pago ${x.intentos} veces` : ""}</span>
                     <span style={{ display: "flex", gap: 10, alignItems: "center", flexShrink: 0 }}>
                       {x.monto != null && <span style={{ color: T.tx2, fontFamily: "monospace" }}>${Math.round(x.monto).toLocaleString("es-CO")} {x.moneda}</span>}
                       <span style={{ color: ESTADO_MP[x.estado]?.[1] || T.tx3, fontWeight: 700 }}>{ESTADO_MP[x.estado]?.[0] || x.estado}</span>

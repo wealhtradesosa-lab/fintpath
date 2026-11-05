@@ -660,6 +660,9 @@ export default function FinPath(){
   const[showAuth,setShowAuth]=useState(false);
   const[loginRole,setLoginRole]=useState(()=>{if(typeof window==="undefined")return"client";const p=window.location.pathname;return(p==="/asesores"||p==="/asesores/")?"advisor":"client"});
   const[billingCycle,setBillingCycle]=useState("mensual");
+  // 4-nov-2026: una persona tocó "Activar" 8 veces en 5 s porque el botón no daba señal; cada toque creaba una suscripción en Mercado Pago. Mientras se abre el pago, el botón dice "Abriendo Mercado Pago…" y no acepta más toques.
+  const[abriendoPago,setAbriendoPago]=useState(null);
+  useEffect(()=>{const f=()=>setAbriendoPago(null);window.addEventListener("pageshow",f);return()=>window.removeEventListener("pageshow",f)},[]);
   const[monedaPago,setMonedaPago]=useState(null);
   const[toast,setToast]=useState("");
   const[authUser,setAuthUser]=useState(null);
@@ -3776,8 +3779,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       const plans=getPlansForApp({plan,isUS,trm:trm||4200,billingCycle,trialActive,trialDays});
       // 25-oct-2026 (Santiago: "que quien ingrese vea los planes y decida si paga en pesos o dólares").
       const mon=monedaPago||(isCO?"cop":"usd");
-      const pagarMP=async(pl)=>{const planMp=pl.n==="Básico"?"basico":pl.n==="Pro Familiar"?"pro_familiar":"pro";trackCheckoutStarted({plan:pl.n,billingCycle,priceId:"mp_"+planMp});
-        try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planMp,ciclo:billingCycle})});const d=await r.json();if(d&&d.url){window.location.href=d.url;return}}catch{}
+      const pagarMP=async(pl)=>{if(abriendoPago)return;setAbriendoPago(pl.n);const planMp=pl.n==="Básico"?"basico":pl.n==="Pro Familiar"?"pro_familiar":"pro";trackCheckoutStarted({plan:pl.n,billingCycle,priceId:"mp_"+planMp});
+        try{const r=await fetchAuth("/api/mp-suscribir",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:planMp,ciclo:billingCycle})});const d=await r.json();if(d&&d.url){window.location.href=d.url;setTimeout(()=>setAbriendoPago(null),15000);return}}catch{}
+        setAbriendoPago(null);
         if(planMp==="pro"&&billingCycle==="mensual"){window.open(PIONEROS_MP.url,"_blank","noopener");return}
         alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta pagar en dólares.")};
       return<div>
@@ -3793,7 +3797,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         <div style={{maxWidth:720,margin:"0 auto 24px",textAlign:"center"}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>{isUS?"How do you want to pay?":"¿Cómo quieres pagar?"}</div>
           <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
-            {[["cop","En pesos colombianos","Mercado Pago: PSE, tarjeta débito o crédito. Sin cobros internacionales."],["usd","En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
+            {[["cop","En pesos colombianos","Mercado Pago, con tarjeta de crédito o débito. Cobro automático en pesos, sin cargos internacionales."],["usd","En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
               <button key={k} onClick={()=>setMonedaPago(k)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,cursor:"pointer",border:"2px solid "+(mon===k?T.gn:T.border),background:mon===k?T.gnB:"transparent",color:T.tx}}>
                 <div style={{fontSize:14,fontWeight:700}}>{mon===k?"● ":"○ "}{t1}</div>
                 <div style={{fontSize:12,color:T.tx3,marginTop:3,lineHeight:1.4}}>{t2}</div>
@@ -3848,7 +3852,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 {pl.comingSoon?(
                   <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>{window.location.href="mailto:soporte@finpathia.com?subject=Plan Pro Familiar — interesado&body=Hola, quiero entrar a la lista de espera del plan Pro Familiar para mi familia/equipo. Mi email: "+(u?.p?.email||"")}}>Únete a la lista de espera</Bt>
                 ):(
-                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0)?0.55:1,cursor:(pl.cur||pl.rank===0)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0&&mon==="cop"&&PRECIOS_COP[pl.n]){pagarMP(pl);return}
+                <Bt v={pl.cur?"s":pl.rank>pl.rankActual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",opacity:(pl.cur||pl.rank===0||(abriendoPago&&abriendoPago!==pl.n))?0.55:1,cursor:(pl.cur||pl.rank===0||abriendoPago)?"default":"pointer"}} onClick={()=>{if(!pl.cur&&pl.rank!==0&&mon==="cop"&&PRECIOS_COP[pl.n]){pagarMP(pl);return}
                   if(!pl.cur&&pl.rank!==0)(async()=>{
                   try{
                     // PriceIds vienen de src/lib/plans.js (STRIPE_PRICE_IDS),
@@ -3891,7 +3895,8 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                   // incluida Free — que no tiene precio, así que era un botón
                   // muerto (el handler hace `if(!priceId)return`). Quien ya tenía
                   // plan no distinguía qué era mejorar y qué era bajar.
-                  pl.cur ? "Tu plan actual"
+                  abriendoPago===pl.n ? "Abriendo Mercado Pago…"
+                  : pl.cur ? "Tu plan actual"
                   : pl.enTrial ? (pl.trialDays<=1?"Activar antes de que venza":`Activar — quedan ${pl.trialDays} días`)
                   : pl.rank===0 ? "Se activa al cancelar tu plan"
                   : pl.rankActual===0 ? "Comenzar"
