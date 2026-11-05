@@ -3845,6 +3845,14 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               )}
               <div style={{flex:1,minHeight:14}}/>
               <Bt v={anual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(meses)}>{cargando?"Abriendo Mercado Pago…":anual?`Pagar el año · ${fmtCOP(pr.anual)}`:`Pagar un mes · ${fmtCOP(pr.mensual)}`}</Bt>
+              <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>PSE, tarjeta o Efecty · un solo pago</div>
+              {/* 5-nov-2026 (Santiago: "no veo dónde es lo del cobro automático"). Va dentro de la
+                  tarjeta del mes, como segunda forma de pagarlo, en vez de un recuadro aparte abajo. */}
+              {!anual&&<>
+                <div style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 10px",fontSize:11,color:T.tx3}}><div style={{flex:1,height:1,background:T.border}}/>o<div style={{flex:1,height:1,background:T.border}}/></div>
+                <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>Cobro automático cada mes</Bt>
+                <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>Con tarjeta débito o crédito · cancelas cuando quieras</div>
+              </>}
             </div>)};
           return(<div style={{maxWidth:640,margin:"0 auto"}}>
             {proPl&&<div style={{textAlign:"left",padding:"20px",borderRadius:16,border:"1px solid "+T.border,background:T.bg2,marginBottom:20}}>
@@ -3858,13 +3866,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{fontSize:15,fontWeight:700,color:T.tx,textAlign:"center",margin:"4px 0 18px"}}>Elige cómo pagar el Pro</div>
             <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:16}}>{tarjeta(12)}{tarjeta(1)}</div>
             <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,background:T.bg3,fontSize:13,color:T.tx2,lineHeight:1.6}}>
-              <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>Pagas con PSE, tarjeta débito o crédito, o Efecty</div>
-              No necesitas cuenta de Mercado Pago. Es un solo pago: no hay cobros automáticos y te avisamos por correo antes de que venza para que renueves si quieres.
+              <div style={{fontWeight:700,color:T.tx,marginBottom:4}}>No necesitas cuenta de Mercado Pago</div>
+              Con el pago único no hay cobros automáticos: te avisamos por correo antes de que venza. Si eliges el cobro automático, se cobra solo cada mes a tu tarjeta y lo cancelas en un toque desde Mi cuenta.
             </div>
-            {proPl&&!proPl.cur&&<div style={{marginTop:14,padding:"14px 16px",borderRadius:12,border:"1px solid "+T.border,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-              <div style={{fontSize:13,color:T.tx2,lineHeight:1.5,flex:"1 1 240px"}}><strong style={{color:T.tx}}>¿Prefieres que se cobre solo cada mes?</strong><br/>Cobro automático con tarjeta débito o crédito, {fmtCOP(pr.mensual)}/mes. Sin cuenta de Mercado Pago. Cancelas en un toque.</div>
-              <Bt v="s" sz="m" onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>Activar cobro automático</Bt>
-            </div>}
             {tarjetaMP&&<Suspense fallback={null}><TarjetaMP ciclo={tarjetaMP.ciclo} monto={tarjetaMP.monto} email={u?.p?.email||authUser?.email||""} onCerrar={()=>setTarjetaMP(null)} onListo={()=>{track("mp_tarjeta_ok")}}/></Suspense>}
           </div>)})():(<>
           <div style={{textAlign:"center",marginBottom:20}}>
