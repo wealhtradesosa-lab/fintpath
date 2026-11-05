@@ -18,6 +18,8 @@ function recargarUnaVez() {
     const ultima = Number(sessionStorage.getItem(k) || 0);
     if (Date.now() - ultima < 30000) return false;
     sessionStorage.setItem(k, String(Date.now()));
+    // Volver a la misma sección después de recargar (App.jsx lo lee al arrancar).
+    if (window.__fpPg && window.__fpPg !== "dash") sessionStorage.setItem("fp3_volver_a", window.__fpPg);
   } catch { /* sin sessionStorage: igual se recarga */ }
   window.location.reload();
   return true;

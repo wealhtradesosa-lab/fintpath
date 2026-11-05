@@ -1,3 +1,4 @@
+import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState } from "react";
 import { Interruptor, Trash2, MenuFila } from "./Iconos.jsx";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
@@ -881,12 +882,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       <div style={{fontSize:40,marginBottom:12}}></div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:T.txt}}>Agrega tus ingresos mensuales</h3>
                       <p style={{fontSize:13,color:T.txt3,maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Registra todo lo que recibes cada mes: salario, arriendos, rendimientos, dividendos, freelance. <strong style={{color:T.txt2}}>No incluyas cuotas de créditos</strong> — esas van en Deudas.</p>
-                      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
-                        <button onClick={()=>{setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true);}} style={{background:T.green,color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar ingreso</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>Subir tabla Excel de ingresos</button>}
-                      </div>
+                      <DosFormasCargar singular="ingreso" plural="ingresos" onManual={()=>{setEditId(null); setForm(INITIAL_FORM); setModoIngreso("porPago"); setTemplateElegido(null); setShowForm(true);}} onExcel={onImport||null} />
                       <div style={{background:T.bg3,borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
-                        <div style={{fontSize:12,fontWeight:700,color:T.txt3,marginBottom:8,letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <div style={{fontSize:12,fontWeight:700,color:T.txt3,marginBottom:8,letterSpacing:1}}>Así puede verse tu Excel (es solo un ejemplo)</div>
                         <table style={{width:"100%",fontSize:12,color:T.txt2}}>
                           <thead><tr style={{borderBottom:"1px solid "+T.border}}><th style={{padding:"4px 8px",textAlign:"left",color:T.txt3}}>Nombre</th><th style={{textAlign:"right",padding:"4px 8px",color:T.txt3}}>Monto/mes</th><th style={{padding:"4px 8px",color:T.txt3}}>Categoría</th></tr></thead>
                           <tbody>

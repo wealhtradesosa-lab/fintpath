@@ -1,3 +1,4 @@
+import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState, useMemo, useEffect } from "react";
 import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import { fmtTasaEs } from "../lib/formato.js";
@@ -573,12 +574,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <div style={{fontSize:40,marginBottom:12}}></div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>Agrega tu patrimonio</h3>
                       <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>Propiedades, fondos de inversión, CDTs, acciones, crypto, vehículos, cuentas de ahorro. Incluye el <strong style={{color:"var(--fp-txt2)"}}>valor actual</strong> de cada activo.</p>
-                      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
-                        <button onClick={openAdd} style={{background:"#00c805",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>+ Agregar activo</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>Subir tabla Excel de activos</button>}
-                      </div>
+                      <DosFormasCargar singular="activo" plural="activos" onManual={openAdd} onExcel={onImport||null} />
                       <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
-                        <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>Ejemplo de Excel para importar</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>Así puede verse tu Excel (es solo un ejemplo)</div>
                         <table style={{width:"100%",fontSize:12,color:"var(--fp-txt2)"}}>
                           <thead><tr style={{borderBottom:"1px solid rgba(var(--fp-ink),0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"var(--fp-txt3)"}}>Activo</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>Valor actual</th><th style={{padding:"4px 8px",color:"var(--fp-txt3)"}}>Tipo</th></tr></thead>
                           <tbody>

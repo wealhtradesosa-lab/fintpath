@@ -645,7 +645,10 @@ export default function FinPath(){
   const[u,_setU]=useState(null);
   const setU=(v)=>{if(typeof v==="function"){_setU(p=>{const r=v(p);return r||p})}else{_setU(v)}};
   const[ld,setLd]=useState(true);
-  const[pg,setPg]=useState("dash");
+  // 5-nov-2026 (Santiago: "presioné subir Excel y me sacó"). Cuando se publica una versión nueva,
+  // abrir una ventana recarga la página (main.jsx) y volvía al Dashboard. Ahora vuelve a la misma sección.
+  const[pg,setPg]=useState(()=>{try{const v=sessionStorage.getItem("fp3_volver_a");if(v){sessionStorage.removeItem("fp3_volver_a");return v}}catch{}return "dash"});
+  useEffect(()=>{try{window.__fpPg=pg}catch{}},[pg]);
   const[md,setMd]=useState(null);
   const[f,sF]=useState({});
   const[aM,sAM]=useState("login");

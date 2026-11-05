@@ -1,3 +1,4 @@
+import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState } from "react";
 import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
@@ -448,12 +449,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                       <div style={{fontSize:40,marginBottom:12}}></div>
                       <h3 style={{fontSize:18,fontWeight:700,margin:"0 0 8px",color:"var(--fp-txt)"}}>{tx("Registra tus deudas y créditos", "Add your debts and loans")}</h3>
                       <p style={{fontSize:13,color:"var(--fp-txt3)",maxWidth:420,margin:"0 auto 20px",lineHeight:1.6}}>{esUS() ? tx("Hipotecas, préstamos, tarjetas de crédito, créditos estudiantiles. Incluye ", "Mortgages, loans, credit cards, student loans. Include ") : tx("Hipotecas, préstamos, tarjetas de crédito, leasing. Incluye ", "Mortgages, loans, credit cards, leasing. Include ")}<strong style={{color:"var(--fp-txt2)"}}>{tx("saldo pendiente, cuota mensual y tasa de interés", "balance, monthly payment and interest rate")}</strong>{tx(". Puedes vincular cada deuda al activo que financia.", ". You can link each debt to the asset it finances.")}</p>
-                      <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:24}}>
-                        <button onClick={()=>setShowForm(true)} style={{background:"#00c805",color:"#000",border:"none",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>{tx("+ Agregar deuda", "+ Add debt")}</button>
-                        {onImport&&<button onClick={onImport} style={{background:"rgba(59,130,246,0.1)",color:"#3b82f6",border:"1px solid rgba(59,130,246,0.2)",padding:"12px 24px",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:14}}>{tx("Subir tabla Excel de deudas", "Upload a debts Excel sheet")}</button>}
-                      </div>
+                      <DosFormasCargar singular={tx("deuda","debt")} plural={tx("deudas","debts")} onManual={()=>setShowForm(true)} onExcel={onImport||null} en={tx("es","en")==="en"}/>
                       <div style={{background:"var(--fp-raised)",borderRadius:12,padding:"16px 20px",maxWidth:400,margin:"0 auto",textAlign:"left"}}>
-                        <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>{tx("Ejemplo de Excel para importar", "Sample Excel to import")}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"var(--fp-txt3)",marginBottom:8,letterSpacing:1}}>{tx("Así puede verse tu Excel (es solo un ejemplo)", "Your Excel can look like this (just an example)")}</div>
                         <table style={{width:"100%",fontSize:12,color:"var(--fp-txt2)"}}>
                           <thead><tr style={{borderBottom:"1px solid rgba(var(--fp-ink),0.06)"}}><th style={{padding:"4px 8px",textAlign:"left",color:"var(--fp-txt3)"}}>{tx("Deuda", "Debt")}</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>{tx("Saldo", "Balance")}</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>{tx("Cuota/mes", "Payment/mo")}</th><th style={{textAlign:"right",padding:"4px 8px",color:"var(--fp-txt3)"}}>{tx("Tasa", esUS() ? "APR" : "Rate")}</th></tr></thead>
                           <tbody>
