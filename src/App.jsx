@@ -3844,13 +3844,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                 <div style={{fontSize:13,color:T.tx3,marginTop:2}}>Pagas solo este mes. Renuevas cuando quieras.</div>
               )}
               <div style={{flex:1,minHeight:14}}/>
-              <Bt v={anual?"p":"s"} sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(meses)}>{cargando?"Abriendo Mercado Pago…":anual?`Pagar el año · ${fmtCOP(pr.anual)}`:`Pagar un mes · ${fmtCOP(pr.mensual)}`}</Bt>
+              <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&!cargando?0.55:1}} onClick={()=>pagarUnico(meses)}>{cargando?"Abriendo Mercado Pago…":anual?`Pagar el año · ${fmtCOP(pr.anual)}`:`Pagar un mes · ${fmtCOP(pr.mensual)}`}</Bt>
               <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>PSE, tarjeta o Efecty · un solo pago</div>
               {/* 5-nov-2026 (Santiago: "no veo dónde es lo del cobro automático"). Va dentro de la
                   tarjeta del mes, como segunda forma de pagarlo, en vez de un recuadro aparte abajo. */}
               {!anual&&<>
                 <div style={{display:"flex",alignItems:"center",gap:8,margin:"12px 0 10px",fontSize:11,color:T.tx3}}><div style={{flex:1,height:1,background:T.border}}/>o<div style={{flex:1,height:1,background:T.border}}/></div>
-                <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center"}} onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>Cobro automático cada mes</Bt>
+                <Bt v="s" sz="m" st={{width:"100%",justifyContent:"center",border:"1.5px solid var(--fp-txt)",color:"var(--fp-txt)",background:"transparent"}} onClick={()=>setTarjetaMP({ciclo:"mensual",monto:pr.mensual})}>Cobro automático cada mes</Bt>
                 <div style={{fontSize:12,color:T.tx3,textAlign:"center",marginTop:6}}>Con tarjeta débito o crédito · cancelas cuando quieras</div>
               </>}
             </div>)};
