@@ -137,7 +137,7 @@ exports.handler = async (event) => {
     // asignado a mano. El estado (activa / cancelada) sale de accounts.
     const estadoCuenta = {};
     try {
-      const rc = await fetch(`${URL}/rest/v1/accounts?select=id,subscription_status,grace_until`, { headers: h });
+      const rc = await fetch(`${URL}/rest/v1/accounts?select=id,subscription_status,grace_until,pago_unico`, { headers: h });
       if (rc.ok) (await rc.json()).forEach((a) => { estadoCuenta[a.id] = a; });
     } catch { /* sin estado: se muestra la marca sola */ }
     const correoDe = Object.fromEntries(usuarios.map((u) => [u.id, u.email]));
@@ -147,13 +147,15 @@ exports.handler = async (event) => {
       .filter((r) => viaDe(r.stripe_customer_id))
       .map((r) => {
         const cta = estadoCuenta[r.account_id] || {};
-        const estado = cta.subscription_status || "—";
+        // 5-nov-2026: pago único (PSE/Efecty) = "canceled" con fecha futura y pago_unico.
+        const prepago = !!cta.pago_unico && cta.subscription_status === "canceled" && cta.grace_until && new Date(cta.grace_until) > new Date();
+        const estado = prepago ? `pagado hasta ${String(cta.grace_until).slice(0, 10)}` : (cta.subscription_status || "—");
         return {
           email: correoDe[r.id] || "(sin correo)",
           via: viaDe(r.stripe_customer_id),
           plan: r.plan || r?.data?.p?.plan || "free",
           estado,
-          vigente: estado === "active" && ["basico", "pro", "pro_familiar"].includes(r.plan || r?.data?.p?.plan),
+          vigente: (estado === "active" || prepago) && ["basico", "pro", "pro_familiar"].includes(r.plan || r?.data?.p?.plan),
           registro: creadoDe[r.id] || null,
           ultimoCambio: r.updated_at,
         };
@@ -237,7 +239,7 @@ exports.handler = async (event) => {
     // ── Registros por mes, desde el primer usuario: cuántos se registran, cuántos
     // cargan datos y cuántos tienen hoy un pago vigente. Cada mes trae la lista
     // de quienes se registraron (para abrirla en el panel).
-    const vigentesIds = new Set(filas.filter((r) => viaDe(r.stripe_customer_id) && (estadoCuenta[r.account_id]?.subscription_status === "active") && ["basico", "pro", "pro_familiar"].includes(r.plan)).map((r) => r.id));
+    const vigentesIds = new Set(filas.filter((r) => viaDe(r.stripe_customer_id) && (estadoCuenta[r.account_id]?.subscription_status === "active" || (estadoCuenta[r.account_id]?.pago_unico && new Date(estadoCuenta[r.account_id]?.grace_until) > new Date())) && ["basico", "pro", "pro_familiar"].includes(r.plan)).map((r) => r.id));
     const porMesMap = {};
     usuarios.forEach((u) => {
       const k = (u.created_at || "").slice(0, 7);

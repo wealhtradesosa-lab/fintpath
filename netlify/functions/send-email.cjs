@@ -382,3 +382,4 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: cors, body: JSON.stringify({ ok: false, error: String(e?.message || e) }) };
   }
 };
+exports.emailShell = emailShell;

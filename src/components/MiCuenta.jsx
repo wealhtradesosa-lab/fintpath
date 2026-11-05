@@ -67,7 +67,7 @@ const daysUntil = (d) => {
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
   currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
-  subscriptionStatus, graceUntil, onUpgrade,
+  subscriptionStatus, graceUntil, pagoUnico, onUpgrade,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -124,7 +124,7 @@ export default function MiCuenta({
           supabase={supabase} accountId={accountId} role={role}
           displayName={displayName} plan={plan} maxMembers={maxMembers}
           currentUserId={currentUserId} currentUserName={currentUserName} onChange={onChange}
-          subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} onUpgrade={onUpgrade}
+          subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} pagoUnico={pagoUnico} onUpgrade={onUpgrade}
         />
       )}
       {activeTab === "config" && configContent && (
@@ -135,7 +135,7 @@ export default function MiCuenta({
 }
 
 // ═══ Tab Miembros ═══════════════════════════════════════════════════════
-function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil, onUpgrade }) {
+function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers, currentUserId, currentUserName, onChange, subscriptionStatus, graceUntil, pagoUnico, onUpgrade }) {
   const [members, setMembers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -318,7 +318,17 @@ function MiembrosTab({ supabase, accountId, role, displayName, plan, maxMembers,
         </div>
 
         {/* Banner: subscription cancelada · grace period activo */}
-        {subscriptionStatus === "canceled" && graceUntil && (
+        {/* 5-nov-2026 · Pago único (PSE/Efecty): pagado hasta una fecha, sin cobro automático. */}
+        {subscriptionStatus === "canceled" && graceUntil && pagoUnico && (
+          <div style={{ marginTop: 16, padding: "12px 14px", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+            <strong style={{ color: T.txt }}>Tu plan {PLAN_LABELS[plan] || plan} está pagado hasta el {new Date(graceUntil).toLocaleDateString("es-CO", { day: "numeric", month: "long", year: "numeric" })}.</strong>{" "}
+            Fue un pago único: no hay cobros automáticos. Te avisamos por correo 5 días antes. Si renuevas antes, se suma desde esa fecha.{" "}
+            {isAdmin && onUpgrade && (
+              <button type="button" onClick={onUpgrade} style={{ background: "none", border: "none", padding: 0, color: T.txt, fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontSize: 12 }}>Renovar ahora</button>
+            )}
+          </div>
+        )}
+        {subscriptionStatus === "canceled" && graceUntil && !pagoUnico && (
           <div style={{
             marginTop: 16,
             padding: "12px 14px",

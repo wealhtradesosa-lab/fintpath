@@ -50,6 +50,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/mp-pago-unico"
+  to = "/.netlify/functions/mp-pago-unico"
+  status = 200
+
+[[redirects]]
   from = "/api/ai-chat"
   to = "/.netlify/functions/ai-chat"
   status = 200

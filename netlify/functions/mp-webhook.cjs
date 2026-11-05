@@ -10,6 +10,8 @@
 //                           "userId|plan" (update_user_plan_after_stripe)
 //   cancelled / paused    → cancelación con periodo de gracia
 //                           (handle_subscription_canceled; el cron diario baja el plan)
+//   payment (pago único)  → activar_pago_unico: plan por 1 o 12 meses
+//                           (referencia "userId|plan|unico|meses")
 //
 // El id del cliente se guarda como "mp_<preapproval_id>" en la columna de
 // cliente de pago (la misma que usa Stripe), así las RPC existentes sirven.
@@ -38,6 +40,23 @@ async function mp(path) {
 }
 
 const { errorParaLog } = require("../lib/logSeguro.cjs");
+const { sendRendered } = require("./send-email.cjs");
+const { correoPagoUnico } = require("../lib/correoPagoUnico.cjs");
+
+// Correo de confirmación del pago único. Nunca tumba el webhook.
+async function avisarPagoUnico({ uid, plan, meses, hasta, paymentId, email }) {
+  try {
+    let to = null;
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_KEY;
+    const r = await fetch(`${url}/auth/v1/admin/users/${uid}`, { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+    if (r.ok) to = (await r.json()).email || null;
+    to = to || email;
+    if (!to) return;
+    const m = correoPagoUnico({ tipo: "confirmacion", plan, meses, hasta });
+    await sendRendered({ to, ...m, etiqueta: "pago_unico_confirmacion", idempotencyKey: `pago_unico_${paymentId}` });
+  } catch (e) { console.error("[mp-webhook] correo de confirmación", errorParaLog(e)); }
+}
 
 exports.handler = async (event) => {
   const ok = { statusCode: 200, body: JSON.stringify({ received: true }) };
@@ -50,6 +69,24 @@ exports.handler = async (event) => {
   const id = aviso?.data?.id || q["data.id"] || q.id;
   if (!id) return ok;
   try {
+    // 5-nov-2026 · Pago único (mp-pago-unico: PSE, Efecty, tarjeta). Llega como
+    // aviso "payment". Se consulta el pago a la API (nunca se confía en el
+    // aviso) y solo se activa si está aprobado y su referencia dice "unico".
+    // Los cobros mensuales de una suscripción también llegan como "payment",
+    // pero su referencia no trae "unico" y se ignoran aquí.
+    if (/^payment$/.test(tipo) || (tipo === "" && q.topic === "payment")) {
+      const pago = await mp(`/v1/payments/${id}`);
+      const [uid, planRef, marca, mesesRef] = String(pago.external_reference || "").split("|");
+      if (marca !== "unico" || !uid) { console.log(`[mp-webhook] pago ${id} sin marca de pago único: ignorado`); return ok; }
+      console.log(`[mp-webhook] pago único ${pago.id} status=${pago.status} user=${uid}`);
+      if (pago.status !== "approved") return ok;
+      const planU = ["basico", "pro", "pro_familiar"].includes(planRef) ? planRef : "pro";
+      const meses = Number(mesesRef) === 1 ? 1 : 12;
+      const hasta = JSON.parse(await rpc("activar_pago_unico", { p_user_id: uid, p_plan: planU, p_payment_id: String(pago.id), p_meses: meses }));
+      console.log(`[mp-webhook] ✅ ${planU} pagado hasta ${hasta} para ${uid}`);
+      await avisarPagoUnico({ uid, plan: planU, meses, hasta, paymentId: pago.id, email: pago?.payer?.email });
+      return ok;
+    }
     let preId = null;
     if (/preapproval/.test(tipo) && !/authorized_payment/.test(tipo)) preId = id;
     else if (/authorized_payment/.test(tipo)) { const pago = await mp(`/authorized_payments/${id}`); preId = pago.preapproval_id; }

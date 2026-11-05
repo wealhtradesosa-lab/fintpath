@@ -99,7 +99,8 @@ export function useAccount(authUser, supabase) {
               managed_by_advisor_id,
               managed_tier,
               subscription_status,
-              grace_until
+              grace_until,
+              pago_unico
             )
           `)
           .eq("user_id", authUser.id)
@@ -216,6 +217,7 @@ export function useAccount(authUser, supabase) {
           managedTier: acc.managed_tier || null,
           subscriptionStatus: acc.subscription_status || "active",
           graceUntil: acc.grace_until ? new Date(acc.grace_until) : null,
+          pagoUnico: !!acc.pago_unico,
           memberships: data, // lista completa para AccountSwitcher
           loading: false,
           error: null,

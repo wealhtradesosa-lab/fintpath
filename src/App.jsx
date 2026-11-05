@@ -746,7 +746,7 @@ export default function FinPath(){
   // 01+01b+01c+01d aún no está aplicada, devuelve isLegacy=true con defaults
   // (admin) y todo el flujo cae al camino legacy. Cuando está aplicada, los
   // saves van a public.user_data por account_id en lugar de por id.
-  const{accountId,role,isLegacy,displayName,plan:planAccount,maxMembers,memberships,subscriptionStatus,graceUntil,loading:accountLoading,refresh:refreshAccount}=useAccount(authUser,supabase);
+  const{accountId,role,isLegacy,displayName,plan:planAccount,maxMembers,memberships,subscriptionStatus,graceUntil,pagoUnico,loading:accountLoading,refresh:refreshAccount}=useAccount(authUser,supabase);
   // 30-oct-2026: cuentas que invitaron a este usuario como contador (solo lectura tributaria).
   const[clientesContador,setClientesContador]=useState([]);
   useEffect(()=>{
@@ -963,7 +963,14 @@ export default function FinPath(){
     //    nada — quedaba dudando si le habían cobrado.
     // Después de entregar una tarjeta, el silencio destruye la confianza.
     const cancelado=params.get('canceled');
-    if(cancelado==='true'){
+    // 5-nov-2026 · Regreso desde Mercado Pago (suscripción o pago único con PSE/Efecty).
+    const mpVuelta=params.get('mp');
+    if(mpVuelta){
+      if(mpVuelta==='ok')setPagoEstado({tipo:"exito",titulo:"¡Pago recibido!",msg:"Mercado Pago confirmó tu pago. Tu plan se activa en menos de un minuto y te llega un correo con el detalle. Si no lo ves activo, recarga la página."});
+      else if(mpVuelta==='pendiente')setPagoEstado({tipo:"procesando",cerrable:true,titulo:"Tu pago está pendiente",msg:"Si pagaste en efectivo (Efecty) o tu banco aún no confirma el PSE, activamos tu plan apenas Mercado Pago lo apruebe y te avisamos por correo. No tienes que hacer nada más."});
+      else setPagoEstado({tipo:"cancelado",titulo:"No se completó el pago",msg:"No te cobramos nada y tu plan sigue igual. Puedes intentarlo de nuevo con PSE, Efecty o tarjeta."});
+      window.history.replaceState({},'',window.location.pathname);
+    } else if(cancelado==='true'){
       setPagoEstado({tipo:"cancelado",titulo:"No se completó el pago",msg:"No te cobramos nada y tu plan sigue igual. Puedes intentarlo cuando quieras."});
       window.history.replaceState({},'',window.location.pathname);
     } else if(successFlag==='true'||(successFlag==='1'&&sessionId&&sessionId!=='{CHECKOUT_SESSION_ID}')){
@@ -3784,6 +3791,12 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         setAbriendoPago(null);
         if(planMp==="pro"&&billingCycle==="mensual"){window.open(PIONEROS_MP.url,"_blank","noopener");return}
         alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta pagar en dólares.")};
+      // 5-nov-2026 (Santiago: "pago único anual que puedan pagar por PSE"). Checkout Pro de
+      // Mercado Pago: PSE, Efecty, tarjeta o saldo. Un solo cobro, no se renueva solo.
+      const pagarUnico=async(meses)=>{const clave="unico"+meses;if(abriendoPago)return;setAbriendoPago(clave);trackCheckoutStarted({plan:"Pro",billingCycle:meses===12?"anual":"mensual",priceId:"mp_unico_"+meses});
+        try{const r=await fetchAuth("/api/mp-pago-unico",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:"pro",meses})});const d=await r.json();if(d&&d.url){window.location.href=d.url;setTimeout(()=>setAbriendoPago(null),15000);return}}catch{}
+        setAbriendoPago(null);
+        alert("No pudimos abrir Mercado Pago en este momento. Escríbenos a soporte@finpathia.com o intenta de nuevo.")};
       return<div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <h2 style={{fontSize:28,fontWeight:700,margin:"0 0 8px"}}>{isUS?"One plan, everything included":"Un solo plan, todo incluido"}</h2>
@@ -3797,7 +3810,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
         <div style={{maxWidth:720,margin:"0 auto 24px",textAlign:"center"}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:8}}>{isUS?"How do you want to pay?":"¿Cómo quieres pagar?"}</div>
           <div style={{display:"grid",gridTemplateColumns:mb?"1fr":"1fr 1fr",gap:10}}>
-            {[["cop","En pesos colombianos","Mercado Pago, con tarjeta de crédito o débito. Cobro automático en pesos, sin cargos internacionales."],["usd","En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
+            {[["cop","En pesos colombianos","Mercado Pago: tarjeta con cobro automático, o PSE y Efecty con un pago único. Sin cargos internacionales."],["usd","En dólares (USD)","Tarjeta internacional con Stripe. Tu banco convierte a su tasa."]].map(([k,t1,t2])=>
               <button key={k} onClick={()=>setMonedaPago(k)} style={{textAlign:"left",padding:"12px 14px",borderRadius:12,cursor:"pointer",border:"2px solid "+(mon===k?T.gn:T.border),background:mon===k?T.gnB:"transparent",color:T.tx}}>
                 <div style={{fontSize:14,fontWeight:700}}>{mon===k?"● ":"○ "}{t1}</div>
                 <div style={{fontSize:12,color:T.tx3,marginTop:3,lineHeight:1.4}}>{t2}</div>
@@ -3908,6 +3921,20 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             </Cd>
           ))}
         </div>
+        {mon==="cop"&&(()=>{const pr=PRECIOS_COP["Pro"],sinDesc=pr.mensual*12,ahorro=sinDesc-pr.anual;return(
+          <div style={{maxWidth:480,margin:"16px auto 0",padding:"18px 20px",borderRadius:14,border:"1px solid "+T.border,background:T.bg2}}>
+            <div style={{fontSize:15,fontWeight:700,color:T.tx}}>¿Sin tarjeta? Paga con PSE o Efecty</div>
+            <div style={{fontSize:12,color:T.tx3,marginTop:4,lineHeight:1.5}}>Un solo pago por Mercado Pago, sin cobros automáticos. También sirve tarjeta o tu saldo de Mercado Pago. Antes de vencer te avisamos para renovar.</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",margin:"12px 0"}}>{["PSE","Efecty","Tarjeta","Saldo Mercado Pago"].map(m=><span key={m} style={{fontSize:11,fontWeight:700,padding:"3px 9px",borderRadius:6,border:"1px solid "+T.border,color:T.tx2}}>{m}</span>)}</div>
+            <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:28,fontWeight:700,color:T.tx}}>{fmtCOP(pr.anual)}</span>
+              <span style={{fontSize:13,color:T.tx3,fontWeight:600}}>por 1 año</span>
+              <span style={{fontSize:13,color:T.tx3,textDecoration:"line-through"}}>{fmtCOP(sinDesc)}</span>
+            </div>
+            <div style={{display:"inline-block",marginTop:6,fontSize:12,fontWeight:700,color:T.gn,background:T.gnB,padding:"4px 10px",borderRadius:6}}>Ahorras {fmtCOP(ahorro)} · 2 meses gratis</div>
+            <Bt v="p" sz="m" st={{width:"100%",justifyContent:"center",marginTop:14,opacity:abriendoPago&&abriendoPago!=="unico12"?0.55:1}} onClick={()=>pagarUnico(12)}>{abriendoPago==="unico12"?"Abriendo Mercado Pago…":`Pagar 1 año con PSE · ${fmtCOP(pr.anual)}`}</Bt>
+            <button type="button" onClick={()=>pagarUnico(1)} style={{display:"block",width:"100%",marginTop:10,background:"none",border:"none",color:T.tx2,fontSize:13,cursor:abriendoPago?"default":"pointer",textDecoration:"underline",opacity:abriendoPago&&abriendoPago!=="unico1"?0.55:1}}>{abriendoPago==="unico1"?"Abriendo Mercado Pago…":`¿Prefieres pagar solo un mes? ${fmtCOP(pr.mensual)}`}</button>
+          </div>)})()}
         {mon==="cop"&&<div style={{maxWidth:480,margin:"16px auto 0",fontSize:12,color:T.tx2,textAlign:"center",lineHeight:1.5}}>En Mercado Pago entra con el mismo correo de tu cuenta FINPATHIA ({u?.p?.email||authUser?.email||"tu correo"}) para que tu plan se active solo.</div>}
         <div style={{textAlign:"center",marginTop:24,color:T.tx3,fontSize:13,lineHeight:1.8}}>
           {mon==="cop"?"Pagos seguros con Mercado Pago":"Pagos seguros con Stripe"} • Cancela cuando quieras • Sin compromisos<br/>
@@ -4307,7 +4334,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
               </div>
               <Bt v="s" onClick={()=>{const inp=document.createElement("input");inp.type="file";inp.accept=".json";inp.onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);localStorage.setItem(SK,JSON.stringify(d));setU(sanitize(d));alert("Datos importados correctamente. Recarga la página.")}catch{alert("Error: archivo no válido")}};r.readAsText(f)};inp.click()}} st={{justifyContent:"center"}}>Importar Datos (JSON)</Bt>
               <Bt v="d" onClick={()=>{if(confirm("¿Borrar TODOS tus datos financieros? Esta acción no se puede deshacer. Tus inversiones, gastos, ingresos y deudas se perderán."))setU(mkU(u?.p?.name||"Usuario",u?.p?.email||""))}} st={{justifyContent:"center"}}>Borrar Datos</Bt></div></Cd></div>;
-    return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil}/>;}
+    return <MiCuenta onUpgrade={()=>setPg("price")} supabase={supabase} accountId={accountId} role={role} displayName={displayName} plan={planAccount} maxMembers={maxMembers} currentUserId={authUser?.id} currentUserName={u?.p?.name||authUser?.user_metadata?.name||authUser?.email?.split("@")[0]||"El administrador"} onChange={refreshAccount} isLegacy={isLegacy} configContent={cuentaConfig} defaultTab={pg==="set"?"config":undefined} subscriptionStatus={subscriptionStatus} graceUntil={graceUntil} pagoUnico={pagoUnico}/>;}
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
   return <RoleProvider value={{role,isLegacy,accountId}}><div className="fp-app" style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}><DefsIconos/>
@@ -4389,7 +4416,7 @@ img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
           <div style={{fontSize:14,fontWeight:700,color:pagoEstado.tipo==="exito"?"#3ddc45":pagoEstado.tipo==="cancelado"?"#f59e0b":"#60a5fa"}}>{pagoEstado.titulo}</div>
           <div style={{fontSize:12,color:"#cbd5e1",marginTop:3,lineHeight:1.5}}>{pagoEstado.msg}</div>
         </div>
-        {pagoEstado.tipo!=="procesando"&&<button onClick={()=>setPagoEstado(null)} style={{background:"transparent",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,lineHeight:1,padding:0,flexShrink:0}}>×</button>}
+        {(pagoEstado.tipo!=="procesando"||pagoEstado.cerrable)&&<button onClick={()=>setPagoEstado(null)} style={{background:"transparent",border:"none",color:"#64748b",cursor:"pointer",fontSize:18,lineHeight:1,padding:0,flexShrink:0}}>×</button>}
       </div>
     </div>}
     <AvisoVersion/>{toast&&<div style={{position:"fixed",top:"max(16px, env(safe-area-inset-top))",left:"50%",transform:"translateX(-50%)",maxWidth:"calc(100vw - 32px)",boxSizing:"border-box",textAlign:"center",background:"#00c805",color:"#000",padding:"12px 24px",borderRadius:12,fontWeight:700,fontSize:13,zIndex:9999,boxShadow:"0 8px 32px rgba(0,0,0,0.4)",animation:"slideUp 0.3s ease"}}>{toast}</div>}</main>
