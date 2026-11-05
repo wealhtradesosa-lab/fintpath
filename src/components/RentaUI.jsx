@@ -59,9 +59,12 @@ export function SelectorTitular({ owners, value, onChange, conGrupo = true }) {
     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {items.map((it) => (
         <button key={it.id} type="button" onClick={() => onChange(it.id)} aria-pressed={value === it.id}
-          style={{ textAlign: "left", cursor: "pointer", minWidth: 180, padding: "10px 14px", borderRadius: R.lg,
-            border: `1px solid ${value === it.id ? C.accent : C.border}`, background: value === it.id ? Cα.accent15 : C.raised, color: C.text }}>
-          <div style={{ ...F.h3, fontSize: 14 }}>{it.nombre}</div>
+          // 5-nov-2026 (Santiago: "para saber cuál está presionada, marcar con verde").
+          // Antes el seleccionado era azul claro y tema.css lo volvía transparente:
+          // no se distinguía. Ahora verde del tema, con borde de 2px y un check.
+          style={{ textAlign: "left", cursor: "pointer", minWidth: 180, padding: value === it.id ? "9px 13px" : "10px 14px", borderRadius: R.lg,
+            border: value === it.id ? "2px solid var(--fp-pos)" : `1px solid ${C.border}`, background: value === it.id ? "color-mix(in srgb, var(--fp-pos) 12%, transparent)" : C.raised, color: C.text }}>
+          <div style={{ ...F.h3, fontSize: 14, display: "flex", alignItems: "center", gap: 6 }}>{value === it.id && <span aria-hidden style={{ color: "var(--fp-pos)" }}>✓</span>}{it.nombre}</div>
           <div style={F.caption}>{it.sub}</div>
         </button>
       ))}
@@ -70,20 +73,18 @@ export function SelectorTitular({ owners, value, onChange, conGrupo = true }) {
 }
 
 // 5-nov-2026 (Santiago: "a estas tarjetas darles color o fondo, se ve todo muy
-// blanco y negro"). `tono` tiñe la tarjeta según lo que significa la cifra:
-// accent = ingresos y lo que se tiene · danger = impuesto y deudas · warn =
-// tasa · ok = lo que baja el impuesto o queda a favor. Sin tono, gris como antes.
-const TONOS = {
-  accent: { c: C.accent, bg: Cα.accent08, bd: Cα.accent25 },
-  ok: { c: C.ok, bg: Cα.ok08, bd: Cα.ok25 },
-  warn: { c: C.warn, bg: Cα.warn08, bd: Cα.warn25 },
-  danger: { c: C.danger, bg: Cα.danger08, bd: Cα.danger25 },
-};
+// blanco y negro"; luego: "se le fue la mano en colores"). `tono` tiñe solo las
+// cifras que deciden: impuesto (danger), saldo y patrimonio líquido (ok/danger).
+// El resto queda neutro con borde fino.
+// Con variables del tema (no hex): tema.css neutraliza el azul literal y
+// ajusta verde/rojo/ámbar según modo claro u oscuro.
+const tono = (v) => ({ c: `var(${v})`, bg: `color-mix(in srgb, var(${v}) 7%, transparent)`, bd: `color-mix(in srgb, var(${v}) 22%, transparent)` });
+const TONOS = { accent: tono("--fp-azul"), ok: tono("--fp-pos"), warn: tono("--fp-alerta"), danger: tono("--fp-neg") };
 export function Kpi({ k, v, d, color, tono }) {
   const t = TONOS[tono];
   return (
-    <div style={{ background: t ? `linear-gradient(180deg, ${t.bg}, transparent 140%), ${C.raised}` : C.raised, border: t ? `1px solid ${t.bd}` : "1px solid transparent", borderRadius: R.lg, padding: "12px 14px", display: "grid", gap: 3, alignContent: "start", gridTemplateRows: "auto auto 1fr" }}>
-      <span style={{ ...F.caption, fontWeight: 500, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}>{t && <span style={{ width: 6, height: 6, borderRadius: "50%", background: t.c, flexShrink: 0 }} />}<span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{k}</span></span>
+    <div style={{ background: t ? `linear-gradient(180deg, ${t.bg}, transparent 140%), ${C.raised}` : C.raised, border: `1px solid ${t ? t.bd : C.border}`, borderRadius: R.lg, padding: "12px 14px", display: "grid", gap: 3, alignContent: "start", gridTemplateRows: "auto auto 1fr" }}>
+      <span style={{ ...F.caption, fontWeight: 500, color: C.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "flex", alignItems: "center", gap: 6 }}><span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{k}</span></span>
       <span style={{ fontWeight: 600, fontSize: 20, color: color || (t ? t.c : C.text), fontVariantNumeric: "tabular-nums" }}>{v}</span>
       {d && <span style={F.caption}>{d}</span>}
     </div>

@@ -199,16 +199,16 @@ export default function EstimadoRenta({ u, onGuardar, onGuardarVersiones, onNavi
         )}
         <Panel titulo="2. Su ficha: lo que declaró el año pasado" sub={`${e.d.tipo === "F110" ? "Formulario 110" : "Formulario 210"} · año gravable ${e.ano} · traída del historial`}>
           <KpiGrid>
-            <Kpi tono="accent" k="Ingresos brutos" v={mm(e.d.renglones.ingresosBrutos)} />
+            <Kpi k="Ingresos brutos" v={mm(e.d.renglones.ingresosBrutos)} />
             <Kpi tono="danger" k="Impuesto de renta" v={mm(impuestoDeclarado(e.d))} />
-            <Kpi tono="warn" k="Tasa efectiva" v={pct(impuestoDeclarado(e.d) / (Number(e.d.renglones.ingresosBrutos) || 1))} />
-            <Kpi tono="accent" k={e.nat ? "Retenciones" : "Autorretenciones"} v={mm(retencionDeclarada(e.d))} />
+            <Kpi k="Tasa efectiva" v={pct(impuestoDeclarado(e.d) / (Number(e.d.renglones.ingresosBrutos) || 1))} />
+            <Kpi k={e.nat ? "Retenciones" : "Autorretenciones"} v={mm(retencionDeclarada(e.d))} />
             {e.d.renglones.saldoPagar != null && (() => { const sd = saldoDeclarado(e.d); return <Kpi tono={sd.valor < 0 ? "ok" : "danger"} k={sd.valor < 0 ? "Saldo a favor" : "Saldo que pagó"} v={mm(Math.abs(sd.valor))} />; })()}
-            {Number(e.d.renglones.ingresosNoConstitutivos) > 0 && <Kpi tono="ok" k="Ingresos no constitutivos" v={mm(e.d.renglones.ingresosNoConstitutivos)} d="aportes obligatorios y similares" />}
-            {e.nat && <Kpi tono="ok" k="Exentas y deducciones" v={mm(["rentaExenta25", "deducIntereses", "deducMedicina", "deducDependientes", "pvAFC"].reduce((a, k) => a + (Number(e.d.renglones[k]) || 0), 0))} d="25% laboral, intereses, medicina, dependientes, AFC" />}
-            {!e.nat && Number(e.d.renglones.costosDeducciones) > 0 && <Kpi tono="ok" k="Costos y deducciones" v={mm(e.d.renglones.costosDeducciones)} />}
-            {e.d.renglones.patrimonioBruto != null && <Kpi tono="accent" k="Patrimonio bruto" v={mm(e.d.renglones.patrimonioBruto)} />}
-            {e.d.renglones.deudas != null && <Kpi tono="danger" k="Deudas" v={mm(e.d.renglones.deudas)} />}
+            {Number(e.d.renglones.ingresosNoConstitutivos) > 0 && <Kpi k="Ingresos no constitutivos" v={mm(e.d.renglones.ingresosNoConstitutivos)} d="aportes obligatorios y similares" />}
+            {e.nat && <Kpi k="Exentas y deducciones" v={mm(["rentaExenta25", "deducIntereses", "deducMedicina", "deducDependientes", "pvAFC"].reduce((a, k) => a + (Number(e.d.renglones[k]) || 0), 0))} d="25% laboral, intereses, medicina, dependientes, AFC" />}
+            {!e.nat && Number(e.d.renglones.costosDeducciones) > 0 && <Kpi k="Costos y deducciones" v={mm(e.d.renglones.costosDeducciones)} />}
+            {e.d.renglones.patrimonioBruto != null && <Kpi k="Patrimonio bruto" v={mm(e.d.renglones.patrimonioBruto)} />}
+            {e.d.renglones.deudas != null && <Kpi k="Deudas" v={mm(e.d.renglones.deudas)} />}
             {e.d.renglones.patrimonioLiquido != null && <Kpi tono={Number(e.d.renglones.patrimonioLiquido) >= 0 ? "ok" : "danger"} k="Patrimonio líquido" v={mm(e.d.renglones.patrimonioLiquido)} />}
           </KpiGrid>
           <OrigenIngresos e={e} registrados={ingresosRegistrados(u, owner.id)} onNavigate={onNavigate} />
@@ -382,9 +382,9 @@ function Patrimonio({ pat, casa, onCasa }) {
   return (
     <Panel titulo="Impuesto al patrimonio" sub={`Lo pagan las personas con patrimonio líquido de 72.000 UVT o más al 1 de enero (${mm(pat.umbral)} en ${pat.anoA}). Se declara aparte, en el formulario 420.`}>
       <KpiGrid>
-        <Kpi tono="accent" k={`Patrimonio líquido al 1-ene-${pat.anoA}`} v={mm(pat.patA)} d={pat.exc ? `menos casa ${mm(pat.exc)}` : "según la última declaración"} />
+        <Kpi k={`Patrimonio líquido al 1-ene-${pat.anoA}`} v={mm(pat.patA)} d={pat.exc ? `menos casa ${mm(pat.exc)}` : "según la última declaración"} />
         <Kpi tono={pat.aplica ? "danger" : "ok"} k={`Impuesto ${pat.anoA}`} v={pat.aplica ? mm(pat.impA) : "No aplica"} d={pat.aplica ? "ya se debió declarar este año" : `está ${mm(pat.umbral - (pat.patA - pat.exc))} por debajo del umbral`} color={pat.aplica ? C.danger : undefined} />
-        <Kpi tono="accent" k={`Al 1-ene-${pat.anoB}`} v={mm(pat.patB)} d={pat.dicho ? "con lo que dijiste de tu patrimonio" : `si sigue la tendencia (${pct(pat.crec)} al año)`} />
+        <Kpi k={`Al 1-ene-${pat.anoB}`} v={mm(pat.patB)} d={pat.dicho ? "con lo que dijiste de tu patrimonio" : `si sigue la tendencia (${pct(pat.crec)} al año)`} />
         <Kpi tono={pat.impB > 0 ? "danger" : "ok"} k={`Impuesto ${pat.anoB} estimado`} v={pat.impB > 0 ? mm(pat.impB) : "No aplica"} d={pat.impB > 0 ? `con la UVT ${pat.anoB} estimada` : "sigue por debajo del umbral"} color={pat.impB > 0 ? C.danger : undefined} />
       </KpiGrid>
       <div style={{ maxWidth: 360, marginTop: 12 }}>
@@ -436,8 +436,8 @@ function Grupo({ owners, respDe, calculosGO }) {
           <div style={{ marginTop: 12 }}><KpiGrid>
             <Kpi tono="danger" k="Impuesto adicional del socio" v={mm(dv.extra)} d={`${pct(dv.extra / div)} de lo que recibe`} color={C.danger} />
             <Kpi tono="ok" k="Le queda en el bolsillo" v={mm(dv.neto)} d="después de su impuesto" />
-            <Kpi tono="accent" k="Retención al pagarlos" v={mm(dv.retencion)} d="15% de lo que pase de 1.090 UVT; se descuenta al declarar" />
-            <Kpi tono="warn" k="Carga total del grupo" v={pct(dv.cargaTotal)} d="empresa (35%) + socio, sobre la utilidad antes de impuestos" />
+            <Kpi k="Retención al pagarlos" v={mm(dv.retencion)} d="15% de lo que pase de 1.090 UVT; se descuenta al declarar" />
+            <Kpi k="Carga total del grupo" v={pct(dv.cargaTotal)} d="empresa (35%) + socio, sobre la utilidad antes de impuestos" />
           </KpiGrid></div>
           <ul style={{ ...F.body, margin: "12px 0 0", paddingLeft: 18, display: "grid", gap: 4 }}>
             <li><b style={{ color: C.text }}>Si las dejas en la empresa</b>, hoy no pagas nada adicional y la plata sigue trabajando allá; además, el impuesto al patrimonio es solo para personas.</li>

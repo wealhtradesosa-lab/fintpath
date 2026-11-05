@@ -184,13 +184,13 @@ function HistTitular({ owner, onNavigate, onSaveDeclaracion }) {
     <Panel titulo={`Historial de ${owner.name}`} sub={`${n} de ${MAX_DECLARACIONES} declaraciones · ${anos.join(", ")} · formulario ${nat ? "210" : "110"}`}>
       <KpiGrid>
         <Kpi tono="danger" k={`Impuesto ${u.ano}`} v={mm(k.impuesto)} d={flecha(k.impuestoVar)} color={k.impuestoVar > 0 ? C.danger : undefined} />
-        <Kpi tono="warn" k="Tasa efectiva" v={pct(k.tasa)} d={`${k.tasaVarPts != null ? `${k.tasaVarPts >= 0 ? "▲" : "▼"} ${Math.abs(k.tasaVarPts).toLocaleString("es-CO", { maximumFractionDigits: 1 })} pts · ` : ""}de cada $100 que entran, $${Math.round(k.tasa * 100)} van a renta`} />
-        <Kpi tono="accent" k="Crecimiento de ingresos" v={k.cagr != null ? pct(k.cagr) : "—"} d={k.cagr != null ? `promedio anual ${anos[0]}–${u.ano}` : "necesita 2 años o más"} />
+        <Kpi k="Tasa efectiva" v={pct(k.tasa)} d={`${k.tasaVarPts != null ? `${k.tasaVarPts >= 0 ? "▲" : "▼"} ${Math.abs(k.tasaVarPts).toLocaleString("es-CO", { maximumFractionDigits: 1 })} pts · ` : ""}de cada $100 que entran, $${Math.round(k.tasa * 100)} van a renta`} />
+        <Kpi k="Crecimiento de ingresos" v={k.cagr != null ? pct(k.cagr) : "—"} d={k.cagr != null ? `promedio anual ${anos[0]}–${u.ano}` : "necesita 2 años o más"} />
         {k.patrimonio != null && <Kpi tono="ok" k="Patrimonio líquido" v={mm(k.patrimonio)} d={flecha(k.patrimonioVar)} />}
-        {k.endeudamiento != null && <Kpi tono="danger" k="Endeudamiento" v={pct(k.endeudamiento, 0)} d="deudas sobre patrimonio bruto" />}
-        {k.cubierto != null && <Kpi tono="accent" k="Impuesto cubierto con retenciones" v={pct(k.cubierto, 0)} d="el resto se pagó al declarar" />}
-        {nat && k.tope > 0 && <Kpi tono="ok" k="Beneficios usados vs tope" v={pct(k.usado / k.tope, 0)} d={`${mm(k.usado)} de exentas y deducciones · tope ${mm(k.tope)}${k.usado > k.tope ? " · lo de más no restó" : ""}`} color={k.usado > k.tope ? C.danger : undefined} />}
-        {!nat && k.margenFiscal != null && <Kpi tono="accent" k="Margen fiscal" v={pct(k.margenFiscal, 0)} d="renta gravable sobre ingresos" />}
+        {k.endeudamiento != null && <Kpi k="Endeudamiento" v={pct(k.endeudamiento, 0)} d="deudas sobre patrimonio bruto" />}
+        {k.cubierto != null && <Kpi k="Impuesto cubierto con retenciones" v={pct(k.cubierto, 0)} d="el resto se pagó al declarar" />}
+        {nat && k.tope > 0 && <Kpi k="Beneficios usados vs tope" v={pct(k.usado / k.tope, 0)} d={`${mm(k.usado)} de exentas y deducciones · tope ${mm(k.tope)}${k.usado > k.tope ? " · lo de más no restó" : ""}`} color={k.usado > k.tope ? C.danger : undefined} />}
+        {!nat && k.margenFiscal != null && <Kpi k="Margen fiscal" v={pct(k.margenFiscal, 0)} d="renta gravable sobre ingresos" />}
       </KpiGrid>
     </Panel>
 
@@ -223,9 +223,9 @@ function HistTitular({ owner, onNavigate, onSaveDeclaracion }) {
 
     <Panel titulo="Hacia dónde va" sub={`Si los ingresos siguen creciendo como en los últimos años (${pct(proy.g)} al año) y nada más cambia, en ${proy.ano}:`}>
       <KpiGrid>
-        <Kpi tono="accent" k="Ingresos" v={mm(proy.ing)} d={`▲ ${pct((proy.ing - u.ing) / (u.ing || 1), 0)} vs ${u.ano}`} />
+        <Kpi k="Ingresos" v={mm(proy.ing)} d={`▲ ${pct((proy.ing - u.ing) / (u.ing || 1), 0)} vs ${u.ano}`} />
         <Kpi tono="danger" k="Impuesto de renta" v={mm(proy.imp)} d={`${proy.imp >= u.imp ? "▲" : "▼"} ${pct(Math.abs(proy.imp - u.imp) / (u.imp || 1), 0)} vs ${u.ano}`} color={proy.imp > u.imp ? C.danger : undefined} />
-        <Kpi tono="warn" k="Tasa efectiva" v={pct(proy.tasa)} d={`de cada $100, $${Math.round(proy.tasa * 100)} a renta`} />
+        <Kpi k="Tasa efectiva" v={pct(proy.tasa)} d={`de cada $100, $${Math.round(proy.tasa * 100)} a renta`} />
         {proy.pat != null && <Kpi tono="ok" k="Patrimonio líquido" v={mm(proy.pat)} d={`al ritmo de ${pct(proy.gPat)} anual`} />}
       </KpiGrid>
     </Panel>
@@ -271,9 +271,9 @@ function HistGrupo({ owners }) {
     <Panel titulo="Historial del grupo familiar" sub={`Suma de ${con.length} titulares con declaración${sin.length ? ` · falta: ${sin.map((o) => o.name).join(", ")}` : ""}`}>
       <KpiGrid>
         <Kpi tono="danger" k={`Impuesto del grupo ${u}`} v={mm(tot(fI, u))} d={varTxt(fI)} />
-        <Kpi tono="warn" k="Tasa efectiva del grupo" v={pct(tot(fI, u) / (tot(fG, u) || 1))} d="impuesto sobre ingresos de todos" />
+        <Kpi k="Tasa efectiva del grupo" v={pct(tot(fI, u) / (tot(fG, u) || 1))} d="impuesto sobre ingresos de todos" />
         <Kpi tono="ok" k="Patrimonio líquido del grupo" v={mm(tot(fP, u))} d={varTxt(fP)} />
-        <Kpi tono="accent" k="Quién paga más" v={mayor.name} d={`${pct(val(mayor, u, fI) / (tot(fI, u) || 1), 0)} del impuesto del grupo`} />
+        <Kpi k="Quién paga más" v={mayor.name} d={`${pct(val(mayor, u, fI) / (tot(fI, u) || 1), 0)} del impuesto del grupo`} />
       </KpiGrid>
     </Panel>
     <Panel titulo="Tendencias">
