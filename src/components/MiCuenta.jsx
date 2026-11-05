@@ -67,7 +67,7 @@ const daysUntil = (d) => {
 export default function MiCuenta({
   supabase, accountId, role, displayName, plan, maxMembers,
   currentUserId, currentUserName, onChange, isLegacy, configContent, defaultTab,
-  subscriptionStatus, graceUntil, pagoUnico, onUpgrade,
+  subscriptionStatus, graceUntil, pagoUnico, onUpgrade, onDescargarDatos,
 }) {
   // Tabs disponibles según contexto
   const showMembersTab = !isLegacy && accountId;
@@ -129,6 +129,62 @@ export default function MiCuenta({
       )}
       {activeTab === "config" && configContent && (
         <div>{configContent}</div>
+      )}
+      <TusDatos onDescargarDatos={onDescargarDatos} esDueno={role !== "reader"} />
+    </div>
+  );
+}
+
+// 5-nov-2026 · Tus datos: llevártelos o borrarlos, sin escribirle a nadie
+// (Santiago: "que la info quede disponible"; Ley 1581 de 2012).
+function TusDatos({ onDescargarDatos, esDueno }) {
+  const [abierto, setAbierto] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState(null);
+  const [descargando, setDescargando] = useState(false);
+  const borrar = async () => {
+    setEnviando(true); setError(null);
+    try {
+      const r = await fetchAuth("/api/borrar-cuenta", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirmacion: texto }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(d.error || "No pudimos borrar tu cuenta."); setEnviando(false); return; }
+      try { localStorage.clear(); } catch { /* sin almacenamiento */ }
+      window.location.href = "/?cuenta=borrada";
+    } catch { setError("Error de red. Intenta de nuevo."); setEnviando(false); }
+  };
+  return (
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: 20 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, marginBottom: 4 }}>Tus datos</div>
+      <div style={{ fontSize: 12, color: T.txt2, lineHeight: 1.6, marginBottom: 14 }}>Son tuyos. Puedes descargarlos cuando quieras, también si tu plan está vencido.</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+        {onDescargarDatos && (
+          <button type="button" disabled={descargando} onClick={async () => { setDescargando(true); try { await onDescargarDatos(); } finally { setDescargando(false); } }}
+            style={{ background: T.bg3, color: T.txt, border: `1px solid ${T.border}`, padding: "10px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>
+            {descargando ? "Preparando…" : "Descargar mis datos (Excel + copia completa)"}
+          </button>
+        )}
+        {esDueno && !abierto && (
+          <button type="button" onClick={() => setAbierto(true)}
+            style={{ background: "transparent", color: T.txt3, border: `1px solid ${T.border}`, padding: "10px 16px", borderRadius: 10, cursor: "pointer", fontWeight: 600, fontSize: 12 }}>
+            Borrar mi cuenta
+          </button>
+        )}
+      </div>
+      {abierto && (
+        <div style={{ marginTop: 14, padding: 14, borderRadius: 10, border: `1px solid ${T.border}`, background: T.bg3, fontSize: 12, color: T.txt2, lineHeight: 1.6 }}>
+          <strong style={{ color: T.txt }}>Esto borra tu cuenta y toda tu información para siempre.</strong> Cancelamos cualquier cobro automático y no se puede deshacer. Si compartes la cuenta con otras personas, ellas también pierden el acceso. Te recomendamos descargar tus datos antes.
+          <div style={{ marginTop: 10 }}>Escribe <strong style={{ color: T.txt }}>BORRAR</strong> para confirmar:</div>
+          <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+            <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="BORRAR" style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.card, color: T.txt, fontSize: 13, minWidth: 140 }} />
+            <button type="button" disabled={texto.trim().toUpperCase() !== "BORRAR" || enviando} onClick={borrar}
+              style={{ background: texto.trim().toUpperCase() === "BORRAR" ? "#ff5000" : T.bg3, color: texto.trim().toUpperCase() === "BORRAR" ? "#fff" : T.txt3, border: "none", padding: "8px 14px", borderRadius: 8, cursor: texto.trim().toUpperCase() === "BORRAR" && !enviando ? "pointer" : "default", fontWeight: 700, fontSize: 12 }}>
+              {enviando ? "Borrando…" : "Borrar definitivamente"}
+            </button>
+            <button type="button" onClick={() => { setAbierto(false); setTexto(""); setError(null); }} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 12 }}>Cancelar</button>
+          </div>
+          {error && <div style={{ marginTop: 8, color: "#ff5000" }}>{error}</div>}
+        </div>
       )}
     </div>
   );

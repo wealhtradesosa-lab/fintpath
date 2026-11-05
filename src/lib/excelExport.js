@@ -472,3 +472,54 @@ export async function exportInversionesExcel(inversiones, owners, trm, en = fals
     }
   }, buildFilename(X.fileInversiones));
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5-nov-2026 · MIS DATOS — todo en un libro (también en modo consulta)
+// Santiago: "si no paga, que la info quede disponible". La persona puede
+// llevarse sus datos aunque no pague: un Excel con una hoja por sección y una
+// copia completa en JSON. Sin cálculos: lo que cargó, tal cual.
+// ═══════════════════════════════════════════════════════════════════════════
+const SECCIONES_DATOS = [
+  ["inv", "Patrimonio"], ["ingresos", "Ingresos"], ["gas", "Gastos"], ["deu", "Deudas"],
+  ["owners", "Titulares"], ["declaraciones", "Declaraciones"], ["metas", "Metas"], ["ibk", "Portafolio"],
+];
+const plano = (o, pre = "", out = {}) => {
+  Object.entries(o || {}).forEach(([k, v]) => {
+    const key = pre ? `${pre}.${k}` : k;
+    if (v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length <= 12) plano(v, key, out);
+    else out[key] = Array.isArray(v) || (v && typeof v === "object") ? JSON.stringify(v) : v;
+  });
+  return out;
+};
+export async function exportarMisDatos(u, en = false) {
+  const X = en ? XL.en : XL.es;
+  const XLSX = await import("xlsx");
+  const wb = XLSX.utils.book_new();
+  agregarHojaAviso(XLSX, wb, X);
+  let hojas = 0;
+  SECCIONES_DATOS.forEach(([clave, nombre]) => {
+    let v = u?.[clave];
+    if (clave === "gas" && v && !Array.isArray(v)) {
+      v = Object.entries(v).flatMap(([cat, items]) => (items || []).map((g) => ({ categoria: cat, ...g })));
+    }
+    if (!Array.isArray(v) || v.length === 0) return;
+    const filas = v.filter((x) => x && typeof x === "object").map((x) => plano(x));
+    if (!filas.length) return;
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filas), nombre.slice(0, 31));
+    hojas += 1;
+  });
+  if (u?.p) {
+    const perfil = plano(u.p);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([perfil]), "Perfil");
+  }
+  const fecha = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `FINPATHIA_mis_datos_${fecha}.xlsx`);
+  // Copia completa, para guardar o volver a cargar: todo lo que hay en la cuenta.
+  const blob = new Blob([JSON.stringify(u || {}, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `FINPATHIA_copia_completa_${fecha}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  return hojas;
+}

@@ -60,6 +60,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/borrar-cuenta"
+  to = "/.netlify/functions/borrar-cuenta"
+  status = 200
+
+[[redirects]]
   from = "/api/ai-chat"
   to = "/.netlify/functions/ai-chat"
   status = 200
