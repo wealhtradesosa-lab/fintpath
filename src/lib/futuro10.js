@@ -272,7 +272,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const antesLiq = falta;
     if (fuente !== "liquidez" && falta > 0) excesoVentas += falta;
     activos.filter((a) => a.clase === "liquido" && a.id !== excluirId).forEach((a) => {
-      const u = Math.min(a.valor, falta); a.valor -= u; falta -= u; desdeLiquidez += u;
+      const u = Math.min(a.valor, falta); a.valor -= u; falta -= u; desdeLiquidez += u; a.tomadoLiq = (a.tomadoLiq || 0) + u; // 7-nov: cuánto salió de cada cuenta (La historia de tu plata)
     });
     if (fuente !== "liquidez") excesoCubierto += antesLiq - falta;
     return Math.max(0, monto) - falta;
@@ -520,7 +520,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   fila0.rentas = pasivo; fila0.laboral = Math.max(0, ingresos - pasivo); fila0.crece = 0; fila0.produce = pasivo;
   fila0.ingresosReal = ingresos; fila0.gastosReal = fila0.gastos;
   fila0.porActivo = [
-    ...todos.map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: a.rentaReemplazada ? 0 : (a.rentaAnual || 0), crece: 0, crec: a.crec, rentaPct: a.rentaPct || 0 })),
+    ...todos.map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: a.rentaReemplazada ? 0 : (a.rentaAnual || 0), crece: 0, crec: a.crec, rentaPct: a.rentaPct || 0, deLiquidez: a.tomadoLiq || 0 })),
     { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: rCan.liquidez },
     { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: 0, crec: rCan.renta },
     { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: 0, crec: rCan.crecimiento },

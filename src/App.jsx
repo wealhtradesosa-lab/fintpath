@@ -1531,18 +1531,34 @@ export default function FinPath(){
     const f10=(id,nombre,descripcion,config)=>({id,nombre,descripcion,creado:"2026-10-30T12:00:00.000Z",config:{escenario:"base",decisiones:{},norte:"equilibrio",mezcla:null,nuevas:[],reinversiones:[],futuros:{ingresos:[],activos:[],gastos:[]},...config}});
     // Demo: 12 meses de historia del patrimonio (crece ~1% al mes, con un bache en abril).
     {const f=fotoPatrimonio(nd,trmReal(nd)||4000);if(f){const hoy=new Date();nd.historiaPatrimonio=[];for(let m=12;m>=1;m--){const dt=new Date(hoy.getFullYear(),hoy.getMonth()-m,28);const fac=Math.pow(0.99,m)*(dt.getMonth()===3?0.97:1);nd.historiaPatrimonio.push({k:dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0"),d:dt.toISOString().slice(0,10),a:Math.round(f.a*fac),de:Math.round(f.de*(1+m*0.01)),nw:Math.round(f.a*fac-f.de*(1+m*0.01))})}}}
+    // 7-nov-2026 (Santiago: "los escenarios del demo son todos muy parecidos en
+    // cifras y resultados; que veamos más contraste: unos de más riesgo, otros
+    // más conservadores"). Cinco perfiles de riesgo, del más prudente al más
+    // agresivo, con el mismo patrimonio de partida. Cada uno cuenta una historia
+    // distinta: qué vende, a dónde va la plata y qué produce.
+    const custom=(nombre,monto,tasa,pctRecibe=0,moneda="COP")=>({preset:"custom",nombre,monto,anio:1,rendimientoNomPct:tasa,pctRecibe,moneda,fuente:"venta"});
     nd.futuro10={escenarios:[
-      f10("demo_f10_1","1 · Protección: blindar la familia","Quedar sin deudas y con la vida pagada pase lo que pase: vender Orlando (renta menos de lo que cuesta), la fintech y el bitcoin, pagar todos los créditos y dejar lo que sobra en liquidez y renta fija. Se quedan la casa del lago y el fondo que paga cada mes.",
-        {decisiones:{d_i2:{accion:"vende"},d_i7:{accion:"vende"},d_i10:{accion:"vende"}},pagarDeudas:pagarTodo,mezcla:{liquidez:30,renta:65,crecimiento:5}}),
-      f10("demo_f10_2","2 · Vivir de rentas","Vender la casa del lago y Orlando, pagar los créditos caros y poner la plata a pagar cada mes: dos tercios en renta fija que deposita cada mes, el resto creciendo.",
-        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"}},pagarDeudas:pagarConOrlando,norte:"rentas",nuevas:[rfPaga("Renta fija que paga cada mes (CDT y TES)",6500000000,10)]}),
-      f10("demo_f10_3","3 · Equilibrio","Vender la casa del lago y Orlando, construir la bodega en el lote y repartir mitad en renta, mitad creciendo.",
-        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i5:bodegaF10},pagarDeudas:pagarConOrlando,norte:"equilibrio",nuevas:[rfPaga("Renta fija que paga cada mes (CDT y TES)",4000000000,10)]}),
-      f10("demo_f10_4","4 · Crecer en mercado global","Salir del ladrillo grande: vender la casa del lago, Orlando y Miami, pagar todo y llevar el 70% a un portafolio global de acciones (S&P 500, en dólares). Líquido y diversificado, pero sube y baja.",
-        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i3:{accion:"vende"}},pagarDeudas:pagarTodo,norte:"crecer",nuevas:[rfPaga("Bonos globales que pagan cada mes",2500000000,7,"USD")]}),
-      f10("demo_f10_5","5 · Crecer en finca raíz","Quedarse con los inmuebles y sumar más: construir la bodega en el lote y meter el efectivo y la fintech en un proyecto de vivienda en preventa que se valoriza.",
+      // 1 · Conservador: vende lo que pierde plata y lo volátil, paga TODO y deja la plata en renta fija.
+      f10("demo_f10_1","1 · Protección: sin deudas y dormir tranquilo","Perfil conservador. Vender Orlando (renta menos de lo que cuesta), la fintech y el bitcoin; pagar todos los créditos y dejar lo que sobra en liquidez y CDT. Se quedan la casa del lago y el fondo que paga cada mes. Crece poco, pero nada depende del mercado.",
+        {decisiones:{d_i2:{accion:"vende"},d_i7:{accion:"vende"},d_i10:{accion:"vende"}},pagarDeudas:pagarTodo,mezcla:{liquidez:40,renta:60,crecimiento:0},
+         nuevas:[custom("CDT escalonados (pagan cada mes)",900000000,9.5,100)]}),
+      // 2 · Rentista: vende los inmuebles grandes y pone TODO a pagar cada mes. Máximo ingreso mensual, mínimo crecimiento.
+      f10("demo_f10_2","2 · Vivir de rentas: el máximo ingreso mensual","Perfil moderado-conservador. Vender la casa del lago y Orlando, pagar los créditos y poner los $9.000 M en renta fija que deposita cada mes (TES, CDT y un fondo de deuda privada). Es el escenario que más plata te pone en el bolsillo cada mes, a cambio de crecer menos.",
+        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"}},pagarDeudas:pagarConOrlando,mezcla:{liquidez:15,renta:85,crecimiento:0},
+         nuevas:[custom("TES y CDT que pagan cada mes",5500000000,10,100),custom("Fondo de deuda privada (paga cada mes)",3500000000,13,100)]}),
+      // 3 · Equilibrio: la bodega + mitad renta, mitad crecimiento.
+      f10("demo_f10_3","3 · Equilibrio: renta hoy y crecimiento mañana","Perfil moderado. Vender la casa del lago y Orlando, construir la bodega en el lote (renta desde el mes 6) y repartir: la mitad en renta fija que paga cada mes, la otra mitad en un portafolio global de acciones que se reinvierte.",
+        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i5:bodegaF10},pagarDeudas:pagarConOrlando,norte:"equilibrio",
+         nuevas:[custom("Renta fija que paga cada mes (CDT y TES)",4000000000,10,100),custom("Portafolio global de acciones (S&P 500, en dólares)",3500000000,12,0,"USD")]}),
+      // 4 · Crecimiento en mercado: sale del ladrillo, todo a acciones. Volátil, líquido.
+      f10("demo_f10_4","4 · Crecer en el mercado global","Perfil agresivo. Salir del ladrillo: vender la casa del lago, Orlando y Miami, pagar todo y llevar la plata a acciones: un portafolio global (S&P 500) y una parte en tecnología y mercados emergentes. Nada paga cada mes; todo se reinvierte. Sube y baja, pero a 10 años es el que más multiplica en el mercado.",
+        {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i3:{accion:"vende"}},pagarDeudas:pagarTodo,mezcla:{liquidez:5,renta:10,crecimiento:85},
+         nuevas:[custom("Portafolio global de acciones (S&P 500, en dólares)",5500000000,12,0,"USD"),custom("Acciones de tecnología y mercados emergentes",3000000000,17,0,"USD")]}),
+      // 5 · Finca raíz con motor: bodega + preventa + proyectos asociativos que se repiten cada año.
+      f10("demo_f10_5","5 · Crecer en finca raíz con un motor de construcción","Perfil muy agresivo. Quedarse con los inmuebles y sumar más: construir la bodega, meter la fintech y el efectivo en un proyecto de vivienda en preventa, y poner $1.200 M a trabajar en proyectos de construcción asociativos que se construyen, se venden y vuelven a empezar cada año. La ganancia de cada vuelta se reinvierte en la preventa. Es el que más crece, y el que más depende de que cada obra salga bien.",
         {decisiones:{d_i5:bodegaF10,d_i7:{accion:"vende"},d_i8:{accion:"vende"}},pagarDeudas:pagarCaras,norte:"crecer",
-         nuevas:[{preset:"custom",nombre:"Proyecto de vivienda en preventa",monto:1200000000,anio:1,rendimientoNomPct:14,pctRecibe:0,moneda:"COP",fuente:"venta"}]}),
+         nuevas:[custom("Proyecto de vivienda en preventa",550000000,15,0)],
+         ciclos:[{nombre:"Proyectos de construcción asociativos",capital:1200000000,valorFinal:1680000000,meses:12,desde:1,hasta:10,fuente:"venta",costosPct:8,destino:"reinvierte",destinoId:"nueva_0"}]}),
     ]};
     nd.caminoElegido="demo_esc_1";
     // Declaraciones de años anteriores, para que "Tu renta, año tras año" tenga con qué comparar.

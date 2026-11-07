@@ -80,7 +80,8 @@ export default function HistoriaPlata({ r }) {
     ...vendidos.map((v) => ({ id: v.id, nombre: v.nombre, valor: v.valor, tag: "vende", porque: v.porque })),
     ...(f0.porActivo || []).filter((a) => !esCanasta(a) && !esCiclo(a) && !nuevasIds.has(a.id) && !vendIds.has(a.id)).map((a) => {
       const ap = aporteDe[a.id];
-      const valor = ap && ap.anio === 1 ? (ap.valorHoy || 0) : a.valor;
+      const valor = (ap && ap.anio === 1 ? (ap.valorHoy || 0) : a.valor) + (a.deLiquidez || 0);
+      if (a.deLiquidez > 0.5) return { id: a.id, nombre: a.nombre, valor, tag: "usa", usa: a.deLiquidez };
       return { id: a.id, nombre: a.nombre, valor, tag: ap ? "recibe" : "igual", ap };
     }),
   ].filter((a) => a.valor > 0.5).sort((x, y) => y.valor - x.valor);
@@ -95,6 +96,7 @@ export default function HistoriaPlata({ r }) {
       if (nuevasIds.has(a.id)) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "nuevo" };
       if (ap && ap.anio === 1) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "aporte", antes: ap.valorHoy || 0, aporte: ap.aporte };
       if (ap) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "aporteLuego", aporte: ap.aporte, anio: ap.anio };
+      if (a.deLiquidez > 0.5) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "menos", antes: a.valor + a.deLiquidez, usa: a.deLiquidez };
       return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "igual" };
     }),
     ...(canastaHoy > 0.5 ? [{ id: "canastas", nombre: tx("Liquidez, colchón y lo que sobra", "Cash, cushion and leftover"), valor: canastaHoy, tag: "canasta" }] : []),
@@ -222,16 +224,19 @@ export default function HistoriaPlata({ r }) {
     vende: [tx("Se vende", "Sold"), INF.txTeja], igual: [tx("Igual que hoy", "Same as today"), INF.tx2], recibe: [tx("Se conserva y recibe más", "Kept, gets more"), INF.txDorado],
     nuevo: [tx("Nuevo · de la venta", "New · from the sale"), INF.azul], aporte: [tx("Tenías + de la venta", "You had + from the sale"), INF.txDorado],
     aporteLuego: [tx("Igual · recibe más luego", "Same · gets more later"), INF.txDorado], canasta: [tx("De la venta: colchón y sobrante", "From the sale: cushion and leftover"), INF.txOk],
-    motor: [tx("Negocio que se repite · de la venta", "Repeating deal · from the sale"), INF.serie[6]],
+    motor: [tx("Negocio que se repite", "Repeating deal"), INF.serie[6]],
+    usa: [tx("Sale una parte para el plan", "Part goes to the plan"), INF.txTeja], menos: [tx("Lo que queda", "What's left"), INF.tx2],
   };
-  const COLB = { vende: INF.teja, igual: INF.gris, recibe: INF.gris, nuevo: INF.azul, aporte: INF.dorado, aporteLuego: INF.gris, canasta: INF.oliva, motor: INF.serie[6] };
+  const COLB = { vende: INF.teja, igual: INF.gris, recibe: INF.gris, nuevo: INF.azul, aporte: INF.dorado, aporteLuego: INF.gris, canasta: INF.oliva, motor: INF.serie[6], usa: INF.gris, menos: INF.gris };
   const detalle = (a) => {
     if (a.tag === "vende") return <><b style={{ color: INF.tx }}>{tx("Por qué: ", "Why: ")}</b>{a.porque}</>;
     if (a.tag === "recibe") return a.ap.anio === 1 ? tx(`Le pones ${fmM(a.ap.aporte)} de la venta`, `You add ${fmM(a.ap.aporte)} from the sale`) : tx(`En ${anioCal(a.ap.anio - 1)} le pones ${fmM(a.ap.aporte)}`, `In ${anioCal(a.ap.anio - 1)} you add ${fmM(a.ap.aporte)}`);
     if (a.tag === "aporte") return tx(`Tenías ${fmM(a.antes)} + ${fmM(a.aporte)} de la venta`, `You had ${fmM(a.antes)} + ${fmM(a.aporte)} from the sale`);
     if (a.tag === "aporteLuego") return tx(`En ${anioCal(a.anio - 1)} recibe ${fmM(a.aporte)}`, `In ${anioCal(a.anio - 1)} it gets ${fmM(a.aporte)}`);
     if (a.tag === "nuevo") return tx("Se compra con la plata de la venta", "Bought with the sale proceeds");
-    if (a.tag === "motor") return tx("Capital que trabaja: se construye, se vende y vuelve a entrar", "Working capital: build, sell, and go again");
+    if (a.tag === "usa") return tx(`De aquí salen ${fmM(a.usa)} para el plan`, `${fmM(a.usa)} comes out of here for the plan`);
+    if (a.tag === "menos") return tx(`Tenías ${fmM(a.antes)} − ${fmM(a.usa)} que usaste en el plan`, `You had ${fmM(a.antes)} − ${fmM(a.usa)} used in the plan`);
+    if (a.tag === "motor") return tx("Capital que sale de la venta y trabaja: se construye, se vende y vuelve a entrar", "Capital from the sale that works: build, sell, and go again");
     if (a.tag === "canasta") return tx("Lo que queda de la venta, repartido según tu mezcla", "What's left of the sale, split per your mix");
     return null;
   };
