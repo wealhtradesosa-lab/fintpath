@@ -13,10 +13,17 @@
 //   · 3 Patrimonio neto por año  ·  Cada inversión, año por año
 //   · Le gana a la inflación, año por año
 //   · 4 Año por año
+// 7-nov-2026: ordenado como una historia en 5 capítulos (índice arriba):
+//   1 El veredicto (una frase + fichas) · 2 Qué haces con tu plata (HistoriaPlata
+//   + la tabla de la plata nueva, plegada) · 3 Tu mes (mes completo, mes a mes con
+//   eventos numerados, entra/sale) · 4 Tu patrimonio (neto por año, cada inversión
+//   juntas / cada una, todo lo que tienes) · 5 ¿Es buen plan? (lo que produce,
+//   inflación). Al final, plegada, la tabla año por año. El orden de arriba es el viejo.
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
 import { anioCal } from "../lib/futuro10.js";
 import MesCompleto from "./MesCompleto.jsx";
+import HistoriaPlata from "./infografia/HistoriaPlata.jsx";
 import { useMemo, useState } from "react";
 import { ComposedChart, BarChart, Bar, Area, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, LabelList, Cell } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
@@ -69,6 +76,8 @@ function series(filas, campo, n = 5) {
 
 export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct() }) {
   const [modo, setModo] = useState("nominal"); // nominal | real (plata de hoy)
+  const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
+  const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala
   const filas = r.filas || [];
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
   const ev = useMemo(() => eventosDelPlan(r), [r]);
@@ -137,6 +146,26 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   const produce = (f1.porActivo || []).map((a) => ({ ...a, rM: a.renta / 12, cM: Math.max(0, a.crece) / 12 })).filter((a) => a.rM + a.cM > 0.5).sort((a, b) => b.rM + b.cM - (a.rM + a.cM));
   const maxProd = Math.max(1, ...produce.map((a) => a.rM + a.cM));
 
+  // ── 7-nov-2026: el informe como una historia en 5 capítulos ─────────────────
+  // (Santiago: "revisemos cómo diagramar mejor, para que integremos todo de una
+  // forma clara, completa y que explique muy bien el escenario"). Ninguna gráfica
+  // sale; se ordenan por la pregunta que responden.
+  const faltan = filas.slice(1).filter((f) => f.ingresos < f.gastos).length;
+  const veredicto = tx(<>Este plan lleva tu patrimonio de <b>{fmM(f0.patrimonio)}</b> hoy a <b>{fmM(fin.patrimonio)}</b> en {anioCal(fin.anio)}{cagr != null ? <> (crece {fmPct(cagr, 1)} al año)</> : null}. {faltan === 0 ? <>Lo que entra cubre lo que sale <b>todos los años</b></> : <>En <b style={{ color: INF.txBad }}>{faltan} de {filas.length - 1} años</b> lo que entra no cubre lo que sale</>}{real != null ? <> y {real >= 0 ? <>le gana a la inflación por <b style={{ color: INF.txOk }}>{fmPct(real, 1)} real</b> al año</> : <>pierde contra la inflación (<b style={{ color: INF.txBad }}>{fmPct(real, 1)} real</b> al año)</>}</> : null}.</>,
+    <>This plan takes your net worth from <b>{fmM(f0.patrimonio)}</b> today to <b>{fmM(fin.patrimonio)}</b> in {anioCal(fin.anio)}{cagr != null ? <> (growing {fmPct(cagr, 1)} a year)</> : null}. {faltan === 0 ? <>What comes in covers what goes out <b>every year</b></> : <>In <b style={{ color: INF.txBad }}>{faltan} of {filas.length - 1} years</b> income doesn't cover spending</>}{real != null ? <> and {real >= 0 ? <>it beats inflation by <b style={{ color: INF.txOk }}>{fmPct(real, 1)} real</b> a year</> : <>it loses to inflation (<b style={{ color: INF.txBad }}>{fmPct(real, 1)} real</b> a year)</>}</> : null}.</>);
+  const CAPS = [["cap-veredicto", tx("Veredicto", "Verdict")], ["cap-plata", tx("Tu plata", "Your money")], ["cap-mes", tx("Tu mes", "Your month")], ["cap-patrimonio", tx("Patrimonio", "Net worth")], ["cap-bueno", tx("¿Es buen plan?", "Good plan?")]];
+  const irA = (id) => { const el = typeof document !== "undefined" && document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
+  const Indice = () => <nav aria-label={tx("Capítulos del informe", "Report chapters")} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+    {CAPS.map(([id, l], i) => <button key={id} onClick={() => irA(id)} style={{ padding: "7px 12px", borderRadius: 999, border: `1px solid ${INF.linea}`, background: "transparent", color: INF.tx, fontSize: 12.5, cursor: "pointer", display: "inline-flex", gap: 6, alignItems: "center" }}><span style={{ color: INF.txDorado, fontWeight: 700 }}>{i + 1}</span>{l}</button>)}
+  </nav>;
+  const Capitulo = ({ id, n, titulo, pregunta }) => <div id={id} style={{ display: "flex", gap: 12, alignItems: "flex-start", margin: n === 1 ? "4px 0 12px" : "30px 0 12px", scrollMarginTop: 80 }}>
+    <div style={{ fontSize: 32, fontWeight: 800, lineHeight: 1, color: INF.txDorado, fontVariantNumeric: "tabular-nums", minWidth: 28 }}>{n}</div>
+    <div style={{ borderLeft: `1px solid ${INF.linea}`, paddingLeft: 12 }}>
+      <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em", color: INF.tx }}>{titulo}</h2>
+      <div style={{ fontSize: 13.5, color: INF.tx2, marginTop: 3, lineHeight: 1.45 }}>{pregunta}</div>
+    </div>
+  </div>;
+
   const Toggle = () => <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
     {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos")]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
   </div>;
@@ -151,6 +180,9 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
 
   return (
     <div style={{ color: INF.tx }}>
+      <Indice />
+      <Capitulo id="cap-veredicto" n={1} titulo={tx("El veredicto", "The verdict")} pregunta={tx("¿Qué tan bueno es este plan, en una línea?", "How good is this plan, in one line?")} />
+      <div style={{ ...card, fontSize: 16, lineHeight: 1.55, color: INF.tx }}>{veredicto}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 14 }}>
         <Ficha l={tx(`Patrimonio en ${anioCal(10)}`, `Net worth in ${anioCal(10)}`)} v={fmM(fin.patrimonio / d(fin))} s={`${tx("hoy", "today")} ${fmM(f0.patrimonio)}${cagr != null ? tx(` · crece ${fmPct(cagr, 1)} al año`, ` · grows ${fmPct(cagr, 1)} a year`) : ""}`} />
         <Ficha l={tx("Produce al mes", "Earns per month")} v={fmM(produceMes)} s={tx(`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`, `income ${fmM(rentaMes)} + compounding ${fmM(multiplicaMes)}`)} />
@@ -160,6 +192,61 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         <Ficha l={tx("Le gana a la inflación", "Beats inflation")} v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={tx(`real al año · en ${ganaN} de ${gana.length} años`, `real per year · in ${ganaN} of ${gana.length} years`)} col={real != null && real >= 0 ? INF.txOk : INF.txBad} />
       </div>
 
+      <Capitulo id="cap-plata" n={2} titulo={tx("Qué haces con tu plata", "What you do with your money")} pregunta={tx("Qué vendes, a dónde va cada peso y cómo crece cada inversión.", "What you sell, where every dollar goes and how each investment grows.")} />
+      <HistoriaPlata r={r} />
+      {plataNueva.length > 0 && <div style={card}>
+        <h3 style={h3}>{tx(`La plata nueva, en tabla: a dónde va cada ${moneda()}`, `New money as a table: where every ${moneda()} goes`)} · {fmM(totalNueva)}</h3>
+        <p style={lead}>{tx(<>Solo la plata que se mueve: lo que vendes{bd.capitalNuevo > 0 ? ", el capital nuevo" : ""}{bd.desdeLiquidez > 0 ? " y lo que sale de tu liquidez" : ""}. Lo que ya tienes y no se mueve no aparece aquí; eso lo suma «Todo lo que tienes después del plan».</>, <>Only the money that moves: what you sell{bd.capitalNuevo > 0 ? ", new capital" : ""}{bd.desdeLiquidez > 0 ? " and what comes out of your cash" : ""}. What you already own and don't move isn't here; "Everything you own after the plan" adds it.</>)}</p>
+        <details><summary style={{ cursor: "pointer", fontSize: 13, color: INF.tx2, padding: "4px 0" }}>{tx("Ver el detalle en tabla", "See the detail as a table")}</summary>
+        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 560 }}>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Destino", "Destination")}</th><th style={th}>{tx("Capital", "Capital")}</th><th style={th}>{tx("Tasa", "Rate")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Bolsillo", "Bucket")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Regla", "Rule")}</th></tr></thead>
+          <tbody>{plataNueva.map((x, i) => <tr key={i}><td style={tdL}>{x.destino}</td><td style={td}>{fmM(x.capital)}</td><td style={td}>{x.tasa}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.bolsillo}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.regla}</td></tr>)}
+            <tr><td style={{ ...tdL, fontWeight: 700 }}>{tx("Total desplegado", "Total deployed")}</td><td style={{ ...td, fontWeight: 700 }}>{fmM(totalNueva)}</td><td style={td} /><td style={td} /><td style={{ ...tdL, color: INF.tx2 }}>{[(r.vendidos || []).map((v) => `${v.nombre} ${fmM(v.valor)}`).join(" + "), bd.capitalNuevo > 0 ? `${tx("capital nuevo", "new capital")} ${fmM(bd.capitalNuevo)}` : null, bd.desdeLiquidez > 0 ? `${tx("liquidez", "cash")} ${fmM(bd.desdeLiquidez)}` : null].filter(Boolean).join(" + ")}</td></tr>
+          </tbody></table></div></details>
+      </div>}
+
+      <Capitulo id="cap-mes" n={3} titulo={tx("Tu mes: ¿alcanza para vivir?", "Your month: is it enough to live on?")} pregunta={tx("Lo que entra, lo que sale y lo que sobra, hoy y año por año.", "What comes in, what goes out and what's left, today and year by year.")} />
+      <MesCompleto r={r} card={card} h3={h3} lead={lead} />
+      <Toggle />
+      <div style={card}>
+        <h3 style={h3}>{tx("Mes a mes: ¿alcanza para vivir? Así se comporta el plan en el tiempo", "Month by month: is it enough to live on? How the plan holds up over time")}</h3>
+        <p style={lead}>{tx(<><b>Línea azul:</b> lo que entra cada mes. <b>Línea roja punteada:</b> lo que sale para vivir. <b>Franja verde:</b> lo que sobra, que no se queda quieto: {r.destinoSobra || "se reinvierte"}. Las líneas verticales marcan los cambios. Mientras la azul esté por encima de la roja, el plan se sostiene solo.</>, <><b>Blue line:</b> what comes in each month. <b>Dashed red line:</b> what goes out to live. <b>Green band:</b> the surplus, which doesn't sit idle: {r.destinoSobra || "it's reinvested"}. Vertical lines mark changes. As long as blue stays above red, the plan pays for itself.</>)}</p>
+        <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
+          <ComposedChart data={mes} margin={{ top: 30, right: 96, left: 6, bottom: 0 }}>
+            <CartesianGrid {...grid} />
+            <XAxis dataKey="anio" {...eje} />
+            <YAxis {...eje} tickFormatter={fmEje} width={72} />
+            <Tooltip content={(q) => <ChartTooltip {...q} payload={(q.payload || []).filter((x) => x.dataKey !== "base")} formatter={tip} />} />
+            <Area type="stepAfter" dataKey="base" stackId="b" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" name=" " tooltipType="none" />
+            <Area type="stepAfter" dataKey="sobra" stackId="b" stroke="none" fill={INF.franja} isAnimationActive={false} name={tx("Sobra", "Surplus")} />
+            {marcas.map((m, i) => <ReferenceLine key={m.anio} x={anioTxt(m.anio)} stroke={INF.ref} strokeDasharray="2 3"
+              label={(q) => <g><circle cx={q.viewBox.x} cy={q.viewBox.y - 14} r={9} fill={INF.navy} /><text x={q.viewBox.x} y={q.viewBox.y - 10} textAnchor="middle" fill="#fff" fontSize={11} fontWeight={700}>{i + 1}</text></g>} />)}
+            <Line type="stepAfter" dataKey="entra" name={tx("Entra", "In")} stroke={INF.azul} strokeWidth={2.5} dot={false} label={finLabel("entra", `${tx("Entra", "In")} ${fmM(mes[mes.length - 1]?.entra)}`, INF.azul)} />
+            <Line type="stepAfter" dataKey="sale" name={tx("Sale", "Out")} stroke={INF.teja} strokeWidth={2} strokeDasharray="5 4" dot={false} label={finLabel("sale", `${tx("Sale", "Out")} ${fmM(mes[mes.length - 1]?.sale)}`, INF.teja)} />
+          </ComposedChart>
+        </ResponsiveContainer></div></div>
+        {marcas.length > 0 && <ol style={{ listStyle: "none", padding: 0, margin: "8px 0 4px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,260px),1fr))", gap: "6px 16px" }}>
+          {marcas.map((m, i) => <li key={m.anio} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: INF.tx }}>
+            <span style={{ width: 18, height: 18, borderRadius: "50%", background: INF.navy, color: "#fff", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
+            <span><b>{anioTxt(m.anio)}</b> · <span style={{ color: INF.tx2 }}>{ev.filter((x) => x.anio === m.anio).map((x) => x.texto).join(" · ")}</span></span>
+          </li>)}
+        </ol>}
+        {apretado && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 4 }}>{tx("Año más apretado:", "Tightest year:")} <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? tx(`sobran ${fmM(apretado.s)}`, `${fmM(apretado.s)} surplus`) : tx(`faltan ${fmM(-apretado.s)}`, `${fmM(-apretado.s)} short`)} {tx("al mes", "a month")} ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} {tx("de cobertura", "coverage")})</b>.</div>}
+      </div>
+      {r.desglose && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
+        {[[tx("Lo que entra cada mes", "What comes in each month"), tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`), r.desglose.entra, INF.azul, f1.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started."), r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {
+          const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
+          return <div key={t} style={card}>
+            <h3 style={h3}>{t} · {fmM(tot)}</h3>
+            <p style={lead}>{l}</p>
+            {(verTodo[t] ? lista : lista.slice(0, 10)).map((x, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(100px,42%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
+              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 12, color: INF.tx2 }}>{x.nota}</span>}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 12, width: `${Math.max(1, Math.abs(x.mensual) / mx * 60)}%`, background: x.mensual < 0 ? INF.gris : col, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(x.mensual)}</span></span>
+            </div>)}
+            {lista.length > 10 && <button onClick={() => setVerTodo((v) => ({ ...v, [t]: !v[t] }))} style={{ marginTop: 8, padding: "6px 12px", borderRadius: 999, border: `1px solid ${INF.linea}`, background: "transparent", color: INF.tx2, fontSize: 12, cursor: "pointer" }}>{verTodo[t] ? tx("Ver solo las 10 más grandes", "Show only the 10 largest") : tx(`Ver las ${lista.length - 10} restantes`, `Show the other ${lista.length - 10}`)}</button>}
+          </div>;
+        })}
+      </div>}
       {(r.desglose?.reinvierte || []).length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
         <h3 style={h3}>{tx("Lo que rinde y no te llega al mes", "Returns that don't reach you monthly")}</h3>
         <p style={lead}>{esUS()
@@ -168,44 +255,51 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 12 }}>· {fmPct(x.pct, 1)} {tx("al año", "a year")}</span></span><b style={{ color: INF.txDorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}{tx("/mes se reinvierte", "/mo reinvested")}</b></div>)}
       </div>}
 
-      <MesCompleto r={r} card={card} h3={h3} lead={lead} />
-
-      <Toggle />
-
+      <Capitulo id="cap-patrimonio" n={4} titulo={tx("Tu patrimonio: cómo crece", "Your net worth: how it grows")} pregunta={tx("Cuánto vale todo lo que tienes cada año y qué inversión lo empuja.", "What everything you own is worth each year and which investment drives it.")} />
       <div style={card}>
-        <h3 style={h3}>{tx("Mes a mes: ¿alcanza para vivir? Así se comporta el plan en el tiempo", "Month by month: is it enough to live on? How the plan holds up over time")}</h3>
-        <p style={lead}>{tx(<><b>Línea azul:</b> lo que entra cada mes. <b>Línea roja punteada:</b> lo que sale para vivir. <b>Franja verde:</b> lo que sobra, que no se queda quieto: {r.destinoSobra || "se reinvierte"}. Las líneas verticales marcan los cambios. Mientras la azul esté por encima de la roja, el plan se sostiene solo.</>, <><b>Blue line:</b> what comes in each month. <b>Dashed red line:</b> what goes out to live. <b>Green band:</b> the surplus, which doesn't sit idle: {r.destinoSobra || "it's reinvested"}. Vertical lines mark changes. As long as blue stays above red, the plan pays for itself.</>)}</p>
-        <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={mes} margin={{ top: 40, right: 96, left: 6, bottom: 0 }}>
+        <h3 style={h3}>{tx("Patrimonio neto por año", "Net worth by year")}</h3>
+        <p style={lead}>{tx("Cada color es una inversión; el número de arriba es el patrimonio neto (activos menos deudas).", "Each color is an investment; the number on top is net worth (assets minus debts).")}</p>
+        <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={280}>
+          <BarChart data={pat} margin={{ top: 22, right: 6, left: 0, bottom: 0 }}>
             <CartesianGrid {...grid} />
-            <XAxis dataKey="anio" {...eje} />
-            <YAxis {...eje} tickFormatter={fmEje} width={72} />
-            <Tooltip content={(q) => <ChartTooltip {...q} payload={(q.payload || []).filter((x) => x.dataKey !== "base")} formatter={tip} />} />
-            <Area type="stepAfter" dataKey="base" stackId="b" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" name=" " tooltipType="none" />
-            <Area type="stepAfter" dataKey="sobra" stackId="b" stroke="none" fill={INF.franja} isAnimationActive={false} name={tx("Sobra", "Surplus")} />
-            {marcas.map((m, i) => <ReferenceLine key={m.anio} x={anioTxt(m.anio)} stroke={INF.ref} strokeDasharray="2 3"
-              label={(q) => <text x={q.viewBox.x + 4} y={q.viewBox.y - 6 - (i % 2) * 14} style={{ fill: INF.tx2 }} fontSize={11}>{m.txt.length > 26 ? m.txt.slice(0, 25) + "…" : m.txt}</text>} />)}
-            <Line type="stepAfter" dataKey="entra" name={tx("Entra", "In")} stroke={INF.azul} strokeWidth={2.5} dot={false} label={finLabel("entra", `${tx("Entra", "In")} ${fmM(mes[mes.length - 1]?.entra)}`, INF.azul)} />
-            <Line type="stepAfter" dataKey="sale" name={tx("Sale", "Out")} stroke={INF.teja} strokeWidth={2} strokeDasharray="5 4" dot={false} label={finLabel("sale", `${tx("Sale", "Out")} ${fmM(mes[mes.length - 1]?.sale)}`, INF.teja)} />
-          </ComposedChart>
+            <XAxis dataKey="anio" {...eje} interval={1} />
+            <YAxis {...eje} tickFormatter={fmEje} width={68} />
+            <Tooltip content={<ChartTooltip formatter={tip} />} />
+            <Bar dataKey="otros" stackId="v" name={tx("Otros activos netos", "Other net assets")} fill={INF.gris} />
+            {sV.top.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sV.top.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 12 }} />}</Bar>)}
+          </BarChart>
         </ResponsiveContainer></div></div>
-        {apretado && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 4 }}>{tx("Año más apretado:", "Tightest year:")} <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? tx(`sobran ${fmM(apretado.s)}`, `${fmM(apretado.s)} surplus`) : tx(`faltan ${fmM(-apretado.s)}`, `${fmM(-apretado.s)} short`)} {tx("al mes", "a month")} ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} {tx("de cobertura", "coverage")})</b>.</div>}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2 }}>{[{ nombre: tx("Otros activos netos", "Other net assets"), color: INF.gris }, ...sV.top].map((s) => <span key={s.nombre}><span style={{ display: "inline-block", width: 8, height: 8, background: s.color, marginRight: 4 }} />{s.nombre}</span>)}</div>
       </div>
-
-      {plataNueva.length > 0 && <div style={card}>
-        <h3 style={h3}>{tx(`1 · La plata nueva: a dónde va cada ${moneda()}`, `1 · New money: where every ${moneda()} goes`)} · {fmM(totalNueva)}</h3>
-        <p style={lead}>{tx(<>Solo la plata que se mueve: lo que vendes{bd.capitalNuevo > 0 ? ", el capital nuevo" : ""}{bd.desdeLiquidez > 0 ? " y lo que sale de tu liquidez" : ""}. Lo que ya tienes y no se mueve no aparece aquí; eso lo suma el punto 2.</>, <>Only the money that moves: what you sell{bd.capitalNuevo > 0 ? ", new capital" : ""}{bd.desdeLiquidez > 0 ? " and what comes out of your cash" : ""}. What you already own and don't move isn't here; section 2 adds it.</>)}</p>
-        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 560 }}>
-          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Destino", "Destination")}</th><th style={th}>{tx("Capital", "Capital")}</th><th style={th}>{tx("Tasa", "Rate")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Bolsillo", "Bucket")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Regla", "Rule")}</th></tr></thead>
-          <tbody>{plataNueva.map((x, i) => <tr key={i}><td style={tdL}>{x.destino}</td><td style={td}>{fmM(x.capital)}</td><td style={td}>{x.tasa}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.bolsillo}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.regla}</td></tr>)}
-            <tr><td style={{ ...tdL, fontWeight: 700 }}>{tx("Total desplegado", "Total deployed")}</td><td style={{ ...td, fontWeight: 700 }}>{fmM(totalNueva)}</td><td style={td} /><td style={td} /><td style={{ ...tdL, color: INF.tx2 }}>{[(r.vendidos || []).map((v) => `${v.nombre} ${fmM(v.valor)}`).join(" + "), bd.capitalNuevo > 0 ? `${tx("capital nuevo", "new capital")} ${fmM(bd.capitalNuevo)}` : null, bd.desdeLiquidez > 0 ? `${tx("liquidez", "cash")} ${fmM(bd.desdeLiquidez)}` : null].filter(Boolean).join(" + ")}</td></tr>
-          </tbody></table></div>
-      </div>}
-
+      <div style={card}>
+        <h3 style={h3}>{tx("Cada inversión, año por año", "Each investment, year by year")}</h3>
+        <p style={lead}>{tx("El valor de las inversiones más grandes. «Juntas» las compara en la misma escala; «Cada una» le da a cada inversión su propia escala, para ver cómo crece aunque sea pequeña.", "Value of your largest investments. \"Together\" compares them on one scale; \"One by one\" gives each its own scale, so you can see it grow even if it's small.")}</p>
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>{[["juntas", tx("Juntas", "Together")], ["cada", tx("Cada una", "One by one")]].map(([k, l]) => <button key={k} onClick={() => setVistaInv(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${vistaInv === k ? INF.tx : INF.linea}`, background: vistaInv === k ? INF.tx : "transparent", color: vistaInv === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}</div>
+        {vistaInv === "cada" ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,260px),1fr))", gap: 12 }}>
+          {sV.top.map((s) => { const v0 = pat[0]?.[s.id] || 0, vf = pat[pat.length - 1]?.[s.id] || 0; return <div key={s.id} style={{ border: `1px solid ${INF.linea}`, borderRadius: 10, padding: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13 }}><b style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.nombre}</b>{v0 > 0.5 && <b style={{ color: s.color, whiteSpace: "nowrap" }}>×{(vf / v0).toLocaleString(esUS() ? "en-US" : "es-CO", { maximumFractionDigits: 1 })}</b>}</div>
+            <div style={{ fontSize: 12, color: INF.tx2, margin: "2px 0 6px" }}>{fmM(v0)} → <b style={{ color: INF.tx }}>{fmM(vf)}</b></div>
+            <ResponsiveContainer width="100%" height={110}><ComposedChart data={pat} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+              <XAxis dataKey="anio" hide /><YAxis hide domain={[0, "auto"]} />
+              <Tooltip content={<ChartTooltip formatter={tip} />} />
+              <Area type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} fill={s.color} fillOpacity={0.18} isAnimationActive={false} />
+            </ComposedChart></ResponsiveContainer>
+          </div>; })}
+        </div> : <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
+          <LineChart data={pat} margin={{ top: 10, right: 128, left: 0, bottom: 0 }}>
+            <CartesianGrid {...grid} />
+            <XAxis dataKey="anio" {...eje} interval={1} />
+            <YAxis {...eje} tickFormatter={fmEje} width={68} />
+            <Tooltip content={<ChartTooltip formatter={tip} />} />
+            {sL.map((s) => <Line key={s.id} type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} dot={false}
+              label={(p) => (p.index === pat.length - 1 ? <text x={p.x + 6} y={p.y + 4} fill={s.color} fontSize={11}>{`${(s.nombre || "").slice(0, 12)} ${fmM(p.value)}`}</text> : null)} />)}
+          </LineChart>
+        </ResponsiveContainer></div></div>}
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
         <div style={card}>
-          <h3 style={h3}>{tx("2 · Todo lo que tienes después del plan", "2 · Everything you own after the plan")} · {fmM(totTienes)}</h3>
-          <p style={lead}>{tx("Lo que ya tenías y no se mueve, más la plata nueva del punto 1.", "What you already had and don't move, plus the new money from section 1.")} {fin.deuda > 0 ? tx(`Menos deudas (${fmM(f1.deuda)}) = patrimonio neto ${fmM(f1.patrimonio)}.`, `Minus debts (${fmM(f1.deuda)}) = net worth ${fmM(f1.patrimonio)}.`) : ""}</p>
+          <h3 style={h3}>{tx("Todo lo que tienes después del plan", "Everything you own after the plan")} · {fmM(totTienes)}</h3>
+          <p style={lead}>{tx("Lo que ya tenías y no se mueve, más la plata nueva. Foto del primer año.", "What you already had and don't move, plus the new money. Snapshot of year one.")} {fin.deuda > 0 ? tx(`Menos deudas (${fmM(f1.deuda)}) = patrimonio neto ${fmM(f1.patrimonio)}.`, `Minus debts (${fmM(f1.deuda)}) = net worth ${fmM(f1.patrimonio)}.`) : ""}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2, marginBottom: 8 }}>{[...new Set(tienes.map((a) => a.clase))].map((c) => <span key={c}><span style={{ display: "inline-block", width: 8, height: 8, background: COLOR_CLASE[c] || INF.gris, marginRight: 4 }} />{ETQ_CLASE[c] || c}</span>)}</div>
           {tienes.map((a) => <div key={a.id} style={{ display: "grid", gridTemplateColumns: "minmax(90px,38%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
@@ -225,20 +319,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         </div>
       </div>
 
-      {r.desglose && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
-        {[[tx("3 · Lo que entra cada mes", "3 · What comes in each month"), tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`), r.desglose.entra, INF.azul, f1.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started."), r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {
-          const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
-          return <div key={t} style={card}>
-            <h3 style={h3}>{t} · {fmM(tot)}</h3>
-            <p style={lead}>{l}</p>
-            {lista.map((x, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(100px,42%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
-              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 12, color: INF.tx2 }}>{x.nota}</span>}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 12, width: `${Math.max(1, Math.abs(x.mensual) / mx * 60)}%`, background: x.mensual < 0 ? INF.gris : col, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(x.mensual)}</span></span>
-            </div>)}
-          </div>;
-        })}
-      </div>}
-
+      <Capitulo id="cap-bueno" n={5} titulo={tx("¿Es buen plan?", "Is it a good plan?")} pregunta={tx("Cuánto produce el patrimonio y si le gana a la inflación.", "What your net worth earns and whether it beats inflation.")} />
       <div style={card}>
         <h3 style={h3}>{tx("Año a año: todo lo que produce el patrimonio", "Year by year: everything your net worth earns")}</h3>
         <p style={lead}>{tx("Abajo, en tonos azules y verdes, lo que llega a la cuenta cada año (rentas y pensiones). Arriba, lo que se queda invertido y crece. El número sobre cada barra es el total que produjo el patrimonio ese año. La línea roja es lo que sale para vivir.", "Bottom, in blues and greens: what reaches your account each year (income and pensions). Top: what stays invested and grows. The number above each bar is the total your net worth earned that year. The red line is what goes out to live.")}</p>
@@ -265,39 +346,6 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             <td style={{ ...tdL, color: INF.tx2 }}>{qe.length ? qe.join(" · ") : tx("Sin cambios", "No changes")}</td></tr>; })}</tbody>
         </table></div>
       </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
-        <div style={card}>
-          <h3 style={h3}>{tx("4 · Patrimonio neto por año", "4 · Net worth by year")}</h3>
-          <p style={lead}>{tx("Cada color es una inversión; el número de arriba es el patrimonio neto (activos menos deudas).", "Each color is an investment; the number on top is net worth (assets minus debts).")}</p>
-          <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={280}>
-            <BarChart data={pat} margin={{ top: 22, right: 6, left: 0, bottom: 0 }}>
-              <CartesianGrid {...grid} />
-              <XAxis dataKey="anio" {...eje} interval={1} />
-              <YAxis {...eje} tickFormatter={fmEje} width={68} />
-              <Tooltip content={<ChartTooltip formatter={tip} />} />
-              <Bar dataKey="otros" stackId="v" name={tx("Otros activos netos", "Other net assets")} fill={INF.gris} />
-              {sV.top.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sV.top.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 12 }} />}</Bar>)}
-            </BarChart>
-          </ResponsiveContainer></div></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2 }}>{[{ nombre: tx("Otros activos netos", "Other net assets"), color: INF.gris }, ...sV.top].map((s) => <span key={s.nombre}><span style={{ display: "inline-block", width: 8, height: 8, background: s.color, marginRight: 4 }} />{s.nombre}</span>)}</div>
-        </div>
-        <div style={card}>
-          <h3 style={h3}>{tx("Cada inversión, año por año", "Each investment, year by year")}</h3>
-          <p style={lead}>{tx("El valor de las inversiones más grandes; al final, lo que vale cada una.", "Value of your largest investments; at the end, what each is worth.")}</p>
-          <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
-            <LineChart data={pat} margin={{ top: 10, right: 128, left: 0, bottom: 0 }}>
-              <CartesianGrid {...grid} />
-              <XAxis dataKey="anio" {...eje} interval={1} />
-              <YAxis {...eje} tickFormatter={fmEje} width={68} />
-              <Tooltip content={<ChartTooltip formatter={tip} />} />
-              {sL.map((s) => <Line key={s.id} type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} dot={false}
-                label={(p) => (p.index === pat.length - 1 ? <text x={p.x + 6} y={p.y + 4} fill={s.color} fontSize={11}>{`${(s.nombre || "").slice(0, 12)} ${fmM(p.value)}`}</text> : null)} />)}
-            </LineChart>
-          </ResponsiveContainer></div></div>
-        </div>
-      </div>
-
       <div style={card}>
         <h3 style={h3}>{tx("Le gana a la inflación, año por año", "Beating inflation, year by year")}</h3>
         <p style={lead}>{tx(`Cada barra es cuánto crece el patrimonio neto ese año. La línea punteada es la inflación (${fmPct(inflacionPct, 1)}): por encima, el plan gana poder de compra; por debajo, lo pierde. La cifra sobre cada barra es lo que gana por encima de la inflación.`, `Each bar is how much net worth grows that year. The dashed line is inflation (${fmPct(inflacionPct, 1)}): above it, the plan gains purchasing power; below it, it loses it. The figure above each bar is the gain over inflation.`)}</p>
@@ -318,8 +366,8 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         </ResponsiveContainer></div></div>
       </div>
 
-      <div style={card}>
-        <h3 style={h3}>{tx("5 · Año por año", "5 · Year by year")}</h3>
+      <details style={card}><summary style={{ cursor: "pointer", fontSize: 15, fontWeight: 600, color: INF.tx }}>{tx("Ver la tabla año por año", "See the year-by-year table")}</summary>
+        <div style={{ height: 10 }} />
         <p style={lead}>{nombre}. {modo === "real" ? tx(`En ${monedas()} de hoy.`, `In today's ${monedas()}.`) : tx(`En ${monedas()} de cada año.`, `In each year's ${monedas()}.`)} {tx("Cobertura = lo que entra ÷ lo que sale.", "Coverage = money in ÷ money out.")}</p>
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 560 }}>
           <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={th}>{tx("Patrimonio", "Net worth")}</th>{sL.map((s) => <th key={s.id} style={th}>{(s.nombre || "").slice(0, 18)}</th>)}<th style={th}>{tx("Deuda", "Debt")}</th><th style={th}>{tx("Cobertura", "Coverage")}</th></tr></thead>
@@ -327,7 +375,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             {sL.map((s) => <td key={s.id} style={td}>{pat[i][s.id] ? fmM(pat[i][s.id]) : "—"}</td>)}
             <td style={td}>{f.deuda > 0 ? fmM(f.deuda / d(f)) : "—"}</td><td style={td}>{f.gastos > 0 ? fmPct(f.ingresos / f.gastos * 100, 0) : "—"}</td></tr>)}</tbody>
         </table></div>
-      </div>
+      </details>
     </div>
   );
 }

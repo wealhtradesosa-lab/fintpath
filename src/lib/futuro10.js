@@ -805,7 +805,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
-    vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => ({ id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x) })),
+    // 7-nov-2026 (La historia de tu plata): lo que rendía cada activo vendido, para explicar por qué se vende.
+    vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => { const rentaAnual = n(b.rentaNetaPorActivo[x.id]) * 12; return { id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x), clase: claseActivo(x), rentaAnual, crec: crecimientoDefault(x, esc, sup, rentaAnual) }; }),
     reinversionesDetalle,
     ciclosDetalle,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
