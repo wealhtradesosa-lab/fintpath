@@ -19,7 +19,7 @@ import { anioCal } from "../../lib/futuro10.js";
 import { INF, fmM, fmPct } from "../../lib/informeTheme.js";
 import { tx, esUS, num } from "../../lib/region.js";
 
-const COL = { deuda: INF.oliva, renta: INF.azul, crece: INF.dorado, mixto: INF.serie[4], caja: INF.gris };
+const COL = { deuda: INF.oliva, renta: INF.azul, crece: INF.dorado, mixto: INF.serie[4], caja: INF.gris, motor: INF.serie[6] };
 const card = { background: INF.panel, border: `1px solid ${INF.linea}`, borderRadius: 14, padding: 18 };
 const paso = (n, color) => ({ width: 30, height: 30, borderRadius: 15, background: color, color: "#fff", fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 });
 const chip = (color) => ({ fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 999, whiteSpace: "nowrap", color, border: `1px solid ${color}` });
@@ -75,9 +75,10 @@ export default function HistoriaPlata({ r }) {
   const nuevasIds = new Set((r.nuevasDetalle || []).filter((x) => x.id).map((x) => x.id));
   const aporteDe = Object.fromEntries((r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => [x.activoId, x]));
   const esCanasta = (a) => a.clase === "canasta";
+  const esCiclo = (a) => a.clase === "ciclo";
   const hoyLista = [
     ...vendidos.map((v) => ({ id: v.id, nombre: v.nombre, valor: v.valor, tag: "vende", porque: v.porque })),
-    ...(f0.porActivo || []).filter((a) => !esCanasta(a) && !nuevasIds.has(a.id) && !vendIds.has(a.id)).map((a) => {
+    ...(f0.porActivo || []).filter((a) => !esCanasta(a) && !esCiclo(a) && !nuevasIds.has(a.id) && !vendIds.has(a.id)).map((a) => {
       const ap = aporteDe[a.id];
       const valor = ap && ap.anio === 1 ? (ap.valorHoy || 0) : a.valor;
       return { id: a.id, nombre: a.nombre, valor, tag: ap ? "recibe" : "igual", ap };
@@ -90,6 +91,7 @@ export default function HistoriaPlata({ r }) {
   const despuesLista = [
     ...(f0.porActivo || []).filter((a) => !esCanasta(a)).map((a) => {
       const ap = aporteDe[a.id];
+      if (esCiclo(a)) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "motor" };
       if (nuevasIds.has(a.id)) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "nuevo" };
       if (ap && ap.anio === 1) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "aporte", antes: ap.valorHoy || 0, aporte: ap.aporte };
       if (ap) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "aporteLuego", aporte: ap.aporte, anio: ap.anio };
@@ -137,9 +139,26 @@ export default function HistoriaPlata({ r }) {
     const serie = s.map((a, t) => { if (t > 0) ac += a.renta || 0; return { v: a.valor || 0, c: ac }; });
     const rentaMes = x.pagaRenta ? ((s[1]?.renta || 0) / 12) : 0;
     destinos.push({
-      key: "nu" + k, tipo: x.pagaRenta ? "renta" : "crece", nombre: x.nombre, sub: x.anio > 1 ? tx(`Se invierte en ${anioCal(x.anio - 1)}`, `Invested in ${anioCal(x.anio - 1)}`) : "",
+      key: x.id || "nu" + k, tipo: x.pagaRenta ? "renta" : "crece", nombre: x.nombre, sub: x.anio > 1 ? tx(`Se invierte en ${anioCal(x.anio - 1)}`, `Invested in ${anioCal(x.anio - 1)}`) : "",
       monto: x.monto, rinde: fmPct(x.rendPct, 1) + tx(" al año", " a year"),
       pagaMes: rentaMes, pagaEtq: tx("Te paga", "Pays you"), serie,
+    });
+  });
+  // Negocios que se repiten (asociativos): el capital sale una vez y trabaja en
+  // ciclos; cada ciclo deja su ganancia. Santiago (7-nov): "actúa como motor…
+  // cada año se vende lo construido y se reinvierte, y no sale en ninguna parte".
+  const nomActivo = (id) => (id === "c_crecimiento" ? tx("Crecimiento (lo que sobra)", "Growth (leftover)") : id === "c_renta" ? tx("Renta fija (lo que sobra)", "Fixed income (leftover)") : id === "c_liquidez" ? tx("Liquidez y colchón", "Cash and cushion") : id === "c_disponible" ? tx("disponible", "available") : ((f0.porActivo || []).find((a) => a.id === id) || {}).nombre || null);
+  (r.ciclosDetalle || []).filter((c) => c.capital > 0).forEach((c) => {
+    const s0 = serieDe(c.id);
+    let ac = 0;
+    const serie = s0.map((a, t) => { if (t > 0) ac += (a.renta || 0) + (a.crece || 0); return { v: a.valor || 0, c: ac }; });
+    destinos.push({
+      key: c.id, tipo: "motor", nombre: c.nombre, ciclo: c, destinoNombre: c.destino !== "flujo" ? nomActivo(c.destinoId) : null,
+      sub: c.desde > 1 ? tx(`Arranca en ${anioCal(c.desde)} · ${c.fuente === "nuevo" ? "con capital nuevo" : c.fuente === "liquidez" ? "de tu liquidez" : "apartado de la venta"}`, `Starts in ${anioCal(c.desde)} · ${c.fuente === "nuevo" ? "with new capital" : c.fuente === "liquidez" ? "from your cash" : "set aside from the sale"}`) : (c.meses === 12 ? tx("Un ciclo cada año", "One cycle a year") : tx(`Un ciclo cada ${c.meses} meses`, `One cycle every ${c.meses} months`)),
+      monto: c.capital, rinde: fmPct(c.rentabilidadPct, 1) + tx(" al año, neto", " a year, net"),
+      pagaMes: c.destino === "flujo" ? c.gananciaAnual / 12 : 0, pagaEtq: c.destino === "flujo" ? tx("Te paga", "Pays you") : tx("Reinvierte", "Reinvests"),
+      pagaTxt: c.destino !== "flujo" ? `${fmM(c.gananciaAnual / 12)}${tx("/mes", "/mo")}` : null,
+      desdeMes: c.desde > 1 ? (c.desde - 1) * 12 : 0, serie,
     });
   });
   const colchon = bd.colchon || 0, restante = bd.restante || 0;
@@ -177,12 +196,21 @@ export default function HistoriaPlata({ r }) {
 
   const ETQ = {
     deuda: tx("Te libera flujo", "Frees up cash flow"), renta: tx("Te paga cada mes", "Pays you monthly"),
-    mixto: tx("Sube y te paga", "Grows and pays you"), crece: tx("Se multiplica", "Compounds"), caja: tx("Protección", "Safety"),
+    mixto: tx("Sube y te paga", "Grows and pays you"), crece: tx("Se multiplica", "Compounds"), caja: tx("Protección", "Safety"), motor: tx("Motor: se repite", "Engine: repeats"),
   };
   const FRASE = (x, ult) => {
+    if (x.tipo === "motor") {
+      const c = x.ciclo, cadaTxt = c.meses === 12 ? tx("Cada año", "Every year") : tx(`Cada ${c.meses} meses`, `Every ${c.meses} months`);
+      const destTxt = c.destino === "flujo" ? tx("llega a tu flujo de caja", "reaches your cash flow") : (x.destinoNombre ? tx(`se reinvierte en ${x.destinoNombre}`, `is reinvested in ${x.destinoNombre}`) : tx("se reinvierte según tu mezcla", "is reinvested per your mix"));
+      const fin2 = c.hasta < nAnios ? tx(` En ${anioCal(c.hasta + 1)} termina y el capital vuelve a tu bolsa.`, ` In ${anioCal(c.hasta + 1)} it ends and the capital comes back.`) : "";
+      return tx(`${cadaTxt}: inviertes ${fmM(c.capital)}, al terminar vale ${fmM(c.valorFinal)} y, después de costos e impuesto, deja ${fmM(c.gananciaCiclo)}. Esa ganancia ${destTxt}; el capital vuelve a entrar al siguiente ciclo. En ${nAnios} años deja ${fmM(ult.c)}.${fin2}`,
+        `${cadaTxt}: you put in ${fmM(c.capital)}, it ends worth ${fmM(c.valorFinal)} and, after costs and tax, leaves ${fmM(c.gananciaCiclo)}. That profit ${destTxt}; the capital goes into the next cycle. Over ${nAnios} years it leaves ${fmM(ult.c)}.${fin2}`);
+    }
     if (x.tipo === "deuda") return tx(`La deuda desaparece y cada mes dejas de pagar ${fmM(x.pagaMes)}. En ${nAnios} años son ${fmM(ult.c)} que se quedan contigo.`, `The debt is gone and you stop paying ${fmM(x.pagaMes)} a month. Over ${nAnios} years that's ${fmM(ult.c)} that stays with you.`);
     if (x.canasta) return tx(`Arranca con ${fmM(x.monto)} de las ventas y cada año recibe parte de lo que te sobra del mes; por eso crece más que su rendimiento.`, `It starts with ${fmM(x.monto)} from the sales and each year gets part of your monthly surplus, so it grows faster than its return alone.`);
-    if (x.tipo === "crece") return tx("No te paga mes a mes: todo lo que gana se queda adentro y vuelve a rendir. Por eso es el que más crece.", "It doesn't pay you monthly: everything it earns stays in and compounds. That's why it grows the most.");
+    const motores = (r.ciclosDetalle || []).filter((c) => c.destino !== "flujo" && c.destinoId === x.key).map((c) => c.nombre);
+    const extra = motores.length ? tx(` Además recibe cada año la ganancia de «${motores.join("», «")}».`, ` It also receives the yearly profit from "${motores.join('", "')}".`) : "";
+    if (x.tipo === "crece") return tx("No te paga mes a mes: todo lo que gana se queda adentro y vuelve a rendir. Por eso es el que más crece.", "It doesn't pay you monthly: everything it earns stays in and compounds. That's why it grows the most.") + extra;
     if (x.tipo === "renta") return tx(`Te deposita unos ${fmM(x.pagaMes)} al mes. En ${nAnios} años habrás cobrado ${fmM(ult.c)}.`, `It deposits about ${fmM(x.pagaMes)} a month. Over ${nAnios} years you'll collect ${fmM(ult.c)}.`);
     if (x.tipo === "mixto") return x.desdeMes > 0
       ? tx(`Los primeros ${x.desdeMes} meses no produce; después te paga ${fmM(x.pagaMes)} al mes y sigue valorizándose.`, `It earns nothing for the first ${x.desdeMes} months; then it pays you ${fmM(x.pagaMes)} a month and keeps appreciating.`)
@@ -194,14 +222,16 @@ export default function HistoriaPlata({ r }) {
     vende: [tx("Se vende", "Sold"), INF.txTeja], igual: [tx("Igual que hoy", "Same as today"), INF.tx2], recibe: [tx("Se conserva y recibe más", "Kept, gets more"), INF.txDorado],
     nuevo: [tx("Nuevo · de la venta", "New · from the sale"), INF.azul], aporte: [tx("Tenías + de la venta", "You had + from the sale"), INF.txDorado],
     aporteLuego: [tx("Igual · recibe más luego", "Same · gets more later"), INF.txDorado], canasta: [tx("De la venta: colchón y sobrante", "From the sale: cushion and leftover"), INF.txOk],
+    motor: [tx("Negocio que se repite · de la venta", "Repeating deal · from the sale"), INF.serie[6]],
   };
-  const COLB = { vende: INF.teja, igual: INF.gris, recibe: INF.gris, nuevo: INF.azul, aporte: INF.dorado, aporteLuego: INF.gris, canasta: INF.oliva };
+  const COLB = { vende: INF.teja, igual: INF.gris, recibe: INF.gris, nuevo: INF.azul, aporte: INF.dorado, aporteLuego: INF.gris, canasta: INF.oliva, motor: INF.serie[6] };
   const detalle = (a) => {
     if (a.tag === "vende") return <><b style={{ color: INF.tx }}>{tx("Por qué: ", "Why: ")}</b>{a.porque}</>;
     if (a.tag === "recibe") return a.ap.anio === 1 ? tx(`Le pones ${fmM(a.ap.aporte)} de la venta`, `You add ${fmM(a.ap.aporte)} from the sale`) : tx(`En ${anioCal(a.ap.anio - 1)} le pones ${fmM(a.ap.aporte)}`, `In ${anioCal(a.ap.anio - 1)} you add ${fmM(a.ap.aporte)}`);
     if (a.tag === "aporte") return tx(`Tenías ${fmM(a.antes)} + ${fmM(a.aporte)} de la venta`, `You had ${fmM(a.antes)} + ${fmM(a.aporte)} from the sale`);
     if (a.tag === "aporteLuego") return tx(`En ${anioCal(a.anio - 1)} recibe ${fmM(a.aporte)}`, `In ${anioCal(a.anio - 1)} it gets ${fmM(a.aporte)}`);
     if (a.tag === "nuevo") return tx("Se compra con la plata de la venta", "Bought with the sale proceeds");
+    if (a.tag === "motor") return tx("Capital que trabaja: se construye, se vende y vuelve a entrar", "Working capital: build, sell, and go again");
     if (a.tag === "canasta") return tx("Lo que queda de la venta, repartido según tu mezcla", "What's left of the sale, split per your mix");
     return null;
   };
@@ -271,7 +301,7 @@ export default function HistoriaPlata({ r }) {
       </Paso>}
 
       {destinos.length > 0 && <Paso n={3} color={INF.azul} titulo={tx(`Cómo crece cada inversión en ${nAnios} años`, `How each investment grows over ${nAnios} years`)}
-        sub={tx("Dorado: lo que vale la inversión. Azul: la renta que ya cobraste, acumulada. Verde: las cuotas que dejas de pagar, acumuladas.", "Gold: what the investment is worth. Blue: income collected, cumulative. Green: payments you no longer make, cumulative.")}>
+        sub={tx("Dorado: lo que vale la inversión. Azul: la renta que ya cobraste, acumulada. Verde: las cuotas que dejas de pagar, acumuladas. Morado: la ganancia que dejó un negocio que se repite, acumulada.", "Gold: what the investment is worth. Blue: income collected, cumulative. Green: payments you no longer make, cumulative. Purple: profit left by a repeating deal, cumulative.")}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,300px),1fr))", gap: 12 }}>
           {destinos.filter((x) => x.serie && !(x.canasta && x.monto < totDest * 0.02)).map((x) => {
             const s = x.serie, ult = s[s.length - 1];
@@ -279,17 +309,17 @@ export default function HistoriaPlata({ r }) {
             const inicio = x.monto + (x.base || 0);
             const final = x.tipo === "deuda" ? ult.c : ult.v + ult.c;
             const mult = x.tipo !== "deuda" && inicio > 0 ? final / inicio : null;
-            const colC = x.tipo === "deuda" ? INF.oliva : INF.azul;
-            const colFin = x.tipo === "deuda" ? INF.txOk : x.tipo === "crece" || x.tipo === "caja" ? INF.txDorado : INF.azul;
-            const finEtq = x.tipo === "deuda" ? tx(`Dejas de pagar en ${nAnios} años`, `Not paid over ${nAnios} years`) : x.tipo === "crece" || x.tipo === "caja" ? tx(`Vale en ${anioCal(nAnios)}`, `Worth in ${anioCal(nAnios)}`) : tx(`Vale + cobraste en ${anioCal(nAnios)}`, `Worth + collected by ${anioCal(nAnios)}`);
+            const colC = x.tipo === "deuda" ? INF.oliva : x.tipo === "motor" ? INF.serie[6] : INF.azul;
+            const colFin = x.tipo === "deuda" ? INF.txOk : x.tipo === "motor" ? INF.serie[6] : x.tipo === "crece" || x.tipo === "caja" ? INF.txDorado : INF.azul;
+            const finEtq = x.tipo === "deuda" ? tx(`Dejas de pagar en ${nAnios} años`, `Not paid over ${nAnios} years`) : x.tipo === "motor" ? tx(`Capital + ganancia en ${nAnios} años`, `Capital + profit over ${nAnios} years`) : x.tipo === "crece" || x.tipo === "caja" ? tx(`Vale en ${anioCal(nAnios)}`, `Worth in ${anioCal(nAnios)}`) : tx(`Vale + cobraste en ${anioCal(nAnios)}`, `Worth + collected by ${anioCal(nAnios)}`);
             return <div key={x.key} style={{ background: "var(--fp-raised)", borderRadius: 14, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
                 <div style={{ minWidth: 0 }}><div style={{ fontSize: 16, fontWeight: 700 }}>{x.nombre}</div>{x.sub && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 2 }}>{x.sub}</div>}</div>
                 <span style={chip(colFin)}>{ETQ[x.tipo]}</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
-                {[[tx("Inviertes", "You invest"), fmM(x.monto), INF.tx], [tx("Rinde", "Returns"), x.rinde, INF.tx], [x.pagaEtq, x.pagaMes > 0.5 ? `${fmM(x.pagaMes)}${tx("/mes", "/mo")}` : tx("$0 · se reinvierte", "$0 · reinvested"), x.pagaMes > 0.5 ? colFin : INF.tx2]].map(([l, v, c]) =>
-                  <div key={l} style={{ background: INF.panel, borderRadius: 10, padding: "8px 10px", minWidth: 0 }}><div style={{ fontSize: 11.5, color: INF.tx2 }}>{l}</div><div style={{ fontSize: 13.5, fontWeight: 700, color: c, overflow: "hidden", textOverflow: "ellipsis" }}>{v}</div></div>)}
+                {[[tx("Inviertes", "You invest"), fmM(x.monto), INF.tx], [tx("Rinde", "Returns"), x.rinde, INF.tx], [x.pagaEtq, x.pagaMes > 0.5 ? `${fmM(x.pagaMes)}${tx("/mes", "/mo")}` : (x.pagaTxt || tx("$0 · se reinvierte", "$0 · reinvested")), x.pagaMes > 0.5 || x.pagaTxt ? colFin : INF.tx2]].map(([l, v, c]) =>
+                  <div key={l} style={{ background: INF.panel, borderRadius: 10, padding: "8px 10px", minWidth: 0 }}><div style={{ fontSize: 11.5, color: INF.tx2 }}>{l}</div><div style={{ fontSize: 13.5, fontWeight: 700, color: c, overflowWrap: "anywhere" }}>{v}</div></div>)}
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
                 <div><div style={{ fontSize: 12, color: INF.tx2 }}>{finEtq}</div><div style={{ fontSize: 22, fontWeight: 800, color: colFin, fontVariantNumeric: "tabular-nums" }}>{fmM(final)}</div></div>
