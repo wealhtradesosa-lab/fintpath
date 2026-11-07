@@ -65,12 +65,40 @@ export default function HistoriaPlata({ r }) {
     return { ...v, porque, rinde };
   });
   const totVend = vendidos.reduce((s, v) => s + v.valor, 0);
-  const maxVend = Math.max(1, ...vendidos.map((v) => v.valor));
-  // Lo que se conserva, con su valor de ANTES del plan (fila 0 ya trae los aportes de las reinversiones).
-  const antes = Object.fromEntries((r.reinversionesDetalle || []).map((x) => [x.activoId, x.valorHoy || 0]));
-  const conserva = (f0.porActivo || []).filter((a) => !vendIds.has(a.id) && a.clase !== "canasta")
-    .map((a) => (a.id in antes ? { ...a, valor: antes[a.id] } : a)).filter((a) => a.valor > 0.5).sort((a, b) => b.valor - a.valor);
-  const totConserva = conserva.reduce((s, a) => s + a.valor, 0);
+  // ── Tu portafolio: hoy → después del plan ──────────────────────────────────
+  // 7-nov-2026 (Santiago: "la historia debe ser más clara: usted parte de
+  // 17.000, vendió estos activos que suman 11.000 y su portafolio quedó así…
+  // ¿de dónde salieron los 5.000 de BTG?"). Tres fotos: lo que tienes HOY (con
+  // su valor de antes del plan), lo que vendes/conservas, y cómo queda DESPUÉS
+  // (fila 0 del motor, que ya trae las inversiones nuevas y los aportes del
+  // año 1). Cada activo dice de dónde viene su valor.
+  const nuevasIds = new Set((r.nuevasDetalle || []).filter((x) => x.id).map((x) => x.id));
+  const aporteDe = Object.fromEntries((r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => [x.activoId, x]));
+  const esCanasta = (a) => a.clase === "canasta";
+  const hoyLista = [
+    ...vendidos.map((v) => ({ id: v.id, nombre: v.nombre, valor: v.valor, tag: "vende", porque: v.porque })),
+    ...(f0.porActivo || []).filter((a) => !esCanasta(a) && !nuevasIds.has(a.id) && !vendIds.has(a.id)).map((a) => {
+      const ap = aporteDe[a.id];
+      const valor = ap && ap.anio === 1 ? (ap.valorHoy || 0) : a.valor;
+      return { id: a.id, nombre: a.nombre, valor, tag: ap ? "recibe" : "igual", ap };
+    }),
+  ].filter((a) => a.valor > 0.5).sort((x, y) => y.valor - x.valor);
+  const totHoy = hoyLista.reduce((s2, a) => s2 + a.valor, 0);
+  const conserva = hoyLista.filter((a) => a.tag !== "vende");
+  const totConserva = conserva.reduce((s2, a) => s2 + a.valor, 0);
+  const canastaHoy = (f0.porActivo || []).filter(esCanasta).reduce((s2, a) => s2 + (a.valor || 0), 0);
+  const despuesLista = [
+    ...(f0.porActivo || []).filter((a) => !esCanasta(a)).map((a) => {
+      const ap = aporteDe[a.id];
+      if (nuevasIds.has(a.id)) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "nuevo" };
+      if (ap && ap.anio === 1) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "aporte", antes: ap.valorHoy || 0, aporte: ap.aporte };
+      if (ap) return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "aporteLuego", aporte: ap.aporte, anio: ap.anio };
+      return { id: a.id, nombre: a.nombre, valor: a.valor, tag: "igual" };
+    }),
+    ...(canastaHoy > 0.5 ? [{ id: "canastas", nombre: tx("Liquidez, colchón y lo que sobra", "Cash, cushion and leftover"), valor: canastaHoy, tag: "canasta" }] : []),
+  ].filter((a) => a.valor > 0.5).sort((x, y) => y.valor - x.valor);
+  const totDespues = despuesLista.reduce((s2, a) => s2 + a.valor, 0);
+  const maxPort = Math.max(1, ...hoyLista.map((a) => a.valor), ...despuesLista.map((a) => a.valor));
 
   // ── 2 · Fuentes → destinos ─────────────────────────────────────────────────
   const fuentes = [
@@ -162,6 +190,36 @@ export default function HistoriaPlata({ r }) {
     return tx("Plata a la mano para imprevistos y lo que sobra de las ventas, repartido según la mezcla que elegiste. Cada año suma también lo que te sobra del mes, por eso crece más que su rendimiento.", "Cash on hand for surprises plus what's left from the sales, split per the mix you picked. Each year it also adds your monthly surplus, so it grows faster than its return alone.");
   };
 
+  const TAG = {
+    vende: [tx("Se vende", "Sold"), INF.txTeja], igual: [tx("Igual que hoy", "Same as today"), INF.tx2], recibe: [tx("Se conserva y recibe más", "Kept, gets more"), INF.txDorado],
+    nuevo: [tx("Nuevo · de la venta", "New · from the sale"), INF.azul], aporte: [tx("Tenías + de la venta", "You had + from the sale"), INF.txDorado],
+    aporteLuego: [tx("Igual · recibe más luego", "Same · gets more later"), INF.txDorado], canasta: [tx("De la venta: colchón y sobrante", "From the sale: cushion and leftover"), INF.txOk],
+  };
+  const COLB = { vende: INF.teja, igual: INF.gris, recibe: INF.gris, nuevo: INF.azul, aporte: INF.dorado, aporteLuego: INF.gris, canasta: INF.oliva };
+  const detalle = (a) => {
+    if (a.tag === "vende") return <><b style={{ color: INF.tx }}>{tx("Por qué: ", "Why: ")}</b>{a.porque}</>;
+    if (a.tag === "recibe") return a.ap.anio === 1 ? tx(`Le pones ${fmM(a.ap.aporte)} de la venta`, `You add ${fmM(a.ap.aporte)} from the sale`) : tx(`En ${anioCal(a.ap.anio - 1)} le pones ${fmM(a.ap.aporte)}`, `In ${anioCal(a.ap.anio - 1)} you add ${fmM(a.ap.aporte)}`);
+    if (a.tag === "aporte") return tx(`Tenías ${fmM(a.antes)} + ${fmM(a.aporte)} de la venta`, `You had ${fmM(a.antes)} + ${fmM(a.aporte)} from the sale`);
+    if (a.tag === "aporteLuego") return tx(`En ${anioCal(a.anio - 1)} recibe ${fmM(a.aporte)}`, `In ${anioCal(a.anio - 1)} it gets ${fmM(a.aporte)}`);
+    if (a.tag === "nuevo") return tx("Se compra con la plata de la venta", "Bought with the sale proceeds");
+    if (a.tag === "canasta") return tx("Lo que queda de la venta, repartido según tu mezcla", "What's left of the sale, split per your mix");
+    return null;
+  };
+  const Portafolio = ({ titulo, total, lista, max }) => <div style={{ background: "var(--fp-raised)", borderRadius: 12, padding: 14, minWidth: 0 }}>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 10 }}><span style={{ fontSize: 12, fontWeight: 600, color: INF.tx2, letterSpacing: "0.06em" }}>{titulo}</span><b style={{ fontSize: 18, fontVariantNumeric: "tabular-nums" }}>{fmM(total)}</b></div>
+    {lista.map((a) => { const [etq, col] = TAG[a.tag]; const d = detalle(a); return <div key={a.id} style={{ padding: "7px 0", borderTop: `1px solid ${INF.linea}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontSize: 13.5, fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
+        <span style={{ ...chip(col), fontSize: 11 }}>{etq}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ flex: 1, height: 10, background: INF.panel, borderRadius: 3 }}><span style={{ display: "block", height: 10, width: `${Math.max(1, a.valor / max * 100)}%`, background: COLB[a.tag], borderRadius: 3 }} /></span>
+        <b style={{ fontSize: 13.5, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 72, textAlign: "right" }}>{fmM(a.valor)}</b>
+      </div>
+      {d && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 3, lineHeight: 1.4 }}>{d}</div>}
+    </div>; })}
+  </div>;
+
   const Barra = ({ items, total, etq }) => <div style={{ display: "flex", height: 44, borderRadius: 10, overflow: "hidden", gap: 2 }}>
     {items.map((x) => { const p = total > 0 ? x.monto / total * 100 : 0; return <div key={x.key || x.nombre} title={`${x.nombre}: ${fmM(x.monto)}`} style={{ flex: `${x.monto} 1 0`, minWidth: 3, background: x.color, display: "flex", alignItems: "center", padding: "0 10px", overflow: "hidden", color: "#fff", fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap" }}>{p >= 9 ? (etq ? etq(x, p) : `${Math.round(p)} %`) : ""}</div>; })}
   </div>;
@@ -171,33 +229,26 @@ export default function HistoriaPlata({ r }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, marginBottom: 24 }}>
         {[
-          [tx("1 · Sueltas", "1 · You let go"), fmM(totVend), tx(`${vendidos.length} activo${vendidos.length === 1 ? "" : "s"}`, `${vendidos.length} asset${vendidos.length === 1 ? "" : "s"}`), INF.tx],
-          [tx("2 · Repartes", "2 · You deploy"), fmM(totDest), tx(`en ${destinos.length} destinos`, `across ${destinos.length} destinations`), INF.tx],
-          [tx("3 · Te llega o ahorras al mes", "3 · Monthly in or saved"), `+${fmM(totFlujo)}`, ultimaRenta > 0 ? tx(`completo desde el mes ${ultimaRenta}`, `in full from month ${ultimaRenta}`) : tx("desde el primer mes", "from month one"), INF.azul],
-          [tx(`4 · En ${anioCal(nAnios)} vale`, `4 · Worth in ${anioCal(nAnios)}`), fmM(valorFin), tx("lo invertido, sin la renta cobrada", "what you invested, excluding income collected"), INF.txDorado],
-        ].map(([l, v, s, c]) => <div key={l} style={{ background: "var(--fp-raised)", borderRadius: 12, padding: "14px 16px" }}>
+          [tx("Partes de", "You start with"), fmM(totHoy), tx(`${hoyLista.length} activos hoy`, `${hoyLista.length} assets today`), INF.tx],
+          [tx("Vendes", "You sell"), fmM(totVend), tx(`${vendidos.length} activo${vendidos.length === 1 ? "" : "s"} · conservas ${fmM(totConserva)}`, `${vendidos.length} asset${vendidos.length === 1 ? "" : "s"} · you keep ${fmM(totConserva)}`), INF.txTeja],
+          [tx("Después del plan tienes", "After the plan you own"), fmM(totDespues), bd.deudas > 0.5 ? tx(`${despuesLista.length} activos · y ${fmM(bd.deudas)} pagaron deudas`, `${despuesLista.length} assets · and ${fmM(bd.deudas)} paid off debts`) : tx(`${despuesLista.length} activos`, `${despuesLista.length} assets`), INF.txDorado],
+          [tx(`En ${anioCal(nAnios)} vale`, `Worth in ${anioCal(nAnios)}`), fmM(fin.activos), tx(`todo tu portafolio · hoy ${fmM(totDespues)}`, `your whole portfolio · today ${fmM(totDespues)}`), INF.azul],
+        ].map(([l, v, s2, c]) => <div key={l} style={{ background: "var(--fp-raised)", borderRadius: 12, padding: "14px 16px" }}>
           <div style={{ fontSize: 12, color: INF.tx2 }}>{l}</div>
           <div style={{ fontSize: 24, fontWeight: 700, color: c, fontVariantNumeric: "tabular-nums", margin: "2px 0" }}>{v}</div>
-          <div style={{ fontSize: 12, color: INF.tx2 }}>{s}</div>
+          <div style={{ fontSize: 12, color: INF.tx2 }}>{s2}</div>
         </div>)}
       </div>
 
-      {vendidos.length > 0 && <Paso n={1} color={INF.teja} titulo={tx("Tus inversiones de hoy: qué se vende y por qué", "Your investments today: what's sold and why")}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,220px),1fr))", gap: 10 }}>
-          {vendidos.map((v) => <div key={v.id} style={{ background: "var(--fp-raised)", borderRadius: 12, padding: 14, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}><b style={{ fontSize: 14 }}>{v.nombre}</b><span style={chip(INF.txTeja)}>{tx("Se vende", "Sold")}</span></div>
-            <div style={{ fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{fmM(v.valor)}</div>
-            <div style={{ height: 6, background: INF.linea, borderRadius: 3 }}><div style={{ height: 6, width: `${v.valor / maxVend * 100}%`, background: INF.teja, borderRadius: 3 }} /></div>
-            <div style={{ fontSize: 13, color: INF.tx2, lineHeight: 1.45 }}><b style={{ color: INF.tx }}>{tx("Por qué: ", "Why: ")}</b>{v.porque}</div>
-          </div>)}
+      <Paso n={1} color={INF.teja} titulo={tx("Tu portafolio: hoy y después del plan", "Your portfolio: today and after the plan")}
+        sub={tx(`A la izquierda, lo que tienes hoy y qué pasa con cada activo. A la derecha, cómo queda tu portafolio el primer año del plan y de dónde sale el valor de cada uno.`, `Left: what you own today and what happens to each asset. Right: how your portfolio looks in year one of the plan and where each value comes from.`)}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,400px),1fr))", gap: 12 }}>
+          <Portafolio titulo={tx("HOY", "TODAY")} total={totHoy} lista={hoyLista} max={maxPort} />
+          <Portafolio titulo={tx("DESPUÉS DEL PLAN", "AFTER THE PLAN")} total={totDespues} lista={despuesLista} max={maxPort} />
         </div>
-        {conserva.length > 0 && <div style={{ marginTop: 10, background: "var(--fp-raised)", borderRadius: 12, padding: "12px 14px" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8, flexWrap: "wrap" }}><span style={chip(INF.txOk)}>{tx("Se conserva", "Kept")}</span><span style={{ fontSize: 13, color: INF.tx2 }}>{tx(`${conserva.length} activos que no se mueven · ${fmM(totConserva)}`, `${conserva.length} assets that stay put · ${fmM(totConserva)}`)}</span></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>{conserva.slice(0, 12).map((a) => <span key={a.id} style={{ fontSize: 12.5, padding: "4px 10px", borderRadius: 8, border: `1px solid ${INF.linea}`, color: INF.tx }}>{a.nombre} <span style={{ color: INF.tx2 }}>{fmM(a.valor)}</span></span>)}{conserva.length > 12 && <span style={{ fontSize: 12.5, color: INF.tx2, padding: "4px 6px" }}>+{conserva.length - 12}</span>}</div>
-        </div>}
-      </Paso>}
+      </Paso>
 
-      {destinos.length > 0 && <Paso n={2} color={INF.dorado} titulo={tx(`A dónde va cada ${esUS() ? "dólar" : "peso"}`, "Where every dollar goes")}>
+      {destinos.length > 0 && <Paso n={2} color={INF.dorado} titulo={tx(`Los ${fmM(totFuentes)} de la venta: a dónde va cada ${esUS() ? "dólar" : "peso"}`, `The ${fmM(totFuentes)} from the sale: where every dollar goes`)}>
         <div style={{ background: "var(--fp-raised)", borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: INF.tx2, marginBottom: 6 }}>{tx("DE DÓNDE SALE", "WHERE IT COMES FROM")} · {fmM(totFuentes)}</div>
           <Barra items={fuentes} total={totFuentes} etq={(x) => x.nombre} />
