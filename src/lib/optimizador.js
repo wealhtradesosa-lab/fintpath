@@ -156,9 +156,7 @@ function construirPalancaRegimenSimple(user, owner, detActual) {
 
 function formatearCOP(n) {
   const num = Number(n) || 0;
-  if (num >= 1_000_000) return `$${fmtNumEs((num / 1_000_000), 1)}M`;
-  if (num >= 1_000) return `$${fmtNumEs((num / 1_000), 0)}K`;
-  return `$${num.toFixed(0)}`;
+  return `${num < 0 ? "−" : ""}$${Math.round(Math.abs(num)).toLocaleString("es-CO")}`; // 9-nov-2026: cifra completa
 }
 
 /**

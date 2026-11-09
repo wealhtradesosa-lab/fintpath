@@ -16,7 +16,7 @@
 //   - Si hay mismatches sin revisar → muestra banner amarillo expandible
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { useState } from "react";
 
 // Paleta consistente con el resto del app
@@ -35,13 +35,7 @@ const colors = {
   border: "rgba(var(--fp-ink),0.08)",
 };
 
-function fmM(v) {
-  const m = (Number(v) || 0) / 1e6;
-  if (Math.abs(m) >= 1000) return "$" + fmtNumEs(m, 0)+" MM";
-  if (Math.abs(m) >= 1) return "$" + fmtNumEs(m, 0)+" MM";
-  return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
-}
-
+const fmM = (v) => fmtPlataEs(v);
 export default function BannerMismatchDeclaracion({ results, onMarkReviewed, onUnmark, onNavigate }) {
   const [expanded, setExpanded] = useState({});
   const [showRevisados, setShowRevisados] = useState(false);

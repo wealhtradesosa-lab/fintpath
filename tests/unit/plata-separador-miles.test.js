@@ -1,42 +1,30 @@
-// 21-oct-2026 — "por favor separar en miles esto es terrible", "lo hemos
-// pedido mucho", "siempre lo hace".
-//
-// La tarjeta de Escenarios mostraba "$6018241,6 mil M" y "$164981833,2 M".
-// Causa: seis copias de la misma función abreviaban con toFixed(), que NO
-// pone separador de miles. Mientras la cifra cupo en tres dígitos no se notó.
+// 21-oct-2026 — "por favor separar en miles esto es terrible".
+// 9-nov-2026 — Santiago: "debemos mostrar los valores con todos los ceros,
+// pues en pesos sí que se confunde uno". Nada se abrevia (ni MM, ni K, ni
+// billones): la cifra completa, siempre con un punto cada tres dígitos.
 import { describe, it, expect } from "vitest";
-import { fmtPlataCortaEs } from "../../src/lib/formato.js";
+import { fmtPlataEs, fmtPlataCortaEs, fmtDolaresEs, fmtEjeEs } from "../../src/lib/formato.js";
 
-describe("la plata abreviada SIEMPRE lleva separador de miles", () => {
-  it("las cifras de la captura, en la palabra que la gente lee", () => {
-    expect(fmtPlataCortaEs(6018241.6e9)).toBe("$6.018,2 billones");
-    expect(fmtPlataCortaEs(164981833.2e6)).toBe("$165 billones");
+describe("la plata va completa, con todos los ceros", () => {
+  it("las cifras de la captura de BTC", () => {
+    expect(fmtPlataEs(5236408054.98)).toBe("$5.236.408.055");
+    expect(fmtPlataEs(26182040)).toBe("$26.182.040");
+    expect(fmtPlataEs(350e6)).toBe("$350.000.000");
   });
 
-  it("miles de millones se escriben en millones con puntos (31-oct-2026: $16.400 M)", () => {
-    expect(fmtPlataCortaEs(1234.5e9)).toBe("$1,2 billón");
-    expect(fmtPlataCortaEs(999e9)).toBe("$999.000 MM");
-    expect(fmtPlataCortaEs(456.78e6)).toBe("$457 MM");   // M y K nunca pasan de 999
-    expect(fmtPlataCortaEs(123456)).toBe("$123 K");
+  it("cifras absurdas también completas: los ceros dejan ver el absurdo", () => {
+    expect(fmtPlataEs(6018241.6e9)).toBe("$6.018.241.600.000.000");
   });
 
-  it("no hay cifra, por grande que sea, sin un punto cada tres dígitos", () => {
-    for (const n of [1e9, 1e10, 1e12, 1e15, 7.7e13, 3.21e16]) {
-      const s = fmtPlataCortaEs(n);
-      const entero = s.replace(/^[−$]+/, "").split(" ")[0].split(",")[0];
-      expect(entero.replace(/\./g, "").length <= 3 || entero.includes("."), `${n} → ${s}`).toBe(true);
-    }
+  it("chicas, cero y negativas", () => {
+    expect(fmtPlataEs(850e3)).toBe("$850.000");
+    expect(fmtPlataEs(0)).toBe("$0");
+    expect(fmtPlataEs(-1234.5e9)).toBe("−$1.234.500.000.000");
   });
 
-  it("las escalas chicas no cambiaron", () => {
-    expect(fmtPlataCortaEs(28.5e6)).toBe("$29 MM");   // de 10 M para arriba, entero
-    expect(fmtPlataCortaEs(2.5e6)).toBe("$2,5 MM");
-    expect(fmtPlataCortaEs(850e3)).toBe("$850 K");
-    expect(fmtPlataCortaEs(0)).toBe("$0");
-  });
-
-  it("los negativos llevan su signo y su separador", () => {
-    expect(fmtPlataCortaEs(-1234.5e9)).toBe("−$1,2 billón");
-    expect(fmtPlataCortaEs(-456.78e6)).toBe("−$457 MM");
+  it("el nombre viejo da lo mismo; dólares con US$; ejes sin $", () => {
+    expect(fmtPlataCortaEs(28.5e6)).toBe("$28.500.000");
+    expect(fmtDolaresEs(41564714)).toBe("US$41.564.714");
+    expect(fmtEjeEs(5e9)).toBe("5.000.000.000");
   });
 });

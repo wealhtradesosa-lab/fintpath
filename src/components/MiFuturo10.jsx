@@ -11,6 +11,7 @@ import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
 import EscenariosCreados from "./infografia/EscenariosCreados";
 
+import { fmtPlataEs } from "../lib/formato.js";
 const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#00c805", rd: "#ff5000", am: "#f59e0b" };
 const card = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: 14, marginBottom: 12 };
 const btn = (on) => ({ padding: "8px 12px", borderRadius: 8, border: `1px solid ${on ? C.gn : C.bd}`, background: on ? "rgba(0,200,5,0.15)" : "transparent", color: on ? C.gn : C.tx, cursor: "pointer", fontSize: 13 });
@@ -872,7 +873,7 @@ function Ciclos({ lista, set, det, destinos = [] }) {
   const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
   const up = (i, v) => set(lista.map((y, j) => (j === i ? { ...y, ...v } : y)));
   // CO: $1.350M (millones de pesos). US: cifra corta en dólares ($1.4M, $450K).
-  const mm = (v) => (esUS() ? plataR(v) : `$${Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`);
+  const mm = (v) => (esUS() ? plataR(v) : fmtPlataEs(v));
   const TC = tarifaCiclo();
   const nomT = (t) => tx(t.nombre, t.nombreEn), notaT = (t) => tx(t.nota, t.notaEn);
   return <>

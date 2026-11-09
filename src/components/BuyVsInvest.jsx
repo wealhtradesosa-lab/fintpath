@@ -19,14 +19,7 @@ const T = { bg:"var(--fp-bg)", bg2:"var(--fp-card)", bg3:"var(--fp-raised)", bor
 
 let LOC = "es-CO";
 const fm = (n) => "$" + Math.round(Number(n) || 0).toLocaleString(LOC);
-const fmCorto = (n) => {
-  const v = Number(n) || 0;
-  if (Math.abs(v) >= 1e9) return "$" + (v / 1e9).toFixed(1) + (LOC === "en-US" ? "B" : "MM");
-  if (Math.abs(v) >= 1e6) return "$" + (LOC === "en-US" ? (v/1e6).toFixed(1) + "M" : Math.round(v / 1e6) + "M");
-  if (Math.abs(v) >= 1e3 && LOC === "en-US") return "$" + Math.round(v / 1e3) + "K";
-  return "$" + Math.round(v).toLocaleString(LOC);
-};
-
+const fmCorto = fm;
 // Rendimientos de referencia. El de BTC NO es el CAGR histórico de 55.8%: a 20
 // años ese número implica un precio por bitcoin superior a la riqueza mundial,
 // y convierte cualquier comparación en un chiste. 20% ya es una apuesta fuerte.
@@ -433,7 +426,7 @@ export default function BuyVsInvest({ isUS = false, guardado = null, onGuardar =
             <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" />
             <XAxis dataKey="anio" stroke="var(--fp-txt3)" fontSize={11}
               label={{ value: "años", position: "insideBottomRight", fill: "var(--fp-txt3)", fontSize: 12 }} />
-            <YAxis stroke="var(--fp-txt3)" fontSize={11} tickFormatter={fmCorto} width={70} />
+            <YAxis stroke="var(--fp-txt3)" fontSize={11} tickFormatter={fmCorto} width={104} />
             <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(l) => `Año ${l}`} />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Line type="monotone" dataKey="Comprar" stroke={T.orange} strokeWidth={2} dot={false} />

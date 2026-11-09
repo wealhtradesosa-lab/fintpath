@@ -215,7 +215,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           <ComposedChart data={mes} margin={{ top: 30, right: 96, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} />
-            <YAxis {...eje} tickFormatter={fmEje} width={72} />
+            <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={(q) => <ChartTooltip {...q} payload={(q.payload || []).filter((x) => x.dataKey !== "base")} formatter={tip} />} />
             <Area type="stepAfter" dataKey="base" stackId="b" stroke="none" fill="transparent" isAnimationActive={false} legendType="none" name=" " tooltipType="none" />
             <Area type="stepAfter" dataKey="sobra" stackId="b" stroke="none" fill={INF.franja} isAnimationActive={false} name={tx("Sobra", "Surplus")} />
@@ -263,7 +263,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           <BarChart data={pat} margin={{ top: 22, right: 6, left: 0, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} interval={1} />
-            <YAxis {...eje} tickFormatter={fmEje} width={68} />
+            <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={<ChartTooltip formatter={tip} />} />
             <Bar dataKey="otros" stackId="v" name={tx("Otros activos netos", "Other net assets")} fill={INF.gris} />
             {sV.top.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sV.top.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 12 }} />}</Bar>)}
@@ -289,7 +289,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           <LineChart data={pat} margin={{ top: 10, right: 128, left: 0, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} interval={1} />
-            <YAxis {...eje} tickFormatter={fmEje} width={68} />
+            <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={<ChartTooltip formatter={tip} />} />
             {sL.map((s) => <Line key={s.id} type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} dot={false}
               label={(p) => (p.index === pat.length - 1 ? <text x={p.x + 6} y={p.y + 4} fill={s.color} fontSize={11}>{`${(s.nombre || "").slice(0, 12)} ${fmM(p.value)}`}</text> : null)} />)}
@@ -327,7 +327,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           <ComposedChart data={prod} margin={{ top: 22, right: 8, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} />
-            <YAxis {...eje} tickFormatter={fmEje} width={72} />
+            <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={<ChartTooltip formatter={tip} />} />
             {sR.top.map((s, i) => <Bar key={"r" + s.id} dataKey={"r_" + s.id} stackId="p" name={`${s.nombre} (${tx("renta", "income")})`} fill={[INF.azul, INF.serie[4], INF.oliva, INF.navy, INF.serie[6], INF.serie[8]][i % 6]} />)}
             <Bar dataKey="r_otros" stackId="p" name={sR.resto.length ? tx("Resto de rentas (más pequeñas)", "Other income (smaller)") : tx("Ajuste (costos de inmuebles sin ligar)", "Adjustment (unlinked property costs)")} fill={INF.gris} />

@@ -588,10 +588,7 @@ const pdfTxt = (s) => String(s ?? "")
   .replace(/[−–—]/g, "-").replace(/×/g, "x").replace(/≈/g, "aprox.").replace(/→/g, "->")
   .replace(/[✓✅]/g, "").replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[^\x00-\xFF]/g, "");
 export const AVISO_LEGAL_GO = "FINPATHIA es una herramienta de información y planeación. Los resultados son estimaciones hechas con los datos que ingresaste y con la norma vigente a la fecha de este documento. No constituyen asesoría tributaria, contable ni legal, y no reemplazan la revisión de un contador público o un abogado. Cada estrategia depende de los hechos, documentos y soportes de tu caso, y de la interpretación de la DIAN, que puede cambiar. FINPATHIA no se hace responsable por las decisiones que tomes con base en esta información. Antes de firmar o declarar, valida todo con un contador público o un asesor tributario. Términos: finpathia.com/terminos.";
-const MMpdf = (v) => {
-  const x = (Number(v) || 0) / 1e6;
-  return "$" + x.toLocaleString("es-CO", { maximumFractionDigits: Math.abs(x) >= 100 ? 0 : 1 }) + " MM";
-};
+const MMpdf = (v) => { const r = Math.round(Number(v) || 0); return (r < 0 ? "-" : "") + "$" + Math.abs(r).toLocaleString("es-CO"); }; // 9-nov-2026: cifra completa
 
 export async function exportGananciaOcasionalPDF(r, datos) {
   LOC = "es-CO"; TAGLINE = "Tu family office";

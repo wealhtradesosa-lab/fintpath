@@ -25,7 +25,7 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { useEffect } from "react";
 import { track } from "../lib/analytics.js";
 
@@ -35,14 +35,7 @@ const T = {
   orange: "#f59e0b", red: "#ff5000", green: "#00c805", cyan: "#94a3b8",
 };
 
-const fmMoney = (v) => {
-  const n = Math.round(Number(v) || 0);
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + n.toLocaleString("es-CO");
-};
-
+const fmMoney = (v) => fmtPlataEs(v);
 // Las funciones de detección son puras (sin React) y viven en src/lib/alertasCore.js
 // para poder testearlas directamente con node en el hook pre-commit.
 // Las re-exportamos acá para mantener compatibilidad con imports previos.

@@ -13,6 +13,7 @@ import { mesesDePago } from "../lib/impuestoReferente";
 import { textoFechaPago } from "./NotaFuenteImpuesto";
 import { Panel, Bienvenida, SelectorTitular, Kpi, KpiGrid, Plata, Campo, Grid, Aviso, inp, card } from "./RentaUI";
 
+import { fmtPlataEs } from "../lib/formato.js";
 /**
  * Impuestos → «Lo que viene»: cuánto me va a tocar pagar de renta este año.
  *
@@ -507,7 +508,7 @@ function ResumenHistoria({ owner }) {
   const s = serieHistorial(owner);
   if (s.length < 2) return null;
   const anos = s.map((x) => x.ano), u = s.at(-1), p = s.at(-2);
-  const corto = (v) => "$" + Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO");
+  const corto = (v) => fmtPlataEs(v);
   const cambio = (l, a, b, subirEsMalo) => {
     if (a == null || b == null || !a) return null;
     const d = (b - a) / a; if (Math.abs(d) < 0.03) return null;
@@ -518,10 +519,10 @@ function ResumenHistoria({ owner }) {
     <div style={{ marginTop: 16 }}>
       <div style={F.h3}>Así le ha ido, año tras año</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 10, marginTop: 8 }}>
-        <Grafica titulo="Ingresos (MM)"><Linea anos={anos} v={s.map((x) => x.ing)} fmt={corto} color={C.accent} txt={15} /></Grafica>
-        <Grafica titulo="Impuesto (MM)"><Linea anos={anos} v={s.map((x) => x.imp)} fmt={corto} color={C.danger} txt={15} /></Grafica>
+        <Grafica titulo="Ingresos"><Linea anos={anos} v={s.map((x) => x.ing)} fmt={corto} color={C.accent} txt={15} /></Grafica>
+        <Grafica titulo="Impuesto"><Linea anos={anos} v={s.map((x) => x.imp)} fmt={corto} color={C.danger} txt={15} /></Grafica>
         <Grafica titulo="Tasa efectiva"><Linea anos={anos} v={s.map((x) => x.tasa)} fmt={(v) => pct(v)} color={C.warn} txt={15} /></Grafica>
-        {s.every((x) => x.pat != null) && <Grafica titulo="Patrimonio líquido (MM)"><Linea anos={anos} v={s.map((x) => x.pat)} fmt={corto} txt={15} /></Grafica>}
+        {s.every((x) => x.pat != null) && <Grafica titulo="Patrimonio líquido"><Linea anos={anos} v={s.map((x) => x.pat)} fmt={corto} txt={15} /></Grafica>}
       </div>
       <div style={{ ...F.h3, marginTop: 12 }}>Principales cambios {p.ano} → {u.ano}</div>
       <ul style={{ ...F.body, margin: "6px 0 0", paddingLeft: 18, display: "grid", gap: 4 }}>

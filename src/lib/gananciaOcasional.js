@@ -168,7 +168,7 @@ export function calcularGananciaOcasional(e = {}) {
   });
   else est.push({
     id: "mejoras", titulo: "¿Le hiciste mejoras? Súmalas", norma: "Art. 69 ET", estado: "falta_dato", ahorro: 0, campos: ["mejoras", "valorizacion"],
-    detalle: "Remodelaciones, ampliaciones y contribuciones por valorización con factura suben el costo. Cada $10 MM de costo baja el impuesto estimado en $1,5 MM.",
+    detalle: "Remodelaciones, ampliaciones y contribuciones por valorización con factura suben el costo. Cada $10.000.000 de costo baja el impuesto estimado en $1.500.000.",
   });
 
   const exPosible = Math.min(liquidar(costoDespues, false).utilidadGO, EXENCION_311_1_UVT * uvt) * TARIFA_GO;

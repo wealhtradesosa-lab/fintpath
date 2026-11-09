@@ -18,7 +18,7 @@
 //   />
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine, CartesianGrid } from "recharts";
 import { useEffect } from "react";
 import { proyectarSiguienteAno } from "./AlertasAnoAnterior.jsx";
@@ -32,14 +32,7 @@ const T = {
   card: "rgba(var(--fp-ink),0.02)",
 };
 
-const fmM = (v) => {
-  const n = Number(v) || 0;
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + Math.round(n).toLocaleString("es-CO");
-};
-
+const fmM = (v) => fmtPlataEs(v);
 export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresActuales }) {
   useEffect(() => {
     if (!Array.isArray(serie) || serie.length < 1) return;
@@ -107,7 +100,7 @@ export default function MiniGraficaAnosAnteriores({ serie, anoActual, valoresAct
           <LineChart data={puntos} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="ano" {...axisProps} />
-            <YAxis tickFormatter={fmM} {...axisProps} width={55} />
+            <YAxis tickFormatter={fmM} {...axisProps} width={104} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)}/>} />
             <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} iconType="circle"/>
             <Line type="monotone" dataKey="ingresos" stroke={CHART.blue} strokeWidth={2.5} dot={{ r: 3, strokeWidth: 0 }} activeDot={{r:5}} name="Ingresos" />

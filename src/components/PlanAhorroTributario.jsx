@@ -28,7 +28,7 @@
 //     áreas de persona
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtPctEs, fmtNumEs } from "../lib/formato.js";
+import { fmtPctEs, fmtNumEs, fmtPlataEs } from "../lib/formato.js";
 import { useState, useMemo } from "react";
 import NumberInput from "./NumberInput";
 import { UVT } from "../lib/taxCO.js";
@@ -58,14 +58,7 @@ function fm(n) {
   if (!n && n !== 0) return "$0";
   return "$" + Math.round(n).toLocaleString("es-CO");
 }
-function fmShort(v) {
-  const n = Math.abs(Number(v) || 0);
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + Math.round(n);
-}
-
+const fmShort = (v) => fmtPlataEs(v);
 // ─────────────────────────────────────────────────────────────────────────
 // DEFINICIÓN DE ÁREAS · JURÍDICA
 // Cada área es: pregunta simple + ahorro potencial + carga inline

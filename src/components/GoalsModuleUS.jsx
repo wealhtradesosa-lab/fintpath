@@ -103,7 +103,7 @@ const T = {
   bl:"#3b82f6", pr:"#3b82f6", or:"#f59e0b", cy:"#94a3b8",
 };
 const fm  = (n) => `$${Math.round(n||0).toLocaleString("en-US")}`;
-const fmK = (n) => n>=1e6?`$${(n/1e6).toFixed(2)}M`:n>=1000?`$${(n/1000).toFixed(0)}K`:fm(n);
+const fmK = (n) => fm(n); // 9-nov-2026: full digits
 const pct = (n) => `${((n||0)).toFixed(1)}%`;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────

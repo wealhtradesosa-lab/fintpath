@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { DEFAULT_AG } from "../lib/taxCO.js";
 // FINPATHIA · VistaFamiliarConsolidada.jsx
 //
@@ -56,14 +56,7 @@ const C = {
 };
 
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
-const fmShort = (v) => {
-  const n = Math.abs(Number(v) || 0);
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + Math.round(n);
-};
-
+const fmShort = (v) => fmtPlataEs(v);
 /**
  * Vista Familiar Consolidada.
  *

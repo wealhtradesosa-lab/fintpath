@@ -1457,7 +1457,7 @@ function GraficaMesAMes({ r, perfil, base, onArreglar }) {
           <ComposedChart data={datos} margin={{ top: 26, right: 12, left: 0, bottom: 0 }}>
             <CartesianGrid {...gridProps} />
             <XAxis dataKey="mes" {...axisProps} ticks={ticks} tickFormatter={(m) => (m === 0 ? "hoy" : `año ${m / 12}`)} />
-            <YAxis {...axisProps} width={80} tickFormatter={(v) => sinCorte(fmMes(v).replace("$", ""))} />
+            <YAxis {...axisProps} width={104} tickFormatter={(v) => sinCorte(fmMes(v).replace("$", ""))} />
             <Tooltip content={<DeDonde />} />
             <Area type="stepAfter" dataKey={(x) => [Math.min(x.entra, x.sale), x.entra]} name="Sobra" stroke="none" fill={C.ok} fillOpacity={0.16} isAnimationActive={false} />
             <Line type="stepAfter" dataKey="entra" name="Entra" stroke={r.color} strokeWidth={2} dot={false} isAnimationActive={false} />
@@ -1848,7 +1848,7 @@ function PasoCompara({ res, base, perfil, activoId, onVer, caminoElegido, onEleg
         <div style={{ height: 260, marginTop: 14 }}>
           <ResponsiveContainer>
             <LineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid {...gridProps} /><XAxis dataKey="anio" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : `año ${a}`)} /><YAxis {...axisProps} width={60} tickFormatter={(v) => fmM(v).replace("$", "")} />
+              <CartesianGrid {...gridProps} /><XAxis dataKey="anio" {...axisProps} tickFormatter={(a) => (a === 0 ? "hoy" : `año ${a}`)} /><YAxis {...axisProps} width={104} tickFormatter={(v) => fmM(v).replace("$", "")} />
               <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} labelFormatter={(a) => (a === 0 ? "Hoy" : `Año ${a}`)} />} /><Legend wrapperStyle={{ fontSize: 12, color: CHART.txt2 }} />
               {res.map((r) => <Line key={r.id} type="monotone" dataKey={r.id} name={r.nombre} stroke={r.color} strokeWidth={r.id === activoId ? 3 : 1.5} dot={false} strokeOpacity={activoId && r.id !== activoId ? 0.55 : 1} />)}
             </LineChart>

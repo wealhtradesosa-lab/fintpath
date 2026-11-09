@@ -3,6 +3,7 @@
 import { C, Cα, F, R } from "../lib/designTokens";
 import { mm, ultimaDeclaracion } from "../lib/rentaDesdeDeclaracion.js";
 
+import { fmtPlataEs } from "../lib/formato.js";
 export const card = { background: C.surface, border: `1px solid ${C.border}`, borderRadius: R.lg, padding: 16 };
 // Misma altura para casillas y listas: antes la lista desplegable salía más alta y nada alineaba.
 export const inp = { width: "100%", boxSizing: "border-box", height: 42, margin: 0, background: C.raised, border: `1px solid ${C.border}`, borderRadius: R.md, color: C.text, padding: "0 12px", fontSize: 14, lineHeight: "normal", outline: "none" };
@@ -92,7 +93,7 @@ export function Kpi({ k, v, d, color, tono }) {
 }
 export const KpiGrid = ({ children }) => <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 10 }}>{children}</div>;
 
-const corto = (v) => "$" + Math.round((Number(v) || 0) / 1e6).toLocaleString("es-CO");
+const corto = (v) => fmtPlataEs(v);
 
 /** Barras agrupadas o apiladas por año. Desde el índice `desde`, barras punteadas (proyección). */
 export function Barras({ anos, series, apilar = false, fmt = corto, desde = 99 }) {

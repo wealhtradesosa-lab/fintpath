@@ -24,8 +24,6 @@ const T = {
 const fm = (n) => {
   if(n==null||isNaN(n)) return "$0";
   const v = Math.abs(n);
-  if(v>=1e9) return "$"+(n/1e9).toFixed(1)+"B";
-  if(v>=1e6) return "$"+(n/1e6).toFixed(1)+"M";
   return "$"+Math.round(n).toLocaleString("en-US");
 };
 const pct = (n) => ((n||0)).toFixed(1)+"%";
@@ -316,7 +314,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
               <ChartGradients/>
               <CartesianGrid {...gridProps}/>
               <XAxis dataKey="name" {...axisProps}/>
-              <YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/>
+              <YAxis {...axisProps} width={96} tickFormatter={v=>fm(v).replace("$","")}/>
               <Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/>
               <Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>
                 {cfData.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}
@@ -409,7 +407,7 @@ export default function DashboardUS({ u, t, ib, pen, setPg, generatePDF, mb }) {
               <ChartGradients/>
               <CartesianGrid {...gridProps}/>
               <XAxis dataKey="yr" {...axisProps}/>
-              <YAxis {...axisProps} tickFormatter={v=>fm(v).replace("$","")}/>
+              <YAxis {...axisProps} width={96} tickFormatter={v=>fm(v).replace("$","")}/>
               <Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/>
               <Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/>
             </AreaChart>

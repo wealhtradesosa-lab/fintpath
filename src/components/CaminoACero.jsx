@@ -175,7 +175,7 @@ export default function CaminoACero({ plan, base, fm, cf, extraOverride, setExtr
                 <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
                   <CartesianGrid stroke="rgba(var(--fp-ink),0.05)" vertical={false} />
                   <XAxis dataKey="i" type="number" domain={[0, "dataMax"]} ticks={ticks} tickFormatter={(i) => String(new Date(new Date().getFullYear(), new Date().getMonth() + i, 1).getFullYear())} tick={{ fill: V.txt3, fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={78} tickFormatter={(v) => sinCorte((esUS() ? plataCorta(v) : fm(v)).replace("$", ""))} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: V.txt3, fontSize: 12 }} width={104} tickFormatter={(v) => sinCorte((esUS() ? plataCorta(v) : fm(v)).replace("$", ""))} axisLine={false} tickLine={false} />
                   <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} labelFormatter={(i) => fechaEnMeses(i)} />} />
                   <Line type="monotone" dataKey="solo" name={tx("Solo con tus cuotas", "Payments only")} stroke={V.red} strokeWidth={2} dot={false} isAnimationActive={false} />
                   {conExtra && <Line type="monotone" dataKey="extra" name={tx(`Abonando ${fm(plan.extra)} más`, `Paying ${fm(plan.extra)} extra`)} stroke={V.green} strokeWidth={2.5} dot={false} isAnimationActive={false} />}

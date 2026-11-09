@@ -1,4 +1,4 @@
-import { fmtPctEs } from "./formato.js";
+import { fmtPctEs, fmtPlataEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // ALERTAS CORE
 // ─────────────────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export function calcPatronesAnomalos(ctx) {
     patrones.push({
       severity: "critical",
       label: "Sin retenciones con ingresos altos",
-      sugerencia: `Ingresos declarados de $${Math.round(a.ingresos / 1e6)}M pero retenciones en cero. El año pasado declaraste $${Math.round(p.retenciones).toLocaleString("es-CO")} en retenciones. Si eres empleado o prestas servicios profesionales, casi seguro te están practicando retención — revisa que no se te olvidó ningún certificado.`,
+      sugerencia: `Ingresos declarados de ${fmtPlataEs(a.ingresos)} pero retenciones en cero. El año pasado declaraste $${Math.round(p.retenciones).toLocaleString("es-CO")} en retenciones. Si eres empleado o prestas servicios profesionales, casi seguro te están practicando retención — revisa que no se te olvidó ningún certificado.`,
     });
   }
 

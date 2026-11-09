@@ -135,7 +135,7 @@ export function planGananciaOcasional(e = {}) {
       ok: m > 0, on: usar.mejoras, ahorro: d, campos: ["mejoras"],
       texto: m > 0
         ? (d > 0 ? `Suma $${fmt(m)} a tu costo por compra, que queda en $${fmt(hist + m)}.` : `Aun sumando $${fmt(m)}, tu costo por compra no supera el avalúo: aquí las mejoras no cambian el impuesto.`)
-        : "Reformas, ampliaciones y sus materiales (facturas de ferretería incluidas) a nombre del dueño se suman a tu costo por compra. Cada $100 MM bajan el impuesto $15 MM.",
+        : "Reformas, ampliaciones y sus materiales (facturas de ferretería incluidas) a nombre del dueño se suman a tu costo por compra. Cada $100.000.000 bajan el impuesto $15.000.000.",
       porque: "El Art. 69 arma el costo fiscal con el precio de compra más las adiciones y mejoras y las contribuciones por valorización pagadas. Cada mejora también se reajusta desde el año en que se hizo.",
       soporte: "Facturas electrónicas a nombre del dueño (con NIT si es empresa), contratos de obra, pagos de mano de obra y recibos de valorización.",
       ojo: "Solo cuentan mejoras que aumentan el valor o la vida útil (ampliaciones, remodelaciones). Arreglos y mantenimiento no. Si la empresa ya las descontó como gasto, no se pueden sumar otra vez.",
@@ -171,7 +171,7 @@ export function planGananciaOcasional(e = {}) {
       texto: p > 0 ? `Esa pérdida de $${fmt(p)} se resta de la ganancia del inmueble.`
         : "Si tienes otro activo de más de 2 años que hoy vale menos de lo que costó (acciones, un lote, un vehículo), venderlo el mismo año resta esa pérdida. Escribe la pérdida.",
       porque: "Las pérdidas por vender activos de más de 2 años (pérdidas ocasionales) se restan de las ganancias ocasionales del mismo año. Si la otra venta cae en otro año, no se puede restar.",
-      ejemplo: "Con un carro: la empresa compró una camioneta en 2022 por $400 MM y ya la depreció $160 MM, así que su costo fiscal hoy es $240 MM. Si la vende el mismo año de la casa en $180 MM, pierde $60 MM y esa pérdida se resta de la ganancia de la casa: el impuesto baja $9 MM (15% de $60 MM). Ojo: en una empresa el carro casi siempre está depreciado, así que su costo fiscal es bajo y venderlo puede dar ganancia en vez de pérdida. La pérdida que cuenta es frente al costo fiscal, no frente a lo que pagaste.",
+      ejemplo: "Con un carro: la empresa compró una camioneta en 2022 por $400.000.000 y ya la depreció $160.000.000, así que su costo fiscal hoy es $240.000.000. Si la vende el mismo año de la casa en $180.000.000, pierde $60.000.000 y esa pérdida se resta de la ganancia de la casa: el impuesto baja $9.000.000 (15% de $60.000.000). Ojo: en una empresa el carro casi siempre está depreciado, así que su costo fiscal es bajo y venderlo puede dar ganancia en vez de pérdida. La pérdida que cuenta es frente al costo fiscal, no frente a lo que pagaste.",
       soporte: "La escritura o contrato de venta del otro activo y su costo fiscal.",
       ojo: "La venta tiene que ser real y a precio de mercado (Art. 90): venderle a un socio o vinculado por debajo de su valor la DIAN la puede desconocer. Las pérdidas de renta ordinaria de años anteriores no sirven para esto.",
     });

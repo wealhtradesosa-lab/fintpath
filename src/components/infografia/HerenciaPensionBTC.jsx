@@ -13,7 +13,7 @@ import { fmtNumEs, fmtPctEs } from "../../lib/formato.js";
 
 const W = 640, H = 170, IZQ = 8, DER = 632, ARR = 24, ABA = 140;
 
-export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetiro, edadRetiro, hastaEdad, fm, nombrePension = "Pensión" }) {
+export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetiro, edadRetiro, hastaEdad, fm, nombrePension = "Pensión", irreal = false, precioHoy = null }) {
   if (!comp || !retiro) return null;
   const filas = [
     comp.pension.enVida > 0 ? { k: "p", nombre: nombrePension, mes: comp.pension.mes, vida: comp.pension.enVida, hereda: 0 } : null,
@@ -60,7 +60,7 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
               <div style={{ fontSize: 12, color: C.txt3, margin: "2px 0 8px" }}>{nota}</div>
               <div style={{ display: "flex", height: 28, borderRadius: 8, overflow: "hidden", background: C.pista }}>
                 <div className="fpi-barra-h" style={{ width: (f.vida / max) * 100 + "%", background: trama(C.azul, 80), animationDelay: `${i * 80}ms` }} />
-                <div className="fpi-barra-h" style={{ width: (f.hereda / max) * 100 + "%", background: C.pos, animationDelay: `${i * 80 + 120}ms` }} />
+                <div className="fpi-barra-h" style={{ width: (f.hereda / max) * 100 + "%", background: esBtc && irreal ? C.txt3 : C.pos, animationDelay: `${i * 80 + 120}ms` }} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 8, marginTop: 8, ...cifra }}>
                 <div style={{ fontSize: 13, color: C.txt2 }}>
@@ -68,8 +68,15 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
                   Suma de lo que recibes {tramo}: <strong style={{ color: C.txt }}>{fm(f.vida)}</strong>
                 </div>
                 <div style={{ fontSize: 13, color: C.txt2 }}>
-                  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: C.pos, marginRight: 6 }} />
-                  Les queda a tus herederos{hastaEdad ? ` a los ${hastaEdad}` : ""}: <strong style={{ color: f.hereda > 0 ? C.pos : C.txt }}>{f.hereda > 0 ? fm(f.hereda) : "$0"}</strong>
+                  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: esBtc && irreal ? C.txt3 : C.pos, marginRight: 6 }} />
+                  Les queda a tus herederos{hastaEdad ? ` a los ${hastaEdad}` : ""}: <strong style={{ color: esBtc && irreal ? C.txt3 : f.hereda > 0 ? C.pos : C.txt }}>{f.hereda > 0 ? fm(f.hereda) : "$0"}</strong>
+                  {/* 9-nov-2026 (Santiago: "US$163 millones con 1 BTC, algo está mal"): la cuenta
+                      estaba bien; lo que faltaba era ver el precio que implica el supuesto. */}
+                  {esBtc && f.hereda > 0 && retiro.precioFinal > 0 && (
+                    <div style={{ fontSize: 12, color: irreal ? C.neg : C.txt3, marginTop: 4, lineHeight: 1.45 }}>
+                      Para esto, 1 BTC tendría que valer US${fmtNumEs(retiro.precioFinal, 0)}{hastaEdad ? ` a los ${hastaEdad}` : " al final"}{precioHoy ? ` (hoy US$${fmtNumEs(precioHoy, 0)})` : ""}.{irreal ? " Escenario no realista." : ""}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -87,14 +94,14 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
             <path className="fpi-arco" d={d} fill="none" strokeWidth="2.5" style={{ stroke: retiro.agotaEn != null ? C.neg : C.pos, "--fpi-largo": 1600 }} />
             <circle cx={x(s[s.length - 1].año)} cy={y(s[s.length - 1].capital)} r="5" strokeWidth="3" style={{ fill: "var(--fp-card)", stroke: retiro.agotaEn != null ? C.neg : C.pos }} />
             <text x={IZQ} y={ARR - 8} fontSize="12" style={{ fill: C.txt2, ...cifra }}>Al retirarte: {fm(s[0].capital)}</text>
-            <text x={DER - 14} y={Math.max(ARR + 4, y(s[s.length - 1].capital) - 12)} textAnchor="end" fontSize="12" fontWeight="600" style={{ fill: retiro.agotaEn != null ? C.neg : C.pos, ...cifra }}>{retiro.agotaEn != null ? "Se acaba" : "Heredable: " + fm(s[s.length - 1].capital)}</text>
+            <text x={DER - 14} y={Math.max(ARR + 4, y(s[s.length - 1].capital) - 12)} textAnchor="end" fontSize="12" fontWeight="600" style={{ fill: retiro.agotaEn != null ? C.neg : irreal ? C.txt3 : C.pos, ...cifra }}>{retiro.agotaEn != null ? "Se acaba" : "Heredable: " + fm(s[s.length - 1].capital)}</text>
             <text x={IZQ} y={H - 8} fontSize="11" style={{ fill: C.txt3 }}>Año 0</text>
             <text x={DER} y={H - 8} textAnchor="end" fontSize="11" style={{ fill: C.txt3 }}>Año {s[s.length - 1].año}</text>
           </svg>
         </div>
         {retiro.irreal && (
           <div style={{ fontSize: 13, color: C.neg, marginTop: 8, lineHeight: 1.5 }}>
-            Ojo, este escenario no es realista: con estos crecimientos un bitcoin valdría {retiro.precioFinal >= 1e6 ? `US$${fmtNumEs(retiro.precioFinal / 1e6, 1)} millones` : `US$${fmtNumEs(retiro.precioFinal, 0)}`} al final, y todos los bitcoin juntos {retiro.vecesRiqueza >= 1 ? `${fmtNumEs(retiro.vecesRiqueza, 1)} veces` : `el ${fmtNumEs(retiro.vecesRiqueza * 100, 0)} %`} de toda la riqueza del mundo. Baja el crecimiento al ahorrar (paso 3) o mientras retiras (paso 4).
+            Ojo, este escenario no es realista: con estos crecimientos un bitcoin valdría {`US$${fmtNumEs(retiro.precioFinal, 0)}`} al final, y todos los bitcoin juntos {retiro.vecesRiqueza >= 1 ? `${fmtNumEs(retiro.vecesRiqueza, 1)} veces` : `el ${fmtNumEs(retiro.vecesRiqueza * 100, 0)} %`} de toda la riqueza del mundo. Baja el crecimiento al ahorrar (paso 3) o mientras retiras (paso 4).
           </div>
         )}
         <div style={{ fontSize: 12, color: C.txt3, marginTop: 6 }}>El capital crece {fmtPctEs(retiro.real, 1)} al año sobre la inflación (el crecimiento que elegiste para el retiro menos la inflación del dólar) y cada mes sale el retiro.</div>

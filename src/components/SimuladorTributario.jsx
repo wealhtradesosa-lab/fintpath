@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip } from "recharts";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
@@ -15,11 +15,7 @@ const T = {
   green: "#00c805", red: "#ff5000", blue: "#3b82f6", purple: "#3b82f6",
   orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
-const fm = (v) => {
-  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
-  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
-  return "$" + Math.round(v).toLocaleString("es-CO");
-};
+const fm = (v) => fmtPlataEs(v);
 // Tabla Art. 241 y cálculo centralizado en src/lib/tablaArt241.js.
 // calcImp se usa solo para estimar el impact textual en 2 recomendaciones
 // (Pensión Voluntaria y AFC). No afecta los números del motor.
@@ -667,13 +663,7 @@ export default function SimuladorTributario({ trm, user, onNavigate, onUpdate })
         const infos = warns.filter(w => w.severity === "info");
 
         // Helper: formateo de moneda compacto para el panel.
-        const fmM = (v) => {
-          const n = Math.round(Number(v) || 0);
-          if (n >= 1000000) return "$" + fmtNumEs((n / 1000000), 1)+" MM";
-          if (n >= 1000) return "$" + fmtNumEs((n / 1000), 0)+"K";
-          return "$" + n.toLocaleString("es-CO");
-        };
-
+        const fmM = (v) => fmtPlataEs(v);
         // Aprobar: persiste el fiscalCodeSugerido en el item, haciendo desaparecer el warning.
         const aprobar = (w) => {
           if (!onUpdate || !w.fiscalCodeSugerido) return;

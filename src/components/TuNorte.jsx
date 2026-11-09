@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { OBJETIVOS, VEHICULOS, CANASTAS_EXPLICADAS, diagnosticar, proyectar } from "../lib/norte.js";
 import BarraComposicion from "./BarraComposicion";
 import Disclaimer from "./Disclaimer";
@@ -25,14 +25,7 @@ import Disclaimer from "./Disclaimer";
  * definirlo: sin ese punto de partida no hay forma de medir avance después.
  */
 
-const fm = (v) => {
-  const n = Math.round(Number(v) || 0);
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (Math.abs(n) >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + n.toLocaleString("es-CO");
-};
-
+const fm = (v) => fmtPlataEs(v);
 export default function TuNorte({ user, totales = {}, T = {}, onGuardar, onReclasificar, isEN = false }) {
   const L = isEN ? "en" : "es";
   const tx = T.txt || T.tx || "var(--fp-txt)";

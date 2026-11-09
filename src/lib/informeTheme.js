@@ -51,31 +51,11 @@ const ETQ_CLASE_ES = { inmueble: "Inmuebles", liquido: "Liquidez", acciones: "Bo
 const ETQ_CLASE_EN = { inmueble: "Real estate", liquido: "Cash", acciones: "Stocks", nueva: "New investments", otro: "Other", vehiculo: "Vehicles", canasta: "Surplus reinvested" };
 export const ETQ_CLASE = new Proxy({}, { get: (_, k) => tx(ETQ_CLASE_ES[k], ETQ_CLASE_EN[k]), ownKeys: () => Object.keys(ETQ_CLASE_ES), getOwnPropertyDescriptor: (_, k) => (k in ETQ_CLASE_ES ? { enumerable: true, configurable: true, value: tx(ETQ_CLASE_ES[k], ETQ_CLASE_EN[k]) } : undefined) });
 
-/** $1.234 M · $12,3 mil M · $850.000 */
+/** Cifra completa: $1.234.567.890 · $1,234,567,890 (9-nov-2026: nada abreviado). */
 export function fmM(v) {
-  const n = Number(v) || 0, a = Math.abs(n), sg = n < 0 ? "−" : "";
-  // 3-nov-2026 — EE. UU.: $1.2B · $3.4M · $850,000.
-  if (esUS()) {
-    const q = (x) => x.toLocaleString("en-US", { maximumFractionDigits: 1 });
-    if (a >= 1e9) return `${sg}$${q(a / 1e9)}B`;
-    if (a >= 1e6) return `${sg}$${q(a / 1e6)}M`;
-    return `${sg}$${miles(a)}`;
-  }
-  if (a >= 1e9) return `${sg}$${fmtMilesEs(Math.round(a / 1e6))}M`;
-  if (a >= 1e6) return `${sg}$${(Math.round(a / 1e5) / 10).toLocaleString("es-CO")}M`;
-  return `${sg}$${fmtMilesEs(Math.round(a))}`;
+  const r = Math.round(Number(v) || 0), sg = r < 0 ? "−" : "";
+  return `${sg}$${esUS() ? miles(Math.abs(r)) : fmtMilesEs(Math.abs(r))}`;
 }
-/** Para ejes: $10.000M, $500M */
-export function fmEje(v) {
-  const n = Number(v) || 0, a = Math.abs(n), sg = n < 0 ? "−" : "";
-  if (esUS()) {
-    const q = (x) => x.toLocaleString("en-US", { maximumFractionDigits: 1 });
-    if (a >= 1e9) return `${sg}$${q(a / 1e9)}B`;
-    if (a >= 1e6) return `${sg}$${q(a / 1e6)}M`;
-    if (a >= 1e3) return `${sg}$${q(a / 1e3)}K`;
-    return `${sg}$${miles(a)}`;
-  }
-  if (a >= 1e6) return `${sg}$${fmtMilesEs(Math.round(a / 1e6))}M`;
-  return `${sg}$${fmtMilesEs(Math.round(a))}`;
-}
+/** Para ejes: la misma cifra completa. */
+export const fmEje = fmM;
 export const fmPct = (v, d = 1) => pctRegion(v, d);

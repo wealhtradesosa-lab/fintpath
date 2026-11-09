@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { fmtNumEs, fmtTasaEs } from "../lib/formato.js";
+import { fmtNumEs, fmtTasaEs, fmtPlataEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso, grupoIngreso, GRUPOS_INGRESO, PREGUNTA_RENTA } from "../lib/metrics.js";
 import ConfirmarIngresos from "./ConfirmarIngresos";
@@ -166,7 +166,7 @@ function Slider({ label, value, base, max, color, onChange, sub }) {
   );
 }
 
-const fmCorto = (n) => { const a = Math.abs(Number(n) || 0); return "$" + (a >= 1e6 ? (a / 1e6).toLocaleString("es-CO", { maximumFractionDigits: a >= 1e8 ? 0 : 1 }) + " MM" : Math.round(a).toLocaleString("es-CO")); };
+const fmCorto = (n) => fmtPlataEs(Math.abs(Number(n) || 0));
 
 // ─── FREEDOM BAR (inline, reactive) ───
 // 5-nov-2026 (Santiago: "muevo los sliders y la barra de libertad parece fija,
@@ -1245,7 +1245,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
                   return { i, v: getVal("ing_"+idx, base) };
                 }).filter(Boolean).sort((a,b)=>b.v-a.v);
                 const ingRows = ingMes.map(({ i, v }) => {
-                const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: $${fmtNumEs((i.capital/1e6), 0)}M × ${fmtTasaEs(i.tasa)}</span>` : "";
+                const cap = i.capital && i.tasa ? `<span style="color:#888;font-size:10px">Capital: ${fmtPlataEs(i.capital)} × ${fmtTasaEs(i.tasa)}</span>` : "";
                 const monto = v > 0
                   ? `<span style="font-weight:600;color:#00a804">$${Math.round(v).toLocaleString("es-CO")}</span>`
                   : `<span style="color:var(--fp-txt2);font-size:10px">no aplica en ${mesPdfL.toLowerCase()}</span>`;
@@ -2643,7 +2643,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
                 <ChartGradients/>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="m" {...axisProps} />
-                <YAxis {...axisProps} tickFormatter={(v) => {if(Math.abs(v)>=1e9)return"$"+fmtNumEs((v / 1e6), 0)+" MM";if(Math.abs(v)>=1e6)return"$"+fmtNumEs((v/1e6), 0)+" MM";if(Math.abs(v)>=1e3)return"$"+fmtNumEs((v/1e3), 0)+"K";return"$"+v}} />
+                <YAxis {...axisProps} width={104} tickFormatter={(v) => fmtPlataEs(v).replace(/ /g, "\u00A0")} />
                 {/* 14-sep-2026 — Tercera pasada sobre lo mismo (Santiago:
                     "por eso explique mejor"). El encabezado del tooltip decía
                     solo "DIC", y al lado una cifra: se lee como el dato DE

@@ -21,6 +21,7 @@ import { calcularBase, tipoActivo, esLiquido, tipoIngreso, esLaboral, INFLACION_
 import { montoPromedioMensual } from "./flowHelpers.js";
 import { esUS, tx, plataCorta, localeCifras } from "./region.js";
 
+import { fmtPlataEs } from "./formato.js";
 export const SUPUESTOS_F10 = {
   validadoPor: "Finpathia · Finanzas, 24-oct-2026",
   anios: 10,
@@ -84,7 +85,7 @@ export const nombreSup = (x) => (x ? tx(x.nombre, x.nombreEn) : "");
 
 // 3-nov-2026 — Textos del motor en el idioma de la sesión (region.js).
 // Monto corto para las alertas: CO «1.350 M» (millones de pesos, como siempre); US «$350K».
-const mmTxt = (v) => (esUS() ? plataCorta(v) : `${Math.round(v / 1e6).toLocaleString("es-CO")} M`);
+const mmTxt = (v) => (esUS() ? plataCorta(v) : fmtPlataEs(v));
 const FREC_EN = { mensual: "monthly", variable: "variable", anual: "annual", trimestral: "quarterly", semestral: "semiannual", unico: "one-time" };
 const MES_EN = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 // Nota de vigencia/frecuencia de un ingreso o gasto (paso 1 de Mi futuro).
@@ -765,7 +766,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), mensual: v, nota: tipoIngreso(i) === "pasivo" ? tx("renta · de tu página Ingresos", "passive · from your Income page") : tx("trabajo · de tu página Ingresos", "work · from your Income page") });
     });
     activos.filter((a) => a.rentaCorregida && a.rentaAnual > 0).forEach((a) => entra.push({ nombre: tx(`Renta de ${a.nombre}`, `Income from ${a.nombre}`), mensual: a.rentaAnual / 12 * Math.pow(1 + gIng, 0), nota: tx("la corregiste en el paso Hoy", "you edited it in step 1") }));
-    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada || a?.rentaCorregida) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => (esUS() ? plataCorta(x) : `$${(Math.round(x / 1e5) / 10).toLocaleString("es-CO")}M`);
+    Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada || a?.rentaCorregida) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => (esUS() ? plataCorta(x) : fmtPlataEs(x));
       // 24-oct-2026 (Santiago: "Rapicredit me da el 21 % de 3.288 M"): se muestra la cuenta, no solo el neto.
       entra.push({ nombre: tx(`Renta de ${nombreActivo(id)}`, `Income from ${nombreActivo(id)}`), mensual: v, nota: br - v > 0.5 ? tx(`${mm(br)} de renta − ${mm(br - v)} de gastos ligados en Egresos`, `${mm(br)} income − ${mm(br - v)} linked expenses on Expenses`) : tx("renta de tu página Ingresos", "income from your Income page") }); } });
     const ff = 1 + inf;
@@ -1010,7 +1011,7 @@ export function migrarModifica(cfg = {}, esc) {
  */
 export function resumenEscenario(r) {
   if (!r) return "";
-  const corto = (v) => (esUS() ? plataCorta(Math.abs(Number(v) || 0)) : `$${Math.round(Math.abs(Number(v) || 0) / 1e6).toLocaleString("es-CO")}M`);
+  const corto = (v) => (esUS() ? plataCorta(Math.abs(Number(v) || 0)) : fmtPlataEs(Math.abs(Number(v) || 0)));
   const partes = [];
   if ((r.vendidos || []).length) partes.push(tx(`Vende ${r.vendidos.map((v) => v.nombre).join(" y ")}`, `Sell ${r.vendidos.map((v) => v.nombre).join(" and ")}`));
   const inv = [...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ n: x.nombre, v: x.aporte })), ...(r.nuevasDetalle || []).map((x) => ({ n: x.nombre, v: x.monto }))].sort((a, b) => b.v - a.v);

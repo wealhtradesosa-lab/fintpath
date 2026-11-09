@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import InputDecimalEs from "./InputDecimalEs.jsx";
-import { fmtNumEs, fmtPlataCortaEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPlataCortaEs, fmtPlataEs } from "../lib/formato.js";
+const sinCorteEje = (s) => String(s).replace(/ /g, "\u00A0");
 import { fmtPctEs } from "../lib/metrics.js";
 import {
   AreaChart,
@@ -263,12 +264,8 @@ export default function ProyeccionPatrimonio({
           <XAxis dataKey="m" {...axisProps} />
           <YAxis
             {...axisProps}
-            tickFormatter={(v) => {
-              if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
-              if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
-              if (Math.abs(v) >= 1e3) return "$" + fmtNumEs((v / 1e3), 0)+"K";
-              return "$" + v;
-            }}
+            width={104}
+            tickFormatter={(v) => sinCorteEje(fmtPlataEs(v))}
           />
           <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} />} />
           <ReferenceLine y={snap.patrimonioNeto} stroke={CHART.txt3} strokeDasharray="4 4" />

@@ -19,7 +19,7 @@
 //   marcados como pagados).
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs, fmtVolatilidadTextoEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtVolatilidadTextoEs, fmtPlataEs } from "../lib/formato.js";
 import { tx, esUS, esEN, plata, plataCorta, pct as pctR, num as numR, nombreMes } from "../lib/region.js";
 import { nombreCategoria } from "../lib/infografia.js";
 import { useState, useMemo } from "react";
@@ -61,13 +61,7 @@ const nomCat = (n) => {
   return ING[n] ? tx(n, ING[n]) : nombreCategoria(n);
 };
 const nomFrecuencia = (v, l) => tx(l, { mensual: "Monthly", variable: "Variable", anual: "Yearly", trimestral: "Quarterly", semestral: "Twice a year", unico: "One-time" }[v] || l);
-const fmShortCO = (n) => {
-  const abs = Math.abs(n || 0);
-  if (abs >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (abs >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (abs >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + Math.round(n || 0).toString();
-};
+const fmShortCO = (n) => fmtPlataEs(n);
 const fmShort = (n) => (esUS() ? plataCorta(n) : fmShortCO(n));
 
 export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
@@ -612,7 +606,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               style={{ cursor: "pointer" }}>
               <CartesianGrid stroke={T.border} vertical={false} />
               <XAxis dataKey="mesLabel" stroke={T.txt3} fontSize={11} axisLine={{ stroke: T.border }} tickLine={false} />
-              <YAxis stroke={T.txt3} fontSize={11} width={84} axisLine={false} tickLine={false} tickFormatter={(v) => sinCorte(fmShort(v))} />
+              <YAxis stroke={T.txt3} fontSize={11} width={104} axisLine={false} tickLine={false} tickFormatter={(v) => sinCorte(fmShort(v))} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(var(--fp-ink),0.03)" }} />
               <ReferenceLine y={0} stroke={T.border} strokeDasharray="3 3" />
               <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: tx(`Cash Flow promedio ${fmShort(highlights.promedio)}`, `Avg cash flow ${fmShort(highlights.promedio)}`), position: "insideTopRight", fill: T.txt3, fontSize: 11 }} />

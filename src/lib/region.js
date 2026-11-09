@@ -60,26 +60,10 @@ export const miles = (n) => Math.round(fin(n)).toLocaleString(L());
 export const plata = (n) => { const v = Math.round(fin(n)); return (v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString(L()); };
 
 /**
- * Plata abreviada para tarjetas y gráficas.
- *   CO (igual que fmtPlataCortaEs): $16.393 MM · $2,5 MM · $850 K · $1,2 billones
- *   US: $16.4B · $2.5M · $850K
+ * 9-nov-2026 (Santiago: "mostrar los valores con todos los ceros"): ya no se
+ * abrevia ($16.4B, $2,5 MM). Se deja el nombre para no tocar a quien la llama.
  */
-export function plataCorta(n) {
-  const v = Math.round(fin(n)), a = Math.abs(v), sg = v < 0 ? "−" : "";
-  const q = (x, dec) => x.toLocaleString(L(), { minimumFractionDigits: 0, maximumFractionDigits: dec });
-  if (R.pais === "US") {
-    if (a >= 1e12) return sg + "$" + q(a / 1e12, 1) + "T";
-    if (a >= 1e9) return sg + "$" + q(a / 1e9, 1) + "B";
-    if (a >= 1e6) return sg + "$" + q(a / 1e6, a >= 1e8 ? 0 : 1) + "M";
-    if (a >= 1e3) return sg + "$" + q(a / 1e3, 0) + "K";
-    return sg + "$" + q(a, 0);
-  }
-  if (a >= 1e12) return sg + "$" + q(a / 1e12, 1) + (a < 2e12 ? " billón" : " billones");
-  if (a >= 1e7) return sg + "$" + q(a / 1e6, 0) + " MM";
-  if (a >= 1e6) return sg + "$" + q(a / 1e6, 1) + " MM";
-  if (a >= 1e3) return sg + "$" + q(a / 1e3, 0) + " K";
-  return sg + "$" + q(a, 0);
-}
+export const plataCorta = (n) => plata(n);
 
 /** Ejemplo de monto para placeholders: "Ej.: 57.500.000" · "e.g. 57,500". */
 export const ejemploMonto = (co, us) => tx("Ej.: ", "e.g. ") + miles(R.pais === "US" ? us : co);

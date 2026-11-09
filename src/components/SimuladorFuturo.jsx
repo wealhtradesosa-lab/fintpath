@@ -1164,7 +1164,7 @@ export default function SimuladorFuturo({ user, escenarios = [], onUpdate, onNav
                 <ChartGradients />
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="m" {...axisProps} />
-                <YAxis {...axisProps} width={64} domain={[(min) => min - Math.max(1, Math.abs(patFin - snap.patrimonioNeto)) * 0.6, (max) => max + Math.max(1, Math.abs(patFin - snap.patrimonioNeto)) * 0.3]} tickFormatter={(v) => fmC(v)} />
+                <YAxis {...axisProps} width={104} domain={[(min) => min - Math.max(1, Math.abs(patFin - snap.patrimonioNeto)) * 0.6, (max) => max + Math.max(1, Math.abs(patFin - snap.patrimonioNeto)) * 0.3]} tickFormatter={(v) => fmC(v)} />
                 <YAxis yAxisId="oculto" hide domain={["auto", "auto"]} />
                 <Tooltip content={<ChartTooltip formatter={(v) => fm(v)} />} />
                 <ReferenceLine y={snap.patrimonioNeto} stroke={CHART.txt3} strokeDasharray="4 4" />

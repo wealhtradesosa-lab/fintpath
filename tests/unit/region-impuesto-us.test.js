@@ -11,15 +11,15 @@ describe("región", () => {
   it("por defecto es Colombia en español y no cambia lo existente", () => {
     expect(tx("Hola", "Hello")).toBe("Hola");
     expect(plata(1234567)).toBe("$1.234.567");
-    expect(plataCorta(16393000000)).toBe("$16.393 MM");
+    expect(plataCorta(16393000000)).toBe("$16.393.000.000"); // 9-nov-2026: sin abreviar
     expect(pct(4.25, 1)).toBe("4,3%");
   });
   it("idioma y país son ejes distintos", () => {
     setRegion({ idioma: "es", pais: "US" });
     expect(tx("Hola", "Hello")).toBe("Hola");
     expect(plata(1234567)).toBe("$1,234,567");
-    expect(plataCorta(2500000)).toBe("$2.5M");
-    expect(plataCorta(16400000000)).toBe("$16.4B");
+    expect(plataCorta(2500000)).toBe("$2,500,000");
+    expect(plataCorta(16400000000)).toBe("$16,400,000,000");
     expect(miles(57500)).toBe("57,500");
     setRegion({ idioma: "en", pais: "US" });
     expect(tx("Hola", "Hello")).toBe("Hello");

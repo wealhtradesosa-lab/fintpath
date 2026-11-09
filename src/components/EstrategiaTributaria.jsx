@@ -35,7 +35,7 @@
 //   - "Ver el detalle técnico" en vez de "Modo experto F-110"
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { impuestoACargoDe, saldoAFavorDe, textoSaldoAFavor, notaAhorroConSaldoAFavor } from "../lib/saldoAFavor.js";
@@ -67,14 +67,7 @@ function fm(n) {
   if (!n && n !== 0) return "$0";
   return "$" + Math.round(n).toLocaleString("es-CO");
 }
-function fmShort(v) {
-  const n = Math.abs(Number(v) || 0);
-  if (n >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (n >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  if (n >= 1e3) return "$" + fmtNumEs((n / 1e3), 0)+"K";
-  return "$" + Math.round(n);
-}
-
+const fmShort = (v) => fmtPlataEs(v);
 /**
  * Pantalla "Strategy-First" para Impuestos.
  *

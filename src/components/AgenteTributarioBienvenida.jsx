@@ -20,7 +20,7 @@
 //   5. Acompañamiento: explicación de "qué significa esto" en cada bloque
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtPctEs } from "../lib/formato.js";
+import { fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { useMemo, useState } from "react";
 import { generarRecomendaciones } from "../lib/recomendaciones.js";
 import { exportarBorradorPDF } from "../lib/pdfExport.js";
@@ -55,21 +55,7 @@ const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
 /**
  * Convierte un número grande en formato legible: $1,044,000,000 → "$1.044 millones"
  */
-function fmHumano(v) {
-  const n = Math.round(Number(v) || 0);
-  if (n === 0) return "$0";
-  if (Math.abs(n) >= 1_000_000_000) {
-    return "$" + (n / 1_000_000_000).toFixed(1).replace(/\.0$/, "") + " mil millones";
-  }
-  if (Math.abs(n) >= 1_000_000) {
-    return "$" + (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + " millones";
-  }
-  if (Math.abs(n) >= 1_000) {
-    return "$" + (n / 1_000).toFixed(0) + " mil";
-  }
-  return "$" + n.toLocaleString("es-CO");
-}
-
+const fmHumano = (v) => fmtPlataEs(v);
 export default function AgenteTributarioBienvenida({
   user,
   selectedOwner,

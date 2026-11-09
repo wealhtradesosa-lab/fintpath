@@ -19,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs, fmtDolaresEs } from "../lib/formato.js";
 import Disclaimer from "./Disclaimer";
 import NumberInput from "./NumberInput";
 import PageHeader from "./PageHeader.jsx";
@@ -33,12 +33,7 @@ import {
 const T = { card: "var(--fp-card)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805", red: "#ff5000", blue: "#3b82f6", orange: "#f59e0b" };
 const PRECIO_RESPALDO = 77_647; // USD, cierre del 3-nov-2026 (Yahoo); solo si no se pudo traer el de hoy
 
-const fCLocal = (v) => {
-  const a = Math.abs(v || 0);
-  if (a >= 1e9) return "$" + fmtNumEs(v / 1e6, 0) + " MM";
-  if (a >= 1e6) return "$" + fmtNumEs(v / 1e6, 1) + " MM";
-  return "$" + Math.round(v || 0).toLocaleString("es-CO");
-};
+const fCLocal = (v) => fmtPlataEs(v);
 const fU = (v) => "US$" + Math.round(v || 0).toLocaleString("en-US");
 
 const Paso = ({ n, titulo, listo, children }) => (
@@ -71,7 +66,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const trmV = pTrm || 4200;
   // En dólares, con "US$" y la palabra "millones" para que no se confunda con pesos.
   const fC = enDolares
-    ? (v) => { const u = (v || 0) / trmV, a = Math.abs(u); return (u < 0 ? "−" : "") + "US$" + (a >= 1e6 ? fmtNumEs(a / 1e6, 1) + " millones" : fmtNumEs(a, 0)); }
+    ? (v) => fmtDolaresEs((v || 0) / trmV)
     : (fm || fCLocal);
   // Compatibilidad: antes u.ahorroBTC eran las respuestas sueltas; ahora { borrador, escenarios }.
   const g0 = guardado || {};
@@ -215,7 +210,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                       <Fila l={`Tienes al terminar de ahorrar (${finAño}${edadFin ? `, a los ${edadFin}` : ""}), en pesos de hoy`} v={fC(r.valor)} />
                       <Fila l="Retiras del capital cada año" v={`${fmtNumEs(Number(d.retiroPct) || 4, 0)} %`} />
                       <Fila l={`Retiras cada mes${edadFin && d.hastaEdad ? `, de los ${edadFin} a los ${d.hastaEdad}` : ""}`} v={fC(r.retiroMes)} />
-                      <Fila l={`Les queda a tus herederos${d.hastaEdad ? ` a los ${d.hastaEdad}` : " al final"}`} v={fC(r.heredable)} c={r.heredable > 0 ? T.green : T.txt} />
+                      <Fila l={`Les queda a tus herederos${d.hastaEdad ? ` a los ${d.hastaEdad}` : " al final"}`} v={fC(r.heredable)} c={r.irreal ? T.txt3 : r.heredable > 0 ? T.green : T.txt} />
                       {r.agotaEn != null && edadIni && <div style={{ fontSize: 12, color: T.orange, marginTop: 4 }}>El bitcoin se acaba a los {Math.round(edadIni + r.agotaEn)}: desde ahí no hay retiro.</div>}
                       {r.irreal && <div style={{ fontSize: 12, color: T.red, marginTop: 4 }}>Escenario no realista: con estos crecimientos un bitcoin valdría más de lo que el mundo puede pagar.</div>}
                     </div>
@@ -313,14 +308,14 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[80, 90, 100].map((e) => <Chip key={e} activo={Number(hastaEdad) === e} onClick={() => setHastaEdad(e)}>{e} años</Chip>)}
           </div>
-          <div style={{ fontSize: 13, color: T.txt3, margin: "14px 0 6px" }}>¿Cuánto sigue subiendo el bitcoin mientras retiras?</div>
+          <div style={{ fontSize: 13, color: T.txt3, margin: "14px 0 6px" }}>¿Cuánto crece al año el bitcoin {edadRetiro ? `desde los ${edadRetiro}, ` : ""}mientras retiras?</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
             {[{ v: 0, s: "Se queda en su precio" }, { v: 5 }, { v: 10, s: "Prudente" }, ...(cagrN != null && ![0, 5, 10].includes(cagrN) ? [{ v: cagrN, s: "Igual que al ahorrar" }] : [])].map((o) => (
               <Chip key={o.v} activo={Number(crecRetiro) === o.v} onClick={() => setCrecRetiro(o.v)} sub={o.s}>{o.v} % al año</Chip>
             ))}
           </div>
           <Pct value={crecRetiro} onChange={setCrecRetiro} placeholder="10" />
-          <div style={{ fontSize: 12, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>Va aparte del crecimiento al ahorrar: mantener 25 % o 30 % al año por 30 o 40 años da precios que el mundo no puede pagar.</div>
+          <div style={{ fontSize: 12, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>Este porcentaje <strong style={{ color: T.txt2 }}>reemplaza</strong>{cagrN != null ? ` al ${fmtNumEs(cagrN, 0)} %` : " al crecimiento"} que usaste {edadRetiro ? `hasta los ${edadRetiro}` : "al ahorrar"}; no se suma. Se aplica todos los años hasta los {hastaEdad}. Lo prudente es que sea menor: un activo más grande crece más despacio, y mantener 25 % o 30 % por 30 o 40 años da precios que el mundo no puede pagar.</div>
           {edadRetiro && (
             <div style={{ fontSize: 14, color: T.txt, marginTop: 12, lineHeight: 1.5 }}>
               Dejas de ahorrar a los <strong>{edadRetiro}</strong> y calculamos el retiro hasta los <strong>{hastaEdad}</strong>: <strong>{añosRetiro} años</strong> retirando.
@@ -362,8 +357,12 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
             </div>
           )}
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24, marginBottom: 12 }}>
-            <div style={{ fontSize: 14, color: T.txt2 }}>Pones {fC(r.invertido)} en {añosN} años y, si sube {fmtPctEs(cagrN, 0)} al año, terminas con</div>
-            <div style={{ fontSize: 48, fontWeight: 700, color: T.txt, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums" }}>{fC(r.valorCOPHoy)}</div>
+            {/* 9-nov-2026 (Santiago): con una compra única «Pones $350 MM en 10 años» se leía como aportes durante 10 años. */}
+            <div style={{ fontSize: 14, color: T.txt2 }}>{frecuencia === "unico"
+              ? <>Pones {fC(r.invertido)} hoy y, si sube {fmtPctEs(cagrN, 0)} al año durante {añosN} años, {edadRetiro ? `a los ${edadRetiro} ` : ""}terminas con</>
+              : <>Pones {fC(r.invertido)} en {añosN} años y, si sube {fmtPctEs(cagrN, 0)} al año, terminas con</>}</div>
+            {/* Cifra completa (9-nov-2026): el tamaño baja en pantallas angostas para que quepa en una línea. */}
+            <div style={{ fontSize: "clamp(26px, 8vw, 48px)", fontWeight: 700, color: T.txt, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fC(r.valorCOPHoy)}</div>
             <div style={{ fontSize: 14, color: T.txt2 }}>{fmtNumEs(r.btc, 4)} BTC · {fmtNumEs(r.multiplo, 1)} veces lo que pusiste · <strong style={{ color: T.txt }}>{enDolares ? "en dólares de hoy" : "en pesos de hoy"}</strong></div>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 14, padding: "12px 14px", background: T.bg3, borderRadius: 10, fontSize: 14, color: T.txt2 }}>
               <span>En pesos de {añoHoy + añosN}, con inflación de</span>
@@ -373,10 +372,13 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
               <span style={{ fontSize: 12, color: T.txt3, flexBasis: "100%" }}>Es la misma plata: los pesos de {añoHoy + añosN} valen menos. Para comparar con lo de hoy, mira la cifra grande.</span>
             </div>
             <div style={{ fontSize: 13, color: T.txt3, marginTop: 10 }}>Si el bitcoin cae 50 % justo ese año, tendrías {fC(r.valorCOPHoy * 0.5)}. Ha pasado varias veces.</div>
+            {/* 9-nov-2026 (Santiago: "¿ese 20 % se suma al 35 %?"): los dos tramos, uno detrás del otro. */}
+            {edadRetiro && <div style={{ fontSize: 13, color: T.txt2, marginTop: 10 }}>Crecimiento: <strong style={{ color: T.txt }}>{fmtPctEs(cagrN, 0)} al año hasta los {edadRetiro}</strong> → <strong style={{ color: T.txt }}>{fmtPctEs(Number(crecRetiro) || 0, 0)} al año de los {edadRetiro} a los {hastaEdad}</strong>. El segundo reemplaza al primero; no se suman.</div>}
             {r.irreal && <div style={{ fontSize: 12, color: T.red, marginTop: 10 }}>Ojo: con este crecimiento el bitcoin valdría más que una cuarta parte de toda la riqueza del mundo. Tómalo con pinzas.</div>}
           </div>
 
           <HerenciaPensionBTC comp={comp} retiro={retiro} retiroPct={Number(retiroPct)} añosRetiro={añosRetiro} edadRetiro={edadRetiro} hastaEdad={edadRetiro ? Number(hastaEdad) : null} fm={fC}
+            irreal={!!(r.irreal || retiro?.irreal)} precioHoy={precioHoy}
             nombrePension={elegida ? (guardadas.length > 1 ? "Pensión de " + elegida.nombre : "Tu pensión") : "Tu pensión"} />
 
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 20, marginBottom: 12 }}>

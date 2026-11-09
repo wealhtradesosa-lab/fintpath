@@ -18,15 +18,10 @@ import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./e
 import { resumenEscenario, anioCal } from "../../lib/futuro10.js";
 import { tx, esUS, plataCorta, num } from "../../lib/region.js";
 
+import { fmtPlataEs } from "../../lib/formato.js";
 // 3-nov-2026: en EE. UU. las cifras van con el formato del país ($2.5M); en
 // Colombia se queda exactamente como estaba ($2,5 MM).
-const fm = (n) => {
-  if (esUS()) return plataCorta(n);
-  const v = Number(n) || 0, a = Math.abs(v), sg = v < 0 ? "−" : "";
-  if (a >= 1e8) return sg + "$" + Math.round(a / 1e6).toLocaleString("es-CO") + " MM";
-  if (a >= 1e6) return sg + "$" + (a / 1e6).toLocaleString("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " MM";
-  return sg + "$" + Math.round(a).toLocaleString("es-CO");
-};
+const fm = (n) => (esUS() ? plataCorta(n) : fmtPlataEs(n));
 const pct = (n, d = 1) => (n == null ? "—" : esUS() ? num(n, d) + "%" : n.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %");
 
 function medir(r, inflacionPct) {

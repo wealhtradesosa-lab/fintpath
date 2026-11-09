@@ -6,6 +6,7 @@ import { NORMA_GO_VERIFICADA } from "../lib/normaGananciaOcasional.js";
 import { claseDeActivo } from "../lib/taxonomiaActivos.js";
 import { exportGananciaOcasionalPDF, AVISO_LEGAL_GO } from "../lib/pdfSectionExport.js";
 
+import { fmtPlataEs } from "../lib/formato.js";
 /**
  * Solucionador de ganancia ocasional — venta de inmuebles (Colombia).
  *
@@ -18,10 +19,7 @@ import { exportGananciaOcasionalPDF, AVISO_LEGAL_GO } from "../lib/pdfSectionExp
  * lib/planGananciaOcasional.js (puro y testeado).
  */
 
-const MM = (v) => {
-  const x = (Number(v) || 0) / 1e6;
-  return "$" + x.toLocaleString("es-CO", { maximumFractionDigits: Math.abs(x) >= 100 ? 0 : 1 }) + " MM";
-};
+const MM = (v) => fmtPlataEs(v);
 const hoy = new Date();
 const AÑOS = Array.from({ length: hoy.getFullYear() - 1954 }, (_, i) => hoy.getFullYear() - i);
 

@@ -1,4 +1,4 @@
-import { fmtPctEs, fmtNumEs } from "./formato.js";
+import { fmtPctEs, fmtNumEs, fmtPlataEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // chartTheme.js · Sesión 2-may-2026
 //
@@ -118,9 +118,7 @@ export function ChartTooltip({ active, payload, label, formatter, labelFormatter
     if (formatter) return formatter(v, name, entry);
     if (typeof v === "number") {
       // Formato moneda colombiana por defecto
-      if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
-      if (Math.abs(v) >= 1e3) return "$" + fmtNumEs((v / 1e3), 1)+"K";
-      return "$" + v.toLocaleString("es-CO");
+      return fmtPlataEs(v);
     }
     return v;
   };

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, AreaChart, Area, CartesianGrid } from "recharts";
 import PageHeader from "./PageHeader.jsx";
@@ -25,11 +25,7 @@ const T = {
   orange: "#f59e0b", gold: "#f59e0b", cyan: "#94a3b8",
 };
 const SM_2026 = 1_750_905;
-const fCOPLocal = (v) => {
-  if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
-  if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
-  return "$" + Math.round(v).toLocaleString("es-CO");
-};
+const fCOPLocal = (v) => fmtPlataEs(v);
 const fUSD = (v, trm) => "$" + Math.round(v / (trm || 4200)).toLocaleString("en-US") + " USD";
 const pc = (v) => fmtPctEs((v || 0), 1);
 const TT = { background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, color: T.txt, fontSize: 12 };
@@ -688,7 +684,7 @@ export default function PensionesColpensiones({ trm, owners = [], pensiones = {}
                 <ChartGradients/>
                 <CartesianGrid {...gridProps} />
                 <XAxis dataKey="anio" {...axisProps} />
-                <YAxis {...axisProps} width={80} tickFormatter={(v) => sinCorte(fCOP(v).replace("$",""))} />
+                <YAxis {...axisProps} width={104} tickFormatter={(v) => sinCorte(fCOP(v).replace("$",""))} />
                 <Tooltip content={<ChartTooltip formatter={(v) => fCOP(v)}/>} />
                 <Area type="monotone" dataKey="saldo" stroke={CHART.green} fill="url(#gradGreen)" strokeWidth={2.5} />
               </AreaChart>

@@ -41,9 +41,6 @@ const LIMITS = {
 
 const fUSD = (v) => {
   const n = Math.round(Number(v) || 0);
-  if (Math.abs(n) >= 1e9) return "$" + (n / 1e9).toFixed(1) + "B";
-  if (Math.abs(n) >= 1e6) return "$" + (n / 1e6).toFixed(1) + "M";
-  if (Math.abs(n) >= 1e3) return "$" + (n / 1e3).toFixed(0) + "K";
   return "$" + n.toLocaleString("en-US");
 };
 const fFull = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("en-US");

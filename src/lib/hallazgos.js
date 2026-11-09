@@ -1,11 +1,12 @@
 import { t as textos } from "./hallazgosI18n.js";
-import { fmtPctEs, fmtNumEs } from "./formato.js";
+import { fmtPctEs, fmtNumEs, fmtPlataEs } from "./formato.js";
 import { calcularBase } from "./metrics.js";
 import { esUS, getRegion, tx, plata, plataCorta, pct as pctR, num as numR } from "./region.js";
 
 // 3-nov-2026 — Cifras por país: en EE. UU. los montos son dólares y no se
 // redondean a millones (una tarjeta de $6.500 mostraba "$0 MM"). Colombia queda igual.
-const millones = (v, neg = false) => (esUS() ? (neg ? "−" : "") + (Math.abs(v) >= 1e6 ? plataCorta(v) : plata(v)) : (neg ? "−$" : "$") + Math.round(v / 1e6).toLocaleString("es-CO") + " MM");
+// 9-nov-2026: cifras completas, sin «MM» (ver fmtPlataEs).
+const millones = (v, neg = false) => (neg ? "−" : "") + (esUS() ? plata(Math.abs(v)) : fmtPlataEs(Math.abs(v)));
 const pctPais = (v, d) => (esUS() ? pctR(v, d) : fmtPctEs(v, d));
 // ════════════════════════════════════════════════════════════════════════════
 // hallazgos.js — Lo que el asesor VE sin que se lo pregunten.

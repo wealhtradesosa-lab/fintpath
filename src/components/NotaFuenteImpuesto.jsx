@@ -3,6 +3,7 @@ import { C, F, R } from "../lib/designTokens";
 import { mesesDePago } from "../lib/impuestoReferente";
 import { tx, esUS, esEN, plata, nombreMes } from "../lib/region.js";
 
+import { fmtPlataEs } from "../lib/formato.js";
 /**
  * Explica de dónde sale el impuesto que usa cada simulador (29-oct-2026, Santiago:
  * "eso me tenía bien confundido en mis números… que sea claro y explicado").
@@ -40,7 +41,7 @@ function LoQuePague({ owner, ano, onGuardar }) {
 }
 
 const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-const mm = (n) => "$" + Math.round((Number(n) || 0) / 1e6).toLocaleString("es-CO") + " MM";
+const mm = (n) => fmtPlataEs(n);
 // 3-nov-2026: mes en el idioma de la sesión (en español, igual que antes).
 const mesN = (m) => (esEN() ? nombreMes(m) : MESES[m - 1]);
 const mesF = (m) => (esEN() ? nombreMes(m) : MESES[m - 1].toLowerCase());

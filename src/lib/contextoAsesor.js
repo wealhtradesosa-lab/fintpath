@@ -19,7 +19,6 @@ const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio",
 const n = (v) => Number(v) || 0;
 export const fmC = (v) => {
   const x = n(v), a = Math.abs(x), sg = x < 0 ? "-" : "";
-  if (a >= 1e7) return `${sg}$${Math.round(a / 1e6).toLocaleString("es-CO")}M`;
   return `${sg}$${Math.round(a).toLocaleString("es-CO")}`;
 };
 const pct = (v, d = 1) => `${(Math.round(n(v) * 10 ** d) / 10 ** d).toLocaleString("es-CO")}%`;

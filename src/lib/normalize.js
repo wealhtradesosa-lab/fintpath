@@ -39,6 +39,7 @@ import {
   OWN_JUR_ORDINARIO, OWN_JUR_SIMPLE, OWN_JUR_ZONA_FRANCA, OWN_JUR_CHC, OWN_JUR_EXENTA,
 } from "./fiscalCodes.js";
 
+import { fmtPlataEs } from "./formato.js";
 // ─── Severity helpers ─────────────────────────────────────────────────────
 
 const mkWarning = (opts) => ({ severity: "warning", ...opts });
@@ -315,7 +316,7 @@ export function normalizeFiscalData(user) {
       itemType: "owner",
       ownerName: ow.name,
       code: "DESCUENTOS_AÑO_ANTERIOR_NO_CAPTURADOS",
-      message: `${ow.name} tuvo ~$${Math.round(tuvoDescuentos / 1e6)}M en descuentos tributarios en ${da.anoGravable} y este año solo $${Math.round(totalActual / 1e6)}M`,
+      message: `${ow.name} tuvo ~$${Math.round(tuvoDescuentos).toLocaleString("es-CO")} en descuentos tributarios en ${da.anoGravable} y este año solo $${Math.round(totalActual).toLocaleString("es-CO")}`,
       accionSugerida: "Si la empresa sigue teniendo las mismas actividades (ICA, donaciones, CTI), los descuentos se siguen aplicando. Captura los valores actuales en el perfil del owner.",
     });
   });
@@ -342,7 +343,7 @@ export function normalizeFiscalData(user) {
       itemType: "owner",
       ownerName: ow.name,
       code: "APORTES_VOLUNTARIOS_NO_CAPTURADOS",
-      message: `${ow.name} declaró ~$${Math.round(tuvoPVAFC / 1e6)}M en pensión voluntaria + AFC en ${da.anoGravable} pero no hay aportes capturados este año`,
+      message: `${ow.name} declaró ~${fmtPlataEs(tuvoPVAFC)} en pensión voluntaria + AFC en ${da.anoGravable} pero no hay aportes capturados este año`,
       accionSugerida: "Si sigues aportando a PV/AFC, captúralos en el perfil del owner. Son deducibles dentro del tope 40%/1340 UVT — olvidarlos puede costar varios millones en impuesto.",
     });
   });

@@ -25,6 +25,7 @@ import { calcImpRenta } from "./tablaArt241.js";
 import { uvtForYear } from "./taxCO.js";
 import { totalAnualItem } from "./flowHelpers.js";
 
+import { fmtPlataEs } from "./formato.js";
 export const TARIFA_SOCIEDADES = 0.35;
 export const MAX_DECLARACIONES = 4;
 export const UMBRAL_PATRIMONIO_UVT = 72000;
@@ -474,8 +475,5 @@ export function analisisHistorial(owner) {
 }
 
 // ─── Formato ──────────────────────────────────────────────────────────────
-export function mm(v) {
-  const x = num(v) / 1e6;
-  return (x < 0 ? "−" : "") + "$" + Math.abs(x).toLocaleString("es-CO", { maximumFractionDigits: Math.abs(x) >= 100 ? 0 : 1 }) + " MM";
-}
+export function mm(v) { return fmtPlataEs(num(v)); }
 export const pct = (v, d = 1) => (num(v) * 100).toLocaleString("es-CO", { maximumFractionDigits: d }) + "%";

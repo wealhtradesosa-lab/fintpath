@@ -1,4 +1,4 @@
-import { fmtNumEs, fmtPctEs } from "./formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "./formato.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · Detector de mismatch declaración ↔ datos cargados
 //
@@ -66,13 +66,7 @@ function severidadDe(diferenciaPct, diferenciaAbs) {
 /**
  * Formatea un valor en millones para mensajes
  */
-function fmM(v) {
-  const m = (Number(v) || 0) / 1e6;
-  if (Math.abs(m) >= 1000) return "$" + fmtNumEs((m / 1000), 1)+"B";
-  if (Math.abs(m) >= 1) return "$" + fmtNumEs(m, 0)+" MM";
-  if (Math.abs(m) >= 0.1) return "$" + fmtNumEs(m, 1)+" MM";
-  return "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
-}
+const fmM = (v) => fmtPlataEs(v);
 
 /**
  * Compara una declaración F-110 (persona jurídica) con el cálculo del motor.

@@ -12,12 +12,12 @@ describe("contexto completo del asesor", () => {
   };
   it("incluye inversiones con renta, metas y los planes con sus decisiones y resultados", () => {
     const c = contextoCompleto(user);
-    expect(c).toMatch(/Rapicredit fondeo.*renta \$58M\/mes \(21/);
+    expect(c).toMatch(/Rapicredit fondeo.*renta \$57\.500\.000\/mes \(21/);
     expect(c).toMatch(/Fee distribuidores/);
     expect(c).toMatch(/METAS/);
     expect(c).toMatch(/Plan «BALANCE\+CASA» \(MARCADO COMO RECOMENDADO\)/);
     expect(c).toMatch(/Vende: Puerto Madero/);
-    expect(c).toMatch(/Compra\/construye: Casa finca .*vale \$5\.400M al terminar/);
+    expect(c).toMatch(/Compra\/construye: Casa finca .*vale \$5\.400\.000\.000 al terminar/);
     expect(c).toMatch(/Gasto futuro: Universidad hijos/);
     expect(c).toMatch(/Punto de partida/);
     expect(c.length).toBeLessThan(60000);

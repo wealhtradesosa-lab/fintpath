@@ -1795,7 +1795,7 @@ export default function FinPath(){
 
   // 21-oct-2026 — El signo va ANTES del peso. Antes salía "$-35.114.710" y
   // "$-35,1M": el menos quedaba entre el símbolo y el número.
-  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";/* 3-nov-2026: en EE. UU. los montos ya están en dólares (trmPais = 1); no se convierten */const baseUSD=jurisdiction==="US";const enUSD=!baseUSD&&cur==="USD"&&trm>0;const v=enUSD?(n/trm):n;const loc=(enUSD||baseUSD)?"en-US":"es-CO";const sg=v<0?"-":"";const a=Math.abs(v);if(enUSD||baseUSD){if(a>=1e9)return sg+"$"+(a/1e9).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"B";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+"M";}else{/* 31-oct-2026: un solo formato en pesos, en millones ($16.400 M); la «B» se confundía con billón */if(a>=1e8)return sg+"$"+Math.round(a/1e6).toLocaleString(loc)+" MM";if(a>=1e6)return sg+"$"+(a/1e6).toLocaleString(loc,{minimumFractionDigits:1,maximumFractionDigits:1})+" MM";}return sg+"$"+Math.round(a).toLocaleString(loc)};
+  const fm=n=>{if(masked)return"$•••••";if(n==null||isNaN(n))return"$0";/* 3-nov-2026: en EE. UU. los montos ya están en dólares (trmPais = 1); no se convierten. 9-nov-2026 (Santiago: "mostrar los valores con todos los ceros"): nunca se abrevia (ni MM ni M/B); pesos pasados a dólares llevan «US$» */const baseUSD=jurisdiction==="US";const enUSD=!baseUSD&&cur==="USD"&&trm>0;const v=enUSD?(n/trm):n;const loc=baseUSD?"en-US":"es-CO";const r=Math.round(v);return(r<0?"−":"")+(enUSD?"US$":"$")+Math.abs(r).toLocaleString(loc)};
   // Commit 23 Tarea 3: feedback honesto del estado de guardado.
   // Antes 'showToast' decia 'Guardado' inmediato, pero tecnicamente solo
   // era localStorage — el upsert a Supabase tenia debounce de 2s y podia
@@ -2878,7 +2878,7 @@ export default function FinPath(){
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>{tx("Flujo de Caja Mensual","Monthly Cash Flow")}</div>
           <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={fd} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} width={78} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
+            <BarChart data={fd} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} width={104} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
           </ResponsiveContainer>
         </Cd>
         {/* Tax Estimate */}
@@ -3508,7 +3508,7 @@ export default function FinPath(){
             <AreaChart data={data} margin={MARGEN_EJE}>
               <defs><linearGradient id="fpGradHist" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3b82f6" stopOpacity={0.3}/><stop offset="1" stopColor="#3b82f6" stopOpacity={0}/></linearGradient></defs>
               <CartesianGrid {...gridProps}/><XAxis dataKey="m" {...axisProps}/>
-              <YAxis {...axisProps} width={78} domain={[v=>Math.floor(v*0.97),v=>Math.ceil(v*1.02)]} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/>
+              <YAxis {...axisProps} width={104} domain={[v=>Math.floor(v*0.97),v=>Math.ceil(v*1.02)]} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/>
               <Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/>
               <Area type="monotone" dataKey="nw" name={tx("Patrimonio neto","Net worth")} stroke="#3b82f6" strokeWidth={2.5} fill="url(#fpGradHist)" dot={{r:3.5,fill:"#3b82f6",strokeWidth:0}} activeDot={{r:5}}/>
             </AreaChart>
@@ -3523,7 +3523,7 @@ export default function FinPath(){
         <Cd s={{padding:20}}>
           <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>{tx("Proyección Patrimonial (8% anual)","Net Worth Projection (8% a year)")}</div>
           <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={pj} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} width={78} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
+            <AreaChart data={pj} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="yr" {...axisProps}/><YAxis {...axisProps} width={104} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip content={<ChartTooltip formatter={v=>fm(v)}/>}/><Area type="monotone" dataKey="v" stroke={CHART.green} strokeWidth={2.5} fill="url(#gradGreen)"/></AreaChart>
           </ResponsiveContainer>
         </Cd>
         {/* Independence Progress */}

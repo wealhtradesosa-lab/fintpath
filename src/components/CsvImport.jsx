@@ -136,8 +136,6 @@ const fmt = (v) => {
   if (v === null || v === undefined || v === "") return "—";
   if (Array.isArray(v)) return v.length > 0 ? v.map((x) => `${x.c}: $${Math.round(x.m).toLocaleString("es-CO")}`).join(", ") : "—";
   if (typeof v === "number") {
-    if (Math.abs(v) >= 1e9) return "$" + fmtNumEs((v / 1e6), 0)+" MM";
-    if (Math.abs(v) >= 1e6) return "$" + fmtNumEs((v / 1e6), 1)+" MM";
     if (Math.abs(v) >= 1e3) return "$" + Math.round(v).toLocaleString("es-CO");
     return String(v);
   }

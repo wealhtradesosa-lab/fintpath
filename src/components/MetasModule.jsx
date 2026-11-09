@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pencil, Trash2 } from "./Iconos.jsx";
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import NumberInput from "./NumberInput";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import Disclaimer from "./Disclaimer.jsx";
@@ -22,11 +22,7 @@ const T = {
   gold: "#f59e0b", cyan: "#94a3b8",
   ch: ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"],
 };
-const _fm = (n) => {
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  return "$" + Math.round(n).toLocaleString("es-CO");
-};
+const _fm = (n) => fmtPlataEs(n);
 const ICONS = ["","","","","","","","","","","",""];
 const CATS = ["Propiedad","Vehículo","Educación","Viaje","Negocio","Retiro","Ahorro","Salud","Familia","Otro"];
 

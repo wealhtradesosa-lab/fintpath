@@ -16,7 +16,7 @@
 //   - Prioridad alta destaca en verde
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { useState } from "react";
 
 // Paleta consistente con DeclaracionFlow
@@ -37,14 +37,7 @@ const PRIORIDAD_META = {
   baja:  { label: "Prioridad baja",  color: C.txt3,   bg: C.bg3 },
 };
 
-function fmShort(n) {
-  if (!n) return "$0";
-  if (n >= 1_000_000_000) return "$" + fmtNumEs((n / 1_000_000), 0)+" MM";
-  if (n >= 1_000_000) return "$" + fmtNumEs((n / 1_000_000), 1)+" MM";
-  if (n >= 1_000) return "$" + fmtNumEs((n / 1_000), 0)+"K";
-  return "$" + Math.round(n).toLocaleString("es-CO");
-}
-
+const fmShort = (n) => fmtPlataEs(n);
 function fm(n) {
   if (!n && n !== 0) return "$0";
   return "$" + Math.round(n).toLocaleString("es-CO");

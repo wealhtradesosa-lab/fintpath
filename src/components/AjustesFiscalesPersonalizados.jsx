@@ -17,7 +17,7 @@
 // en cada switch es textual/informativo, no re-calcula el motor aún.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtPctEs, fmtNumEs } from "../lib/formato.js";
+import { fmtPctEs, fmtNumEs, fmtPlataEs } from "../lib/formato.js";
 import { Trash2 } from "./Iconos.jsx";
 import { useState, useMemo } from "react";
 import SmartNumberInput from "./NumberInput";
@@ -31,13 +31,7 @@ const T = {
   green: "#00c805", red: "#ff5000", orange: "#f59e0b", blue: "#3b82f6", purple: "#3b82f6",
 };
 
-const fm = (v) => {
-  const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  return "$" + Math.round(n).toLocaleString("es-CO");
-};
-
+const fm = (v) => fmtPlataEs(v);
 // ─────────────────────────────────────────────────────────────────────────
 // Row de switch toggle simple
 // ─────────────────────────────────────────────────────────────────────────

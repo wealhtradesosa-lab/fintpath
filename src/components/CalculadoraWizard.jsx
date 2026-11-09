@@ -18,7 +18,7 @@
 // igual que antes.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { fmtNumEs, fmtPctEs } from "../lib/formato.js";
+import { fmtNumEs, fmtPctEs, fmtPlataEs } from "../lib/formato.js";
 import { useMemo, useState, useEffect } from "react";
 import { montoPromedioMensual, totalAnualItem } from "../lib/flowHelpers.js";
 import { estimarImpuesto, UVT } from "../lib/taxCO.js";
@@ -44,13 +44,7 @@ const T = {
 // F: re-export del sistema tipográfico central. Igual que antes pero unificado.
 const F = F_CENTRAL;
 
-const fm = (v) => {
-  const n = Number(v) || 0;
-  if (Math.abs(n) >= 1e9) return "$" + fmtNumEs((n / 1e6), 0)+" MM";
-  if (Math.abs(n) >= 1e6) return "$" + fmtNumEs((n / 1e6), 1)+" MM";
-  return "$" + Math.round(n).toLocaleString("es-CO");
-};
-
+const fm = (v) => fmtPlataEs(v);
 const STEPS = [
   { id: 0, titulo: "¿Para quién?", descripcion: "Elige el propietario fiscal" },
   { id: 1, titulo: "Tus datos", descripcion: "Revisa lo que ya cargaste" },
@@ -200,7 +194,7 @@ function getHintContextual(det, owner) {
     return {
       tono: "ok",
       icono: "",
-      texto: `Según tu estimación, aportes a PV/AFC podrían reducir tu impuesto en ~$${fmtNumEs((ahorro / 1_000_000), 1)}M (${pct}%). Confírmalo con tu contador.`,
+      texto: `Según tu estimación, aportes a PV/AFC podrían reducir tu impuesto en ~${fmtPlataEs(ahorro)} (${pct}%). Confírmalo con tu contador.`,
     };
   }
 
@@ -238,7 +232,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
   if ((det.deducDep || 0) > 0) {
     recs.push({
       icono: "",
-      titulo: `Dependientes: $${fmtNumEs((det.deducDep / 1_000_000), 1)}M/año`,
+      titulo: `Dependientes: ${fmtPlataEs(det.deducDep)}/año`,
       desc: `Ya se está deduciendo 10% del ingreso por ${fp.dependientes?.cantidad || 1} dependiente(s).`,
       tono: "ok",
     });
@@ -248,7 +242,7 @@ function getTopRecomendaciones(det, owner, n = 4) {
   if ((det.deducVivienda || 0) > 0) {
     recs.push({
       icono: "",
-      titulo: `Intereses vivienda: $${fmtNumEs((det.deducVivienda / 1_000_000), 1)}M/año`,
+      titulo: `Intereses vivienda: ${fmtPlataEs(det.deducVivienda)}/año`,
       desc: "Los intereses de tu hipoteca ya se deducen automáticamente.",
       tono: "ok",
     });
@@ -778,7 +772,7 @@ function RegimenSelector({ selectedOwner, onUpdateOwner, ownerType = "juridica",
               <div style={{ fontSize: 11, color: T.txt3, fontStyle: "italic" }}>{r.art}</div>
               {noElegible && (
                 <div style={{ fontSize: 11, color: T.red, marginTop: 6, fontWeight: 600 }}>
-                  Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~${fmtNumEs((TOPE_SIMPLE_UVT * UVT / 1_000_000), 0)}M COP). No eres elegible para Régimen Simple.
+                  Tus ingresos brutos ({ingresoBrutoEnUVT.toFixed(0)} UVT/año) superan el tope de 100.000 UVT (~{fmtPlataEs(TOPE_SIMPLE_UVT * UVT)} COP). No eres elegible para Régimen Simple.
                 </div>
               )}
             </button>
@@ -1019,7 +1013,7 @@ function HonorariosGastosPanel({ user, selectedOwner, onNavigate }) {
   const desglose = det.gastosHonorariosDesglose || {};
 
   // Formato monetario
-  const fmtM = (n) => "$" + fmtNumEs((Math.round((Number(n) || 0) / 100_000) / 10), 1)+"M";
+  const fmtM = (n) => fmtPlataEs(n);
   const fmtPct = (n) => Math.round(n * 1000) / 10 + "%";
 
   // Color del banner según alerta
@@ -1217,9 +1211,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "",
       label: "Dependientes",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~$${Math.round(MAX_DEP / 1_000_000)}M)`,
+      topeMensual: `Tope: 10% ingreso, máx 384 UVT/año (~${fmtPlataEs(MAX_DEP)})`,
       valor: det.deducDep || 0,
-      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_DEP / 1_000_000), 1)}M/año si tienes al menos 1 dependiente (10% del ingreso laboral, máx 384 UVT). Sube a $${fmtNumEs((MAX_DEP * 2 / 1_000_000), 1)}M si hay discapacidad certificada.`,
+      montoMaximoTexto: `Hasta ${fmtPlataEs(MAX_DEP)}/año si tienes al menos 1 dependiente (10% del ingreso laboral, máx 384 UVT). Sube a ${fmtPlataEs(MAX_DEP * 2)} si hay discapacidad certificada.`,
       ctaTexto: "→ Declarar dependientes",
       linkTexto: "Modificar dependientes →",
       accion: { tipo: "scroll", target: "ajustes-fiscales" },
@@ -1229,9 +1223,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "",
       label: "Medicina prepagada / salud / vida",
       art: "Art. 387 #2 ET",
-      topeMensual: `Tope: 16 UVT/mes (~$${fmtNumEs(MED_MES, 0)}/mes · ${ETIQUETA_AG}, $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año)`,
+      topeMensual: `Tope: 16 UVT/mes (~$${fmtNumEs(MED_MES, 0)}/mes · ${ETIQUETA_AG}, ${fmtPlataEs(MAX_MEDICINA)}/año)`,
       valor: det.deducMedicina || 0,
-      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_MEDICINA / 1_000_000), 1)}M/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
+      montoMaximoTexto: `Hasta ${fmtPlataEs(MAX_MEDICINA)}/año combinando medicina prepagada + seguros de salud + seguros de vida. Tope conjunto 16 UVT/mes.`,
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar en Egresos →",
       accion: { tipo: "navigate", target: "egresos" },
@@ -1241,9 +1235,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "",
       label: "Intereses de vivienda",
       art: "Art. 119 ET",
-      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~$${fmtNumEs((MAX_VIVIENDA / 1_000_000), 1)}M)`,
+      topeMensual: `Tope: 100 UVT/mes, 1.200 UVT/año (~${fmtPlataEs(MAX_VIVIENDA)})`,
       valor: det.deducVivienda || 0,
-      montoMaximoTexto: `Hasta $${fmtNumEs((MAX_VIVIENDA / 1_000_000), 1)}M/año de intereses si tienes crédito hipotecario sobre tu vivienda de habitación. El motor lee los intereses pagados según tasa y saldo.`,
+      montoMaximoTexto: `Hasta ${fmtPlataEs(MAX_VIVIENDA)}/año de intereses si tienes crédito hipotecario sobre tu vivienda de habitación. El motor lee los intereses pagados según tasa y saldo.`,
       ctaTexto: "→ Cargar en Deudas",
       linkTexto: "Modificar deuda →",
       accion: { tipo: "navigate", target: "deudas" },
@@ -1253,9 +1247,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "",
       label: "Pensión Voluntaria (PV)",
       art: "Art. 126-1 ET",
-      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M) · ${ETIQUETA_AG}`,
+      topeMensual: `Tope conjunto con AFC: 30% ingreso laboral, máx 3.800 UVT/año (~${fmtPlataEs(MAX_PV_AFC)}) · ${ETIQUETA_AG}`,
       valor: det.pensionVol || 0,
-      montoMaximoTexto: `${ETIQUETA_AG}: hasta $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año en pensión voluntaria o AFC podría ser exento (tope conjunto: 30% del ingreso laboral o 3.800 UVT, lo menor, dentro del tope del 40%). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      montoMaximoTexto: `${ETIQUETA_AG}: hasta ${fmtPlataEs(MAX_PV_AFC)}/año en pensión voluntaria o AFC podría ser exento (tope conjunto: 30% del ingreso laboral o 3.800 UVT, lo menor, dentro del tope del 40%). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
       nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.",
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar PV →",
@@ -1266,9 +1260,9 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
       icono: "",
       label: "AFC (Ahorro Fomento Construcción)",
       art: "Art. 126-4 ET",
-      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~$${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M) · ${ETIQUETA_AG}`,
+      topeMensual: `Tope conjunto con PV: 30% ingreso laboral, máx 3.800 UVT/año (~${fmtPlataEs(MAX_PV_AFC)}) · ${ETIQUETA_AG}`,
       valor: det.afc || 0,
-      montoMaximoTexto: `${ETIQUETA_AG}: hasta $${fmtNumEs((MAX_PV_AFC / 1_000_000), 0)}M/año en pensión voluntaria o AFC podría ser exento (tope conjunto con la pensión voluntaria). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
+      montoMaximoTexto: `${ETIQUETA_AG}: hasta ${fmtPlataEs(MAX_PV_AFC)}/año en pensión voluntaria o AFC podría ser exento (tope conjunto con la pensión voluntaria). La AFC sirve para comprar vivienda; la pensión voluntaria es para el largo plazo. Si lo retiras antes y para otro fin, pierdes el beneficio.`,
       nota: "Es un cálculo del ahorro en impuesto, no una recomendación. Antes de aportar, revisa las condiciones de retiro con tu fondo o tu contador.",
       ctaTexto: "→ Cargar en Egresos",
       linkTexto: "Modificar AFC →",
@@ -1276,7 +1270,7 @@ function DeduccionesNaturalesPanel({ user, selectedOwner, onNavigate }) {
     },
   ];
 
-  const fmt = (n) => "$" + Math.round((Number(n) || 0) / 1_000_000 * 10) / 10 + "M";
+  const fmt = (n) => fmtPlataEs(n);
 
   // Camino 1.5: handler unificado de acción según tipo (scroll dentro del paso o navigate al módulo).
   const handleAccion = (accion) => {

@@ -150,7 +150,7 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
           <LineChart data={curvas} margin={{ top: 10, right: 150, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} />
-            <YAxis {...eje} tickFormatter={fmEje} width={74} />
+            <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} />} />
             {m.map((p) => <Line key={p.k} type="monotone" dataKey={p.k} name={p.nombre} stroke={p.color} strokeWidth={p.esHoy ? 1.6 : 2.2} dot={false}
               label={(q) => (q.index === curvas.length - 1 ? <text x={q.x + 6} y={q.y + 4 + (desp[p.k] || 0)} fill={p.color} fontSize={11}>{`${p.nombre.length > 14 ? p.nombre.slice(0, 13) + "…" : p.nombre} ${fmM(q.value)}`}</text> : null)} />)}
@@ -168,7 +168,7 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
           <BarChart data={seis} margin={{ top: 10, right: 6, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="c" {...eje} interval={0} />
-            <YAxis {...eje} tickFormatter={fmEje} width={70} />
+            <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={<ChartTooltip formatter={(v) => fmM(v)} />} />
             <Legend wrapperStyle={{ fontSize: 12, color: INF.tx2 }} />
             {m.map((p) => <Bar key={p.k} dataKey={p.k} name={p.nombre} fill={p.color} />)}
