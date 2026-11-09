@@ -37,6 +37,7 @@ export const CAIDA_ESTRES = 0.6; // caída del 60 % el año en que empieza el re
 
 /** Tasa (%) del año `y` contado desde hoy (y = 1 es el primer año). */
 export function tasaCurva(curva, y) {
+  if (curva.tasaFn) return curva.tasaFn(Math.max(1, y));
   return curva.rt + (curva.r0 - curva.rt) * Math.pow(0.5, (Math.max(1, y) - 1) / MEDIA_VIDA_AÑOS);
 }
 /**
@@ -253,17 +254,39 @@ export function comparativoHerencia({ pensionMes, añosVida, retiro }) {
 }
 export const MESADAS_POR_AÑO_PENSION = 13;
 
-// ── Proyecciones de analistas (4-nov-2026) ──────────────────────────────────
-// Santiago: "¿cuál es el futuro proyectado del BTC? Uno puede elegir el promedio
-// pasado o el futuro; ese también debería estar, y basado en qué fuente".
-// Son metas de terceros, no de FINPATHIA. Todas apuntan a 2030: el crecimiento
-// anual implícito se calcula desde el precio de hoy hasta esa fecha.
-export const PROYECCIONES_ANALISTAS = [
-  { id: "sc", fuente: "Standard Chartered", detalle: "Geoff Kendrick, nota del 12-ene-2026", fecha: "2026-01-12", año: 2030, precio: 500_000, url: "https://sherwood.news/crypto/standard-chartered-still-sees-bitcoin-hitting-usd150-000-in-2026" },
-  { id: "ark-bajista", fuente: "ARK Invest · escenario bajista", detalle: "Big Ideas, actualizado el 25-abr-2025", fecha: "2025-04-25", año: 2030, precio: 500_000, url: "https://cointelegraph.com/news/ark-invest-predicts-bitcoin-could-rise-to-over-2-million-by-2030" },
-  { id: "ark-base", fuente: "ARK Invest · escenario base", detalle: "Big Ideas, actualizado el 25-abr-2025", fecha: "2025-04-25", año: 2030, precio: 1_200_000, url: "https://cointelegraph.com/news/ark-invest-predicts-bitcoin-could-rise-to-over-2-million-by-2030" },
-  { id: "ark-alcista", fuente: "ARK Invest · escenario alcista", detalle: "Big Ideas, actualizado el 25-abr-2025", fecha: "2025-04-25", año: 2030, precio: 2_400_000, url: "https://cointelegraph.com/news/ark-invest-predicts-bitcoin-could-rise-to-over-2-million-by-2030" },
+// ── Escenarios de expertos (9-nov-2026) ─────────────────────────────────────
+// Santiago: "tenemos los escenarios que usted dice pero además los de los
+// expertos". Metas públicas de terceros, verificadas el 9-nov-2026. Cada una se
+// vuelve una trayectoria: el crecimiento que lleva del precio de hoy a la meta
+// en su fecha y, después de esa fecha (que ellos no proyectan), sigue como el
+// escenario Base de FINPATHIA. VanEck, ARK y Bitwise emiten ETF de bitcoin, y las
+// metas pasadas se han quedado largas (Standard Chartered proyectó US$200.000
+// para 2025 y el año cerró en US$87.509): se muestran como lo que son.
+export const FUENTES_EXPERTOS = [
+  { id: "vaneck-bajista", fuente: "VanEck · bajista", detalle: "Capital Market Assumptions, 8-ene-2026", año: 2050, precio: 130_000, url: "https://www.vaneck.com/us/en/insights/blogs/digital-assets/matthew-sigel-vaneck-bitcoin-long-term-capital-market-assumptions/" },
+  { id: "ark-bajista", fuente: "ARK Invest · bajista", detalle: "Big Ideas 2025, abr-2025", año: 2030, precio: 300_000, url: "https://www.ark-invest.com/articles/valuation-models/arks-bitcoin-price-target-2030" },
+  { id: "sc", fuente: "Standard Chartered", detalle: "Geoff Kendrick, dic-2025 (reiterado en 2026)", año: 2030, precio: 500_000, url: "https://sherwood.news/crypto/standard-chartered-still-sees-bitcoin-hitting-usd150-000-in-2026" },
+  { id: "ark-base", fuente: "ARK Invest · base", detalle: "Big Ideas 2026, ene-2026 (US$16 billones de capitalización)", año: 2030, precio: 760_000, url: "https://www.theblock.co/post/386560/cathie-wood-ark-invest-bitcoin-crypto-2030" },
+  { id: "bernstein", fuente: "Bernstein", detalle: "ago-2026", año: 2033, precio: 1_000_000, url: "https://www.swanbitcoin.com/economics/bitcoin-price-prediction/" },
+  { id: "ark-alcista", fuente: "ARK Invest · alcista", detalle: "Cathie Wood, may-2026", año: 2030, precio: 1_250_000, url: "https://www.webpronews.com/cathie-woods-1-25-million-bitcoin-call-why-ark-invest-still-bets-big-amid-market-slump/" },
+  { id: "vaneck-base", fuente: "VanEck · base", detalle: "Capital Market Assumptions, 8-ene-2026", año: 2050, precio: 2_900_000, url: "https://www.vaneck.com/us/en/insights/blogs/digital-assets/matthew-sigel-vaneck-bitcoin-long-term-capital-market-assumptions/" },
 ];
+// Compatibilidad con código anterior.
+export const PROYECCIONES_ANALISTAS = FUENTES_EXPERTOS;
+
+/** Trayectoria de una meta de experto: g fijo hasta su año y después el Base. */
+export function curvaExperto(f, precioHoy, hoy = Date.now()) {
+  const n = Math.max(1, Math.round((Date.UTC(f.año, 11, 31) - hoy) / (365.25 * 86_400_000)));
+  const g = (Math.pow(f.precio / precioHoy, 1 / n) - 1) * 100;
+  const base = ESCENARIOS_CURVA[1];
+  return { id: "exp:" + f.id, nombre: f.fuente, experto: f, añosMeta: n, r0: g, rt: base.rt, tasaFn: (y) => (y <= n ? g : tasaCurva(base, y)) };
+}
+/** Curva por id guardado: "prudente" | "base" | "optimista" | "exp:<id>". null = personalizado. */
+export function curvaPorId(id, precioHoy) {
+  if (!id || id === "personal") return null;
+  if (id.startsWith("exp:")) { const f = FUENTES_EXPERTOS.find((x) => "exp:" + x.id === id); return f && precioHoy > 0 ? curvaExperto(f, precioHoy) : null; }
+  return ESCENARIOS_CURVA.find((e) => e.id === id) || null;
+}
 
 /** Crecimiento anual que lleva del precio de hoy a `precio` al cierre de `año`. */
 export function cagrHacia({ precioHoy, precio, año, hoy = Date.now() }) {
@@ -283,4 +306,36 @@ export function techoPersonalizado({ precioHoy, cagr, años, crecRetiro, añosRe
   const maxCrecRetiro = alRetiro >= PRECIO_TECHO_REALISTA ? 0 : Math.floor((Math.pow(PRECIO_TECHO_REALISTA / alRetiro, 1 / Math.max(1, añosRetiro)) - 1) * 100);
   const maxCagr = Math.floor((Math.pow(PRECIO_TECHO_REALISTA / precioHoy, 1 / Math.max(1, años)) - 1) * 100);
   return { alRetiro, alFinal, irrealAhorro: alRetiro > PRECIO_TECHO_REALISTA, irreal: alFinal > PRECIO_TECHO_REALISTA, maxCrecRetiro, maxCagr };
+}
+
+
+// ── Personalizado como curva (9-nov-2026) ───────────────────────────────────
+// Santiago: "para uno personalizar el que quiera… no sabría qué valor poner a
+// no ser que vea qué estiman las fuentes más serias y la historia". El
+// personalizado es una curva (empieza en r0, termina en rt) que se llena desde
+// cualquier escenario o meta de experto; con r0 = rt es una tasa fija.
+export function curvaPersonal(r0, rt) {
+  const a = Math.max(0, Number(r0) || 0), b = Math.max(0, Number(rt) || 0);
+  return { id: "personal", nombre: "Personalizado", r0: a, rt: Math.min(a, b) };
+}
+/** r0 (con rt dado) que lleva del precio de hoy a `precio` en `años` años. */
+export function r0QueLlegaA({ precioHoy, precio, años, rt = 5 }) {
+  let lo = rt, hi = 400;
+  const f = (r0) => precioHoy * trayectoria({ curva: { r0, rt } }).f(años * 12);
+  if (f(lo) >= precio) return lo;
+  for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (f(m) < precio) lo = m; else hi = m; }
+  return lo;
+}
+/** El r0 más alto que, con ese rt, no pasa el techo realista en `años` años. */
+export function maxR0Realista({ precioHoy, rt = 5, años }) {
+  return Math.floor(r0QueLlegaA({ precioHoy, precio: PRECIO_TECHO_REALISTA, años, rt }));
+}
+/** Valores para personalizar a partir de cualquier curva (nuestra o de experto). */
+export function personalizarDesde(curva, precioHoy) {
+  if (!curva) return { r0: 25, rt: 5 };
+  if (curva.experto) {
+    const n = curva.añosMeta;
+    return { r0: Math.round(r0QueLlegaA({ precioHoy, precio: curva.experto.precio, años: n, rt: curva.rt })), rt: curva.rt };
+  }
+  return { r0: Math.round(curva.r0), rt: Math.round(curva.rt) };
 }

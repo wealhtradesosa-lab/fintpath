@@ -87,7 +87,7 @@ describe("retiro y herencia", () => {
 import { PROYECCIONES_ANALISTAS, cagrHacia } from "../../src/lib/ahorroBTC.js";
 describe("proyecciones de analistas", () => {
   it("todas tienen fuente, fecha, año y url", () => {
-    for (const p of PROYECCIONES_ANALISTAS) { expect(p.fuente).toBeTruthy(); expect(p.url).toMatch(/^https:/); expect(p.año).toBe(2030); }
+    for (const p of PROYECCIONES_ANALISTAS) { expect(p.fuente).toBeTruthy(); expect(p.url).toMatch(/^https:/); expect(p.año).toBeGreaterThanOrEqual(2030); expect(p.detalle).toBeTruthy(); }
   });
   it("crecimiento implícito: de 77.647 hoy (4-nov-2026) a 500 mil en 2030 ≈ 57 % al año", () => {
     const c = cagrHacia({ precioHoy: 77_647, precio: 500_000, año: 2030, hoy: Date.UTC(2026, 10, 4) });
@@ -135,5 +135,41 @@ describe("escenarios con curva", () => {
     const t = techoPersonalizado({ precioHoy: 75_270, cagr: 35, años: 10, crecRetiro: 20, añosRetiro: 18 });
     expect(t.irreal).toBe(true); expect(t.irrealAhorro).toBe(false); expect(t.maxCrecRetiro).toBe(7);
     expect(techoPersonalizado({ precioHoy: 75_270, cagr: 35, años: 10, crecRetiro: 7, añosRetiro: 18 }).irreal).toBe(false);
+  });
+});
+
+import { FUENTES_EXPERTOS, curvaExperto, curvaPorId, curvaPersonal, r0QueLlegaA, maxR0Realista, personalizarDesde } from "../../src/lib/ahorroBTC.js";
+describe("expertos y personalizado (9-nov-2026)", () => {
+  const hoy = Date.UTC(2026, 10, 9), p0 = 77_000;
+  it("cada meta de experto llega a su precio en su año", () => {
+    for (const f of FUENTES_EXPERTOS) {
+      const c = curvaExperto(f, p0, hoy);
+      expect(p0 * trayectoria({ curva: c }).f(c.añosMeta * 12)).toBeCloseTo(f.precio, -1);
+    }
+  });
+  it("después de la meta sigue el Base", () => {
+    const c = curvaExperto(FUENTES_EXPERTOS.find((f) => f.id === "sc"), p0, hoy);
+    expect(tasaCurva(c, c.añosMeta + 1)).toBeCloseTo(tasaCurva(ESCENARIOS_CURVA[1], c.añosMeta + 1), 10);
+  });
+  it("curvaPorId resuelve los tres tipos", () => {
+    expect(curvaPorId("base", p0).id).toBe("base");
+    expect(curvaPorId("exp:sc", p0).experto.precio).toBe(500_000);
+    expect(curvaPorId("personal", p0)).toBeNull();
+  });
+  it("personalizado con inicio = final es tasa fija; el final no supera el inicio", () => {
+    expect(trayectoria({ curva: curvaPersonal(10, 10) }).f(24)).toBeCloseTo(1.21, 10);
+    expect(curvaPersonal(10, 20).rt).toBe(10);
+  });
+  it("personalizar desde un experto arranca en una curva que llega a su meta", () => {
+    const c = curvaPorId("exp:sc", p0);
+    const v = personalizarDesde(c, p0);
+    const precio = p0 * trayectoria({ curva: curvaPersonal(v.r0, v.rt) }).f(c.añosMeta * 12);
+    expect(Math.abs(precio / 500_000 - 1)).toBeLessThan(0.05);
+  });
+  it("máximo realista: r0 que no pasa el techo", () => {
+    const r0 = maxR0Realista({ precioHoy: p0, rt: 5, años: 28 });
+    expect(p0 * trayectoria({ curva: curvaPersonal(r0, 5) }).f(28 * 12)).toBeLessThanOrEqual(PRECIO_TECHO_REALISTA);
+    expect(p0 * trayectoria({ curva: curvaPersonal(r0 + 2, 5) }).f(28 * 12)).toBeGreaterThan(PRECIO_TECHO_REALISTA);
+    expect(r0QueLlegaA({ precioHoy: p0, precio: p0, años: 5, rt: 0 })).toBe(0);
   });
 });

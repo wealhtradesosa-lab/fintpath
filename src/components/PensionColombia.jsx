@@ -28,7 +28,7 @@ import HerenciaPensionBTC from "./infografia/HerenciaPensionBTC.jsx";
 import {
   simularAhorroBTC, pensionParaComparar, INFLACION_USD, cagrHistorico, ofertaBTC, alturaEstimada,
   proyeccionPrecio, simularRetiro, comparativoHerencia, HISTORICO_BTC, PROYECCIONES_ANALISTAS, cagrHacia,
-  ESCENARIOS_CURVA, tasaCurva, trayectoria, techoPersonalizado, CAIDA_ESTRES,
+  ESCENARIOS_CURVA, tasaCurva, trayectoria, techoPersonalizado, CAIDA_ESTRES, FUENTES_EXPERTOS, curvaPorId, curvaPersonal, maxR0Realista, personalizarDesde, PRECIO_TECHO_REALISTA,
 } from "../lib/ahorroBTC.js";
 
 const T = { card: "var(--fp-card)", bg3: "var(--fp-raised)", border: "rgba(var(--fp-ink),0.08)", txt: "var(--fp-txt)", txt2: "var(--fp-txt2)", txt3: "var(--fp-txt3)", green: "#00c805", red: "#ff5000", blue: "#3b82f6", orange: "#f59e0b" };
@@ -87,6 +87,10 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const [escBTC, setEscBTC] = useState(g.escBTC || (g.cagr !== undefined && g.cagr !== "" ? "personal" : "base"));
   const [retiroPct, setRetiroPct] = useState(g.retiroPct ?? 4);
   const [crecRetiro, setCrecRetiro] = useState(g.crecRetiro ?? 10);
+  // Personalizado (curva): lo guardado antes con tasa fija entra como «empieza en cagr, termina en crecRetiro».
+  const legado = g.cagr !== undefined && g.cagr !== "" && g.pR0 == null;
+  const [pR0, setPR0] = useState(g.pR0 ?? (legado ? Number(g.cagr) : 25));
+  const [pRt, setPRt] = useState(g.pRt ?? (legado ? Math.min(Number(g.cagr), Number(g.crecRetiro ?? 10)) : 5));
   // 4-nov-2026 (Santiago: "que uno pueda calcular hasta qué edad va a vivir:
   // 80, 90, 100 años"). Los años de retiro salen de la edad de hoy, los años de
   // ahorro y la edad hasta la que se calcula. La edad se toma de Pensiones si
@@ -128,7 +132,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const infN = Number(inflacionCOP) || 0;
   const aPesosDe = (valorHoy, añosAdelante) => valorHoy * Math.pow(1 + infN / 100, añosAdelante);
   const añoHoy = new Date().getFullYear();
-  const datos = { frecuencia, monto, años, cagr, escBTC, retiroPct, crecRetiro, edadHoy, hastaEdad, pensionFuente, pensionManual, inflacionCOP };
+  const datos = { frecuencia, monto, años, cagr, escBTC, pR0, pRt, retiroPct, crecRetiro, edadHoy, hastaEdad, pensionFuente, pensionManual, inflacionCOP };
   const guardar = (extra = {}) => onGuardar && onGuardar({ borrador: datos, escenarios: escenariosGuardados, abierto: escAbierto, ...extra });
   useEffect(() => {
     if (!onGuardar) return;
@@ -142,20 +146,23 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const montoN = Number(monto) || 0;
   const añosN = Number(años) || 0;
   const cagrN = cagr === "" ? null : Number(cagr);
-  const curva = escBTC === "personal" ? null : (ESCENARIOS_CURVA.find((e) => e.id === escBTC) || ESCENARIOS_CURVA[1]);
-  const listo1 = montoN > 0, listo2 = añosN > 0, listo3 = !!curva || (cagrN != null && cagrN >= 0), listo4 = Number(retiroPct) > 0;
+  const curva = escBTC === "personal" ? curvaPersonal(pR0, pRt) : (curvaPorId(escBTC, precioHoy) || ESCENARIOS_CURVA[1]);
+  const listo1 = montoN > 0, listo2 = añosN > 0, listo3 = !!curva, listo4 = Number(retiroPct) > 0;
   const r = useMemo(() => (listo3 ? simularAhorroBTC({ frecuencia, monto: montoN, años: añosN, precioHoy, trm, cagr: cagrN, curva, retiroPct: Number(retiroPct) || 4 }) : null),
-    [frecuencia, montoN, añosN, precioHoy, trm, cagrN, escBTC, retiroPct]); // eslint-disable-line react-hooks/exhaustive-deps
+    [frecuencia, montoN, añosN, precioHoy, trm, cagrN, escBTC, retiroPct, pR0, pRt]); // eslint-disable-line react-hooks/exhaustive-deps
   const elegida = guardadas.find((p) => "calc:" + p.id === pensionFuente);
   const pension = pensionParaComparar({ fuente: elegida ? "calculada" : pensionFuente, calculada: elegida, manual: pensionManual });
   const listo5 = pensionFuente === "ninguna" || !!pension;
   const argsRetiro = r ? { capital: r.valorCOPHoy, retiroPct: Number(retiroPct) || 4, años: añosRetiro, cagr: Number(crecRetiro) || 0, curva, desdeAño: añosN, precioInicial: r.precioFinal } : null;
-  const retiro = useMemo(() => (argsRetiro ? simularRetiro(argsRetiro) : null), [r, retiroPct, añosRetiro, crecRetiro, escBTC]); // eslint-disable-line react-hooks/exhaustive-deps
+  const retiro = useMemo(() => (argsRetiro ? simularRetiro(argsRetiro) : null), [r, retiroPct, añosRetiro, crecRetiro, escBTC, pR0, pRt]); // eslint-disable-line react-hooks/exhaustive-deps
   // Prueba de estrés: el bitcoin cae 60 % justo al empezar a retirar.
-  const estres = useMemo(() => (argsRetiro ? simularRetiro({ ...argsRetiro, caidaInicial: CAIDA_ESTRES }) : null), [r, retiroPct, añosRetiro, crecRetiro, escBTC]); // eslint-disable-line react-hooks/exhaustive-deps
-  const techo = !curva && cagrN != null && añosN > 0 ? techoPersonalizado({ precioHoy, cagr: cagrN, años: añosN, crecRetiro: Number(crecRetiro) || 0, añosRetiro }) : null;
+  const estres = useMemo(() => (argsRetiro ? simularRetiro({ ...argsRetiro, caidaInicial: CAIDA_ESTRES }) : null), [r, retiroPct, añosRetiro, crecRetiro, escBTC, pR0, pRt]); // eslint-disable-line react-hooks/exhaustive-deps
+  const precioAlFinal = precioHoy * trayectoria({ curva }).f((añosN + añosRetiro) * 12);
+  const precioAlRetiro = precioHoy * trayectoria({ curva }).f(añosN * 12);
+  const persIrreal = escBTC === "personal" && precioAlFinal > PRECIO_TECHO_REALISTA;
+  const personalizar = () => { const v = personalizarDesde(curva, precioHoy); setPR0(v.r0); setPRt(v.rt); setEscBTC("personal"); };
   const comp = retiro ? comparativoHerencia({ pensionMes: pension?.mesada || 0, añosVida: añosRetiro, retiro }) : null;
-  const proy = useMemo(() => (r ? proyeccionPrecio({ precioHoy, cagr: cagrN, curva, años: añosN }) : []), [r, precioHoy, cagrN, añosN, escBTC]); // eslint-disable-line react-hooks/exhaustive-deps
+  const proy = useMemo(() => (r ? proyeccionPrecio({ precioHoy, cagr: cagrN, curva, años: añosN }) : []), [r, precioHoy, cagrN, añosN, escBTC, pR0, pRt]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const c10 = cagrHistorico(10), c5 = cagrHistorico(5);
   const textoFrecuencia = frecuencia === "mensual" ? "cada mes" : frecuencia === "anual" ? "cada año" : "una sola vez";
@@ -171,6 +178,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
   const abrir = (e) => {
     const d = e.datos || {};
     setFrecuencia(d.frecuencia || "mensual"); setMonto(d.monto || ""); setAños(d.años || ""); setCagr(d.cagr ?? ""); setEscBTC(d.escBTC || (d.cagr !== undefined && d.cagr !== "" ? "personal" : "base"));
+    { const lg = d.cagr !== undefined && d.cagr !== "" && d.pR0 == null; setPR0(d.pR0 ?? (lg ? Number(d.cagr) : 25)); setPRt(d.pRt ?? (lg ? Math.min(Number(d.cagr), Number(d.crecRetiro ?? 10)) : 5)); }
     setRetiroPct(d.retiroPct ?? 4); setCrecRetiro(d.crecRetiro ?? 10); setInflacionCOP(d.inflacionCOP ?? 4); if (d.edadHoy) setEdadHoy(d.edadHoy); setHastaEdad(d.hastaEdad || 90); setPensionFuente(d.pensionFuente || ""); setPensionManual(d.pensionManual || "");
     setEscAbierto(e.id);
     setTimeout(() => { try { resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); } catch { /* sin scroll */ } }, 200);
@@ -198,7 +206,10 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                   // crecimiento del retiro, usa el prudente (10 %) y lo dice.
                   const d = e.datos || {};
                   const crecR = d.crecRetiro != null ? Number(d.crecRetiro) : 10;
-                  const cv = d.escBTC && d.escBTC !== "personal" ? ESCENARIOS_CURVA.find((x) => x.id === d.escBTC) : (d.escBTC ? null : (d.cagr !== undefined && d.cagr !== "" ? null : ESCENARIOS_CURVA[1]));
+                  const lgc = d.cagr !== undefined && d.cagr !== "" && d.pR0 == null;
+                  const cv = d.escBTC && d.escBTC !== "personal" ? curvaPorId(d.escBTC, precioHoy)
+                    : (d.escBTC === "personal" || lgc) ? curvaPersonal(d.pR0 ?? Number(d.cagr), d.pRt ?? Math.min(Number(d.cagr), Number(d.crecRetiro ?? 10)))
+                    : ESCENARIOS_CURVA[1];
                   const rv = simularAhorroBTC({ frecuencia: d.frecuencia || "mensual", monto: Number(d.monto) || 0, años: Number(d.años) || 0, precioHoy, trm, cagr: Number(d.cagr) || 0, curva: cv, retiroPct: Number(d.retiroPct) || 4 });
                   const edadIni = Number(d.edadHoy) > 0 ? Number(d.edadHoy) + Number(d.años || 0) : null;
                   const añosRet = edadIni && d.hastaEdad ? Math.max(1, Number(d.hastaEdad) - edadIni) : 25;
@@ -215,7 +226,7 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
                   return (
                     <div style={{ marginTop: 8 }}>
                       {Number(d.monto) > 0 && <Fila l={`Ahorras ${frec}${d.frecuencia === "unico" ? "" : `, ${d.años} años`}`} v={fC(Number(d.monto))} />}
-                      {cv ? <Fila l="Escenario de crecimiento" v={`${cv.nombre} (${cv.r0} % → ${cv.rt} %)`} /> : <>
+                      {cv ? <Fila l="Escenario de crecimiento" v={cv.experto ? `${cv.nombre}: ${fU(cv.experto.precio)} en ${cv.experto.año}` : `${cv.nombre} (${fmtNumEs(cv.r0, 0)} % → ${fmtNumEs(cv.rt, 0)} %)`} /> : <>
                         {d.cagr !== "" && d.cagr != null && <Fila l="Supones que el bitcoin sube mientras ahorras" v={`${fmtNumEs(Number(d.cagr), 0)} % al año`} />}
                         <Fila l={d.crecRetiro != null ? "Y mientras retiras" : "Y mientras retiras (prudente; guardado antes de poder elegirlo)"} v={`${fmtNumEs(crecR, 0)} % al año`} />
                       </>}
@@ -275,37 +286,41 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
               const pf = precioHoy * trayectoria({ curva: e }).f(añosN * 12);
               return <Chip key={e.id} activo={escBTC === e.id} onClick={() => setEscBTC(e.id)} sub={`Empieza en ${e.r0} % y baja hasta ${e.rt} %. 1 BTC en ${añoHoy + añosN}: ${fU(pf)}`}>{e.nombre}</Chip>;
             })}
-            <Chip activo={escBTC === "personal"} onClick={() => setEscBTC("personal")} sub="Escribes una tasa fija">Personalizado</Chip>
+            <Chip activo={escBTC === "personal"} onClick={() => setEscBTC("personal")} sub="Ajustas con cuánto empieza y en cuánto termina">Personalizado</Chip>
           </div>
-          {curva && <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>Escenario {curva.nombre}: {fmtNumEs(tasaCurva(curva, 1), 0)} % este año, {fmtNumEs(tasaCurva(curva, añosN), 0)} % en {añoHoy + añosN}{edadRetiro ? ` (a los ${edadRetiro})` : ""} y {fmtNumEs(tasaCurva(curva, añosN + añosRetiro), 0)} % al final. La parte por encima de {curva.rt} % se reduce a la mitad cada 4 años, al ritmo del ciclo de halving. Es un modelo, no una predicción.</div>}
-          {escBTC === "personal" && <>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Según lo que pasó</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-              <Chip activo={cagrN === Math.round(c10)} onClick={() => setCagr(Math.round(c10))} sub={`${fmtNumEs(c10, 0)} % al año (${HISTORICO_BTC.at(-11).año}–${HISTORICO_BTC.at(-1).año})`}>Últimos 10 años</Chip>
-              <Chip activo={cagrN === Math.round(c5)} onClick={() => setCagr(Math.round(c5))} sub={`${fmtNumEs(c5, 0)} % al año (${HISTORICO_BTC.at(-6).año}–${HISTORICO_BTC.at(-1).año})`}>Últimos 5 años</Chip>
-              <Chip activo={cagrN === 10} onClick={() => setCagr(10)} sub="10 % al año">Conservador</Chip>
+          {/* 9-nov-2026 (Santiago: "además los de los expertos"): metas públicas verificadas, elegibles como escenario. */}
+          <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, margin: "4px 0 8px" }}>Según los expertos</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {FUENTES_EXPERTOS.map((f) => {
+              const c = curvaPorId("exp:" + f.id, precioHoy);
+              if (!c) return null;
+              return <Chip key={f.id} activo={escBTC === "exp:" + f.id} onClick={() => setEscBTC("exp:" + f.id)} sub={`${fU(f.precio)} en ${f.año} (${fmtNumEs(c.r0, 0)} % al año)`}>{f.fuente}</Chip>;
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.6, marginBottom: 12 }}>
+            Metas de terceros, no de FINPATHIA, calculadas desde el precio de hoy ({fU(precioHoy)}). Después del año de cada meta, que ellos no proyectan, se sigue el escenario Base. VanEck y ARK emiten fondos de bitcoin, y las metas pasadas se han quedado largas: Standard Chartered proyectó US$200.000 para 2025 y el año cerró en {fU(HISTORICO_BTC.find((h) => h.año === 2025)?.cierre || 87508)}. Fuentes:{" "}
+            {FUENTES_EXPERTOS.filter((p, i, a) => a.findIndex((x) => x.url === p.url) === i).map((p, i) => (
+              <span key={p.id}>{i ? " · " : ""}<a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: T.txt2 }}>{p.fuente.split(" · ")[0]} ({p.detalle})</a></span>
+            ))}.
+          </div>
+          {curva?.experto && <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>{curva.nombre}: crece {fmtNumEs(curva.r0, 0)} % al año hasta {curva.experto.año} para llegar a su meta de {fU(curva.experto.precio)}; después sigue el escenario Base ({fmtNumEs(tasaCurva(curva, curva.añosMeta + 1), 0)} % y bajando). 1 BTC en {añoHoy + añosN}: {fU(precioHoy * trayectoria({ curva }).f(añosN * 12))}.</div>}
+          {curva && !curva.experto && <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>Escenario {curva.nombre}: {fmtNumEs(tasaCurva(curva, 1), 0)} % este año, {fmtNumEs(tasaCurva(curva, añosN), 0)} % en {añoHoy + añosN}{edadRetiro ? ` (a los ${edadRetiro})` : ""} y {fmtNumEs(tasaCurva(curva, añosN + añosRetiro), 0)} % al final. La parte por encima de {curva.rt} % se reduce a la mitad cada 4 años, al ritmo del ciclo de halving. Es un modelo, no una predicción.</div>}
+          {escBTC !== "personal" && <button type="button" onClick={personalizar} style={{ marginTop: 10, background: "transparent", border: `1px solid ${T.border}`, borderRadius: 999, padding: "6px 14px", color: T.txt, cursor: "pointer", fontSize: 13 }}>Personalizar este escenario</button>}
+          {escBTC === "personal" && <div style={{ marginTop: 12, padding: 14, border: `1px solid ${T.border}`, borderRadius: 12 }}>
+            <div style={{ fontSize: 13, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>Parte de un escenario o de la meta de un experto (arriba, elígelo y toca «Personalizar este escenario») o de la historia, y ajústalo.</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Lo que pasó</div>
+            <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.6, marginBottom: 12 }}>Últimos 10 años: {fmtNumEs(c10, 0)} % al año ({HISTORICO_BTC.at(-11).año}–{HISTORICO_BTC.at(-1).año}) · últimos 5 años: {fmtNumEs(c5, 0)} % al año ({HISTORICO_BTC.at(-6).año}–{HISTORICO_BTC.at(-1).año}). Ha caído más de 70 % en varios años.</div>
+            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+              <div><div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>Empieza creciendo</div><Pct value={pR0} onChange={(v) => setPR0(v === "" ? "" : Math.min(300, v))} placeholder="25" /></div>
+              <div><div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>Y termina en</div><Pct value={pRt} onChange={(v) => setPRt(v === "" ? "" : Math.min(100, v))} placeholder="5" /></div>
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: T.txt2, marginBottom: 8 }}>Según lo que proyectan los analistas (precio en 2030)</div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-              {PROYECCIONES_ANALISTAS.map((p) => {
-                const c = cagrHacia({ precioHoy, precio: p.precio, año: p.año });
-                if (c == null) return null;
-                return <Chip key={p.id} activo={cagrN === Math.round(c)} onClick={() => setCagr(Math.round(c))} sub={`${fU(p.precio)} en ${p.año} → ${fmtNumEs(c, 0)} % al año`}>{p.fuente}</Chip>;
-              })}
+            <div style={{ fontSize: 12, color: T.txt3, marginTop: 8, lineHeight: 1.5 }}>La parte por encima del final se reduce a la mitad cada 4 años. Si pones el mismo número en los dos, es una tasa fija para todos los años.{Number(pRt) > Number(pR0) && " El final no puede ser mayor que el inicio: se usa el inicio."}</div>
+            <div style={{ fontSize: 13, color: persIrreal ? T.orange : T.txt2, marginTop: 10, lineHeight: 1.5 }}>
+              Con esto, 1 BTC valdría {fU(precioAlRetiro)} en {añoHoy + añosN} y {fU(precioAlFinal)} {edadRetiro ? `a los ${hastaEdad}` : `en ${añoHoy + añosN + añosRetiro}`}.
+              {persIrreal && <> Está fuera de lo realista. <button type="button" onClick={() => setPR0(maxR0Realista({ precioHoy, rt: Math.min(Number(pRt) || 0, Number(pR0) || 0), años: añosN + añosRetiro }))} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 13, textDecoration: "underline" }}>Ajustar al máximo realista</button></>}
             </div>
-            <div style={{ fontSize: 12, color: T.txt3, lineHeight: 1.6, marginBottom: 16 }}>
-              Metas de terceros, no de FINPATHIA, calculadas desde el precio de hoy ({fU(precioHoy)}). Fuentes:{" "}
-              {PROYECCIONES_ANALISTAS.filter((p, i, a) => a.findIndex((x) => x.url === p.url) === i).map((p, i) => (
-                <span key={p.id}>{i ? " · " : ""}<a href={p.url} target="_blank" rel="noopener noreferrer" style={{ color: T.txt2 }}>{p.fuente.split(" · ")[0]} ({p.detalle})</a></span>
-              ))}.
-              {añosN > 4 && <> Ojo: apuntan a 2030; usar ese crecimiento por {añosN} años lo extiende más allá de lo que ellos proyectan.</>}
-            </div>
-            <div style={{ fontSize: 13, color: T.txt3, marginBottom: 6 }}>O escribe el tuyo</div>
-            <Pct value={cagr} onChange={setCagr} placeholder="Ej. 25" />
-            {cagrN > 40 && <div style={{ fontSize: 12, color: T.orange, marginTop: 8, lineHeight: 1.5 }}>Más de 40 % al año por muchos años da precios que el mundo difícilmente puede pagar. Úsalo como escenario extremo.</div>}
             <div style={{ fontSize: 12, color: T.txt3, marginTop: 8 }}>En dólares. El resultado se trae a pesos de hoy descontando {fmtPctEs(INFLACION_USD, 0)} de inflación del dólar.</div>
-            {techo && <div style={{ fontSize: 12, color: techo.irrealAhorro ? T.orange : T.txt3, marginTop: 8, lineHeight: 1.5 }}>Con esto, 1 BTC valdría {fU(techo.alRetiro)} en {añoHoy + añosN}.{techo.irrealAhorro && <> Está fuera de lo realista. <button type="button" onClick={() => setCagr(techo.maxCagr)} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>Ajustar al máximo realista ({techo.maxCagr} % al año)</button></>}</div>}
-          </>}
+          </div>}
         </Paso>
       </>}
 
@@ -333,17 +348,6 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {[80, 90, 100].map((e) => <Chip key={e} activo={Number(hastaEdad) === e} onClick={() => setHastaEdad(e)}>{e} años</Chip>)}
           </div>
-          {escBTC === "personal" && <>
-          <div style={{ fontSize: 13, color: T.txt3, margin: "14px 0 6px" }}>¿Cuánto crece al año el bitcoin {edadRetiro ? `desde los ${edadRetiro}, ` : ""}mientras retiras?</div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-            {[{ v: 0, s: "Se queda en su precio" }, { v: 5 }, { v: 10, s: "Prudente" }].map((o) => (
-              <Chip key={o.v} activo={Number(crecRetiro) === o.v} onClick={() => setCrecRetiro(o.v)} sub={o.s}>{o.v} % al año</Chip>
-            ))}
-          </div>
-          <Pct value={crecRetiro} onChange={setCrecRetiro} placeholder="10" />
-          <div style={{ fontSize: 12, color: T.txt3, marginTop: 6, lineHeight: 1.5 }}>Este porcentaje <strong style={{ color: T.txt2 }}>reemplaza</strong>{cagrN != null ? ` al ${fmtNumEs(cagrN, 0)} %` : " al crecimiento"} que usaste {edadRetiro ? `hasta los ${edadRetiro}` : "al ahorrar"}; no se suma. Se aplica todos los años hasta los {hastaEdad}. Lo prudente es que sea menor: un activo más grande crece más despacio, y mantener 25 % o 30 % por 30 o 40 años da precios que el mundo no puede pagar.</div>
-            {techo && <div style={{ fontSize: 12, color: techo.irreal ? T.orange : T.txt3, marginTop: 6, lineHeight: 1.5 }}>Con esto, 1 BTC valdría {fU(techo.alFinal)} a los {hastaEdad}.{techo.irreal && <> Está fuera de lo realista. <button type="button" onClick={() => setCrecRetiro(techo.maxCrecRetiro)} style={{ background: "none", border: 0, padding: 0, color: T.blue, cursor: "pointer", fontSize: 12, textDecoration: "underline" }}>Ajustar al máximo realista ({techo.maxCrecRetiro} % al año)</button></>}</div>}
-          </>}
           {edadRetiro && (
             <div style={{ fontSize: 14, color: T.txt, marginTop: 12, lineHeight: 1.5 }}>
               Dejas de ahorrar a los <strong>{edadRetiro}</strong> y calculamos el retiro hasta los <strong>{hastaEdad}</strong>: <strong>{añosRetiro} años</strong> retirando.
@@ -387,8 +391,8 @@ export default function PensionBTC({ trm: pTrm, guardado, onGuardar, pensiones =
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: 24, marginBottom: 12 }}>
             {/* 9-nov-2026 (Santiago): con una compra única «Pones $350 MM en 10 años» se leía como aportes durante 10 años. */}
             <div style={{ fontSize: 14, color: T.txt2 }}>{frecuencia === "unico"
-              ? <>Pones {fC(r.invertido)} hoy y, {curva ? `con el escenario ${curva.nombre}` : `si sube ${fmtPctEs(cagrN, 0)} al año`}, en {añosN} años {edadRetiro ? `(a los ${edadRetiro}) ` : ""}terminas con</>
-              : <>Pones {fC(r.invertido)} en {añosN} años y, {curva ? `con el escenario ${curva.nombre}` : `si sube ${fmtPctEs(cagrN, 0)} al año`}, terminas con</>}</div>
+              ? <>Pones {fC(r.invertido)} hoy y, {escBTC === "personal" ? "con tu escenario personalizado" : `con el escenario ${curva.nombre}`}, en {añosN} años {edadRetiro ? `(a los ${edadRetiro}) ` : ""}terminas con</>
+              : <>Pones {fC(r.invertido)} en {añosN} años y, {escBTC === "personal" ? "con tu escenario personalizado" : `con el escenario ${curva.nombre}`}, terminas con</>}</div>
             {/* Cifra completa (9-nov-2026): el tamaño baja en pantallas angostas para que quepa en una línea. */}
             <div style={{ fontSize: "clamp(26px, 8vw, 48px)", fontWeight: 700, color: T.txt, letterSpacing: "-0.03em", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fC(r.valorCOPHoy)}</div>
             <div style={{ fontSize: 14, color: T.txt2 }}>{fmtNumEs(r.btc, 4)} BTC · {fmtNumEs(r.multiplo, 1)} veces lo que pusiste · <strong style={{ color: T.txt }}>{enDolares ? "en dólares de hoy" : "en pesos de hoy"}</strong></div>
