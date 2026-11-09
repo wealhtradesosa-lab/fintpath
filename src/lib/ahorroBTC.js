@@ -18,6 +18,46 @@ export const ESCENARIOS_BTC = [
   { id: "moderado", nombre: "Moderado", cagr: 10 },
   { id: "optimista", nombre: "Optimista", cagr: 20 },
 ];
+
+// ── Escenarios con crecimiento que baja (9-nov-2026) ─────────────────────────
+// Santiago: "¿cómo podemos poner escenarios que sí sean realistas?". Con una
+// tasa fija por 30-40 años (35 % y luego 20 %) la herencia daba US$163 millones
+// porque 1 BTC terminaba en US$40-920 millones. Ningún activo crece igual por
+// décadas: el bitcoin creció ~70 %/año sus primeros 10 años y ~25 % los últimos
+// 5. Cada escenario arranca en r0 y la parte por encima de la tasa madura (rt)
+// se reduce a la mitad cada 4 años (el ciclo de halving). Es un modelo, no una
+// predicción; los tres quedan muy por debajo del techo de RIQUEZA_MUNDIAL_USD.
+export const ESCENARIOS_CURVA = [
+  { id: "prudente", nombre: "Prudente", r0: 15, rt: 3 },
+  { id: "base", nombre: "Base", r0: 25, rt: 5 },
+  { id: "optimista", nombre: "Optimista", r0: 40, rt: 6 },
+];
+export const MEDIA_VIDA_AÑOS = 4;
+export const CAIDA_ESTRES = 0.6; // caída del 60 % el año en que empieza el retiro
+
+/** Tasa (%) del año `y` contado desde hoy (y = 1 es el primer año). */
+export function tasaCurva(curva, y) {
+  return curva.rt + (curva.r0 - curva.rt) * Math.pow(0.5, (Math.max(1, y) - 1) / MEDIA_VIDA_AÑOS);
+}
+/**
+ * Trayectoria del precio: f(mes) = cuántas veces el precio de hoy vale en el mes
+ * `mes` contado desde hoy. Con `curva` la tasa cambia año a año; sin ella usa `cagr` fijo.
+ */
+export function trayectoria({ curva = null, cagr = 0 } = {}) {
+  if (!curva) { const g = (Number(cagr) || 0) / 100; return { f: (mes) => Math.pow(1 + g, mes / 12), tasa: () => Number(cagr) || 0 }; }
+  const cache = [1];
+  const f = (mes) => {
+    const m = Math.max(0, mes);
+    const y = Math.floor(m / 12);
+    while (cache.length <= y) { const k = cache.length; cache.push(cache[k - 1] * (1 + tasaCurva(curva, k) / 100)); }
+    const resto = m - y * 12;
+    return cache[y] * Math.pow(1 + tasaCurva(curva, y + 1) / 100, resto / 12);
+  };
+  return { f, tasa: (y) => tasaCurva(curva, y) };
+}
+/** Precio máximo «realista» de 1 BTC: todos los BTC juntos ≤ 25 % de la riqueza mundial. */
+export const PRECIO_TECHO_REALISTA = (0.25 * 450e12) / 21e6;
+
 export const INFLACION_USD = 3;      // % anual, para traer el resultado a pesos de hoy
 export const RETIRO_DEFAULT = 4;     // % anual que se retira del capital
 export const OFERTA_BTC = 21e6;
@@ -32,7 +72,7 @@ export const RIQUEZA_MUNDIAL_USD = 450e12;
  * @param {number} p.precioHoy precio del BTC en USD
  * @param {number} p.trm       COP por USD (constante: todo en pesos de hoy)
  */
-export function simularAhorroBTC({ frecuencia = "mensual", monto, años, cagr, precioHoy, trm, retiroPct = RETIRO_DEFAULT, inflacionUSD = INFLACION_USD }) {
+export function simularAhorroBTC({ frecuencia = "mensual", monto, años, cagr, curva = null, precioHoy, trm, retiroPct = RETIRO_DEFAULT, inflacionUSD = INFLACION_USD }) {
   const m = Math.max(0, Number(monto) || 0);
   const n = Math.max(0, Math.round(Number(años) || 0));
   const g = (Number(cagr) || 0) / 100;
@@ -40,7 +80,8 @@ export function simularAhorroBTC({ frecuencia = "mensual", monto, años, cagr, p
   const tc = Number(trm) || 0;
   if (!m || !n || !p0 || !tc) return null;
 
-  const precioEn = (mes) => p0 * Math.pow(1 + g, mes / 12);
+  const tr = trayectoria({ curva, cagr: g * 100 });
+  const precioEn = (mes) => p0 * tr.f(mes);
   const deflactor = (año) => Math.pow(1 + inflacionUSD / 100, año);
   let btc = 0;
   let invertido = 0;
@@ -53,11 +94,11 @@ export function simularAhorroBTC({ frecuencia = "mensual", monto, años, cagr, p
     } else if (frecuencia === "anual") {
       btc += m / tc / precioEn((y - 1) * 12 + 1); invertido += m;
     }
-    const precio = p0 * Math.pow(1 + g, y);
+    const precio = precioEn(y * 12);
     serie.push({ año: y, btc, invertido, valorCOPHoy: (btc * precio / deflactor(y)) * tc });
   }
 
-  const precioFinal = p0 * Math.pow(1 + g, n);
+  const precioFinal = precioEn(n * 12);
   const valorUSD = btc * precioFinal;
   const valorCOPHoy = (valorUSD / deflactor(n)) * tc;
   const retiroMes = valorCOPHoy * (retiroPct / 100) / 12;
@@ -150,8 +191,9 @@ export function ofertaBTC(altura) {
 }
 
 /** Proyección año a año del precio con el crecimiento elegido. */
-export function proyeccionPrecio({ precioHoy, cagr, años, añoHoy = new Date().getFullYear() }) {
-  return Array.from({ length: Math.max(0, Math.round(años)) }, (_, i) => ({ año: añoHoy + i + 1, precio: precioHoy * Math.pow(1 + cagr / 100, i + 1) }));
+export function proyeccionPrecio({ precioHoy, cagr, curva = null, años, añoHoy = new Date().getFullYear() }) {
+  const tr = trayectoria({ curva, cagr });
+  return Array.from({ length: Math.max(0, Math.round(años)) }, (_, i) => ({ año: añoHoy + i + 1, precio: precioHoy * tr.f((i + 1) * 12), tasa: tr.tasa(i + 1) }));
 }
 
 /**
@@ -164,23 +206,35 @@ export function proyeccionPrecio({ precioHoy, cagr, años, añoHoy = new Date().
 // de ahorro y los 28 de retiro pone un bitcoin en cientos de millones de dólares.
 // Por eso el retiro tiene su propio crecimiento (por defecto prudente, 10 %) y
 // la simulación devuelve el precio que implica, para avisar si es irreal.
-export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25, cagr, inflacionUSD = INFLACION_USD, precioInicial = null }) {
+export function simularRetiro({ capital, retiroPct = RETIRO_DEFAULT, años = 25, cagr, curva = null, desdeAño = 0, caidaInicial = 0, inflacionUSD = INFLACION_USD, precioInicial = null }) {
+  // Con curva, el retiro sigue la misma trayectoria donde la dejó el ahorro
+  // (año desdeAño + 1 en adelante). caidaInicial: prueba de estrés, el bitcoin
+  // cae ese % justo al empezar a retirar y sigue creciendo desde ahí, sin rebote;
+  // el retiro mensual ya estaba planeado con el capital de antes de la caída.
+  const tr = trayectoria({ curva, cagr });
   const real = (1 + (cagr || 0) / 100) / (1 + inflacionUSD / 100) - 1;
-  const rm = Math.pow(1 + real, 1 / 12) - 1;
+  const rmDe = (m) => {
+    if (!curva) return Math.pow(1 + real, 1 / 12) - 1;
+    const y = desdeAño + Math.ceil(m / 12);
+    return Math.pow((1 + tasaCurva(curva, y) / 100) / (1 + inflacionUSD / 100), 1 / 12) - 1;
+  };
   const retiroMes = capital * (retiroPct / 100) / 12;
-  let c = capital, retirado = 0, agotaEn = null;
+  let c = capital * (1 - Math.min(Math.max(caidaInicial, 0), 1)), retirado = 0, agotaEn = null;
   const serie = [{ año: 0, capital: c }];
   for (let m = 1; m <= Math.round(años * 12); m++) {
-    c = c * (1 + rm);
+    c = c * (1 + rmDe(m));
     const r = Math.min(retiroMes, c);
     c -= r; retirado += r;
     if (c <= 0 && agotaEn == null) agotaEn = m / 12;
     if (m % 12 === 0) serie.push({ año: m / 12, capital: Math.max(0, c) });
   }
-  const precioFinal = precioInicial ? precioInicial * Math.pow(1 + (cagr || 0) / 100, años) : null;
+  const factorRetiro = curva ? tr.f((desdeAño + años) * 12) / tr.f(desdeAño * 12) : Math.pow(1 + (cagr || 0) / 100, años);
+  const precioFinal = precioInicial ? precioInicial * factorRetiro * (1 - Math.min(Math.max(caidaInicial, 0), 1)) : null;
+  // Crecimiento real promedio del tramo de retiro, para el texto de la gráfica.
+  const realProm = años > 0 ? (Math.pow(factorRetiro / Math.pow(1 + inflacionUSD / 100, años), 1 / años) - 1) * 100 : 0;
   const capMercado = precioFinal ? precioFinal * OFERTA_BTC : null;
   return {
-    retiroMes, capitalFinal: Math.max(0, c), totalRetirado: retirado, agotaEn, serie, real: real * 100,
+    retiroMes, capitalFinal: Math.max(0, c), totalRetirado: retirado, agotaEn, serie, real: curva ? realProm : real * 100, conCurva: !!curva,
     precioFinal, irreal: capMercado != null && capMercado > RIQUEZA_MUNDIAL_USD * 0.25,
     vecesRiqueza: capMercado != null ? capMercado / RIQUEZA_MUNDIAL_USD : null,
   };
@@ -216,4 +270,17 @@ export function cagrHacia({ precioHoy, precio, año, hoy = Date.now() }) {
   const años = (Date.UTC(año, 11, 31) - hoy) / (365.25 * 86_400_000);
   if (!(años > 0) || !(precioHoy > 0)) return null;
   return (Math.pow(precio / precioHoy, 1 / años) - 1) * 100;
+}
+
+
+/**
+ * Para el escenario personalizado: precio de 1 BTC al terminar y el crecimiento
+ * del retiro más alto que no pasa del techo realista (9-nov-2026).
+ */
+export function techoPersonalizado({ precioHoy, cagr, años, crecRetiro, añosRetiro }) {
+  const alRetiro = precioHoy * Math.pow(1 + (Number(cagr) || 0) / 100, años);
+  const alFinal = alRetiro * Math.pow(1 + (Number(crecRetiro) || 0) / 100, añosRetiro);
+  const maxCrecRetiro = alRetiro >= PRECIO_TECHO_REALISTA ? 0 : Math.floor((Math.pow(PRECIO_TECHO_REALISTA / alRetiro, 1 / Math.max(1, añosRetiro)) - 1) * 100);
+  const maxCagr = Math.floor((Math.pow(PRECIO_TECHO_REALISTA / precioHoy, 1 / Math.max(1, años)) - 1) * 100);
+  return { alRetiro, alFinal, irrealAhorro: alRetiro > PRECIO_TECHO_REALISTA, irreal: alFinal > PRECIO_TECHO_REALISTA, maxCrecRetiro, maxCagr };
 }

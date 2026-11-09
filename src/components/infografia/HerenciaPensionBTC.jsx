@@ -101,10 +101,10 @@ export default function HerenciaPensionBTC({ comp, retiro, retiroPct, añosRetir
         </div>
         {retiro.irreal && (
           <div style={{ fontSize: 13, color: C.neg, marginTop: 8, lineHeight: 1.5 }}>
-            Ojo, este escenario no es realista: con estos crecimientos un bitcoin valdría {`US$${fmtNumEs(retiro.precioFinal, 0)}`} al final, y todos los bitcoin juntos {retiro.vecesRiqueza >= 1 ? `${fmtNumEs(retiro.vecesRiqueza, 1)} veces` : `el ${fmtNumEs(retiro.vecesRiqueza * 100, 0)} %`} de toda la riqueza del mundo. Baja el crecimiento al ahorrar (paso 3) o mientras retiras (paso 4).
+            Ojo, este escenario no es realista: con estos crecimientos un bitcoin valdría {`US$${fmtNumEs(retiro.precioFinal, 0)}`} al final, y todos los bitcoin juntos {retiro.vecesRiqueza >= 1 ? `${fmtNumEs(retiro.vecesRiqueza, 1)} veces` : `el ${fmtNumEs(retiro.vecesRiqueza * 100, 0)} %`} de toda la riqueza del mundo. Elige uno de los escenarios del paso 3 o baja el crecimiento.
           </div>
         )}
-        <div style={{ fontSize: 12, color: C.txt3, marginTop: 6 }}>El capital crece {fmtPctEs(retiro.real, 1)} al año sobre la inflación (el crecimiento que elegiste para el retiro menos la inflación del dólar) y cada mes sale el retiro.</div>
+        <div style={{ fontSize: 12, color: C.txt3, marginTop: 6 }}>El capital crece {retiro.conCurva ? "en promedio " : ""}{fmtPctEs(retiro.real, 1)} al año sobre la inflación ({retiro.conCurva ? "según el escenario elegido" : "el crecimiento que elegiste para el retiro"}, menos la inflación del dólar) y cada mes sale el retiro.</div>
       </div>
     </section>
   );

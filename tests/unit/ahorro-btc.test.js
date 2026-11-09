@@ -94,3 +94,46 @@ describe("proyecciones de analistas", () => {
     expect(c).toBeGreaterThan(54); expect(c).toBeLessThan(60);
   });
 });
+
+// 9-nov-2026 — Escenarios con crecimiento que baja (Santiago: "¿cómo ponemos
+// escenarios que sí sean realistas?"). Caso real: $350.000.000 en una compra,
+// 10 años, retiro 6 % hasta los 80 (18 años).
+import { ESCENARIOS_CURVA, tasaCurva, trayectoria, techoPersonalizado, PRECIO_TECHO_REALISTA, proyeccionPrecio } from "../../src/lib/ahorroBTC.js";
+describe("escenarios con curva", () => {
+  const caso = { frecuencia: "unico", monto: 350e6, años: 10, precioHoy: 75_270, trm: 3_900 };
+  it("la tasa arranca en r0, baja a la mitad del exceso cada 4 años y tiende a rt", () => {
+    const b = ESCENARIOS_CURVA.find((e) => e.id === "base");
+    expect(tasaCurva(b, 1)).toBe(25);
+    expect(tasaCurva(b, 5)).toBeCloseTo(15, 6);
+    expect(tasaCurva(b, 60)).toBeCloseTo(5, 1);
+  });
+  it("ningún escenario pasa el techo realista en 40 años", () => {
+    for (const e of ESCENARIOS_CURVA) expect(75_270 * trayectoria({ curva: e }).f(40 * 12)).toBeLessThan(PRECIO_TECHO_REALISTA);
+  });
+  it("sin curva, la trayectoria es la tasa fija de siempre", () => {
+    expect(trayectoria({ cagr: 10 }).f(24)).toBeCloseTo(1.21, 10);
+  });
+  it("caso de Santiago con Base: herencia de cientos de millones, no decenas de miles de millones", () => {
+    const b = ESCENARIOS_CURVA.find((e) => e.id === "base");
+    const r = simularAhorroBTC({ ...caso, curva: b });
+    const ret = simularRetiro({ capital: r.valorCOPHoy, retiroPct: 6, años: 18, curva: b, desdeAño: 10, precioInicial: r.precioFinal });
+    expect(r.irreal).toBe(false); expect(ret.irreal).toBe(false);
+    expect(ret.capitalFinal).toBeLessThan(2e9);
+    expect(ret.precioFinal).toBeLessThan(1_500_000);
+    expect(proyeccionPrecio({ precioHoy: 75_270, curva: b, años: 10 }).at(-1).precio).toBeCloseTo(r.precioFinal, 0);
+  });
+  it("prueba de estrés: caer 60 % al empezar a retirar deja menos (o se acaba)", () => {
+    const b = ESCENARIOS_CURVA.find((e) => e.id === "base");
+    const r = simularAhorroBTC({ ...caso, curva: b });
+    const a = { capital: r.valorCOPHoy, retiroPct: 6, años: 18, curva: b, desdeAño: 10, precioInicial: r.precioFinal };
+    const n = simularRetiro(a), s = simularRetiro({ ...a, caidaInicial: 0.6 });
+    expect(s.retiroMes).toBe(n.retiroMes);
+    expect(s.capitalFinal).toBeLessThan(n.capitalFinal);
+    expect(s.agotaEn).not.toBeNull();
+  });
+  it("personalizado: 35 % y luego 20 % es irreal y el máximo realista del retiro es ~7 %", () => {
+    const t = techoPersonalizado({ precioHoy: 75_270, cagr: 35, años: 10, crecRetiro: 20, añosRetiro: 18 });
+    expect(t.irreal).toBe(true); expect(t.irrealAhorro).toBe(false); expect(t.maxCrecRetiro).toBe(7);
+    expect(techoPersonalizado({ precioHoy: 75_270, cagr: 35, años: 10, crecRetiro: 7, añosRetiro: 18 }).irreal).toBe(false);
+  });
+});
