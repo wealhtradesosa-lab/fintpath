@@ -15,7 +15,7 @@ import { TABLA_ART73_AG, ULTIMO_AG_ART70, NORMA_GO_VERIFICADA } from "./normaGan
 import { US_TAX_YEAR } from "./jurisdictions/usStateTax.js";
 
 /** Fecha de la última revisión completa de normas nuevas (la mueve el revisor semanal). */
-export const ULTIMA_REVISION_NORMATIVA = "2026-11-02";
+export const ULTIMA_REVISION_NORMATIVA = "2026-11-09";
 
 const d = (s) => new Date(s + "T12:00:00");
 
