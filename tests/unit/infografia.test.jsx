@@ -3,7 +3,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { calcularMetricas } from "../../src/lib/metrics.js";
-import { flujoDinero, geometriaSankey, mapaPatrimonio, squarify, rentasPorMes, escalaMedidor } from "../../src/lib/infografia.js";
+import { flujoDinero, geometriaSankey, mapaPatrimonio, squarify, rentasPorMes, escalaMedidor, letraQueCabe } from "../../src/lib/infografia.js";
 import MedidorLibertad from "../../src/components/infografia/MedidorLibertad.jsx";
 import FlujoDinero from "../../src/components/infografia/FlujoDinero.jsx";
 import MapaPatrimonio from "../../src/components/infografia/MapaPatrimonio.jsx";
@@ -96,5 +96,21 @@ describe("escenarios creados", () => {
     expect(html).toContain("«Crecer» lleva la delantera");
     expect(html.indexOf("Crecer")).toBeLessThan(html.indexOf("Vender"));
     expect(html).not.toContain("NaN");
+  });
+});
+
+// 10-nov-2026: con cifras completas, "$4.238.000.000" se salía de un bloque
+// angosto del treemap. La letra se ajusta al ancho del bloque.
+describe("letraQueCabe", () => {
+  it("respeta el máximo cuando sobra espacio", () => {
+    expect(letraQueCabe("$4.238.000.000", 600, 32)).toBe(32);
+  });
+  it("achica la cifra en un bloque angosto", () => {
+    const fs = letraQueCabe("$4.238.000.000", 166, 24);
+    expect(fs).toBeLessThan(24);
+    expect(fs).toBeGreaterThan(18);
+  });
+  it("no baja del mínimo", () => {
+    expect(letraQueCabe("$19.433.732.091.000", 20, 24, 11)).toBe(11);
   });
 });

@@ -31,6 +31,17 @@ export const descNivel = (lv) => (lv ? tx(lv.desc, NIVEL_EN[lv.clave]?.desc) : "
 
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 // Etiquetas del Sankey: caben ~24 caracteres a cada lado.
+// Tamaño de letra para que un texto quepa en `ancho` (unidades del SVG).
+// Estima el ancho de Inter con cifras tabulares: dígitos y símbolos ≈ 0,62 em,
+// separadores (. , espacio) ≈ 0,3 em, letras ≈ 0,56 em. Margen del 6 %.
+// 10-nov-2026: con las cifras completas, "$4.238.000.000" se salía del treemap.
+export function letraQueCabe(texto, ancho, max = 32, min = 10) {
+  const t = String(texto ?? "");
+  let em = 0;
+  for (const ch of t) em += /[0-9$%+−\-]/.test(ch) ? 0.62 : /[.,·\s]/.test(ch) ? 0.3 : 0.56;
+  if (em === 0 || ancho <= 0) return max;
+  return Math.max(min, Math.min(max, Math.floor((ancho / (em * 1.06)) * 10) / 10));
+}
 export const corto = (s, max = 24) => { const t = String(s || "").trim(); return t.length > max ? t.slice(0, max - 1).trimEnd() + "…" : t; };
 
 // ─── Flujo del dinero (Sankey) ─────────────────────────────────────────────

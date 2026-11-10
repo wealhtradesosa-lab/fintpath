@@ -7,7 +7,7 @@
 // nombre en `fuente`) o, si no hay, de la tasa escrita en el activo.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { mapaPatrimonio, squarify, corto } from "../../lib/infografia.js";
+import { mapaPatrimonio, squarify, corto, letraQueCabe } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
 import { tx, localeCifras, esUS } from "../../lib/region.js";
 
@@ -51,8 +51,8 @@ export default function MapaPatrimonio({ met, fm }) {
               </rect>
               {grande && <>
                 <text x={px} y={py + 2} fontSize="14" style={{ fill: t.txt }}>{corto(b.nombre, Math.floor(b.w / 8))}</text>
-                <text x={px} y={py + 36} fontSize={b.w > 360 ? 32 : 24} fontWeight="600" style={{ fill: t.txt, ...cifra }}>{fm(b.valor)}</text>
-                <text x={px} y={py + 58} fontSize="12" style={{ fill: t.sub }}>{fmtPct(b.pct)} · {lectura(b)}</text>
+                <text x={px} y={py + 36} fontSize={letraQueCabe(fm(b.valor), b.w - 28, b.w > 360 ? 32 : 24, 11)} fontWeight="600" style={{ fill: t.txt, ...cifra }}>{fm(b.valor)}</text>
+                <text x={px} y={py + 58} fontSize={letraQueCabe(`${fmtPct(b.pct)} · ${lectura(b)}`, b.w - 28, 12, 9)} style={{ fill: t.sub }}>{fmtPct(b.pct)} · {lectura(b)}</text>
               </>}
               {medio && <>
                 <text x={b.x + 10} y={b.y + 20} fontSize="11" style={{ fill: t.txt }}>{corto(b.nombre, Math.floor(b.w / 6.5))}</text>
