@@ -25,6 +25,7 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
   const [sel, setSel] = useState(inicial ? `${inicial.cat}::${inicial.idx}` : "__nuevo");
   // Varias partes del mismo evento (Santiago: "tiquetes 4.500 USD, presupuesto para gastos 2.500 USD").
   const [otras, setOtras] = useState([]);
+  const [modo, setModo] = useState("total"); // "total" | "partes"
   const nuevaLinea = () => ({ id: Math.random().toString(36).slice(2), nota: "", monto: "", moneda, pago: "contado", cuotas: "12", tasa: "" });
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevaCat, setNuevaCat] = useState("Viajes");
@@ -45,13 +46,21 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
   const cal = m > 0 ? calendarioExtra({ ...datos, cuotas: Number(cuotas), tasa: Number(tasa) }) : [];
   const enAño = cal.filter((p) => p.año === año);
   const fueraAño = cal.length - enAño.length;
-  const pequeño = m > 0 && esMenorQueUmbral(enPesos, gastoMensualReferencia(gastos, trm));
-  const otrasOk = otras.filter((l) => Number(l.monto) > 0);
-  const totalPesos = enPesos + otrasOk.reduce((t, l) => t + extraEnPesos({ monto: Number(l.monto), moneda: l.moneda }, null, trm), 0);
+  const pequeño = modo === "total" && m > 0 && esMenorQueUmbral(enPesos, gastoMensualReferencia(gastos, trm));
+  const esViaje = nuevo ? nuevaCat === "Viajes" : actual?.cat === "Viajes";
+  const irAPartes = () => {
+    setModo("partes");
+    if (!otras.length) {
+      const nombres = esViaje ? [tx("Tiquetes", "Flights"), tx("Hotel", "Hotel"), tx("Viáticos", "Daily costs")] : [tx("Concepto 1", "Item 1"), tx("Concepto 2", "Item 2")];
+      setOtras(nombres.map((n, i) => ({ ...nuevaLinea(), nota: n, monto: i === 0 && Number(monto) > 0 ? monto : "" })));
+    }
+  };
+  const otrasOk = modo === "partes" ? otras.filter((l) => Number(l.monto) > 0) : [];
+  const totalPesos = (modo === "total" ? enPesos : 0) + otrasOk.reduce((t, l) => t + extraEnPesos({ monto: Number(l.monto), moneda: l.moneda }, null, trm), 0);
   // 14-nov-2026 (Santiago: "uno pone los ítems y no van sumando al total"): la parte 1 ya no es
   // obligatoria; cuentan todas las partes con valor, en cualquier orden.
   const lineas = [
-    ...(m > 0 ? [{ monto: m, moneda, nota, pago, cuotas, tasa }] : []),
+    ...(modo === "total" && m > 0 ? [{ monto: m, moneda, nota, pago, cuotas, tasa }] : []),
     ...otrasOk.map((l) => ({ monto: Number(l.monto), moneda: l.moneda, nota: l.nota, pago: l.pago, cuotas: l.cuotas, tasa: l.tasa })),
   ];
   const listo = lineas.length > 0 && (nuevo ? true : !!actual);
@@ -99,13 +108,25 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.3fr 0.7fr 1fr", gap: 10, marginBottom: 12 }}>
-          <div><label style={lbl}>{otras.length ? (nota || tx("Parte 1", "Part 1")) : tx("Valor", "Amount")} · {moneda}</label><NumberInput value={monto} onChange={setMonto} placeholder="0" style={inp} /></div>
-          <div><label style={lbl}>{tx("Moneda", "Currency")}</label>
-            <select value={moneda} onChange={(e) => setMoneda(e.target.value)} style={inp}><option value="COP">COP</option><option value="USD">USD</option></select></div>
+        {/* 14-nov-2026 (Santiago: "dice parte uno y después añadir… ¿es un solo valor aproximado total o
+            ítem por ítem? Uno elige"). Elección explícita arriba; en «Por partes» todas valen igual. */}
+        <label style={lbl}>{tx("¿Cómo lo quieres poner?", "How do you want to enter it?")}</label>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          <button type="button" style={chip(modo === "total")} onClick={() => setModo("total")}>{tx("Valor total", "Total amount")}</button>
+          <button type="button" style={chip(modo === "partes")} onClick={() => irAPartes()}>{tx("Por partes (tiquetes, hotel…)", "By parts")}</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: modo === "total" ? "1.3fr 0.7fr 1fr" : "1fr 1fr", gap: 10, marginBottom: 12 }}>
+          {modo === "partes" && <div><label style={lbl}>{tx("Moneda de las partes", "Currency")}</label>
+            <select value={moneda} onChange={(e) => { const v = e.target.value; setMoneda(v); setOtras((o) => o.map((x) => ({ ...x, moneda: v }))); }} style={inp}><option value="COP">COP</option><option value="USD">USD</option></select></div>}
+          {modo === "total" && <>
+            <div><label style={lbl}>{tx("Valor total", "Total")} · {moneda}</label><NumberInput value={monto} onChange={setMonto} placeholder="0" style={inp} /></div>
+            <div><label style={lbl}>{tx("Moneda", "Currency")}</label>
+              <select value={moneda} onChange={(e) => setMoneda(e.target.value)} style={inp}><option value="COP">COP</option><option value="USD">USD</option></select></div>
+          </>}
           <div><label style={lbl}>{tx("Mes", "Month")}</label>
             <select value={mes} onChange={(e) => setMes(Number(e.target.value))} style={inp}>{MESES.map((x) => <option key={x.v} value={x.v}>{tx(x.l, nombreMes(x.v))}</option>)}</select></div>
         </div>
+        {modo === "total" && <>
         {m > 0 && moneda === "COP" && m < 100000 && (
           <div style={{ fontSize: 12, color: T.orange, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 10, lineHeight: 1.5 }}>
             {tx(`$${Math.round(m).toLocaleString("es-CO")} pesos es muy poco. ¿Lo escribiste en dólares?`, "Very small amount in pesos. Was it in dollars?")}{" "}
@@ -128,11 +149,12 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
           </div>
         )}
 
-        {/* Otras partes del mismo pago único */}
+        </>}
+        {modo === "partes" && <>
         {otras.map((l, k) => (
           <div key={l.id} style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 10px 6px", marginBottom: 10 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 0.7fr", gap: 8, marginBottom: 8 }}>
-              <div><label style={lbl}>{tx(`Parte ${k + 2}`, `Part ${k + 2}`)}</label><input value={l.nota} onChange={(e) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, nota: e.target.value } : x)))} placeholder={tx("Gastos del viaje", "Trip budget")} style={inp} /></div>
+              <div><label style={lbl}>{tx("Concepto", "Item")}</label><input value={l.nota} onChange={(e) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, nota: e.target.value } : x)))} placeholder={tx("Gastos del viaje", "Trip budget")} style={inp} /></div>
               <div><label style={lbl}>{tx("Valor", "Amount")}</label><NumberInput value={l.monto} onChange={(v) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, monto: v } : x)))} placeholder="0" style={inp} /></div>
               <div><label style={lbl}>{tx("Moneda", "Currency")}</label><select value={l.moneda} onChange={(e) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, moneda: e.target.value } : x)))} style={inp}><option value="COP">COP</option><option value="USD">USD</option></select></div>
             </div>
@@ -150,17 +172,14 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
             )}
           </div>
         ))}
-        {/* 14-nov-2026 (Santiago: "poder poner valor de hotel, valor de tiquetes y valor de viáticos"). */}
-        {otras.length === 0 && (nuevo ? nuevaCat === "Viajes" : actual?.cat === "Viajes") && (
-          <button type="button" onClick={() => { setNota("Tiquetes"); setOtras([{ ...nuevaLinea(), nota: "Hotel" }, { ...nuevaLinea(), nota: "Viáticos" }]); }}
-            style={{ background: "rgba(0,200,5,0.08)", border: `1px solid ${T.green}`, color: T.green, borderRadius: 8, padding: "8px 12px", fontSize: 13, fontWeight: 600, cursor: "pointer", width: "100%", marginBottom: 8 }}>
-            {tx("Separar en tiquetes, hotel y viáticos", "Split into flights, hotel and daily costs")}
+          <button type="button" onClick={() => setOtras((o) => [...o, nuevaLinea()])} style={{ background: "transparent", border: `1px dashed ${T.border}`, color: T.txt2, borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer", width: "100%", marginBottom: 12 }}>
+            {tx("+ Agregar otro concepto", "+ Add another item")}
           </button>
-        )}
-        <button type="button" onClick={() => setOtras((o) => [...o, nuevaLinea()])} style={{ background: "transparent", border: `1px dashed ${T.border}`, color: T.txt2, borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer", width: "100%", marginBottom: 12 }}>
-          {tx("+ Agregar otra parte (ej. tiquetes y gastos del viaje)", "+ Add another part")}
-        </button>
-        {lineas.length > 1 && <div style={{ fontSize: 13, color: T.txt2, marginBottom: 10 }}>{tx("Total del pago único:", "Total:")} <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong></div>}
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, color: T.txt2, marginBottom: 12, padding: "8px 10px", background: T.bg3, borderRadius: 8 }}>
+            <span>{tx("Total", "Total")} {otrasOk.length ? `(${otrasOk.length} ${otrasOk.length === 1 ? tx("concepto", "item") : tx("conceptos", "items")})` : ""}</span>
+            <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong>
+          </div>
+        </>}
 
         {pequeño && (
           <div style={{ fontSize: 12, color: T.orange, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 10, lineHeight: 1.5 }}>
@@ -172,7 +191,7 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
           <div style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px", margin: "6px 0 14px", fontSize: 13, lineHeight: 1.6 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: T.txt3, marginBottom: 2 }}>{tx("Efecto", "Effect")}</div>
             <div style={{ color: T.txt2 }}>{tx(`Gasto de ${mesL(mes)}:`, "Expense:")} <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong>{moneda === "USD" ? <span style={{ color: T.txt3 }}> · {tx("TRM", "FX")} {Math.round(fx).toLocaleString("es-CO")}</span> : null}</div>
-            {lineas.length === 1 && m > 0 ? (<div style={{ color: T.txt2 }}>
+            {modo === "total" && m > 0 ? (<div style={{ color: T.txt2 }}>
               {pago === "contado" && tx(`Sale de tu cuenta en ${mesL(mes)}.`, "Paid this month.")}
               {pago === "tarjeta1" && (mes < 12 ? tx(`Sale de tu cuenta en ${mesL(mes + 1)}, al pagar la tarjeta.`, "Paid next month.") : tx("Sale de tu cuenta en enero, al pagar la tarjeta (no pesa en el flujo de este año).", "Paid in January."))}
               {pago === "cuotas" && cal.length > 0 && <>
