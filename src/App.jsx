@@ -2752,7 +2752,7 @@ export default function FinPath(){
         partes={t.metMes?partesObligacion(t.metMes):null} caja={t.metMes?lecturaCaja(t.metMes):null} fin={t.metMes?finDeudas(t.metMes,(u?.deu)||[]):null}
         extra={<>
           {(t.ind||0)<100&&<div style={{fontSize:12,color:CHART.txt3}}>{tx("Para cubrirlo con rentas necesitarías unos ","To cover it with passive income you'd need about ")}<b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b>{tx(" más invertidos al "," more invested at ")}{pctR(RETORNO_SUPUESTO*100,0)}{tx(" anual."," a year.")}</div>}
-          {(t.ob||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>{tx("Tu número FIRE: ","Your FIRE number: ")}<b style={{color:CHART.txt}}>{fm(t.ob*12*25)}</b>{tx(" · llevas el "," · you're at ")}<b style={{color:CHART.txt}}>{pctR(Math.max(0,t.nw/(t.ob*12*25)*100),0)}</b></div>}
+          {(t.gfm||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>{tx("Tu número FIRE: ","Your FIRE number: ")}<b style={{color:CHART.txt}}>{fm(t.gfm*12*25)}</b>{tx(" · llevas el "," · you're at ")}<b style={{color:CHART.txt}}>{pctR(Math.max(0,t.nw/(t.gfm*12*25)*100),0)}</b></div>}
         </>}/>}
 
       {/* 2-nov-2026 — Después del primer minuto: primero ve su número (arriba), luego el camino para volverlo exacto. */}
@@ -3038,7 +3038,11 @@ export default function FinPath(){
         const runway = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999; // colchón único (metrics.js)
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
         const savingsRate = t.ahorroPct || 0; // misma cifra que alertas y puntaje (metrics.js, neto de retención)
-        const fireNumber = (t.ob||t.gfm||0) * 12 * 25; // 13-nov-2026: misma base del nivel (gastos + intereses + impuesto del mes), no solo gastos
+        // 13-nov-2026 — FIRE = gastos de vida PERMANENTES × 25. No lleva intereses de
+        // deudas (se terminan) ni el impuesto del mes: por un rato usó la base del
+        // nivel y el número de Santiago saltó de $18.644 a $37.291 millones. Lo
+        // temporal no se multiplica por 25 años de retiro.
+        const fireNumber = (t.gfm||0) * 12 * 25;
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
         const debtService = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
         // Passive vs active income

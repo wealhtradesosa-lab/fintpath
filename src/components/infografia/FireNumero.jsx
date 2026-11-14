@@ -26,7 +26,7 @@ export default function FireNumero({ fireNumber, nw, anios, ahorroMes, fm }) {
       <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 16, alignItems: "flex-end" }}>
         <div>
           <h3 style={titulo}>{tx("¿Cuánto necesitas para no trabajar más?", "How much do you need to stop working?")}</h3>
-          <div style={subtitulo}>{tx("Tu número FIRE: tus gastos de un año × 25 (la regla del 4 %).", "Your FIRE number: one year of expenses × 25 (the 4% rule).")}</div>
+          <div style={subtitulo}>{tx("Tu número FIRE: tus gastos de vida de un año × 25 (la regla del 4 %). No incluye las cuotas ni los intereses de tus deudas, porque se terminan.", "Your FIRE number: one year of living expenses × 25 (the 4% rule). It leaves out debt payments and interest, because they end.")}</div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-0.02em", color: C.txt, ...cifra }}>{fm(fireNumber)}</div>
