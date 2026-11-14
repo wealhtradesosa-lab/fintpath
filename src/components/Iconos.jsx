@@ -77,22 +77,45 @@ import { MoreHorizontal, Pencil as Lapiz, Trash2 as Caneca } from "lucide-react"
  */
 export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar", extra = [] }) {
   const [abierto, setAbierto] = useState(false);
+  // 14-nov-2026 (Santiago: "al último ítem de la lista no le salen los botones
+  // borrar y editar"). El menú era absolute debajo del botón y el contenedor de
+  // la tabla (overflow auto) lo cortaba en la última fila. Ahora es fixed,
+  // anclado al botón, y se abre hacia arriba si abajo no cabe.
+  const [pos, setPos] = useState(null);
   const ref = useRef(null);
+  const btnRef = useRef(null);
   useEffect(() => {
     if (!abierto) return;
     const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
+    const cerrar = () => setAbierto(false);
     document.addEventListener("mousedown", fuera);
-    return () => document.removeEventListener("mousedown", fuera);
+    window.addEventListener("scroll", cerrar, true);
+    window.addEventListener("resize", cerrar);
+    return () => {
+      document.removeEventListener("mousedown", fuera);
+      window.removeEventListener("scroll", cerrar, true);
+      window.removeEventListener("resize", cerrar);
+    };
   }, [abierto]);
+  const abrir = () => {
+    if (abierto) { setAbierto(false); return; }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) {
+      const alto = 44 * ((onEditar ? 1 : 0) + (onEliminar ? 1 : 0) + extra.length) + 10;
+      const arriba = window.innerHeight - r.bottom < alto + 8 && r.top > alto + 8;
+      setPos({ right: Math.max(8, window.innerWidth - r.right), ...(arriba ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) });
+    }
+    setAbierto(true);
+  };
   const item = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", color: "var(--fp-txt)", borderRadius: 6 };
   return (
     <span ref={ref} style={{ position: "relative", display: "inline-block", flexShrink: 0 }}>
-      <button type="button" aria-label="Más opciones" title="Editar o eliminar" aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
+      <button ref={btnRef} type="button" aria-label="Más opciones" title="Editar o eliminar" aria-haspopup="menu" onClick={abrir}
         style={{ background: abierto ? "rgba(var(--fp-ink),0.08)" : "rgba(var(--fp-ink),0.04)", border: "1px solid rgba(var(--fp-ink),0.16)", borderRadius: 8, padding: "4px 8px", cursor: "pointer", color: "var(--fp-txt)", display: "inline-flex" }}>
         <MoreHorizontal size={18} strokeWidth={2.25} />
       </button>
       {abierto && (
-        <div role="menu" style={{ position: "absolute", right: 0, top: "100%", zIndex: 30, minWidth: 150, background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.12)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+        <div role="menu" style={{ position: "fixed", ...(pos || { right: 8, top: 8 }), zIndex: 1000, minWidth: 150, background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.12)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
           {/* 14-nov-2026: acciones extra de la fila (p. ej. "Registrar aporte"). */}
           {extra.map((x) => <button key={x.label} role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); x.onClick(); }}>{x.label}</button>)}
           {onEditar && <button role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); onEditar(); }}><Lapiz size={15} strokeWidth={1.75} /> {editarTitulo}</button>}
