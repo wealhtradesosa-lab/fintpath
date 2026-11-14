@@ -10,7 +10,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { estimarImpuestoReferente, mesesDePago, saldoImpuestoAnual } from "../lib/impuestoReferente";
 import SankeyFlujo from "./SankeyFlujo";
 import FlujoMesVsPromedio, { promedioFilas } from "./FlujoMesVsPromedio";
-import { cuotaDeudaDelMes, retencionDelMes } from "../lib/flujoMes.js";
+import { cuotaDeudaDelMes, retencionDelMes, deudaViva } from "../lib/flujoMes.js";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, getMonto, getMontosMensuales, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
@@ -820,7 +820,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     // (20-jul-2026, Santiago: "las deudas también pueden ser hasta X mes").
     let cuotasDeudasMes = 0;
     (user.deudas || []).forEach((d, di) => {
-      if (d.sim === false || (d.mt || 0) <= 0) return;
+      if (!deudaViva(d)) return;
       cuotasDeudasMes += cuotaDeudaDelMes(d, getVal(`debt_${di}`, d.pago || d.pg || 0),
                                           añoActual, mes, user?.trm);
     });
@@ -1032,7 +1032,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       //    obligación anual, no un descuento sobre cada pago.
       let cuotas = 0;
       (user.deudas || []).forEach((d, di) => {
-        if (d.sim === false || (d.mt || 0) <= 0) return;
+        if (!deudaViva(d)) return;
         cuotas += cuotaDeudaDelMes(d, ov(`debt_${di}`, d.pago || d.pg || 0), año, mes, trm);
       });
       const retencion = retencionDelMes(ingresosMes, simT.brutoTotal || 0, simT.retencionMensual || 0);

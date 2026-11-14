@@ -19,6 +19,7 @@ import { exportDeudasPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import FrecuenciaSelector from "./FrecuenciaSelector";
 import TablaMensual from "./TablaMensual";
+import AbonoDeudaModal from "./AbonoDeudaModal";
 import BarraComposicion from "./BarraComposicion";
 import { MESES, costoCredito, montoPromedioMensual, montoDelMes, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 import { tx, esUS, plata, pct as pctR, monedaBase, nombreMes } from "../lib/region.js";
@@ -171,6 +172,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     input.click();
   };
   const [editId, setEditId] = useState(null);
+  const [abonoDe, setAbonoDe] = useState(null); // 14-nov-2026: id de la deuda con el formulario de abono abierto
   const [cerrados, setCerrados] = useState({}); // 31-oct-2026: grupos colapsables
   const [busqueda, setBusqueda] = useState("");
   const [titularFiltro, setTitularFiltro] = useState("");
@@ -496,6 +498,21 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           ></span>
                         )}
                         <span style={d.pagada ? { textDecoration: "line-through", opacity: 0.65 } : undefined}>{d.n}</span>
+                        {(() => {
+                          const añoA = new Date().getFullYear();
+                          const ab = (d.abonos || []).filter((a) => Number(a.año) === añoA);
+                          if (!ab.length) return null;
+                          const tot = ab.reduce((t, a) => t + (Number(a.monto) || 0), 0);
+                          const aho = ab.reduce((t, a) => t + (Number(a.ahorroInteres) || 0), 0);
+                          return (
+                            <button type="button" onClick={() => setAbonoDe(d.id)}
+                              title={ab.map((a) => `${MESES_NOM[a.mes - 1]}: ${fm(a.monto)}`).join(" · ")}
+                              style={{ marginLeft: 7, background: "rgba(245,158,11,0.12)", color: T.orange, border: "none", cursor: "pointer",
+                                fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
+                              {tx(`Abonos ${añoA}: ${fm(tot)}`, `Extra ${añoA}: ${fm(tot)}`)}{aho > 0 ? tx(` · ahorras ${fm(aho)} de intereses`, ` · saves ${fm(aho)} interest`) : ""}
+                            </button>
+                          );
+                        })()}
                         {d.pagada && (
                           <span title={d.pagadaEl ? tx(`Saldada el ${d.pagadaEl}`, `Paid off on ${d.pagadaEl}`) : tx("Saldada", "Paid off")}
                             style={{ marginLeft: 7, background: "rgba(0,200,5,0.15)", color: T.green,
@@ -578,6 +595,12 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                           y usa estilo neutro de acción. El verde con ✓ queda
                           reservado para el chip que sí indica estado, junto al
                           nombre de la deuda. */}
+                      {d.pagada !== true && (d.sim !== false) && (Number(d.mt) || 0) > 0 && (
+                        <button onClick={() => { if (!guardEdit(role)) return; setAbonoDe(d.id); }}
+                          title={tx("Registrar un abono extraordinario a esta deuda", "Record an extra payment on this debt")}
+                          style={{ background: "rgba(0,200,5,0.10)", border: "1px solid rgba(0,200,5,0.35)", padding: "5px 8px", borderRadius: 6, cursor: "pointer",
+                            color: T.green, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap" }}>{tx("Registrar abono", "Extra payment")}</button>
+                      )}
                       {d.pagada !== true && (d.sim !== false) && (
                         <button
                           onClick={() => {
@@ -1082,6 +1105,15 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         </div>
       )}
     
+    {abonoDe && (() => {
+      const d = deudas.find((x) => x.id === abonoDe);
+      if (!d) return null;
+      return (
+        <AbonoDeudaModal deuda={d} fm={fm} T={T}
+          onCerrar={() => setAbonoDe(null)}
+          onGuardar={(nueva, seguir) => { onUpdate(deudas.map((x) => (x.id === d.id ? nueva : x))); if (!seguir) setAbonoDe(null); }} />
+      );
+    })()}
     <Disclaimer variante="general" idioma={tx("es", "en")} T={T} compacto />
   </div>
   );

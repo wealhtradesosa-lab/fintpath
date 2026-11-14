@@ -779,6 +779,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                         <div style={{ minWidth: 0, fontSize: 13, color: T.txt, overflowWrap: "anywhere", lineHeight: 1.35 }}>
                           {x.nombre}
                           {conCat && x.cat && <span style={{ fontSize: 11, color: T.txt3, marginLeft: 6 }}>{nomCat(x.cat)}</span>}
+                          {x.abono > 0 && <div style={{ fontSize: 11, color: T.gd, marginTop: 1 }}>{isEN ? "includes extra payment " : "incluye abono extra de "}{fm(x.abono)}</div>}
                         </div>
                         <div style={{ fontSize: 13, color: T.txt2, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", textAlign: "right" }}>{fm(x.monto)}</div>
                       </div>
