@@ -518,6 +518,15 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
   };
 
+  // 14-nov-2026 (Santiago: "¿cómo marcamos fácilmente que un gasto ya se pagó todo el año?"): atajo
+  // del menú … que abre el gasto con el pago por adelantado ya marcado y valores sugeridos.
+  const abrirPagadoAño = (item) => {
+    openEdit(item);
+    const año = new Date().getFullYear(), mesH = new Date().getMonth() + 1;
+    const fq = item.frecuencia || "mensual";
+    const sugerido = fq === "mensual" ? (Number(item.m) || 0) * (12 - mesH + 1) : (Number(item.m) || 0);
+    setForm((p) => ({ ...p, prepago: p.prepago || { año, mes: mesH, hastaMes: 12, monto: sugerido ? String(Math.round(sugerido)) : "" } }));
+  };
   const openEdit = (item) => {
     // NUEVO (18-jul-2026): preservar frecuencia y mesPago si existen.
     // Retrocompat: items viejos con freq="año" mantienen su comportamiento
@@ -910,7 +919,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}><Interruptor on={item.sim!==false} /></button>
-                  <MenuFila extra={[{ label: "Registrar extra", onClick: () => { if (!guardEdit(role)) return; setExtraDe({ cat: item.cat, idx: item.idx }); } }]} onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
+                  <MenuFila extra={[{ label: "Ya lo pagué todo el año", onClick: () => { if (!guardEdit(role)) return; abrirPagadoAño(item); } }, { label: "Registrar extra", onClick: () => { if (!guardEdit(role)) return; setExtraDe({ cat: item.cat, idx: item.idx }); } }]} onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
                 </td>
               </tr>
               )
