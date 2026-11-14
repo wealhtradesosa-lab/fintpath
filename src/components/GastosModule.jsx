@@ -377,6 +377,16 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const _añoHoy = new Date().getFullYear();
   const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g), 0);
+  // 14-nov-2026 (Santiago: "cada sección debería tener un identificador de color… para
+  // diferenciar el título del ítem"). Cada clase lleva el mismo color que en la barra de
+  // distribución (orden por monto): franja a la izquierda y fondo tenue en su encabezado.
+  const colorClase = (() => {
+    const gr = {};
+    activos.forEach((x) => { const c = claseGasto(x); const k = c.icono + " " + c.nombre; gr[k] = (gr[k] || 0) + montoPromedioMensual(x) * (fxG(x)); });
+    const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"]; const out = {};
+    Object.entries(gr).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).forEach(([k], i) => { out[k] = PAL[i % PAL.length]; });
+    return out;
+  })();
 
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
   // El user hace click en el chip "Pendiente" y pasa a "Pagado".
@@ -721,8 +731,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   </td></tr>
             ) : conEncabezados(separarPorLimite(itemsFiltrados, plan).visibles).map((item) => (
                   item.__cat ? (
-                    <tr key={item.key} onClick={() => setCerrados((c) => ({ ...c, [item.key]: !c[item.key] }))} title={cerrados[item.key] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
-                      <td colSpan={7} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                    <tr key={item.key} onClick={() => setCerrados((c) => ({ ...c, [item.key]: !c[item.key] }))} title={cerrados[item.key] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: (colorClase[item.__cat] || "#64748b") + "1f", cursor: "pointer" }}>
+                      <td colSpan={7} style={{ padding: "11px 14px", borderLeft: `4px solid ${colorClase[item.__cat] || "#64748b"}`, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.key] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>

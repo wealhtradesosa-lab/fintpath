@@ -397,6 +397,16 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     ]);
   };
   const activos = items.filter((i) => i.sim !== false);
+  // 14-nov-2026 (Santiago: "cada sección debería tener un identificador de color… para
+  // diferenciar el título del ítem"). Cada clase lleva el mismo color que en la barra de
+  // distribución (orden por monto): franja a la izquierda y fondo tenue en su encabezado.
+  const colorClase = (() => {
+    const gr = {};
+    activos.forEach((x) => { const c = claseIngreso(x); const k = c.icono + " " + c.nombre; gr[k] = (gr[k] || 0) + montoPromedioMensual(x) * (x.moneda === "USD" ? (trm || 4200) : 1); });
+    const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"]; const out = {};
+    Object.entries(gr).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).forEach(([k], i) => { out[k] = PAL[i % PAL.length]; });
+    return out;
+  })();
 
   // 26-jul-2026 — AUDITORÍA DE VARIABLES. "Total mensual" y "Total anual" —los
   // indicadores que se ven al abrir la sección— sumaban `mensual` CRUDO: un
@@ -898,8 +908,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   </td></tr>
                 ) : conEncabezados(separarPorLimite(allItems, plan).visibles).map((item) => (
                   item.__cat ? (
-                    <tr key={item.id} onClick={() => setCerrados((c) => ({ ...c, [item.id]: !c[item.id] }))} title={cerrados[item.id] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: T.bg3, cursor: "pointer" }}>
-                      <td colSpan={9} style={{ padding: "9px 14px", borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
+                    <tr key={item.id} onClick={() => setCerrados((c) => ({ ...c, [item.id]: !c[item.id] }))} title={cerrados[item.id] ? "Ver los ítems" : "Ocultar los ítems"} style={{ background: (colorClase[item.__cat] || "#64748b") + "1f", cursor: "pointer" }}>
+                      <td colSpan={9} style={{ padding: "11px 14px", borderLeft: `4px solid ${colorClase[item.__cat] || "#64748b"}`, borderTop: `1px solid ${T.border}`, borderBottom: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.id] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
