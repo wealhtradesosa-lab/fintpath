@@ -36,8 +36,8 @@ export const TEMPLATES = [
   {
     id: "mensual-todo-año",
     emoji: "",
-    titulo: (tipo) => tipo === "ingreso" ? "Cada mes durante todo el año" : "Cada mes durante todo el año",
-    descripcion: () => "Se recibe/paga los 12 meses",
+    titulo: () => "Cada mes",
+    descripcion: (tipo) => tipo === "ingreso" ? "Lo recibes los 12 meses del año" : "Lo pagas los 12 meses del año",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: sueldo, arriendo, dividendo mensual" : "Ej: arriendo, servicios, gimnasio, mercado",
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
     // El toggle "Mensual/Total del año" también aplica acá
@@ -56,9 +56,9 @@ export const TEMPLATES = [
   {
     id: "mensual-limitado",
     emoji: "",
-    titulo: () => "Cada mes solo durante algunos meses",
-    descripcion: () => "Se recibe/paga solo un rango de meses (ej: jul–dic)",
-    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: Rapicredit jul–dic, contrato por proyecto" : "Ej: alquiler temporal, curso trimestral",
+    titulo: () => "Solo algunos meses",
+    descripcion: (tipo) => tipo === "ingreso" ? "Lo recibes cada mes, pero solo de un mes a otro" : "Lo pagas cada mes, pero solo de un mes a otro",
+    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: Rapicredit jul–dic, contrato por proyecto" : "Ej: colegio por cuotas de febrero a noviembre, un curso",
     // Preset arranca ene-jun: la mayoría de rangos empiezan en enero
     // (salario parcial, contrato). Así el user típico solo toca "Hasta"
     // (18-jul-2026 noche, Santiago: elegir Desde primero lo sacaba).
@@ -70,13 +70,29 @@ export const TEMPLATES = [
   {
     id: "anual",
     emoji: "",
-    titulo: () => "Solo una vez al año",
-    descripcion: () => "1 pago único en un mes específico",
-    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: prima diciembre, bono anual, cesantías" : "Ej: impuesto vehículo, predial, seguro anual",
+    // 14-nov-2026 (Santiago: "¿o anual es eso? No se entiende"): «Solo una vez al
+    // año» se leía como un pago único. Es un pago que se repite cada año.
+    titulo: () => "Una vez al año, todos los años",
+    descripcion: () => "Se repite cada año en el mismo mes",
+    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: prima de diciembre, bono anual, cesantías" : "Ej: colegio pagado de contado, seguro anual, predial, impuesto del vehículo",
     preset: { frecuencia: "anual", desdeMes: 1, hastaMes: 12, mesPago: 6 },
     camposVisibles: ["monto", "mesPago"],
     modoIngresoDefault: "porPago",
     color: "#3b82f6",
+  },
+  // 14-nov-2026 (Santiago: "fui a registrar unas vacaciones, no veo dónde pone
+  // uno único pago"). Estaba en un botón aparte («+ Extraordinario»). Ahora es
+  // una opción más; abre el formulario de pago único (lib/gastosExtra.js).
+  {
+    id: "unico",
+    soloTipo: "gasto",
+    emoji: "",
+    titulo: () => "Un solo pago (no se repite)",
+    descripcion: () => "Pasa una vez. Eliges el mes y si lo pagas de contado, con tarjeta o a cuotas",
+    ejemplo: () => "Ej: vacaciones, una compra grande, una reparación",
+    preset: {},
+    camposVisibles: [],
+    color: "#f59e0b",
   },
   {
     id: "variable-mensual",
@@ -87,7 +103,7 @@ export const TEMPLATES = [
       : "Diferente monto cada mes (ej: gastos irregulares)",
     ejemplo: (tipo) => tipo === "ingreso"
       ? "Ej: $15M en ene-feb, $8M en mar-abr, $40M pico en may..."
-      : "Ej: gastos de viaje, servicios variables",
+      : "Ej: servicios que varían, gastos de temporada",
     // Preset: 12 meses en 0 — el user los llena en la tabla
     preset: {
       frecuencia: "variable",
@@ -142,7 +158,8 @@ export function detectarTemplate(item) {
 }
 
 export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T, onCancel }) {
-  const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado");
+  const ORDEN = ["mensual-todo-año", "mensual-limitado", "unico", "anual", "variable-mensual"];
+  const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado" && (!t.soloTipo || t.soloTipo === tipo)).sort((a, b) => ORDEN.indexOf(a.id) - ORDEN.indexOf(b.id));
   const templateAvanzado = TEMPLATES.find(t => t.id === "avanzado");
 
   return (
@@ -186,9 +203,7 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
               e.currentTarget.style.background = T.card;
             }}
           >
-            <div style={{ fontSize: 28, flexShrink: 0, width: 40, textAlign: "center" }}>
-              {tpl.emoji}
-            </div>
+            {tpl.emoji ? <div style={{ fontSize: 28, flexShrink: 0, width: 40, textAlign: "center" }}>{tpl.emoji}</div> : null}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.txt, marginBottom: 2 }}>
                 {tpl.titulo(tipo)}

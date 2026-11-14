@@ -1,6 +1,7 @@
 import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState } from "react";
 import ExtraGastoModal from "./ExtraGastoModal";
+import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
 import { extraEnPesos } from "../lib/gastosExtra.js";
 import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
@@ -311,6 +312,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     input.click();
   };
   const fm = fmt || _fm;
+  // 14-nov-2026 (Santiago: "pongo el valor en dólares y en la sección unos valores
+  // salen en pesos y otros en dólares; eso es un bug"). fm recibe PESOS y los muestra
+  // en la moneda del botón general. Los gastos en USD se pasan a pesos antes de
+  // mostrarlos o sumarlos; antes se mostraba el número en dólares como si fueran pesos.
+  const fxG = (g) => (g && g.moneda === "USD" ? (trmUsable(trm) ?? TRM_PROVISIONAL) : 1);
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
   const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
@@ -351,10 +357,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const porCat = {};
     lista.forEach(it => { const c = claseGasto(it); (porCat[c.id] = porCat[c.id] || { c, items: [] }).items.push(it); });
     const grupos = Object.values(porCat)
-      .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => montoPromedioMensual(b) - montoPromedioMensual(a)),
-        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g), 0),
+      .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => montoPromedioMensual(b) * fxG(b) - montoPromedioMensual(a) * fxG(a)),
+        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0),
         // 3-nov-2026: lo que sale ESTE mes en el grupo, junto al promedio.
-        subMes: items.filter(g => g.sim !== false).reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy), 0) }))
+        subMes: items.filter(g => g.sim !== false).reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
@@ -363,14 +369,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
   };
-  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g) * (g.moneda === "USD" ? (trm || 4200) : 1), 0)
+  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)
   // 26-jul-2026 — mismo caso que Ingresos: "Total Mensual" mostraba un PROMEDIO
   // ANUAL. Un gasto que solo cae de oct a dic aparecía prorrateado, cuando lo
   // que se quiere saber al abrir la sección es qué sale ESTE mes.
   const _mesHoy = new Date().getMonth() + 1;
   const _añoHoy = new Date().getFullYear();
   const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-  const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * (g.moneda === "USD" ? (trm || 4200) : 1), 0);
+  const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g), 0);
 
   // Fase 2 flujo anual (18-jul-2026): toggle pagado/pendiente por año.
   // El user hace click en el chip "Pendiente" y pasa a "Pagado".
@@ -566,9 +572,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             Bajar PDF
           </button>
-          <button onClick={() => { if (!guardEdit(role)) return; setExtraDe("nuevo"); }}
-            title="Un viaje, una compra grande, una reparación: lo que se sale de tu mes normal"
-            style={{ background: "transparent", color: "#00c805", border: "1px solid rgba(0,200,5,0.45)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Extraordinario</button>
+{/* 14-nov-2026: «+ Extraordinario» pasó al formulario como «Un solo pago (no se repite)». */}
           <button onClick={openAdd} style={{ background: "#00c805", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
@@ -600,7 +604,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   <span style={{ width: 6, height: 6, borderRadius: 3, background: colorBySev, flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, color: T.txt, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {item.c || w.itemConcepto || w.itemCategoria || "(sin descripción)"} <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· {fm(item.m || 0)}/mes · {item.cat}</span>
+                      {item.c || w.itemConcepto || w.itemCategoria || "(sin descripción)"} <span style={{ color: T.txt3, fontWeight: 400, fontFamily: "monospace" }}>· {fm((item.m || 0) * fxG(item))}/mes · {item.cat}</span>
                     </div>
                     <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.4, marginTop: 2 }}>{w.message || w.accionSugerida}</div>
                   </div>
@@ -629,8 +633,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           { l: `Sale en ${_MESES_L[_mesHoy - 1]}`, v: fm(totalEsteMes), c: T.red },
           { l: "Promedio mensual del año", v: fm(totalMes), c: T.orange },
           { l: "Total del año", v: fm(totalMes * 12), c: T.orange },
-          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.blue },
-          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g), 0)), c: T.orange },
+          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)), c: T.blue },
+          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)), c: T.orange },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
@@ -654,7 +658,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             en la barra es exactamente lo que se lee en la tabla. */}
         {(() => {
           const grupos = {};
-          activos.forEach(g => { const c = claseGasto(g); const k = c.icono + " " + c.nombre; grupos[k] = (grupos[k] || 0) + montoPromedioMensual(g) * (g.moneda === "USD" ? (trm || 4200) : 1); });
+          activos.forEach(g => { const c = claseGasto(g); const k = c.icono + " " + c.nombre; grupos[k] = (grupos[k] || 0) + montoPromedioMensual(g) * fxG(g); });
           const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
           if (datos.length < 2) return null;   // con una sola categoría no dice nada
           const tot = datos.reduce((s, d) => s + d.value, 0);
@@ -830,14 +834,14 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   return (
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       {hoy > 0
-                        ? <div style={{ fontWeight: 700, color: T.red }}>{fm(hoy)}</div>
+                        ? <div style={{ fontWeight: 700, color: T.red }}>{fm(hoy * fxG(item))}</div>
                         : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>no sale</div>}
                       {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, whiteSpace: "nowrap", color: hoy < prom ? T.green : T.orange }}>{hoy < prom ? "▼" : "▲"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
                     </td>
                   );
                 })()}
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
-                  <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(promedioMesActivo(item))}</div>
+                  <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(promedioMesActivo(item) * fxG(item))}</div>
                   {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                   {(() => {
                     const badge = labelVigenciaBadge(item);
@@ -845,7 +849,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     const total = totalAnualItem(item);
                     return (
                       <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginTop: 2 }}>
-                        {fm(total)}/año
+                        {fm(total * fxG(item))}/año
                       </div>
                     );
                   })()}
@@ -886,6 +890,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 tipo="gasto"
                 tokens={T}
                 onSelect={(tpl) => {
+                  // 14-nov-2026: «Un solo pago» abre el formulario de pago único.
+                  if (tpl.id === "unico") { setShowForm(false); setTemplateElegido(null); setExtraDe("nuevo"); return; }
                   // UX FIX crítico (18-jul-2026 noche): al cambiar template,
                   // NO perder datos que el user ya llenó. Mismo patrón que Ingresos.
                   setForm(p => {
@@ -954,7 +960,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 const ow = (owners || []).find(o => o.id === form.owner);
                 const ownerType = ow ? ow.type : "natural";
                 setForm((p) => ({ ...p, cat: v, fiscalCode: defaultFiscalCode(ownerType, v) }));
-              }} options={[{v:"Aporte tributario",l:"Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"Nómina y empleados"},{v:"Honorarios",l:"Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"Vivienda / Arriendo oficina"},{v:"Inmueble arrendado",l:"Costos de inmueble arrendado (admón, predial, mantenimiento)"},{v:"Servicios",l:"Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"Mantenimiento y reparaciones"},{v:"Seguros",l:"Seguros y pólizas"},{v:"Transporte",l:"Transporte y combustible"},{v:"Arrendamiento",l:"Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"Gastos de representación"},{v:"Tecnología",l:"Tecnología y software"},{v:"Depreciación",l:"Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"Alimentación y mercado"},{v:"Educación",l:"Educación y capacitación"},{v:"Salud",l:"Salud / Medicina prepagada"},{v:"Seguridad Social",l:"Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"Entretenimiento y ocio"},{v:"Vestimenta",l:"Vestimenta"},{v:"Mascotas",l:"Mascotas"},{v:"Deporte",l:"Deporte y bienestar"},{v:"Personal",l:"Gastos personales"},{v:"Ahorro",l:"Ahorro e inversión"},{v:"Otro",l:"Otro"}]} />
+              }} options={[{v:"Aporte tributario",l:"Aporte tributario (PV, AFC, Salud prepagada)"},{v:"Nómina",l:"Nómina y empleados"},{v:"Honorarios",l:"Honorarios profesionales (contador, abogado)"},{v:"Vivienda",l:"Vivienda / Arriendo oficina"},{v:"Inmueble arrendado",l:"Costos de inmueble arrendado (admón, predial, mantenimiento)"},{v:"Servicios",l:"Servicios (luz, agua, internet, gas)"},{v:"Mantenimiento",l:"Mantenimiento y reparaciones"},{v:"Seguros",l:"Seguros y pólizas"},{v:"Transporte",l:"Transporte y combustible"},{v:"Arrendamiento",l:"Arrendamiento operativo (renting, leasing)"},{v:"Impuesto",l:"Impuesto (predial, rodamiento, ICA, otros)"},{v:"Representación",l:"Gastos de representación"},{v:"Tecnología",l:"Tecnología y software"},{v:"Depreciación",l:"Depreciación (Art. 128-141 ET, solo jurídica)"},{v:"Alimentación",l:"Alimentación y mercado"},{v:"Educación",l:"Educación y capacitación"},{v:"Salud",l:"Salud / Medicina prepagada"},{v:"Seguridad Social",l:"Seguridad social (pensión, EPS, ARL) — se deduce automáticamente"},{v:"Entretenimiento",l:"Entretenimiento y ocio"},{v:"Viajes",l:"Viajes y vacaciones"},{v:"Vestimenta",l:"Vestimenta"},{v:"Mascotas",l:"Mascotas"},{v:"Deporte",l:"Deporte y bienestar"},{v:"Personal",l:"Gastos personales"},{v:"Ahorro",l:"Ahorro e inversión"},{v:"Otro",l:"Otro"}]} />
               <In l="Concepto" value={form.c} onChange={(v) => setForm((p) => ({ ...p, c: v }))} placeholder="Arriendo" />
 
               {/* Vínculo al activo. Solo se ofrece si hay activos cargados:

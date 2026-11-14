@@ -14,14 +14,18 @@ import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
 // compra.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CATS_NUEVO = ["Viajes", "Entretenimiento", "Educación", "Salud", "Vivienda", "Mantenimiento", "Transporte", "Tecnología", "Vestimenta", "Personal", "Otro"];
+const CATS_NUEVO = ["Viajes", "Entretenimiento", "Seguros", "Alimentación", "Educación", "Salud", "Vivienda", "Mantenimiento", "Transporte", "Tecnología", "Vestimenta", "Personal", "Otro"];
 
 export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar, onCerrar }) {
   const { año, mes: mesHoy } = getMesActual();
   const conceptos = [];
   Object.entries(gastos || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => conceptos.push({ cat, idx, g, key: `${cat}::${idx}` })));
   conceptos.sort((a, b) => (a.g.c || a.cat).localeCompare(b.g.c || b.cat, "es"));
-  const [sel, setSel] = useState(inicial ? `${inicial.cat}::${inicial.idx}` : "");
+  // 14-nov-2026: desde el formulario («Un solo pago») arranca en «crear concepto nuevo».
+  const [sel, setSel] = useState(inicial ? `${inicial.cat}::${inicial.idx}` : "__nuevo");
+  // Varias partes del mismo evento (Santiago: "tiquetes 4.500 USD, presupuesto para gastos 2.500 USD").
+  const [otras, setOtras] = useState([]);
+  const nuevaLinea = () => ({ id: Math.random().toString(36).slice(2), nota: "", monto: "", moneda, pago: "contado", cuotas: "12", tasa: "" });
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevaCat, setNuevaCat] = useState("Viajes");
   const [nota, setNota] = useState("");
@@ -42,6 +46,8 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
   const enAño = cal.filter((p) => p.año === año);
   const fueraAño = cal.length - enAño.length;
   const pequeño = m > 0 && esMenorQueUmbral(enPesos, gastoMensualReferencia(gastos, trm));
+  const otrasOk = otras.filter((l) => Number(l.monto) > 0);
+  const totalPesos = enPesos + otrasOk.reduce((t, l) => t + extraEnPesos({ monto: Number(l.monto), moneda: l.moneda }, null, trm), 0);
   const listo = m > 0 && (nuevo ? true : !!actual);
   const extrasAct = actual ? (actual.g.extras || []).filter((x) => Number(x.año) === año) : [];
 
@@ -53,9 +59,15 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
 
   const guardar = () => {
     if (!listo) return;
-    const out = nuevo
+    let out = nuevo
       ? crearConExtra(gastos, { nombre: nuevoNombre, cat: nuevaCat }, datos)
       : registrarExtra(gastos, actual.cat, actual.idx, datos);
+    const cat = nuevo ? nuevaCat : actual.cat;
+    const idx = nuevo ? out[cat].length - 1 : actual.idx;
+    otrasOk.forEach((l, k) => {
+      const d = { año, mes, monto: Number(l.monto), moneda: l.moneda, nota: l.nota, pago: l.pago, cuotas: l.cuotas, tasa: l.tasa };
+      out = registrarExtra(out, cat, idx, d, new Date(Date.now() + k + 1)); // ids distintos
+    });
     onGuardar(out);
   };
 
@@ -64,9 +76,9 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
       style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()}
         style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", width: "min(480px, 100%)", maxHeight: "92vh", overflowY: "auto" }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: T.txt }}>{tx("Gasto extraordinario", "One-off expense")}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color: T.txt }}>{tx("Un solo pago (no se repite)", "One-time payment")}</div>
         <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, marginBottom: 16, lineHeight: 1.5 }}>
-          {tx("Registra lo que se sale de tu mes normal: un viaje, una compra grande, una reparación. Tu día a día ya está en tus gastos recurrentes.", "Record what falls outside a normal month: a trip, a big purchase, a repair.")}
+          {tx("Algo que pasa una vez: un viaje, una compra grande, una reparación. Cuenta en el mes en que sale la plata y en el total del año, pero no como gasto de cada mes.", "Record what falls outside a normal month: a trip, a big purchase, a repair.")}
         </div>
 
         <label style={lbl}>{tx("¿A qué gasto pertenece?", "Which expense is it?")}</label>
@@ -106,6 +118,33 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
           </div>
         )}
 
+        {/* Otras partes del mismo pago único */}
+        {otras.map((l, k) => (
+          <div key={l.id} style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 10px 6px", marginBottom: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 0.7fr", gap: 8, marginBottom: 8 }}>
+              <div><label style={lbl}>{tx(`Parte ${k + 2}`, `Part ${k + 2}`)}</label><input value={l.nota} onChange={(e) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, nota: e.target.value } : x)))} placeholder={tx("Gastos del viaje", "Trip budget")} style={inp} /></div>
+              <div><label style={lbl}>{tx("Valor", "Amount")}</label><NumberInput value={l.monto} onChange={(v) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, monto: v } : x)))} placeholder="0" style={inp} /></div>
+              <div><label style={lbl}>{tx("Moneda", "Currency")}</label><select value={l.moneda} onChange={(e) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, moneda: e.target.value } : x)))} style={inp}><option value="COP">COP</option><option value="USD">USD</option></select></div>
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 6 }}>
+              {[["contado", tx("De contado", "Cash")], ["tarjeta1", tx("Tarjeta, un pago", "Card, one payment")], ["cuotas", tx("Tarjeta a cuotas", "Installments")]].map(([v, t]) => (
+                <button key={v} type="button" style={chip(l.pago === v)} onClick={() => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, pago: v } : x)))}>{t}</button>
+              ))}
+              <button type="button" onClick={() => setOtras((o) => o.filter((x) => x.id !== l.id))} style={{ marginLeft: "auto", background: "none", border: "none", color: T.txt3, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>{tx("Quitar", "Remove")}</button>
+            </div>
+            {l.pago === "cuotas" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 6 }}>
+                <div><label style={lbl}>{tx("Número de cuotas", "Installments")}</label><NumberInput value={l.cuotas} onChange={(v) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, cuotas: v } : x)))} placeholder="12" style={inp} /></div>
+                <div><label style={lbl}>{tx("Tasa de la tarjeta (E.A. %)", "Card rate (APR %)")}</label><NumberInput value={l.tasa} onChange={(v) => setOtras((o) => o.map((x) => (x.id === l.id ? { ...x, tasa: v } : x)))} placeholder={tx("Mira tu extracto", "See statement")} style={inp} /></div>
+              </div>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={() => setOtras((o) => [...o, nuevaLinea()])} style={{ background: "transparent", border: `1px dashed ${T.border}`, color: T.txt2, borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer", width: "100%", marginBottom: 12 }}>
+          {tx("+ Agregar otra parte (ej. tiquetes y gastos del viaje)", "+ Add another part")}
+        </button>
+        {otrasOk.length > 0 && m > 0 && <div style={{ fontSize: 13, color: T.txt2, marginBottom: 10 }}>{tx("Total del pago único:", "Total:")} <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong></div>}
+
         {pequeño && (
           <div style={{ fontSize: 12, color: T.orange, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 10, lineHeight: 1.5 }}>
             {tx("Este valor ya cabe en tus gastos del mes; no hace falta registrarlo. Si es algo que se repite, súmalo a tu estimado mensual.", "This already fits in your monthly expenses.")}
@@ -135,7 +174,7 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: T.txt3, marginBottom: 4 }}>{tx(`Extras de ${año} en este gasto`, `${año} one-offs`)}</div>
             {extrasAct.map((x) => (
               <div key={x.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "5px 0", borderBottom: `1px solid ${T.border}`, fontSize: 13 }}>
-                <span style={{ color: T.txt2 }}>{MESES[x.mes - 1]?.l} · {x.moneda === "USD" ? "US$" + Math.round(x.monto).toLocaleString("es-CO") : fm(x.monto)}{x.nota ? ` · ${x.nota}` : ""}</span>
+                <span style={{ color: T.txt2 }}>{MESES[x.mes - 1]?.l} · {fm(extraEnPesos(x, actual.g, trm))}{x.moneda === "USD" ? ` (US$${Math.round(x.monto).toLocaleString("es-CO")})` : ""}{x.nota ? ` · ${x.nota}` : ""}</span>
                 <button type="button" onClick={() => { if (confirm(tx("¿Quitar este extra?", "Remove?"))) onGuardar(eliminarExtra(gastos, actual.cat, actual.idx, x.id), true); }}
                   style={{ background: "none", border: "none", color: T.txt3, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>{tx("Quitar", "Remove")}</button>
               </div>
