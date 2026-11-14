@@ -1,6 +1,8 @@
 import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState } from "react";
 import { Interruptor, Trash2, MenuFila } from "./Iconos.jsx";
+import ExtraIngresoModal from "./ExtraIngresoModal";
+import { extrasIngresoDelMes, extrasIngresoDelAño } from "../lib/ingresosExtra.js";
 import { fmtPctEs, fmtTasaEs } from "../lib/formato.js";
 import { fetchAuth } from "../lib/apiFetch";
 import Disclaimer from "./Disclaimer";
@@ -130,7 +132,7 @@ const TEMPLATE_COMPLETO =
 // tiene que dejar decidir rapido, no obligar a leer un catalogo.
 const CATS_DESTACADAS = ["Salario", "Arriendo", "Honorarios", "Dividendos", "Intereses bancarios", "Pensión"];
 
-function CategoriaSelector({ tokens: T, cats, onSelect, onCancel }) {
+function CategoriaSelector({ tokens: T, cats, onSelect, onCancel, onUnico, editando = false }) {
   const [verTodas, setVerTodas] = useState(false);
   const destacadas = cats.filter((c) => CATS_DESTACADAS.includes(c.v));
   const resto = cats.filter((c) => !CATS_DESTACADAS.includes(c.v));
@@ -138,6 +140,16 @@ function CategoriaSelector({ tokens: T, cats, onSelect, onCancel }) {
 
   return (
     <div>
+      {/* 14-nov-2026 (Santiago): primero «¿se repite o pasa una sola vez?». */}
+      {onUnico && (
+        <button type="button" onClick={onUnico}
+          style={{ width: "100%", textAlign: "left", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", cursor: "pointer", color: T.txt, marginBottom: 18 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.6, color: T.txt3, textTransform: "uppercase", marginBottom: 4 }}>Pasa una sola vez</div>
+          <div style={{ fontSize: 14, fontWeight: 700 }}>{editando ? "Era de una sola vez: pasarlo a ingreso único →" : "Un solo ingreso (no se repite) →"}</div>
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>{editando ? "Deja de repetirse y queda solo en el mes en que entró. No hay que volver a digitarlo." : "Una herencia, la venta de un activo, un bono extra: cuenta solo en el mes en que entra."}</div>
+        </button>
+      )}
+      <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.6, color: T.txt3, textTransform: "uppercase", marginBottom: 6 }}>Se repite</div>
       <div style={{ fontSize: 13, color: T.txt2, marginBottom: 14, lineHeight: 1.5 }}>
         ¿Qué tipo de ingreso vas a registrar? Según lo que elijas te pedimos
         solo los datos que aplican.
@@ -274,7 +286,7 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, authUser, plan, onUpgrade, onIrAPatrimonio}) {
+export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, onImport, user, authUser, plan, onUpgrade, onIrAPatrimonio, monedaVista = "COP" }) {
   const [verRevisar, setVerRevisar] = useState(false);
   const fm = fmt || _fm;
   // Fase 3 commit 5 — gating reader: si role==='reader', los handlers
@@ -283,6 +295,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // los modales pero no persisten cambios (RLS también bloquea en BD).
   const { role } = useRole();
   const [showForm, setShowForm] = useState(false);
+  const [extraIng, setExtraIng] = useState(null); // 14-nov-2026: "nuevo" | id — ingreso único
   const [scanning, setScanning] = useState(false);
 
   const scanImage = async () => {
@@ -387,11 +400,12 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       .map(({ c, items: its }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...its].sort((a, b) => mes(b) - mes(a)),
         sub: its.filter(i => i.sim !== false).reduce((s, i) => s + mes(i), 0),
         // 3-nov-2026: lo que entra ESTE mes en el grupo, junto al promedio.
-        subMes: its.filter(i => i.sim !== false).reduce((s, i) => s + montoDelMes(i, _añoHoy, _mesHoy) * (i.moneda === "USD" ? (trm || 4200) : 1), 0) }))
+        subMes: its.filter(i => i.sim !== false).reduce((s, i) => s + montoDelMes(i, _añoHoy, _mesHoy) * (i.moneda === "USD" ? (trm || 4200) : 1) + extrasIngresoDelMes(i, _añoHoy, _mesHoy, trm), 0),
+        extrasAño: its.filter(i => i.sim !== false).reduce((s, i) => s + extrasIngresoDelAño(i, _añoHoy, trm), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
-      { __cat: gr.cat, __sub: gr.sub, __subMes: gr.subMes, __n: gr.items.length,
+      { __cat: gr.cat, __sub: gr.sub, __subMes: gr.subMes, __extrasAño: gr.extrasAño, __n: gr.items.length,
         __pct: tot > 0 ? (gr.sub / tot) * 100 : 0, id: "__h_" + gr.id },
       ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
@@ -423,7 +437,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
   // dos preguntas distintas y ahora se muestran las dos, cada una con su nombre.
   const _mesHoy = new Date().getMonth() + 1;
   const _añoHoy = new Date().getFullYear();
-  const totalEsteMes = activos.reduce((s, i) => s + (montoDelMes(i, _añoHoy, _mesHoy) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
+  const totalEsteMes = activos.reduce((s, i) => s + (montoDelMes(i, _añoHoy, _mesHoy) * (i.moneda === "USD" ? (trm || 4200) : 1)) + extrasIngresoDelMes(i, _añoHoy, _mesHoy, trm), 0);
+  const totalExtrasAño = activos.reduce((s, i) => s + extrasIngresoDelAño(i, _añoHoy, trm), 0);
   const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const fijos = activos.filter((i) => i.tipo === "fijo").reduce((s, i) => s + (montoPromedioMensual(i) * (i.moneda === "USD" ? (trm || 4200) : 1)), 0);
   const variables = totalMes - fijos;
@@ -625,6 +640,9 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     setTemplateElegido(null); // reset para próxima creación
   };
   const handleEdit = (item) => {
+    // 14-nov-2026: un ingreso que solo existe como ingreso único se abre en su
+    // propio formulario (lista, agregar otro, quitar), no en el de recurrentes.
+    if (item.soloExtras) { setExtraIng(item.id); return; }
     // Commit 1.5: migración silenciosa para salarios viejos sin item.aportes:
     //   si categoria=Salario y no hay aportes guardados, prefill 4%+4% sobre el bruto.
     //   Nunca mutamos item directamente; sólo el form. El usuario decide si guardar.
@@ -732,7 +750,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       <PageHeader
         label="Ingresos"
         title="Tus fuentes"
-        subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} fuente${activos.length !== 1 ? "s" : ""} activa${activos.length !== 1 ? "s" : ""} · Total: ${fm(totalMes)}/mes`}
+        subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} fuente${activos.length !== 1 ? "s" : ""} activa${activos.length !== 1 ? "s" : ""} · Total: ${fm(totalMes)}/mes${totalExtrasAño > 0 ? ` · más ${fm(totalExtrasAño)} de ingresos únicos este año` : ""}`}
         rightSlot={<>
           {onImport && <button onClick={onImport}
             title="Cargar ingresos desde una tabla de Excel"
@@ -831,7 +849,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[{ l: `Entra en ${_MESES_L[_mesHoy - 1]}`, v: fm(totalEsteMes), c: T.green },
           { l: "Promedio mensual del año", v: fm(totalMes), c: T.blue },
-          { l: "Total del año", v: fm(totalMes * 12), c: T.blue },
+          { l: "Total del año", v: fm(totalMes * 12 + totalExtrasAño), c: T.blue },
           { l: "Fijos", v: fm(fijos), c: T.txt }].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
@@ -915,8 +933,10 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.id] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.green, fontFamily: "monospace" }}>
+                            {item.__sub > 0 ? <>
                             {fm(item.__subMes)} <span style={{ color: T.txt3, fontWeight: 500 }}>este mes · prom. {fm(item.__sub)}</span>
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
+                            </> : <>{fm(item.__extrasAño)} <span style={{ color: T.txt3, fontWeight: 500 }}>en el año · no se repite</span></>}
                           </span>
                         </div>
                       </td>
@@ -996,23 +1016,25 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                       })()}
                     </td>
                     <td style={{ padding: "10px 14px" }}><span style={{ background: T.greenDim, color: T.green, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.categoria}</span></td>
-                    <td style={{ padding: "10px 14px" }}><span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.tipo}</span></td>
+                    <td style={{ padding: "10px 14px" }}>{item.soloExtras ? <span style={{ background: "rgba(var(--fp-ink),0.06)", color: T.txt2, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>único</span> : <span style={{ background: (item.tipo === "fijo" ? T.blue : T.orange) + "15", color: item.tipo === "fijo" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.tipo}</span>}</td>
                     {(() => {
                       // Este mes: lo que de verdad entra en el mes en curso (vigencia, variables,
                       // primas y bonos en su mes). Si no entra nada este mes, se dice.
                       const fx = item.moneda === "USD" ? (trm || 4200) : 1;
-                      const hoy = montoDelMes(item, _añoHoy, _mesHoy) * fx, prom = (esPrimaBono(item) ? mensualPrimaBono(item) : promedioMesActivo(item)) * fx;
+                      const exI = extrasIngresoDelMes(item, _añoHoy, _mesHoy, trm);
+                      const hoy = montoDelMes(item, _añoHoy, _mesHoy) * fx + exI, prom = (esPrimaBono(item) ? mensualPrimaBono(item) : promedioMesActivo(item)) * fx;
                       const distinto = prom > 0 && Math.abs(hoy - prom) / prom >= 0.03;
                       return (
                         <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                           {hoy > 0
-                            ? <div style={{ fontWeight: 700, color: T.green }}>{fm(hoy)}</div>
-                            : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>no entra</div>}
+                            ? <div style={{ fontWeight: 700, color: T.txt }}>{fm(hoy)}{exI > 0 && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>ingreso único</div>}</div>
+                            : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>{item.soloExtras ? (() => { const ms = []; for (let k = 1; k <= 12; k++) if (extrasIngresoDelMes(item, _añoHoy, k, trm) > 0) ms.push(k); const fut = ms.find((k) => k > _mesHoy); return fut ? `entra en ${_MESES_L[fut - 1]}` : ms.length ? `entró en ${_MESES_L[ms[ms.length - 1] - 1]}` : "no entra este año"; })() : "no entra este mes"}</div>}
                           {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, color: hoy > prom ? T.green : T.orange }}>{hoy > prom ? "▲" : "▼"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
                         </td>
                       );
                     })()}
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
+                      {item.soloExtras ? <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(extrasIngresoDelAño(item, _añoHoy, trm))}<div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>{(() => { const ms = []; for (let k = 1; k <= 12; k++) if (extrasIngresoDelMes(item, _añoHoy, k, trm) > 0) ms.push(k); return ms.length === 1 ? `una vez, en ${_MESES_L[ms[0] - 1]}` : `en ${ms.length} meses · no se repite`; })()}</div></div> :
                       <div style={{ fontWeight: 600, color: T.txt2 }}>
                         {/* 25-jul-2026: en variables usamos el promedio de meses
                             ACTIVOS, no item.mensual (que el motor ignora para
@@ -1026,9 +1048,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                           <button type="button" data-testid="sugerir-prima-descartar" onClick={(e) => { e.stopPropagation(); descartarSugerenciaPrima(item); }} style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(var(--fp-ink),0.15)", background: "transparent", color: "var(--fp-txt2)", cursor: "pointer" }}>Es mensual, dejarlo así</button>
                         </div>}
                         {item.moneda==="USD" && <span style={{fontSize:11,color:T.txt3,marginLeft:4}}>USD ${Math.round(promedioMesActivo(item)).toLocaleString("es-CO")}</span>}
-                      </div>
+                      </div>}
+                      {!item.soloExtras && extrasIngresoDelAño(item, _añoHoy, trm) > 0 && <button type="button" title="Ver, corregir o quitar" onClick={(e) => { e.stopPropagation(); setExtraIng(item.id); }} style={{ display: "block", marginLeft: "auto", background: "none", border: "none", padding: 0, fontSize: 11, color: T.txt3, fontWeight: 500, marginTop: 2, cursor: "pointer", textDecoration: "underline dotted", fontFamily: "inherit" }}>+ {fm(extrasIngresoDelAño(item, _añoHoy, trm))} único este año</button>}
                       {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                       {(() => {
+                        if (item.soloExtras) return null;
                         const badge = labelVigenciaBadge(item);
                         if (!badge) return null;
                         const total = totalAnualItem(item);
@@ -1136,6 +1160,8 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   setTemplateElegido(TEMPLATE_COMPLETO);
                 }}
                 onCancel={() => setShowForm(false)}
+                onUnico={() => { setShowForm(false); setExtraIng(editId ? { convertir: editId } : "nuevo"); }}
+                editando={!!editId}
               />
             ) : (
               <>
@@ -1830,6 +1856,11 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       )}
     
     <Disclaimer variante="general" idioma="es" T={T} compacto />
+    {extraIng && (
+      <ExtraIngresoModal ingresos={items} inicialId={typeof extraIng === "string" && extraIng !== "nuevo" ? extraIng : null} convertirId={extraIng?.convertir || null} fm={fm} T={T} trm={trm} monedaVista={monedaVista} owners={owners || []}
+        onCerrar={() => setExtraIng(null)}
+        onGuardar={(nuevo, seguir) => { onUpdate(nuevo); if (!seguir) setExtraIng(null); }} />
+    )}
   </div>
   );
 }

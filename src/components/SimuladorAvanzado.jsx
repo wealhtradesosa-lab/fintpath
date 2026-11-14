@@ -13,6 +13,7 @@ import FlujoMesVsPromedio, { promedioFilas } from "./FlujoMesVsPromedio";
 import { cuotaDeudaDelMes, retencionDelMes, deudaViva } from "../lib/flujoMes.js";
 import { aportesInversionDelMes } from "../lib/aportesInversion.js";
 import { extrasCajaDelMes } from "../lib/gastosExtra.js";
+import { extrasIngresoDelMes } from "../lib/ingresosExtra.js";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, getMonto, getMontosMensuales, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
@@ -797,7 +798,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     ingSim.forEach(ing => {
       if (ing.sim === false) return;
       const montoBase = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
-      brutoDelMes += montoDelMes(conSlider(ing, montoBase, getMonto(ing)), añoActual, mes);
+      brutoDelMes += montoDelMes(conSlider(ing, montoBase, getMonto(ing)), añoActual, mes) + extrasIngresoDelMes(ing, añoActual, mes, trm);
     });
 
     // Gastos del mes: aportes obligatorios vs familiares
@@ -1006,7 +1007,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       (user.ingresos || []).forEach((ing, ii) => {
         if (ing.sim === false) return;
         const montoBase = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
-        ingresosMes += montoDelMes(conSlider(ing, ov(`ing_${ii}`, montoBase), montoBase), año, mes);
+        ingresosMes += montoDelMes(conSlider(ing, ov(`ing_${ii}`, montoBase), montoBase), año, mes) + extrasIngresoDelMes(ing, año, mes, trm);
       });
       let aportesObl = 0, gastosFam = 0;
       Object.entries(user.gastos || {}).forEach(([cat, items]) => {
@@ -1152,7 +1153,7 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
     (user?.ingresos || []).forEach((ing, ii) => {
       if (ing.sim === false) return;
       const baseCop = getMonto(ing) * (ing.moneda === "USD" ? trm : 1);
-      bruto += montoDelMes(conSlider(ing, vg(`ing_${ii}`, baseCop), baseCop), añoActual, mes);
+      bruto += montoDelMes(conSlider(ing, vg(`ing_${ii}`, baseCop), baseCop), añoActual, mes) + extrasIngresoDelMes(ing, añoActual, mes, trm);
     });
 
     let aportes = 0, gastosFam = 0;
@@ -2402,7 +2403,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
               .filter((i) => i.sim !== false)
               .map((i) => {
                 const base = (Number(i.mensual) || 0) * (i.moneda === "USD" ? trm : 1);
-                return { nombre: i.nombre || i.fuente || "Ingreso", valor: montoDelMes({ ...i, mensual: base }, simTMes.añoActual, simTMes.mes) };
+                return { nombre: i.nombre || i.fuente || "Ingreso", valor: montoDelMes({ ...i, mensual: base }, simTMes.añoActual, simTMes.mes) + extrasIngresoDelMes(i, simTMes.añoActual, simTMes.mes, trm) };
               });
             // 29-oct-2026 (Santiago: "veo el arriendo en 16 MM cuando en diciembre pago 10"):
             // los gastos en dólares no se pasaban a pesos ni se tomaban los deslizadores, y

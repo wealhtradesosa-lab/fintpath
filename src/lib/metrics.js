@@ -105,6 +105,9 @@ export function esSalarioEmpleado(i) {
 // La respuesta queda en el ingreso (rentaPasiva: true/false) y manda siempre.
 const CATS_DUDOSAS = new Set(["Honorarios", "Comisiones", "Freelance", "Negocio", "Otro", "Otros", "", "Consulting", "Self-employed", "Business", "Commissions"]);
 export function grupoIngreso(i) {
+  // 14-nov-2026: un ingreso que solo existe como ingreso único (herencia, venta
+  // de un activo) es de una sola vez por definición: no se pregunta ni suma al nivel.
+  if (i?.soloExtras === true) return "unica";
   if (i?.rentaPasiva === true) return "renta";
   if (i?.rentaPasiva === false) return esUnaSolaVez(i) ? "unica" : "trabajo";
   if (esSalarioEmpleado(i)) return "trabajo";

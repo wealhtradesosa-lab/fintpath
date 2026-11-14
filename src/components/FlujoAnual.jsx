@@ -34,6 +34,7 @@ import { estimarImpuestoReferente, calibracionReferente, saldoImpuestoDelMes } f
 import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 import { composicionMes } from "../lib/composicionMes.js";
+import { extrasIngresoDelMes } from "../lib/ingresosExtra.js";
 import { aportesInversionDelMes } from "../lib/aportesInversion.js";
 import { cuotaDeudaDelMes, retencionDelMes, gastoDelMes, deudaViva, fxDe } from "../lib/flujoMes.js";
 
@@ -115,7 +116,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     // era pareja (en el simulador sigue al ingreso del mes).
     const deudasVivas = deudas.filter(deudaViva);
     const cuotaDeudasEnMes = (mes) => deudasVivas.reduce((s, d) => s + cuotaDeudaDelMes(d, d.pago || d.pg || 0, año, mes, trmR), 0);
-    const ingresoDe = (ing, mes) => montoDelMes({ ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1) }, año, mes);
+    const ingresoDe = (ing, mes) => montoDelMes({ ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1) }, año, mes)
+      + extrasIngresoDelMes(ing, año, mes, trmR); // 14-nov-2026: ingresos únicos
     const ingresosPorMes = Array.from({ length: 12 }, (_, i) =>
       ingresos.reduce((t, ing) => (ing.sim === false ? t : t + ingresoDe(ing, i + 1)), 0));
     const brutoRef = ingresosPorMes.reduce((t, x) => t + x, 0) / 12;
@@ -361,7 +363,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1);
       let totalAño = 0;
       for (let m = 1; m <= 12; m++) {
-        totalAño += montoDelMes({ ...ing, mensual: montoBase }, año, m);
+        totalAño += montoDelMes({ ...ing, mensual: montoBase }, año, m) + extrasIngresoDelMes(ing, año, m, trmR);
       }
       if (totalAño > 0) ingresosPorCat[cat] = (ingresosPorCat[cat] || 0) + totalAño;
     });

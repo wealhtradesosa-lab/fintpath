@@ -528,6 +528,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     setForm((p) => ({ ...p, prepago: p.prepago || { año, mes: mesH, hastaMes: 12, monto: sugerido ? String(Math.round(sugerido)) : "" } }));
   };
   const openEdit = (item) => {
+    // 14-nov-2026: un gasto que solo existe como pago único se abre en su propio
+    // formulario (lista de pagos, agregar otro, quitar), no en el de recurrentes.
+    if (item.soloExtras) { setExtraDe({ cat: item.cat, idx: item.idx }); return; }
     // NUEVO (18-jul-2026): preservar frecuencia y mesPago si existen.
     // Retrocompat: items viejos con freq="año" mantienen su comportamiento
     // (m ya está mensualizado, se multiplica × 12 para mostrar como anual
@@ -877,7 +880,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </td>
                 <td style={{ padding: "10px 14px" }}>
-                  <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.t === "f" ? "fijo" : "variable"}</span>
+                  {item.soloExtras
+                    ? <span style={{ background: "rgba(var(--fp-ink),0.06)", color: T.txt2, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>único</span>
+                    : <span style={{ background: (item.t === "f" ? T.blue : T.orange) + "15", color: item.t === "f" ? T.blue : T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999 }}>{item.t === "f" ? "fijo" : "variable"}</span>}
                 </td>
                 {(() => {
                   // Este mes: lo que de verdad sale en el mes en curso (vigencia, variables,
@@ -888,7 +893,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   const fq = getFrecuencia(item), mp = Number(item.mesPago) || 1;
                   const cuando = fq === "anual" ? (mp < _mesHoy ? `salió en ${_MESES_L[mp - 1]}` : `sale en ${_MESES_L[mp - 1]}`)
                     : item.prepago && Number(item.prepago.año) === _añoHoy ? "pagado por adelantado"
-                    : item.soloExtras ? "no sale este mes" : "no sale este mes";
+                    : item.soloExtras ? (() => { const ms = []; for (let k = 1; k <= 12; k++) if (extrasMes(item, k) > 0) ms.push(k); const fut = ms.find((k) => k > _mesHoy); return fut ? `sale en ${_MESES_L[fut - 1]}` : ms.length ? `salió en ${_MESES_L[ms[ms.length - 1] - 1]}` : "no sale este año"; })()
+                    : "no sale este mes";
                   return (
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       {hoy > 0
@@ -903,8 +909,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 })()}
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                   {item.soloExtras
-                    ? <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(extrasAño(item))}<div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>en el año · no se repite</div></div>
+                    ? <div style={{ fontWeight: 600, color: T.txt }}>{fm(extrasAño(item))}<div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>{(() => { const ms = []; for (let k = 1; k <= 12; k++) if (extrasMes(item, k) > 0) ms.push(k); return ms.length === 1 ? `una vez, en ${_MESES_L[ms[0] - 1]}` : `en ${ms.length} meses · no se repite`; })()}</div></div>
                     : <div style={{ fontWeight: 600, color: T.txt }}>{fm(promLista(item) * fxG(item))}<span style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>/mes</span></div>}
+                  {!item.soloExtras && extrasAño(item) > 0 && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500, marginTop: 2 }}>+ {fm(extrasAño(item))} pago único este año</div>}
                   {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                   {(() => {
                     const badge = labelVigenciaBadge(item);
@@ -919,7 +926,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}><Interruptor on={item.sim!==false} /></button>
-                  <MenuFila extra={[{ label: "Ya lo pagué todo el año", onClick: () => { if (!guardEdit(role)) return; abrirPagadoAño(item); } }, { label: "Registrar extra", onClick: () => { if (!guardEdit(role)) return; setExtraDe({ cat: item.cat, idx: item.idx }); } }]} onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
+                  <MenuFila extra={item.soloExtras ? [] : [{ label: "Ya lo pagué todo el año", onClick: () => { if (!guardEdit(role)) return; abrirPagadoAño(item); } }]} /* 14-nov-2026 (Santiago: "el registro de extra aquí no es, quitarlo"): el pago único va por "+ Agregar". */ onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
                 </td>
               </tr>
               )

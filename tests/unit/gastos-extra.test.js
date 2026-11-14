@@ -33,7 +33,8 @@ describe("gastos extraordinarios", () => {
     expect(v).toMatchObject({ c: "Vacaciones", m: 0, soloExtras: true });
     expect(gastoDelMes(v, año, 11, 4_000)).toBe(5_000_000);
     const g3 = eliminarExtra(g2, "Viajes", 0, v.extras[0].id);
-    expect(g3.Viajes[0].extras).toHaveLength(0);
+    // 14-nov-2026: un gasto que solo existía por su pago único se va con él (antes quedaba una fila en $0).
+    expect(g3.Viajes).toHaveLength(0);
   });
   it("umbral que orienta: menos del 5 % del gasto mensual", () => {
     expect(esMenorQueUmbral(300_000, 20_000_000)).toBe(true);

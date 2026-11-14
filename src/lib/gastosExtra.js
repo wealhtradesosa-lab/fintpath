@@ -87,6 +87,9 @@ export function crearConExtra(gastos, { nombre, cat }, datos, hoy) {
 
 export function eliminarExtra(gastos, cat, idx, id) {
   const out = { ...gastos };
-  out[cat] = (gastos[cat] || []).map((g, i) => (i === idx ? { ...g, extras: (g.extras || []).filter((x) => x.id !== id) } : g));
+  out[cat] = (gastos[cat] || [])
+    .map((g, i) => (i === idx ? { ...g, extras: (g.extras || []).filter((x) => x.id !== id) } : g))
+    // 14-nov-2026: un gasto que solo existía por sus pagos únicos se va con el último.
+    .filter((g, i) => !(i === idx && g.soloExtras && !(g.extras || []).length));
   return out;
 }

@@ -1,4 +1,5 @@
 import { montoDelMes } from "../lib/flowHelpers.js";
+import { extrasIngresoDelMes } from "../lib/ingresosExtra.js";
 import { cuotaDeudaDelMes, retencionDelMes, gastoDelMes, deudaViva } from "../lib/flujoMes.js";
 import { aportesInversionDelMes } from "../lib/aportesInversion.js";
 import { saldoImpuestoDelMes } from "../lib/impuestoReferente";
@@ -48,7 +49,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
 
   const meses = [];
   for (let m = 1; m <= 12; m++) {
-    const entra = ing.reduce((s, i) => s + enCOP(montoDelMes(i, año, m), i.moneda), 0);
+    const entra = ing.reduce((s, i) => s + enCOP(montoDelMes(i, año, m), i.moneda) + extrasIngresoDelMes(i, año, m, trm), 0); // 14-nov-2026: ingresos únicos
     // 14-nov-2026 — Mismas reglas que el simulador y el detalle del año (lib/flujoMes.js):
     // cuotas con frecuencia, vigencia, abonos y TRM; gastos en USD convertidos;
     // impuesto en el mes de cada declaración; aportes a inversiones del mes.

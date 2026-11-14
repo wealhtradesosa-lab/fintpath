@@ -12,6 +12,9 @@ export const CLASES_INGRESO = [
   { id: "financieras", nombre: "Rentas financieras", icono: "", re: /interes|rendimiento|dividendo|cdt|inversion|capital|fondo/ },
   { id: "negocios", nombre: "Negocios", icono: "", re: /negocio|utilidad|empresa|venta/ },
   { id: "pensiones", nombre: "Pensiones", icono: "", re: /pension/ },
+  // 14-nov-2026: los ingresos de una sola vez (herencia, venta de un activo) van
+  // en su propio grupo. Nunca se elige por texto (re: null); lo decide soloExtras.
+  { id: "unicos", nombre: "Ingresos únicos", icono: "", re: null },
   { id: "otros", nombre: "Otros", icono: "", re: null },
 ];
 
@@ -31,7 +34,7 @@ export function claseDeTexto(clases, ...textos) {
   const t = norm(textos.filter(Boolean).join(" "));
   return clases.find((c) => c.re && c.re.test(t)) || clases[clases.length - 1];
 }
-export const claseIngreso = (i) => claseDeTexto(CLASES_INGRESO, i?.categoria, i?.tipo) ;
+export const claseIngreso = (i) => (i?.soloExtras ? CLASES_INGRESO.find((c) => c.id === "unicos") : claseDeTexto(CLASES_INGRESO, i?.categoria, i?.tipo));
 export const claseGasto = (g) => claseDeTexto(CLASES_GASTO, g?.cat);
 
 /** ¿El ítem es del titular? Sin titular, cuenta como del primero (como en el resto de la app). */

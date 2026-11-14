@@ -26,6 +26,7 @@
 // guardan con la cuenta.
 // ═══════════════════════════════════════════════════════════════════════════
 import { tx, esUS, esEN, plata, plataCorta, pct, nombreMes, monedaBase, localeCifras } from "../lib/region.js";
+import { extrasIngresoDelMes } from "../lib/ingresosExtra.js";
 import { useState, useMemo, useEffect, useRef } from "react";
 import PageHeader from "./PageHeader";
 import { estimarImpuestoReferente, pagosDeclaracion } from "../lib/impuestoReferente";
@@ -151,8 +152,9 @@ export function construirBase(user) {
       capital: Number(i.capital) || 0, tasa: Number(i.tasa) || 0, tasaModo: i.tasaModo || "anual",
       montoTipico: (getFrecuencia(i) === "variable" ? supuestoVariable(i).monto : promedioMesActivo(i)) * fx,
       supuesto: getFrecuencia(i) === "variable" ? supuestoVariable(i).texto : (getFrecuencia(i) === "mensual" ? "" : tx(`${getFrecuencia(i)} · cae en su mes`, `${frecTxt(getFrecuencia(i))} · falls in its month`)),
-      porMes: (año) => proyectarPorMes(i, año, fx),
-      porMesReal: (año) => MESES.map((m) => (montoDelMes(i, año, m.v) || 0) * fx),
+      // 14-nov-2026: más los ingresos únicos de ese año en su mes (lib/ingresosExtra.js).
+      porMes: (año) => proyectarPorMes(i, año, fx).map((v, k) => v + extrasIngresoDelMes(i, año, k + 1, trm)),
+      porMesReal: (año) => MESES.map((m) => (montoDelMes(i, año, m.v) || 0) * fx + extrasIngresoDelMes(i, año, m.v, trm)),
     });
   });
   Object.entries(user.gastos || {}).forEach(([cat, items]) => {

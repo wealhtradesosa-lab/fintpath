@@ -18,6 +18,7 @@ import { cuotaDeudaDelMes, gastoDelMes, deudaViva, fxDe } from "./flujoMes.js";
 import { abonosDelMes } from "./abonosDeuda.js";
 import { aportesInversionDelMes } from "./aportesInversion.js";
 import { extrasCajaDelMes } from "./gastosExtra.js";
+import { extrasIngresoDelMes } from "./ingresosExtra.js";
 
 const porMonto = (a, b) => b.monto - a.monto;
 
@@ -31,7 +32,7 @@ export function composicionMes({ user, año, mes, trm = 4200 }) {
   (user?.ingresos || []).forEach((ing) => {
     if (ing.sim === false) return;
     const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trm : 1);
-    const monto = montoDelMes({ ...ing, mensual: montoBase }, año, mes);
+    const monto = montoDelMes({ ...ing, mensual: montoBase }, año, mes) + extrasIngresoDelMes(ing, año, mes, trm); // 14-nov-2026: ingresos únicos
     if (Math.round(monto) !== 0) ingresos.push({ nombre: ing.nombre || ing.fuente || "Ingreso", cat: ing.categoria || "", monto });
   });
 
