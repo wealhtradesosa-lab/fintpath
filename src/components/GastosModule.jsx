@@ -1,5 +1,7 @@
 import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState } from "react";
+import ExtraGastoModal from "./ExtraGastoModal";
+import { extraEnPesos } from "../lib/gastosExtra.js";
 import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
 import { CLASES_GASTO, claseGasto, esDelTitular } from "../lib/clasesListado.js";
@@ -260,6 +262,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // Fase 3 commit 6: gating reader. Mismo patrón que IngresosModule.
   const { role } = useRole();
   const [verRevisar, setVerRevisar] = useState(false);
+  const [extraDe, setExtraDe] = useState(null); // 14-nov-2026: { cat, idx } | "nuevo" — formulario de gasto extraordinario
   const [scanning, setScanning] = useState(false);
 
   const scanImage = async () => {
@@ -563,6 +566,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             style={{ background: "transparent", color: "var(--fp-txt)", border: "1px solid rgba(var(--fp-ink),0.15)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 600, fontSize: 13 }}>
             Bajar PDF
           </button>
+          <button onClick={() => { if (!guardEdit(role)) return; setExtraDe("nuevo"); }}
+            title="Un viaje, una compra grande, una reparación: lo que se sale de tu mes normal"
+            style={{ background: "transparent", color: "#00c805", border: "1px solid rgba(0,200,5,0.45)", padding: "10px 18px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Extraordinario</button>
           <button onClick={openAdd} style={{ background: "#00c805", color: "#000", border: "none", padding: "10px 22px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontSize: 13 }}>+ Agregar</button>
         </>}
       />
@@ -734,6 +740,18 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       );
                     })()}
                     <span>{item.c || "—"}</span>
+                    {(() => {
+                      const ex = (item.extras || []).filter((x) => Number(x.año) === añoActual);
+                      if (!ex.length) return null;
+                      const tot = ex.reduce((t, x) => t + extraEnPesos(x, item, trm), 0);
+                      return (
+                        <button type="button" onClick={() => setExtraDe({ cat: item.cat, idx: item.idx })}
+                          title={ex.map((x) => `${x.nota || "Extra"}: ${fm(extraEnPesos(x, item, trm))}`).join(" · ")}
+                          style={{ background: "rgba(245,158,11,0.12)", color: "#f59e0b", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
+                          Extras {añoActual}: {fm(tot)}
+                        </button>
+                      );
+                    })()}
                     {/* Badge de vigencia/frecuencia (18-jul-2026): visible cuando NO es mensual todo el año */}
                     {(() => {
                       const badge = labelVigenciaBadge(item);
@@ -834,7 +852,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}><Interruptor on={item.sim!==false} /></button>
-                  <MenuFila onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
+                  <MenuFila extra={[{ label: "Registrar extra", onClick: () => { if (!guardEdit(role)) return; setExtraDe({ cat: item.cat, idx: item.idx }); } }]} onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
                 </td>
               </tr>
               )
@@ -1404,6 +1422,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         </div>
       )}
     
+    {extraDe && (
+      <ExtraGastoModal gastos={gas} inicial={extraDe === "nuevo" ? null : extraDe} fm={fm} T={T} trm={trm}
+        onCerrar={() => setExtraDe(null)}
+        onGuardar={(nuevo, seguir) => { onUpdate(nuevo); if (!seguir) setExtraDe(null); }} />
+    )}
     <Disclaimer variante="general" idioma="es" T={T} compacto />
   </div>
   );

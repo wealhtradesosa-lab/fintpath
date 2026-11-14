@@ -12,6 +12,7 @@ import SankeyFlujo from "./SankeyFlujo";
 import FlujoMesVsPromedio, { promedioFilas } from "./FlujoMesVsPromedio";
 import { cuotaDeudaDelMes, retencionDelMes, deudaViva } from "../lib/flujoMes.js";
 import { aportesInversionDelMes } from "../lib/aportesInversion.js";
+import { extrasCajaDelMes } from "../lib/gastosExtra.js";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, getMonto, getMontosMensuales, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
@@ -810,7 +811,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       });
       gasWithOverrides.forEach(g => {
         if (g.sim === false) return;
-        const monto = montoDelMes(g, añoActual, mes) * (g.moneda === "USD" ? trm : 1);
+        const monto = montoDelMes(g, añoActual, mes) * (g.moneda === "USD" ? trm : 1)
+          + extrasCajaDelMes(g, añoActual, mes, trm); // 14-nov-2026: gastos extraordinarios del mes
         if (cat === "Seguridad Social") aportesObligatoriosMes += monto;
         else gastosFamiliaresMes += monto;
       });
@@ -1010,7 +1012,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       Object.entries(user.gastos || {}).forEach(([cat, items]) => {
         (items || []).forEach((g, gi) => {
           if (g.sim === false) return;
-          const monto = montoDelMes(conSlider(g, ov(`gf_${cat}_${gi}`, getMonto(g)), getMonto(g)), año, mes) * (g.moneda === "USD" ? trm : 1);
+          const monto = montoDelMes(conSlider(g, ov(`gf_${cat}_${gi}`, getMonto(g)), getMonto(g)), año, mes) * (g.moneda === "USD" ? trm : 1)
+            + extrasCajaDelMes(g, año, mes, trm); // 14-nov-2026: gastos extraordinarios del mes
           if (cat === "Seguridad Social") aportesObl += monto;
           else gastosFam += monto;
         });

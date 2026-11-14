@@ -12,6 +12,7 @@
 import { montoDelMes } from "./flowHelpers.js";
 import { TRM_PROVISIONAL, trmUsable } from "./trm.js";
 import { abonosDelMes } from "./abonosDeuda.js";
+import { extrasCajaDelMes } from "./gastosExtra.js";
 
 export const fxDe = (item, trm) => (item?.moneda === "USD" ? (trmUsable(trm) ?? TRM_PROVISIONAL) : 1);
 
@@ -38,7 +39,8 @@ export const retencionDelMes = (ingresosMes, brutoRef, retencionRef) =>
   (brutoRef > 0 ? (ingresosMes / brutoRef) * retencionRef : retencionRef);
 
 // GASTO del mes en pesos (los gastos en dólares se convierten con la TRM).
-export const gastoDelMes = (g, año, mes, trm) => montoDelMes(g, año, mes) * fxDe(g, trm);
+// 14-nov-2026: más los extras de ese gasto que salen de caja en el mes (gastosExtra.js).
+export const gastoDelMes = (g, año, mes, trm) => montoDelMes(g, año, mes) * fxDe(g, trm) + extrasCajaDelMes(g, año, mes, trm);
 
 // Deudas que pesan en el flujo: con saldo y encendidas.
 // 14-nov-2026: una deuda marcada como pagada sigue pesando en los meses en que sí
