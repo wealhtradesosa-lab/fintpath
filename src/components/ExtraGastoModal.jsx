@@ -48,7 +48,13 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
   const pequeño = m > 0 && esMenorQueUmbral(enPesos, gastoMensualReferencia(gastos, trm));
   const otrasOk = otras.filter((l) => Number(l.monto) > 0);
   const totalPesos = enPesos + otrasOk.reduce((t, l) => t + extraEnPesos({ monto: Number(l.monto), moneda: l.moneda }, null, trm), 0);
-  const listo = m > 0 && (nuevo ? true : !!actual);
+  // 14-nov-2026 (Santiago: "uno pone los ítems y no van sumando al total"): la parte 1 ya no es
+  // obligatoria; cuentan todas las partes con valor, en cualquier orden.
+  const lineas = [
+    ...(m > 0 ? [{ monto: m, moneda, nota, pago, cuotas, tasa }] : []),
+    ...otrasOk.map((l) => ({ monto: Number(l.monto), moneda: l.moneda, nota: l.nota, pago: l.pago, cuotas: l.cuotas, tasa: l.tasa })),
+  ];
+  const listo = lineas.length > 0 && (nuevo ? true : !!actual);
   const extrasAct = actual ? (actual.g.extras || []).filter((x) => Number(x.año) === año) : [];
 
   const lbl = { fontSize: 12, color: T.txt3, marginBottom: 4, display: "block" };
@@ -59,15 +65,13 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
 
   const guardar = () => {
     if (!listo) return;
+    const [primera, ...resto] = lineas.map((l) => ({ año, mes, ...l }));
     let out = nuevo
-      ? crearConExtra(gastos, { nombre: nuevoNombre, cat: nuevaCat }, datos)
-      : registrarExtra(gastos, actual.cat, actual.idx, datos);
+      ? crearConExtra(gastos, { nombre: nuevoNombre, cat: nuevaCat }, primera)
+      : registrarExtra(gastos, actual.cat, actual.idx, primera);
     const cat = nuevo ? nuevaCat : actual.cat;
     const idx = nuevo ? out[cat].length - 1 : actual.idx;
-    otrasOk.forEach((l, k) => {
-      const d = { año, mes, monto: Number(l.monto), moneda: l.moneda, nota: l.nota, pago: l.pago, cuotas: l.cuotas, tasa: l.tasa };
-      out = registrarExtra(out, cat, idx, d, new Date(Date.now() + k + 1)); // ids distintos
-    });
+    resto.forEach((d, k) => { out = registrarExtra(out, cat, idx, d, new Date(Date.now() + k + 1)); }); // ids distintos
     onGuardar(out);
   };
 
@@ -156,7 +160,7 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
         <button type="button" onClick={() => setOtras((o) => [...o, nuevaLinea()])} style={{ background: "transparent", border: `1px dashed ${T.border}`, color: T.txt2, borderRadius: 8, padding: "8px 12px", fontSize: 13, cursor: "pointer", width: "100%", marginBottom: 12 }}>
           {tx("+ Agregar otra parte (ej. tiquetes y gastos del viaje)", "+ Add another part")}
         </button>
-        {otrasOk.length > 0 && m > 0 && <div style={{ fontSize: 13, color: T.txt2, marginBottom: 10 }}>{tx("Total del pago único:", "Total:")} <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong></div>}
+        {lineas.length > 1 && <div style={{ fontSize: 13, color: T.txt2, marginBottom: 10 }}>{tx("Total del pago único:", "Total:")} <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong></div>}
 
         {pequeño && (
           <div style={{ fontSize: 12, color: T.orange, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 10, lineHeight: 1.5 }}>
@@ -164,11 +168,11 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
           </div>
         )}
 
-        {m > 0 && (
+        {totalPesos > 0 && (
           <div style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px", margin: "6px 0 14px", fontSize: 13, lineHeight: 1.6 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: T.txt3, marginBottom: 2 }}>{tx("Efecto", "Effect")}</div>
             <div style={{ color: T.txt2 }}>{tx(`Gasto de ${mesL(mes)}:`, "Expense:")} <strong style={{ color: T.txt }}>{fm(totalPesos)}</strong>{moneda === "USD" ? <span style={{ color: T.txt3 }}> · {tx("TRM", "FX")} {Math.round(fx).toLocaleString("es-CO")}</span> : null}</div>
-            <div style={{ color: T.txt2 }}>
+            {lineas.length === 1 && m > 0 ? (<div style={{ color: T.txt2 }}>
               {pago === "contado" && tx(`Sale de tu cuenta en ${mesL(mes)}.`, "Paid this month.")}
               {pago === "tarjeta1" && (mes < 12 ? tx(`Sale de tu cuenta en ${mesL(mes + 1)}, al pagar la tarjeta.`, "Paid next month.") : tx("Sale de tu cuenta en enero, al pagar la tarjeta (no pesa en el flujo de este año).", "Paid in January."))}
               {pago === "cuotas" && cal.length > 0 && <>
@@ -177,7 +181,7 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
                 {Number(tasa) > 0 && <div>{tx("Intereses de diferirlo:", "Interest:")} <strong style={{ color: T.red }}>{fm(cal.reduce((t, p) => t + p.monto, 0) * fx - enPesos)}</strong></div>}
                 {!(Number(tasa) > 0) && <div style={{ color: T.orange }}>{tx("Sin la tasa de la tarjeta, las cuotas quedan sin intereses.", "Without the rate, no interest is counted.")}</div>}
               </>}
-            </div>
+            </div>) : <div style={{ color: T.txt2 }}>{tx("Cada parte sale de tu cuenta según su forma de pago: de contado, en el mes; con tarjeta a un pago, el mes siguiente; a cuotas, repartida.", "Each part is paid according to its payment method.")}</div>}
             <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>{tx("Suma al total del año de este gasto. No cuenta como gasto recurrente.", "Adds to this expense's yearly total; not treated as recurring.")}</div>
           </div>
         )}

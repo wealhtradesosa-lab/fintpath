@@ -2,7 +2,7 @@ import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState } from "react";
 import ExtraGastoModal from "./ExtraGastoModal";
 import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
-import { extraEnPesos } from "../lib/gastosExtra.js";
+import { extraEnPesos, extrasCajaDelMes } from "../lib/gastosExtra.js";
 import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import FiltroListado from "./FiltroListado";
 import { CLASES_GASTO, claseGasto, esDelTitular } from "../lib/clasesListado.js";
@@ -317,6 +317,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // en la moneda del botón general. Los gastos en USD se pasan a pesos antes de
   // mostrarlos o sumarlos; antes se mostraba el número en dólares como si fueran pesos.
   const fxG = (g) => (g && g.moneda === "USD" ? (trmUsable(trm) ?? TRM_PROVISIONAL) : 1);
+  // 14-nov-2026: los pagos únicos (g.extras) salen en su mes y suman al año, aunque no al promedio
+  // recurrente. Antes la fila decía "no sale" y los totales de arriba no los contaban.
+  const _añoX = new Date().getFullYear();
+  const extrasMes = (g, mes) => extrasCajaDelMes(g, _añoX, mes, trm);
+  const extrasAño = (g) => { let t = 0; for (let k = 1; k <= 12; k++) t += extrasMes(g, k); return t; };
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
   const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
@@ -360,7 +365,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => montoPromedioMensual(b) * fxG(b) - montoPromedioMensual(a) * fxG(a)),
         sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0),
         // 3-nov-2026: lo que sale ESTE mes en el grupo, junto al promedio.
-        subMes: items.filter(g => g.sim !== false).reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g), 0) }))
+        subMes: items.filter(g => g.sim !== false).reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g) + extrasMes(g, _mesHoy), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
@@ -376,7 +381,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const _mesHoy = new Date().getMonth() + 1;
   const _añoHoy = new Date().getFullYear();
   const _MESES_L = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-  const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g), 0);
+  const totalEsteMes = activos.reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g) + extrasMes(g, _mesHoy), 0);
+  const totalExtrasAño = activos.reduce((s, g) => s + extrasAño(g), 0);
   // 14-nov-2026 (Santiago: "cada sección debería tener un identificador de color… para
   // diferenciar el título del ítem"). Cada clase lleva el mismo color que en la barra de
   // distribución (orden por monto): franja a la izquierda y fondo tenue en su encabezado.
@@ -571,7 +577,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       <PageHeader
         label="Egresos"
         title="Tus gastos"
-        subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto${activos.length !== 1 ? "s" : ""} en ${cats.length} categorías · Total: ${fm(totalMes)}/mes · ${fm(totalMes * 12)}/año`}
+        subtitle={`${activos.length}${activos.length !== allItems.length ? ` de ${allItems.length}` : ""} gasto${activos.length !== 1 ? "s" : ""} en ${cats.length} categorías · Total: ${fm(totalMes)}/mes · ${fm(totalMes * 12 + totalExtrasAño)}/año`}
         rightSlot={<>
           {onImport && <button onClick={onImport}
             title="Cargar gastos desde una tabla de Excel"
@@ -648,7 +654,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         {[
           { l: `Sale en ${_MESES_L[_mesHoy - 1]}`, v: fm(totalEsteMes), c: T.red },
           { l: "Promedio mensual del año", v: fm(totalMes), c: T.orange },
-          { l: "Total del año", v: fm(totalMes * 12), c: T.orange },
+          { l: "Total del año", v: fm(totalMes * 12 + totalExtrasAño), c: T.orange },
           { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)), c: T.blue },
           { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)), c: T.orange },
         ].map((m) => (
@@ -846,19 +852,22 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 {(() => {
                   // Este mes: lo que de verdad sale en el mes en curso (vigencia, variables,
                   // pagos anuales). Si no sale nada este mes, se dice en vez de poner $0.
-                  const hoy = montoDelMes(item, _añoHoy, _mesHoy), prom = promedioMesActivo(item);
+                  const exMes = extrasMes(item, _mesHoy) / fxG(item); // en la moneda del gasto, para comparar con prom
+                  const hoy = montoDelMes(item, _añoHoy, _mesHoy) + exMes, prom = promedioMesActivo(item);
                   const distinto = prom > 0 && Math.abs(hoy - prom) / prom >= 0.03;
                   return (
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       {hoy > 0
-                        ? <div style={{ fontWeight: 700, color: T.red }}>{fm(hoy * fxG(item))}</div>
+                        ? <div style={{ fontWeight: 700, color: T.red }}>{fm(hoy * fxG(item))}{exMes > 0 && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>pago único</div>}</div>
                         : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>no sale</div>}
                       {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, whiteSpace: "nowrap", color: hoy < prom ? T.green : T.orange }}>{hoy < prom ? "▼" : "▲"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
                     </td>
                   );
                 })()}
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
-                  <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(promedioMesActivo(item) * fxG(item))}</div>
+                  {item.soloExtras
+                    ? <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(extrasAño(item))}<div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>en el año · no se repite</div></div>
+                    : <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(promedioMesActivo(item) * fxG(item))}</div>}
                   {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                   {(() => {
                     const badge = labelVigenciaBadge(item);
