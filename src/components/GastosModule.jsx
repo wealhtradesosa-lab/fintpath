@@ -457,6 +457,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         owner: form.owner || "",
         fiscalCode: form.fiscalCode || undefined,
         causalidad: form.causalidad || undefined,
+        // 14-nov-2026 (Santiago: "cada año hay vacaciones, no las mismas, pero sí un presupuesto;
+        // poder poner tiquetes, hotel o viáticos, separado o todo junto"). El monto es la suma.
+        partes: Array.isArray(form.partes) && form.partes.some((x) => Number(x.monto) > 0)
+          ? form.partes.filter((x) => Number(x.monto) > 0).map((x) => ({ nota: (x.nota || "").trim() || "Parte", monto: Number(x.monto) }))
+          : undefined,
       };
       if (form.montoModo === "tasa") {
         base.montoModo = "tasa";
@@ -512,6 +517,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       // 26-jul-2026: sin esto, editar un gasto cargado en USD lo devolvía a
       // COP en silencio — el formulario arrancaba con el valor por defecto y
       // al guardar pisaba la moneda original.
+      partes: Array.isArray(item.partes) && item.partes.length ? item.partes.map((x) => ({ nota: x.nota, monto: String(x.monto) })) : null,
       activoId: item.activoId || "", moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
@@ -744,6 +750,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                       );
                     })()}
                     <span>{item.c || "—"}</span>
+                    {Array.isArray(item.partes) && item.partes.length > 0 && <span title={item.partes.map((x) => `${x.nota}: ${fm(x.monto * fxG(item))}`).join(" · ")} style={{ fontSize: 11, color: T.txt3 }}>· {item.partes.map((x) => x.nota).join(", ")}</span>}
                     {(() => {
                       const ex = (item.extras || []).filter((x) => Number(x.año) === añoActual);
                       if (!ex.length) return null;
@@ -1176,7 +1183,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         return "Monto";
                       })() + ((form.moneda || "COP") === "USD" ? " (US$)" : " ($ pesos)")}
                       value={form.m}
-                      onChange={(v) => setForm((p) => ({ ...p, m: v }))}
+                      onChange={(v) => setForm((p) => ({ ...p, m: v, partes: null }))}
                       type="number"
                       placeholder="0"
                     />
@@ -1212,6 +1219,40 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     })()}
                   </div>
                   )}
+                  {/* Partes del presupuesto (tiquetes, hotel, viáticos…): opcional; el monto es la suma. */}
+                  {!mostrarCampo("tablaMensual") && form.montoModo !== "tasa" && (() => {
+                    const partes = Array.isArray(form.partes) ? form.partes : null;
+                    const sumar = (ps) => String(ps.reduce((t, x) => t + (Number(x.monto) || 0), 0) || "");
+                    const setPartes = (ps) => setForm((p) => ({ ...p, partes: ps, m: ps ? sumar(ps) : p.m }));
+                    const sugeridas = form.cat === "Viajes" ? ["Tiquetes", "Hotel", "Viáticos"] : ["Parte 1", "Parte 2"];
+                    if (!partes) return (
+                      <div style={{ gridColumn: "1/-1" }}>
+                        <button type="button" onClick={() => setPartes(sugeridas.map((n, i) => ({ nota: n, monto: i === 0 && form.m ? String(form.m) : "" })))}
+                          style={{ background: "transparent", border: `1px dashed ${T.border}`, color: T.txt2, borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer" }}>
+                          {form.cat === "Viajes" ? "Separar en tiquetes, hotel y viáticos" : "Separar en partes"} · opcional
+                        </button>
+                      </div>
+                    );
+                    return (
+                      <div style={{ gridColumn: "1/-1", minWidth: 0, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10 }}>
+                        <div style={{ fontSize: 12, color: T.txt3, marginBottom: 8 }}>Partes del valor. La que no aplique, déjala vacía.</div>
+                        {partes.map((x, i) => (
+                          <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) auto", gap: 8, marginBottom: 6, alignItems: "center" }}>
+                            <input value={x.nota} onChange={(e) => setPartes(partes.map((y, k) => (k === i ? { ...y, nota: e.target.value } : y)))}
+                              style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.txt, fontSize: 13 }} />
+                            <input inputMode="decimal" placeholder="0" value={x.monto ? Number(x.monto).toLocaleString("es-CO") : ""} onChange={(e) => setPartes(partes.map((y, k) => (k === i ? { ...y, monto: e.target.value.replace(/[^0-9]/g, "") } : y)))}
+                              style={{ width: "100%", minWidth: 0, boxSizing: "border-box", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.txt, fontSize: 13, textAlign: "right" }} />
+                            <button type="button" onClick={() => setPartes(partes.filter((_, k) => k !== i))} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 12 }}>Quitar</button>
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
+                          <button type="button" onClick={() => setPartes([...partes, { nota: "Otra", monto: "" }])} style={{ background: "none", border: "none", color: "#3b82f6", cursor: "pointer", fontSize: 12, padding: 0 }}>+ Otra parte</button>
+                          <button type="button" onClick={() => setPartes(null)} style={{ background: "none", border: "none", color: T.txt3, cursor: "pointer", fontSize: 12, padding: 0, textDecoration: "underline" }}>Poner todo junto</button>
+                          <span style={{ marginLeft: "auto", fontSize: 13, color: T.txt2 }}>Total: <strong style={{ color: T.txt }}>{(form.moneda === "USD" ? "US$" : "$") + (Number(form.m) || 0).toLocaleString("es-CO")}</strong></span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {/* UX iter 3 (18-jul-2026 noche): FrecuenciaSelector muestra
                       solo lo que el template pide — cero redundancia. */}
                   {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
