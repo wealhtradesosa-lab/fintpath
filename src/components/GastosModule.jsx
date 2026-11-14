@@ -821,7 +821,15 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           userSelect: "none",
                         }}
                       >
-                        {estaPagadoEnAño(item, añoActual) ? `Pagado ${añoActual}` : `Pendiente ${añoActual}`}
+                        {/* 14-nov-2026 (Santiago: "¿por qué sale pendiente si ya fue pagado?"). «Pendiente»
+                            no decía nada: si el mes ya pasó se pregunta; si no ha llegado, se dice cuándo sale. */}
+                        {estaPagadoEnAño(item, añoActual)
+                          ? `Pagado ${añoActual}`
+                          : (getFrecuencia(item) === "anual" && Number(item.mesPago || 1) < _mesHoy)
+                            ? "¿Ya lo pagaste? Toca para marcarlo"
+                            : getFrecuencia(item) === "anual"
+                              ? `Sale en ${_MESES_L[Number(item.mesPago || 1) - 1]}`
+                              : `Pendiente ${añoActual}`}
                       </span>
                     )}
                   </div>
