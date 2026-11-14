@@ -342,11 +342,10 @@ export const estaPagadoEnAño = (item, año) => {
  */
 export function montoPromedioMensual(item) {
   const freq = getFrecuencia(item);
-  // FIX pagado: si es no-mensual y ya está pagado este año, no cuenta
-  const { año: añoActual } = getMesActual();
-  if (freq !== "mensual" && freq !== "variable" && estaPagadoEnAño(item, añoActual)) {
-    return 0;
-  }
+  // 14-nov-2026 (Santiago: "el hecho de que un gasto haya salido no quiere decir que no se vea").
+  // Antes, un gasto no mensual marcado como pagado devolvía 0: un seguro anual pagado salía del
+  // promedio, del simulador y del nivel de libertad aunque se repite cada año. El pago ya está en
+  // su mes (montoDelMes); el promedio mensual es el costo real del gasto, pagado o no.
   // Variable: suma del total anual / 12 (o meses activos si vigencia limitada)
   if (freq === "variable") {
     // Reutilizamos totalAnualItem que ya considera vigencia

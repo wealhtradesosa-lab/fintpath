@@ -24,3 +24,14 @@ describe("pago por adelantado", () => {
     expect(prepagoDelAño(gym, 2025)).toBeNull();
   });
 });
+
+// 14-nov-2026 (Santiago: "un gasto es un gasto y debe alterar el índice de libertad; cada año
+// saco vacaciones"). Marcar un gasto anual como pagado ya no lo saca del promedio.
+describe("un gasto anual pagado sigue contando", () => {
+  it("el promedio mensual es el mismo, pagado o no", () => {
+    const vac = { c: "Vacaciones", m: 12000000, frecuencia: "anual", mesPago: 6 };
+    const año = new Date().getFullYear();
+    expect(montoPromedioMensual(vac)).toBe(1000000);
+    expect(montoPromedioMensual({ ...vac, pagos: { [año]: true } })).toBe(1000000);
+  });
+});

@@ -884,7 +884,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       {hoy > 0
                         ? <div style={{ fontWeight: 700, color: T.txt }}>{fm(hoy * fxG(item))}{exMes > 0 && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>pago único</div>}</div>
-                        : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>{cuando}</div>}
+                        : <div style={{ fontFamily: "inherit" }}>
+                            {fq === "anual" && <div style={{ fontWeight: 600, color: T.txt2, fontFamily: "monospace" }}>{fm(totalAnualItem(item) * fxG(item))}</div>}
+                            <div style={{ fontSize: 12, color: T.txt3 }}>{cuando}</div>
+                          </div>}
                       {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, whiteSpace: "nowrap", color: hoy < prom ? T.green : T.orange }}>{hoy < prom ? "▼" : "▲"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
                     </td>
                   );
