@@ -1001,7 +1001,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 código listo y nadie podía usarlo.
                 El valor se guarda en la moneda elegida; lo que se VE depende
                 del selector global de la barra superior. */}
-            <In l="Moneda" value={form.moneda || "COP"} onChange={(v) => setForm((p) => ({ ...p, moneda: v }))} options={[{v:"COP",l:"COP (pesos)"},{v:"USD",l:"USD (se convierte a la TRM)"}]} />
+            {/* 14-nov-2026: la moneda pasó al lado del monto (ver abajo). */}
 
               {/* Commit 1.6: sub-selector para Aporte tributario (PV, AFC, Salud prepagada) */}
               {form.cat === "Aporte tributario" && (() => {
@@ -1173,12 +1173,42 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           return labelMontoSegunFrecuencia(freq);
                         }
                         return "Monto";
-                      })() + ((form.moneda || "COP") === "USD" ? " en dólares (USD)" : " en pesos (COP)")}
+                      })() + ((form.moneda || "COP") === "USD" ? " (US$)" : " ($ pesos)")}
                       value={form.m}
                       onChange={(v) => setForm((p) => ({ ...p, m: v }))}
                       type="number"
                       placeholder="0"
                     />
+                    {/* 14-nov-2026 (Santiago: "pongo el valor de las vacaciones en dólares porque así las
+                        pagué y al presionar el botón dólares cambia a otro valor menor"). El campo Moneda
+                        estaba lejos del monto: escribía 8.200 pensando en dólares y se guardaba en pesos.
+                        Ahora la moneda va pegada al monto, con la conversión y un aviso si el valor en
+                        pesos es tan bajo que seguramente eran dólares. */}
+                    {(() => {
+                      const mon = form.moneda || "COP";
+                      const v = Number(form.m) || 0;
+                      const tasa = trmUsable(trm) ?? TRM_PROVISIONAL;
+                      const seg = (on) => ({ padding: "6px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", border: "none",
+                        background: on ? "#00c805" : "transparent", color: on ? "#000" : "var(--fp-txt2)" });
+                      return (
+                        <div style={{ marginTop: 8 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 12, color: T.txt3 }}>¿En qué moneda escribiste el valor?</span>
+                            <div style={{ display: "inline-flex", border: `1px solid ${T.border}`, borderRadius: 999, overflow: "hidden" }}>
+                              <button type="button" style={seg(mon === "COP")} onClick={() => setForm((p) => ({ ...p, moneda: "COP" }))}>Pesos (COP)</button>
+                              <button type="button" style={seg(mon === "USD")} onClick={() => setForm((p) => ({ ...p, moneda: "USD" }))}>Dólares (USD)</button>
+                            </div>
+                          </div>
+                          {v > 0 && mon === "USD" && <div style={{ fontSize: 12, color: T.txt2, marginTop: 6 }}>US${Math.round(v).toLocaleString("es-CO")} = <strong style={{ color: T.txt }}>${Math.round(v * tasa).toLocaleString("es-CO")}</strong> con la TRM de ${Math.round(tasa).toLocaleString("es-CO")}. Se guarda en dólares y se ve en la moneda que elijas arriba.</div>}
+                          {v > 0 && mon === "COP" && v < 100000 && (
+                            <div style={{ fontSize: 12, color: T.orange, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "8px 10px", marginTop: 6, lineHeight: 1.5 }}>
+                              ${Math.round(v).toLocaleString("es-CO")} pesos es muy poco. ¿Lo escribiste en dólares?{" "}
+                              <button type="button" onClick={() => setForm((p) => ({ ...p, moneda: "USD" }))} style={{ background: "none", border: "none", padding: 0, color: "#3b82f6", fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: 12 }}>Sí, son US${Math.round(v).toLocaleString("es-CO")}</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                   )}
                   {/* UX iter 3 (18-jul-2026 noche): FrecuenciaSelector muestra
@@ -1186,6 +1216,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
                   <div style={{gridColumn:"1/-1"}}>
                     <FrecuenciaSelector
+                      moneda={form.moneda || "COP"}
                       frecuencia={form.frecuencia}
                       mesPago={form.mesPago}
                       desdeMes={form.desdeMes}

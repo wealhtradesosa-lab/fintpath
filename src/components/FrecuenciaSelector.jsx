@@ -82,6 +82,7 @@ export default function FrecuenciaSelector({
   mesPago = 1,
   onChange,
   monto,
+  moneda = "COP", // 14-nov-2026: el resumen va en la moneda en que se escribió el valor
   tokens: T,
   // Fase 4 flujo anual (18-jul-2026): rango de vigencia solo para mensuales
   desdeMes = 1,
@@ -139,7 +140,7 @@ export default function FrecuenciaSelector({
   }, [rangoLimitado]);
   const vigenciaLimitada = modoLimitado; // la UI usa el MODO, no el rango
 
-  const fm = (n) => "$" + Math.round(n).toLocaleString("es-CO");
+  const fm = (n) => (moneda === "USD" ? "US$" : "$") + Math.round(n).toLocaleString("es-CO");
 
   return (
     <div style={{ marginBottom: 12 }}>

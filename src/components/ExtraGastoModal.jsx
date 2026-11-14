@@ -102,6 +102,12 @@ export default function ExtraGastoModal({ gastos, inicial, fm, T, trm, onGuardar
           <div><label style={lbl}>{tx("Mes", "Month")}</label>
             <select value={mes} onChange={(e) => setMes(Number(e.target.value))} style={inp}>{MESES.map((x) => <option key={x.v} value={x.v}>{tx(x.l, nombreMes(x.v))}</option>)}</select></div>
         </div>
+        {m > 0 && moneda === "COP" && m < 100000 && (
+          <div style={{ fontSize: 12, color: T.orange, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", borderRadius: 8, padding: "8px 10px", marginBottom: 10, lineHeight: 1.5 }}>
+            {tx(`$${Math.round(m).toLocaleString("es-CO")} pesos es muy poco. ¿Lo escribiste en dólares?`, "Very small amount in pesos. Was it in dollars?")}{" "}
+            <button type="button" onClick={() => setMoneda("USD")} style={{ background: "none", border: "none", padding: 0, color: "#3b82f6", fontWeight: 700, cursor: "pointer", textDecoration: "underline", fontSize: 12 }}>{tx(`Sí, son US$${Math.round(m).toLocaleString("es-CO")}`, "Yes, USD")}</button>
+          </div>
+        )}
         <div style={{ marginBottom: 12 }}><label style={lbl}>{tx("Nota (opcional)", "Note (optional)")}</label>
           <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder={tx("Tiquetes y hotel", "Flights and hotel")} style={inp} /></div>
 
