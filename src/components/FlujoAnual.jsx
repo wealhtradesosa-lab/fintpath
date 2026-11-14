@@ -33,6 +33,7 @@ import { montoDelMes, MESES, getMesActual, montoPromedioMensual, getFrecuencia, 
 import { estimarImpuestoReferente, calibracionReferente, saldoImpuestoDelMes } from "../lib/impuestoReferente";
 import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
+import { composicionMes } from "../lib/composicionMes.js";
 
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
@@ -86,6 +87,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
   // del año pero no explicaba ningún mes: para entender un pico había que
   // salir a Ingresos y a Egresos y reconstruirlo a mano.
   const [mesDetalle, setMesDetalle] = useState(null);
+  const [verTodoMes, setVerTodoMes] = useState(false);
 
   // ─── Motor: calcular ingresos/egresos/cash flow por cada mes ──────────
   const datosMensuales = useMemo(() => {
@@ -286,6 +288,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     const promedioCF = datosMensuales.reduce((s, d) => s + d.cashFlow, 0) / 12;
     return {
       mes, dato, transiciones,
+      comp: composicionMes({ user, año, mes, trm: trmR }),
       contraPromedio: (dato?.cashFlow || 0) - promedioCF,
       suben: movs.filter((m) => m.efecto > 0),
       bajan: movs.filter((m) => m.efecto < 0),
@@ -601,7 +604,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                 const i = e?.activeTooltipIndex;
                 if (typeof i !== "number" || !datosMensuales[i]) return;
                 const m = datosMensuales[i].mes;
-                setMesDetalle((prev) => (prev === m ? null : m));
+                setMesDetalle((prev) => (prev === m ? null : m)); setVerTodoMes(false);
               }}
               style={{ cursor: "pointer" }}>
               <CartesianGrid stroke={T.border} vertical={false} />
@@ -610,8 +613,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(var(--fp-ink),0.03)" }} />
               <ReferenceLine y={0} stroke={T.border} strokeDasharray="3 3" />
               <ReferenceLine y={highlights.promedio} stroke={T.txt3} strokeDasharray="2 6" label={{ value: tx(`Cash Flow promedio ${fmShort(highlights.promedio)}`, `Avg cash flow ${fmShort(highlights.promedio)}`), position: "insideTopRight", fill: T.txt3, fontSize: 11 }} />
-              <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name={L.ingresos} isAnimationActive={false} />
-              <Bar dataKey="egresos" fill={T.rd} radius={[4, 4, 0, 0]} name={L.egresos} isAnimationActive={false} />
+              <Bar dataKey="ingresos" fill={T.gn} radius={[4, 4, 0, 0]} name={L.ingresos} isAnimationActive={false}>
+                {datosMensuales.map((m) => <Cell key={m.mes} fill={T.gn} fillOpacity={mesDetalle && m.mes !== mesDetalle ? 0.35 : 1} />)}
+              </Bar>
+              <Bar dataKey="egresos" fill={T.rd} radius={[4, 4, 0, 0]} name={L.egresos} isAnimationActive={false}>
+                {datosMensuales.map((m) => <Cell key={m.mes} fill={T.rd} fillOpacity={mesDetalle && m.mes !== mesDetalle ? 0.35 : 1} />)}
+              </Bar>
               <Line type="monotone" dataKey="cashFlow" stroke={T.gd} strokeWidth={2.5} dot={{ r: 4, fill: T.gd }} activeDot={{ r: 6 }} name="Cash Flow" isAnimationActive={false} />
             </ComposedChart>
           </ResponsiveContainer>
@@ -727,11 +734,43 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                   borderRadius: 12, padding: "14px 16px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
                     flexWrap: "wrap", gap: 8, marginBottom: 4 }}>
+                {/* 14-nov-2026 (Santiago: "poner más grande el mes para uno saber
+                    qué está viendo"): el mes en grande, con flechas para pasar
+                    de mes sin volver al gráfico, igual que en el simulador. */}
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>
-                    {d.mesLabelFull} {año}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {[["‹", -1], ["›", 1]].map(([f, dlt], k) => {
+                      const destino = detalleMes.mes + dlt;
+                      const btn = (
+                        <button key={f} type="button" aria-label={dlt < 0 ? (isEN ? "Previous month" : "Mes anterior") : (isEN ? "Next month" : "Mes siguiente")}
+                          onClick={() => { setMesDetalle(destino); setVerTodoMes(false); }}
+                          style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 8, color: T.txt, width: 34, height: 34,
+                                fontSize: 18, lineHeight: 1, cursor: "pointer", visibility: destino >= 1 && destino <= 12 ? "visible" : "hidden" }}>{f}</button>
+                      );
+                      return k === 0 ? btn : null;
+                    })}
+                    <div>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: T.txt, letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+                        {d.mesLabelFull} {año}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 600, marginTop: 1,
+                            color: d.esMesActual ? T.gn : (año > añoDefault || (año === añoDefault && detalleMes.mes > mesActualHoy)) ? T.gd : T.txt3 }}>
+                        {d.esMesActual ? (isEN ? "Current month" : "Mes actual")
+                          : (año > añoDefault || (año === añoDefault && detalleMes.mes > mesActualHoy)) ? (isEN ? "Projected" : "Proyectado")
+                          : (isEN ? "Executed" : "Ejecutado")}
+                      </div>
+                    </div>
+                    {(() => {
+                      const destino = detalleMes.mes + 1;
+                      return (
+                        <button type="button" aria-label={isEN ? "Next month" : "Mes siguiente"}
+                          onClick={() => { setMesDetalle(destino); setVerTodoMes(false); }}
+                          style={{ background: T.bg2, border: `1px solid ${T.border}`, borderRadius: 8, color: T.txt, width: 34, height: 34,
+                                fontSize: 18, lineHeight: 1, cursor: "pointer", visibility: destino <= 12 ? "visible" : "hidden" }}>›</button>
+                      );
+                    })()}
                   </div>
-                  <div style={{ fontSize: 12, color: T.txt2, marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: T.txt2, marginTop: 6 }}>
                     {L.ingresos} {fm(d.ingresos)} · {L.egresos} {fm(d.egresos)} ·{" "}
                     <strong style={{ color: d.cashFlow >= 0 ? T.gn : T.rd }}>
                       {L.cashflow} {fm(d.cashFlow)}
@@ -745,7 +784,80 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                 </button>
               </div>
 
-              <div style={{ fontSize: 12, color: T.txt2, margin: "8px 0 12px", lineHeight: 1.5 }}>
+              {/* 14-nov-2026 — Composición del mes: cada ingreso, gasto y cuota con
+                  su valor; los totales son las cifras del encabezado. Ver
+                  lib/composicionMes.js. */}
+              {(() => {
+                const c = detalleMes.comp;
+                const mesL = (d.mesLabelFull || "").toLowerCase();
+                const TOPE = 8;
+                const Lista = ({ items, conCat }) => {
+                  const vis = verTodoMes ? items : items.slice(0, TOPE);
+                  return (<>
+                    {vis.map((x, i) => (
+                      <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", columnGap: 12,
+                            padding: "6px 0", borderBottom: `1px solid ${T.border}` }}>
+                        <div style={{ minWidth: 0, fontSize: 13, color: T.txt, overflowWrap: "anywhere", lineHeight: 1.35 }}>
+                          {x.nombre}
+                          {conCat && x.cat && <span style={{ fontSize: 11, color: T.txt3, marginLeft: 6 }}>{nomCat(x.cat)}</span>}
+                        </div>
+                        <div style={{ fontSize: 13, color: T.txt2, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", textAlign: "right" }}>{fm(x.monto)}</div>
+                      </div>
+                    ))}
+                    {!verTodoMes && items.length > TOPE && (
+                      <button type="button" onClick={() => setVerTodoMes(true)}
+                        style={{ background: "none", border: "none", color: T.gd, fontSize: 12, fontWeight: 700, cursor: "pointer", padding: "6px 0" }}>
+                        {isEN ? `Show ${items.length - TOPE} more` : `Ver ${items.length - TOPE} más`}
+                      </button>
+                    )}
+                  </>);
+                };
+                const Sub = ({ t }) => (
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: T.txt3, margin: "10px 0 2px" }}>{t}</div>
+                );
+                const Total = ({ et, v, color, fuerte, signo }) => (
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "7px 0 0" }}>
+                    <span style={{ fontSize: fuerte ? 13 : 12, fontWeight: fuerte ? 700 : 500, color: fuerte ? T.txt : T.txt2 }}>{et}</span>
+                    <span style={{ fontSize: fuerte ? 14 : 12, fontWeight: fuerte ? 700 : 500, color: color || T.txt2, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{signo || ""}{fm(v)}</span>
+                  </div>
+                );
+                return (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px,100%), 1fr))", gap: 22, margin: "12px 0 6px" }}>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.gn, letterSpacing: 0.6, paddingBottom: 4, borderBottom: `1px solid ${T.border}` }}>
+                        {isEN ? `Income in ${mesL}` : `Ingresos de ${mesL}`}
+                      </div>
+                      {c.ingresos.length === 0
+                        ? <div style={{ fontSize: 12, color: T.txt3, padding: "6px 0" }}>{isEN ? "No income this month." : "Este mes no hubo ingresos."}</div>
+                        : <Lista items={c.ingresos} conCat />}
+                      <Total fuerte et={isEN ? "Total income" : "Total ingresos"} v={c.totalIngresos} color={T.gn} />
+                      {(d.retencion || 0) > 0 && <>
+                        <Total et={isEN ? "Withholding" : "Retención en la fuente"} v={d.retencion} signo="−" />
+                        <Total et={isEN ? "Available" : "Disponible en cuenta"} v={d.disponible} />
+                      </>}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: T.rd, letterSpacing: 0.6, paddingBottom: 4, borderBottom: `1px solid ${T.border}` }}>
+                        {isEN ? `Outflows in ${mesL}` : `Egresos de ${mesL}`}
+                      </div>
+                      {c.gastos.length > 0 && <><Sub t={isEN ? `Expenses · ${fm(c.totalGastos)}` : `Gastos · ${fm(c.totalGastos)}`} /><Lista items={c.gastos} conCat /></>}
+                      {c.cuotas.length > 0 && <><Sub t={isEN ? `Loan payments · ${fm(c.totalCuotas)}` : `Cuotas de deudas · ${fm(c.totalCuotas)}`} /><Lista items={c.cuotas} /></>}
+                      {(d.impuestoNeto || 0) > 0 && <><Sub t={isEN ? "Income tax" : "Impuesto de renta"} />
+                        <Lista items={[{ nombre: isEN ? "Tax return balance" : "Saldo de la declaración", monto: d.impuestoNeto }]} /></>}
+                      <Total fuerte et={isEN ? "Total outflows" : "Total egresos"} v={d.egresos} color={T.rd} />
+                    </div>
+                  </div>
+                );
+              })()}
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "9px 0 4px", borderTop: `1px solid ${T.border}`, marginBottom: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>{isEN ? "Cash flow for the month" : "Flujo de caja del mes"}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: d.cashFlow >= 0 ? T.gn : T.rd, fontVariantNumeric: "tabular-nums" }}>{fm(d.cashFlow)}</span>
+              </div>
+
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: T.txt3, marginTop: 14 }}>
+                {isEN ? "Against the yearly average" : "Frente al promedio del año"}
+              </div>
+              <div style={{ fontSize: 12, color: T.txt2, margin: "4px 0 12px", lineHeight: 1.5 }}>
                 {Math.round(vs) === 0
                   ? (isEN ? "This month matched the yearly average." : "Este mes rindió igual que el promedio del año.")
                   : (<>
