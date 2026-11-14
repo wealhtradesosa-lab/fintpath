@@ -367,7 +367,29 @@ export function montoPromedioMensual(item) {
  * Devuelve el monto que pesa en un mes específico, considerando frecuencia,
  * mes de pago, rango de vigencia y estado (pagado/pendiente).
  */
+/**
+ * 14-nov-2026 — Pago por adelantado (Santiago: "a veces uno paga cosas de forma
+ * anticipada, un seguro, una membresía; poder poner pagado el total, por tanto
+ * no sigue apareciendo el resto del año"). item.prepago = { año, mes, hastaMes, monto }:
+ * en `mes` sale `monto` (lo que se pagó, en la moneda del gasto) y de mes+1 a
+ * hastaMes no sale nada. Solo cambia la caja de ese año; el promedio y el nivel
+ * de libertad no cambian, porque el gasto sigue existiendo.
+ */
+export function prepagoDelAño(item, año) {
+  const p = item?.prepago;
+  if (!p || Number(p.año) !== Number(año)) return null;
+  const mes = Math.min(12, Math.max(1, Number(p.mes) || 1));
+  const hastaMes = Math.min(12, Math.max(mes, Number(p.hastaMes) || 12));
+  return { mes, hastaMes, monto: Math.max(0, Number(p.monto) || 0) };
+}
+
 export function montoDelMes(item, año, mes) {
+  const pp = prepagoDelAño(item, año);
+  if (pp && mes >= pp.mes && mes <= pp.hastaMes) return mes === pp.mes ? pp.monto : 0;
+  return montoDelMesBase(item, año, mes);
+}
+
+function montoDelMesBase(item, año, mes) {
   const freq = getFrecuencia(item);
 
   // Variable: vale EXACTAMENTE lo cargado en ese mes. Fuera de la vigencia

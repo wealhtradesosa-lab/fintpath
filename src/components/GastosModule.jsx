@@ -322,6 +322,10 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   const _añoX = new Date().getFullYear();
   const extrasMes = (g, mes) => extrasCajaDelMes(g, _añoX, mes, trm);
   const extrasAño = (g) => { let t = 0; for (let k = 1; k <= 12; k++) t += extrasMes(g, k); return t; };
+  // 14-nov-2026 (Santiago: "porque en unos sale… eso no debería pasar"; "mire, no sale valores"). En
+  // esta lista el promedio mensual es SIEMPRE el total del año ÷ 12, esté pagado o no: la fila decía
+  // el valor anual completo como "promedio" y el encabezado excluía lo pagado. (El motor no cambia.)
+  const promLista = (g) => (totalAnualItem(g) || 0) / 12;
   const [showForm, setShowForm] = useState(false);
   const [editKey, setEditKey] = useState(null); // "cat|idx"
   const [form, setForm] = useState({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
@@ -362,8 +366,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const porCat = {};
     lista.forEach(it => { const c = claseGasto(it); (porCat[c.id] = porCat[c.id] || { c, items: [] }).items.push(it); });
     const grupos = Object.values(porCat)
-      .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => montoPromedioMensual(b) * fxG(b) - montoPromedioMensual(a) * fxG(a)),
-        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0),
+      .map(({ c, items }) => ({ cat: `${c.icono} ${c.nombre}`, id: c.id, items: [...items].sort((a, b) => promLista(b) * fxG(b) - promLista(a) * fxG(a)),
+        sub: items.filter(g => g.sim !== false).reduce((s, g) => s + promLista(g) * fxG(g), 0),
         // 3-nov-2026: lo que sale ESTE mes en el grupo, junto al promedio.
         subMes: items.filter(g => g.sim !== false).reduce((s, g) => s + montoDelMes(g, _añoHoy, _mesHoy) * fxG(g) + extrasMes(g, _mesHoy), 0) }))
       .sort((a, b) => b.sub - a.sub);
@@ -374,7 +378,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       ...((!!(busqueda || "").trim()) || !cerrados["__h_" + gr.id] ? gr.items : []),
     ]);
   };
-  const totalMes = activos.reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)
+  const totalMes = activos.reduce((s, g) => s + promLista(g) * fxG(g), 0)
   // 26-jul-2026 — mismo caso que Ingresos: "Total Mensual" mostraba un PROMEDIO
   // ANUAL. Un gasto que solo cae de oct a dic aparecía prorrateado, cuando lo
   // que se quiere saber al abrir la sección es qué sale ESTE mes.
@@ -388,7 +392,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   // distribución (orden por monto): franja a la izquierda y fondo tenue en su encabezado.
   const colorClase = (() => {
     const gr = {};
-    activos.forEach((x) => { const c = claseGasto(x); const k = c.icono + " " + c.nombre; gr[k] = (gr[k] || 0) + montoPromedioMensual(x) * (fxG(x)); });
+    activos.forEach((x) => { const c = claseGasto(x); const k = c.icono + " " + c.nombre; gr[k] = (gr[k] || 0) + promLista(x) * (fxG(x)); });
     const PAL = ["#00c805","#3b82f6","#64748b","#94a3b8","#475569","#b4bfcc","#334155","#7a8699"]; const out = {};
     Object.entries(gr).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).forEach(([k], i) => { out[k] = PAL[i % PAL.length]; });
     return out;
@@ -475,6 +479,9 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         causalidad: form.causalidad || undefined,
         // 14-nov-2026 (Santiago: "cada año hay vacaciones, no las mismas, pero sí un presupuesto;
         // poder poner tiquetes, hotel o viáticos, separado o todo junto"). El monto es la suma.
+        prepago: form.prepago && Number(form.prepago.monto) > 0
+          ? { año: Number(form.prepago.año), mes: Number(form.prepago.mes), hastaMes: Math.max(Number(form.prepago.mes), Number(form.prepago.hastaMes)), monto: Number(form.prepago.monto) }
+          : undefined,
         partes: Array.isArray(form.partes) && form.partes.some((x) => Number(x.monto) > 0)
           ? form.partes.filter((x) => Number(x.monto) > 0).map((x) => ({ nota: (x.nota || "").trim() || "Parte", monto: Number(x.monto) }))
           : undefined,
@@ -534,6 +541,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       // COP en silencio — el formulario arrancaba con el valor por defecto y
       // al guardar pisaba la moneda original.
       partes: Array.isArray(item.partes) && item.partes.length ? item.partes.map((x) => ({ nota: x.nota, monto: String(x.monto) })) : null,
+      prepago: item.prepago && Number(item.prepago.año) === new Date().getFullYear() ? { ...item.prepago, monto: String(item.prepago.monto) } : null,
       activoId: item.activoId || "", moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
@@ -655,8 +663,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
           { l: `Sale en ${_MESES_L[_mesHoy - 1]}`, v: fm(totalEsteMes), c: T.red },
           { l: "Promedio mensual del año", v: fm(totalMes), c: T.orange },
           { l: "Total del año", v: fm(totalMes * 12 + totalExtrasAño), c: T.orange },
-          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)), c: T.blue },
-          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + montoPromedioMensual(g) * fxG(g), 0)), c: T.orange },
+          { l: "Fijos", v: fm(activos.filter((g) => g.t === "f").reduce((s, g) => s + promLista(g) * fxG(g), 0)), c: T.blue },
+          { l: "Variables", v: fm(activos.filter((g) => g.t !== "f").reduce((s, g) => s + promLista(g) * fxG(g), 0)), c: T.orange },
         ].map((m) => (
           <div key={m.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 20px" }}>
             <div style={{ fontSize: 11, color: T.txt3, fontWeight: 600 }}>{m.l}</div>
@@ -680,7 +688,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
             en la barra es exactamente lo que se lee en la tabla. */}
         {(() => {
           const grupos = {};
-          activos.forEach(g => { const c = claseGasto(g); const k = c.icono + " " + c.nombre; grupos[k] = (grupos[k] || 0) + montoPromedioMensual(g) * fxG(g); });
+          activos.forEach(g => { const c = claseGasto(g); const k = c.icono + " " + c.nombre; grupos[k] = (grupos[k] || 0) + promLista(g) * fxG(g); });
           const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
           if (datos.length < 2) return null;   // con una sola categoría no dice nada
           const tot = datos.reduce((s, d) => s + d.value, 0);
@@ -709,7 +717,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
               {/* 3-nov-2026 (Santiago: "uno debería tener promedio año y valor mes actual: el
                   arriendo promedia 16 MM pero hoy pago 10 MM"). Dos columnas: lo que sale este
                   mes y el promedio del año. */}
-              {["Concepto", "Categoría", "DIAN", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio del año", "On/Off"].map((h, k) => (
+              {["Concepto", "Categoría", "DIAN", "Tipo", `Este mes (${_MESES_L[_mesHoy - 1]})`, "Promedio mensual", "On/Off"].map((h, k) => (
                 <th key={h || k} style={{ padding: "12px 14px", textAlign: k === 4 || k === 5 ? "right" : "left", color: T.txt3, fontWeight: 600, fontSize: 11, borderBottom: `1px solid ${T.border}`, whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
@@ -743,7 +751,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           <span style={{ fontSize: 13, fontWeight: 700, color: T.txt }}>
                             <span style={{ color: T.txt3, marginRight: 6, display: "inline-block", width: 10 }}>{cerrados[item.key] ? "▸" : "▾"}</span>{item.__cat} <span style={{ color: T.txt3, fontWeight: 500 }}>· {item.__n}</span>
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: T.red, fontFamily: "monospace" }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: T.txt, fontFamily: "monospace" }}>
                             {fm(item.__subMes)} <span style={{ color: T.txt3, fontWeight: 500 }}>este mes · prom. {fm(item.__sub)}</span>
                             <span style={{ color: T.txt3, fontWeight: 500, marginLeft: 6 }}>{fmtPctEs(item.__pct, 0)}</span>
                           </span>
@@ -804,6 +812,11 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                         </span>
                       );
                     })()}
+                    {item.prepago && Number(item.prepago.año) === añoActual && (
+                      <span title={`Pagaste ${fm(Number(item.prepago.monto) * fxG(item))} en ${_MESES_L[Number(item.prepago.mes) - 1]}`} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: "rgba(0,200,5,0.15)", color: "#00c805" }}>
+                        Pagado por adelantado hasta {_MESES_L[Number(item.prepago.hastaMes) - 1]}
+                      </span>
+                    )}
                     {/* Fase 2 flujo anual: chip "Pagado" solo aparece si frecuencia != mensual */}
                     {getFrecuencia(item) !== "mensual" && getFrecuencia(item) !== "variable" && (
                       <span
@@ -861,13 +874,17 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   // Este mes: lo que de verdad sale en el mes en curso (vigencia, variables,
                   // pagos anuales). Si no sale nada este mes, se dice en vez de poner $0.
                   const exMes = extrasMes(item, _mesHoy) / fxG(item); // en la moneda del gasto, para comparar con prom
-                  const hoy = montoDelMes(item, _añoHoy, _mesHoy) + exMes, prom = promedioMesActivo(item);
-                  const distinto = prom > 0 && Math.abs(hoy - prom) / prom >= 0.03;
+                  const hoy = montoDelMes(item, _añoHoy, _mesHoy) + exMes, prom = promLista(item);
+                  const distinto = false; // el % vs promedio no aporta en un gasto anual y confundía
+                  const fq = getFrecuencia(item), mp = Number(item.mesPago) || 1;
+                  const cuando = fq === "anual" ? (mp < _mesHoy ? `salió en ${_MESES_L[mp - 1]}` : `sale en ${_MESES_L[mp - 1]}`)
+                    : item.prepago && Number(item.prepago.año) === _añoHoy ? "pagado por adelantado"
+                    : item.soloExtras ? "no sale este mes" : "no sale este mes";
                   return (
                     <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                       {hoy > 0
-                        ? <div style={{ fontWeight: 700, color: T.red }}>{fm(hoy * fxG(item))}{exMes > 0 && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>pago único</div>}</div>
-                        : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>no sale</div>}
+                        ? <div style={{ fontWeight: 700, color: T.txt }}>{fm(hoy * fxG(item))}{exMes > 0 && <div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>pago único</div>}</div>
+                        : <div style={{ fontSize: 12, color: T.txt3, fontFamily: "inherit" }}>{cuando}</div>}
                       {distinto && hoy > 0 && <div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, whiteSpace: "nowrap", color: hoy < prom ? T.green : T.orange }}>{hoy < prom ? "▼" : "▲"} {fmtPctEs(Math.abs(hoy - prom) / prom * 100, 0)} vs. promedio</div>}
                     </td>
                   );
@@ -875,7 +892,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 <td style={{ padding: "10px 14px", textAlign: "right", fontFamily: "monospace" }}>
                   {item.soloExtras
                     ? <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(extrasAño(item))}<div style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>en el año · no se repite</div></div>
-                    : <div style={{ fontWeight: 600, color: T.txt2 }}>{fm(promedioMesActivo(item) * fxG(item))}</div>}
+                    : <div style={{ fontWeight: 600, color: T.txt }}>{fm(promLista(item) * fxG(item))}<span style={{ fontSize: 11, color: T.txt3, fontWeight: 500 }}>/mes</span></div>}
                   {/* Subtítulo con total anual solo si NO es mensual todo el año */}
                   {(() => {
                     const badge = labelVigenciaBadge(item);
@@ -1368,6 +1385,42 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </div>
               )}
+              {/* 14-nov-2026 — Pago por adelantado (Santiago: "un seguro, una membresía… poder poner pagado
+                  el total, por tanto no sigue apareciendo el resto del año"). Solo gastos que se repiten. */}
+              {templateElegido?.id !== "variable-mensual" && (() => {
+                const año = new Date().getFullYear(), mesH = new Date().getMonth() + 1;
+                const pp = form.prepago;
+                const MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+                const sel = { width: "100%", boxSizing: "border-box", minWidth: 0, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.txt, fontSize: 13 };
+                const activar = (on) => setForm((p) => {
+                  if (!on) return { ...p, prepago: null };
+                  const m = Number(p.m) || 0, desde = mesH, hasta = 12;
+                  const sugerido = (p.frecuencia || "mensual") === "mensual" ? m * (hasta - desde + 1) : m;
+                  return { ...p, prepago: { año, mes: desde, hastaMes: hasta, monto: sugerido ? String(Math.round(sugerido)) : "" } };
+                });
+                const upd = (k, v) => setForm((p) => ({ ...p, prepago: { ...p.prepago, [k]: v } }));
+                return (
+                  <div style={{ gridColumn: "1/-1", border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.txt, cursor: "pointer" }}>
+                      <input type="checkbox" checked={!!pp} onChange={(e) => activar(e.target.checked)} />
+                      Ya lo pagué por adelantado este año (ej. el seguro o la membresía completos)
+                    </label>
+                    {pp && (
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 10 }}>
+                        <div><div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>Cuánto pagaste ({(form.moneda || "COP") === "USD" ? "US$" : "$"})</div>
+                          <input inputMode="decimal" value={pp.monto ? Number(pp.monto).toLocaleString("es-CO") : ""} onChange={(e) => upd("monto", e.target.value.replace(/[^0-9]/g, ""))} placeholder="0" style={{ ...sel, textAlign: "right" }} /></div>
+                        <div><div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>En qué mes lo pagaste</div>
+                          <select value={pp.mes} onChange={(e) => upd("mes", Number(e.target.value))} style={sel}>{MES.map((n, i) => <option key={i} value={i + 1}>{n}</option>)}</select></div>
+                        <div><div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>Cubre hasta</div>
+                          <select value={pp.hastaMes} onChange={(e) => upd("hastaMes", Number(e.target.value))} style={sel}>{MES.map((n, i) => i + 1 >= Number(pp.mes) && <option key={i} value={i + 1}>{n}</option>)}</select></div>
+                        <div style={{ gridColumn: "1/-1", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+                          Sale de tu cuenta en {MES[Number(pp.mes) - 1]}. De {MES[Math.min(11, Number(pp.mes))]} a {MES[Number(pp.hastaMes) - 1]} no vuelve a salir{Number(pp.hastaMes) <= Number(pp.mes) ? " (cubre solo ese mes)" : ""}. Desde el año siguiente sigue normal. Tu promedio y tu nivel de libertad no cambian: el gasto sigue existiendo.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <In l="Propietario fiscal (opcional)" value={form.owner} onChange={(v) => {
                 const ow = (owners || []).find(o => o.id === v);
                 const ownerType = ow ? ow.type : "natural";
