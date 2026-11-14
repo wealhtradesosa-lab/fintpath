@@ -379,12 +379,16 @@ export function prepagoDelAño(item, año) {
   if (!p || Number(p.año) !== Number(año)) return null;
   const mes = Math.min(12, Math.max(1, Number(p.mes) || 1));
   const hastaMes = Math.min(12, Math.max(mes, Number(p.hastaMes) || 12));
-  return { mes, hastaMes, monto: Math.max(0, Number(p.monto) || 0) };
+  // 14-nov-2026 (Santiago: "cada mes pago 3 MM y este mes pagué 25 MM, incluida
+  // la cuota o no"). incluyeMes: el pago extraordinario ya trae la cuota de ese
+  // mes (sale solo el pago) o la cuota se pagó aparte (sale cuota + pago).
+  return { mes, hastaMes, monto: Math.max(0, Number(p.monto) || 0), incluyeMes: p.incluyeMes !== false };
 }
 
 export function montoDelMes(item, año, mes) {
   const pp = prepagoDelAño(item, año);
-  if (pp && mes >= pp.mes && mes <= pp.hastaMes) return mes === pp.mes ? pp.monto : 0;
+  if (pp && mes === pp.mes) return pp.incluyeMes ? pp.monto : montoDelMesBase(item, año, mes) + pp.monto;
+  if (pp && mes > pp.mes && mes <= pp.hastaMes) return 0; // meses que ese pago dejó cubiertos
   return montoDelMesBase(item, año, mes);
 }
 

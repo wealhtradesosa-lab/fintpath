@@ -37,7 +37,9 @@ export const TEMPLATES = [
     id: "mensual-todo-año",
     emoji: "",
     titulo: () => "Cada mes",
-    descripcion: (tipo) => tipo === "ingreso" ? "Lo recibes los 12 meses del año" : "Lo pagas los 12 meses del año",
+    // 14-nov-2026: "Cada mes" ahora pregunta de qué mes a qué mes (enero → diciembre
+    // por defecto), así que "Solo algunos meses" deja de ser una opción aparte.
+    descripcion: (tipo) => tipo === "ingreso" ? "Entra cada mes. Eliges de qué mes a qué mes" : "Lo pagas cada mes. Eliges de qué mes a qué mes",
     ejemplo: (tipo) => tipo === "ingreso" ? "Ej: sueldo, arriendo, dividendo mensual" : "Ej: arriendo, servicios, gimnasio, mercado",
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 12, mesPago: 1 },
     // El toggle "Mensual/Total del año" también aplica acá
@@ -49,7 +51,7 @@ export const TEMPLATES = [
     // clasificación DIAN). Ajustar un rango de meses no debería costar
     // reelegir la plantilla.
     // El default sigue siendo 1-12, así que quien no lo toque no ve diferencia.
-    camposVisibles: ["monto", "modoIngresoSimple", "vigencia"],
+    camposVisibles: ["monto", "vigencia"], // 14-nov-2026: sin «¿Mensual o Total del año?»: el valor es el de cada mes
     modoIngresoDefault: "porPago",
     color: "#00c805",
   },
@@ -63,7 +65,7 @@ export const TEMPLATES = [
     // (salario parcial, contrato). Así el user típico solo toca "Hasta"
     // (18-jul-2026 noche, Santiago: elegir Desde primero lo sacaba).
     preset: { frecuencia: "mensual", desdeMes: 1, hastaMes: 6, mesPago: 1 },
-    camposVisibles: ["monto", "modoIngresoSimple", "vigencia"],
+    camposVisibles: ["monto", "vigencia"], // 14-nov-2026: sin «¿Mensual o Total del año?»: el valor es el de cada mes
     modoIngresoDefault: "porPago",
     color: "#3b82f6",
   },
@@ -158,8 +160,8 @@ export function detectarTemplate(item) {
 }
 
 export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T, onCancel }) {
-  const ORDEN = ["mensual-todo-año", "mensual-limitado", "anual", "variable-mensual", "unico"];
-  const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado" && (!t.soloTipo || t.soloTipo === tipo)).sort((a, b) => ORDEN.indexOf(a.id) - ORDEN.indexOf(b.id));
+  const ORDEN = ["mensual-todo-año", "anual", "variable-mensual", "unico"];
+  const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado" && t.id !== "mensual-limitado" && (!t.soloTipo || t.soloTipo === tipo)).sort((a, b) => ORDEN.indexOf(a.id) - ORDEN.indexOf(b.id));
   const templateAvanzado = TEMPLATES.find(t => t.id === "avanzado");
 
   return (

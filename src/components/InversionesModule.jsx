@@ -660,7 +660,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <td style={{ padding: pad, textAlign: "right", whiteSpace: "nowrap", fontSize: 12, color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: pad }}><div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
-                      <MenuFila extra={[{ label: "Registrar aporte", onClick: () => { if (!guardEdit(role)) return; setAporteDe(inv.id); } }]} onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
+                      <MenuFila extra={[{ label: "Registrar aporte", icono: "aporte", onClick: () => { if (!guardEdit(role)) return; setAporteDe(inv.id); } }]} onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
                     </div></td>
                     </>) : (<>
                       <td style={{ padding: "12px 14px", fontSize: 12, color: T.txt3 }}>{tipo}</td>
@@ -671,7 +671,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
                       </td>
                       <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                        <MenuFila extra={[{ label: "Registrar aporte", onClick: () => { if (!guardEdit(role)) return; setAporteDe(inv.id); } }]} onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
+                        <MenuFila extra={[{ label: "Registrar aporte", icono: "aporte", onClick: () => { if (!guardEdit(role)) return; setAporteDe(inv.id); } }]} onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
                       </div></td>
                     </>)}
                   </tr>

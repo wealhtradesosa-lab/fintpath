@@ -29,7 +29,7 @@ export function labelMontoSegunFrecuencia(frecuencia) {
   switch (frecuencia) {
     case "trimestral": return "Monto por trimestre";
     case "semestral":  return "Monto por semestre";
-    case "anual":      return "Monto anual (1 pago)";
+    case "anual":      return "Valor del pago de cada año";
     case "unico":      return "Monto del pago único";
     default:           return "Monto mensual";
   }
@@ -83,6 +83,7 @@ export default function FrecuenciaSelector({
   onChange,
   monto,
   moneda = "COP", // 14-nov-2026: el resumen va en la moneda en que se escribió el valor
+  tipo = "gasto", // 14-nov-2026: "ingreso" | "gasto" — para hablar de "entra" o "lo pagas"
   tokens: T,
   // Fase 4 flujo anual (18-jul-2026): rango de vigencia solo para mensuales
   desdeMes = 1,
@@ -207,57 +208,36 @@ export default function FrecuenciaSelector({
           de vigencia + sistema respeta ambos.
           Default: enero-diciembre (todo el año) → comportamiento clásico.
           ═══════════════════════════════════════════════════════════════════ */}
-      {/* Vigencia — para mensual Y variable (18-jul-2026 noche) */}
+      {/* Vigencia — para mensual Y variable.
+          14-nov-2026 (Santiago: "ese mensaje de «se recibe o paga todo el año» no
+          se entiende"). Ya no hay botón "Todo el año / Solo unos meses": se
+          pregunta directo de qué mes a qué mes, con los dos meses siempre a la
+          vista. Enero → diciembre es todo el año. */}
       {(frecuencia === "mensual" || frecuencia === "variable") && mostrarVigencia && (
         <div style={{ marginBottom: 8, marginTop: 4 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-            <label style={{ fontSize: 11, fontWeight: 500, color: T.txt3 }}>
-              ¿Se recibe/paga todo el año?
-            </label>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button type="button"
-                onClick={() => { setModoLimitado(false); onChange({ desdeMes: 1, hastaMes: 12, vigenciaModo: "todo" }); }}
-                style={{ background: !vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${!vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: !vigenciaLimitada ? T.gn : T.txt2, fontSize: 11, fontWeight: !vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
-                Todo el año
-              </button>
-              <button type="button"
-                onClick={() => { setModoLimitado(true); onChange({ vigenciaModo: "limitada" }); }}
-                style={{ background: vigenciaLimitada ? T.gn + "15" : "transparent", border: `1.5px solid ${vigenciaLimitada ? T.gn : ("rgba(var(--fp-ink),0.35)")}`, borderRadius: 6, padding: "4px 12px", color: vigenciaLimitada ? T.gn : T.txt2, fontSize: 11, fontWeight: vigenciaLimitada ? 700 : 600, cursor: "pointer" }}>
-                Solo unos meses
-              </button>
-            </div>
+          <label style={{ fontSize: 12, fontWeight: 600, color: T.txt2, display: "block", marginBottom: 6 }}>
+            {tipo === "ingreso" ? "¿De qué mes a qué mes entra?" : "¿De qué mes a qué mes lo pagas?"}
+          </label>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <select aria-label="Desde"
+              value={desdeMes}
+              onChange={(e) => {
+                const nuevo = Number(e.target.value);
+                const nuevoHasta = nuevo > hastaMes ? nuevo : hastaMes;
+                onChange({ desdeMes: nuevo, hastaMes: nuevoHasta, vigenciaModo: nuevo === 1 && nuevoHasta === 12 ? "todo" : "limitada" });
+              }}
+              style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.txt, fontSize: 13, outline: "none" }}>
+              {MESES.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+            </select>
+            <span style={{ color: T.txt3, fontSize: 13 }}>→</span>
+            <select aria-label="Hasta"
+              value={hastaMes}
+              onChange={(e) => { const h = Number(e.target.value); onChange({ hastaMes: h, vigenciaModo: desdeMes === 1 && h === 12 ? "todo" : "limitada" }); }}
+              style={{ flex: 1, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.txt, fontSize: 13, outline: "none" }}>
+              {MESES.filter(m => m.v >= desdeMes).map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
+            </select>
           </div>
-          {vigenciaLimitada && (
-            <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 4 }}>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, color: T.txt3, display: "block", marginBottom: 2 }}>Desde</label>
-                <select
-                  value={desdeMes}
-                  onChange={(e) => {
-                    const nuevo = Number(e.target.value);
-                    // Auto-ajustar hastaMes si el rango queda invertido
-                    const nuevoHasta = nuevo > hastaMes ? nuevo : hastaMes;
-                    // vigenciaModo "limitada": tocar el mes ES elegir modo limitado
-                    onChange({ desdeMes: nuevo, hastaMes: nuevoHasta, vigenciaModo: "limitada" });
-                  }}
-                  style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.txt, fontSize: 12, outline: "none" }}
-                >
-                  {MESES.map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-                </select>
-              </div>
-              <span style={{ color: T.txt3, fontSize: 11, marginTop: 14 }}>→</span>
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 11, color: T.txt3, display: "block", marginBottom: 2 }}>Hasta</label>
-                <select
-                  value={hastaMes}
-                  onChange={(e) => onChange({ hastaMes: Number(e.target.value), vigenciaModo: "limitada" })}
-                  style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "6px 10px", color: T.txt, fontSize: 12, outline: "none" }}
-                >
-                  {MESES.filter(m => m.v >= desdeMes).map(m => <option key={m.v} value={m.v}>{m.l}</option>)}
-                </select>
-              </div>
-            </div>
-          )}
+          {!rangoLimitado && <div style={{ fontSize: 11, color: T.txt3, marginTop: 4 }}>De enero a diciembre: todo el año.</div>}
         </div>
       )}
 

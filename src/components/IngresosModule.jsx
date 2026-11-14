@@ -1544,7 +1544,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                   chips de frecuencia otra vez. Solo lo esencial. */}
               {(mostrarCampo("frecuencia") || mostrarCampo("vigencia") || mostrarCampo("mesPago")) && (
               <div style={{gridColumn:"1/-1"}}>
-                <FrecuenciaSelector
+                <FrecuenciaSelector tipo="ingreso"
                   frecuencia={form.frecuencia}
                   mesPago={form.mesPago}
                   desdeMes={form.desdeMes}

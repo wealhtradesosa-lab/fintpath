@@ -44,10 +44,10 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
       <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
       {options
-        ? <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={valorOpcion(o)} value={valorOpcion(o)}>{etiquetaOpcion(o)}</option>)}</select>
+        ? <select value={value ?? ""} onChange={(e) => onChange(e.target.value)} style={{ width: "100%", boxSizing: "border-box", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }}>{options.map((o) => <option key={valorOpcion(o)} value={valorOpcion(o)}>{etiquetaOpcion(o)}</option>)}</select>
         : type === "number"
-          ? <NumberInput value={value} onChange={(v) => onChange(v === "" ? "" : String(v))} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
-          : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
+          ? <NumberInput value={value} onChange={(v) => onChange(v === "" ? "" : String(v))} placeholder={placeholder} style={{ width: "100%", boxSizing: "border-box", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
+          : <input type={type || "text"} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={{ width: "100%", boxSizing: "border-box", background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", color: T.txt, fontSize: 14, outline: "none" }} />
       }
     </div>
   );
@@ -480,7 +480,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         // 14-nov-2026 (Santiago: "cada año hay vacaciones, no las mismas, pero sí un presupuesto;
         // poder poner tiquetes, hotel o viáticos, separado o todo junto"). El monto es la suma.
         prepago: form.prepago && Number(form.prepago.monto) > 0
-          ? { año: Number(form.prepago.año), mes: Number(form.prepago.mes), hastaMes: Math.max(Number(form.prepago.mes), Number(form.prepago.hastaMes)), monto: Number(form.prepago.monto) }
+          ? { año: Number(form.prepago.año), mes: Number(form.prepago.mes), hastaMes: Math.max(Number(form.prepago.mes), Number(form.prepago.hastaMes)), monto: Number(form.prepago.monto), incluyeMes: form.prepago.incluyeMes !== false }
           : undefined,
         partes: Array.isArray(form.partes) && form.partes.some((x) => Number(x.monto) > 0)
           ? form.partes.filter((x) => Number(x.monto) > 0).map((x) => ({ nota: (x.nota || "").trim() || "Parte", monto: Number(x.monto) }))
@@ -525,7 +525,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
     const año = new Date().getFullYear(), mesH = new Date().getMonth() + 1;
     const fq = item.frecuencia || "mensual";
     const sugerido = fq === "mensual" ? (Number(item.m) || 0) * (12 - mesH + 1) : (Number(item.m) || 0);
-    setForm((p) => ({ ...p, prepago: p.prepago || { año, mes: mesH, hastaMes: 12, monto: sugerido ? String(Math.round(sugerido)) : "" } }));
+    setForm((p) => ({ ...p, prepago: p.prepago || { año, mes: mesH, hastaMes: 12, incluyeMes: true, monto: sugerido ? String(Math.round(sugerido)) : "" } }));
   };
   const openEdit = (item) => {
     // 14-nov-2026: un gasto que solo existe como pago único se abre en su propio
@@ -826,7 +826,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     })()}
                     {item.prepago && Number(item.prepago.año) === añoActual && (
                       <span title={`Pagaste ${fm(Number(item.prepago.monto) * fxG(item))} en ${_MESES_L[Number(item.prepago.mes) - 1]}`} style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 10, background: "rgba(0,200,5,0.15)", color: "#00c805" }}>
-                        Pagado por adelantado hasta {_MESES_L[Number(item.prepago.hastaMes) - 1]}
+                        {Number(item.prepago.hastaMes) > Number(item.prepago.mes) ? `Pagado hasta ${_MESES_L[Number(item.prepago.hastaMes) - 1]}` : `Abono en ${_MESES_L[Number(item.prepago.mes) - 1]}`}
                       </span>
                     )}
                     {/* Fase 2 flujo anual: chip "Pagado" solo aparece si frecuencia != mensual */}
@@ -926,7 +926,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 </td>
                 <td style={{ padding: "10px 14px" }}>
                   <button onClick={() => { if (!guardEdit(role)) return; const upd = {...gastos}; upd[item.cat] = upd[item.cat].map((g,i) => i===item.idx ? {...g, sim: !(item.sim!==false)} : g); onUpdate(upd); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={item.sim===false?"Mostrar":"Ocultar"}><Interruptor on={item.sim!==false} /></button>
-                  <MenuFila extra={item.soloExtras ? [] : [{ label: "Ya lo pagué todo el año", onClick: () => { if (!guardEdit(role)) return; abrirPagadoAño(item); } }]} /* 14-nov-2026 (Santiago: "el registro de extra aquí no es, quitarlo"): el pago único va por "+ Agregar". */ onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
+                  <MenuFila extra={item.soloExtras ? [] : [{ label: "Ya lo pagué todo el año", icono: "pagado", onClick: () => { if (!guardEdit(role)) return; abrirPagadoAño(item); } }]} /* 14-nov-2026 (Santiago: "el registro de extra aquí no es, quitarlo"): el pago único va por "+ Agregar". */ onEditar={() => openEdit(item)} onEliminar={() => { if (!guardEdit(role)) return; const g = { ...gas }; g[item.cat] = g[item.cat].filter((_, i) => i !== item.idx); if (g[item.cat].length === 0) delete g[item.cat]; onUpdate(g); }} />
                 </td>
               </tr>
               )
@@ -1243,7 +1243,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           if (modoIngreso === "anual") return "Total del año";
                           return labelMontoSegunFrecuencia(freq);
                         }
-                        return "Monto";
+                        // 14-nov-2026: decir de qué es el valor, no solo "Monto".
+                        return freq === "mensual" ? "Valor de cada mes" : labelMontoSegunFrecuencia(freq);
                       })() + ((form.moneda || "COP") === "USD" ? " (US$)" : " ($ pesos)")}
                       value={form.m}
                       onChange={(v) => setForm((p) => ({ ...p, m: v, partes: null }))}
@@ -1404,37 +1405,79 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   })()}
                 </div>
               )}
-              {/* 14-nov-2026 — Pago por adelantado (Santiago: "un seguro, una membresía… poder poner pagado
-                  el total, por tanto no sigue apareciendo el resto del año"). Solo gastos que se repiten. */}
+              {/* 14-nov-2026 — Abono o pago extraordinario (Santiago: "eso debe tener los
+                  pagos mensuales y la casilla de abono o pago extraordinario"; "cada mes pago
+                  3 MM y este mes pagué 25 MM, incluida la cuota o no"; "ahí mismo puede uno
+                  marcar se pagó todo lo pendiente, y por tanto deja de cobrarse la cuota").
+                  Vive en form.prepago = { año, mes, monto, incluyeMes, hastaMes } y lo aplica
+                  montoDelMes (flowHelpers): solo cambia la caja de ese año. */}
               {templateElegido?.id !== "variable-mensual" && (() => {
                 const año = new Date().getFullYear(), mesH = new Date().getMonth() + 1;
                 const pp = form.prepago;
                 const MES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-                const sel = { width: "100%", boxSizing: "border-box", minWidth: 0, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", color: T.txt, fontSize: 13 };
-                const activar = (on) => setForm((p) => {
-                  if (!on) return { ...p, prepago: null };
-                  const m = Number(p.m) || 0, desde = mesH, hasta = 12;
-                  const sugerido = (p.frecuencia || "mensual") === "mensual" ? m * (hasta - desde + 1) : m;
-                  return { ...p, prepago: { año, mes: desde, hastaMes: hasta, monto: sugerido ? String(Math.round(sugerido)) : "" } };
-                });
-                const upd = (k, v) => setForm((p) => ({ ...p, prepago: { ...p.prepago, [k]: v } }));
+                const sel = { width: "100%", boxSizing: "border-box", minWidth: 0, background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 10px", color: T.txt, fontSize: 14 };
+                const chipS = (on) => ({ padding: "7px 12px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${on ? "#00c805" : T.border}`, background: on ? "rgba(0,200,5,0.12)" : "transparent", color: on ? T.txt : T.txt2 });
+                const lblS = { fontSize: 12, fontWeight: 600, color: T.txt2, marginBottom: 6, display: "block" };
+                const mensualFq = (form.frecuencia || "mensual") === "mensual";
+                const cuota = mensualFq ? (Number(form.m) || 0) : 0;
+                const hastaVig = Number(form.hastaMes) || 12;
+                const moneda = (form.moneda || "COP") === "USD" ? "US$" : "$";
+                const fmtM = (v) => moneda + Math.round(Number(v) || 0).toLocaleString("es-CO");
+                // Lo que falta por pagar del año desde el mes del pago (incluido).
+                const pendiente = (desde) => (mensualFq ? cuota * Math.max(0, hastaVig - desde + 1) : (Number(form.m) || 0));
+                const activar = (on) => setForm((p) => (on ? { ...p, prepago: { año, mes: mesH, monto: "", incluyeMes: true, hastaMes: mesH } } : { ...p, prepago: null }));
+                const upd = (patch) => setForm((p) => ({ ...p, prepago: { ...p.prepago, ...patch } }));
+                const mes = Number(pp?.mes) || mesH, hasta = Math.max(mes, Number(pp?.hastaMes) || mes);
+                const cubre = !pp ? "" : hasta <= mes ? "abono" : hasta >= hastaVig ? "todo" : "hasta";
+                const elegirCubre = (c) => {
+                  if (c === "abono") upd({ hastaMes: mes });
+                  else if (c === "todo") upd({ hastaMes: 12, incluyeMes: true, monto: String(Math.round(pendiente(mes)) || "") });
+                  else upd({ hastaMes: Math.min(12, mes + 1) });
+                };
+                const montoN = Number(pp?.monto) || 0;
+                const saleMes = pp ? (pp.incluyeMes !== false ? montoN : montoN + cuota) : 0;
                 return (
-                  <div style={{ gridColumn: "1/-1", border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 12px" }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: T.txt, cursor: "pointer" }}>
-                      <input type="checkbox" checked={!!pp} onChange={(e) => activar(e.target.checked)} />
-                      Ya lo pagué por adelantado este año (ej. el seguro o la membresía completos)
+                  <div style={{ gridColumn: "1/-1", border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 600, color: T.txt, cursor: "pointer" }}>
+                      <input type="checkbox" checked={!!pp} onChange={(e) => activar(e.target.checked)} style={{ width: 16, height: 16 }} />
+                      Hice un abono o pago extraordinario
                     </label>
+                    {!pp && <div style={{ fontSize: 12, color: T.txt3, marginTop: 4, marginLeft: 26 }}>Por ejemplo, pagaste más de la cuota, o pagaste de una vez lo que faltaba del año.</div>}
                     {pp && (
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginTop: 10 }}>
-                        <div><div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>Cuánto pagaste ({(form.moneda || "COP") === "USD" ? "US$" : "$"})</div>
-                          <input inputMode="decimal" value={pp.monto ? Number(pp.monto).toLocaleString("es-CO") : ""} onChange={(e) => upd("monto", e.target.value.replace(/[^0-9]/g, ""))} placeholder="0" style={{ ...sel, textAlign: "right" }} /></div>
-                        <div><div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>En qué mes lo pagaste</div>
-                          <select value={pp.mes} onChange={(e) => upd("mes", Number(e.target.value))} style={sel}>{MES.map((n, i) => <option key={i} value={i + 1}>{n}</option>)}</select></div>
-                        <div><div style={{ fontSize: 12, color: T.txt3, marginBottom: 4 }}>Cubre hasta</div>
-                          <select value={pp.hastaMes} onChange={(e) => upd("hastaMes", Number(e.target.value))} style={sel}>{MES.map((n, i) => i + 1 >= Number(pp.mes) && <option key={i} value={i + 1}>{n}</option>)}</select></div>
-                        <div style={{ gridColumn: "1/-1", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
-                          Sale de tu cuenta en {MES[Number(pp.mes) - 1]}. De {MES[Math.min(11, Number(pp.mes))]} a {MES[Number(pp.hastaMes) - 1]} no vuelve a salir{Number(pp.hastaMes) <= Number(pp.mes) ? " (cubre solo ese mes)" : ""}. Desde el año siguiente sigue normal. Tu promedio y tu nivel de libertad no cambian: el gasto sigue existiendo.
+                      <div style={{ marginTop: 12, display: "grid", gap: 14 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10 }}>
+                          <div><span style={lblS}>¿Cuánto pagaste? ({moneda})</span>
+                            <input inputMode="decimal" value={pp.monto ? Number(pp.monto).toLocaleString("es-CO") : ""} onChange={(e) => upd({ monto: e.target.value.replace(/[^0-9]/g, "") })} placeholder="0" style={{ ...sel, textAlign: "right", fontWeight: 600 }} /></div>
+                          <div><span style={lblS}>¿En qué mes?</span>
+                            <select value={mes} onChange={(e) => { const m2 = Number(e.target.value); upd({ mes: m2, hastaMes: cubre === "abono" ? m2 : Math.max(m2, hasta) }); }} style={sel}>{MES.map((n, i) => <option key={i} value={i + 1}>{n}{i + 1 === mesH ? " (este mes)" : ""}</option>)}</select></div>
                         </div>
+                        {cuota > 0 && (
+                          <div><span style={lblS}>¿Incluye la cuota de {MES[mes - 1]} ({fmtM(cuota)})?</span>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button type="button" style={chipS(pp.incluyeMes !== false)} onClick={() => upd({ incluyeMes: true })}>Sí, la incluye</button>
+                              <button type="button" style={chipS(pp.incluyeMes === false)} onClick={() => upd({ incluyeMes: false })}>No, la pagué aparte</button>
+                            </div></div>
+                        )}
+                        <div><span style={lblS}>¿Qué cubre ese pago?</span>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button type="button" style={chipS(cubre === "abono")} onClick={() => elegirCubre("abono")}>Sigo pagando la cuota normal</button>
+                            <button type="button" style={chipS(cubre === "todo")} onClick={() => elegirCubre("todo")}>Pagué todo lo pendiente del año</button>
+                            <button type="button" style={chipS(cubre === "hasta")} onClick={() => elegirCubre("hasta")}>Cubre hasta otro mes</button>
+                          </div>
+                          {cubre === "hasta" && (
+                            <select value={hasta} onChange={(e) => upd({ hastaMes: Number(e.target.value) })} style={{ ...sel, marginTop: 8 }}>
+                              {MES.map((n, i) => i + 1 > mes && <option key={i} value={i + 1}>Hasta {n}</option>)}
+                            </select>
+                          )}
+                          {cubre === "todo" && mensualFq && cuota > 0 && <div style={{ fontSize: 12, color: T.txt3, marginTop: 6 }}>Lo pendiente de {MES[mes - 1]} a {MES[hastaVig - 1]}: {fmtM(pendiente(mes))}. Puedes cambiar el valor si pagaste otro.</div>}
+                        </div>
+                        {montoN > 0 && (
+                          <div style={{ background: T.bg3, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 12px", fontSize: 13, color: T.txt, lineHeight: 1.6 }}>
+                            En {MES[mes - 1]} sale <strong>{fmtM(saleMes)}</strong>{cuota > 0 ? (pp.incluyeMes !== false ? " (ya incluye la cuota)" : ` (cuota ${fmtM(cuota)} + pago ${fmtM(montoN)})`) : ""}.{" "}
+                            {hasta > mes ? <>{hasta === mes + 1 ? `En ${MES[mes]}` : `De ${MES[mes]} a ${MES[hasta - 1]}`} <strong>no se cobra la cuota</strong>.</> : <>Los meses siguientes sigues pagando la cuota normal.</>}
+                            <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>En {año + 1} vuelve a lo normal. Tu promedio y tu nivel de libertad no cambian: el gasto sigue existiendo.</div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

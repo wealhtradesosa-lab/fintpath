@@ -69,7 +69,12 @@ export function IconoMenu({ id, size = 20 }) {
 }
 
 import { useEffect, useRef, useState } from "react";
-import { MoreHorizontal, Pencil as Lapiz, Trash2 as Caneca } from "lucide-react";
+import { MoreHorizontal, Pencil as Lapiz, Trash2 as Caneca, CalendarCheck, CirclePlus } from "lucide-react";
+
+// 14-nov-2026 (Santiago: "así como Editar y Eliminar tienen ícono, lo mismo
+// debería pasar con «Ya lo pagué todo el año»"). Toda acción del menú lleva
+// ícono, del mismo tamaño y trazo, para que se lea como una sola lista.
+const ICONOS_MENU = { pagado: CalendarCheck, aporte: CirclePlus };
 
 /**
  * Menú «⋯» de una fila (crítica de diseño: lápiz y caneca a la vista en cada
@@ -117,7 +122,7 @@ export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar", extra 
       {abierto && (
         <div role="menu" style={{ position: "fixed", ...(pos || { right: 8, top: 8 }), zIndex: 1000, minWidth: 150, background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.12)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
           {/* 14-nov-2026: acciones extra de la fila (p. ej. "Registrar aporte"). */}
-          {extra.map((x) => <button key={x.label} role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); x.onClick(); }}>{x.label}</button>)}
+          {extra.map((x) => { const Ic = ICONOS_MENU[x.icono]; return <button key={x.label} role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); x.onClick(); }}>{Ic ? <Ic size={15} strokeWidth={1.75} /> : <span style={{ width: 15, flexShrink: 0 }} />} {x.label}</button>; })}
           {onEditar && <button role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); onEditar(); }}><Lapiz size={15} strokeWidth={1.75} /> {editarTitulo}</button>}
           {onEliminar && <button role="menuitem" type="button" style={{ ...item, color: "#ff5000" }} onClick={() => { setAbierto(false); onEliminar(); }}><Caneca size={15} strokeWidth={1.75} /> Eliminar</button>}
         </div>
