@@ -14,6 +14,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { montoDelMes } from "./flowHelpers.js";
+import { cuotaDeudaDelMes, gastoDelMes, deudaViva } from "./flujoMes.js";
 
 const porMonto = (a, b) => b.monto - a.monto;
 
@@ -35,18 +36,16 @@ export function composicionMes({ user, año, mes, trm = 4200 }) {
   Object.entries(user?.gas || user?.gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g) => {
       if (g.sim === false) return;
-      const monto = montoDelMes(g, año, mes);
+      const monto = gastoDelMes(g, año, mes, trm);
       if (Math.round(monto) !== 0) gastos.push({ nombre: g.c || cat, cat, monto, aporte: cat === "Seguridad Social" });
     });
   });
 
   const cuotas = [];
   (user?.deu || user?.deudas || []).forEach((d) => {
-    if ((d.mt || 0) <= 0 || d.sim === false) return;
-    const desde = Number(d.desdeMes) || 1;
-    const hasta = Number(d.hastaMes) || 12;
-    if (mes < desde || mes > hasta) return;
-    const monto = d.pg || d.pago || 0;
+    if (!deudaViva(d)) return;
+    // Mismo cálculo del simulador: respeta frecuencia variable (abonos), vigencia y moneda.
+    const monto = cuotaDeudaDelMes(d, d.pago || d.pg || 0, año, mes, trm);
     if (Math.round(monto) !== 0) cuotas.push({ nombre: d.n || d.nombre || "Deuda", monto });
   });
 

@@ -45,3 +45,15 @@ describe("composicionMes", () => {
     expect(c.totalCuotas).toBe(2_800_000);
   });
 });
+
+describe("abono extraordinario en una deuda (frecuencia variable)", () => {
+  it("noviembre muestra la cuota con el abono, igual que el simulador", async () => {
+    const { cuotaDeudaDelMes } = await import("../../src/lib/flujoMes.js");
+    const montos = Array(12).fill(2_000_000); montos[10] = 47_000_000; // cuota + abono de $45M
+    const u = { ingresos: [], gastos: {}, deudas: [{ n: "Deepal", mt: 80e6, pago: 2_000_000, frecuencia: "variable", montosMensuales: montos }] };
+    const nov = composicionMes({ user: u, año, mes: 11, trm: 4000 });
+    expect(nov.cuotas).toEqual([{ nombre: "Deepal", monto: 47_000_000 }]);
+    expect(nov.totalCuotas).toBe(cuotaDeudaDelMes(u.deudas[0], 2_000_000, año, 11, 4000));
+    expect(composicionMes({ user: u, año, mes: 10, trm: 4000 }).totalCuotas).toBe(2_000_000);
+  });
+});

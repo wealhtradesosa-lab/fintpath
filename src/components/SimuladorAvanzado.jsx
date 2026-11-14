@@ -10,6 +10,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { estimarImpuestoReferente, mesesDePago, saldoImpuestoAnual } from "../lib/impuestoReferente";
 import SankeyFlujo from "./SankeyFlujo";
 import FlujoMesVsPromedio, { promedioFilas } from "./FlujoMesVsPromedio";
+import { cuotaDeudaDelMes, retencionDelMes } from "../lib/flujoMes.js";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, getMonto, getMontosMensuales, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
@@ -51,22 +52,8 @@ const fm = (n) => { const v = Math.round(Number(n) || 0); return (v < 0 ? "-$" :
 // Una deuda con cuotas distintas por mes (frecuencia variable / montosMensuales) ignoraba el `mensual`
 // que trae el slider: montoDelMes lee el mes cargado. Ahora el slider escala la cuota del mes en la
 // misma proporción (0 % → 0, 50 % → la mitad), para cualquier frecuencia.
-export const cuotaDeudaDelMes = (d, cuotaBase, año, mes, trm) => {
-  const original = Number(d?.pago || d?.pg || 0) || 0;
-  const fx = d?.moneda === "USD" ? (trmUsable(trm) ?? TRM_PROVISIONAL) : 1;
-  if (original > 0 && Number(cuotaBase) !== original) {
-    const delMes = montoDelMes({ ...d, mensual: original, m: undefined }, año, mes);
-    return delMes * ((Number(cuotaBase) || 0) / original) * fx;
-  }
-  return montoDelMes({ ...d, mensual: cuotaBase, m: undefined }, año, mes) * fx;
-};
-
-// RETENCIÓN — sigue al ingreso del mes: si un mes entra menos, retienen menos.
-// Aplicarla plana en los 12 meses desplaza el cash flow mes a mes aunque el
-// total anual cuadre. El impuesto de renta sí va parejo: es una obligación
-// anual, no un descuento sobre cada pago.
-export const retencionDelMes = (ingresosMes, brutoRef, retencionRef) =>
-  (brutoRef > 0 ? (ingresosMes / brutoRef) * retencionRef : retencionRef);
+// 14-nov-2026: viven en lib/flujoMes.js (también los usa FlujoAnual).
+export { cuotaDeudaDelMes, retencionDelMes };
 // ═══════════════════════════════════════════════════════════════════════════
 
 const cuotaDeudaEnMes = (d, mes) => {

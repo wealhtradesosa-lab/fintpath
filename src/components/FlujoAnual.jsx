@@ -34,6 +34,7 @@ import { estimarImpuestoReferente, calibracionReferente, saldoImpuestoDelMes } f
 import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 import { composicionMes } from "../lib/composicionMes.js";
+import { cuotaDeudaDelMes, retencionDelMes, gastoDelMes, deudaViva, fxDe } from "../lib/flujoMes.js";
 
 const T = {
   bg: "var(--fp-bg)", bg2: "var(--fp-card)", bg3: "var(--fp-raised)", bg4: "var(--fp-raised)",
@@ -104,46 +105,27 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       impuestoBrutoAnual += (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       retencionAnual += (td.reteN || 0);
     });
-    const retencionMes = Math.round(retencionAnual / 12);
     // El saldo de la declaración no se paga cada mes: sale de un golpe en el mes que le toca a cada titular.
     const impuestoNetoEnMes = (mes) => Math.round(saldoImpuestoDelMes(taxData?.detalle, user?.owners, mes));
 
-    // 27-sep-2026 (Santiago: "ya pagué el crédito de libre inversión y me
-    // aparece todavía en diciembre con una cuota de 2.500.000 por pagar").
-    //
-    // CAUSA: esta suma filtraba por saldo y por sim, pero ignoraba la VIGENCIA
-    // de la deuda. Se calculaba UNA cuota mensual y se aplicaba a los 12 meses
-    // por igual —"mensuales por diseño", decía el comentario original—, así que
-    // una deuda con hastaMes = septiembre seguía descontándose en octubre,
-    // noviembre y diciembre.
-    //
-    // Marcar la deuda como pagada sí la sacaba (pone mt: 0), pero quien en vez
-    // de eso ajusta la vigencia —que es lo que el formulario invita a hacer—
-    // no veía ningún efecto acá. Dos caminos para el mismo hecho y solo uno
-    // funcionaba.
-    //
-    // Los ingresos y los gastos de este mismo cálculo ya pasaban por
-    // montoDelMes, que respeta frecuencia y vigencia. Las cuotas eran la única
-    // línea que no. Ahora se calculan por mes, con el mismo criterio.
-    const deudasVivas = deudas.filter(d => (d.mt || 0) > 0 && d.sim !== false);
-    const cuotaDeudasEnMes = (mes) => deudasVivas.reduce((s, d) => {
-      const desde = Number(d.desdeMes) || 1;
-      const hasta = Number(d.hastaMes) || 12;
-      if (mes < desde || mes > hasta) return s;
-      return s + (d.pg || d.pago || 0);
-    }, 0);
+    // 14-nov-2026 — Mismas reglas que el simulador (lib/flujoMes.js). Antes la
+    // cuota era fija los 12 meses (ignoraba la frecuencia variable, donde se
+    // cargan los abonos: el abono de $45M a Deepal no aparecía) y la retención
+    // era pareja (en el simulador sigue al ingreso del mes).
+    const deudasVivas = deudas.filter(deudaViva);
+    const cuotaDeudasEnMes = (mes) => deudasVivas.reduce((s, d) => s + cuotaDeudaDelMes(d, d.pago || d.pg || 0, año, mes, trmR), 0);
+    const ingresoDe = (ing, mes) => montoDelMes({ ...ing, mensual: (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1) }, año, mes);
+    const ingresosPorMes = Array.from({ length: 12 }, (_, i) =>
+      ingresos.reduce((t, ing) => (ing.sim === false ? t : t + ingresoDe(ing, i + 1)), 0));
+    const brutoRef = ingresosPorMes.reduce((t, x) => t + x, 0) / 12;
+    const retencionRef = retencionAnual / 12;
 
     // Para cada mes del año, calcular ingresos y gastos
     return Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1;
 
       // Ingresos del mes (respeta frecuencia + mes de pago + estado pagado)
-      let ingresosMes = 0;
-      ingresos.forEach(ing => {
-        if (ing.sim === false) return;
-        const montoBase = (Number(ing.mensual) || 0) * (ing.moneda === "USD" ? trmR : 1);
-        ingresosMes += montoDelMes({ ...ing, mensual: montoBase }, año, mes);
-      });
+      const ingresosMes = ingresosPorMes[i];
 
       // Gastos del mes: aportes obligatorios + gastos familiares
       let aportesObligatorios = 0;
@@ -151,13 +133,14 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       Object.entries(gastos).forEach(([cat, items]) => {
         (items || []).forEach(g => {
           if (g.sim === false) return;
-          const monto = montoDelMes(g, año, mes);
+          const monto = gastoDelMes(g, año, mes, trmR);
           if (cat === "Seguridad Social") aportesObligatorios += monto;
           else gastosFamiliares += monto;
         });
       });
 
       const cuotasDeudasMes = cuotaDeudasEnMes(mes);
+      const retencionMes = retencionDelMes(ingresosMes, brutoRef, retencionRef);
       const disponible = ingresosMes - retencionMes;
       const impuestoNetoMes = impuestoNetoEnMes(mes);
       const egresosMes = aportesObligatorios + gastosFamiliares + cuotasDeudasMes + impuestoNetoMes;
@@ -225,8 +208,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     Object.entries(user?.gas || user?.gastos || {}).forEach(([cat, items]) => {
       (items || []).forEach((g) => {
         if (g.sim === false || fueraDeVigencia(g)) return;
-        const delM = montoDelMes(g, año, mes);
-        const tipico = montoPromedioMensual(g);
+        const delM = gastoDelMes(g, año, mes, trmR);
+        const tipico = montoPromedioMensual(g) * fxDe(g, trmR);
         if (Math.round(delM - tipico) !== 0) {
           const r = rangoEfectivo(g);
           movs.push({ nombre: g.c || cat, tipo: "gasto", cat,
@@ -236,21 +219,18 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       });
     });
 
-    // Cuotas: acá el movimiento es binario — la cuota aplica este mes o no.
+    // Cuotas: mismo cálculo del flujo (lib/flujoMes.js): respeta frecuencia
+    // variable (abonos), vigencia y moneda. Lo típico = promedio de los 12 meses.
     (user?.deu || user?.deudas || []).forEach((d) => {
-      if (d.sim === false || (d.mt || 0) <= 0) return;
-      const cuota = (Number(d.pg || d.pago) || 0) * (d.moneda === "USD" ? trmR : 1);
-      if (cuota <= 0) return;
-      const desde = Number(d.desdeMes) || 1;
-      const hasta = Number(d.hastaMes) || 12;
-      const vigentes = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
-      const aplica = mes >= desde && mes <= hasta;
-      const tipico = (cuota * vigentes) / 12;
-      const delM = aplica ? cuota : 0;
+      if (!deudaViva(d)) return;
+      const base = d.pago || d.pg || 0;
+      const meses = Array.from({ length: 12 }, (_, i) => cuotaDeudaDelMes(d, base, año, i + 1, trmR));
+      const delM = meses[mes - 1];
+      const tipico = meses.reduce((t, x) => t + x, 0) / 12;
       if (Math.round(delM - tipico) !== 0) {
         movs.push({ nombre: d.n || d.nombre || L.cuotas, tipo: "cuota",
                     monto: delM, tipico, efecto: -(delM - tipico),
-                    mesesActivos: vigentes });
+                    mesesActivos: meses.filter((x) => Math.round(x) !== 0).length });
       }
     });
 
@@ -364,7 +344,9 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       impuestoBrutoAnual += (td.impBruto != null ? td.impBruto : (td.impuesto || 0));
       retencionAnual += (td.reteN || 0);
     });
-    const impuestoNetoAnual = Math.max(0, impuestoBrutoAnual - retencionAnual);
+    // Por titular y en los meses en que se paga, igual que la tabla mes a mes.
+    let impuestoNetoAnual = 0;
+    for (let m = 1; m <= 12; m++) impuestoNetoAnual += saldoImpuestoDelMes(taxData?.detalle, user?.owners, m);
 
     // ─── INGRESOS por categoría ─────────────────────────────────
     const ingresosPorCat = {};
@@ -387,7 +369,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         if (g.sim === false) return;
         let totalAño = 0;
         for (let m = 1; m <= 12; m++) {
-          totalAño += montoDelMes(g, año, m);
+          totalAño += gastoDelMes(g, año, m, trmR);
         }
         if (totalAño > 0) egresosPorCat[cat] = (egresosPorCat[cat] || 0) + totalAño;
       });
@@ -397,14 +379,11 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     // 27-sep-2026 — Mismo defecto que arriba, y acá pesaba más: multiplicar la
     // cuota por 12 le cobra el año entero a una deuda que corre medio año. Una
     // cuota de $2,5M vigente hasta septiembre inflaba la categoría en $7,5M.
-    const cuotasAnual = deudas
-      .filter(d => (d.mt || 0) > 0 && d.sim !== false)
-      .reduce((s, d) => {
-        const desde = Number(d.desdeMes) || 1;
-        const hasta = Number(d.hastaMes) || 12;
-        const mesesVigentes = Math.max(0, Math.min(12, hasta) - Math.max(1, desde) + 1);
-        return s + (d.pg || d.pago || 0) * mesesVigentes;
-      }, 0);
+    // 14-nov-2026: la suma de los 12 meses del mismo cálculo (abonos incluidos).
+    let cuotasAnual = 0;
+    deudas.filter(deudaViva).forEach((d) => {
+      for (let m = 1; m <= 12; m++) cuotasAnual += cuotaDeudaDelMes(d, d.pago || d.pg || 0, año, m, trmR);
+    });
     if (cuotasAnual > 0) egresosPorCat["Cuotas de deudas"] = cuotasAnual;
 
     // Impuesto neto (después de retención) como categoría separada
