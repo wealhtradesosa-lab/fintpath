@@ -593,6 +593,8 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
     brutoTotal, retencionMensual, disponibleCuenta,
     aportesObligatorios, gastosFamiliares, cuotasDeudas,
     impuestoBrutoMensual, impuestoNeto,
+    // 14-nov-2026: detalle por titular, para que AñoEnCurso ponga el saldo en su mes (como el simulador).
+    impuestoDetalle:(taxData&&taxData.detalle)||[],
     egresosTotales, cashFlow, independencia, coberturaTotal,
     // ═══ Base única de métricas (metrics.js) ═══
     // 21-oct-2026 — UNA sola base por párrafo. Todo lo que describe la foto de

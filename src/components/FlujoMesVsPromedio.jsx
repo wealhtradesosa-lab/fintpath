@@ -20,7 +20,7 @@ import { MESES } from "../lib/flowHelpers.js";
 // promedio es Σ filas ÷ 12, igual que las barras y el cierre del año.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CAMPOS = ["bruto", "retencion", "disponible", "aportes", "gastosFam", "cuotas", "impuesto", "egresos", "flujo"];
+const CAMPOS = ["bruto", "retencion", "disponible", "aportes", "gastosFam", "cuotas", "impuesto", "inversiones", "egresos", "flujo"];
 
 export function promedioFilas(filas) {
   const p = Object.fromEntries(CAMPOS.map((k) => [k, 0]));
@@ -50,6 +50,7 @@ const FILAS = [
       { label: "Gastos familiares", campo: "gastosFam" },
       { label: "Cuotas de deudas", campo: "cuotas" },
       { label: "Impuesto de renta", campo: "impuesto", nota: "Se paga en el mes de cada declaración" },
+      { label: "Aportes a inversiones", campo: "inversiones", nota: "Extraordinarios: la plata pasa a tu patrimonio", soloSiHay: true },
     ],
   },
 ];
@@ -157,6 +158,7 @@ export default function FlujoMesVsPromedio({ T, fm, mes, año, mesActual, onMes,
             ...(open ? f.detalle.flatMap((d) => {
               const m = filaMes[d.campo] || 0;
               const p = filaProm[d.campo] || 0;
+              if (d.soloSiHay && Math.round(m) === 0 && Math.round(p) === 0) return [];
               const dd = (d.resta ? -1 : 1) * (m - p);
               const v = (x) => (d.resta && Math.round(x) !== 0 ? "−" : "") + fm(x);
               return [

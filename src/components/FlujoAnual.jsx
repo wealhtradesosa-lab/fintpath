@@ -34,6 +34,7 @@ import { estimarImpuestoReferente, calibracionReferente, saldoImpuestoDelMes } f
 import { ChartTooltip, sinCorte, MARGEN_EJE } from "../lib/chartTheme.jsx";
 import Disclaimer from "./Disclaimer.jsx";
 import { composicionMes } from "../lib/composicionMes.js";
+import { aportesInversionDelMes } from "../lib/aportesInversion.js";
 import { cuotaDeudaDelMes, retencionDelMes, gastoDelMes, deudaViva, fxDe } from "../lib/flujoMes.js";
 
 const T = {
@@ -143,7 +144,8 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       const retencionMes = retencionDelMes(ingresosMes, brutoRef, retencionRef);
       const disponible = ingresosMes - retencionMes;
       const impuestoNetoMes = impuestoNetoEnMes(mes);
-      const egresosMes = aportesObligatorios + gastosFamiliares + cuotasDeudasMes + impuestoNetoMes;
+      const inversionesMes = aportesInversionDelMes(user, año, mes, trmR).total;
+      const egresosMes = aportesObligatorios + gastosFamiliares + cuotasDeudasMes + impuestoNetoMes + inversionesMes;
       const cashFlow = disponible - egresosMes;
 
       return {
@@ -158,6 +160,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
         gastosFamiliares,
         cuotasDeudas: cuotasDeudasMes,
         impuestoNeto: impuestoNetoMes,
+        inversiones: inversionesMes,
         retencion: retencionMes,
         disponible,
         // Meta info
@@ -275,6 +278,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
     };
   }, [mesDetalle, user, trm, año, datosMensuales, L.ingresos, L.cuotas]);
 
+  const hayInv = datosMensuales.some((d) => Math.round(d.inversiones || 0) > 0);
   const highlights = useMemo(() => {
     const cashFlows = datosMensuales.map(d => d.cashFlow);
     const promedio = cashFlows.reduce((s, c) => s + c, 0) / 12;
@@ -385,6 +389,9 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
       for (let m = 1; m <= 12; m++) cuotasAnual += cuotaDeudaDelMes(d, d.pago || d.pg || 0, año, m, trmR);
     });
     if (cuotasAnual > 0) egresosPorCat["Cuotas de deudas"] = cuotasAnual;
+    let invAnual = 0;
+    for (let m = 1; m <= 12; m++) invAnual += aportesInversionDelMes(user, año, m, trmR).total;
+    if (invAnual > 0) egresosPorCat["Aportes a inversiones"] = invAnual;
 
     // Impuesto neto (después de retención) como categoría separada
     if (impuestoNetoAnual > 0) egresosPorCat["Impuesto de renta"] = impuestoNetoAnual;
@@ -822,6 +829,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                       </div>
                       {c.gastos.length > 0 && <><Sub t={isEN ? `Expenses · ${fm(c.totalGastos)}` : `Gastos · ${fm(c.totalGastos)}`} /><Lista items={c.gastos} conCat /></>}
                       {c.cuotas.length > 0 && <><Sub t={isEN ? `Loan payments · ${fm(c.totalCuotas)}` : `Cuotas de deudas · ${fm(c.totalCuotas)}`} /><Lista items={c.cuotas} /></>}
+                      {c.inversiones.length > 0 && <><Sub t={isEN ? `Investments · ${fm(c.totalInversiones)}` : `Aportes a inversiones · ${fm(c.totalInversiones)}`} /><Lista items={c.inversiones} /></>}
                       {(d.impuestoNeto || 0) > 0 && <><Sub t={isEN ? "Income tax" : "Impuesto de renta"} />
                         <Lista items={[{ nombre: isEN ? "Tax return balance" : "Saldo de la declaración", monto: d.impuestoNeto }]} /></>}
                       <Total fuerte et={isEN ? "Total outflows" : "Total egresos"} v={d.egresos} color={T.rd} />
@@ -1155,11 +1163,12 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
           <div style={{ fontSize: 14, fontWeight: 700, color: T.txt }}>{tx("Detalle mes a mes", "Month-by-month detail")}</div>
           <div style={{ fontSize: 12, color: T.txt3, marginTop: 2 }}>{tx("Desglose completo: ingresos, egresos por categoría, cash flow y saldo acumulado.", "Full breakdown: income, outflows by category, cash flow and running balance.")}</div>
         </div>
+        {/* 14-nov-2026: columna de aportes a inversiones solo si hubo alguno en el año, para que la fila cuadre con Egresos. */}
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr style={{ background: T.bg3 }}>
-                {[L.mes, L.ingresos, L.aportes, L.gastosFam, L.cuotas, L.impuesto, L.egresos, L.cashflow, L.saldo].map((h, i) => (
+                {[L.mes, L.ingresos, L.aportes, L.gastosFam, L.cuotas, L.impuesto, ...(hayInv ? [tx("Inversiones", "Investments")] : []), L.egresos, L.cashflow, L.saldo].map((h, i) => (
                   <th key={h} style={{ padding: "10px 12px", textAlign: i === 0 ? "left" : "right", color: T.txt3, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
@@ -1178,6 +1187,7 @@ export default function FlujoAnual({ user, trm = 4200, isEN = false }) {
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.txt2 }}>{fm(d.gastosFamiliares)}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.txt2 }}>{fm(d.cuotasDeudas)}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.pr }}>{fm(d.impuestoNeto)}</td>
+                    {hayInv && <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.bl }}>{fm(d.inversiones)}</td>}
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: T.rd, fontWeight: 600 }}>{fm(d.egresos)}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: d.cashFlow >= 0 ? T.gn : T.rd, fontWeight: 700 }}>{fm(d.cashFlow)}</td>
                     <td style={{ padding: "10px 12px", textAlign: "right", fontFamily: "monospace", color: saldo >= 0 ? T.txt : T.rd, fontWeight: 600 }}>{fm(saldo)}</td>

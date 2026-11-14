@@ -1,5 +1,6 @@
 import DosFormasCargar from "./DosFormasCargar.jsx";
 import { useState, useMemo, useEffect } from "react";
+import AporteInversionModal from "./AporteInversionModal";
 import { Interruptor, Pencil, Trash2, MenuFila } from "./Iconos.jsx";
 import { fmtTasaEs } from "../lib/formato.js";
 import { fmtPctEs, inflacionGlobal } from "../lib/metrics.js";
@@ -206,6 +207,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   const { role } = useRole();
   // V4.9 - edit fix
   const [showForm, setShowForm] = useState(false);
+  const [aporteDe, setAporteDe] = useState(null); // 14-nov-2026: id de la inversión con el formulario de aporte abierto
   const [busca, setBusca] = useState("");
   const [titularFiltro, setTitularFiltro] = useState("");
   const [cerrados, setCerrados] = useState({});
@@ -625,6 +627,19 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         )}
                         <span>{name}</span>
                       </div>
+                      {(() => {
+                        const añoA = new Date().getFullYear();
+                        const ap = (inv.aportes || []).filter((a) => Number(a.año) === añoA);
+                        const tot = ap.reduce((t, a) => t + (Number(a.monto) || 0), 0);
+                        if (!ap.length) return null;
+                        return (
+                          <button type="button" onClick={() => setAporteDe(inv.id)}
+                            style={{ marginTop: 3, background: "rgba(59,130,246,0.12)", color: T.blue, border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700,
+                              padding: "2px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
+                            {`Aportes ${añoA}: ${inv.moneda === "USD" ? "US$" + Math.round(tot).toLocaleString("es-CO") : fm(tot)}`}
+                          </button>
+                        );
+                      })()}
                       {inv.revisarFiscal && (
                         <div onClick={() => openEdit(inv)} style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", cursor: "pointer", marginBottom: 2 }}>Revisa: ¿qué tipo de inversión es? Elígelo para que tu renta quede bien calculada</div>
                       )}
@@ -645,7 +660,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <td style={{ padding: pad, textAlign: "right", whiteSpace: "nowrap", fontSize: 12, color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: pad }}><div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                       <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
-                      <MenuFila onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
+                      <MenuFila extra={[{ label: "Registrar aporte", onClick: () => { if (!guardEdit(role)) return; setAporteDe(inv.id); } }]} onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
                     </div></td>
                     </>) : (<>
                       <td style={{ padding: "12px 14px", fontSize: 12, color: T.txt3 }}>{tipo}</td>
@@ -656,7 +671,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                         <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>
                       </td>
                       <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><div style={{display:"flex",alignItems:"center",gap:4}}>
-                        <MenuFila onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
+                        <MenuFila extra={[{ label: "Registrar aporte", onClick: () => { if (!guardEdit(role)) return; setAporteDe(inv.id); } }]} onEditar={() => openEdit(inv)} onEliminar={() => { if (!guardEdit(role)) return; if (confirm("¿Eliminar?")) onUpdate(items.filter((i) => i.id !== inv.id)); }} />
                       </div></td>
                     </>)}
                   </tr>
@@ -866,6 +881,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       )}
     
     <Disclaimer variante="general" idioma="es" T={T} compacto />
-  </div>
+  {aporteDe && (() => {
+        const iv = items.find((x) => x.id === aporteDe);
+        if (!iv) return null;
+        return <AporteInversionModal inv={iv} fm={fm} T={T} onCerrar={() => setAporteDe(null)}
+          onGuardar={(nueva, seguir) => { onUpdate(items.map((x) => (x.id === iv.id ? nueva : x))); if (!seguir) setAporteDe(null); }} />;
+      })()}
+    </div>
   );
 }

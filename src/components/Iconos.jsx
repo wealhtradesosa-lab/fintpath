@@ -75,7 +75,7 @@ import { MoreHorizontal, Pencil as Lapiz, Trash2 as Caneca } from "lucide-react"
  * Menú «⋯» de una fila (crítica de diseño: lápiz y caneca a la vista en cada
  * fila = ruido). Un botón discreto; al tocarlo, «Editar» y «Eliminar».
  */
-export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar" }) {
+export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar", extra = [] }) {
   const [abierto, setAbierto] = useState(false);
   const ref = useRef(null);
   useEffect(() => {
@@ -93,6 +93,8 @@ export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar" }) {
       </button>
       {abierto && (
         <div role="menu" style={{ position: "absolute", right: 0, top: "100%", zIndex: 30, minWidth: 150, background: "var(--fp-card)", border: "1px solid rgba(var(--fp-ink),0.12)", borderRadius: 10, padding: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+          {/* 14-nov-2026: acciones extra de la fila (p. ej. "Registrar aporte"). */}
+          {extra.map((x) => <button key={x.label} role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); x.onClick(); }}>{x.label}</button>)}
           {onEditar && <button role="menuitem" type="button" style={item} onClick={() => { setAbierto(false); onEditar(); }}><Lapiz size={15} strokeWidth={1.75} /> {editarTitulo}</button>}
           {onEliminar && <button role="menuitem" type="button" style={{ ...item, color: "#ff5000" }} onClick={() => { setAbierto(false); onEliminar(); }}><Caneca size={15} strokeWidth={1.75} /> Eliminar</button>}
         </div>

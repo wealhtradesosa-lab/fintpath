@@ -11,6 +11,7 @@ import { estimarImpuestoReferente, mesesDePago, saldoImpuestoAnual } from "../li
 import SankeyFlujo from "./SankeyFlujo";
 import FlujoMesVsPromedio, { promedioFilas } from "./FlujoMesVsPromedio";
 import { cuotaDeudaDelMes, retencionDelMes, deudaViva } from "../lib/flujoMes.js";
+import { aportesInversionDelMes } from "../lib/aportesInversion.js";
 import ProyeccionPatrimonio from "./ProyeccionPatrimonio";
 import CtaUnaAccion from "./CtaUnaAccion";
 import { montoPromedioMensual, montoDelMes, MESES, getMesActual, getFrecuencia, getMonto, getMontosMensuales, estaPagadoEnAño, FRECUENCIAS, getRangoMeses, rangoEfectivo, totalAnualItem } from "../lib/flowHelpers.js";
@@ -832,7 +833,8 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
 
     // Consolidación
     const disponibleMes = brutoDelMes - retencionMes;
-    const egresosMes = aportesObligatoriosMes + gastosFamiliaresMes + cuotasDeudasMes + impuestoNetoMes;
+    const inversionesMes = aportesInversionDelMes(user, añoActual, mes, trm).total;
+    const egresosMes = aportesObligatoriosMes + gastosFamiliaresMes + cuotasDeudasMes + impuestoNetoMes + inversionesMes;
     const cashFlowMes = disponibleMes - egresosMes;
 
     return {
@@ -1038,17 +1040,19 @@ export default function SimuladorAvanzado({ user, impuestoData, totals, fmt, onN
       const retencion = retencionDelMes(ingresosMes, simT.brutoTotal || 0, simT.retencionMensual || 0);
       // El saldo de la declaración sale en su mes, no 1/12 cada mes (29-oct-2026).
       const impNeto = simT.saldoPorMes ? (simT.saldoPorMes[mes - 1] || 0) : (simT.impuestoNeto || 0);
-      const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto);
+      // 14-nov-2026: aportes extraordinarios a inversiones del mes (salen de caja, no son gasto).
+      const inversiones = aportesInversionDelMes(user, año, mes, trm).total;
+      const cf = (ingresosMes - retencion) - (aportesObl + gastosFam + cuotas + impNeto + inversiones);
       // 14-sep-2026 (Santiago: "es super bueno ver cuánto ha ingresado total
       // en el año, cuánto ha salido y cuánto ha quedado"). El cálculo ya tenía
       // las dos patas; solo devolvía el neto y se perdían.
       const entra = ingresosMes;
-      const sale = retencion + aportesObl + gastosFam + cuotas + impNeto;
+      const sale = retencion + aportesObl + gastosFam + cuotas + impNeto + inversiones;
       // 14-nov-2026 — Desglose por mes: el promedio de la tabla "mes vs promedio"
       // sale de aquí (Σ 12 meses ÷ 12), la misma fuente de las barras y del cierre.
       return { mes, mesLabel: MESES.find(m => m.v === mes)?.l.slice(0, 3) || "", cashFlow: cf, entra, sale,
         retencion, disponible: ingresosMes - retencion, aportes: aportesObl, gastosFam, cuotas, impuesto: impNeto,
-        egresos: aportesObl + gastosFam + cuotas + impNeto };
+        inversiones, egresos: aportesObl + gastosFam + cuotas + impNeto + inversiones };
     });
   }, [user, getVal, trm, simT.retencionMensual, simT.impuestoNeto, simT.saldoPorMes, simT.brutoTotal]);
 
@@ -1758,7 +1762,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
       {(() => {
         const filas = cashFlowPorMes.map((m) => ({
           bruto: m.entra, retencion: m.retencion, disponible: m.disponible, aportes: m.aportes,
-          gastosFam: m.gastosFam, cuotas: m.cuotas, impuesto: m.impuesto, egresos: m.egresos, flujo: m.cashFlow,
+          gastosFam: m.gastosFam, cuotas: m.cuotas, impuesto: m.impuesto, inversiones: m.inversiones, egresos: m.egresos, flujo: m.cashFlow,
         }));
         const filaProm = promedioFilas(filas);
         const filaMes = filas[mesVisualizado - 1] || filaProm;

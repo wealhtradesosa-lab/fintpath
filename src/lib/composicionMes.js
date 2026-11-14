@@ -16,6 +16,7 @@
 import { montoDelMes } from "./flowHelpers.js";
 import { cuotaDeudaDelMes, gastoDelMes, deudaViva, fxDe } from "./flujoMes.js";
 import { abonosDelMes } from "./abonosDeuda.js";
+import { aportesInversionDelMes } from "./aportesInversion.js";
 
 const porMonto = (a, b) => b.monto - a.monto;
 
@@ -51,10 +52,12 @@ export function composicionMes({ user, año, mes, trm = 4200 }) {
     if (Math.round(monto) !== 0) cuotas.push(abono > 0 ? { nombre: d.n || d.nombre || "Deuda", monto, abono } : { nombre: d.n || d.nombre || "Deuda", monto });
   });
 
+  const inv = aportesInversionDelMes(user, año, mes, trm);
   const suma = (xs) => xs.reduce((s, x) => s + x.monto, 0);
   return {
     ingresos: ingresos.sort(porMonto), totalIngresos: suma(ingresos),
     gastos: gastos.sort(porMonto), totalGastos: suma(gastos),
     cuotas: cuotas.sort(porMonto), totalCuotas: suma(cuotas),
+    inversiones: inv.items, totalInversiones: inv.total,
   };
 }

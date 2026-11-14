@@ -1,4 +1,7 @@
 import { montoDelMes } from "../lib/flowHelpers.js";
+import { cuotaDeudaDelMes, retencionDelMes, gastoDelMes, deudaViva } from "../lib/flujoMes.js";
+import { aportesInversionDelMes } from "../lib/aportesInversion.js";
+import { saldoImpuestoDelMes } from "../lib/impuestoReferente";
 import { tx, esUS, nombreMes } from "../lib/region.js";
 
 const num = (v) => Number(v) || 0;
@@ -24,7 +27,7 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   if (!user) return null;
 
   const ing = (user.ingresos || []).filter((i) => i.sim !== false);
-  const deu = (user.deu || []).filter((d) => d.sim !== false && (d.mt || 0) > 0);
+  const deu = (user.deu || []).filter(deudaViva);
   const gasCats = Object.values(user.gas || {}).flatMap((its) => (its || []).filter((g) => g.sim !== false));
 
   if (!ing.length && !gasCats.length) return null;
@@ -46,13 +49,19 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   const meses = [];
   for (let m = 1; m <= 12; m++) {
     const entra = ing.reduce((s, i) => s + enCOP(montoDelMes(i, año, m), i.moneda), 0);
-    const gasta = gasCats.reduce((s, g) => s + montoDelMes(g, año, m), 0);
-    const cuotas = deu.reduce((s, d) => s + enCOP(montoDelMes({ ...d, mensual: d.pg || 0 }, año, m), d.moneda), 0);
+    // 14-nov-2026 — Mismas reglas que el simulador y el detalle del año (lib/flujoMes.js):
+    // cuotas con frecuencia, vigencia, abonos y TRM; gastos en USD convertidos;
+    // impuesto en el mes de cada declaración; aportes a inversiones del mes.
+    const gasta = gasCats.reduce((s, g) => s + gastoDelMes(g, año, m, trm), 0);
+    const cuotas = deu.reduce((s, d) => s + cuotaDeudaDelMes(d, d.pago || d.pg || 0, año, m, trm), 0);
+    const inversiones = aportesInversionDelMes(user, año, m, trm).total;
     // La retención sigue al ingreso del mes: si un mes entra menos, retienen
     // menos. El impuesto de renta es una obligación anual, así que se reparte
     // parejo — es el mismo criterio que usa el motor.
-    const retencion = brutoRef > 0 ? (entra / brutoRef) * retencionMes : 0;
-    const sale = gasta + cuotas + retencion + impuestoMes;
+    const retencion = brutoRef > 0 ? retencionDelMes(entra, brutoRef, retencionMes) : 0;
+    const impMes = Array.isArray(totales?.impuestoDetalle) && totales.impuestoDetalle.length
+      ? saldoImpuestoDelMes(totales.impuestoDetalle, user.owners, m) : impuestoMes;
+    const sale = gasta + cuotas + retencion + impMes + inversiones;
     meses.push({ m, entra, sale, neto: entra - sale });
   }
 
