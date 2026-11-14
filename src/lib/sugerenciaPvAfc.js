@@ -81,7 +81,7 @@ export function flujoLibreTrasEmergencia(user, owner, { ag = DEFAULT_AG } = {}) 
   const b = calcularBase({ ingresos: u.ingresos, gastos: u.gas, deudas: u.deu, inv: u.inv, trm: u.trm });
   const descuentos = descuentosObligatorios(det0, ag);
   const flujoNetoAnual = Math.round((b.fl || 0) * 12 - descuentos.total);
-  const faltanteEmergencia = Math.max(0, MESES_FONDO_EMERGENCIA * (b.ob || 0) - (b.liquidos || 0));
+  const faltanteEmergencia = Math.max(0, MESES_FONDO_EMERGENCIA * (b.obCaja ?? b.ob ?? 0) - (b.liquidos || 0));
   const flujoLibreAnual = Math.max(0, flujoNetoAnual - faltanteEmergencia);
   return { u, det0, descuentos, flujoNetoAnual, faltanteEmergencia, flujoLibreAnual };
 }

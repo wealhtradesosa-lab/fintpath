@@ -29,7 +29,7 @@
  *   SD  servicio de deuda (cuotas, capital + interés).
  *   FL = IA + IP − G − SD      OB = G + SD
  */
-import { montoPromedioMensual, montoDelMes, getMesActual } from "./flowHelpers.js";
+import { montoPromedioMensual, montoDelMes, getMesActual, tasaMensualEq } from "./flowHelpers.js";
 
 // ─── Clasificación de ingresos ─────────────────────────────────────────────
 const CATS_PASIVAS = new Set([
@@ -203,6 +203,23 @@ const cuotaDeuda = (d, trm, mens) => {
   const { mes } = mensContexto;
   return mes >= desde && mes <= hasta ? cuota : 0;
 };
+// 13-nov-2026 (Santiago: "si uno paga a capital pues eso es ahorro, ¿no?").
+// Parte la cuota de una deuda en interés (costo real de deber) y abono a
+// capital (ahorro: pasa de deuda a patrimonio). El interés sale del saldo y la
+// tasa, igual que costoCredito (compuesto → tasa mensual equivalente; simple →
+// tasa/12). La fracción se aplica a la cuota ya mensualizada, así respeta
+// vigencia, frecuencia y moneda. Sin saldo o sin tasa no se puede partir: la
+// cuota cuenta ENTERA como costo (mejor exigir de más) y se marca `sinTasa`.
+const partirCuota = (d, cuota) => {
+  if (!(cuota > 0)) return { interes: 0, capital: 0, sinTasa: false };
+  if (d?.tipoInteres === "sin_interes") return { interes: 0, capital: cuota, sinTasa: false };
+  const B = num(d?.mt), P = num(d?.pg ?? d?.pago), ts = num(d?.ts);
+  if (!(B > 0) || !(ts > 0) || !(P > 0)) return { interes: cuota, capital: 0, sinTasa: true };
+  const r = d?.tipoInteres === "simple" ? ts / 100 / 12 : tasaMensualEq(ts);
+  const frac = Math.min(1, (B * r) / P);
+  const interes = cuota * frac;
+  return { interes, capital: cuota - interes, sinTasa: false };
+};
 
 // ─── Clasificación de activos (liquidez / invertibles) ─────────────────────
 const TYPE_MAP = { Other: "Otro", Investment: "Fondo de Inversión", Income: "Otro", Trading: "Acciones", Lote: "Real Estate",
@@ -370,17 +387,31 @@ export function calcularBase(d = {}, opts = {}) {
   // pagando, pero a la que nadie le cargó el saldo, perdía su cuota ENTERA de
   // la obligación del mes. En la cuenta de Santiago eran $2,5M/mes invisibles.
   // Ahora manda la cuota: si este mes hay que pagarla, cuenta.
-  const sd = deudas.reduce((s, x) => s + cuotaDeuda(x, trm, mens), 0);
-  const ob = g + sd;
+  // 13-nov-2026 — Dos obligaciones, dos preguntas:
+  //   obCaja = gastos + cuota COMPLETA → ¿te alcanza la caja este mes? (flujo)
+  //   ob     = gastos + INTERESES      → ¿tus activos pagan tu vida? (nivel)
+  // El abono a capital no es consumo: es ahorro, y la deuda se termina. Antes
+  // el nivel lo trataba como gasto perpetuo y pagar deudas bajaba el nivel.
+  let sd = 0, si = 0, sc = 0;
+  const deudasSinTasa = { n: 0, cuota: 0 };
+  deudas.forEach((x) => {
+    const cuota = cuotaDeuda(x, trm, mens);
+    if (!(cuota > 0)) return;
+    const p = partirCuota(x, cuota);
+    sd += cuota; si += p.interes; sc += p.capital;
+    if (p.sinTasa) { deudasSinTasa.n++; deudasSinTasa.cuota += cuota; }
+  });
+  const obCaja = g + sd;
+  const ob = g + si;
   // Obligación esencial: el piso. Los aportes obligatorios y las cuotas de deuda
   // entran siempre (no son opcionales). Si los gastos no están clasificados no se
   // inventa una fracción: obEsencial = ob, y "Seguridad" queda tan exigente como
   // "Independencia". Mejor exigir de más que prometer una seguridad que no es.
   const esencialesClasificados = gastosVidaEsencial > 0;
   const obEsencial = esencialesClasificados
-    ? gastosVidaEsencial + aportesObligatorios + excesoCostos + impuestoNeto + sd
+    ? gastosVidaEsencial + aportesObligatorios + excesoCostos + impuestoNeto + si
     : ob;
-  const fl = ia + ip - ob;
+  const fl = ia + ip - obCaja;
 
   // 3) Balance
   const valorActivo = (i) => num(i.va) * fx(i, trm);
@@ -388,7 +419,9 @@ export function calcularBase(d = {}, opts = {}) {
   const deudaTotal = deudas.reduce((s, x) => s + num(x.mt) * fx(x, trm), 0);
   const patrimonioNeto = activosTotal - deudaTotal;
   const liquidos = inv.filter(esLiquido).reduce((s, i) => s + valorActivo(i), 0);
-  const colchonMeses = ob > 0 ? liquidos / ob : null;
+  // Colchón contra la caja del mes (cuota completa): es lo que hay que pagar si
+  // el ingreso se cae mañana.
+  const colchonMeses = obCaja > 0 ? liquidos / obCaja : null;
   // Invertibles (spec §5): inmuebles con renta o valorización, financieros,
   // caja. Se excluyen vehículos y bienes de uso.
   const invertiblesLista = inv.filter((i) => {
@@ -404,12 +437,14 @@ export function calcularBase(d = {}, opts = {}) {
   // libre (fl) ya es neto de retención, así que el denominador debe serlo también.
   // La retención no se vuelve a restar en el saldo a pagar de Renta (impuestoNeto ya viene neto).
   const ingresoNeto = ia + ipBruto;
-  const ahorroPct = ingresoNeto > 0 ? (fl / ingresoNeto) * 100 : 0;
+  // Ahorro = lo que sobra + lo que abonas a capital (los dos construyen patrimonio).
+  const ahorroPct = ingresoNeto > 0 ? ((fl + sc) / ingresoNeto) * 100 : 0;
   const cargaDeudaPct = ingresoNeto > 0 ? (sd / ingresoNeto) * 100 : 0;
   return {
     trm, base, anioMedido: aMed, mesMedido: mMed, ocultos,
     iaBruto, ia, ipBruto, ip, costosNeteados, costosAbsorbidosManual,
-    g, sd, ob, fl, obEsencial, gastosVidaEsencial, esencialesClasificados,
+    g, sd, ob, obCaja, fl, obEsencial,
+    interesesDeuda: si, capitalDeuda: sc, deudasSinTasa, gastosVidaEsencial, esencialesClasificados,
     aportesObligatorios, gastosVida, impuestoNeto, retencionMensual,
     ingresoTotal, ingresoNeto, ahorroPct, cargaDeudaPct,
     // % del ingreso que no depende del trabajo (composición, sobre bruto)
@@ -451,17 +486,17 @@ export const NIVELES = [
     detail: "Cubres tus gastos y cuotas con lo que ganas. Si dejaras de trabajar, tu ingreso pasivo todavía no paga ni lo esencial." },
   { id: 3, clave: "seguridad", nombre: "Seguridad", umbral: "esencial", factor: 1, icon: "", color: "#94a3b8",
     desc: "Tus activos pagan lo que no puedes apagar",
-    detail: "Tu ingreso pasivo cubre lo esencial: techo, comida, servicios, salud, educación, transporte, seguros, aportes y las cuotas de tus deudas. Si tu ingreso por trabajo desapareciera, recortarías lo demás, pero no pierdes el piso." },
+    detail: "Tu ingreso pasivo cubre lo esencial: techo, comida, servicios, salud, educación, transporte, seguros, aportes y los intereses de tus deudas. Si tu ingreso por trabajo desapareciera, recortarías lo demás, pero no pierdes el piso." },
   { id: 4, clave: "independencia", nombre: "Independencia", umbral: "total", factor: 1, icon: "", color: "#f59e0b",
     desc: "Tus activos pagan todo tu nivel de vida",
-    detail: "Tu ingreso pasivo neto cubre el 100% de tus gastos y cuotas, sin recortar nada. Trabajar pasa a ser una elección." },
+    detail: "Tu ingreso pasivo neto cubre el 100% de tus gastos y los intereses de tus deudas, sin recortar nada. Lo que abonas a capital es ahorro, no gasto. Trabajar pasa a ser una elección." },
   // 24-oct-2026 (Santiago, con 136 % de cobertura: "¿136 % sí es para estar
   // en abundancia? Abundancia creería yo es cuando se alcanzan porcentajes
   // más altos"). Antes bastaba 130 %. Abundancia es pagar la vida DOS veces
   // con los activos: 200 %.
   { id: 5, clave: "abundancia", nombre: "Abundancia", umbral: "total", factor: 2, icon: "", color: "#f59e0b",
     desc: "Lo pagan dos veces",
-    detail: "Tu ingreso pasivo es el doble de tus gastos y cuotas. Ese margen absorbe la inflación, un año malo de rentas o un gasto grande sin tocar el capital, y deja plata para reinvertir cada mes." },
+    detail: "Tu ingreso pasivo es el doble de tus gastos y los intereses de tus deudas. Ese margen absorbe la inflación, un año malo de rentas o un gasto grande sin tocar el capital, y deja plata para reinvertir cada mes." },
 ];
 
 /** Ingreso pasivo mensual que exige un escalón. null si no se mide así. */
@@ -539,7 +574,7 @@ export const BANDAS_SALUD = [
 export function saludFinanciera(b) {
   // Sin ingresos ni obligaciones cargados no hay nada que puntuar: antes una cuenta vacía sacaba 40 por
   // «deuda 0» y «apalancamiento 0».
-  if (b.ingresoNeto != null && !(b.ingresoNeto > 0) && !(b.ob > 0)) return { score: null, banda: "Sin datos", componentes: {}, candado: null };
+  if (b.ingresoNeto != null && !(b.ingresoNeto > 0) && !((b.obCaja ?? b.ob) > 0)) return { score: null, banda: "Sin datos", componentes: {}, candado: null };
   // Misma base (ingreso neto de retención) en numerador y denominador.
   const ahorroPct = b.ahorroPct != null ? b.ahorroPct : 0;
   const deudaPct = b.cargaDeudaPct != null ? b.cargaDeudaPct : 0;

@@ -14,7 +14,11 @@ import { C, trama, tarjeta, cifra, CSS_INFOGRAFIA } from "./estilos.js";
 const R = 128, CX = 160, CY = 160;
 const fmtPct = (n) => Math.round(n || 0).toLocaleString(localeCifras()) + (localeCifras() === "en-US" ? "%" : " %");
 
-export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, fm, extra = null }) {
+// 13-nov-2026 — `partes`, `caja` y `fin` salen de lib/desgloseLibertad.js: la cifra
+// contra la que se mide el nivel se abre en sus partes, el abono a capital se
+// dice como ahorro y la caja del mes queda al lado (un nivel alto no puede
+// esconder un mes en que la plata no alcanza).
+export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, fm, extra = null, partes = null, caja = null, fin: finD = null }) {
   if (!(ob > 0)) return null;
   const max = escalaMedidor(cobertura);
   const p = puntoArco(cobertura, max, { cx: CX, cy: CY, r: R });
@@ -71,7 +75,7 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
         <circle className="fpi-fade" cx={p.x} cy={p.y} r="8" strokeWidth="3"
           style={{ fill: "var(--fp-card)", stroke: ok ? C.pos : C.neg, filter: `drop-shadow(0 0 8px ${ok ? "var(--fp-pos)" : "var(--fp-neg)"})` }} />
         <text x={CX} y={CY - 26} textAnchor="middle" fontSize="46" fontWeight="600" style={{ fill: C.txt, ...cifra }}>{fmtPct(cobertura)}</text>
-        <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" style={{ fill: C.txt2 }}>{tx("de tus gastos y cuotas", "of your expenses and payments")}</text>
+        <text x={CX} y={CY - 4} textAnchor="middle" fontSize="12" style={{ fill: C.txt2 }}>{tx("de tus gastos e intereses", "of your expenses and interest")}</text>
         <text x={ini.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>{fmtPct(0)}</text>
         <text x={fin.x} y={CY + 26} textAnchor="middle" fontSize="11" style={{ fill: C.txt3 }}>{fmtPct(max)}</text>
         {marcas.some((m) => m.pct >= max * 0.97) && <text x={fin.x} y={CY + 41} textAnchor="middle" fontSize="12" style={{ fill: C.txt3 }}>{nombreNivel(NIVELES[4])}</text>}
@@ -83,12 +87,38 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
         <div style={{ fontSize: 14, lineHeight: 1.55, color: C.txt }}>
           {n ? descNivel(NIVELES[n - 1]) + ". " : ""}
           {ok ? tx(<>Te sobran <b style={{ color: C.pos, ...cifra }}>{fm(dif)}</b> de rentas al mes.</>, <>You have <b style={{ color: C.pos, ...cifra }}>{fm(dif)}</b> of passive income to spare each month.</>)
-            : tx(<>A tus rentas les faltan <b style={{ ...cifra }}>{fm(-dif)}</b> al mes para pagar todo tu nivel de vida.</>, <>Your passive income is <b style={{ ...cifra }}>{fm(-dif)}</b> a month short of covering your whole lifestyle.</>)}
+            : tx(<>A tus rentas les faltan <b style={{ ...cifra }}>{fm(-dif)}</b> este mes para pagar todo tu nivel de vida.</>, <>This month your passive income is <b style={{ ...cifra }}>{fm(-dif)}</b> short of covering your whole lifestyle.</>)}
         </div>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap", paddingTop: 12, borderTop: `1px solid ${C.linea}` }}>
           <div><div style={{ fontSize: 12, color: C.txt2 }}>{tx("Rentas al mes", "Passive income / mo")}</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ip)}</div></div>
-          <div><div style={{ fontSize: 12, color: C.txt2 }}>{tx("Gastos y cuotas al mes", "Expenses & payments / mo")}</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ob)}</div></div>
+          <div><div style={{ fontSize: 12, color: C.txt2 }}>{tx("Gastos e intereses al mes", "Expenses & interest / mo")}</div><div style={{ fontSize: 20, fontWeight: 600, color: C.txt, ...cifra }}>{fm(ob)}</div></div>
         </div>
+        {Array.isArray(partes) && partes.length > 0 && (
+          <div style={{ fontSize: 12, lineHeight: 1.6, color: C.txt2 }}>
+            {tx("Se compone de: ", "Made up of: ")}
+            {partes.map((pt, i) => <span key={pt.clave}>{i > 0 ? " · " : ""}{tx(pt.es, pt.en)} <b style={{ color: C.txt, ...cifra }}>{fm(pt.monto)}</b></span>)}
+          </div>
+        )}
+        {caja && caja.capital > 0 && (
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: C.txt2 }}>
+            {tx(<>Este mes además abonas <b style={{ color: C.pos, ...cifra }}>{fm(caja.capital)}</b> a capital de tus deudas. Eso es ahorro, no gasto: tu deuda baja y tu patrimonio sube.</>,
+                <>This month you also pay <b style={{ color: C.pos, ...cifra }}>{fm(caja.capital)}</b> of debt principal. That is saving, not spending: your debt goes down and your net worth goes up.</>)}
+          </div>
+        )}
+        {caja && (
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: caja.deficit ? C.neg : C.txt2 }}>
+            {caja.deficit
+              ? tx(<>Caja del mes: salen <b style={{ ...cifra }}>{fm(-caja.fl)}</b> más de lo que entra, contando salario y cuotas completas.</>, <>Cash this month: <b style={{ ...cifra }}>{fm(-caja.fl)}</b> more goes out than comes in, counting salary and full payments.</>)
+              : tx(<>Caja del mes, con salario y cuotas completas: te sobran <b style={{ color: C.txt, ...cifra }}>{fm(caja.fl)}</b>.</>, <>Cash this month, with salary and full payments: <b style={{ color: C.txt, ...cifra }}>{fm(caja.fl)}</b> left over.</>)}
+            {caja.rentasNoCubrenCuotas && tx(<> Tus rentas pagan tu vida, pero no las cuotas completas: el abono a capital lo está pagando otro ingreso.</>, <> Your passive income covers your life, but not the full payments: another income is paying the principal.</>)}
+          </div>
+        )}
+        {finD && finD.coberturaSinDeudas != null && finD.coberturaSinDeudas > cobertura + 0.5 && (
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: C.txt2 }}>
+            {tx(<>Cuando termines de pagar tus deudas (≈ {finD.anio}), tus rentas cubrirían el <b style={{ color: C.txt, ...cifra }}>{fmtPct(finD.coberturaSinDeudas)}</b> de tu vida.</>,
+                <>Once your debts are paid off (≈ {finD.anio}), your passive income would cover <b style={{ color: C.txt, ...cifra }}>{fmtPct(finD.coberturaSinDeudas)}</b> of your life.</>)}
+          </div>
+        )}
         {nivel?.siguiente && nivel.faltaIPSiguiente > 0 && (
           <div style={{ fontSize: 13, color: C.txt2 }}>
             {tx(<>Siguiente nivel, {nivel.siguiente.nombre}: <b style={{ color: C.txt, ...cifra }}>{fm(nivel.faltaIPSiguiente)}</b> más de renta al mes.</>, <>Next level, {nombreNivel(nivel.siguiente)}: <b style={{ color: C.txt, ...cifra }}>{fm(nivel.faltaIPSiguiente)}</b> more passive income a month.</>)}

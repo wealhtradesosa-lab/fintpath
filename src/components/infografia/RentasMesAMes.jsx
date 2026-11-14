@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // RentasMesAMes — «¿Tus rentas alcanzan todos los meses?»
 // 1-nov-2026. Barras: rentas de cada mes (azul, lo que producen tus activos).
-// Línea: gastos y cuotas. El mes actual es el protagonista; los demás se
+// Línea: gastos e intereses. El mes actual es el protagonista; los demás se
 // atenúan. Un mes donde las rentas no alcanzan se marca en naranja.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -38,7 +38,7 @@ export default function RentasMesAMes({ meses, mesActual }) {
       <style>{CSS_INFOGRAFIA}</style>
       <div>
         <h3 style={titulo}>{tx("¿Tus rentas alcanzan todos los meses?", "Does your passive income cover every month?")}</h3>
-        <div style={subtitulo}>{tx("Barras: tus rentas de cada mes. Línea: tus gastos y cuotas.", "Bars: passive income each month. Line: expenses and debt payments.")} {conclusion}</div>
+        <div style={subtitulo}>{tx("Barras: tus rentas de cada mes. Línea: tus gastos e intereses de deudas.", "Bars: passive income each month. Line: expenses and debt interest.")} {conclusion}</div>
       </div>
       <div style={{ overflowX: "auto" }}>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={conclusion} style={{ width: "100%", minWidth: 560, height: "auto", fontFamily: "Inter, system-ui, sans-serif" }}>
@@ -55,7 +55,7 @@ export default function RentasMesAMes({ meses, mesActual }) {
                 fill: corto ? trama(C.neg, actual ? 90 : 45) : actual ? C.azul : trama(C.azul, 38),
                 filter: actual ? "drop-shadow(0 0 10px color-mix(in srgb, var(--fp-azul) 45%, transparent))" : "none",
               }}>
-              <title>{tx(`${MES_LARGO[m.mes - 1]}: rentas ${pct(m.cobertura)} de tus gastos y cuotas`, `${mesLargo(m.mes)}: passive income ${pct(m.cobertura)} of expenses and payments`)}</title>
+              <title>{tx(`${MES_LARGO[m.mes - 1]}: rentas ${pct(m.cobertura)} de tus gastos e intereses`, `${mesLargo(m.mes)}: passive income ${pct(m.cobertura)} of expenses and interest`)}</title>
             </rect>
           );
         })}

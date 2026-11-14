@@ -189,7 +189,7 @@ function flujoNegativo(t, L = textos("es")) {
  */
 function colchonUnico(user, t, trm) {
   const b = t?.met || calcularBase({ ingresos: user?.ingresos, gastos: user?.gas || user?.gastos, deudas: user?.deu || user?.deudas, inv: user?.inv, trm });
-  return { meses: b.colchonMeses, liquidos: b.liquidos, ob: b.ob };
+  return { meses: b.colchonMeses, liquidos: b.liquidos, ob: b.obCaja ?? b.ob };
 }
 
 /**

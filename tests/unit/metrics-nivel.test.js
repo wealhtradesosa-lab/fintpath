@@ -13,19 +13,25 @@ describe("caso QA Pro completo", () => {
     expect(m.costosNeteados).toBe(350000 + 200000);
     expect(m.ip).toBe(1497500);
   });
+  // 13-nov-2026 — La cuota se parte: intereses (costo) y abono a capital (ahorro).
+  // Tarjeta 4,2M al 28 % E.A. + vehículo 18,5M al 16 % + hipoteca 210M al 12,5 %:
+  // intereses del mes ≈ 2.388.883 (verificado aparte con la tasa mensual equivalente).
   it("G, SD, OB, FL", () => {
     expect(m.g).toBe(4910000);
     expect(m.sd).toBe(3720000);
-    expect(m.ob).toBe(8630000);
-    expect(m.fl).toBe(567500);
+    expect(m.interesesDeuda).toBeCloseTo(2388883, 0);
+    expect(m.capitalDeuda).toBeCloseTo(3720000 - 2388883, 0);
+    expect(m.obCaja).toBe(8630000);              // caja: cuota completa
+    expect(m.ob).toBeCloseTo(4910000 + 2388883, 0); // libertad: gastos + intereses
+    expect(m.fl).toBe(567500);                   // el flujo sigue con la cuota completa
   });
-  it("cobertura pasiva ~17% (no 0,0%) → N2 Estabilidad", () => {
-    expect(m.coberturaPasiva).toBeCloseTo(17.35, 1);
+  it("cobertura pasiva ~20,5% (IP ÷ gastos + intereses) → N2 Estabilidad", () => {
+    expect(m.coberturaPasiva).toBeCloseTo(20.52, 1);
     expect(m.pctIngresoPasivo).toBeCloseTo(21.0, 1);
     expect(m.nivel.nivel).toBe(2);
     expect(m.nivel.nombre).toBe("Estabilidad");
   });
-  it("liquidez única: caja + CDT + fondo, sobre OB", () => {
+  it("liquidez única: caja + CDT + fondo, sobre la caja del mes (cuota completa)", () => {
     expect(m.liquidos).toBe(26500000);
     expect(m.colchonMeses).toBeCloseTo(3.07, 2);
   });
@@ -103,7 +109,8 @@ describe("sin doble conteo de gastos del inmueble arrendado", () => {
       .filter(([c]) => c !== "Inmueble arrendado")
       .flatMap(([, it]) => it).reduce((s, g) => s + g.m, 0);
     expect(m.g).toBe(gastosVidaSinInmueble);        // 4.910.000
-    expect(m.ob).toBe(m.g + m.sd);                  // 8.630.000
+    expect(m.obCaja).toBe(m.g + m.sd);              // 8.630.000
+    expect(m.ob).toBeCloseTo(m.g + m.interesesDeuda, 6);
     expect(m.ip + m.costosNeteados).toBe(m.ipBruto);
   });
   it("si el costo supera la renta, solo el exceso vuelve a G (una vez)", () => {
@@ -140,9 +147,9 @@ describe("casos de QA del simulador (misma fuente que el Dashboard)", () => {
     const m = cm([{ categoria: "Dividendos", mensual: 5e6 }], 2e6);
     expect(m.nivel.nivel).toBe(5);
   });
-  it("QA Pro → N2 con 17,35%", () => {
+  it("QA Pro → N2 con 20,52%", () => {
     const m = qaMetricas();
     expect(m.nivel.nivel).toBe(2);
-    expect(m.coberturaPasiva).toBeCloseTo(17.35, 2);
+    expect(m.coberturaPasiva).toBeCloseTo(20.52, 2);
   });
 });

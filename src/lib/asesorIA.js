@@ -110,7 +110,7 @@ export function cifrasClave(user, totals) {
 
   // Fondo de emergencia contra gastos + cuotas del mes y la liquidez de
   // metrics.js (las mismas cifras del colchón del Dashboard).
-  const ob = Number(m.ob) || 0;
+  const ob = Number(m.obCaja ?? m.ob) || 0; // fondo de emergencia: la caja del mes, con la cuota completa
   if (ob > 0) {
     const liquidez = Number(m.liquidos) || 0;
     lineas.push(`• Fondo de emergencia (meses de gastos + cuotas; los activos líquidos ${fm(liquidez)} cuentan como fondo):`);

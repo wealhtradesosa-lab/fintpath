@@ -123,6 +123,7 @@ import { getPlansForApp, STRIPE_PRICE_IDS, planDesdePriceId, PRECIOS_COP, fmtCOP
 import DeclaracionUpload from "./components/DeclaracionUpload";
 import GlosarioPage from "./components/GlosarioPage";
 import MedidorLibertad from "./components/infografia/MedidorLibertad";
+import { partesObligacion, lecturaCaja, finDeudas } from "./lib/desgloseLibertad.js";
 import FlujoDinero from "./components/infografia/FlujoDinero";
 import MapaPatrimonio from "./components/infografia/MapaPatrimonio";
 import RentasMesAMes from "./components/infografia/RentasMesAMes";
@@ -602,7 +603,7 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
     met, metMes, nivel:metMes.nivel,
     salud:saludFinanciera(metMes), rentaYield:rentaYYield(metMes), inflacion:gananciaVsInflacion(metMes,inflacionPct), colchonMeses:metMes.colchonMeses,
     ingresoPasivo:metMes.ip, ingresoPasivoBruto:metMes.ipBruto, pctIngresoPasivo:metMes.pctIngresoPasivo,
-    ob:metMes.ob, ahorroPct:metMes.ahorroPct, cargaDeudaPct:metMes.cargaDeudaPct, ingresoNeto:metMes.ingresoNeto,
+    ob:metMes.ob, obCaja:metMes.obCaja, sd:metMes.sd, interesesDeuda:metMes.interesesDeuda, capitalDeuda:metMes.capitalDeuda, deudasSinTasa:metMes.deudasSinTasa, gastosVidaMes:metMes.gastosVida, aportesMes:metMes.aportesObligatorios, excesoCostosMes:Math.max(0,(metMes.g||0)-(metMes.gastosVida||0)-(metMes.aportesObligatorios||0)-(metMes.impuestoNeto||0)), impuestoNetoMes:metMes.impuestoNeto, ahorroPct:metMes.ahorroPct, cargaDeudaPct:metMes.cargaDeudaPct, ingresoNeto:metMes.ingresoNeto,
     // ═══ Legacy aliases (compatibilidad) ═══
     ab, td, nw:ab-td,
     ti:brutoTotal, tg:0, ni:disponibleCuenta,
@@ -2326,9 +2327,9 @@ export default function FinPath(){
       const mB=t.metMes||t.met||{};
       const ctxNv={ob:mB.ob||0,obEsencial:nv.obEsencial||mB.ob||0};
       const sigMonto=sig?umbralNivel(sig,ctxNv):null;
-      const nvCuerpo="Cobertura pasiva: "+pc(mB.coberturaPasiva)+"\nIngreso pasivo neto: "+fm(mB.ip)+"/mes vs Gastos + cuotas: "+fm(mB.ob)+"/mes\n\n"+
-        (nv.nivel===5?"Abundancia: tu ingreso pasivo es el doble de tus gastos y cuotas. Ese margen absorbe un año malo sin tocar el capital y deja para reinvertir."
-        :nv.nivel===4?"¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos y cuotas."
+      const nvCuerpo="Cobertura pasiva: "+pc(mB.coberturaPasiva)+"\nIngreso pasivo neto: "+fm(mB.ip)+"/mes vs Gastos + intereses de deudas: "+fm(mB.ob)+"/mes"+((mB.capitalDeuda||0)>0?" (además abonas "+fm(mB.capitalDeuda)+"/mes a capital: es ahorro)":"")+"\n\n"+
+        (nv.nivel===5?"Abundancia: tu ingreso pasivo es el doble de tus gastos e intereses. Ese margen absorbe un año malo sin tocar el capital y deja para reinvertir."
+        :nv.nivel===4?"¡Independencia alcanzada! Tu ingreso pasivo cubre el 100% de tus gastos e intereses."
         :nv.candado==="deficit"?"Tu flujo del mes es negativo ("+fm(mB.fl)+"/mes) y tus activos todavía no pagan lo esencial. El primer paso es que lo que entra cubra lo que sale."
         :nv.candado==="patrimonio_negativo"?"Tu patrimonio neto es negativo: el nivel queda en "+nv.nombre+" hasta que tus activos superen tus deudas."
         :sig?"Siguiente: "+sig.nombre+(sigMonto!=null?" → necesitas "+fm(sigMonto)+"/mes de ingreso pasivo\nTe faltan: "+fm(nv.faltaIPSiguiente)+"/mes de ingreso pasivo":" → no se gana con ingreso pasivo sino con que el flujo del mes quede positivo (hoy: "+fm(mB.fl)+"/mes)"):"")+
@@ -2748,9 +2749,10 @@ export default function FinPath(){
       {/* 1-nov-2026 — Infografías del Dashboard (skill infografia-finpathia).
           Base «este mes» (t.metMes), la misma del nivel, el Simulador y el Asesor. */}
       {(t.ob||0)>0&&<MedidorLibertad cobertura={t.ind||0} ip={t.ingresoPasivo||0} ob={t.ob||0} nivel={t.nivel} fm={fm}
+        partes={t.metMes?partesObligacion(t.metMes):null} caja={t.metMes?lecturaCaja(t.metMes):null} fin={t.metMes?finDeudas(t.metMes,(u?.deu)||[]):null}
         extra={<>
           {(t.ind||0)<100&&<div style={{fontSize:12,color:CHART.txt3}}>{tx("Para cubrirlo con rentas necesitarías unos ","To cover it with passive income you'd need about ")}<b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b>{tx(" más invertidos al "," more invested at ")}{pctR(RETORNO_SUPUESTO*100,0)}{tx(" anual."," a year.")}</div>}
-          {(t.gfm||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>{tx("Tu número FIRE: ","Your FIRE number: ")}<b style={{color:CHART.txt}}>{fm(t.gfm*12*25)}</b>{tx(" · llevas el "," · you're at ")}<b style={{color:CHART.txt}}>{pctR(Math.max(0,t.nw/(t.gfm*12*25)*100),0)}</b></div>}
+          {(t.ob||0)>0&&<div style={{fontSize:13,color:CHART.txt2}}>{tx("Tu número FIRE: ","Your FIRE number: ")}<b style={{color:CHART.txt}}>{fm(t.ob*12*25)}</b>{tx(" · llevas el "," · you're at ")}<b style={{color:CHART.txt}}>{pctR(Math.max(0,t.nw/(t.ob*12*25)*100),0)}</b></div>}
         </>}/>}
 
       {/* 2-nov-2026 — Después del primer minuto: primero ve su número (arriba), luego el camino para volverlo exacto. */}
@@ -3036,7 +3038,7 @@ export default function FinPath(){
         const runway = t.colchonMeses != null ? Math.round(t.colchonMeses*10)/10 : 999; // colchón único (metrics.js)
         const burnRate = t.nw > 0 ? ((t.te * 12) / t.nw * 100) : 0;
         const savingsRate = t.ahorroPct || 0; // misma cifra que alertas y puntaje (metrics.js, neto de retención)
-        const fireNumber = t.gfm * 12 * 25;
+        const fireNumber = (t.ob||t.gfm||0) * 12 * 25; // 13-nov-2026: misma base del nivel (gastos + intereses + impuesto del mes), no solo gastos
         const fireProgress = fireNumber > 0 ? Math.min((t.nw / fireNumber) * 100, 100) : 0;
         const debtService = t.cargaDeudaPct || 0; // cuotas ÷ ingreso neto de retención (metrics.js)
         // Passive vs active income
@@ -3538,8 +3540,8 @@ export default function FinPath(){
           </div>
           <div style={{marginTop:16,fontSize:12,color:T.tx2,lineHeight:1.6}}>
             {t.ind>=100
-              ?<span style={{color:T.gn}}>{tx("¡Tu ingreso pasivo cubre todos tus gastos y cuotas!","Your passive income covers all your expenses and payments!")}</span>
-              :<span>{tx("Tu ingreso pasivo (","Your passive income (")}{fm(t.ingresoPasivo)}{tx("/mes) cubre el ","/mo) covers ")}{pc(t.ind)}{tx(" de tus gastos y cuotas. Te faltan "," of your expenses and payments. You're ")}{fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))}{tx("/mes de ingreso pasivo.","/mo short in passive income.")}</span>
+              ?<span style={{color:T.gn}}>{tx("¡Tu ingreso pasivo cubre todos tus gastos e intereses!","Your passive income covers all your expenses and interest!")}</span>
+              :<span>{tx("Tu ingreso pasivo (","Your passive income (")}{fm(t.ingresoPasivo)}{tx("/mes) cubre el ","/mo) covers ")}{pc(t.ind)}{tx(" de tus gastos e intereses. Te faltan "," of your expenses and interest. You're ")}{fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))}{tx("/mes de ingreso pasivo.","/mo short in passive income.")}</span>
             }
           </div>
           {t.ind<100&&<div style={{marginTop:8,fontSize:12,color:T.tx3}}>
@@ -4073,7 +4075,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
             <div style={{textAlign:"center",padding:16,background:T.bg3,borderRadius:12}}>
               <div style={{fontSize:11,color:T.tx3,letterSpacing:1,fontWeight:600}}>INDEPENDENCIA</div>
               <div style={{fontSize:24,fontWeight:700,color:t.ind>=100?T.gn:"#f59e0b",marginTop:4}}>{fmtPctEs((t.ind), 0)}</div>
-              <div style={{fontSize:11,color:T.tx3}}>ingreso pasivo vs gastos y cuotas</div>
+              <div style={{fontSize:11,color:T.tx3}}>ingreso pasivo vs gastos e intereses</div>
               <div style={{fontSize:11,color:T.tx3,marginTop:3}}>FIRE: {fmtPctEs(fireProg, 0)} · capital para no trabajar</div>
             </div>
           </div>
@@ -4196,7 +4198,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
           <div style={{background:"linear-gradient(135deg,rgba(0,200,5,0.06),rgba(59,130,246,0.03))",border:"1px solid rgba(0,200,5,0.1)",borderRadius:12,padding:16}}>
             <div style={{fontSize:13,fontWeight:700,color:T.gn,marginBottom:8}}>Diagnóstico</div>
             <div style={{fontSize:12,color:T.tx2,lineHeight:1.8}}>
-              {t.ind>=100?"Tu ingreso pasivo cubre el 100% de tus gastos y cuotas. Estás en nivel de independencia financiera.":"Tu ingreso pasivo cubre el "+fmtPctEs(t.ind, 0)+" de tus gastos y cuotas. Te faltan "+fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))+"/mes de ingreso pasivo para la independencia."}
+              {t.ind>=100?"Tu ingreso pasivo cubre el 100% de tus gastos e intereses. Estás en nivel de independencia financiera.":"Tu ingreso pasivo cubre el "+fmtPctEs(t.ind, 0)+" de tus gastos e intereses. Te faltan "+fm(Math.max(0,(t.ob||0)-(t.ingresoPasivo||0)))+"/mes de ingreso pasivo para la independencia."}
               <br/>{t.cf>=0?"Cash flow positivo de "+fm(t.cf)+"/mes disponible para inversión.":"Cash flow negativo. Gastas "+fm(Math.abs(t.cf))+"/mes más de lo que ganas."}
               <br/>{passR>=80?"El "+fmtPctEs(passR, 0)+" de tus ingresos son pasivos. Excelente independencia.":"Solo el "+fmtPctEs(passR, 0)+" es ingreso pasivo. Meta: superar 80%."}
               <br/>{fireProg>=100?"Ya superaste tu FIRE number. Puedes vivir de tu patrimonio 25+ años.":"FIRE progress: "+fmtPctEs(fireProg, 0)+". Meta: "+fm(fireN)+". Te falta: "+fm(Math.max(0,fireN-t.nw))+"."}

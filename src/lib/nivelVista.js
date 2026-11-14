@@ -16,7 +16,7 @@ export function vistaNivel({ ip = 0, ob = 0, nivel = null } = {}) {
   const nombre = NIVELES[n - 1].nombre;
   const pct = pctPiso(ip, ob);
   const sobraPct = pct > 100 ? pct - 100 : 0;
-  const titular = `Estás en ${nombre} (nivel ${n}/5). Tu ingreso pasivo cubre el ${fmtPctEs(pct, 0)} de tus gastos y cuotas`
+  const titular = `Estás en ${nombre} (nivel ${n}/5). Tu ingreso pasivo cubre el ${fmtPctEs(pct, 0)} de tus gastos e intereses`
     + (sobraPct > 0 ? `: te sobra un ${fmtPctEs(sobraPct, 0)} cada mes.` : ".");
   const desborde = sobraPct > 0 ? `+${fmtPctEs(sobraPct, 0)} por encima` : null;
   const sig = n < 5 ? NIVELES[n] : null;

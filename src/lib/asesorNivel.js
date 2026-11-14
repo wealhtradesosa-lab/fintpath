@@ -16,10 +16,10 @@ export function escalaNiveles() {
   // del mes y los dos primeros contra el flujo. Ver metrics.js → NIVELES.
   const rango = (n) => {
     if (!n.umbral) return n.id === 1 ? "flujo libre negativo" : "flujo positivo, sin cubrir lo esencial";
-    if (n.umbral === "esencial") return "ingreso pasivo ≥ gastos esenciales + cuotas";
+    if (n.umbral === "esencial") return "ingreso pasivo ≥ gastos esenciales + intereses de deudas";
     return n.factor > 1
-      ? `ingreso pasivo ≥ ${n.factor}× (gastos + cuotas)`
-      : "ingreso pasivo ≥ gastos + cuotas";
+      ? `ingreso pasivo ≥ ${n.factor}× (gastos + intereses de deudas)`
+      : "ingreso pasivo ≥ gastos + intereses de deudas";
   };
   return NIVELES.map((n) => `N${n.id} ${n.nombre} (${rango(n)})`).join(" · ");
 }
@@ -40,7 +40,10 @@ export function bloqueNivelLibertad(t = {}) {
   const nv = m.nivel || {};
   const l = [];
   l.push("NIVEL DE LIBERTAD (calculado por Finpathia; úsalo tal cual, no inventes umbrales, nombres ni porcentajes):");
-  l.push(`• Cobertura pasiva = ingreso pasivo neto ÷ (gastos + cuotas) = ${fm(m.ip)} ÷ ${fm(m.ob)} = ${fmtPctEs(m.coberturaPasiva)}`);
+  l.push(`• Cobertura pasiva = ingreso pasivo neto ÷ (gastos + intereses de deudas) = ${fm(m.ip)} ÷ ${fm(m.ob)} = ${fmtPctEs(m.coberturaPasiva)}`);
+  // 13-nov-2026 — El abono a capital no es gasto: es ahorro (la deuda baja y el patrimonio sube).
+  if (m.capitalDeuda > 0) l.push(`• Cuotas de deudas: ${fm(m.sd)}/mes = intereses ${fm(m.interesesDeuda)} (costo, entra al nivel) + abono a capital ${fm(m.capitalDeuda)} (ahorro, NO entra al nivel; sí entra al flujo de caja). Explícalo así si el usuario pregunta.`);
+  if (m.deudasSinTasa && m.deudasSinTasa.n > 0) l.push(`• ${m.deudasSinTasa.n} deuda(s) sin saldo o sin tasa: su cuota (${fm(m.deudasSinTasa.cuota)}/mes) cuenta completa como costo hasta que el usuario cargue saldo y tasa.`);
   l.push(`• Nivel actual: ${nv.nivel}/5 ${nv.nombre}${nv.candado === "patrimonio_negativo" ? " (limitado a N2 porque el patrimonio neto es negativo)" : nv.candado === "deficit" ? " (flujo libre negativo)" : ""}`);
   l.push(`• Escala oficial: ${escalaNiveles()}. Esos son los únicos niveles y umbrales; Independencia solo con cobertura ≥ 100%.`);
   l.push("• El salario y los honorarios NO cuentan como ingreso pasivo; sí el arriendo neto de administración y predial, intereses, dividendos y pensión recibida.");
@@ -54,7 +57,7 @@ export function bloqueNivelLibertad(t = {}) {
     l.push(`• OJO: el flujo del mes es NEGATIVO (${fm(m.fl)}/mes) y aun así el nivel es ${nv.nivel}/5. No es un error: el escalón lo definen los activos (cubren ${fm(m.ip)} de ${fm(m.ob)}), y el hueco se está tapando con capital o deuda. Dilo así; no bajes el nivel por tu cuenta.`);
   }
   l.push(`• Flujo libre: ${fm(m.fl)}/mes; ahorro ${fmtPctEs(m.ahorroPct)} y carga de deuda ${fmtPctEs(m.cargaDeudaPct)} del ingreso neto de retención (${fm(m.ingresoNeto)}/mes).`);
-  if (m.colchonMeses != null) l.push(`• Colchón de liquidez: ${fmtMeses(m.colchonMeses)} (activos líquidos ${fm(m.liquidos)} ÷ gastos y cuotas).`);
+  if (m.colchonMeses != null) l.push(`• Colchón de liquidez: ${fmtMeses(m.colchonMeses)} (activos líquidos ${fm(m.liquidos)} ÷ gastos y cuotas completas del mes).`);
   if (t.salud && t.salud.score != null) l.push(`• Salud financiera: ${t.salud.score}/100 (${t.salud.banda}).`);
   return l.join("\n") + "\n";
 }

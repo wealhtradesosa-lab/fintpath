@@ -832,7 +832,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
     cuotasQueSalenMes: Math.max(0, b.sd - bDeuda.sd),
-    hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
+    hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.obCaja ?? b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
     // Inversiones de las que puede salir plata más adelante (casa propia, obras).
     fuentes: [...activos.filter((a) => a.clase !== "vehiculo" && a.clase !== "inmueble").map((a) => ({ id: a.id, nombre: a.nombre })), ...nuevas.map((x) => ({ id: x.id, nombre: x.nombre })), ...personalizadas.map((c) => ({ id: c.id, nombre: c.nombre })), ...(filas[0].porActivo || []).filter((x) => x.id === "c_crecimiento" || x.id === "c_renta").map((x) => ({ id: x.id, nombre: x.nombre }))],

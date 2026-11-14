@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { partesObligacion } from "../lib/desgloseLibertad.js";
 import { fmtNumEs, fmtTasaEs, fmtPlataEs } from "../lib/formato.js";
 import { FACTORES_ESCENARIO, gastosEscenario } from "../lib/escenarios.js";
 import { calcularMetricas, NIVELES, umbralNivel, fmtPctEs, tipoIngreso, grupoIngreso, GRUPOS_INGRESO, PREGUNTA_RENTA } from "../lib/metrics.js";
@@ -187,7 +188,7 @@ export function conSlider(item, nuevo, base) {
   return { ...item, montoModo: "monto", mensual: v, m: v };
 }
 
-function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null, simulado = false, nivelRealTxt = null, real = null }) {
+function FreedomBarLive({ ip, ob, fl, nivel, met = null, ocultos, mesMedido, nombresIngresosOcultos = [], onNavigate, escenarioTxt = null, trmPendiente = false, pistaSeguridad = null, simulado = false, nivelRealTxt = null, real = null }) {
   const [verOcultos, setVerOcultos] = useState(false);
   const [confirmados, setConfirmados] = useState(() => leerConfirmados());
   const [expandedLvl, setExpandedLvl] = useState(null);
@@ -249,10 +250,17 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
           {trmPendiente && <div style={{ fontSize: 11, color: T.gd, marginBottom: 4 }}>Tus montos en dólares quedan fuera de este nivel: pendiente de tasa. Se suman cuando cargue la TRM.</div>}
           <div style={{ fontSize: 15, fontWeight: 700, color: T.txt, lineHeight: 1.4, overflowWrap: "anywhere" }}>{vista.titular}</div>
           <div style={{ fontSize: 12, color: T.txt2, marginTop: 4, overflowWrap: "anywhere" }}>
-            Tu ingreso pasivo (bruto): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos y cuotas: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
+            Tus rentas (netas de los costos de cada activo): <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(ni)}/mes</b> · Tus gastos e intereses: <b style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{fm(te)}/mes</b>
           </div>
-          <div style={{ fontSize: 11, color: T.txt3, marginTop: 2 }}>Tus gastos y cuotas incluyen el impuesto de renta estimado.</div>
-          <div style={{ fontSize: 12, color: T.txt2, marginTop: 6 }}>Tu nivel de libertad financiera = lo que te pagan tus rentas ÷ lo que gastas. El salario paga el mes; las rentas compran tu libertad.</div>
+          {met && partesObligacion(met).length > 0 && (
+            <div style={{ fontSize: 11, color: T.txt3, marginTop: 2, lineHeight: 1.6 }}>
+              Se compone de: {partesObligacion(met).map((pt, i) => <span key={pt.clave}>{i > 0 ? " · " : ""}{pt.es} <b style={{ color: T.txt2, fontVariantNumeric: "tabular-nums" }}>{fm(pt.monto)}</b></span>)}
+            </div>
+          )}
+          {met && met.capitalDeuda > 0 && (
+            <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>Además abonas <b style={{ fontVariantNumeric: "tabular-nums" }}>{fm(met.capitalDeuda)}/mes</b> a capital de tus deudas: eso es ahorro (tu deuda baja y tu patrimonio sube), por eso no entra al nivel. Sí entra al flujo del mes.</div>
+          )}
+          <div style={{ fontSize: 12, color: T.txt2, marginTop: 6 }}>Tu nivel de libertad financiera = lo que te pagan tus rentas ÷ (tus gastos + los intereses de tus deudas + el impuesto de renta). El salario paga el mes; las rentas compran tu libertad.</div>
           {/* 5-nov-2026 (Santiago: "si subo o bajo ingresos o gastos esto debería
               moverse en consecuencia"; "debería moverse con el cash flow"). Con
               cambios, se ve qué movió cada slider: cobertura, rentas, gastos y el
@@ -263,7 +271,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
             const filas = [
               { l: "Cobertura de tus rentas", a: `${fmtNumEs(cobR, 0)} %`, b: `${fmtNumEs(cobS, 0)} %`, d: cobS - cobR, pos: true, pct: true },
               { l: "Rentas de tus activos al mes", a: fm(real.ip), b: fm(ip), d: ip - real.ip, pos: true },
-              { l: "Gastos y cuotas al mes", a: fm(real.ob), b: fm(ob), d: ob - real.ob, pos: false },
+              { l: "Gastos e intereses al mes", a: fm(real.ob), b: fm(ob), d: ob - real.ob, pos: false },
               { l: "Flujo del mes (lo que entra menos lo que sale, sueldo incluido; impuesto como el real)", a: fm(real.fl || 0), b: fm(fl || 0), d: (fl || 0) - (real.fl || 0), pos: true },
             ];
             return (
@@ -418,10 +426,10 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
                   <div style={{ fontSize: 12, color: T.txt3 }}>
                     Nivel {l.id}/5 — {l.porCobertura
                       ? <>Necesitas {fm(needed)}/mes de ingreso pasivo — {l.def.umbral === "esencial"
-                          ? <>lo esencial de tu mes, dentro de {fm(te)} de gastos y cuotas</>
+                          ? <>lo esencial de tu mes, dentro de {fm(te)} de gastos e intereses</>
                           : l.def.factor > 1
-                          ? <>tus {fm(te)}/mes de gastos y cuotas, dos veces</>
-                          : <>tus {fm(te)}/mes de gastos y cuotas completos</>}</>
+                          ? <>tus {fm(te)}/mes de gastos e intereses, dos veces</>
+                          : <>tus {fm(te)}/mes de gastos e intereses completos</>}</>
                       : l.requisito}
                   </div>
                 </div>
@@ -452,7 +460,7 @@ function FreedomBarLive({ ip, ob, fl, nivel, ocultos, mesMedido, nombresIngresos
               fijar en "¡Abundancia!". De ahí se toma la segunda línea, que es
               la que evita repetir el porcentaje del titular de arriba. */}
           <div style={{ fontSize: 18, fontWeight: 700, color: T.gd }}>¡{currentData?.name || "Abundancia"}!</div>
-          <div style={{ fontSize: 13, color: T.txt2 }}>Estás en el último nivel{vista?.desborde ? `: ${vista.desborde} de tus gastos y cuotas` : ""}.</div>
+          <div style={{ fontSize: 13, color: T.txt2 }}>Estás en el último nivel{vista?.desborde ? `: ${vista.desborde} de tus gastos e intereses` : ""}.</div>
         </div>
       )}
     </div>
@@ -1547,6 +1555,7 @@ ${deuRows ? `<h2>Cuotas de ${mesPdfL}</h2>
       <ConfirmarIngresos ingresos={user.ingresos} fmt={fm} onMarcar={onMarcarRenta} />
       <FreedomBarLive ip={(simT.sinCambios ? metReal : simT.metMes).ip} ob={(simT.sinCambios ? metReal : simT.metMes).ob}
         fl={(simT.sinCambios ? metReal : simT.metMes).fl} nivel={(simT.sinCambios ? metReal : simT.metMes).nivel}
+        met={simT.sinCambios ? metReal : simT.metMes}
         ocultos={metReal.ocultos} mesMedido={metReal.mesMedido}
         simulado={!simT.sinCambios}
         real={{ ip: metReal.ip, ob: metReal.ob, fl: metReal.fl }}

@@ -21,7 +21,7 @@ describe("nivel de libertad: una sola regla para badge, barra, tarjetas y titula
     const nv = nivelLibertad({ ip, ob, fl: 1 });
     expect(nv.nivel).toBe(4);
     const v = vistaNivel({ ip, ob, nivel: nv });
-    expect(v.titular).toMatch(/^Estás en Independencia \(nivel 4\/5\)\. Tu ingreso pasivo cubre el 136\s?% de tus gastos y cuotas: te sobra un 36\s?% cada mes\.$/);
+    expect(v.titular).toMatch(/^Estás en Independencia \(nivel 4\/5\)\. Tu ingreso pasivo cubre el 136\s?% de tus gastos e intereses: te sobra un 36\s?% cada mes\.$/);
     expect(v.desborde).toMatch(/^\+36\s?% por encima$/);
     expect(v.siguiente).toBe("Abundancia");
   });
@@ -30,7 +30,7 @@ describe("nivel de libertad: una sola regla para badge, barra, tarjetas y titula
     const nv = nivelLibertad({ ip: ip3, ob, fl: 1 });
     expect(nv.nivel).toBe(5);
     const v = vistaNivel({ ip: ip3, ob, nivel: nv });
-    expect(v.titular).toMatch(/^Estás en Abundancia \(nivel 5\/5\)\. Tu ingreso pasivo cubre el 210\s?% de tus gastos y cuotas: te sobra un 110\s?% cada mes\.$/);
+    expect(v.titular).toMatch(/^Estás en Abundancia \(nivel 5\/5\)\. Tu ingreso pasivo cubre el 210\s?% de tus gastos e intereses: te sobra un 110\s?% cada mes\.$/);
     expect(v.siguiente).toBeNull();
   });
   it("120% → Independencia y dice cuánto falta para Abundancia", () => {

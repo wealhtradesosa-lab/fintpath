@@ -8,14 +8,16 @@ const m = calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.d
 
 describe("salud financiera (spec §2)", () => {
   const s = saludFinanciera(m);
-  it("caso QA sin retención: 38 Crítica (ahorro 5,8%, deuda 38,2% sobre ingreso neto = bruto)", () => {
-    expect(s.score).toBe(38);
-    expect(s.banda).toBe("Crítica");
-    expect(s.componentes.ahorro.puntos).toBeCloseTo(29.1, 1);
+  // 13-nov-2026 — El abono a capital (1.331.117/mes) cuenta como ahorro:
+  // (567.500 + 1.331.117) ÷ 9.747.500 = 19,5 %.
+  it("caso QA sin retención: 56 Frágil (ahorro 19,5% con abono a capital, deuda 38,2%)", () => {
+    expect(s.score).toBe(56);
+    expect(s.banda).toBe("Frágil");
+    expect(s.componentes.ahorro.puntos).toBeCloseTo(97.4, 1);
     expect(s.componentes.cargaDeuda.puntos).toBeCloseTo(22.8, 1);
     expect(s.componentes.colchon.puntos).toBeCloseTo(51.2, 1);
     expect(s.componentes.apalancamiento.puntos).toBeCloseTo(60.7, 1);
-    expect(s.componentes.cobertura.puntos).toBeCloseTo(34.7, 1);
+    expect(s.componentes.cobertura.puntos).toBeCloseTo(41.0, 1);
   });
   it("candado: patrimonio negativo o FL<0 → máx 39", () => {
     const x = saludFinanciera({ ahorroPct: 50, cargaDeudaPct: 0, fl: 5e6, sd: 0, colchonMeses: 12, activosTotal: 100, deudaTotal: 120, patrimonioNeto: -20, coberturaPasiva: 100 });
@@ -136,28 +138,29 @@ describe("ahorro y carga de deuda: misma base neta de retención (numerador y de
   const RET = Math.round(estimarImpuesto(u).detalle.reduce((s, d) => s + (d.reteN || 0), 0) / 12);
   const conRet = (r) => calcularMetricas({ ingresos: qa.ingresos, gastos: qa.gas, deudas: qa.deu, inv: qa.inv, trm: qa.trm, retencionMensual: r });
   it("la retención real del fixture es ~514.325/mes", () => { expect(RET).toBe(514325); });
-  it("sin retención: FL 567.500 ÷ ingreso 9.747.500 = 5,8%", () => {
+  it("sin retención: (FL 567.500 + capital 1.331.117) ÷ ingreso 9.747.500 = 19,5%", () => {
     const x = conRet(0);
     expect(x.ingresoNeto).toBe(9747500);
-    expect(x.ahorroPct).toBeCloseTo((567500 / 9747500) * 100, 6);
+    expect(x.ahorroPct).toBeCloseTo(((567500 + x.capitalDeuda) / 9747500) * 100, 6);
+    expect(x.ahorroPct).toBeCloseTo(19.48, 2);
     expect(x.cargaDeudaPct).toBeCloseTo((3720000 / 9747500) * 100, 6);
   });
-  it("con retención real: FL 53.175 ÷ neto 9.233.175 = 0,6% (0,576%), no 0,55% sobre bruto", () => {
+  it("con retención real: (FL 53.175 + capital) ÷ neto 9.233.175 = 15,0%, no sobre bruto", () => {
     const x = conRet(RET);
     expect(x.fl).toBe(567500 - RET);
     expect(x.ingresoNeto).toBe(9747500 - RET);
-    expect(x.ahorroPct).toBeCloseTo(0.5759, 3);
-    expect(fmtPctEs(x.ahorroPct)).toBe("0,6%");
-    expect(x.ahorroPct).not.toBeCloseTo((x.fl / 9747500) * 100, 2);
+    expect(x.ahorroPct).toBeCloseTo(((x.fl + x.capitalDeuda) / x.ingresoNeto) * 100, 6);
+    expect(fmtPctEs(x.ahorroPct)).toBe("15,0%");
+    expect(x.ahorroPct).not.toBeCloseTo(((x.fl + x.capitalDeuda) / 9747500) * 100, 2);
     expect(x.cargaDeudaPct).toBeCloseTo((3720000 / x.ingresoNeto) * 100, 6); // 40,3%
   });
-  it("salud con retención real: 30 Crítica; puntaje y tarjeta usan la misma cifra de ahorro", () => {
+  it("salud con retención real: 49 Frágil; puntaje y tarjeta usan la misma cifra de ahorro", () => {
     const x = conRet(RET);
     const s = saludFinanciera(x);
     expect(s.componentes.ahorro.valor).toBe(x.ahorroPct);
     expect(s.componentes.cargaDeuda.valor).toBe(x.cargaDeudaPct);
-    expect(s.score).toBe(30);
-    expect(s.banda).toBe("Crítica");
+    expect(s.score).toBe(49);
+    expect(s.banda).toBe("Frágil");
   });
   it("la retención no cambia IP ni OB (no se resta dos veces)", () => {
     expect(conRet(RET).ob).toBe(conRet(0).ob);
@@ -191,7 +194,7 @@ describe("salud financiera sin datos", () => {
     expect(s.score).toBeNull();
     expect(s.banda).toBe("Sin datos");
   });
-  it("QA Pro no da 100 Excelente: 38 sin retención, 30 con retención real", () => {
-    expect(saludFinanciera(m).score).toBe(38);
+  it("QA Pro no da 100 Excelente: 56 sin retención", () => {
+    expect(saludFinanciera(m).score).toBe(56);
   });
 });
