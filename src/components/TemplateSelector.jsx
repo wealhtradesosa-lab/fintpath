@@ -74,7 +74,7 @@ export const TEMPLATES = [
     // año» se leía como un pago único. Es un pago que se repite cada año.
     titulo: () => "Una vez al año, todos los años",
     descripcion: () => "Se repite cada año en el mismo mes",
-    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: prima de diciembre, bono anual, cesantías" : "Ej: colegio pagado de contado, seguro anual, predial, impuesto del vehículo",
+    ejemplo: (tipo) => tipo === "ingreso" ? "Ej: prima de diciembre, bono anual, cesantías" : "Ej: las vacaciones de cada año, colegio pagado de contado, seguro anual, predial",
     preset: { frecuencia: "anual", desdeMes: 1, hastaMes: 12, mesPago: 6 },
     camposVisibles: ["monto", "mesPago"],
     modoIngresoDefault: "porPago",
@@ -89,7 +89,7 @@ export const TEMPLATES = [
     emoji: "",
     titulo: () => "Un solo pago (no se repite)",
     descripcion: () => "Pasa una vez. Eliges el mes y si lo pagas de contado, con tarjeta o a cuotas",
-    ejemplo: () => "Ej: vacaciones, una compra grande, una reparación",
+    ejemplo: () => "Ej: el viaje de este diciembre, una compra grande, una reparación",
     preset: {},
     camposVisibles: [],
     color: "#f59e0b",
@@ -158,7 +158,7 @@ export function detectarTemplate(item) {
 }
 
 export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T, onCancel }) {
-  const ORDEN = ["mensual-todo-año", "mensual-limitado", "unico", "anual", "variable-mensual"];
+  const ORDEN = ["mensual-todo-año", "mensual-limitado", "anual", "variable-mensual", "unico"];
   const templatesPrincipales = TEMPLATES.filter(t => t.id !== "avanzado" && (!t.soloTipo || t.soloTipo === tipo)).sort((a, b) => ORDEN.indexOf(a.id) - ORDEN.indexOf(b.id));
   const templateAvanzado = TEMPLATES.find(t => t.id === "avanzado");
 
@@ -174,7 +174,14 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-        {templatesPrincipales.map(tpl => (
+        {/* 14-nov-2026 (Santiago: "un gasto que es una vez al año, unas vacaciones… ¿cuál se elige? Es
+            confuso"). Dos grupos con la pregunta que decide: ¿se repite el próximo año? */}
+        {[["repite", tipo === "ingreso" ? "Se repite (lo recibes también el próximo año)" : "Se repite (lo pagas también el próximo año)"], ["unaVez", "Pasa una sola vez"]].map(([grupo, rotulo]) => {
+          const lista = templatesPrincipales.filter((t) => (t.id === "unico" ? "unaVez" : "repite") === grupo);
+          if (!lista.length) return null;
+          return (<div key={grupo} style={{ display: "grid", gap: 8 }}>
+            {templatesPrincipales.some((t) => t.id === "unico") && <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.6, color: T.txt3, textTransform: "uppercase", marginTop: grupo === "unaVez" ? 10 : 0 }}>{rotulo}</div>}
+        {lista.map(tpl => (
           <button
             key={tpl.id}
             type="button"
@@ -218,6 +225,8 @@ export default function TemplateSelector({ tipo = "ingreso", onSelect, tokens: T
             <div style={{ fontSize: 16, color: T.txt3, flexShrink: 0 }}>→</div>
           </button>
         ))}
+          </div>);
+        })}
       </div>
 
       {/* Link chiquito para casos avanzados */}

@@ -895,7 +895,8 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                   // UX FIX crítico (18-jul-2026 noche): al cambiar template,
                   // NO perder datos que el user ya llenó. Mismo patrón que Ingresos.
                   setForm(p => {
-                    const nuevoForm = { ...p, ...tpl.preset };
+                    // 14-nov-2026: fijo/variable ya no se pregunta; sale del tipo de pago.
+                    const nuevoForm = { ...p, ...tpl.preset, t: tpl.id === "variable-mensual" ? "v" : "f" };
 
                     // Caso especial 1: cambiar A "variable-mensual"
                     if (tpl.id === "variable-mensual") {
@@ -1447,7 +1448,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                 );
               })()}
 
-              <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />
+              {templateElegido?.id === "avanzado" && <In l="Tipo" value={form.t} onChange={(v) => setForm((p) => ({ ...p, t: v }))} options={[{ v: "f", l: "Fijo" }, { v: "v", l: "Variable" }]} />}
             </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", marginTop: 20 }}>
               <button onClick={() => setShowForm(false)} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt2, padding: "10px 20px", borderRadius: 10, cursor: "pointer", fontWeight: 600 }}>Cancelar</button>
