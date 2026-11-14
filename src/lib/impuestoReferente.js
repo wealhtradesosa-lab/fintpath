@@ -151,6 +151,19 @@ export function mesesDePago(owner) {
   if (f) return [{ mes: f.mes, dia: f.dia, fraccion: 1, auto: true }];
   return [{ mes: fijo || 9, fraccion: 1 }];
 }
+/**
+ * 14-nov-2026 — Saldo del impuesto del año, TITULAR POR TITULAR.
+ * Cada titular declara y paga por separado: la retención de uno no paga el
+ * impuesto de otro (el saldo a favor de la persona natural no cubre lo que debe
+ * la sociedad). Sumar todo y restar todo dejaba el impuesto del simulador en
+ * $16.500 al mes mientras las barras, que ya iban por titular, sumaban $62,4M.
+ * El saldo a favor se trata como 0 en el flujo: su devolución no es caja segura del año.
+ */
+export function saldoImpuestoAnual(detalle) {
+  let total = 0;
+  for (const d of detalle || []) total += Math.max(0, num(d.impBruto ?? d.impuesto) - num(d.reteN));
+  return total;
+}
 /** Saldo del impuesto que se paga en un mes dado (sin retenciones), sumando todos los titulares. */
 export function saldoImpuestoDelMes(detalle, owners, mes) {
   let total = 0;

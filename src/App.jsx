@@ -105,7 +105,7 @@ import RoleBanner from "./components/RoleBanner";
 import AccountSwitcher from "./components/AccountSwitcher";
 import { useJurisdiction } from "./hooks/useJurisdiction";
 import { UVT, DEFAULT_AG, calcImpRenta, estimarImpuesto } from "./lib/taxCO";
-import { calibracionReferente, estimarImpuestoReferente } from "./lib/impuestoReferente";
+import { calibracionReferente, estimarImpuestoReferente, saldoImpuestoAnual } from "./lib/impuestoReferente";
 import { setRegion, plataCorta as plataRegion, tx, nombreMes, pct as pctR, localeCifras } from "./lib/region.js";
 import { leerNorte, borrarNorte, itemsDesdeNorte, calcularNorte, RETORNO_SUPUESTO } from "./lib/norteUnMinuto.js";
 import PrimerMinuto from "./components/PrimerMinuto.jsx";
@@ -565,7 +565,8 @@ const cT=(inv,ds,gf,ing,taxData,trm=4200,inflacionPct)=>{
   }
   const retencionMensual=Math.round(retencionAnual/12);
   const impuestoBrutoMensual=Math.round(impuestoBrutoAnual/12);
-  const impuestoNeto=Math.max(0,Math.round((impuestoBrutoAnual-retencionAnual)/12));
+  // 14-nov-2026 — por titular (saldoImpuestoAnual): la retención de uno no paga el impuesto de otro.
+  const impuestoNeto=Math.round(saldoImpuestoAnual((taxData&&taxData.detalle)||[])/12);
   // Consolidación (idéntico contrato al simT del Simulador)
   const disponibleCuenta=brutoTotal-retencionMensual;
   const egresosTotales=aportesObligatorios+gastosFamiliares+cuotasDeudas+impuestoNeto;
