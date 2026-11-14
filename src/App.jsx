@@ -3669,7 +3669,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
                   {f.sh} contrato{+f.sh===1?"":"s"} × ${f.pr} × 100 = {fm((+f.sh)*(+f.pr)*100)}
                 </div>}
               </div></div><div style={{display:"flex",gap:12,justifyContent:"flex-end"}}><Bt v="s" onClick={()=>setMd(null)}>Cancelar</Bt><Bt onClick={()=>{add("ibk",{tk:f.tk||"",n:f.n||"",sh:+f.sh||0,cb:+f.cb||0,pr:+f.pr||0,tg:+f.tg||0,mult:+f.mult||1});setMd(null);sF({})}}>Agregar</Bt></div></Md></div>);
-        case"gas":return isUS?<ExpensesModuleUS gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} agi={t.ti*12}/>:<GastosModule trm={trm} owners={u?.owners||[]} ingresos={u?.ingresos||[]} gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} fmt={fm} onImport={()=>setShowImport(true)} plan={plan} onUpgrade={()=>setPg("price")} user={u} authUser={authUser}/>;
+        case"gas":return isUS?<ExpensesModuleUS gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} agi={t.ti*12}/>:<GastosModule monedaVista={cur} trm={trm} owners={u?.owners||[]} ingresos={u?.ingresos||[]} gastos={(u&&u.gas)||{}} onUpdate={v=>upd("gas",v)} fmt={fm} onImport={()=>setShowImport(true)} plan={plan} onUpgrade={()=>setPg("price")} user={u} authUser={authUser}/>;
         case"deu":return<DeudasModule trm={trmPais} owners={u?.owners||[]} deudas={(u&&u.deu)||[]} inversiones={(u&&u.inv)||[]} onUpdate={v=>upd("deu",v)} fmt={isUS?plataRegion:fm} onImport={()=>setShowImport(true)} user={u} plan={plan} onUpgrade={()=>setPg("price")} authUser={authUser} cashFlow={t.cf} onExtraADeudasChange={setExtraADeudas}/>;
     case"met":return isUS
       ?<GoalsModuleUS

@@ -259,7 +259,7 @@ function defaultFiscalCode(ownerType, cat) {
   return "GAS_NAT_PERSONAL";
 }
 
-export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade, user, trm}) {
+export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, ingresos, plan, onUpgrade, user, trm, monedaVista = "COP" }) {
   // Fase 3 commit 6: gating reader. Mismo patrón que IngresosModule.
   const { role } = useRole();
   const [verRevisar, setVerRevisar] = useState(false);
@@ -521,7 +521,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
   };
 
   const openAdd = () => {
-    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual" });
+    setForm({ cat: "", c: "", m: "", t: "f", freq: "mes", frecuencia: "mensual", mesPago: 1, desdeMes: 1, hastaMes: 12, montosMensuales: new Array(12).fill(0), activoId: "", owner: "", fiscalCode: "", causalidad: "", montoModo: "fijo", capital: "", tasa: "", tasaModo: "mensual", moneda: monedaVista === "USD" ? "USD" : "COP" }); // 14-nov-2026: la moneda arranca en la del botón general
     setModoIngreso("porPago"); // default al crear
     setTemplateElegido(null); // resetear plantilla
     setEditKey(null);
@@ -1173,7 +1173,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                           return labelMontoSegunFrecuencia(freq);
                         }
                         return "Monto";
-                      })()}
+                      })() + ((form.moneda || "COP") === "USD" ? " en dólares (USD)" : " en pesos (COP)")}
                       value={form.m}
                       onChange={(v) => setForm((p) => ({ ...p, m: v }))}
                       type="number"
@@ -1429,7 +1429,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       )}
     
     {extraDe && (
-      <ExtraGastoModal gastos={gas} inicial={extraDe === "nuevo" ? null : extraDe} fm={fm} T={T} trm={trm}
+      <ExtraGastoModal gastos={gas} inicial={extraDe === "nuevo" ? null : extraDe} fm={fm} T={T} trm={trm} monedaVista={monedaVista}
         onCerrar={() => setExtraDe(null)}
         onGuardar={(nuevo, seguir) => { onUpdate(nuevo); if (!seguir) setExtraDe(null); }} />
     )}
