@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normasPendientes } from "../../src/lib/vigenciaNormas.js";
+import { normasPendientes, ULTIMA_REVISION_NORMATIVA } from "../../src/lib/vigenciaNormas.js";
 
 const ids = (fecha) => normasPendientes(new Date(fecha + "T12:00:00")).map((p) => p.id);
 
@@ -26,7 +26,12 @@ describe("Vigencia de normas", () => {
     expect(p.gravedad).toBe("alta");
   });
   it("avisa si el revisor deja de correr", () => {
-    expect(ids("2026-12-01")).toContain("revision");
+    // Relativo a la última revisión (antes era una fecha fija que dejaba de
+    // cumplir los 21 días cuando el revisor corría a tiempo).
+    const base = new Date(ULTIMA_REVISION_NORMATIVA + "T12:00:00");
+    const masAdelante = (dias) => new Date(base.getTime() + dias * 86400000).toISOString().slice(0, 10);
+    expect(ids(masAdelante(10))).not.toContain("revision");
+    expect(ids(masAdelante(25))).toContain("revision");
   });
 });
 
