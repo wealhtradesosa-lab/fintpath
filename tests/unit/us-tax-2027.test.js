@@ -28,7 +28,7 @@ describe("EE. UU. año fiscal 2027", () => {
     expect(FEDERAL_BRACKETS.single.at(-1)).toEqual({ max: Infinity, rate: 0.37 });
   });
   it("impuesto federal soltero sobre $100.000 brutos", () => {
-    // 83.400 gravables: 1.280 + 4.707 + 6.858,50
+    // 83.400 gravables: 1.280 + 4.707 + 6.902,50 = 12.889,50
     const r = US.calculateIncomeTax(100000);
     expect(r.taxableIncome).toBe(83400);
     expect(Math.round(r.tax)).toBe(Math.round(1280 + (52025 - 12800) * 0.12 + (83400 - 52025) * 0.22));
