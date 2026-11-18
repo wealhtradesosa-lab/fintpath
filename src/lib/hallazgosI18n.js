@@ -37,12 +37,18 @@ const construir = () => ({
       // 18-nov-2026 (Santiago: "¿$9.200.000 al año en juego? no se entiende si
       // son intereses mensuales o anuales"). El texto no decía cuánta plata
       // había quieta ni que la cifra son intereses que te ahorras en un año.
-      unidad: "menos de intereses al año",
+      unidad: "al año a tu favor",
       titulo: (nombre, tasa) => `${nombre} al ${fmtPctEs(tasa, 1)}`,
-      detalle: (tasa, dif, ahorro, abono, rend) =>
-        `Tienes ${money.es(abono)} en ${liqEs()} rindiendo ${fmtPctEs(rend, 2)} mientras este crédito te cobra ${fmtPctEs(tasa, 2)} ${tasaEs()}; ` +
-        `si abonas esa plata a capital, dejas de pagar unos ${money.es(ahorro)} de intereses en un año (${fmtNumEs(dif, 2)} puntos de diferencia). ` +
-        `Antes de abonar, deja aparte tu fondo de emergencia.`,
+      // `ahorro` es NETO: intereses que dejas de pagar menos lo que esa plata
+      // rinde hoy. Si rinde 0 %, coincide con los intereses evitados.
+      detalle: (tasa, dif, ahorro, abono, rend) => {
+        const intereses = abono * tasa / 100;
+        return `Tienes ${money.es(abono)} en ${liqEs()} rindiendo ${fmtPctEs(rend, 2)} mientras este crédito te cobra ${fmtPctEs(tasa, 2)} ${tasaEs()}; ` +
+          (rend > 0
+            ? `si abonas esa plata a capital, dejas de pagar unos ${money.es(intereses)} de intereses en un año y dejas de ganar ${money.es(intereses - ahorro)} de rendimiento: quedas ${money.es(ahorro)} mejor. `
+            : `si abonas esa plata a capital, dejas de pagar unos ${money.es(ahorro)} de intereses en un año. `) +
+          `Antes de abonar, deja aparte tu fondo de emergencia.`;
+      },
       base: (tasa, rend) =>
         `Tasa del crédito (${fmtPctEs(tasa, 2)} ${tasaEs()}) vs. rendimiento de tu ${liqEs()} (${fmtPctEs(rend, 2)}${esUS() ? "" : " E.A."})`,
       accion: "Ver mis deudas",
@@ -102,12 +108,16 @@ const construir = () => ({
 
   en: {
     deudaCara: {
-      unidad: "less interest a year",
+      unidad: "a year in your favor",
       titulo: (nombre, tasa) => `${nombre} at ${tasa.toFixed(1)}%`,
-      detalle: (tasa, dif, ahorro, abono, rend) =>
-        `You have ${money.en(abono)} in ${liqEn()} earning ${rend.toFixed(2)}% while this loan charges ${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual rate"}. ` +
-        `Putting that money toward principal saves you about ${money.en(ahorro)} in interest over a year (${dif.toFixed(2)} points of difference). ` +
-        `Keep your emergency fund aside first.`,
+      detalle: (tasa, dif, ahorro, abono, rend) => {
+        const interest = abono * tasa / 100;
+        return `You have ${money.en(abono)} in ${liqEn()} earning ${rend.toFixed(2)}% while this loan charges ${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual rate"}. ` +
+          (rend > 0
+            ? `Putting that money toward principal saves about ${money.en(interest)} in interest over a year and gives up ${money.en(interest - ahorro)} of return: you come out ${money.en(ahorro)} ahead. `
+            : `Putting that money toward principal saves you about ${money.en(ahorro)} in interest over a year. `) +
+          `Keep your emergency fund aside first.`;
+      },
       base: (tasa, rend) =>
         `Loan rate (${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual"}) vs. return on your ${liqEn()} (${rend.toFixed(2)}%)`,
       accion: "View debts",
