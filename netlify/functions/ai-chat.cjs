@@ -103,17 +103,23 @@ const KNOWLEDGE_CO = `
 // KNOWLEDGE BASE USA — nuevo, expert-grade
 // ════════════════════════════════════════════════════════════════════════════
 const KNOWLEDGE_US = `
-═══ FINPATHIA AI ADVISOR — US KNOWLEDGE BASE (tax year 2026; items marked 2025 not yet updated) ═══
+═══ FINPATHIA AI ADVISOR — US KNOWLEDGE BASE (tax years 2026 and 2027; 18-nov-2026) ═══
+Use the 2026 figures for income earned in 2026 (returns filed in 2027) and the 2027 figures for 2027 planning, contributions and withholding. Say which year a figure belongs to.
 
-1. FEDERAL INCOME TAX 2026 (IRS Rev. Proc. 2025-32, includes One Big Beautiful Bill Act changes):
-- Standard Deduction: Single $16,100 / MFJ $32,200 / HoH $24,150
-- Tax brackets Single: 10% to $12,400 | 12% to $50,400 | 22% to $105,700 | 24% to $201,775 | 32% to $256,225 | 35% to $640,600 | 37% above
-- Tax brackets MFJ: 10% to $24,800 | 12% to $100,800 | 22% to $211,400 | 24% to $403,550 | 32% to $512,450 | 35% to $768,700 | 37% above
-- Tax brackets HoH 2026: not loaded here — do not quote them; point to Finpathia's Taxes module
-- Long-term capital gains (held >1 year): 0%/15%/20% based on income
+1. FEDERAL INCOME TAX (2026: IRS Rev. Proc. 2025-32, includes One Big Beautiful Bill Act; 2027: IRS Rev. Proc. 2026-35):
+- Standard Deduction 2026: Single/MFS $16,100 / MFJ $32,200 / HoH $24,150
+- Standard Deduction 2027: Single/MFS $16,600 / MFJ $33,200 / HoH $24,925
+- Brackets Single 2026: 10% to $12,400 | 12% to $50,400 | 22% to $105,700 | 24% to $201,775 | 32% to $256,225 | 35% to $640,600 | 37% above
+- Brackets MFJ 2026: 10% to $24,800 | 12% to $100,800 | 22% to $211,400 | 24% to $403,550 | 32% to $512,450 | 35% to $768,700 | 37% above
+- Brackets HoH 2026: 10% to $17,700 | 12% to $67,450 | 22% to $105,700 | 24% to $201,750 | 32% to $256,200 | 35% to $640,600 | 37% above
+- Brackets Single 2027: 10% to $12,800 | 12% to $52,025 | 22% to $109,125 | 24% to $208,325 | 32% to $264,550 | 35% to $661,375 | 37% above
+- Brackets MFJ 2027: 10% to $25,600 | 12% to $104,050 | 22% to $218,250 | 24% to $416,650 | 32% to $529,100 | 35% to $793,650 | 37% above
+- Brackets HoH 2027: 10% to $18,250 | 12% to $69,650 | 22% to $109,100 | 24% to $208,300 | 32% to $264,550 | 35% to $661,350 | 37% above
+- Long-term capital gains (held >1 year): 0% up to taxable income of $49,450 single / $98,900 MFJ (2026) and $51,050 single / $102,100 MFJ (2027); 20% above $545,500 single / $613,700 MFJ (2026) and $563,200 / $633,600 (2027); 15% in between
 - Short-term capital gains: ordinary income rates
 - NIIT (Net Investment Income Tax): 3.8% surtax on investment income above $200K (single) / $250K (MFJ)
 - QBI deduction (§199A): up to 20% deduction for qualified business income (S-corp, LLC, sole prop)
+- Child Tax Credit: $2,200 per child in 2026 ($1,700 refundable); $2,300 in 2027 ($1,800 refundable)
 - Wash sale rule: can't claim loss if you buy substantially identical security within 30 days
 
 2. STATE INCOME TAX (2025 figures):
@@ -125,24 +131,29 @@ const KNOWLEDGE_US = `
 - City taxes: NYC adds 3-3.876%, Yonkers, Philadelphia 3.79%
 - Strategy: high-earners often relocate to TX/FL/NV for state tax savings
 
-3. RETIREMENT ACCOUNTS (2025 limits; 2026 limits not yet loaded here — say they are 2025 figures):
-- 401(k): contribution limit $23,500 + $7,500 catch-up (50+) + $11,250 catch-up (60-63 SECURE 2.0)
+3. RETIREMENT ACCOUNTS (2026: IRS Notice 2025-67; 2027: IRS Notice 2026-66; HSA 2027: Rev. Proc. 2026-24):
+- 401(k)/403(b)/457: $24,500 in 2026 / $25,500 in 2027. Catch-up 50+: $8,000 (2026) / $8,500 (2027). Ages 60-63 (SECURE 2.0): $11,250 (2026) / $11,750 (2027)
+- Total 401(k) limit incl. employer (§415(c)): $72,000 (2026) / $75,000 (2027)
 - Roth 401(k): same limits, after-tax contributions, tax-free growth & withdrawals
-- Traditional IRA: $7,000 + $1,000 catch-up (50+). Deductible if income <$87K single / <$143K MFJ
-- Roth IRA: $7,000 + $1,000 catch-up. Income phaseout: $150K-$165K single / $236K-$246K MFJ
+- Traditional IRA and Roth IRA: $7,500 + $1,100 catch-up (50+), both 2026 and 2027
+- Traditional IRA deduction phase-out if covered by a workplace plan: single $81K-$91K / MFJ $129K-$149K (2026); single $83K-$93K / MFJ $133K-$153K (2027)
+- Roth IRA income phase-out: single $153K-$168K / MFJ $242K-$252K (2026); single $158K-$173K / MFJ $250K-$260K (2027)
 - Backdoor Roth: high-earners contribute to Trad IRA → convert to Roth (uses pro-rata rule!)
-- Mega Backdoor Roth: after-tax 401(k) contributions → in-plan Roth conversion (up to ~$70K total)
-- HSA: $4,300 single / $8,550 family. Triple tax-advantaged: deduct, grow, withdraw for medical tax-free
+- Mega Backdoor Roth: after-tax 401(k) contributions → in-plan Roth conversion (up to the §415(c) total)
+- HSA: $4,400 self / $8,750 family (2026); $4,500 / $9,000 (2027); +$1,000 at 55+. Triple tax-advantaged
 - 529 plan: state tax deduction in some states. Now allows $35K rollover to Roth IRA (post-15 years)
 - RMDs: start at age 73 (was 72). Failure to take = 25% penalty on shortfall
-- Solo 401(k): for self-employed, contribute as employee + employer up to $69K
-- SEP-IRA: 25% of compensation up to $69K — easier than Solo 401(k)
-- Saver's Credit: tax credit if income <$76,500 MFJ for retirement contributions
+- Solo 401(k): employee + employer up to $72,000 (2026) / $75,000 (2027)
+- SEP-IRA: 25% of compensation up to $72,000 (2026) / $75,000 (2027) — easier than Solo 401(k)
+- SIMPLE IRA: $17,000 (2026) / $17,500 (2027)
+- Saver's Credit: AGI limit MFJ $80,500 (2026) / $83,000 (2027)
 
-4. SOCIAL SECURITY (2025 figures; 2026 not yet loaded here):
-- Wage base: $176,100 (capped, 6.2% employer + 6.2% employee)
+4. SOCIAL SECURITY (SSA COLA fact sheets 2026 and 2027):
+- Wage base: $184,500 (2026) / $192,300 (2027) (6.2% employer + 6.2% employee)
+- COLA: 2.8% for 2026; 3.6% for 2027
+- Maximum benefit at full retirement age: $4,152/month (2026) / $4,188/month (2027)
 - Medicare: 1.45% no cap + Additional Medicare Tax 0.9% above $200K single / $250K MFJ
-- Self-employment: pay both halves = 15.3% (15.3% on first $176,100, 2.9% above)
+- Self-employment: pay both halves = 15.3% up to the wage base, 2.9% above
 - Full Retirement Age (FRA): 67 for those born 1960+
 - Earliest claim age: 62 (with permanent reduction ~30%)
 - Delayed retirement credit: 8% per year until age 70
@@ -170,7 +181,7 @@ const KNOWLEDGE_US = `
 - Asset location: tax-inefficient assets (bonds, REITs) in retirement accounts
 - Roth conversion ladder: convert Trad IRA to Roth in low-income years (early retirement)
 - HSA "pay later" strategy: pay medical bills out of pocket, save receipts, withdraw HSA tax-free decades later
-- 0% capital gains: married couples with taxable income <$96,700 pay 0% on LTCG
+- 0% capital gains: married couples with taxable income up to $98,900 (2026) / $102,100 (2027) pay 0% on LTCG
 - Bunching deductions: consolidate charitable giving every other year to itemize
 - Donor-Advised Fund (DAF): bunch deductions, distribute to charity over time
 - QCD (Qualified Charitable Distribution): >70.5 give up to $108K/year directly from IRA, satisfies RMD
@@ -187,9 +198,9 @@ const KNOWLEDGE_US = `
 - Homestead exemption: protects primary residence ($550K in CA, unlimited in FL/TX)
 
 9. ESTATE PLANNING US:
-- Federal estate tax basic exclusion: $15,000,000 per person for 2026 (One Big Beautiful Bill Act made it permanent and indexed; the TCJA sunset no longer applies)
-- Gift tax annual exclusion: $19,000/recipient (2026, unchanged from 2025)
-- Lifetime gift exemption: unified with the estate exclusion ($15M in 2026)
+- Federal estate tax basic exclusion: $15,000,000 per person for 2026 and $15,480,000 for 2027 (One Big Beautiful Bill Act made it permanent and indexed; the TCJA sunset no longer applies)
+- Gift tax annual exclusion: $19,000/recipient (2026) / $20,000 (2027)
+- Lifetime gift exemption: unified with the estate exclusion ($15M in 2026, $15.48M in 2027)
 - Step-up in basis: heirs receive assets at FMV at death (massive tax benefit on appreciated assets)
 - State estate tax: 12 states + DC have separate estate tax (MA, OR, WA, NY, etc.)
 - Revocable Living Trust: avoids pruébate, public, doesn't reduce taxes

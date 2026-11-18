@@ -18,11 +18,13 @@ describe("Vigencia de normas", () => {
     expect(ids("2027-07-01")).toEqual(expect.arrayContaining(["art70", "art73"]));
   });
   it("EE. UU.: desde el 10 de diciembre pide el año fiscal siguiente del IRS", () => {
-    expect(ids("2026-11-02")).not.toContain("irs");
-    expect(ids("2026-12-15")).toContain("irs");
+    // 18-nov-2026: el año fiscal 2027 ya está cargado (Rev. Proc. 2026-35).
+    expect(ids("2026-12-15")).not.toContain("irs");
+    expect(ids("2027-11-02")).not.toContain("irs");
+    expect(ids("2027-12-15")).toContain("irs");
   });
-  it("EE. UU.: en 2027 con el año fiscal 2026 es alerta alta", () => {
-    const p = normasPendientes(new Date("2027-01-05T12:00:00")).find((x) => x.id === "irs");
+  it("EE. UU.: en 2028 con el año fiscal 2027 es alerta alta", () => {
+    const p = normasPendientes(new Date("2028-01-05T12:00:00")).find((x) => x.id === "irs");
     expect(p.gravedad).toBe("alta");
   });
   it("avisa si el revisor deja de correr", () => {
