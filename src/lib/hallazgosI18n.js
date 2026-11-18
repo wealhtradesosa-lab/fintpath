@@ -34,11 +34,15 @@ const liqBaseEn = () => (esUS() ? "Liquid assets (cash, high-yield savings, T-bi
 const construir = () => ({
   es: {
     deudaCara: {
-      unidad: "al año en juego",
+      // 18-nov-2026 (Santiago: "¿$9.200.000 al año en juego? no se entiende si
+      // son intereses mensuales o anuales"). El texto no decía cuánta plata
+      // había quieta ni que la cifra son intereses que te ahorras en un año.
+      unidad: "menos de intereses al año",
       titulo: (nombre, tasa) => `${nombre} al ${fmtPctEs(tasa, 1)}`,
-      detalle: (tasa, dif, ahorro) =>
-        `Tienes liquidez disponible mientras pagas una tasa del ${fmtPctEs(tasa, 2)} ${tasaEs()}. ` +
-        `Abonar a capital rinde ${fmtNumEs(dif, 2)} puntos más que dejarla quieta: ${money.es(ahorro)} al año.`,
+      detalle: (tasa, dif, ahorro, abono, rend) =>
+        `Tienes ${money.es(abono)} en ${liqEs()} rindiendo ${fmtPctEs(rend, 2)} mientras este crédito te cobra ${fmtPctEs(tasa, 2)} ${tasaEs()}; ` +
+        `si abonas esa plata a capital, dejas de pagar unos ${money.es(ahorro)} de intereses en un año (${fmtNumEs(dif, 2)} puntos de diferencia). ` +
+        `Antes de abonar, deja aparte tu fondo de emergencia.`,
       base: (tasa, rend) =>
         `Tasa del crédito (${fmtPctEs(tasa, 2)} ${tasaEs()}) vs. rendimiento de tu ${liqEs()} (${fmtPctEs(rend, 2)}${esUS() ? "" : " E.A."})`,
       accion: "Ver mis deudas",
@@ -98,11 +102,12 @@ const construir = () => ({
 
   en: {
     deudaCara: {
-      unidad: "a year on the table",
+      unidad: "less interest a year",
       titulo: (nombre, tasa) => `${nombre} at ${tasa.toFixed(1)}%`,
-      detalle: (tasa, dif, ahorro) =>
-        `You're holding cash while paying ${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual rate"}. ` +
-        `Paying down principal beats leaving it idle by ${dif.toFixed(2)} points: ${money.en(ahorro)} a year.`,
+      detalle: (tasa, dif, ahorro, abono, rend) =>
+        `You have ${money.en(abono)} in ${liqEn()} earning ${rend.toFixed(2)}% while this loan charges ${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual rate"}. ` +
+        `Putting that money toward principal saves you about ${money.en(ahorro)} in interest over a year (${dif.toFixed(2)} points of difference). ` +
+        `Keep your emergency fund aside first.`,
       base: (tasa, rend) =>
         `Loan rate (${tasa.toFixed(2)}% ${esUS() ? "APR" : "effective annual"}) vs. return on your ${liqEn()} (${rend.toFixed(2)}%)`,
       accion: "View debts",
