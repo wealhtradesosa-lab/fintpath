@@ -538,6 +538,19 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   let liqAgotadaAnio = null;
   // ── Lo que viene: ingresos y activos que empiezan más adelante ──────────
   const fut = leerFuturos(cfg.futuros, esc, sup);
+  // 19-nov-2026: la renta de un activo puesta dos veces (ingreso futuro
+  // vinculado + renta en «Invertir en lo que ya tienes») se cuenta una vez.
+  const duplicadas = rentasDuplicadas(cfg, activos);
+  {
+    const fuera = new Set(duplicadas.filter((d) => d.seguro).map((d) => d.k));
+    if (fuera.size) {
+      const idx = (cfg.futuros?.ingresos || []).map((x, k) => (x && n(x.mensual) > 0 ? k : -1)).filter((k) => k >= 0);
+      fut.ingresos = fut.ingresos.filter((_, j) => !fuera.has(idx[j]));
+    }
+    duplicadas.forEach((d) => alertas.push({ tipo: "renta_doble", anio: 1, texto: d.seguro
+      ? tx(`«${d.ingreso}» y la renta de ${d.activo} en «Invertir en lo que ya tienes» son la misma: se cuenta una vez (${mmTxt(d.contada)} al mes).`, `"${d.ingreso}" and ${d.activo}'s income in "Invest in what you own" are the same: counted once (${mmTxt(d.contada)} a month).`)
+      : tx(`¿«${d.ingreso}» es la misma renta que pusiste en ${d.activo}? Si sí, bórrala de Lo que viene: se está sumando dos veces.`, `Is "${d.ingreso}" the same income you entered for ${d.activo}? If so, delete it from What's coming: it's being counted twice.`) }));
+  }
   // 24-oct-2026 (Santiago: "tengo un activo que en un año empieza a rentar…
   // debería poder elegir en el ingreso nuevo los activos existentes, y poner
   // cuánto se valoriza"). Un ingreso futuro puede salir de un activo tuyo;
@@ -837,6 +850,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     })(),
     nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
     futuros: fut,
+    rentasDuplicadas: duplicadas,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
     cuotasQueSalenMes: Math.max(0, b.sd - bDeuda.sd),
@@ -1060,6 +1074,36 @@ const GENERICAS = new Set(["renta", "rentas", "local", "locales", "apto", "apart
   "rental", "rentals", "rent", "home", "house", "property", "condo", "apartment", "duplex", "fourplex", "unit", "units", "land", "building", "office", "account", "fund", "loan",
   "short", "term", "long", "vacation", "east", "west", "north", "south", "primary", "residence"]);
 const sinTilde = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+/**
+ * 19-nov-2026 (Santiago: "revise que esta renta no se duplique: la puse en
+ * ingreso futuro y después en «Invertir en lo que ya tienes» también aparece
+ * la renta"). Un ingreso futuro que sale de un activo al que también le pones
+ * renta en «Invertir en lo que ya tienes» es la MISMA renta.
+ *   seguro: el ingreso futuro apunta a ese activo → se cuenta una sola vez (la
+ *           de la inversión, que trae monto, fecha y desde cuándo renta).
+ *   posible: no está vinculado pero se llama parecido o tiene el mismo monto →
+ *           solo se avisa.
+ * Devuelve [{ k, ingreso, activoId, activo, mensual, contada, seguro }].
+ */
+export function rentasDuplicadas(cfg = {}, activos = []) {
+  const nombreDe = (id) => ((activos || []).find((a) => a && a.id === id) || {}).nombre || ((activos || []).find((a) => a && a.id === id) || {}).n || "";
+  const conRenta = unaPorActivo(cfg.reinversiones).filter((r) => n(r.rentaMensual) > 0);
+  if (!conRenta.length) return [];
+  const out = [];
+  (cfg.futuros?.ingresos || []).forEach((x, k) => {
+    if (!x || !(n(x.mensual) > 0)) return;
+    const igual = conRenta.find((r) => r.activoId === x.activoId);
+    if (igual) { out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: igual.activoId, activo: nombreDe(igual.activoId), mensual: n(x.mensual), contada: n(igual.rentaMensual), seguro: true }); return; }
+    if (x.activoId) return; // vinculado a otro activo: es otra renta
+    const nom = sinTilde(x.nombre || "");
+    const parecida = conRenta.find((r) => {
+      const toks = sinTilde(nombreDe(r.activoId)).split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !GENERICAS.has(t));
+      return toks.some((t) => nom.includes(t)) || Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01);
+    });
+    if (parecida) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: parecida.activoId, activo: nombreDe(parecida.activoId), mensual: n(x.mensual), contada: n(parecida.rentaMensual), seguro: false });
+  });
+  return out;
+}
 export function sugerirVinculados(user = {}, activoId) {
   const a = (user.inv || []).find((x) => x && x.id === activoId);
   const out = { auto: { ingresos: [], gastos: [] }, ingresos: [], gastos: [] };

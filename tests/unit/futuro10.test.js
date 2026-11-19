@@ -844,3 +844,26 @@ describe("corregir un gasto en Lo que tienes", () => {
     expect(l[0].enEgresos).toBeCloseTo(16e6, -3);
   });
 });
+
+describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "l", n: "lote bodega macarena con licencia", tp: "Lote", va: 410e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 900e6 }], ingresos: [], gas: {}, deu: [] });
+  const reinv = { activoId: "l", monto: 600e6, anio: 2, fuente: "liquidez", rentaMensual: 8.5e6, rentaDesdeMes: 18 };
+  it("ingreso futuro vinculado al mismo activo: se cuenta una vez", () => {
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    const doble = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Renta bodega", mensual: 8.5e6, desde: 3, activoId: "l" }], activos: [], gastos: [] } });
+    expect(doble.rentasDuplicadas).toHaveLength(1);
+    expect(doble.rentasDuplicadas[0].seguro).toBe(true);
+    expect(doble.filas[5].patrimonio).toBeCloseTo(solo.filas[5].patrimonio, 0);
+    expect(doble.alertas.some((a) => a.tipo === "renta_doble")).toBe(true);
+  });
+  it("sin vínculo pero mismo nombre o monto: solo avisa, no borra", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Arriendo Macarena", mensual: 7e6, desde: 3 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: false });
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    expect(r.filas[5].patrimonio).toBeGreaterThan(solo.filas[5].patrimonio);
+  });
+  it("una pensión no se confunde con la renta", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas).toHaveLength(0);
+  });
+});
