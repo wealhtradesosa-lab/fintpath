@@ -234,6 +234,15 @@ describe("futuro10 · inversiones nuevas se reflejan en el resultado", () => {
     expect(r.bolsaDetalle.faltante).toBeCloseTo(100e6, 0);
   });
 
+  it("19-nov-2026: renta fija de la lista con rendimiento propio (12 %) manda sobre el supuesto", () => {
+    const base = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 100e6 }] });
+    const doce = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 100e6, rendimientoNomPct: 12 }] });
+    const vacio = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 100e6, rendimientoNomPct: "" }] });
+    expect(doce.nuevasDetalle[0].rendPct).toBeCloseTo(12, 6);
+    expect(vacio.nuevasDetalle[0].rendPct).toBeCloseTo(base.nuevasDetalle[0].rendPct, 6);
+    expect(base.nuevasDetalle[0].rendPct).not.toBeCloseTo(12, 1);
+  });
+
   it("la bolsa reporta el colchón de hoy, no el del año 10", () => {
     const u = U(); u.gas = { Vida: [{ n: "Mercado", m: 10e6 }] }; u.inv[0].va = 0;
     const r = proyectarFuturo10(u, { decisiones: { casa: { accion: "vende" } } });

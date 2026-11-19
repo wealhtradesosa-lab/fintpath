@@ -235,6 +235,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 </select></label>
                 <label style={lbl}>{tx("¿Cuánto? ($)", "How much? ($)")}<NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
                 <label style={lbl}>{tx("¿De dónde sale la plata?", "Where does the money come from?")}<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
+                {/* 19-nov-2026: rendimiento editable también en los tipos de la lista; vacío = supuesto del escenario. */}
+                {x.preset !== "custom" && SUP.presets[x.preset] && (() => { const sup = retornoNominalPreset(x.preset, esc, SUP); return (
+                  <label style={lbl}>{tx("Rendimiento anual esperado (%)", "Expected annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(sup, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
+                    <span style={{ fontSize: 12 }}>{x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? tx(`Vacío usa ${fmtPctEs(sup, 1)}, el supuesto del escenario ${nombreSup(esc).toLowerCase()}.`, `Blank uses ${fmtPctEs(sup, 1)}, the ${nombreSup(esc).toLowerCase()} scenario assumption.`) : tx(`Usa tu ${fmtPctEs(Number(x.rendimientoNomPct), 1)}; el escenario suponía ${fmtPctEs(sup, 1)}.`, `Uses your ${fmtPctEs(Number(x.rendimientoNomPct), 1)}; the scenario assumed ${fmtPctEs(sup, 1)}.`)}</span></label>); })()}
                 {x.preset === "custom" && <>
                   <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esUS() ? tx("Ej.: negocio, CD, rancho", "e.g. business, CD, ranch") : tx("Ej.: negocio, CDT, finca", "e.g. business, term deposit, farm")} /></label>
                   <label style={lbl}>{tx("¿Cuándo?", "When?")}<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>

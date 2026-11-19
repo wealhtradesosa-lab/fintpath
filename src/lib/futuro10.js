@@ -402,7 +402,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     usos.push({ seccion: "C", nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta" });
     if (m <= 0) return;
     nuevasTotal += m;
-    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rNom(x.preset), usd: !!sup.presets[x.preset].usd, invertible: true, fuente: x.fuente || "venta", preset: x.preset, montoInicial: m });
+    // 19-nov-2026 (Santiago: "puse inversiones de renta fija pero no tiene
+    // espacio para poner el retorno anual estimado, ¿un 12 %? ¿un 15 %?"). Si
+    // escribe un rendimiento, manda sobre el supuesto del escenario.
+    const rendPreset = vacio(x.rendimientoNomPct) ? rNom(x.preset) : n(x.rendimientoNomPct) / 100;
+    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rendPreset, usd: !!sup.presets[x.preset].usd, invertible: true, fuente: x.fuente || "venta", preset: x.preset, montoInicial: m });
   });
   // 25-oct-2026 (Santiago: "asociativos: el primer año invierto 1.350 M en un
   // lote con construcción de vivienda, al terminar vale 1.900 M y se vende; la
