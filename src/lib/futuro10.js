@@ -1097,7 +1097,8 @@ export function rentasDuplicadas(cfg = {}, activos = []) {
   const out = [];
   (cfg.futuros?.ingresos || []).forEach((x, k) => {
     if (!x || !(n(x.mensual) > 0)) return;
-    const igual = conRenta.find((r) => r.activoId === x.activoId);
+    const distinta = new Set([].concat(x.noEsRentaDe || []));
+    const igual = conRenta.find((r) => r.activoId === x.activoId && !distinta.has(r.activoId));
     if (igual) { out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: igual.activoId, activo: nombreDe(igual.activoId), mensual: n(x.mensual), contada: n(igual.rentaMensual), seguro: true }); return; }
     if (x.activoId) return; // vinculado a otro activo: es otra renta
     const nom = sinTilde(x.nombre || "");
@@ -1116,11 +1117,29 @@ export function rentasDuplicadas(cfg = {}, activos = []) {
       if (mismoMonto || nombreFuerte) return "posible";
       return null;
     };
-    const cand = conRenta.map((r) => ({ r, v: evalua(r) })).filter((c) => c.v);
+    const cand = conRenta.filter((r) => !distinta.has(r.activoId)).map((r) => ({ r, v: evalua(r) })).filter((c) => c.v);
     const elegido = cand.find((c) => c.v === "seguro") || cand[0];
     if (elegido) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: elegido.r.activoId, activo: nombreDe(elegido.r.activoId), mensual: n(x.mensual), contada: n(elegido.r.rentaMensual), seguro: elegido.v === "seguro" });
   });
   return out;
+}
+/**
+ * 19-nov-2026 (Santiago: "me pide ingresos futuros, pongo que el lote será una
+ * bodega y me dará 8.500.000; después, aparte, le invierto 600 M al mismo lote
+ * y me pregunta cuánto renta: vuelvo a poner 8.500.000 y el sistema los toma
+ * como dos"). Ingresos de Lo que viene que parecen ser la renta de este activo:
+ * vinculados a él o con una palabra del nombre en común. Para ofrecer «es la
+ * misma» en Invertir en lo que ya tienes.
+ */
+export function rentasFuturasDelActivo(cfg = {}, activo = {}) {
+  const pal = (t) => sinTilde(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4);
+  const delActivo = pal(activo.nombre || activo.n || "");
+  return (cfg.futuros?.ingresos || []).map((x, k) => ({ x, k })).filter(({ x }) => {
+    if (!x || !(n(x.mensual) > 0)) return false;
+    if ([].concat(x.noEsRentaDe || []).includes(activo.id)) return false;
+    if (x.activoId) return x.activoId === activo.id;
+    return pal(x.nombre || "").some((w) => delActivo.includes(w));
+  });
 }
 export function sugerirVinculados(user = {}, activoId) {
   const a = (user.inv || []).find((x) => x && x.id === activoId);

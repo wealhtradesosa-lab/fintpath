@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica, leerFuentesPago } from "../../src/lib/futuro10.js";
+import { rentasFuturasDelActivo, proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica, leerFuentesPago } from "../../src/lib/futuro10.js";
 
 const cero = JSON.parse(JSON.stringify(SUPUESTOS_F10));
 cero.presets.rfCorto.realSpread = 0; cero.presets.rfLargo.realSpread = 0;
@@ -868,6 +868,16 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: true });
     expect(r.futuros.ingresos).toHaveLength(0);
     expect(r.filas[5].patrimonio).toBeCloseTo(solo.filas[5].patrimonio, 0);
+  });
+  it("«No, es otra renta» se respeta: se suman las dos", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2, noEsRentaDe: ["l"] }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas).toHaveLength(0);
+    expect(r.futuros.ingresos).toHaveLength(1);
+  });
+  it("rentasFuturasDelActivo encuentra «bodega» para el lote bodega y no la pensión", () => {
+    const cfg = { futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2 }, { nombre: "Pensión Ana", mensual: 23e6, desde: 5 }] } };
+    const f = rentasFuturasDelActivo(cfg, { id: "l", nombre: "lote bodega macarena con licencia" });
+    expect(f.map((y) => y.k)).toEqual([0]);
   });
   it("una pensión no se confunde con la renta", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });

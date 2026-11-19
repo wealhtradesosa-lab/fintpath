@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -216,6 +216,27 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   <b>{a.nombre}</b>
                   <button style={btn(activo)} onClick={toggle}>{activo ? tx("Le voy a invertir ✓", "I'll invest in it ✓") : tx("Le voy a invertir", "I'll invest in it")}</button>
                 </div>
+                {activo && (() => {
+                  // 19-nov-2026: la renta de este activo ya escrita en Lo que viene.
+                  // Se ofrece juntarla aquí (una sola renta) o decir que es otra.
+                  const futs = rentasFuturasDelActivo(cfg, a);
+                  if (!futs.length) return null;
+                  const ingresos = cfg.futuros?.ingresos || [];
+                  const juntar = ({ x, k }) => {
+                    const re = cfg.reinversiones[iR];
+                    const yaTiene = Number(re.rentaMensual) > 0;
+                    if (!yaTiene) upR({ rentaMensual: x.mensual, rentaDesdeMes: Math.max(0, ((Number(x.desde) || 1) - 1) * 12) });
+                    set("futuros", { ...cfg.futuros, ingresos: ingresos.filter((_, j) => j !== k) });
+                  };
+                  const otra = ({ k }) => set("futuros", { ...cfg.futuros, ingresos: ingresos.map((y, j) => (j === k ? { ...y, noEsRentaDe: [...new Set([].concat(y.noEsRentaDe || [], a.id))] } : y)) });
+                  return futs.map((f) => <div key={f.k} style={{ marginTop: 8, fontSize: 12.5, color: C.tx, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "8px 10px" }}>
+                    {tx(`En Lo que viene pusiste «${f.x.nombre || "ingreso futuro"}»: ${plata(Number(f.x.mensual))} al mes desde ${anioCal(Number(f.x.desde) || 1)}. ¿Es la renta de ${a.nombre}?`, `In What's coming you entered "${f.x.nombre || "future income"}": ${plata(Number(f.x.mensual))} a month from ${anioCal(Number(f.x.desde) || 1)}. Is it ${a.nombre}'s income?`)}
+                    <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                      <button style={btn(true)} onClick={() => juntar(f)}>{Number(cfg.reinversiones[iR].rentaMensual) > 0 ? tx("Sí, es la misma: quitarla de Lo que viene", "Yes, same one: remove it from What's coming") : tx("Sí, es la misma: traerla aquí", "Yes, same one: move it here")}</button>
+                      <button style={btn(false)} onClick={() => otra(f)}>{tx("No, es otra renta", "No, it's a different income")}</button>
+                    </div>
+                  </div>);
+                })()}
                 {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} /></div>}
               </div>
             );
@@ -421,7 +442,11 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
           {/* 19-nov-2026: aviso si esta renta ya está puesta en «Invertir en lo que ya tienes». */}
           {(() => { const d = rentasDuplicadas(cfg, activos).find((y) => y.k === i); if (!d) return null; return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "8px 10px" }}>{d.seguro
             ? tx(`Esta renta ya está en «Invertir en lo que ya tienes» (${d.activo}, ${plata(d.contada)} al mes). Se cuenta una sola vez, la de allá; puedes borrar esta.`, `This income is already in "Invest in what you own" (${d.activo}, ${plata(d.contada)} a month). It's counted once, from there; you can delete this one.`)
-            : tx(`¿Es la misma renta de ${d.activo} que pusiste en «Invertir en lo que ya tienes» (${plata(d.contada)} al mes)? Si sí, bórrala aquí: se está sumando dos veces.`, `Is this the same ${d.activo} income you entered in "Invest in what you own" (${plata(d.contada)} a month)? If so, delete it here: it's being counted twice.`)}</div>; })()}
+            : tx(`¿Es la misma renta de ${d.activo} que pusiste en «Invertir en lo que ya tienes» (${plata(d.contada)} al mes)? Si sí, bórrala aquí: se está sumando dos veces.`, `Is this the same ${d.activo} income you entered in "Invest in what you own" (${plata(d.contada)} a month)? If so, delete it here: it's being counted twice.`)}
+            <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+              <button style={btn(true)} onClick={() => set("futuros", { ...f, ingresos: f.ingresos.filter((_, j) => j !== i) })}>{tx("Es la misma: quitarla de aquí", "Same one: remove it here")}</button>
+              {!d.seguro || !x.activoId ? <button style={btn(false)} onClick={() => upI(i, { noEsRentaDe: [...new Set([].concat(x.noEsRentaDe || [], d.activoId))] })}>{tx("Es otra renta", "It's a different income")}</button> : null}
+            </div></div>; })()}
           <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} placeholder={esUS() ? tx("Ej.: Seguro Social", "e.g. Social Security") : tx("Ej.: pensión", "e.g. pension")} onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>{esUS() ? tx("Al mes ($, dólares de hoy)", "Per month ($, today's dollars)") : tx("Al mes ($, pesos de hoy)", "Per month ($, today's pesos)")}<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
             {!x.activoId && <span style={{ fontSize: 12 }}>{esUS() ? tx("Si es el Seguro Social o una pensión, usa el estimado de tu cuenta en ssa.gov o de tu plan. Sube con la inflación.", "For Social Security or a pension, use the estimate from your ssa.gov account or your plan. It grows with inflation.") : tx("Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.", "For a pension, use the monthly estimate from your pension fund. It grows with inflation.")}</span>}</label>
