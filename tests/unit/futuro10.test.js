@@ -902,3 +902,12 @@ describe("futuro10 · renta fija de la lista que paga al mes (19-nov-2026)", () 
     expect(r.nuevasDetalle[0].pagaRenta).toBe(false);
   });
 });
+
+describe("futuro10 · deudas sin saldo (19-nov-2026)", () => {
+  it("una deuda con cuota pero sin saldo sale en deudasSinSaldo", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 100e6 }], ingresos: [], gas: {}, deu: [{ id: "car", n: "carro mani", mt: "", pg: 6125000 }, { id: "h", n: "hipoteca", mt: 300e6, pg: 4e6 }] };
+    const r = proyectarFuturo10(u, {});
+    expect(r.deudas.map((d) => d.id)).toEqual(["h"]);
+    expect(r.deudasSinSaldo).toEqual([expect.objectContaining({ id: "car", cuota: 6125000 })]);
+  });
+});

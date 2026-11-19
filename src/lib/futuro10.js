@@ -858,6 +858,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     rentasDuplicadas: duplicadas,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
+    // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
+    // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
+    // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
+    deudasSinSaldo: deudasUser.filter((d) => !(n(d.mt) > 0) && n(d.pg ?? d.pago) > 0).map((d) => ({ id: d.id, nombre: d.n || d.nombre || tx("Deuda", "Debt"), cuota: n(d.pg ?? d.pago) * fxA(d), activoId: d.la || d.link || null })),
     cuotasQueSalenMes: Math.max(0, b.sd - bDeuda.sd),
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.obCaja ?? b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
