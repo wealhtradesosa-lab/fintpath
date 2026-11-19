@@ -337,9 +337,11 @@ export default function HistoriaPlata({ r }) {
                 <div style={{ minWidth: 0 }}><div style={{ fontSize: 16, fontWeight: 700 }}>{x.nombre}</div>{x.sub && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 2 }}>{x.sub}</div>}</div>
                 <span style={chip(colFin)}>{ETQ[x.tipo]}</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 8 }}>
+              {/* 19-nov-2026: en el celular «$5.200.000.000» se partía en dos renglones.
+                  Las tres cifras pasan a filas cuando no caben a lo ancho. */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,130px),1fr))", gap: 8 }}>
                 {[[tx("Inviertes", "You invest"), fmM(x.monto), INF.tx], [tx("Rinde", "Returns"), x.rinde, INF.tx], [x.pagaEtq, x.pagaMes > 0.5 ? `${fmM(x.pagaMes)}${tx("/mes", "/mo")}` : (x.pagaTxt || tx("$0 · se reinvierte", "$0 · reinvested")), x.pagaMes > 0.5 || x.pagaTxt ? colFin : INF.tx2]].map(([l, v, c]) =>
-                  <div key={l} style={{ background: INF.panel, borderRadius: 10, padding: "8px 10px", minWidth: 0 }}><div style={{ fontSize: 11.5, color: INF.tx2 }}>{l}</div><div style={{ fontSize: 13.5, fontWeight: 700, color: c, overflowWrap: "anywhere" }}>{v}</div></div>)}
+                  <div key={l} style={{ background: INF.panel, borderRadius: 10, padding: "8px 10px", minWidth: 0 }}><div style={{ fontSize: 11.5, color: INF.tx2 }}>{l}</div><div style={{ fontSize: 13.5, fontWeight: 700, color: c, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }} title={String(v)}>{v}</div></div>)}
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
                 <div><div style={{ fontSize: 12, color: INF.tx2 }}>{finEtq}</div><div style={{ fontSize: 22, fontWeight: 800, color: colFin, fontVariantNumeric: "tabular-nums" }}>{fmM(final)}</div></div>

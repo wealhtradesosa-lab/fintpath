@@ -889,6 +889,13 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     expect(r.rentasDuplicadas).toHaveLength(0);
     expect(r.futuros.ingresos).toHaveLength(1);
   });
+  it("caso real: «LOCAL MACARENA» 8,5 M es del local, no del lote bodega macarena", () => {
+    const u = U(); u.inv.push({ id: "lm", n: "local macarena", tp: "Real Estate", va: 900e6 });
+    const r = proyectarFuturo10(u, { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "LOCAL MACARENA", mensual: 8.5e6, desde: 3 }], activos: [], gastos: [] } });
+    expect(r.futuros.ingresos).toHaveLength(1);
+    expect((r.rentasDuplicadas[0] || {}).seguro).not.toBe(true);
+    expect(rentasFuturasDelActivo({ futuros: { ingresos: [{ nombre: "LOCAL MACARENA", mensual: 8.5e6 }] } }, { id: "l", nombre: "lote bodega macarena con licencia" }, u.inv.map((a) => ({ id: a.id, nombre: a.n })))).toHaveLength(0);
+  });
   it("una pensión no se confunde con la renta", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });
     expect(r.rentasDuplicadas).toHaveLength(0);
