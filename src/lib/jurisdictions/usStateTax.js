@@ -29,96 +29,120 @@
 // ─── Año fiscal federal vigente ────────────────────────────────────────────
 // 2-nov-2026: única tabla federal de la app. US.js, TaxPlanningUS y
 // TaxOptimizerUS leen de aquí (antes había dos tablas 2025, una solo para
-// soltero). Al cambiar de año: actualizar US_TAX_YEAR y estas cifras; la guardia
-// de lib/vigenciaNormas.js avisa cuando el año se queda atrás.
-// Fuente: IRS Rev. Proc. 2025-32 (año fiscal 2026, incluye la ley OBBBA)
-// https://www.irs.gov/pub/irs-drop/rp-25-32.pdf
-export const US_TAX_YEAR = 2026;
+// soltero). La guardia de lib/vigenciaNormas.js avisa cuando falta un año.
+//
+// 18-nov-2026 (Santiago: "ok cárguelos"): las cifras quedan POR AÑO. El año
+// vigente es el año calendario en curso, limitado al último año cargado (igual
+// que la UVT en taxCO.js). Así 2027 queda cargado desde ya y entra solo el
+// 1-ene-2027, sin calcular 2026 con cifras de 2027.
+//   2026 — IRS Rev. Proc. 2025-32 (incluye OBBBA), Notice 2025-67, SSA COLA 2026.
+//   2027 — IRS Rev. Proc. 2026-35 (https://www.irs.gov/pub/irs-drop/rp-26-35.pdf),
+//          Notice 2026-66 (https://www.irs.gov/pub/irs-drop/n-26-66.pdf),
+//          Rev. Proc. 2026-24 HSA (https://www.irs.gov/pub/irs-drop/rp-26-24.pdf),
+//          SSA COLA 2027 (https://www.ssa.gov/cola/factsheets/2027.html).
+const tramos = (cortes) => [0.10, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37]
+  .map((rate, i) => ({ max: i < cortes.length ? cortes[i] : Infinity, rate }));
 
-export const FEDERAL_BRACKETS = {
-  single: [
-    { max: 12400,    rate: 0.10 },
-    { max: 50400,    rate: 0.12 },
-    { max: 105700,   rate: 0.22 },
-    { max: 201775,   rate: 0.24 },
-    { max: 256225,   rate: 0.32 },
-    { max: 640600,   rate: 0.35 },
-    { max: Infinity, rate: 0.37 },
-  ],
-  married_jointly: [
-    { max: 24800,    rate: 0.10 },
-    { max: 100800,   rate: 0.12 },
-    { max: 211400,   rate: 0.22 },
-    { max: 403550,   rate: 0.24 },
-    { max: 512450,   rate: 0.32 },
-    { max: 768700,   rate: 0.35 },
-    { max: Infinity, rate: 0.37 },
-  ],
-  married_separately: [
-    { max: 12400,    rate: 0.10 },
-    { max: 50400,    rate: 0.12 },
-    { max: 105700,   rate: 0.22 },
-    { max: 201775,   rate: 0.24 },
-    { max: 256225,   rate: 0.32 },
-    { max: 384350,   rate: 0.35 },
-    { max: Infinity, rate: 0.37 },
-  ],
-  head_of_household: [
-    { max: 17700,    rate: 0.10 },
-    { max: 67450,    rate: 0.12 },
-    { max: 105700,   rate: 0.22 },
-    { max: 201750,   rate: 0.24 },
-    { max: 256200,   rate: 0.32 },
-    { max: 640600,   rate: 0.35 },
-    { max: Infinity, rate: 0.37 },
-  ],
+export const US_TAX_BY_YEAR = {
+  2026: {
+    brackets: {
+      single:             tramos([12400, 50400, 105700, 201775, 256225, 640600]),
+      married_jointly:    tramos([24800, 100800, 211400, 403550, 512450, 768700]),
+      married_separately: tramos([12400, 50400, 105700, 201775, 256225, 384350]),
+      head_of_household:  tramos([17700, 67450, 105700, 201750, 256200, 640600]),
+    },
+    standard: { single: 16100, married_jointly: 32200, married_separately: 16100, head_of_household: 24150 },
+    ltcg: {
+      single:             { cero: 49450, quince: 545500 },
+      married_jointly:    { cero: 98900, quince: 613700 },
+      married_separately: { cero: 49450, quince: 306850 },
+      head_of_household:  { cero: 66200, quince: 579600 },
+    },
+    limits: {
+      ssWageBase: 184500,
+      ssMaxBenefitFRA: 4152,   // mensual, a la edad plena de retiro
+      ssMaxBenefit70: 5181,    // mensual, reclamando a los 70 (SSA, Oficina del Actuario)
+      ssCola: 0.028,
+      ssBendPoints: [1286, 7749], // fórmula del PIA, elegibles en 2026 (SSA)
+      k401: 24500,
+      k401CatchUp50: 8000,
+      k401CatchUp6063: 11250,
+      ira: 7500,
+      iraCatchUp50: 1100,
+      rothPhaseOutSingle: [153000, 168000],
+      rothPhaseOutJoint: [242000, 252000],
+      tradIraPhaseOutSingleCovered: [81000, 91000],
+      tradIraPhaseOutJointCovered: [129000, 149000],
+      k401Total: 72000,        // 415(c): empleado + empleador + after-tax
+      sep: 72000,
+      simple: 17000,
+      simpleCatchUp50: 4000,
+      simpleCatchUp6063: 5250,
+      hsaSelf: 4400,
+      hsaFamily: 8750,
+      hsaCatchUp55: 1000,
+      fsa: 3400,
+      estateExemption: 15000000,
+    },
+  },
+  2027: {
+    brackets: {
+      single:             tramos([12800, 52025, 109125, 208325, 264550, 661375]),
+      married_jointly:    tramos([25600, 104050, 218250, 416650, 529100, 793650]),
+      married_separately: tramos([12800, 52025, 109125, 208325, 264550, 396825]),
+      head_of_household:  tramos([18250, 69650, 109100, 208300, 264550, 661350]),
+    },
+    standard: { single: 16600, married_jointly: 33200, married_separately: 16600, head_of_household: 24925 },
+    ltcg: {
+      single:             { cero: 51050, quince: 563200 },
+      married_jointly:    { cero: 102100, quince: 633600 },
+      married_separately: { cero: 51050, quince: 316800 },
+      head_of_household:  { cero: 68350, quince: 598400 },
+    },
+    limits: {
+      ssWageBase: 192300,
+      ssMaxBenefitFRA: 4188,
+      ssMaxBenefit70: 5358,
+      ssCola: 0.036,
+      ssBendPoints: [1340, 8077],
+      k401: 25500,
+      k401CatchUp50: 8500,
+      k401CatchUp6063: 11750,
+      ira: 7500,
+      iraCatchUp50: 1100,
+      rothPhaseOutSingle: [158000, 173000],
+      rothPhaseOutJoint: [250000, 260000],
+      tradIraPhaseOutSingleCovered: [83000, 93000],
+      tradIraPhaseOutJointCovered: [133000, 153000],
+      k401Total: 75000,
+      sep: 75000,
+      simple: 17500,
+      simpleCatchUp50: 4000,
+      simpleCatchUp6063: 5250,
+      hsaSelf: 4500,
+      hsaFamily: 9000,
+      hsaCatchUp55: 1000,
+      fsa: 3500,
+      estateExemption: 15480000,
+    },
+  },
 };
 
-export const STANDARD_DEDUCTION = {
-  single: 16100,
-  married_jointly: 32200,
-  married_separately: 16100,
-  head_of_household: 24150,
-};
+/** Último año fiscal federal cargado (lo vigila lib/vigenciaNormas.js). */
+export const US_MAX_TAX_YEAR = Math.max(...Object.keys(US_TAX_BY_YEAR).map(Number));
 
+/** Año fiscal vigente: el año en curso, sin pasar del último cargado. */
+export const usTaxYearFor = (fecha = new Date()) => Math.min(fecha.getFullYear(), US_MAX_TAX_YEAR);
+export const US_TAX_YEAR = usTaxYearFor();
+
+const _vig = US_TAX_BY_YEAR[US_TAX_YEAR];
+export const FEDERAL_BRACKETS = _vig.brackets;
+export const STANDARD_DEDUCTION = _vig.standard;
 // Ganancia de capital de largo plazo: el 0 % llega hasta `cero`, el 15 % hasta
 // `quince` y el 20 % aplica por encima (ingreso gravable total).
-export const LTCG_BREAKPOINTS = {
-  single:             { cero: 49450, quince: 545500 },
-  married_jointly:    { cero: 98900, quince: 613700 },
-  married_separately: { cero: 49450, quince: 306850 },
-  head_of_household:  { cero: 66200, quince: 579600 },
-};
-
-// Seguro Social y límites de retiro 2026.
-// SSA COLA Fact Sheet 2026: https://www.ssa.gov/cola/factsheets/2026.html
-// IRS Notice 2025-67 (límites de planes de retiro 2026).
-export const US_LIMITS = {
-  ssWageBase: 184500,
-  ssMaxBenefitFRA: 4152,   // mensual, a la edad plena de retiro
-  ssMaxBenefit70: 5181,    // mensual, reclamando a los 70 (SSA, Oficina del Actuario)
-  ssCola: 0.028,
-  ssBendPoints: [1286, 7749], // fórmula del PIA, elegibles en 2026 (SSA)
-  k401: 24500,
-  k401CatchUp50: 8000,
-  k401CatchUp6063: 11250,
-  ira: 7500,
-  iraCatchUp50: 1100,
-  rothPhaseOutSingle: [153000, 168000],
-  rothPhaseOutJoint: [242000, 252000],
-  tradIraPhaseOutSingleCovered: [81000, 91000],
-  tradIraPhaseOutJointCovered: [129000, 149000],
-  k401Total: 72000,        // 415(c): empleado + empleador + after-tax
-  sep: 72000,
-  simple: 17000,
-  simpleCatchUp50: 4000,
-  simpleCatchUp6063: 5250,
-  hsaSelf: 4400,
-  hsaFamily: 8750,
-  hsaCatchUp55: 1000,
-  fsa: 3400,
-  estateExemption: 15000000,
-};
+export const LTCG_BREAKPOINTS = _vig.ltcg;
+// Seguro Social y límites de retiro del año vigente.
+export const US_LIMITS = _vig.limits;
 
 // Fechas de los 4 pagos estimados (Form 1040-ES) de un año fiscal: 15 de abril,
 // 15 de junio, 15 de septiembre y 15 de enero del año siguiente; si cae en

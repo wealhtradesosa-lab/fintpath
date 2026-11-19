@@ -99,6 +99,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
       return {
         nombre: d.n || d.nombre || tx("Crédito", "Loan"),
         saldo, tasa, dif,
+        abono: Math.min(liquidez, saldo),
         impacto: dif > 0 ? costoAnualDeuda(Math.min(liquidez, saldo), dif) : 0,
       };
     })
@@ -115,7 +116,7 @@ function deudaCaraVsAhorro(user, trm, L = textos("es")) {
     metrica: millones(impacto),
     unidad: L.deudaCara.unidad,
     titulo: L.deudaCara.titulo(cara.nombre, cara.tasa),
-    detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto),
+    detalle: L.deudaCara.detalle(cara.tasa, diferencial, impacto, cara.abono, RENDIMIENTO_TIPICO),
     impactoAnual: impacto,
     base: esUS() || getRegion().idioma === "en"
       ? L.deudaCara.base(cara.tasa, RENDIMIENTO_TIPICO) + tx(", ponderado por monto. No incluye fondos ni acciones: son posiciones tomadas, no plata disponible.", ", weighted by amount. Funds and stocks are excluded: they're positions already taken, not cash on hand.")

@@ -22,6 +22,24 @@ import { STANDARD_DEDUCTION, US_LIMITS, US_TAX_YEAR, federalTax } from "../lib/j
 // Fuentes 2026: IRS Rev. Proc. 2025-32 (deducción estándar, § 179, préstamos
 // estudiantiles, educadores, crédito por hijos), IRS Notice 2026-10 (millaje),
 // IRS Notice 2025-67 (IRA, HSA, SEP), ley OBBBA (SALT, bonus depreciation).
+// 18-nov-2026: cifras por año fiscal; se toma US_TAX_YEAR (2027 entra el 1-ene).
+// Fuentes 2027: IRS Rev. Proc. 2026-35 (§ 179 $2.640.000, préstamos
+// estudiantiles $90.000–$105.000, educadores $350, crédito por hijos $2.300 /
+// $1.800 reembolsable). SALT 2027 según § 164(b)(7) (OBBBA): el tope y el umbral
+// suben 1 % al año 2026–2029 → $40.804 y $510.050 ($20.402 / $255.025 MFS).
+// Millaje 2027: el IRS lo publica en diciembre; mientras tanto se usa el de 2026
+// (POR CONFIRMAR).
+const POR_AÑO = {
+  2026: { SALT_CAP: 40400, SALT_CAP_MFS: 20200, SALT_MAGI_THRESHOLD: 505000, SALT_MAGI_THRESHOLD_MFS: 252500,
+          STUDENT_LOAN_PO_START: 85000, STUDENT_LOAN_PO_END: 100000, EDUCATOR_MAX: 350, SECTION_179_LIMIT: 2560000,
+          MILEAGE_BUSINESS: 0.725, MILEAGE_MEDICAL: 0.205, MILEAGE_NOTICE: "IRS Notice 2026-10",
+          CHILD_TAX_CREDIT: 2200, CHILD_TAX_CREDIT_REFUND: 1700, EITC_MAX_3: 8231 },
+  2027: { SALT_CAP: 40804, SALT_CAP_MFS: 20402, SALT_MAGI_THRESHOLD: 510050, SALT_MAGI_THRESHOLD_MFS: 255025,
+          STUDENT_LOAN_PO_START: 90000, STUDENT_LOAN_PO_END: 105000, EDUCATOR_MAX: 350, SECTION_179_LIMIT: 2640000,
+          MILEAGE_BUSINESS: 0.725, MILEAGE_MEDICAL: 0.205, MILEAGE_NOTICE: "IRS Notice 2026-10 (2027 rate pending)",
+          CHILD_TAX_CREDIT: 2300, CHILD_TAX_CREDIT_REFUND: 1800, EITC_MAX_3: 8496 }, // EITC: Rev. Proc. 2026-35 § 3.06
+};
+const Y = POR_AÑO[US_TAX_YEAR] || POR_AÑO[Math.max(...Object.keys(POR_AÑO).map(Number))];
 const C = {
   STANDARD_DEDUCTION_SINGLE:  STANDARD_DEDUCTION.single,
   STANDARD_DEDUCTION_MFJ:     STANDARD_DEDUCTION.married_jointly,
@@ -30,10 +48,10 @@ const C = {
   // SALT (§ 164(b)(6), OBBBA): tope de $40.400 en 2026 ($20.200 casados por
   // separado), que baja 30 % del MAGI por encima de $505.000 ($252.500) hasta
   // un piso de $10.000 ($5.000). Se calcula en topeSALT().
-  SALT_CAP:                   40400,
-  SALT_CAP_MFS:               20200,
-  SALT_MAGI_THRESHOLD:        505000,
-  SALT_MAGI_THRESHOLD_MFS:    252500,
+  SALT_CAP:                   Y.SALT_CAP,
+  SALT_CAP_MFS:               Y.SALT_CAP_MFS,
+  SALT_MAGI_THRESHOLD:        Y.SALT_MAGI_THRESHOLD,
+  SALT_MAGI_THRESHOLD_MFS:    Y.SALT_MAGI_THRESHOLD_MFS,
   SALT_FLOOR:                 10000,
   SALT_FLOOR_MFS:             5000,
   MORTGAGE_DEBT_LIMIT:        750000,  // IRC § 163(h)(3)(B) — permanente con OBBBA
@@ -41,20 +59,20 @@ const C = {
   CHARITABLE_CASH_LIMIT:      0.60,    // IRC § 170(b)(1)(G)
   CHARITABLE_PROP_LIMIT:      0.30,    // IRC § 170(e)(1)
   STUDENT_LOAN_MAX:           2500,    // IRC § 221
-  STUDENT_LOAN_PO_START:      85000,   // Phase-out start (single 2026)
-  STUDENT_LOAN_PO_END:        100000,
-  EDUCATOR_MAX:               350,     // IRC § 62(a)(2)(D) — 2026
+  STUDENT_LOAN_PO_START:      Y.STUDENT_LOAN_PO_START, // Phase-out start (single)
+  STUDENT_LOAN_PO_END:        Y.STUDENT_LOAN_PO_END,
+  EDUCATOR_MAX:               Y.EDUCATOR_MAX, // IRC § 62(a)(2)(D)
   HSA_INDIVIDUAL:             US_LIMITS.hsaSelf,   // IRC § 223
   HSA_FAMILY:                 US_LIMITS.hsaFamily,
   IRA_LIMIT:                  US_LIMITS.ira,       // IRC § 219
   IRA_CATCHUP:                US_LIMITS.ira + US_LIMITS.iraCatchUp50, // Age 50+
-  SECTION_179_LIMIT:          2560000, // IRC § 179 — 2026
+  SECTION_179_LIMIT:          Y.SECTION_179_LIMIT, // IRC § 179
   BONUS_DEPRECIATION:         1.00,    // 100% permanente para bienes adquiridos desde el 20-ene-2025 (OBBBA)
-  MILEAGE_BUSINESS:           0.725,   // IRS Notice 2026-10
-  MILEAGE_MEDICAL:            0.205,
+  MILEAGE_BUSINESS:           Y.MILEAGE_BUSINESS,
+  MILEAGE_MEDICAL:            Y.MILEAGE_MEDICAL,
   MILEAGE_CHARITY:            0.14,
-  CHILD_TAX_CREDIT:           2200,    // IRC § 24 — 2026
-  CHILD_TAX_CREDIT_REFUND:    1700,
+  CHILD_TAX_CREDIT:           Y.CHILD_TAX_CREDIT, // IRC § 24
+  CHILD_TAX_CREDIT_REFUND:    Y.CHILD_TAX_CREDIT_REFUND,
   QBI_RATE:                   0.20,    // IRC § 199A
 };
 
@@ -262,7 +280,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
   // ── Credits (reduce tax dollar-for-dollar) ───────────────────────────────
   const credits = useMemo(() => {
     // OBBBA: § 25C y § 25D terminaron el 31-dic-2025 y § 30D el 30-sep-2025.
-    // Para el año fiscal vigente (2026) ya no suman.
+    // Desde el año fiscal 2026 ya no suman.
     const energy  = 0;
     const solar   = 0;
     const ev      = 0;
@@ -560,13 +578,13 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               hint={`IRC § 280A. Simplified method: $5/sq ft × up to 300 sq ft = max $1,500/yr. Must be used regularly and exclusively for business. Your deduction: ${fm(schedC.homeOffice)}.`} />
             <Field l="Business Miles (annual)" value={form.businessMiles}
               onChange={v=>sf("businessMiles",v)}
-              hint={`IRS Notice 2026-10: $0.725/mile for business (2026). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`} />
+              hint={`${Y.MILEAGE_NOTICE}: $${C.MILEAGE_BUSINESS}/mile for business (${US_TAX_YEAR}). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`} />
             <Field l="Business Meals (total, before 50% limit)" value={form.businessMeals}
               onChange={v=>sf("businessMeals",v)}
               hint={`IRC § 274(n). 50% deductible. Must have business purpose and document: who, where, business discussed. Deductible: ${fm(schedC.meals)}. Entertainment is no longer deductible (TCJA 2017).`} />
             <Field l="Section 179 Asset Expensing (cost of equipment)" value={form.section179}
               onChange={v=>sf("section179",v)}
-              hint={`IRC § 179. Immediately expense up to $2,560,000 of qualifying assets (2026). Computers, equipment, furniture. Cannot create a loss (limited to net income). Deductible: ${fm(schedC.s179)}.`} />
+              hint={`IRC § 179. Immediately expense up to ${fm(C.SECTION_179_LIMIT)} of qualifying assets (${US_TAX_YEAR}). Computers, equipment, furniture. Cannot create a loss (limited to net income). Deductible: ${fm(schedC.s179)}.`} />
             <Field l="Professional Development / Education" value={form.professionalDev}
               onChange={v=>sf("professionalDev",v)}
               hint="IRC § 162. Courses, conferences, books, certifications that maintain or improve current business skills. NOT for education to qualify for a new profession." />
@@ -632,7 +650,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           </div>
           <InfoBox color={T.gn}>
             <strong>Other credits to explore with your CPA:</strong><br/>
-            • <strong>Earned Income Tax Credit (EITC)</strong> — § 32, refundable, up to $8,231 (2026, three or more children) for low-to-moderate income<br/>
+            • <strong>Earned Income Tax Credit (EITC)</strong> — § 32, refundable, up to {fm(Y.EITC_MAX_3)} ({US_TAX_YEAR}, three or more children) for low-to-moderate income<br/>
             • <strong>American Opportunity Credit</strong> — § 25A, up to $2,500/student for first 4 years college<br/>
             • <strong>Lifetime Learning Credit</strong> — § 25A, up to $2,000 for any higher education<br/>
             • <strong>Retirement Savings Credit (Saver's Credit)</strong> — § 25B, up to $1,000 for low-to-moderate income<br/>

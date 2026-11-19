@@ -1,7 +1,11 @@
 // 2-nov-2026 — El motor de EE. UU. calculaba con cifras 2025 y solo para
 // soltero. Estas pruebas fijan las cifras 2026 (IRS Rev. Proc. 2025-32, SSA)
 // y que todas las pantallas lean la misma tabla.
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// 18-nov-2026: el año vigente sale de la fecha; se fija a mediados de 2026
+// para que estas pruebas no cambien el 1 de enero.
+vi.hoisted(() => { vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(new Date("2026-06-15T12:00:00")); });
 import { US } from "../../src/lib/jurisdictions/US.js";
 import { US_TAX_YEAR, STANDARD_DEDUCTION, FEDERAL_BRACKETS, LTCG_BREAKPOINTS, US_LIMITS, federalTax, fechasEstimadosUS } from "../../src/lib/jurisdictions/usStateTax.js";
 
