@@ -277,7 +277,7 @@ export default function HistoriaPlata({ r }) {
   return (
     <div style={{ ...card, padding: "18px 20px 6px", marginBottom: 14, color: INF.tx }}>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 10, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,210px),1fr))", gap: 10, marginBottom: 24 }}>
         {[
           [tx("Partes de", "You start with"), fmM(totHoy), tx(`${hoyLista.length} activos hoy`, `${hoyLista.length} assets today`), INF.tx],
           [tx("Vendes", "You sell"), fmM(totVend), tx(`${vendidos.length} activo${vendidos.length === 1 ? "" : "s"} · conservas ${fmM(totConserva)}`, `${vendidos.length} asset${vendidos.length === 1 ? "" : "s"} · you keep ${fmM(totConserva)}`), INF.txTeja],
@@ -285,7 +285,7 @@ export default function HistoriaPlata({ r }) {
           [tx(`En ${anioCal(nAnios)} vale`, `Worth in ${anioCal(nAnios)}`), fmM(fin.activos), tx(`todo tu portafolio · hoy ${fmM(totDespues)}`, `your whole portfolio · today ${fmM(totDespues)}`), INF.azul],
         ].map(([l, v, s2, c]) => <div key={l} style={{ background: "var(--fp-raised)", borderRadius: 12, padding: "14px 16px" }}>
           <div style={{ fontSize: 12, color: INF.tx2 }}>{l}</div>
-          <div style={{ fontSize: 24, fontWeight: 700, color: c, fontVariantNumeric: "tabular-nums", margin: "2px 0" }}>{v}</div>
+          <div style={{ fontSize: "clamp(18px, 1.6vw, 24px)", overflowWrap: "anywhere", fontWeight: 700, color: c, fontVariantNumeric: "tabular-nums", margin: "2px 0" }}>{v}</div>
           <div style={{ fontSize: 12, color: INF.tx2 }}>{s2}</div>
         </div>)}
       </div>

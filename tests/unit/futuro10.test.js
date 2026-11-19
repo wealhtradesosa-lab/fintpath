@@ -867,3 +867,21 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     expect(r.rentasDuplicadas).toHaveLength(0);
   });
 });
+
+describe("futuro10 · renta fija de la lista que paga al mes (19-nov-2026)", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "pm", n: "Puerto", tp: "Real Estate", va: 8000e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 100e6 }], ingresos: [], gas: { V: [{ n: "x", m: 10e6 }] }, deu: [] });
+  const cfg = (o) => ({ decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "rfLargo", monto: 5200e6, rendimientoNomPct: 12, ...o }] });
+  it("si eliges que te llegue todo, aparece en Tu mes y no crece el capital", () => {
+    const r = proyectarFuturo10(U(), cfg({ pctRecibe: 100 }));
+    const fila = r.desglose.entra.find((x) => /renta fija/i.test(x.nombre));
+    expect(fila).toBeTruthy();
+    expect(fila.mensual).toBeCloseTo(5200e6 * 0.12 / 12, -3);
+    expect(r.nuevasDetalle[0]).toMatchObject({ pagaRenta: true });
+    expect(r.nuevasDetalle[0].rendPct).toBeCloseTo(12, 6);
+  });
+  it("sin elegir, se reinvierte como antes", () => {
+    const r = proyectarFuturo10(U(), cfg({}));
+    expect(r.desglose.entra.some((x) => /renta fija/i.test(x.nombre))).toBe(false);
+    expect(r.nuevasDetalle[0].pagaRenta).toBe(false);
+  });
+});

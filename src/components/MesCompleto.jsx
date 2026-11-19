@@ -30,7 +30,14 @@ function Nodo({ x, y, width, height, payload }) {
   return (
     <g>
       <rect x={x} y={y} width={width} height={Math.max(2, height)} fill={color} rx={2} style={centro ? { fill: "var(--fp-txt)" } : undefined} />
-      {height > 6 && <text x={centro ? x + width / 2 : tx} y={centro ? y - 6 : y + height / 2} textAnchor={centro ? "middle" : izq ? "end" : "start"} dominantBaseline="middle" style={{ fill: INF.tx }} fontSize={11}>
+      {/* 19-nov-2026 (Santiago: "mal diagramado"): el monto salía montado más
+          arriba que el nombre (Safari no hereda dominantBaseline al tspan) y la
+          etiqueta del centro se pegaba a las bandas. Ahora se centra con dy y la
+          del centro va más arriba, con el monto debajo del nombre. */}
+      {centro ? <text x={x + width / 2} y={y - 24} textAnchor="middle" style={{ fill: INF.tx }} fontSize={12} fontWeight={600}>
+        <title>{`${payload.name}: ${fmM(payload.valor)}`}</title>{payload.name}
+        <tspan x={x + width / 2} dy="1.25em" style={{ fill: INF.tx2 }} fontWeight={400}>{fmM(payload.valor)}</tspan>
+      </text> : height > 6 && <text x={tx} y={y + height / 2} dy="0.35em" textAnchor={izq ? "end" : "start"} style={{ fill: INF.tx }} fontSize={11}>
         <title>{`${payload.name}: ${fmM(payload.valor)}`}</title>{corto(payload.name)} <tspan style={{ fill: INF.tx2 }}>{fmM(payload.valor)}</tspan>
       </text>}
     </g>
@@ -81,7 +88,7 @@ export default function MesCompleto({ r, card, h3, lead }) {
       <style>{`.fpm-banda { stroke-opacity: .42; transition: stroke-opacity .2s ease; } html[data-tema="claro"] .fpm-banda { stroke-opacity: .5; } .fpm-flujo:hover .fpm-banda { stroke-opacity: .18; } .fpm-flujo .fpm-banda:hover { stroke-opacity: .75; }`}</style>
       <div className="fpm-flujo" style={{ overflowX: "auto" }}><div style={{ minWidth: 820 }}>
         <ResponsiveContainer width="100%" height={alto}>
-          <Sankey data={{ nodes, links }} node={<Nodo />} nodePadding={18} nodeWidth={10} margin={{ top: 28, right: 250, bottom: 10, left: 250 }} link={<Banda />} iterations={32}>
+          <Sankey data={{ nodes, links }} node={<Nodo />} nodePadding={18} nodeWidth={10} margin={{ top: 48, right: 250, bottom: 10, left: 250 }} link={<Banda />} iterations={32}>
             <Tooltip content={tip} />
           </Sankey>
         </ResponsiveContainer>

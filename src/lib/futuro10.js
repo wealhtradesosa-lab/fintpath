@@ -406,7 +406,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // espacio para poner el retorno anual estimado, ¿un 12 %? ¿un 15 %?"). Si
     // escribe un rendimiento, manda sobre el supuesto del escenario.
     const rendPreset = vacio(x.rendimientoNomPct) ? rNom(x.preset) : n(x.rendimientoNomPct) / 100;
-    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rendPreset, usd: !!sup.presets[x.preset].usd, invertible: true, fuente: x.fuente || "venta", preset: x.preset, montoInicial: m });
+    // 19-nov-2026 (Santiago: "¿dónde quedó la renta fija? no veo las nuevas
+    // inversiones en Tu mes"). Como en la personalizada: qué parte de lo que
+    // rinde te llega al mes (entra al flujo); el resto se reinvierte. Sin
+    // elegir, todo se reinvierte (como antes).
+    const pRecibe = Math.min(1, Math.max(0, n(x.pctRecibe) / 100));
+    nuevas.push({ id: "nueva_" + k, nombre: x.nombre || sup.presets[x.preset].nombre, clase: "nueva", valor: m, crec: rendPreset * (1 - pRecibe), rentaPct: rendPreset * pRecibe, usd: !!sup.presets[x.preset].usd, invertible: true, fuente: x.fuente || "venta", preset: x.preset, montoInicial: m });
   });
   // 25-oct-2026 (Santiago: "asociativos: el primer año invierto 1.350 M en un
   // lote con construcción de vivienda, al terminar vale 1.900 M y se vende; la
