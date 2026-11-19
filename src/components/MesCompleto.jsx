@@ -56,9 +56,10 @@ function Banda({ sourceX, targetX, sourceY, targetY, sourceControlX, targetContr
   return <path className="fpm-banda" d={d} fill="none" stroke={color} strokeWidth={Math.max(1, linkWidth)} />;
 }
 
-export default function MesCompleto({ r, card, h3, lead }) {
-  const d = r.desglose || {};
-  const f1 = (r.filas || [])[1] || {};
+// 19-nov-2026: `anio` y `lista` (entra/sale del año elegido) para verlo año por año.
+export default function MesCompleto({ r, card, h3, lead, anio = 1, lista = null }) {
+  const d = lista || r.desglose || {};
+  const f1 = (r.filas || [])[anio] || (r.filas || [])[1] || {};
   const sobra = (f1.cf || 0) / 12;
   const entra = agrupar(d.entra, tr("Otros ingresos", "Other income"));
   const sale = agrupar(d.sale, tr("Otros gastos", "Other expenses"));
@@ -84,7 +85,7 @@ export default function MesCompleto({ r, card, h3, lead }) {
   return (
     <div style={card}>
       <h3 style={h3}>{tr("El mes completo: de dónde viene la plata y a dónde se va", "The full month: where money comes from and where it goes")}</h3>
-      <p style={lead}>{tr(`En ${anioCal(1)}, al mes. A la izquierda, cada renta e ingreso; a la derecha, en qué se va: gastos y cuotas en rojo, y lo que sobra en verde con la inversión a la que va.`, `In ${anioCal(1)}, per month. Left: each source of income. Right: where it goes — expenses and loan payments in red, and the surplus in green with the investment it goes to.`)}</p>
+      <p style={lead}>{tr(`En ${anioCal(anio)}, al mes. A la izquierda, cada renta e ingreso; a la derecha, en qué se va: gastos y cuotas en rojo, y lo que sobra en verde con la inversión a la que va.`, `In ${anioCal(anio)}, per month. Left: each source of income. Right: where it goes — expenses and loan payments in red, and the surplus in green with the investment it goes to.`)}</p>
       <style>{`.fpm-banda { stroke-opacity: .42; transition: stroke-opacity .2s ease; } html[data-tema="claro"] .fpm-banda { stroke-opacity: .5; } .fpm-flujo:hover .fpm-banda { stroke-opacity: .18; } .fpm-flujo .fpm-banda:hover { stroke-opacity: .75; }`}</style>
       <div className="fpm-flujo" style={{ overflowX: "auto" }}><div style={{ minWidth: 820 }}>
         <ResponsiveContainer width="100%" height={alto}>

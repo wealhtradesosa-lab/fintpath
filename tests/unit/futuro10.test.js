@@ -938,3 +938,16 @@ describe("futuro10 · deudas sin saldo (19-nov-2026)", () => {
     expect(r.deudasSinSaldo).toEqual([expect.objectContaining({ id: "car", cuota: 6125000 })]);
   });
 });
+
+describe("futuro10 · lo que sale, año por año (19-nov-2026)", () => {
+  it("gastosBase + gastos futuros − los que se van + cuota = gastos del año", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 500e6 }], ingresos: [], gas: { V: [{ n: "Mercado", m: 5e6 }] }, deu: [{ id: "h", n: "hipoteca", mt: 100e6, pg: 3e6 }] };
+    const r = proyectarFuturo10(u, { futuros: { ingresos: [], activos: [], gastos: [{ nombre: "Universidad", anual: 120e6, desde: 3, anios: 4 }] } });
+    for (const f of r.filas.slice(1)) {
+      const suma = f.gastosBase + f.gastosFut.reduce((s, x) => s + x.anual, 0) - f.gastosQueSeVan.reduce((s, x) => s + x.anual, 0) + f.cuota;
+      expect(suma).toBeCloseTo(f.gastos, 0);
+    }
+    expect(r.filas[3].gastosFut.map((x) => x.nombre)).toEqual(["Universidad"]);
+    expect(r.filas[2].gastosFut).toHaveLength(0);
+  });
+});
