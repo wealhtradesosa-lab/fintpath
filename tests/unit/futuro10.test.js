@@ -862,12 +862,22 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
     expect(r.filas[5].patrimonio).toBeGreaterThan(solo.filas[5].patrimonio);
   });
-  it("caso Santiago: «bodega» 8,5 M sin vincular, mismo año → se cuenta una vez", () => {
-    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+  it("«bodega» 8,5 M sin vincular: solo se pregunta, nunca se borra sola (5 bodegas, 10 lotes)", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: false });
+    expect(r.futuros.ingresos).toHaveLength(1);
+  });
+  it("al confirmar (vincular «bodega» al lote) se cuenta una vez", () => {
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2, activoId: "l" }], activos: [], gastos: [] } });
     expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: true });
-    expect(r.futuros.ingresos).toHaveLength(0);
     expect(r.filas[5].patrimonio).toBeCloseTo(solo.filas[5].patrimonio, 0);
+  });
+  it("con varias bodegas, una renta sin vínculo no se adivina", () => {
+    const u = U(); u.inv.push({ id: "b2", n: "bodega 2", tp: "Real Estate", va: 500e6 }, { id: "b3", n: "bodega 3", tp: "Real Estate", va: 500e6 });
+    const r = proyectarFuturo10(u, { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "renta bodega", mensual: 6e6, desde: 2 }], activos: [], gastos: [] } });
+    expect(r.futuros.ingresos).toHaveLength(1);
+    expect(r.rentasDuplicadas.every((d) => !d.seguro)).toBe(true);
   });
   it("«No, es otra renta» se respeta: se suman las dos", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2, noEsRentaDe: ["l"] }], activos: [], gastos: [] } });

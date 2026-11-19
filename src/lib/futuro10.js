@@ -1108,31 +1108,16 @@ export function rentasDuplicadas(cfg = {}, activos = []) {
     const igual = conRenta.find((r) => r.activoId === x.activoId && !distinta.has(r.activoId));
     if (igual) { out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: igual.activoId, activo: nombreDe(igual.activoId), mensual: n(x.mensual), contada: n(igual.rentaMensual), seguro: true }); return; }
     if (x.activoId) return; // vinculado a otro activo: es otra renta
+    // 19-nov-2026 (Santiago: "el sistema debe ser muy cuidadoso: una persona puede
+    // tener 5 bodegas o 10 lotes, no confundirse"). Sin vínculo, el nombre o el
+    // monto NUNCA borran un ingreso: solo sugieren y la persona confirma (vincula
+    // el ingreso al activo o dice que es otra renta). Solo el vínculo decide.
     const nom = sinTilde(x.nombre || "");
-    // 19-nov-2026 (Santiago: "repite dos veces un ingreso: es un lote al que le
-    // invierto plata y además aparte puse ingreso nuevo" — «bodega» 8,5 M sin
-    // vincular + «lote bodega macarena» con renta 8,5 M). Mismo monto y (alguna
-    // palabra en común o arranca el mismo año) = la misma renta: se cuenta una
-    // vez. Solo nombre parecido o solo mismo monto: se avisa.
-    const palabras = (t, sinGenericas) => sinTilde(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !(sinGenericas && GENERICAS.has(w)));
-    // 19-nov-2026 (caso real: «LOCAL MACARENA» 8,5 M es la renta del local, no
-    // de «lote bodega macarena»). Solo cuentan las palabras que distinguen al
-    // activo: las que no aparecen en el nombre de otro activo tuyo.
-    const distintivas = (id) => palabras(nombreDe(id), false).filter((w) => !(activos || []).some((a) => a && a.id !== id && palabras(a.nombre || a.n || "", false).includes(w)));
-    const evalua = (r) => {
-      const mismoMonto = Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01);
-      const comun = distintivas(r.activoId).some((w) => palabras(x.nombre || "", false).includes(w));
-      const mismoAnio = Math.min(10, Math.max(1, Math.round(n(x.desde) || 1))) === Math.floor(Math.max(0, n(r.rentaDesdeMes)) / 12) + 1;
-      const nombreFuerte = distintivas(r.activoId).filter((w) => !GENERICAS.has(w)).some((w) => nom.includes(w));
-      // Sin vínculo, solo se da por hecho con mismo monto Y una palabra en común
-      // (una pensión de 8,5 M del mismo año no es la renta de la bodega).
-      if (mismoMonto && comun) return "seguro";
-      if (mismoMonto || nombreFuerte || (comun && mismoAnio)) return "posible";
-      return null;
-    };
-    const cand = conRenta.filter((r) => !distinta.has(r.activoId)).map((r) => ({ r, v: evalua(r) })).filter((c) => c.v);
-    const elegido = cand.find((c) => c.v === "seguro") || cand[0];
-    if (elegido) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: elegido.r.activoId, activo: nombreDe(elegido.r.activoId), mensual: n(x.mensual), contada: n(elegido.r.rentaMensual), seguro: elegido.v === "seguro" });
+    const palabras = (t) => sinTilde(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4);
+    const distintivas = (id) => palabras(nombreDe(id)).filter((w) => !GENERICAS.has(w) && !(activos || []).some((a) => a && a.id !== id && palabras(a.nombre || a.n || "").includes(w)));
+    const parecida = conRenta.filter((r) => !distinta.has(r.activoId)).find((r) =>
+      Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01) || distintivas(r.activoId).some((w) => nom.includes(w)));
+    if (parecida) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: parecida.activoId, activo: nombreDe(parecida.activoId), mensual: n(x.mensual), contada: n(parecida.rentaMensual), seguro: false });
   });
   return out;
 }
@@ -1149,7 +1134,7 @@ export function rentasFuturasDelActivo(cfg = {}, activo = {}, todos = []) {
   // Solo palabras que distinguen a este activo de los demás («macarena» está en
   // el lote y en el local: no sirve para saber cuál es).
   const delActivo = pal(activo.nombre || activo.n || "").filter((w) => !(todos || []).some((a) => a && a.id !== activo.id && pal(a.nombre || a.n || "").includes(w)));
-  return (cfg.futuros?.ingresos || []).map((x, k) => ({ x, k })).filter(({ x }) => {
+  return (cfg.futuros?.ingresos || []).map((x, k) => ({ x, k, vinculada: !!x && x.activoId === activo.id })).filter(({ x }) => {
     if (!x || !(n(x.mensual) > 0)) return false;
     if ([].concat(x.noEsRentaDe || []).includes(activo.id)) return false;
     if (x.activoId) return x.activoId === activo.id;
