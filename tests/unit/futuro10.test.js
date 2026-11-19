@@ -862,6 +862,13 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
     expect(r.filas[5].patrimonio).toBeGreaterThan(solo.filas[5].patrimonio);
   });
+  it("caso Santiago: «bodega» 8,5 M sin vincular, mismo año → se cuenta una vez", () => {
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: true });
+    expect(r.futuros.ingresos).toHaveLength(0);
+    expect(r.filas[5].patrimonio).toBeCloseTo(solo.filas[5].patrimonio, 0);
+  });
   it("una pensión no se confunde con la renta", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });
     expect(r.rentasDuplicadas).toHaveLength(0);

@@ -1101,11 +1101,24 @@ export function rentasDuplicadas(cfg = {}, activos = []) {
     if (igual) { out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: igual.activoId, activo: nombreDe(igual.activoId), mensual: n(x.mensual), contada: n(igual.rentaMensual), seguro: true }); return; }
     if (x.activoId) return; // vinculado a otro activo: es otra renta
     const nom = sinTilde(x.nombre || "");
-    const parecida = conRenta.find((r) => {
-      const toks = sinTilde(nombreDe(r.activoId)).split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !GENERICAS.has(t));
-      return toks.some((t) => nom.includes(t)) || Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01);
-    });
-    if (parecida) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: parecida.activoId, activo: nombreDe(parecida.activoId), mensual: n(x.mensual), contada: n(parecida.rentaMensual), seguro: false });
+    // 19-nov-2026 (Santiago: "repite dos veces un ingreso: es un lote al que le
+    // invierto plata y además aparte puse ingreso nuevo" — «bodega» 8,5 M sin
+    // vincular + «lote bodega macarena» con renta 8,5 M). Mismo monto y (alguna
+    // palabra en común o arranca el mismo año) = la misma renta: se cuenta una
+    // vez. Solo nombre parecido o solo mismo monto: se avisa.
+    const palabras = (t, sinGenericas) => sinTilde(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !(sinGenericas && GENERICAS.has(w)));
+    const evalua = (r) => {
+      const mismoMonto = Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01);
+      const comun = palabras(nombreDe(r.activoId), false).some((w) => palabras(x.nombre || "", false).includes(w));
+      const mismoAnio = Math.min(10, Math.max(1, Math.round(n(x.desde) || 1))) === Math.floor(Math.max(0, n(r.rentaDesdeMes)) / 12) + 1;
+      const nombreFuerte = palabras(nombreDe(r.activoId), true).some((w) => nom.includes(w));
+      if (mismoMonto && (comun || mismoAnio)) return "seguro";
+      if (mismoMonto || nombreFuerte) return "posible";
+      return null;
+    };
+    const cand = conRenta.map((r) => ({ r, v: evalua(r) })).filter((c) => c.v);
+    const elegido = cand.find((c) => c.v === "seguro") || cand[0];
+    if (elegido) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: elegido.r.activoId, activo: nombreDe(elegido.r.activoId), mensual: n(x.mensual), contada: n(elegido.r.rentaMensual), seguro: elegido.v === "seguro" });
   });
   return out;
 }
