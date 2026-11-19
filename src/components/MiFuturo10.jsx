@@ -235,6 +235,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 </select></label>
                 <label style={lbl}>{tx("¿Cuánto? ($)", "How much? ($)")}<NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
                 <label style={lbl}>{tx("¿De dónde sale la plata?", "Where does the money come from?")}<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
+                {/* 19-nov-2026 (Santiago: "pongo renta fija largo plazo y el sistema la
+                    declara como BTG; debería dejarme poner la empresa o banco"). El nombre
+                    quedaba guardado de cuando la fila era «Otra (personalizada)» y no se
+                    veía ni se podía cambiar. Ahora se ve y se edita en todos los tipos. */}
+                {x.preset !== "custom" && <label style={lbl}>{tx("¿Dónde? Entidad o nombre (opcional)", "Where? Institution or name (optional)")}<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esUS() ? tx("Ej.: Vanguard, Fidelity", "e.g. Vanguard, Fidelity") : tx("Ej.: BTG, Skandia, Cibest", "e.g. BTG, Skandia, Cibest")} />
+                  <span style={{ fontSize: 12 }}>{x.nombre ? tx(`Sale como «${x.nombre}» en el plan.`, `Shows as "${x.nombre}" in the plan.`) : tx(`Sale como «${nombreSup(SUP.presets[x.preset] || {})}».`, `Shows as "${nombreSup(SUP.presets[x.preset] || {})}".`)}</span></label>}
                 {/* 19-nov-2026: rendimiento editable también en los tipos de la lista; vacío = supuesto del escenario. */}
                 {x.preset !== "custom" && SUP.presets[x.preset] && (() => { const sup = retornoNominalPreset(x.preset, esc, SUP); return (
                   <label style={lbl}>{tx("Rendimiento anual esperado (%)", "Expected annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(sup, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
