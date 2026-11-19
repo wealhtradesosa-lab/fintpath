@@ -105,10 +105,18 @@ export default function HistoriaPlata({ r }) {
   const maxPort = Math.max(1, ...hoyLista.map((a) => a.valor), ...despuesLista.map((a) => a.valor));
 
   // ── 2 · Fuentes → destinos ─────────────────────────────────────────────────
+  const ciclosLuego = (r.ciclosDetalle || []).filter((c) => c.capital > 0 && c.desde > 1 && !(c.fuente === "venta" && (bd.vendido || 0) > 0.5)).reduce((s, c) => s + c.capital, 0);
+  const luegoTotal = (bd.programadas || 0) + (bd.pendienteAnio1 || 0) + ciclosLuego;
   const fuentes = [
     ...vendidos.map((v, i) => ({ nombre: v.nombre, monto: v.valor, color: INF.serie[(i + 5) % INF.serie.length] })),
-    ...(bd.capitalNuevo > 0 ? [{ nombre: tx("Capital nuevo", "New capital"), monto: bd.capitalNuevo, color: INF.navy }] : []),
+    ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0 ? [{ nombre: tx("Capital nuevo", "New capital"), monto: bd.capitalNuevoHoy ?? bd.capitalNuevo, color: INF.navy }] : []),
     ...(bd.desdeLiquidez > 0 ? [{ nombre: tx("De tu liquidez", "From your cash"), monto: bd.desdeLiquidez, color: INF.gris }] : []),
+    // 19-nov-2026 (Santiago: "en un tablero me dice que me gasté 600 M de más y
+    // en otro que me sobran 751.000"). Lo programado para años siguientes (y lo
+    // del año 1 que no alcanzó) se paga con lo que vaya entrando, no con la
+    // venta: Tu plata no lo cuenta contra lo vendido, pero aquí sí aparecía en
+    // «A dónde va» sin su origen y salía como faltante.
+    ...(luegoTotal > 0.5 ? [{ nombre: tx("Lo que entra en años siguientes", "What comes in later years"), monto: luegoTotal, color: INF.serie[3] }] : []),
   ].filter((x) => x.monto > 0.5);
   const totFuentes = fuentes.reduce((s, x) => s + x.monto, 0);
 
@@ -162,6 +170,13 @@ export default function HistoriaPlata({ r }) {
       pagaTxt: c.destino !== "flujo" ? `${fmM(c.gananciaAnual / 12)}${tx("/mes", "/mo")}` : null,
       desdeMes: c.desde > 1 ? (c.desde - 1) * 12 : 0, serie,
     });
+  });
+  // 19-nov-2026: las obras del año 1 salen de la venta (Tu plata las cuenta en
+  // «Sale») y aquí no aparecían: quedaban como «sin asignar».
+  if ((bd.obras || 0) > 0.5) destinos.push({
+    key: "obras", tipo: "obra", color: INF.teja, nombre: tx("Obras", "Build-outs"),
+    sub: (r.modificados || []).filter((m) => m.inversion > 0 && m.inversionAnio === 1).map((m) => (f0.porActivo || []).find((a) => a.id === m.id)?.nombre).filter(Boolean).join(", "),
+    monto: bd.obras, rinde: "—", pagaMes: 0, pagaEtq: tx("Te paga", "Pays you"),
   });
   const colchon = bd.colchon || 0, restante = bd.restante || 0;
   // Colchón + lo que sobra de las ventas: se abre en las tres canastas de la mezcla
@@ -283,7 +298,7 @@ export default function HistoriaPlata({ r }) {
         </div>
       </Paso>
 
-      {destinos.length > 0 && <Paso n={2} color={INF.dorado} titulo={tx(`Los ${fmM(totFuentes)} de la venta: a dónde va cada ${esUS() ? "dólar" : "peso"}`, `The ${fmM(totFuentes)} from the sale: where every dollar goes`)}>
+      {destinos.length > 0 && <Paso n={2} color={INF.dorado} titulo={luegoTotal > 0.5 ? tx(`Los ${fmM(totFuentes)} del plan: a dónde va cada ${esUS() ? "dólar" : "peso"}`, `The ${fmM(totFuentes)} in the plan: where every dollar goes`) : tx(`Los ${fmM(totFuentes)} de la venta: a dónde va cada ${esUS() ? "dólar" : "peso"}`, `The ${fmM(totFuentes)} from the sale: where every dollar goes`)}>
         <div style={{ background: "var(--fp-raised)", borderRadius: 12, padding: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: INF.tx2, marginBottom: 6 }}>{tx("DE DÓNDE SALE", "WHERE IT COMES FROM")} · {fmM(totFuentes)}</div>
           <Barra items={fuentes} total={totFuentes} etq={(x) => x.nombre} />
