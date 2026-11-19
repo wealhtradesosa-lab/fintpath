@@ -744,6 +744,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
     f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio;
+    // 19-nov-2026 (Santiago: "si me paro en 2028 que me muestre mis ingresos y
+    // gastos de ese año"). Lo que sale, partido por año (suma exacta f.gastos):
+    // gastos de Egresos, gastos futuros que corren, los que ya no se pagan y cuotas.
+    f.cuota = cuota; f.gastosBase = gastos;
+    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * Math.pow(1 + inf, t) }));
+    f.gastosQueSeVan = seVan.filter((g) => t >= g.desde).map((g) => ({ nombre: g.nombre, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1) }));
     const fr = Math.pow(1 + gIng, t - 1);
     f.porActivo = [
       ...todos.map((a) => {

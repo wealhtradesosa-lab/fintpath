@@ -94,10 +94,41 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   const [modo, setModo] = useState("nominal"); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
   const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala
+  // 19-nov-2026 (Santiago: "uno debería poder elegir año y ver cómo se comporta
+  // todo; si me paro en 2028, mis ingresos y gastos de ese año"). Año elegido
+  // para los capítulos 3 y 4 (1 = el primer año del plan).
+  const [anioSel, setAnioSel] = useState(1);
   const filas = r.filas || [];
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
   const ev = useMemo(() => eventosDelPlan(r), [r]);
   const f0 = filas[0] || {}, f1 = filas[1] || f0, fin = filas[filas.length - 1] || f0;
+  const nAniosSel = Math.max(1, filas.length - 1);
+  const aSel = Math.min(Math.max(1, anioSel), nAniosSel);
+  const fy = filas[aSel] || f1;
+  // Lo que entra y sale en el año elegido. El año 1 trae el detalle partida por
+  // partida (desglose); los demás se arman con lo que el motor calcula ese año
+  // y cuadran con sus totales (fila «Ajustes» si hace falta, nunca escondida).
+  const listaAnio = useMemo(() => {
+    if (aSel === 1 && r.desglose) return r.desglose;
+    const cuadra = (lista, total) => { const sm = lista.reduce((t, x) => t + x.mensual, 0); const dif = total - sm; if (Math.abs(dif) > Math.max(1, Math.abs(total) * 0.005)) lista.push({ nombre: tx("Ajustes (crecimiento del año, cambios a mitad de año)", "Adjustments (growth during the year, mid-year changes)"), mensual: dif }); return lista; };
+    const entra = [
+      ...((fy.laboral || 0) > 0.5 ? [{ nombre: tx("Ingresos de trabajo", "Work income"), mensual: fy.laboral / 12, nota: tx("salario, honorarios", "salary, fees") }] : []),
+      ...(fy.porActivo || []).filter((a) => a.renta > 0.5).map((a) => ({ nombre: a.nombre, mensual: a.renta / 12, nota: tx("renta del activo", "asset income") })),
+      ...(fy.rentasSueltas || []).map((x) => ({ nombre: x.nombre, mensual: x.renta / 12, nota: x.id && String(x.id).startsWith("fut_") ? tx("ingreso futuro", "future income") : tx("renta", "income") })),
+    ].sort((a, b) => b.mensual - a.mensual);
+    const sale = [
+      ...((fy.gastosBase || 0) > 0.5 ? [{ nombre: tx("Tus gastos de Egresos", "Your expenses"), mensual: fy.gastosBase / 12, nota: tx("suben con la inflación", "grow with inflation") }] : []),
+      ...(fy.gastosFut || []).map((x) => ({ nombre: x.nombre, mensual: x.anual / 12, nota: tx("gasto futuro", "future expense") })),
+      ...(fy.gastosQueSeVan || []).map((x) => ({ nombre: tx(`Ya no pagas ${x.nombre}`, `No longer paying ${x.nombre}`), mensual: -x.anual / 12, nota: tx("gasto que se acabó", "expense that ended") })),
+      ...((fy.cuota || 0) > 0.5 ? [{ nombre: tx("Cuotas de deudas", "Loan payments"), mensual: fy.cuota / 12, nota: tx("deudas que siguen", "remaining debts") }] : []),
+    ];
+    return { entra: cuadra(entra, (fy.ingresos || 0) / 12), sale: cuadra(sale, (fy.gastos || 0) / 12) };
+  }, [r, aSel, fy]);
+  // «Lo que rinde y no te llega» del año elegido (el 1 viene del motor).
+  const reinvierteAnio = aSel === 1 ? (r.desglose?.reinvierte || []) : (fy.porActivo || [])
+    .filter((a) => !["canasta", "inmueble", "vehiculo", "ingreso"].includes(a.clase) && (a.crece || 0) > 0.5 && !((a.renta || 0) > 0.5))
+    .map((a) => ({ id: a.id, nombre: a.nombre, mensual: a.crece / 12, pct: a.valor - a.crece > 0 ? a.crece / (a.valor - a.crece) * 100 : 0 }))
+    .sort((a, b) => b.mensual - a.mensual);
 
   // ── Fichas ────────────────────────────────────────────────────────────────
   const produceMes = ((f1.rentas || 0) + (f1.crece || 0)) / 12;
@@ -157,9 +188,9 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   const totalNueva = plataNueva.reduce((s, x) => s + (x.capital || 0), 0);
 
   // ── Todo lo que tienes / cuánto produce ───────────────────────────────────
-  const tienes = (f1.porActivo || []).filter((a) => a.valor > 0.5).sort((a, b) => b.valor - a.valor);
+  const tienes = (fy.porActivo || []).filter((a) => a.valor > 0.5).sort((a, b) => b.valor - a.valor);
   const totTienes = tienes.reduce((s, a) => s + a.valor, 0);
-  const produce = (f1.porActivo || []).map((a) => ({ ...a, rM: a.renta / 12, cM: Math.max(0, a.crece) / 12 })).filter((a) => a.rM + a.cM > 0.5).sort((a, b) => b.rM + b.cM - (a.rM + a.cM));
+  const produce = (fy.porActivo || []).map((a) => ({ ...a, rM: a.renta / 12, cM: Math.max(0, a.crece) / 12 })).filter((a) => a.rM + a.cM > 0.5).sort((a, b) => b.rM + b.cM - (a.rM + a.cM));
   const maxProd = Math.max(1, ...produce.map((a) => a.rM + a.cM));
 
   // ── 7-nov-2026: el informe como una historia en 5 capítulos ─────────────────
@@ -181,6 +212,18 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
       <div style={{ fontSize: 13.5, color: INF.tx2, marginTop: 3, lineHeight: 1.45 }}>{pregunta}</div>
     </div>
   </div>;
+
+  // Selector de año (capítulos 3 y 4). Mismo estado en los dos lugares.
+  const SelAnio = ({ compacto }) => <div role="group" aria-label={tx("Elegir año", "Pick a year")} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, margin: compacto ? "4px 0 10px" : "0 0 12px" }}>
+    <span style={{ fontSize: 12.5, color: INF.tx2, marginRight: 4 }}>{compacto ? tx("Año:", "Year:") : tx("Ver el año:", "Show year:")}</span>
+    {filas.slice(1).map((f) => { const on = f.anio === aSel; return <button key={f.anio} type="button" onClick={() => setAnioSel(f.anio)} aria-pressed={on}
+      style={{ padding: "6px 11px", borderRadius: 999, border: `1px solid ${on ? INF.tx : INF.linea}`, background: on ? INF.tx : "transparent", color: on ? INF.panel : INF.tx, fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: "pointer", fontVariantNumeric: "tabular-nums" }}>{anioCal(f.anio)}</button>; })}
+  </div>;
+  const IndicadoresAnio = () => { const e = (fy.ingresos || 0) / 12, sa = (fy.gastos || 0) / 12, so = (fy.cf || 0) / 12; return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 10, marginBottom: 14 }}>
+    <Ficha l={tx(`Entra al mes en ${anioCal(aSel)}`, `Monthly income in ${anioCal(aSel)}`)} v={fmM(e)} s={tx(`rentas ${fmM((fy.rentas || 0) / 12)} · trabajo ${fmM((fy.laboral || 0) / 12)}`, `income ${fmM((fy.rentas || 0) / 12)} · work ${fmM((fy.laboral || 0) / 12)}`)} col={INF.azul} />
+    <Ficha l={tx(`Sale al mes en ${anioCal(aSel)}`, `Monthly spending in ${anioCal(aSel)}`)} v={fmM(sa)} s={tx(`gastos ${fmM(((fy.gastos || 0) - (fy.cuota || 0)) / 12)} · cuotas ${fmM((fy.cuota || 0) / 12)}`, `expenses ${fmM(((fy.gastos || 0) - (fy.cuota || 0)) / 12)} · payments ${fmM((fy.cuota || 0) / 12)}`)} col={INF.txTeja} />
+    <Ficha l={so >= 0 ? tx(`Sobra al mes en ${anioCal(aSel)}`, `Monthly surplus in ${anioCal(aSel)}`) : tx(`Falta al mes en ${anioCal(aSel)}`, `Monthly shortfall in ${anioCal(aSel)}`)} v={`${so >= 0 ? "+" : ""}${fmM(so)}`} s={sa > 0 ? tx(`cobertura ${fmPct(e / sa * 100, 0)}`, `coverage ${fmPct(e / sa * 100, 0)}`) : ""} col={so >= 0 ? INF.txOk : INF.txBad} />
+  </div>; };
 
   const Toggle = () => <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
     {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos")]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
@@ -229,8 +272,10 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           </tbody></table></div></details>
       </div>}
 
-      <Capitulo id="cap-mes" n={3} titulo={tx("Tu mes: ¿alcanza para vivir?", "Your month: is it enough to live on?")} pregunta={tx("Lo que entra, lo que sale y lo que sobra, hoy y año por año.", "What comes in, what goes out and what's left, today and year by year.")} />
-      <MesCompleto r={r} card={card} h3={h3} lead={lead} />
+      <Capitulo id="cap-mes" n={3} titulo={tx("Tu mes, año por año: ¿alcanza para vivir?", "Your month, year by year: is it enough to live on?")} pregunta={tx("Elige un año y mira lo que entra, lo que sale y lo que sobra ese año. Lo que tienes y lo que produce cada activo (capítulo 4) también cambian con el año.", "Pick a year to see what comes in, what goes out and what's left that year. What you own and what each asset earns (chapter 4) follow the year too.")} />
+      <SelAnio />
+      <IndicadoresAnio />
+      <MesCompleto r={r} card={card} h3={h3} lead={lead} anio={aSel} lista={listaAnio} />
       <Toggle />
       <div style={card}>
         <h3 style={h3}>{tx("Mes a mes: ¿alcanza para vivir? Así se comporta el plan en el tiempo", "Month by month: is it enough to live on? How the plan holds up over time")}</h3>
@@ -262,8 +307,8 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         </ol>}
         {apretado && <div style={{ fontSize: 12.5, color: INF.tx2, marginTop: 12, paddingTop: 8, borderTop: `1px solid ${INF.linea}` }}>{tx("Año más apretado:", "Tightest year:")} <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? tx(`sobran ${fmM(apretado.s)}`, `${fmM(apretado.s)} surplus`) : tx(`faltan ${fmM(-apretado.s)}`, `${fmM(-apretado.s)} short`)} {tx("al mes", "a month")} ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} {tx("de cobertura", "coverage")})</b>.</div>}
       </div>
-      {r.desglose && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
-        {[[tx("Lo que entra cada mes", "What comes in each month"), tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`), r.desglose.entra, INF.azul, f1.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started."), r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {
+      {listaAnio && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
+        {[[tx("Lo que entra cada mes", "What comes in each month"), aSel === 1 ? tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`) : tx(`En ${anioCal(aSel)}, al mes: tu trabajo, la renta de cada activo y los ingresos que ya empezaron.`, `In ${anioCal(aSel)}, per month: your work, each asset's income and incomes that have started.`), listaAnio.entra, INF.azul, fy.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), aSel === 1 ? tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started.") : tx(`En ${anioCal(aSel)}, al mes: tus gastos (con inflación), los gastos futuros que corren ese año, los que ya no pagas y las cuotas.`, `In ${anioCal(aSel)}, per month: your expenses (with inflation), future expenses running that year, those that ended and loan payments.`), listaAnio.sale, INF.teja, fy.gastos / 12]].map(([t, l, lista, col, tot]) => {
           const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
           return <div key={t} style={card}>
             <h3 style={h3}>{t} · {fmM(tot)}</h3>
@@ -276,12 +321,12 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           </div>;
         })}
       </div>}
-      {(r.desglose?.reinvierte || []).length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
-        <h3 style={h3}>{tx("Lo que rinde y no te llega al mes", "Returns that don't reach you monthly")}</h3>
+      {reinvierteAnio.length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
+        <h3 style={h3}>{tx(`Lo que rinde y no te llega al mes · ${anioCal(aSel)}`, `Returns that don't reach you monthly · ${anioCal(aSel)}`)}</h3>
         <p style={lead}>{esUS()
           ? tx("Estas inversiones producen, pero todo se reinvierte: hacen crecer el patrimonio y no suman a lo que entra cada mes. Si alguna te paga (un bono o una cuenta que paga intereses), cámbiala en el paso 3, Tu plata → «De lo que rinde, ¿cuánto te llega?».", "These investments earn, but everything is reinvested: they grow your net worth and don't add to your monthly income. If one pays you (a bond or an interest-paying account), change it in step 3, Your money → \"Of what it earns, how much reaches you?\".")
           : tx("Estas inversiones producen, pero todo se reinvierte: hacen crecer el patrimonio y no suman a lo que entra cada mes. Si alguna te paga (una renta fija como BTG), cámbiala en el paso 3, Tu plata → «De lo que rinde, ¿cuánto te llega?».", "These investments earn, but everything is reinvested: they grow your net worth and don't add to your monthly income. If one pays you (fixed income such as BTG), change it in step 3, Your money → \"Of what it earns, how much reaches you?\".")}</p>
-        {r.desglose.reinvierte.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 12 }}>· {fmPct(x.pct, 1)} {tx("al año", "a year")}</span></span><b style={{ color: INF.txDorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}{tx("/mes se reinvierte", "/mo reinvested")}</b></div>)}
+        {reinvierteAnio.map((x) => <div key={x.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "4px 0", borderTop: `1px solid ${INF.linea}` }}><span>{x.nombre} <span style={{ color: INF.tx2, fontSize: 12 }}>· {fmPct(x.pct, 1)} {tx("al año", "a year")}</span></span><b style={{ color: INF.txDorado, whiteSpace: "nowrap" }}>{fmM(x.mensual)}{tx("/mes se reinvierte", "/mo reinvested")}</b></div>)}
       </div>}
 
       <Capitulo id="cap-patrimonio" n={4} titulo={tx("Tu patrimonio: cómo crece", "Your net worth: how it grows")} pregunta={tx("Cuánto vale todo lo que tienes cada año y qué inversión lo empuja.", "What everything you own is worth each year and which investment drives it.")} />
@@ -328,10 +373,11 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           </LineChart>
         </ResponsiveContainer></div></div>}
       </div>
+      <SelAnio compacto />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
         <div style={card}>
-          <h3 style={h3}>{tx("Todo lo que tienes después del plan", "Everything you own after the plan")} · {fmM(totTienes)}</h3>
-          <p style={lead}>{tx("Lo que ya tenías y no se mueve, más la plata nueva. Foto del primer año.", "What you already had and don't move, plus the new money. Snapshot of year one.")} {fin.deuda > 0 ? tx(`Menos deudas (${fmM(f1.deuda)}) = patrimonio neto ${fmM(f1.patrimonio)}.`, `Minus debts (${fmM(f1.deuda)}) = net worth ${fmM(f1.patrimonio)}.`) : ""}</p>
+          <h3 style={h3}>{aSel === 1 ? tx("Todo lo que tienes después del plan", "Everything you own after the plan") : tx(`Todo lo que tienes en ${anioCal(aSel)}`, `Everything you own in ${anioCal(aSel)}`)} · {fmM(totTienes)}</h3>
+          <p style={lead}>{aSel === 1 ? tx("Lo que ya tenías y no se mueve, más la plata nueva. Foto del primer año.", "What you already had and don't move, plus the new money. Snapshot of year one.") : tx(`Foto de ${anioCal(aSel)}: lo que vale cada cosa ese año.`, `Snapshot of ${anioCal(aSel)}: what each thing is worth that year.`)} {(fy.deuda || 0) > 0.5 ? tx(`Menos deudas (${fmM(fy.deuda)}) = patrimonio neto ${fmM(fy.patrimonio)}.`, `Minus debts (${fmM(fy.deuda)}) = net worth ${fmM(fy.patrimonio)}.`) : ""}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2, marginBottom: 8 }}>{[...new Set(tienes.map((a) => a.clase))].map((c) => <span key={c}><span style={{ display: "inline-block", width: 8, height: 8, background: COLOR_CLASE[c] || INF.gris, marginRight: 4 }} />{ETQ_CLASE[c] || c}</span>)}</div>
           {tienes.map((a) => <div key={a.id} style={{ display: "grid", gridTemplateColumns: "minmax(90px,38%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
@@ -340,14 +386,14 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         </div>
         <div style={card}>
           <h3 style={h3}>{tx("Cuánto produce cada activo", "What each asset earns")}</h3>
-          <p style={lead}>{tx(`Al mes, en ${anioCal(1)}. Azul: renta que se recibe. Dorado: lo que multiplica (se reinvierte).`, `Per month, in ${anioCal(1)}. Blue: income you receive. Gold: compounding (reinvested).`)}</p>
+          <p style={lead}>{tx(`Al mes, en ${anioCal(aSel)}. Azul: renta que se recibe. Dorado: lo que multiplica (se reinvierte).`, `Per month, in ${anioCal(aSel)}. Blue: income you receive. Gold: compounding (reinvested).`)}</p>
           {produce.map((a) => <div key={a.id} style={{ display: "grid", gridTemplateColumns: "minmax(90px,38%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
             <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.nombre}</span>
             <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
               <span style={{ display: "flex", width: `${Math.max(1, (a.rM + a.cM) / maxProd * 70)}%`, height: 14 }}>{a.rM > 0 && <span style={{ flex: a.rM, background: INF.azul }} />}{a.cM > 0 && <span style={{ flex: a.cM, background: INF.dorado }} />}</span>
               <span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(a.rM + a.cM)}</span></span>
           </div>)}
-          <div style={{ borderTop: `1px solid ${INF.linea}`, marginTop: 8, paddingTop: 8, fontSize: 13, fontWeight: 600 }}>{tx(`Total produce ${fmM(produceMes)}/mes`, `Total earns ${fmM(produceMes)}/mo`)} <span style={{ color: INF.tx2, fontWeight: 400 }}>({tx(`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`, `income ${fmM(rentaMes)} + compounding ${fmM(multiplicaMes)}`)})</span></div>
+          <div style={{ borderTop: `1px solid ${INF.linea}`, marginTop: 8, paddingTop: 8, fontSize: 13, fontWeight: 600 }}>{tx(`Total produce ${fmM(((fy.rentas || 0) + (fy.crece || 0)) / 12)}/mes`, `Total earns ${fmM(((fy.rentas || 0) + (fy.crece || 0)) / 12)}/mo`)} <span style={{ color: INF.tx2, fontWeight: 400 }}>({tx(`renta ${fmM((fy.rentas || 0) / 12)} + multiplica ${fmM((fy.crece || 0) / 12)}`, `income ${fmM((fy.rentas || 0) / 12)} + compounding ${fmM((fy.crece || 0) / 12)}`)})</span></div>
         </div>
       </div>
 
