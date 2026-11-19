@@ -234,6 +234,15 @@ describe("futuro10 · inversiones nuevas se reflejan en el resultado", () => {
     expect(r.bolsaDetalle.faltante).toBeCloseTo(100e6, 0);
   });
 
+  it("19-nov-2026: renta fija de la lista con rendimiento propio (12 %) manda sobre el supuesto", () => {
+    const base = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 100e6 }] });
+    const doce = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 100e6, rendimientoNomPct: 12 }] });
+    const vacio = proyectarFuturo10(U(), { nuevas: [{ preset: "rfLargo", monto: 100e6, rendimientoNomPct: "" }] });
+    expect(doce.nuevasDetalle[0].rendPct).toBeCloseTo(12, 6);
+    expect(vacio.nuevasDetalle[0].rendPct).toBeCloseTo(base.nuevasDetalle[0].rendPct, 6);
+    expect(base.nuevasDetalle[0].rendPct).not.toBeCloseTo(12, 1);
+  });
+
   it("la bolsa reporta el colchón de hoy, no el del año 10", () => {
     const u = U(); u.gas = { Vida: [{ n: "Mercado", m: 10e6 }] }; u.inv[0].va = 0;
     const r = proyectarFuturo10(u, { decisiones: { casa: { accion: "vende" } } });
@@ -833,5 +842,46 @@ describe("corregir un gasto en Lo que tienes", () => {
     const l = gastosLista(u, { gastoHoy: { "Vivienda::arriendo": 12e6 } });
     expect(l[0].corregido).toBe(true);
     expect(l[0].enEgresos).toBeCloseTo(16e6, -3);
+  });
+});
+
+describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "l", n: "lote bodega macarena con licencia", tp: "Lote", va: 410e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 900e6 }], ingresos: [], gas: {}, deu: [] });
+  const reinv = { activoId: "l", monto: 600e6, anio: 2, fuente: "liquidez", rentaMensual: 8.5e6, rentaDesdeMes: 18 };
+  it("ingreso futuro vinculado al mismo activo: se cuenta una vez", () => {
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    const doble = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Renta bodega", mensual: 8.5e6, desde: 3, activoId: "l" }], activos: [], gastos: [] } });
+    expect(doble.rentasDuplicadas).toHaveLength(1);
+    expect(doble.rentasDuplicadas[0].seguro).toBe(true);
+    expect(doble.filas[5].patrimonio).toBeCloseTo(solo.filas[5].patrimonio, 0);
+    expect(doble.alertas.some((a) => a.tipo === "renta_doble")).toBe(true);
+  });
+  it("sin vínculo pero mismo nombre o monto: solo avisa, no borra", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Arriendo Macarena", mensual: 7e6, desde: 3 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: false });
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    expect(r.filas[5].patrimonio).toBeGreaterThan(solo.filas[5].patrimonio);
+  });
+  it("una pensión no se confunde con la renta", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas).toHaveLength(0);
+  });
+});
+
+describe("futuro10 · renta fija de la lista que paga al mes (19-nov-2026)", () => {
+  const U = () => ({ inflacionPct: 4, inv: [{ id: "pm", n: "Puerto", tp: "Real Estate", va: 8000e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 100e6 }], ingresos: [], gas: { V: [{ n: "x", m: 10e6 }] }, deu: [] });
+  const cfg = (o) => ({ decisiones: { pm: { accion: "vende" } }, nuevas: [{ preset: "rfLargo", monto: 5200e6, rendimientoNomPct: 12, ...o }] });
+  it("si eliges que te llegue todo, aparece en Tu mes y no crece el capital", () => {
+    const r = proyectarFuturo10(U(), cfg({ pctRecibe: 100 }));
+    const fila = r.desglose.entra.find((x) => /renta fija/i.test(x.nombre));
+    expect(fila).toBeTruthy();
+    expect(fila.mensual).toBeCloseTo(5200e6 * 0.12 / 12, -3);
+    expect(r.nuevasDetalle[0]).toMatchObject({ pagaRenta: true });
+    expect(r.nuevasDetalle[0].rendPct).toBeCloseTo(12, 6);
+  });
+  it("sin elegir, se reinvierte como antes", () => {
+    const r = proyectarFuturo10(U(), cfg({}));
+    expect(r.desglose.entra.some((x) => /renta fija/i.test(x.nombre))).toBe(false);
+    expect(r.nuevasDetalle[0].pagaRenta).toBe(false);
   });
 });

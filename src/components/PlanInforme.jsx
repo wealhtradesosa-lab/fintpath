@@ -170,9 +170,12 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
     {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos")]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
   </div>;
 
-  const Ficha = ({ l, v, s, col }) => <div style={{ ...card, marginBottom: 0, padding: 14 }}>
+  // 19-nov-2026 (Santiago: "muchos problemas de diagramación"): con cifras
+  // completas ($71.238.343.780) el número se salía de la ficha. Fichas más
+  // anchas, tamaño que se ajusta al ancho y corte de línea como último recurso.
+  const Ficha = ({ l, v, s, col }) => <div style={{ ...card, marginBottom: 0, padding: 14, minWidth: 0 }}>
     <div style={{ fontSize: 12, color: INF.tx2 }}>{l}</div>
-    <div style={{ fontSize: 22, fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", margin: "4px 0" }}>{v}</div>
+    <div style={{ fontSize: "clamp(18px, 1.5vw, 22px)", overflowWrap: "anywhere", fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", margin: "4px 0" }}>{v}</div>
     <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.4 }}>{s}</div>
   </div>;
 
@@ -183,7 +186,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
       <Indice />
       <Capitulo id="cap-veredicto" n={1} titulo={tx("El veredicto", "The verdict")} pregunta={tx("¿Qué tan bueno es este plan, en una línea?", "How good is this plan, in one line?")} />
       <div style={{ ...card, fontSize: 16, lineHeight: 1.55, color: INF.tx }}>{veredicto}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 10, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,210px),1fr))", gap: 10, marginBottom: 14 }}>
         <Ficha l={tx(`Patrimonio en ${anioCal(10)}`, `Net worth in ${anioCal(10)}`)} v={fmM(fin.patrimonio / d(fin))} s={`${tx("hoy", "today")} ${fmM(f0.patrimonio)}${cagr != null ? tx(` · crece ${fmPct(cagr, 1)} al año`, ` · grows ${fmPct(cagr, 1)} a year`) : ""}`} />
         <Ficha l={tx("Produce al mes", "Earns per month")} v={fmM(produceMes)} s={tx(`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`, `income ${fmM(rentaMes)} + compounding ${fmM(multiplicaMes)}`)} />
         <Ficha l={tx("Rendimiento del patrimonio", "Return on net worth")} v={fmPct(rendimiento, 1)} s={tx("anual, sobre lo que tienes", "per year, on what you own")} />

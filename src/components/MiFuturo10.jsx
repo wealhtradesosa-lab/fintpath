@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -235,6 +235,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 </select></label>
                 <label style={lbl}>{tx("¿Cuánto? ($)", "How much? ($)")}<NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
                 <label style={lbl}>{tx("¿De dónde sale la plata?", "Where does the money come from?")}<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
+                {/* 19-nov-2026: rendimiento editable también en los tipos de la lista; vacío = supuesto del escenario. */}
+                {x.preset !== "custom" && SUP.presets[x.preset] && (() => { const sup = retornoNominalPreset(x.preset, esc, SUP); return (
+                  <label style={lbl}>{tx("Rendimiento anual esperado (%)", "Expected annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(sup, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
+                    <span style={{ fontSize: 12 }}>{x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? tx(`Vacío usa ${fmtPctEs(sup, 1)}, el supuesto del escenario ${nombreSup(esc).toLowerCase()}.`, `Blank uses ${fmtPctEs(sup, 1)}, the ${nombreSup(esc).toLowerCase()} scenario assumption.`) : tx(`Usa tu ${fmtPctEs(Number(x.rendimientoNomPct), 1)}; el escenario suponía ${fmtPctEs(sup, 1)}.`, `Uses your ${fmtPctEs(Number(x.rendimientoNomPct), 1)}; the scenario assumed ${fmtPctEs(sup, 1)}.`)}</span></label>
+                  ); })()}
+                {x.preset !== "custom" && SUP.presets[x.preset] && (() => { const rend = (x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? retornoNominalPreset(x.preset, esc, SUP) : Number(x.rendimientoNomPct)) / 100; const p = (Number(x.pctRecibe) || 0) / 100; const mes = (Number(x.monto) || 0) * rend * p / 12; return (
+                  <label style={lbl}>{tx("De lo que rinde, ¿cuánto te llega?", "Of what it earns, how much do you receive?")}<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select>
+                    <span style={{ fontSize: 12, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? tx(`Te llegan ${plata(Math.round(mes))} al mes y salen en Tu mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.`, `You receive ${plata(Math.round(mes))} a month, shown in Your month; ${p < 1 ? "the rest is reinvested" : "the principal stays the same"}.`) : tx("Todo se reinvierte: crece con interés compuesto y no entra a tu mes.", "Everything is reinvested: it compounds and doesn't enter your month.")}</span></label>); })()}
                 {x.preset === "custom" && <>
                   <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esUS() ? tx("Ej.: negocio, CD, rancho", "e.g. business, CD, ranch") : tx("Ej.: negocio, CDT, finca", "e.g. business, term deposit, farm")} /></label>
                   <label style={lbl}>{tx("¿Cuándo?", "When?")}<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
@@ -404,6 +412,10 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
       <h4 style={{ margin: "8px 0" }}>{tx("Ingresos futuros", "Future income")}</h4>
       {f.ingresos.map((x, i) => (
         <div key={i} style={g}>
+          {/* 19-nov-2026: aviso si esta renta ya está puesta en «Invertir en lo que ya tienes». */}
+          {(() => { const d = rentasDuplicadas(cfg, activos).find((y) => y.k === i); if (!d) return null; return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "8px 10px" }}>{d.seguro
+            ? tx(`Esta renta ya está en «Invertir en lo que ya tienes» (${d.activo}, ${plata(d.contada)} al mes). Se cuenta una sola vez, la de allá; puedes borrar esta.`, `This income is already in "Invest in what you own" (${d.activo}, ${plata(d.contada)} a month). It's counted once, from there; you can delete this one.`)
+            : tx(`¿Es la misma renta de ${d.activo} que pusiste en «Invertir en lo que ya tienes» (${plata(d.contada)} al mes)? Si sí, bórrala aquí: se está sumando dos veces.`, `Is this the same ${d.activo} income you entered in "Invest in what you own" (${plata(d.contada)} a month)? If so, delete it here: it's being counted twice.`)}</div>; })()}
           <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} placeholder={esUS() ? tx("Ej.: Seguro Social", "e.g. Social Security") : tx("Ej.: pensión", "e.g. pension")} onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>{esUS() ? tx("Al mes ($, dólares de hoy)", "Per month ($, today's dollars)") : tx("Al mes ($, pesos de hoy)", "Per month ($, today's pesos)")}<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
             {!x.activoId && <span style={{ fontSize: 12 }}>{esUS() ? tx("Si es el Seguro Social o una pensión, usa el estimado de tu cuenta en ssa.gov o de tu plan. Sube con la inflación.", "For Social Security or a pension, use the estimate from your ssa.gov account or your plan. It grows with inflation.") : tx("Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.", "For a pension, use the monthly estimate from your pension fund. It grows with inflation.")}</span>}</label>
