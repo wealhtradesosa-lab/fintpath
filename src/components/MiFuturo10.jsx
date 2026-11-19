@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -126,6 +126,19 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
+      {/* 19-nov-2026 (Santiago: "muchas cosas mal alineadas"). Cuando un título de
+          campo ocupaba dos líneas, su casilla quedaba más abajo que las vecinas.
+          Cada campo es una grilla: título (alto fijo de dos líneas, pegado abajo),
+          casilla y ayuda. Así todas las casillas de una fila quedan a la misma
+          altura. Los botones sueltos (Quitar) se alinean con las casillas. */}
+      <style>{`.fp10-campos { align-items: start; }
+.fp10-campos > label, .fp10-campos > .fp10-campo { display: grid; grid-template-rows: auto auto auto; align-items: end; row-gap: 4px; line-height: 1.3; }
+.fp10-campos > label > span { align-self: start; }
+.fp10-campos > label > input, .fp10-campos > label > select, .fp10-campos > label > div { min-width: 0; width: 100%; box-sizing: border-box; }
+@media (min-width: 600px) {
+  .fp10-campos > label, .fp10-campos > .fp10-campo { grid-template-rows: minmax(2.7em, auto) auto auto; }
+  .fp10-campos > .fp10-boton { padding-top: calc(2.7em + 4px); }
+}`}</style>
       <PageHeader label={tx("Mi futuro a 10 años", "My 10-year future")} title={tx("¿Cómo se ve tu patrimonio en 10 años?", "What does your net worth look like in 10 years?")} compact
         subtitle={tx("1. Revisa lo que tienes y decide qué sigue · 2. Agrega lo que viene · 3. Mueve tu plata · 4. Mira el resultado. Tus datos reales no se tocan.", "1. Review what you have and decide what stays · 2. Add what's coming · 3. Move your money · 4. See the result. Your real data isn't changed.")} />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{avisoF10()}</div>
@@ -200,7 +213,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         </div>
         <div style={card}>
           <Seccion n="A" titulo={tx("Pagar deudas", "Pay off debt")} sub={tx("La deuda de un activo que vendes se paga sola con esa venta. Las demás, márcalas si quieres pagarlas con lo vendido.", "Debt tied to an asset you sell is paid off with that sale. Mark any other debt you want to pay with the proceeds.")} />
-          {(r.deudas || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>{tx("No tienes deudas con saldo.", "You have no outstanding debt.")}</p>}
+          {(r.deudas || []).length + (r.deudasSinSaldo || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>{tx("No tienes deudas con saldo.", "You have no outstanding debt.")}</p>}
         </div>
         <div style={card}>
           <Seccion n="B" titulo={tx("Invertir en lo que ya tienes", "Invest in what you already own")} sub={tx("Plata que le metes a algo tuyo: una obra (la bodega en tu lote) o más capital (IBKR). Elige de dónde sale.", "Money you put into something you own: a build-out (a warehouse on your lot) or more capital (a brokerage account). Choose where it comes from.")} />
@@ -216,7 +229,38 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   <b>{a.nombre}</b>
                   <button style={btn(activo)} onClick={toggle}>{activo ? tx("Le voy a invertir ✓", "I'll invest in it ✓") : tx("Le voy a invertir", "I'll invest in it")}</button>
                 </div>
-                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} /></div>}
+                {activo && (() => {
+                  // 19-nov-2026: la renta de este activo ya escrita en Lo que viene.
+                  // Se ofrece juntarla aquí (una sola renta) o decir que es otra.
+                  const futs = rentasFuturasDelActivo(cfg, a);
+                  if (!futs.length) return null;
+                  // 19-nov-2026 (Santiago: "no ponga el ingreso si ya lo pusiste en la
+                  // sección anterior"). Si aquí todavía no hay renta, no se vuelve a
+                  // pedir: se muestra la de Lo que viene y el campo se esconde.
+                  if (!(Number(cfg.reinversiones[iR].rentaMensual) > 0)) {
+                    const ingresos0 = cfg.futuros?.ingresos || [];
+                    return futs.map((f) => <div key={f.k} style={{ marginTop: 8, fontSize: 12.5, color: C.tx, background: "rgba(0,200,5,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "8px 10px" }}>
+                      {tx(`La renta ya está en Lo que viene: «${f.x.nombre || "ingreso futuro"}», ${plata(Number(f.x.mensual))} al mes desde ${anioCal(Number(f.x.desde) || 1)}. No hace falta ponerla otra vez aquí.`, `The income is already in What's coming: "${f.x.nombre || "future income"}", ${plata(Number(f.x.mensual))} a month from ${anioCal(Number(f.x.desde) || 1)}. No need to enter it again here.`)}
+                      <div style={{ marginTop: 6 }}><button style={btn(false)} onClick={() => set("futuros", { ...cfg.futuros, ingresos: ingresos0.map((y, j) => (j === f.k ? { ...y, noEsRentaDe: [...new Set([].concat(y.noEsRentaDe || [], a.id))] } : y)) })}>{tx("Esa es otra renta: quiero poner la de este activo", "That's a different income: I want to enter this asset's")}</button></div>
+                    </div>);
+                  }
+                  const ingresos = cfg.futuros?.ingresos || [];
+                  const juntar = ({ x, k }) => {
+                    const re = cfg.reinversiones[iR];
+                    const yaTiene = Number(re.rentaMensual) > 0;
+                    if (!yaTiene) upR({ rentaMensual: x.mensual, rentaDesdeMes: Math.max(0, ((Number(x.desde) || 1) - 1) * 12) });
+                    set("futuros", { ...cfg.futuros, ingresos: ingresos.filter((_, j) => j !== k) });
+                  };
+                  const otra = ({ k }) => set("futuros", { ...cfg.futuros, ingresos: ingresos.map((y, j) => (j === k ? { ...y, noEsRentaDe: [...new Set([].concat(y.noEsRentaDe || [], a.id))] } : y)) });
+                  return futs.map((f) => <div key={f.k} style={{ marginTop: 8, fontSize: 12.5, color: C.tx, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "8px 10px" }}>
+                    {tx(`En Lo que viene pusiste «${f.x.nombre || "ingreso futuro"}»: ${plata(Number(f.x.mensual))} al mes desde ${anioCal(Number(f.x.desde) || 1)}. ¿Es la renta de ${a.nombre}?`, `In What's coming you entered "${f.x.nombre || "future income"}": ${plata(Number(f.x.mensual))} a month from ${anioCal(Number(f.x.desde) || 1)}. Is it ${a.nombre}'s income?`)}
+                    <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                      <button style={btn(true)} onClick={() => juntar(f)}>{Number(cfg.reinversiones[iR].rentaMensual) > 0 ? tx("Sí, es la misma: quitarla de Lo que viene", "Yes, same one: remove it from What's coming") : tx("Sí, es la misma: traerla aquí", "Yes, same one: move it here")}</button>
+                      <button style={btn(false)} onClick={() => otra(f)}>{tx("No, es otra renta", "No, it's a different income")}</button>
+                    </div>
+                  </div>);
+                })()}
+                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a).length > 0} /></div>}
               </div>
             );
           })}
@@ -228,13 +272,19 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             const hint = rendimientoHintPct(esc);
             const lbl = { fontSize: 12, color: C.tx2 };
             return (
-              <div key={i} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
+              <div key={i} className="fp10-campos" style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 8 }}>
                 <label style={lbl}>{tx("Tipo", "Type")}<select style={inp} value={x.preset} onChange={(e) => up({ preset: e.target.value })}>
                   {Object.entries(SUP.presets).map(([k, p]) => <option key={k} value={k}>{nombreSup(p)}</option>)}
                   <option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option>
                 </select></label>
                 <label style={lbl}>{tx("¿Cuánto? ($)", "How much? ($)")}<NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
                 <label style={lbl}>{tx("¿De dónde sale la plata?", "Where does the money come from?")}<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
+                {/* 19-nov-2026 (Santiago: "pongo renta fija largo plazo y el sistema la
+                    declara como BTG; debería dejarme poner la empresa o banco"). El nombre
+                    quedaba guardado de cuando la fila era «Otra (personalizada)» y no se
+                    veía ni se podía cambiar. Ahora se ve y se edita en todos los tipos. */}
+                {x.preset !== "custom" && <label style={lbl}>{tx("¿Dónde? Entidad o nombre (opcional)", "Where? Institution or name (optional)")}<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esUS() ? tx("Ej.: Vanguard, Fidelity", "e.g. Vanguard, Fidelity") : tx("Ej.: BTG, Skandia, Cibest", "e.g. BTG, Skandia, Cibest")} />
+                  <span style={{ fontSize: 12 }}>{x.nombre ? tx(`Sale como «${x.nombre}» en el plan.`, `Shows as "${x.nombre}" in the plan.`) : tx(`Sale como «${nombreSup(SUP.presets[x.preset] || {})}».`, `Shows as "${nombreSup(SUP.presets[x.preset] || {})}".`)}</span></label>}
                 {/* 19-nov-2026: rendimiento editable también en los tipos de la lista; vacío = supuesto del escenario. */}
                 {x.preset !== "custom" && SUP.presets[x.preset] && (() => { const sup = retornoNominalPreset(x.preset, esc, SUP); return (
                   <label style={lbl}>{tx("Rendimiento anual esperado (%)", "Expected annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(sup, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
@@ -255,7 +305,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     {(() => { const rend = (x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? hint : Number(x.rendimientoNomPct)) / 100; const p = (x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)) / 100; const mes = (Number(x.monto) || 0) * rend * p / 12;
                       return <span style={{ fontSize: 12, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? tx(`Te llegan ${plata(Math.round(mes))} al mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.`, `You receive ${plata(Math.round(mes))} a month; ${p < 1 ? "the rest is reinvested" : "the principal stays the same"}.`) : tx("Todo se reinvierte: crece con interés compuesto.", "Everything is reinvested: it compounds.")}</span>; })()}</label>
                 </>}
-                <div><button style={btn(false)} onClick={() => set("nuevas", cfg.nuevas.filter((_, j) => j !== i))}>{tx("Quitar", "Remove")}</button></div>
+                <div className="fp10-boton"><button style={btn(false)} onClick={() => set("nuevas", cfg.nuevas.filter((_, j) => j !== i))}>{tx("Quitar", "Remove")}</button></div>
               </div>
             );
           })}
@@ -411,11 +461,15 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
       <div style={{ fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: `1px solid rgba(245,158,11,0.3)`, borderRadius: 8, padding: "8px 10px", marginBottom: 10 }}>{tx("¿La renta sale de un activo que ya tienes? Elígelo en «¿De dónde sale?». Si además le vas a meter plata (construir la bodega en el lote), hazlo en el paso 3, Tu plata → «Invertir en lo que ya tienes»: ahí van la inversión y la renta juntas.", "Does the income come from an asset you already own? Pick it in \"Where does it come from?\". If you're also putting money into it (building on the lot), do it in step 3, Your money → \"Invest in what you already own\": the investment and the income go together there.")}</div>
       <h4 style={{ margin: "8px 0" }}>{tx("Ingresos futuros", "Future income")}</h4>
       {f.ingresos.map((x, i) => (
-        <div key={i} style={g}>
+        <div key={i} className="fp10-campos" style={g}>
           {/* 19-nov-2026: aviso si esta renta ya está puesta en «Invertir en lo que ya tienes». */}
           {(() => { const d = rentasDuplicadas(cfg, activos).find((y) => y.k === i); if (!d) return null; return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "8px 10px" }}>{d.seguro
             ? tx(`Esta renta ya está en «Invertir en lo que ya tienes» (${d.activo}, ${plata(d.contada)} al mes). Se cuenta una sola vez, la de allá; puedes borrar esta.`, `This income is already in "Invest in what you own" (${d.activo}, ${plata(d.contada)} a month). It's counted once, from there; you can delete this one.`)
-            : tx(`¿Es la misma renta de ${d.activo} que pusiste en «Invertir en lo que ya tienes» (${plata(d.contada)} al mes)? Si sí, bórrala aquí: se está sumando dos veces.`, `Is this the same ${d.activo} income you entered in "Invest in what you own" (${plata(d.contada)} a month)? If so, delete it here: it's being counted twice.`)}</div>; })()}
+            : tx(`¿Es la misma renta de ${d.activo} que pusiste en «Invertir en lo que ya tienes» (${plata(d.contada)} al mes)? Si sí, bórrala aquí: se está sumando dos veces.`, `Is this the same ${d.activo} income you entered in "Invest in what you own" (${plata(d.contada)} a month)? If so, delete it here: it's being counted twice.`)}
+            <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+              <button style={btn(true)} onClick={() => set("futuros", { ...f, ingresos: f.ingresos.filter((_, j) => j !== i) })}>{tx("Es la misma: quitarla de aquí", "Same one: remove it here")}</button>
+              {!d.seguro || !x.activoId ? <button style={btn(false)} onClick={() => upI(i, { noEsRentaDe: [...new Set([].concat(x.noEsRentaDe || [], d.activoId))] })}>{tx("Es otra renta", "It's a different income")}</button> : null}
+            </div></div>; })()}
           <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} placeholder={esUS() ? tx("Ej.: Seguro Social", "e.g. Social Security") : tx("Ej.: pensión", "e.g. pension")} onChange={(e) => upI(i, { nombre: e.target.value })} /></label>
           <label style={lbl}>{esUS() ? tx("Al mes ($, dólares de hoy)", "Per month ($, today's dollars)") : tx("Al mes ($, pesos de hoy)", "Per month ($, today's pesos)")}<NumberInput style={inp} value={x.mensual ?? ""} onChange={(v) => upI(i, { mensual: v })} />
             {!x.activoId && <span style={{ fontSize: 12 }}>{esUS() ? tx("Si es el Seguro Social o una pensión, usa el estimado de tu cuenta en ssa.gov o de tu plan. Sube con la inflación.", "For Social Security or a pension, use the estimate from your ssa.gov account or your plan. It grows with inflation.") : tx("Si es una pensión, usa la mesada estimada que te da tu fondo o Colpensiones. Sube con la inflación.", "For a pension, use the monthly estimate from your pension fund. It grows with inflation.")}</span>}</label>
@@ -425,8 +479,8 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
           {/* 24-oct-2026 (Santiago, con la pensión puesta "termina año 7" sin querer:
               "no veo esa opción"). En el iPhone «Sigue» quedaba escondida arriba de la
               rueda. Ahora son dos botones y el año solo aparece si termina. */}
-          <div style={lbl}>{tx("¿Hasta cuándo?", "Until when?")}
-            <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+          <div className="fp10-campo" style={{ ...lbl, gridColumn: "span 2" }}>{tx("¿Hasta cuándo?", "Until when?")}
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <button type="button" style={btn(vacio(x.hasta))} onClick={() => upI(i, { hasta: "" })}>{tx("Sigue siempre", "Ongoing")}</button>
               <button type="button" style={btn(!vacio(x.hasta))} onClick={() => upI(i, { hasta: vacio(x.hasta) ? Math.max(Number(x.desde) || 1, 10) : x.hasta })}>{tx("Termina", "Ends")}</button>
             </div>
@@ -457,7 +511,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
         const faltaF = Math.max(0, (Number(x.valor) || 0) - sumaFps);
         const fuenteNom = validas.length ? validas.map((z) => `${plata(Number(z.monto))} ${tx("de", "from")} ${nomF(z.id)}`).join(" + ") + (faltaF > 0 ? ` + ${plata(faltaF)} ${tx("de tus cuentas de hoy", "from your current accounts")}` : "") : tx("tu liquidez", "your cash");
         return (
-          <div key={i} style={g}>
+          <div key={i} className="fp10-campos" style={g}>
             <label style={lbl}>{tx("¿Qué es?", "What is it?")}<select style={inp} value={tipo} onChange={(e) => upA(i, { clase: e.target.value })}>
               <option value="vivienda">{tx("Casa para vivir", "Home to live in")}</option><option value="inmueble">{tx("Inmueble para rentar", "Rental property")}</option><option value="lote">{tx("Lote", "Lot")}</option><option value="negocio">{tx("Negocio", "Business")}</option><option value="otro">{tx("Otro", "Other")}</option></select></label>
             <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} placeholder={tipo === "vivienda" ? tx("Ej.: casa finca", "e.g. lake house") : tx("Ej.: local comercial", "e.g. storefront")} onChange={(e) => upA(i, { nombre: e.target.value })} /></label>
@@ -502,7 +556,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
         const d = Math.max(1, Number(x.desde) || 1), n = x.anios === "" || x.anios == null ? null : Math.max(1, Number(x.anios) || 1);
         const cuando = d === 1 ? tx("desde ya", "starting now") : `${tx("dentro de", "in")} ${enAnios(d - 1)}`;
         return (
-          <div key={i} style={g}>
+          <div key={i} className="fp10-campos" style={g}>
             <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} placeholder={tx("Ej.: universidad de los hijos", "e.g. kids' college")} onChange={(e) => upG(i, { nombre: e.target.value })} /></label>
             <label style={lbl}>{esUS() ? tx("Al año ($, dólares de hoy)", "Per year ($, today's dollars)") : tx("Al año ($, pesos de hoy)", "Per year ($, today's pesos)")}<NumberInput style={inp} value={x.anual ?? ""} onChange={(v) => upG(i, { anual: v })} />
               <span style={{ fontSize: 12 }}>{tx("Sube cada año con la inflación.", "It grows with inflation every year.")}</span></label>
@@ -558,6 +612,10 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
           </div>
         );
       })}
+      {(r.deudasSinSaldo || []).map((d) => <div key={d.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{d.nombre}</b><span style={{ color: C.tx2 }}>{tx(`cuota ${plata(d.cuota)} al mes`, `payment ${plata(d.cuota)}/mo`)}</span></div>
+        <div style={{ fontSize: 12, color: C.am, marginTop: 4 }}>{tx("No tiene saldo cargado, así que no se puede pagar con la venta y su cuota sigue. Ponle cuánto debes en tu página de Deudas para poder elegir «Se paga».", "It has no balance entered, so it can't be paid off with the sale and its payment continues. Enter how much you owe on your Debts page to choose \"Pay off\".")}</div>
+      </div>)}
       {bolsa === 0 && <p style={{ color: C.tx2, fontSize: 12 }}>{tx("Para pagar una deuda, vende algo en el paso 1: se paga con esa plata.", "To pay off debt, sell something in step 1: it's paid with that money.")}</p>}
       {bd.deudas > 0 && r.cuotasQueSalenMes > 0 && <p style={{ fontSize: 12, color: C.tx2 }}>{tx(<>Pagas {plata(bd.deudas)} y dejas de pagar <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> de cuotas al mes.</>, <>You pay {plata(bd.deudas)} and stop paying <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> a month in payments.</>)}</p>}
     </div>
@@ -585,7 +643,7 @@ const textoIngresoFuturo = (x) => {
 // 24-oct-2026: según el tipo de activo, la plataforma pregunta lo suyo.
 const partesF10 = () => [[0, tx("Nada: todo se reinvierte", "None: all reinvested")], [25, tx("Una cuarta parte", "A quarter")], [50, tx("La mitad", "Half")], [75, tx("Tres cuartas partes", "Three quarters")], [100, tx("Todo: me llega cada mes", "All of it: paid to me monthly")]];
 const etqTipo = () => ({ inmueble: tx("Inmueble: da renta y se valoriza", "Property: earns rent and appreciates"), liquido: tx("Renta fija o cuenta: rinde una tasa al año", "Fixed income or account: earns a yearly rate"), acciones: tx("Fondos, trading o acciones: rinde al año", "Funds, trading or stocks: returns per year"), otro: tx("Otra inversión: rinde al año", "Other investment: returns per year"), vehiculo: tx("Vehículo", "Vehicle") });
-function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] }) {
+function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [], sinRenta = false }) {
   const lbl = { fontSize: 12, color: C.tx2 };
   const desdeMes = Number(x.rentaDesdeMes) || 0;
   const clase = (activos.find((a) => a.id === x.activoId) || {}).clase || "otro";
@@ -594,13 +652,13 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [] })
   const ETQ_TIPO = etqTipo();
   return (<>
     <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>{ETQ_TIPO[clase] || ETQ_TIPO.otro}</div>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 8 }}>
+    <div className="fp10-campos" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 8 }}>
       {conActivo && <label style={lbl}>{tx("¿A cuál?", "Which one?")}<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
       <label style={lbl}>{tx("¿Cuánto le vas a invertir? ($)", "How much will you invest? ($)")}<NumberInput style={inp} placeholder={ejemploMonto(600000000, 150000)} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
       <label style={lbl}>{tx("¿Cuándo?", "When?")}<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
       <label style={lbl}>{tx("¿De dónde sale la plata?", "Where does the money come from?")}<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>
       {esInm ? <>
-        <label style={lbl}>{tx("¿Va a dar renta? ($ al mes, opcional)", "Will it earn rent? ($ a month, optional)")}<NumberInput style={inp} placeholder={ejemploMonto(8500000, 2500)} value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
+{!sinRenta &&         <label style={lbl}>{tx("¿Va a dar renta? ($ al mes, opcional)", "Will it earn rent? ($ a month, optional)")}<NumberInput style={inp} placeholder={ejemploMonto(8500000, 2500)} value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>}
         {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>{tx("¿Desde cuándo renta?", "Rented out from when?")}<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
         <label style={lbl}>{tx("¿Cuánto queda valiendo al terminar? ($, opcional)", "What is it worth when finished? ($, optional)")}<NumberInput style={inp} placeholder={ejemploMonto(1500000000, 400000)} value={x.valorAlTerminar ?? ""} onChange={(v) => up({ valorAlTerminar: v })} /><span style={{ fontSize: 12 }}>{tx("Si con la obra vale más que lo que tenías más lo que inviertes.", "If after the work it's worth more than what you had plus what you invest.")}</span></label>
         <label style={lbl}>{tx("¿Cuánto se valoriza al año? (%)", "Annual appreciation (%)")}<InputDecimalEs style={inp} placeholder={det && det.valorizacionPct != null ? pct(det.valorizacionPct) : ""} value={x.valorizacionNomPct ?? ""} onChange={(v) => up({ valorizacionNomPct: v })} /><span style={{ fontSize: 12 }}>{tx(`Lo que sube el valor cada año${(Number(x.valorAlTerminar) || 0) > 0 ? ", desde que termina la obra" : ""}. Si no sabes, déjalo vacío.`, `How much the value rises each year${(Number(x.valorAlTerminar) || 0) > 0 ? ", once the work is done" : ""}. If you're not sure, leave it blank.`)}</span></label>

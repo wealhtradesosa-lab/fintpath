@@ -858,6 +858,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     rentasDuplicadas: duplicadas,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, pagar, pagado })),
+    // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
+    // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
+    // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
+    deudasSinSaldo: deudasUser.filter((d) => !(n(d.mt) > 0) && n(d.pg ?? d.pago) > 0).map((d) => ({ id: d.id, nombre: d.n || d.nombre || tx("Deuda", "Debt"), cuota: n(d.pg ?? d.pago) * fxA(d), activoId: d.la || d.link || null })),
     cuotasQueSalenMes: Math.max(0, b.sd - bDeuda.sd),
     hoy: { patrimonio: b.patrimonioNeto, ingresoMensual: b.ia + b.ip, salidaMensual: b.obCaja ?? b.ob, flujoMensual: b.fl, liquidos: b.liquidos, colchonMeses: b.colchonMeses },
     activos: activos.map(({ id, nombre, clase, usd }) => ({ id, nombre, clase, usd })),
@@ -1097,17 +1101,49 @@ export function rentasDuplicadas(cfg = {}, activos = []) {
   const out = [];
   (cfg.futuros?.ingresos || []).forEach((x, k) => {
     if (!x || !(n(x.mensual) > 0)) return;
-    const igual = conRenta.find((r) => r.activoId === x.activoId);
+    const distinta = new Set([].concat(x.noEsRentaDe || []));
+    const igual = conRenta.find((r) => r.activoId === x.activoId && !distinta.has(r.activoId));
     if (igual) { out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: igual.activoId, activo: nombreDe(igual.activoId), mensual: n(x.mensual), contada: n(igual.rentaMensual), seguro: true }); return; }
     if (x.activoId) return; // vinculado a otro activo: es otra renta
     const nom = sinTilde(x.nombre || "");
-    const parecida = conRenta.find((r) => {
-      const toks = sinTilde(nombreDe(r.activoId)).split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !GENERICAS.has(t));
-      return toks.some((t) => nom.includes(t)) || Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01);
-    });
-    if (parecida) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: parecida.activoId, activo: nombreDe(parecida.activoId), mensual: n(x.mensual), contada: n(parecida.rentaMensual), seguro: false });
+    // 19-nov-2026 (Santiago: "repite dos veces un ingreso: es un lote al que le
+    // invierto plata y además aparte puse ingreso nuevo" — «bodega» 8,5 M sin
+    // vincular + «lote bodega macarena» con renta 8,5 M). Mismo monto y (alguna
+    // palabra en común o arranca el mismo año) = la misma renta: se cuenta una
+    // vez. Solo nombre parecido o solo mismo monto: se avisa.
+    const palabras = (t, sinGenericas) => sinTilde(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !(sinGenericas && GENERICAS.has(w)));
+    const evalua = (r) => {
+      const mismoMonto = Math.abs(n(x.mensual) - n(r.rentaMensual)) <= Math.max(1, n(r.rentaMensual) * 0.01);
+      const comun = palabras(nombreDe(r.activoId), false).some((w) => palabras(x.nombre || "", false).includes(w));
+      const mismoAnio = Math.min(10, Math.max(1, Math.round(n(x.desde) || 1))) === Math.floor(Math.max(0, n(r.rentaDesdeMes)) / 12) + 1;
+      const nombreFuerte = palabras(nombreDe(r.activoId), true).some((w) => nom.includes(w));
+      if (mismoMonto && (comun || mismoAnio)) return "seguro";
+      if (mismoMonto || nombreFuerte) return "posible";
+      return null;
+    };
+    const cand = conRenta.filter((r) => !distinta.has(r.activoId)).map((r) => ({ r, v: evalua(r) })).filter((c) => c.v);
+    const elegido = cand.find((c) => c.v === "seguro") || cand[0];
+    if (elegido) out.push({ k, ingreso: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), activoId: elegido.r.activoId, activo: nombreDe(elegido.r.activoId), mensual: n(x.mensual), contada: n(elegido.r.rentaMensual), seguro: elegido.v === "seguro" });
   });
   return out;
+}
+/**
+ * 19-nov-2026 (Santiago: "me pide ingresos futuros, pongo que el lote será una
+ * bodega y me dará 8.500.000; después, aparte, le invierto 600 M al mismo lote
+ * y me pregunta cuánto renta: vuelvo a poner 8.500.000 y el sistema los toma
+ * como dos"). Ingresos de Lo que viene que parecen ser la renta de este activo:
+ * vinculados a él o con una palabra del nombre en común. Para ofrecer «es la
+ * misma» en Invertir en lo que ya tienes.
+ */
+export function rentasFuturasDelActivo(cfg = {}, activo = {}) {
+  const pal = (t) => sinTilde(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4);
+  const delActivo = pal(activo.nombre || activo.n || "");
+  return (cfg.futuros?.ingresos || []).map((x, k) => ({ x, k })).filter(({ x }) => {
+    if (!x || !(n(x.mensual) > 0)) return false;
+    if ([].concat(x.noEsRentaDe || []).includes(activo.id)) return false;
+    if (x.activoId) return x.activoId === activo.id;
+    return pal(x.nombre || "").some((w) => delActivo.includes(w));
+  });
 }
 export function sugerirVinculados(user = {}, activoId) {
   const a = (user.inv || []).find((x) => x && x.id === activoId);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica, leerFuentesPago } from "../../src/lib/futuro10.js";
+import { rentasFuturasDelActivo, proyectarFuturo10, SUPUESTOS_F10, retornoNominalPreset, resolverEscenario, cienMillones, leerModifica, migrarModifica, leerFuentesPago } from "../../src/lib/futuro10.js";
 
 const cero = JSON.parse(JSON.stringify(SUPUESTOS_F10));
 cero.presets.rfCorto.realSpread = 0; cero.presets.rfLargo.realSpread = 0;
@@ -862,6 +862,23 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
     expect(r.filas[5].patrimonio).toBeGreaterThan(solo.filas[5].patrimonio);
   });
+  it("caso Santiago: «bodega» 8,5 M sin vincular, mismo año → se cuenta una vez", () => {
+    const solo = proyectarFuturo10(U(), { reinversiones: [reinv] });
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: true });
+    expect(r.futuros.ingresos).toHaveLength(0);
+    expect(r.filas[5].patrimonio).toBeCloseTo(solo.filas[5].patrimonio, 0);
+  });
+  it("«No, es otra renta» se respeta: se suman las dos", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2, noEsRentaDe: ["l"] }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas).toHaveLength(0);
+    expect(r.futuros.ingresos).toHaveLength(1);
+  });
+  it("rentasFuturasDelActivo encuentra «bodega» para el lote bodega y no la pensión", () => {
+    const cfg = { futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2 }, { nombre: "Pensión Ana", mensual: 23e6, desde: 5 }] } };
+    const f = rentasFuturasDelActivo(cfg, { id: "l", nombre: "lote bodega macarena con licencia" });
+    expect(f.map((y) => y.k)).toEqual([0]);
+  });
   it("una pensión no se confunde con la renta", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });
     expect(r.rentasDuplicadas).toHaveLength(0);
@@ -883,5 +900,14 @@ describe("futuro10 · renta fija de la lista que paga al mes (19-nov-2026)", () 
     const r = proyectarFuturo10(U(), cfg({}));
     expect(r.desglose.entra.some((x) => /renta fija/i.test(x.nombre))).toBe(false);
     expect(r.nuevasDetalle[0].pagaRenta).toBe(false);
+  });
+});
+
+describe("futuro10 · deudas sin saldo (19-nov-2026)", () => {
+  it("una deuda con cuota pero sin saldo sale en deudasSinSaldo", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 100e6 }], ingresos: [], gas: {}, deu: [{ id: "car", n: "carro mani", mt: "", pg: 6125000 }, { id: "h", n: "hipoteca", mt: 300e6, pg: 4e6 }] };
+    const r = proyectarFuturo10(u, {});
+    expect(r.deudas.map((d) => d.id)).toEqual(["h"]);
+    expect(r.deudasSinSaldo).toEqual([expect.objectContaining({ id: "car", cuota: 6125000 })]);
   });
 });
