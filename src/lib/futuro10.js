@@ -1096,7 +1096,10 @@ const sinTilde = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/
  */
 export function rentasDuplicadas(cfg = {}, activos = []) {
   const nombreDe = (id) => ((activos || []).find((a) => a && a.id === id) || {}).nombre || ((activos || []).find((a) => a && a.id === id) || {}).n || "";
-  const conRenta = unaPorActivo(cfg.reinversiones).filter((r) => n(r.rentaMensual) > 0);
+  // Solo reinversiones de activos que siguen (un activo vendido no aplica su reinversión guardada).
+  const vivos = new Set((activos || []).filter(Boolean).map((a) => a.id));
+  const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
+  const conRenta = unaPorActivo(cfg.reinversiones).filter((r) => n(r.rentaMensual) > 0 && vivos.has(r.activoId) && !vendidos.has(r.activoId));
   if (!conRenta.length) return [];
   const out = [];
   (cfg.futuros?.ingresos || []).forEach((x, k) => {
@@ -1117,8 +1120,10 @@ export function rentasDuplicadas(cfg = {}, activos = []) {
       const comun = palabras(nombreDe(r.activoId), false).some((w) => palabras(x.nombre || "", false).includes(w));
       const mismoAnio = Math.min(10, Math.max(1, Math.round(n(x.desde) || 1))) === Math.floor(Math.max(0, n(r.rentaDesdeMes)) / 12) + 1;
       const nombreFuerte = palabras(nombreDe(r.activoId), true).some((w) => nom.includes(w));
-      if (mismoMonto && (comun || mismoAnio)) return "seguro";
-      if (mismoMonto || nombreFuerte) return "posible";
+      // Sin vínculo, solo se da por hecho con mismo monto Y una palabra en común
+      // (una pensión de 8,5 M del mismo año no es la renta de la bodega).
+      if (mismoMonto && comun) return "seguro";
+      if (mismoMonto || nombreFuerte || (comun && mismoAnio)) return "posible";
       return null;
     };
     const cand = conRenta.filter((r) => !distinta.has(r.activoId)).map((r) => ({ r, v: evalua(r) })).filter((c) => c.v);

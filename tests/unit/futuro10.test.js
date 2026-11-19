@@ -879,6 +879,16 @@ describe("futuro10 · renta puesta dos veces (19-nov-2026)", () => {
     const f = rentasFuturasDelActivo(cfg, { id: "l", nombre: "lote bodega macarena con licencia" });
     expect(f.map((y) => y.k)).toEqual([0]);
   });
+  it("una pensión del mismo monto y año, sin palabra en común, no se borra (solo avisa)", () => {
+    const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 8.5e6, desde: 2 }], activos: [], gastos: [] } });
+    expect(r.futuros.ingresos).toHaveLength(1);
+    expect(r.rentasDuplicadas[0]).toMatchObject({ seguro: false });
+  });
+  it("si el activo se vende, su reinversión guardada no borra el ingreso futuro", () => {
+    const r = proyectarFuturo10(U(), { decisiones: { l: { accion: "vende" } }, reinversiones: [reinv], futuros: { ingresos: [{ nombre: "bodega", mensual: 8.5e6, desde: 2 }], activos: [], gastos: [] } });
+    expect(r.rentasDuplicadas).toHaveLength(0);
+    expect(r.futuros.ingresos).toHaveLength(1);
+  });
   it("una pensión no se confunde con la renta", () => {
     const r = proyectarFuturo10(U(), { reinversiones: [reinv], futuros: { ingresos: [{ nombre: "Pensión", mensual: 4e6, desde: 5 }], activos: [], gastos: [] } });
     expect(r.rentasDuplicadas).toHaveLength(0);
