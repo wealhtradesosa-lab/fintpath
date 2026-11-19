@@ -25,7 +25,7 @@ import { anioCal } from "../lib/futuro10.js";
 import MesCompleto from "./MesCompleto.jsx";
 import HistoriaPlata from "./infografia/HistoriaPlata.jsx";
 import { useMemo, useState } from "react";
-import { ComposedChart, BarChart, Bar, Area, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, LabelList, Cell } from "recharts";
+import { ComposedChart, BarChart, Bar, Area, Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine, LabelList, Cell, Customized } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
 import { INF, COLOR_CLASE, ETQ_CLASE, fmM, fmEje, fmPct } from "../lib/informeTheme.js";
 import { tx, esUS, inflacionDefaultPct } from "../lib/region.js";
@@ -45,16 +45,32 @@ const tdL = { ...td, textAlign: "left", whiteSpace: "normal" };
 const anioTxt = (a) => (a === 0 ? tx("Hoy", "Today") : String(anioCal(a)));
 const tip = (v) => fmM(v);
 
+/** Etiquetas al final de cada línea, ordenadas y sin montarse (Customized de recharts). */
+function EtiquetasFin({ formattedGraphicalItems = [] }) {
+  const ets = formattedGraphicalItems.map((it) => {
+    const pts = (it.props && it.props.points) || [];
+    const ult = pts[pts.length - 1];
+    const ip = (it.item && it.item.props) || {};
+    return ult && ult.y != null ? { x: ult.x, y: ult.y, color: it.props.stroke || ip.stroke, nombre: ip.name || it.props.name || "", valor: ult.value } : null;
+  }).filter(Boolean).sort((a, b) => a.y - b.y);
+  const GAP = 14;
+  for (let i = 1; i < ets.length; i++) if (ets[i].y - ets[i - 1].y < GAP) ets[i].y = ets[i - 1].y + GAP;
+  const corto = (t) => (t.length > 16 ? t.slice(0, 15).trimEnd() + "…" : t);
+  return <g>{ets.map((e, i) => <text key={i} x={e.x + 6} y={e.y + 4} fill={e.color} fontSize={11}>{corto(e.nombre)} <tspan fill={INF.tx2}>{fmM(Array.isArray(e.valor) ? e.valor[1] : e.valor)}</tspan></text>)}</g>;
+}
+
 /** Lo que pasa cada año, en palabras (para las marcas y la columna «Qué cambia ese año»). */
 export function eventosDelPlan(r) {
   const ev = [];
   if ((r.vendidos || []).length) ev.push({ anio: 0, corto: tx("Vendes", "You sell"), texto: `${tx("Vendes", "You sell")} ${r.vendidos.map((v) => v.nombre).join(", ")}: ${fmM(r.vendidos.reduce((s, v) => s + v.valor, 0))}` });
   (r.deudas || []).filter((d) => d.pagado > 0).forEach((d) => ev.push({ anio: 0, corto: tx("Pagas deudas", "Pay off debts"), texto: `${tx("Pagas", "You pay off")} ${d.nombre}: ${fmM(d.pagado)}` }));
   (r.reinversionesDetalle || []).forEach((x) => {
-    if (x.aporte > 0) ev.push({ anio: Math.max(0, (x.anio || 1) - 1), corto: x.nombre, texto: tx(`Le inviertes ${fmM(x.aporte)} a ${x.nombre}`, `You invest ${fmM(x.aporte)} in ${x.nombre}`) });
+    // 19-nov-2026: el año 1 es hoy (marca 0); el año t se muestra como anioCal(t),
+    // igual que en Tu plata («En 2027» = año 2). Antes restaba uno y salía 2026.
+    if (x.aporte > 0) ev.push({ anio: (x.anio || 1) <= 1 ? 0 : x.anio, corto: x.nombre, texto: tx(`Le inviertes ${fmM(x.aporte)} a ${x.nombre}`, `You invest ${fmM(x.aporte)} in ${x.nombre}`) });
     if (x.rentaMensual > 0) { const a = Math.floor((x.rentaDesdeMes || 0) / 12) + 1; ev.push({ anio: a, corto: `${x.nombre} ${tx("renta", "income")}`, texto: tx(`${x.nombre} empieza a rentar: +${fmM(x.rentaMensual)}/mes`, `${x.nombre} starts paying: +${fmM(x.rentaMensual)}/mo`) }); }
   });
-  (r.nuevasDetalle || []).forEach((x) => ev.push({ anio: Math.max(0, (x.anio || 1) - 1), corto: x.nombre, texto: tx(`Inviertes ${fmM(x.monto)} en ${x.nombre}`, `You invest ${fmM(x.monto)} in ${x.nombre}`) }));
+  (r.nuevasDetalle || []).forEach((x) => ev.push({ anio: (x.anio || 1) <= 1 ? 0 : x.anio, corto: x.nombre, texto: tx(`Inviertes ${fmM(x.monto)} en ${x.nombre}`, `You invest ${fmM(x.monto)} in ${x.nombre}`) }));
   const fut = r.futuros || { ingresos: [], activos: [] };
   fut.ingresos.forEach((x) => ev.push({ anio: x.desde, corto: x.nombre, texto: `${x.nombre}: +${fmM(x.mensual)}${tx("/mes", "/mo")}` }));
   fut.activos.forEach((x) => ev.push({ anio: x.entrega, corto: x.nombre, texto: `${tx("Recibes", "You receive")} ${x.nombre}` }));
@@ -215,7 +231,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         <h3 style={h3}>{tx("Mes a mes: ¿alcanza para vivir? Así se comporta el plan en el tiempo", "Month by month: is it enough to live on? How the plan holds up over time")}</h3>
         <p style={lead}>{tx(<><b>Línea azul:</b> lo que entra cada mes. <b>Línea roja punteada:</b> lo que sale para vivir. <b>Franja verde:</b> lo que sobra, que no se queda quieto: {r.destinoSobra || "se reinvierte"}. Las líneas verticales marcan los cambios. Mientras la azul esté por encima de la roja, el plan se sostiene solo.</>, <><b>Blue line:</b> what comes in each month. <b>Dashed red line:</b> what goes out to live. <b>Green band:</b> the surplus, which doesn't sit idle: {r.destinoSobra || "it's reinvested"}. Vertical lines mark changes. As long as blue stays above red, the plan pays for itself.</>)}</p>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
-          <ComposedChart data={mes} margin={{ top: 30, right: 96, left: 6, bottom: 0 }}>
+          <ComposedChart data={mes} margin={{ top: 30, right: 150, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} />
             <YAxis {...eje} tickFormatter={fmEje} width={104} />
@@ -289,13 +305,16 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             </ComposedChart></ResponsiveContainer>
           </div>; })}
         </div> : <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
-          <LineChart data={pat} margin={{ top: 10, right: 128, left: 0, bottom: 0 }}>
+          <LineChart data={pat} margin={{ top: 10, right: 180, left: 0, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} interval={1} />
             <YAxis {...eje} tickFormatter={fmEje} width={104} />
             <Tooltip content={<ChartTooltip formatter={tip} />} />
-            {sL.map((s) => <Line key={s.id} type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} dot={false}
-              label={(p) => (p.index === pat.length - 1 ? <text x={p.x + 6} y={p.y + 4} fill={s.color} fontSize={11}>{`${(s.nombre || "").slice(0, 12)} ${fmM(p.value)}`}</text> : null)} />)}
+            {sL.map((s) => <Line key={s.id} type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} dot={false} />)}
+            {/* 19-nov-2026 (Santiago: "mal alineado"): las etiquetas del final se
+                montaban unas sobre otras (BTG y rapcicredit terminan casi igual) y
+                se cortaban a la derecha. Se ordenan y se separan al menos 14 px. */}
+            <Customized component={EtiquetasFin} />
           </LineChart>
         </ResponsiveContainer></div></div>}
       </div>

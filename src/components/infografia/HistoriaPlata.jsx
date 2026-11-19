@@ -136,7 +136,7 @@ export default function HistoriaPlata({ r }) {
     const tipo = x.rentaMensual > 0 || x.teLlegaMes > 0 ? (x.clase === "inmueble" ? "mixto" : "renta") : "crece";
     destinos.push({
       key: "re" + x.i, tipo, nombre: x.nombre,
-      sub: x.valorHoy > 0.5 ? tx(`Ya vale ${fmM(x.valorHoy)} y le inviertes más`, `Already worth ${fmM(x.valorHoy)}, you add more`) : (x.anio > 1 ? tx(`Se invierte en ${anioCal(x.anio - 1)}`, `Invested in ${anioCal(x.anio - 1)}`) : ""),
+      sub: x.valorHoy > 0.5 ? tx(`Ya vale ${fmM(x.valorHoy)} y le inviertes más`, `Already worth ${fmM(x.valorHoy)}, you add more`) : (x.anio > 1 ? tx(`Se invierte en ${anioCal(x.anio)}`, `Invested in ${anioCal(x.anio)}`) : ""),
       monto: x.aporte, base: x.valorHoy || 0,
       rinde: x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) + tx(" al año", " a year") : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) + tx(" al año", " a year") : "—",
       pagaMes: x.rentaMensual || x.teLlegaMes || 0, desdeMes: x.rentaDesdeMes || 0, pagaEtq: tx("Te paga", "Pays you"),
@@ -149,7 +149,7 @@ export default function HistoriaPlata({ r }) {
     const serie = s.map((a, t) => { if (t > 0) ac += a.renta || 0; return { v: a.valor || 0, c: ac }; });
     const rentaMes = x.pagaRenta ? ((s[1]?.renta || 0) / 12) : 0;
     destinos.push({
-      key: x.id || "nu" + k, tipo: x.pagaRenta ? "renta" : "crece", nombre: x.nombre, sub: x.anio > 1 ? tx(`Se invierte en ${anioCal(x.anio - 1)}`, `Invested in ${anioCal(x.anio - 1)}`) : "",
+      key: x.id || "nu" + k, tipo: x.pagaRenta ? "renta" : "crece", nombre: x.nombre, sub: x.anio > 1 ? tx(`Se invierte en ${anioCal(x.anio)}`, `Invested in ${anioCal(x.anio)}`) : "",
       monto: x.monto, rinde: fmPct(x.rendPct, 1) + tx(" al año", " a year"),
       pagaMes: rentaMes, pagaEtq: tx("Te paga", "Pays you"), serie,
     });
@@ -245,9 +245,9 @@ export default function HistoriaPlata({ r }) {
   const COLB = { vende: INF.teja, igual: INF.gris, recibe: INF.gris, nuevo: INF.azul, aporte: INF.dorado, aporteLuego: INF.gris, canasta: INF.oliva, motor: INF.serie[6], usa: INF.gris, menos: INF.gris };
   const detalle = (a) => {
     if (a.tag === "vende") return <><b style={{ color: INF.tx }}>{tx("Por qué: ", "Why: ")}</b>{a.porque}</>;
-    if (a.tag === "recibe") return a.ap.anio === 1 ? tx(`Le pones ${fmM(a.ap.aporte)} de la venta`, `You add ${fmM(a.ap.aporte)} from the sale`) : tx(`En ${anioCal(a.ap.anio - 1)} le pones ${fmM(a.ap.aporte)}`, `In ${anioCal(a.ap.anio - 1)} you add ${fmM(a.ap.aporte)}`);
+    if (a.tag === "recibe") return a.ap.anio === 1 ? tx(`Le pones ${fmM(a.ap.aporte)} de la venta`, `You add ${fmM(a.ap.aporte)} from the sale`) : tx(`En ${anioCal(a.ap.anio)} le pones ${fmM(a.ap.aporte)}`, `In ${anioCal(a.ap.anio)} you add ${fmM(a.ap.aporte)}`);
     if (a.tag === "aporte") return tx(`Tenías ${fmM(a.antes)} + ${fmM(a.aporte)} de la venta`, `You had ${fmM(a.antes)} + ${fmM(a.aporte)} from the sale`);
-    if (a.tag === "aporteLuego") return tx(`En ${anioCal(a.anio - 1)} recibe ${fmM(a.aporte)}`, `In ${anioCal(a.anio - 1)} it gets ${fmM(a.aporte)}`);
+    if (a.tag === "aporteLuego") return tx(`En ${anioCal(a.anio)} recibe ${fmM(a.aporte)}`, `In ${anioCal(a.anio)} it gets ${fmM(a.aporte)}`);
     if (a.tag === "nuevo") return tx("Se compra con la plata de la venta", "Bought with the sale proceeds");
     if (a.tag === "usa") return tx(`De aquí salen ${fmM(a.usa)} para el plan`, `${fmM(a.usa)} comes out of here for the plan`);
     if (a.tag === "menos") return tx(`Tenías ${fmM(a.antes)} − ${fmM(a.usa)} que usaste en el plan`, `You had ${fmM(a.antes)} − ${fmM(a.usa)} used in the plan`);
