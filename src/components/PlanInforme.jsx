@@ -189,9 +189,9 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   // 19-nov-2026 (Santiago: "muchos problemas de diagramación"): con cifras
   // completas ($71.238.343.780) el número se salía de la ficha. Fichas más
   // anchas, tamaño que se ajusta al ancho y corte de línea como último recurso.
-  const Ficha = ({ l, v, s, col }) => <div style={{ ...card, marginBottom: 0, padding: 14, minWidth: 0 }}>
-    <div style={{ fontSize: 12, color: INF.tx2 }}>{l}</div>
-    <div style={{ fontSize: "clamp(18px, 1.5vw, 22px)", overflowWrap: "anywhere", fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", margin: "4px 0" }}>{v}</div>
+  const Ficha = ({ l, v, s, col, heroe, ancha }) => <div className={ancha ? "fp-ancha" : undefined} style={{ ...card, marginBottom: 0, padding: heroe ? 24 : 14, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: heroe ? "center" : "flex-start" }}>
+    <div style={{ fontSize: heroe ? 13 : 12, color: INF.tx2 }}>{l}</div>
+    <div style={{ fontSize: heroe ? "clamp(28px, 3.2vw, 40px)" : "clamp(18px, 1.5vw, 22px)", overflowWrap: "anywhere", fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", margin: "4px 0" }}>{v}</div>
     <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.4 }}>{s}</div>
   </div>;
 
@@ -202,13 +202,18 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
       <Indice />
       <Capitulo id="cap-veredicto" n={1} titulo={tx("El veredicto", "The verdict")} pregunta={tx("¿Qué tan bueno es este plan, en una línea?", "How good is this plan, in one line?")} />
       <div style={{ ...card, fontSize: 16, lineHeight: 1.55, color: INF.tx }}>{veredicto}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,210px),1fr))", gap: 10, marginBottom: 14 }}>
-        <Ficha l={tx(`Patrimonio en ${anioCal(10)}`, `Net worth in ${anioCal(10)}`)} v={fmM(fin.patrimonio / d(fin))} s={`${tx("hoy", "today")} ${fmM(f0.patrimonio)}${cagr != null ? tx(` · crece ${fmPct(cagr, 1)} al año`, ` · grows ${fmPct(cagr, 1)} a year`) : ""}`} />
+      {/* 19-nov-2026: un número protagonista (el patrimonio al final) grande a la
+          izquierda y el resto como contexto, en vez de seis fichas iguales en fila. */}
+      <style>{`.fp-veredicto { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 14px; } @media (min-width: 760px) { .fp-veredicto { grid-template-columns: minmax(260px, 1fr) 2fr; } .fp-veredicto-resto { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } .fp-ancha { grid-column: span 2; } }`}</style>
+      <div className="fp-veredicto">
+        <Ficha heroe l={tx(`Patrimonio en ${anioCal(10)}`, `Net worth in ${anioCal(10)}`)} v={fmM(fin.patrimonio / d(fin))} s={`${tx("hoy", "today")} ${fmM(f0.patrimonio)}${cagr != null ? tx(` · crece ${fmPct(cagr, 1)} al año`, ` · grows ${fmPct(cagr, 1)} a year`) : ""}`} />
+        <div className="fp-veredicto-resto" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,170px),1fr))", gap: 10 }}>
         <Ficha l={tx("Produce al mes", "Earns per month")} v={fmM(produceMes)} s={tx(`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`, `income ${fmM(rentaMes)} + compounding ${fmM(multiplicaMes)}`)} />
         <Ficha l={tx("Rendimiento del patrimonio", "Return on net worth")} v={fmPct(rendimiento, 1)} s={tx("anual, sobre lo que tienes", "per year, on what you own")} />
         <Ficha l={tx("Sale al mes", "Goes out per month")} v={fmM(saleMes)} s={tx("gastos + cuotas", "expenses + loan payments")} />
-        <Ficha l={entraMes - saleMes >= 0 ? tx("Sobra al mes y se reinvierte", "Monthly surplus, reinvested") : tx("Falta al mes", "Monthly shortfall")} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || tx("lo que entra menos lo que sale", "what comes in minus what goes out")) : tx("sale de tu liquidez", "comes out of your cash")} col={entraMes - saleMes >= 0 ? INF.txOk : INF.txBad} />
+        <Ficha ancha l={entraMes - saleMes >= 0 ? tx("Sobra al mes y se reinvierte", "Monthly surplus, reinvested") : tx("Falta al mes", "Monthly shortfall")} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || tx("lo que entra menos lo que sale", "what comes in minus what goes out")) : tx("sale de tu liquidez", "comes out of your cash")} col={entraMes - saleMes >= 0 ? INF.txOk : INF.txBad} />
         <Ficha l={tx("Le gana a la inflación", "Beats inflation")} v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={tx(`real al año · en ${ganaN} de ${gana.length} años`, `real per year · in ${ganaN} of ${gana.length} years`)} col={real != null && real >= 0 ? INF.txOk : INF.txBad} />
+        </div>
       </div>
 
       <Capitulo id="cap-plata" n={2} titulo={tx("Qué haces con tu plata", "What you do with your money")} pregunta={tx("Qué vendes, a dónde va cada peso y cómo crece cada inversión.", "What you sell, where every dollar goes and how each investment grows.")} />
@@ -244,13 +249,18 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             <Line type="stepAfter" dataKey="sale" name={tx("Sale", "Out")} stroke={INF.teja} strokeWidth={2} strokeDasharray="5 4" dot={false} label={finLabel("sale", `${tx("Sale", "Out")} ${fmM(mes[mes.length - 1]?.sale)}`, INF.teja)} />
           </ComposedChart>
         </ResponsiveContainer></div></div>
-        {marcas.length > 0 && <ol style={{ listStyle: "none", padding: 0, margin: "8px 0 4px", display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,260px),1fr))", gap: "6px 16px" }}>
-          {marcas.map((m, i) => <li key={m.anio} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.5, color: INF.tx }}>
-            <span style={{ width: 18, height: 18, borderRadius: "50%", background: INF.navy, color: "#fff", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{i + 1}</span>
-            <span><b>{anioTxt(m.anio)}</b> · <span style={{ color: INF.tx2 }}>{ev.filter((x) => x.anio === m.anio).map((x) => x.texto).join(" · ")}</span></span>
+        {/* 19-nov-2026 (Santiago: "muchos problemas de diagramación"): los hitos
+            iban en tres columnas con textos largos cortados a mitad de frase. Ahora
+            es una línea de tiempo: número, año en su columna y cada cambio en su
+            renglón. */}
+        {marcas.length > 0 && <ol style={{ listStyle: "none", padding: 0, margin: "12px 0 4px", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,400px),1fr))", gap: "10px 24px" }}>
+          {marcas.map((m, i) => <li key={m.anio} style={{ display: "grid", gridTemplateColumns: "20px 44px 1fr", gap: "0 8px", alignItems: "start", fontSize: 13, lineHeight: 1.45, color: INF.tx, paddingTop: 8, borderTop: `1px solid ${INF.linea}` }}>
+            <span style={{ width: 20, height: 20, borderRadius: "50%", background: INF.navy, color: "#fff", fontSize: 11, fontWeight: 700, display: "inline-flex", alignItems: "center", justifyContent: "center", marginTop: 1 }}>{i + 1}</span>
+            <b style={{ fontVariantNumeric: "tabular-nums" }}>{anioTxt(m.anio)}</b>
+            <span style={{ display: "grid", gap: 2, color: INF.tx2, minWidth: 0 }}>{ev.filter((x) => x.anio === m.anio).map((x, k) => <span key={k}>{x.texto}</span>)}</span>
           </li>)}
         </ol>}
-        {apretado && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 4 }}>{tx("Año más apretado:", "Tightest year:")} <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? tx(`sobran ${fmM(apretado.s)}`, `${fmM(apretado.s)} surplus`) : tx(`faltan ${fmM(-apretado.s)}`, `${fmM(-apretado.s)} short`)} {tx("al mes", "a month")} ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} {tx("de cobertura", "coverage")})</b>.</div>}
+        {apretado && <div style={{ fontSize: 12.5, color: INF.tx2, marginTop: 12, paddingTop: 8, borderTop: `1px solid ${INF.linea}` }}>{tx("Año más apretado:", "Tightest year:")} <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? tx(`sobran ${fmM(apretado.s)}`, `${fmM(apretado.s)} surplus`) : tx(`faltan ${fmM(-apretado.s)}`, `${fmM(-apretado.s)} short`)} {tx("al mes", "a month")} ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} {tx("de cobertura", "coverage")})</b>.</div>}
       </div>
       {r.desglose && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
         {[[tx("Lo que entra cada mes", "What comes in each month"), tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`), r.desglose.entra, INF.azul, f1.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started."), r.desglose.sale, INF.teja, f1.gastos / 12]].map(([t, l, lista, col, tot]) => {

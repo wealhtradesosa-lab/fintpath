@@ -232,7 +232,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 {activo && (() => {
                   // 19-nov-2026: la renta de este activo ya escrita en Lo que viene.
                   // Se ofrece juntarla aquí (una sola renta) o decir que es otra.
-                  const futs = rentasFuturasDelActivo(cfg, a);
+                  const futs = rentasFuturasDelActivo(cfg, a, r.activos);
                   if (!futs.length) return null;
                   // 19-nov-2026 (Santiago: "no ponga el ingreso si ya lo pusiste en la
                   // sección anterior"). Si aquí todavía no hay renta, no se vuelve a
@@ -260,7 +260,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     </div>
                   </div>);
                 })()}
-                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a).length > 0} /></div>}
+                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a, r.activos).length > 0} /></div>}
               </div>
             );
           })}
