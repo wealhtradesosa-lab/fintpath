@@ -750,6 +750,19 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.cuota = cuota; f.gastosBase = gastos;
     f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * Math.pow(1 + inf, t) }));
     f.gastosQueSeVan = seVan.filter((g) => t >= g.desde).map((g) => ({ nombre: g.nombre, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1) }));
+    // 20-nov-2026 (Santiago: "¿por qué 2026 detalla más los ingresos y gastos
+    // que los otros años?"). Partida por partida en cada año: cada gasto de
+    // Egresos con su inflación (sin los que ya se acabaron), cada ingreso de
+    // trabajo con su crecimiento y la cuota de cada deuda que sigue.
+    const vanG = new Set(seVan.filter((g) => t >= g.desde).map((g) => g.key));
+    f.gastosItems = gastosHoy.filter((g) => !g.neteado).map((g) => ({ nombre: g.nombre, nota: g.cat, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1), seFue: vanG.has(g.key) }));
+    const vanI = new Set(ingSeVan.filter((x) => t >= x.desde).map((x) => x.key));
+    f.ingresosLab = ingresosHoy.filter((x) => !x.pasivo && !vanI.has(x.key)).map((x) => ({ nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + gIng, t - 1) }));
+    {
+      const vivas = deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d) && n(d.pg ?? d.pago) > 0);
+      const totPg = vivas.reduce((s2, d) => s2 + n(d.pg ?? d.pago) * fxA(d), 0);
+      f.cuotasItems = cuota > 0.5 && totPg > 0 ? vivas.map((d) => ({ nombre: d.n || d.nombre || tx("Deuda", "Debt"), anual: cuota * n(d.pg ?? d.pago) * fxA(d) / totPg })) : [];
+    }
     const fr = Math.pow(1 + gIng, t - 1);
     f.porActivo = [
       ...todos.map((a) => {

@@ -948,6 +948,11 @@ describe("futuro10 · lo que sale, año por año (19-nov-2026)", () => {
       expect(suma).toBeCloseTo(f.gastos, 0);
     }
     expect(r.filas[3].gastosFut.map((x) => x.nombre)).toEqual(["Universidad"]);
+    // 20-nov-2026: partida por partida cada año
+    const f5 = r.filas[5];
+    expect(f5.gastosItems.map((x) => x.nombre)).toEqual(["Mercado"]);
+    expect(f5.gastosItems[0].anual).toBeGreaterThan(5e6 * 12); // con inflación
+    for (const f of r.filas.slice(1)) expect(f.cuotasItems.reduce((s, x) => s + x.anual, 0)).toBeCloseTo(f.cuota, 0);
     expect(r.filas[2].gastosFut).toHaveLength(0);
   });
 });
