@@ -956,3 +956,13 @@ describe("futuro10 · lo que sale, año por año (19-nov-2026)", () => {
     expect(r.filas[2].gastosFut).toHaveLength(0);
   });
 });
+
+describe("futuro10 · los gastos del flujo no descuentan el abono a capital (20-nov-2026)", () => {
+  it("año 1: gastos = gastos de Egresos + cuota completa, sin «Ajustes»", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 500e6 }], ingresos: [], gas: { V: [{ n: "Arriendo", m: 16e6 }] }, deu: [{ id: "h", n: "hipoteca", mt: 300e6, pg: 5e6, ts: 12 }] };
+    const r = proyectarFuturo10(u, {});
+    expect(r.filas[1].gastos / 12).toBeCloseTo(16e6 * 1.04 ** 0 + 5e6, -3);
+    expect(r.desglose.sale.some((x) => /Ajustes/.test(x.nombre))).toBe(false);
+    expect(r.filas[2].gastosItems[0].nombre).toBe("Arriendo");
+  });
+});

@@ -480,7 +480,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const gastosSinVendidos = Object.fromEntries(Object.entries(user.gastos || user.gas || {}).map(([k, v]) => [k, sinVendidos(v, `${k}::`)]));
   const bOp = vendidosIds.size ? calcularBase({ ...sinImp, inv: (user.inv || []).filter((a) => !vendidosIds.has(a?.id)), ingresos: sinVendidos(user.ingresos, "i:"), gastos: gastosSinVendidos, gas: gastosSinVendidos, deu: deudasVivas, deudas: deudasVivas }, {}) : bDeuda;
   let ingresos = (bOp.ia + bOp.ip) * 12 - rentaVendida;
-  let gastos = (bOp.ob - bOp.sd) * 12;
+  // 20-nov-2026 — Desde el 13-nov `ob` = gastos + INTERESES (para el nivel) y
+  // `sd` = cuota COMPLETA, así que `ob − sd` dejaba los gastos por debajo en el
+  // abono a capital de cada deuda: el plan mostraba de menos lo que sale cada
+  // mes (y de más lo que sobra). Los gastos del flujo son `g` (sin cuotas; la
+  // cuota completa se suma aparte año a año).
+  let gastos = (bOp.g != null ? bOp.g : bOp.ob - bOp.sd) * 12;
   // 24-oct-2026 (Santiago: "¿cómo quita uno items de gastos que ya no van?
   // por ejemplo mantenimientos"). Gastos de hoy que se acaban en el escenario
   // (cfg.gastosTerminan: { "cat::índice": año desde el que ya no se paga }).
