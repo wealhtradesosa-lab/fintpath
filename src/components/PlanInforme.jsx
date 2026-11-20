@@ -287,6 +287,26 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
       <SelAnio />
       <IndicadoresAnio />
       <MesCompleto r={r} card={card} h3={h3} lead={lead} anio={aSel} lista={listaAnio} />
+      {/* 20-nov-2026 (Santiago: "esto sobra si ya los gráficos muestran ingresos y
+          gastos"). Las listas repetían el Sankey; quedan plegadas justo debajo,
+          para quien quiera ver cada partida (el Sankey agrupa las pequeñas). */}
+      {listaAnio && <details style={{ margin: "-4px 0 14px" }}>
+        <summary style={{ cursor: "pointer", fontSize: 13, color: INF.tx2, padding: "6px 2px" }}>{tx(`Ver la lista completa de ${anioCal(aSel)}, partida por partida`, `See the full ${anioCal(aSel)} list, line by line`)}</summary>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14, marginTop: 10 }}>
+        {[[tx("Lo que entra cada mes", "What comes in each month"), aSel === 1 ? tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`) : tx(`En ${anioCal(aSel)}, al mes, partida por partida: tu trabajo, la renta de cada activo y los ingresos que ya empezaron.`, `In ${anioCal(aSel)}, per month: your work, each asset's income and incomes that have started.`), listaAnio.entra, INF.azul, fy.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), aSel === 1 ? tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started.") : tx(`En ${anioCal(aSel)}, al mes, partida por partida: tus gastos de Egresos con la inflación de cada año, los gastos futuros que corren ese año y la cuota de cada deuda que sigue.`, `In ${anioCal(aSel)}, per month: your expenses (with inflation), future expenses running that year, those that ended and loan payments.`), listaAnio.sale, INF.teja, fy.gastos / 12]].map(([t, l, lista, col, tot]) => {
+          const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
+          return <div key={t} style={card}>
+            <h3 style={h3}>{t} · {fmM(tot)}</h3>
+            <p style={lead}>{l}</p>
+            {(verTodo[t] ? lista : lista.slice(0, 10)).map((x, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(100px,42%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
+              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 12, color: INF.tx2 }}>{x.nota}</span>}</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 12, width: `${Math.max(1, Math.abs(x.mensual) / mx * 60)}%`, background: x.mensual < 0 ? INF.gris : col, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(x.mensual)}</span></span>
+            </div>)}
+            {lista.length > 10 && <button onClick={() => setVerTodo((v) => ({ ...v, [t]: !v[t] }))} style={{ marginTop: 8, padding: "6px 12px", borderRadius: 999, border: `1px solid ${INF.linea}`, background: "transparent", color: INF.tx2, fontSize: 12, cursor: "pointer" }}>{verTodo[t] ? tx("Ver solo las 10 más grandes", "Show only the 10 largest") : tx(`Ver las ${lista.length - 10} restantes`, `Show the other ${lista.length - 10}`)}</button>}
+          </div>;
+        })}
+        </div>
+      </details>}
       <Toggle />
       <div style={card}>
         <h3 style={h3}>{tx("Mes a mes: ¿alcanza para vivir? Así se comporta el plan en el tiempo", "Month by month: is it enough to live on? How the plan holds up over time")}</h3>
@@ -318,20 +338,6 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         </ol>}
         {apretado && <div style={{ fontSize: 12.5, color: INF.tx2, marginTop: 12, paddingTop: 8, borderTop: `1px solid ${INF.linea}` }}>{tx("Año más apretado:", "Tightest year:")} <b style={{ color: apretado.s >= 0 ? INF.tx : INF.txBad }}>{anioTxt(apretado.f.anio)}, {apretado.s >= 0 ? tx(`sobran ${fmM(apretado.s)}`, `${fmM(apretado.s)} surplus`) : tx(`faltan ${fmM(-apretado.s)}`, `${fmM(-apretado.s)} short`)} {tx("al mes", "a month")} ({fmPct(apretado.f.gastos > 0 ? apretado.f.ingresos / apretado.f.gastos * 100 : 0, 0)} {tx("de cobertura", "coverage")})</b>.</div>}
       </div>
-      {listaAnio && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,420px),1fr))", gap: 14 }}>
-        {[[tx("Lo que entra cada mes", "What comes in each month"), aSel === 1 ? tx(`En ${anioCal(1)}, partida por partida. Las rentas de tus inmuebles van netas de sus costos.`, `In ${anioCal(1)}, line by line. Rental income is net of property costs.`) : tx(`En ${anioCal(aSel)}, al mes, partida por partida: tu trabajo, la renta de cada activo y los ingresos que ya empezaron.`, `In ${anioCal(aSel)}, per month: your work, each asset's income and incomes that have started.`), listaAnio.entra, INF.azul, fy.ingresos / 12], [tx("Lo que sale cada mes", "What goes out each month"), aSel === 1 ? tx("En el año 1: tus gastos de Egresos, las cuotas de las deudas que siguen y los gastos futuros que ya empezaron.", "In year 1: your expenses, payments on remaining debts and future expenses that have already started.") : tx(`En ${anioCal(aSel)}, al mes, partida por partida: tus gastos de Egresos con la inflación de cada año, los gastos futuros que corren ese año y la cuota de cada deuda que sigue.`, `In ${anioCal(aSel)}, per month: your expenses (with inflation), future expenses running that year, those that ended and loan payments.`), listaAnio.sale, INF.teja, fy.gastos / 12]].map(([t, l, lista, col, tot]) => {
-          const mx = Math.max(1, ...lista.map((x) => Math.abs(x.mensual)));
-          return <div key={t} style={card}>
-            <h3 style={h3}>{t} · {fmM(tot)}</h3>
-            <p style={lead}>{l}</p>
-            {(verTodo[t] ? lista : lista.slice(0, 10)).map((x, i) => <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(100px,42%) 1fr", gap: 8, alignItems: "center", fontSize: 12.5, padding: "3px 0" }}>
-              <span style={{ minWidth: 0 }}><span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre}</span>{x.nota && <span style={{ fontSize: 12, color: INF.tx2 }}>{x.nota}</span>}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}><span style={{ height: 12, width: `${Math.max(1, Math.abs(x.mensual) / mx * 60)}%`, background: x.mensual < 0 ? INF.gris : col, borderRadius: 3 }} /><span style={{ whiteSpace: "nowrap", color: INF.tx2 }}>{fmM(x.mensual)}</span></span>
-            </div>)}
-            {lista.length > 10 && <button onClick={() => setVerTodo((v) => ({ ...v, [t]: !v[t] }))} style={{ marginTop: 8, padding: "6px 12px", borderRadius: 999, border: `1px solid ${INF.linea}`, background: "transparent", color: INF.tx2, fontSize: 12, cursor: "pointer" }}>{verTodo[t] ? tx("Ver solo las 10 más grandes", "Show only the 10 largest") : tx(`Ver las ${lista.length - 10} restantes`, `Show the other ${lista.length - 10}`)}</button>}
-          </div>;
-        })}
-      </div>}
       {reinvierteAnio.length > 0 && <div style={{ ...card, borderColor: INF.dorado }}>
         <h3 style={h3}>{tx(`Lo que rinde y no te llega al mes · ${anioCal(aSel)}`, `Returns that don't reach you monthly · ${anioCal(aSel)}`)}</h3>
         <p style={lead}>{esUS()
