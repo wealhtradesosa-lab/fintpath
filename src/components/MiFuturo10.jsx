@@ -576,8 +576,20 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
         return (
           <div key={i} className="fp10-campos" style={g}>
             <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} placeholder={tx("Ej.: universidad de los hijos", "e.g. kids' college")} onChange={(e) => upG(i, { nombre: e.target.value })} /></label>
-            <label style={lbl}>{esUS() ? tx("Al año ($, dólares de hoy)", "Per year ($, today's dollars)") : tx("Al año ($, pesos de hoy)", "Per year ($, today's pesos)")}<NumberInput style={inp} value={x.anual ?? ""} onChange={(v) => upG(i, { anual: v })} />
-              <span style={{ fontSize: 12 }}>{tx("Sube cada año con la inflación.", "It grows with inflation every year.")}</span></label>
+            {/* 21-nov-2026 (Santiago: "debería poder uno poner el valor mensual o anual, como
+                se lo sepa"). Se guarda siempre `anual` (el motor no cambia); `periodo` solo
+                dice cómo lo escribió el usuario: en "mes" la casilla muestra anual ÷ 12 y
+                guarda lo escrito × 12. */}
+            <div style={lbl}>
+              <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+                <button type="button" style={btn(x.periodo === "mes")} onClick={() => upG(i, { periodo: "mes" })}>{tx("Al mes", "Monthly")}</button>
+                <button type="button" style={btn(x.periodo !== "mes")} onClick={() => upG(i, { periodo: "año" })}>{tx("Al año", "Yearly")}</button>
+              </div>
+              {esUS() ? tx(x.periodo === "mes" ? "Al mes ($, dólares de hoy)" : "Al año ($, dólares de hoy)", x.periodo === "mes" ? "Per month ($, today's dollars)" : "Per year ($, today's dollars)") : tx(x.periodo === "mes" ? "Al mes ($, pesos de hoy)" : "Al año ($, pesos de hoy)", x.periodo === "mes" ? "Per month ($, today's pesos)" : "Per year ($, today's pesos)")}
+              <NumberInput style={inp}
+                value={x.periodo === "mes" ? (x.anual === "" || x.anual == null ? "" : Math.round((Number(x.anual) || 0) / 12)) : (x.anual ?? "")}
+                onChange={(v) => upG(i, { anual: x.periodo === "mes" ? (v === "" || v == null ? "" : (Number(v) || 0) * 12) : v })} />
+              <span style={{ fontSize: 12 }}>{tx("Sube cada año con la inflación.", "It grows with inflation every year.")}</span></div>
             <label style={lbl}>{tx("Empieza", "Starts")}{selAnio(x.desde || 1, (v) => upG(i, { desde: v || 1 }))}</label>
             <div style={lbl}>{tx("¿Cuántos años?", "For how many years?")}
               <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -586,7 +598,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
               </div>
               {n != null && <select style={{ ...inp, marginTop: 6 }} value={n} onChange={(e) => upG(i, { anios: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{enAnios(y)}</option>)}</select>}
             </div>
-            {(Number(x.anual) || 0) > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>{tx(`Sale ${plata(Number(x.anual))} al año (${plata(Math.round(Number(x.anual) / 12))} al mes) ${cuando}${n != null ? `, durante ${enAnios(n)}` : ", siempre"}.`, `${plata(Number(x.anual))} a year goes out (${plata(Math.round(Number(x.anual) / 12))} a month) ${cuando}${n != null ? `, for ${enAnios(n)}` : ", ongoing"}.`)}</div>}
+            {(Number(x.anual) || 0) > 0 && <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.am }}>{tx(x.periodo === "mes" ? `Sale ${plata(Math.round(Number(x.anual) / 12))} al mes (${plata(Number(x.anual))} al año) ${cuando}${n != null ? `, durante ${enAnios(n)}` : ", siempre"}.` : `Sale ${plata(Number(x.anual))} al año (${plata(Math.round(Number(x.anual) / 12))} al mes) ${cuando}${n != null ? `, durante ${enAnios(n)}` : ", siempre"}.`, `${plata(Number(x.anual))} a year goes out (${plata(Math.round(Number(x.anual) / 12))} a month) ${cuando}${n != null ? `, for ${enAnios(n)}` : ", ongoing"}.`)}</div>}
             <button style={btn(false)} onClick={() => put("gastos", (f.gastos || []).filter((_, j) => j !== i))}>{tx("Quitar", "Remove")}</button>
           </div>
         );
