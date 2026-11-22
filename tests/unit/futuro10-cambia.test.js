@@ -106,3 +106,35 @@ describe("vencimiento cargado en Patrimonio", () => {
     expect(r2.liberados).toHaveLength(0);
   });
 });
+
+// 22-nov-2026 (Santiago): fecha de fin opcional en ingresos y gastos, leída por el plan.
+import { finalesDeDatos, ingresosSueltosHoy, gastosLista } from "../../src/lib/futuro10.js";
+describe("fecha de fin en Ingresos y Egresos", () => {
+  const Y = new Date().getFullYear();
+  const u = () => ({ trm: 4000, inflacionPct: 4, inv: [{ id: "c", n: "Cash", liquido: true, va: 50e6 }],
+    ingresos: [{ id: "con", nombre: "Contrato asesoría", mensual: 10e6, frecuencia: "mensual", finAnio: Y + 2, finMes: 3 }, { id: "s", nombre: "Salario", mensual: 20e6, frecuencia: "mensual" }],
+    gas: { Educación: [{ id: "col", c: "Colegio", mensual: 3e6, frecuencia: "mensual", finAnio: Y + 3, finMes: 11 }], Vida: [{ id: "v", c: "Vida", mensual: 8e6, frecuencia: "mensual" }] } });
+  it("calcula el año del plan desde el que ya no cuenta", () => {
+    const f = finalesDeDatos(u());
+    expect(f.ingresos["i:id:con"]).toBe(3);       // termina en marzo de Y+2 → no cuenta desde el año 3
+    expect(f.gastos["Educación::id:col"]).toBe(5); // termina en noviembre de Y+3 (año 4) → no cuenta desde el 5
+  });
+  it("el plan lo aplica solo y «sigue» lo anula", () => {
+    const base = proyectarFuturo10({ ...u(), ingresos: u().ingresos.map((i) => ({ ...i, finAnio: undefined })), gas: { ...u().gas, Educación: [{ id: "col", c: "Colegio", mensual: 3e6, frecuencia: "mensual" }] } }, {});
+    const r = proyectarFuturo10(u(), {});
+    expect(r.filas[2].ingresos).toBeCloseTo(base.filas[2].ingresos, -3);
+    expect(base.filas[3].ingresos - r.filas[3].ingresos).toBeGreaterThan(10e6 * 12);
+    expect(r.filas[4].gastos).toBeCloseTo(base.filas[4].gastos, -3);
+    expect(base.filas[5].gastos - r.filas[5].gastos).toBeGreaterThan(3e6 * 12);
+    const r2 = proyectarFuturo10(u(), { ingresosTerminan: { "i:id:con": "sigue" }, gastosTerminan: { "Educación::id:col": "sigue" } });
+    expect(r2.filas[5].ingresos).toBeCloseTo(base.filas[5].ingresos, -3);
+    expect(r2.filas[5].gastos).toBeCloseTo(base.filas[5].gastos, -3);
+  });
+  it("las listas del paso 1 lo muestran como dato de la página", () => {
+    const i = ingresosSueltosHoy(u(), {}).find((x) => x.key === "i:id:con");
+    expect(i).toMatchObject({ acabaAnio: 3, finDeDatos: true, finAnio: Y + 2 });
+    const g = gastosLista(u(), {}).find((x) => x.key === "Educación::id:col");
+    expect(g).toMatchObject({ acabaAnio: 5, finDeDatos: true });
+    expect(ingresosSueltosHoy(u(), { ingresosTerminan: { "i:id:con": "sigue" } }).find((x) => x.key === "i:id:con").acabaAnio).toBeNull();
+  });
+});

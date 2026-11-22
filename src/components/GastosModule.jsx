@@ -1,4 +1,5 @@
 import DosFormasCargar from "./DosFormasCargar.jsx";
+import FechaFin, { finParaGuardar } from "./FechaFin.jsx";
 import { useState } from "react";
 import ExtraGastoModal from "./ExtraGastoModal";
 import { TRM_PROVISIONAL, trmUsable } from "../lib/trm.js";
@@ -473,6 +474,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
         desdeMes: (Number(form.desdeMes) || 1) !== 1 ? Number(form.desdeMes) : undefined,
         hastaMes: (Number(form.hastaMes) || 12) !== 12 ? Number(form.hastaMes) : undefined,
         vigenciaModo: form.vigenciaModo || undefined,
+        ...finParaGuardar(form),
         montosMensuales: frecuencia === "variable" ? (form.montosMensuales || new Array(12).fill(0)) : undefined,
         owner: form.owner || "",
         fiscalCode: form.fiscalCode || undefined,
@@ -554,7 +556,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
       // al guardar pisaba la moneda original.
       partes: Array.isArray(item.partes) && item.partes.length ? item.partes.map((x) => ({ nota: x.nota, monto: String(x.monto) })) : null,
       prepago: item.prepago && Number(item.prepago.año) === new Date().getFullYear() ? { ...item.prepago, monto: String(item.prepago.monto) } : null,
-      activoId: item.activoId || "", moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
+      activoId: item.activoId || "", moneda: item.moneda || "COP", freq: freqLegacy, frecuencia, mesPago, desdeMes, hastaMes, vigenciaModo: item.vigenciaModo, finAnio: item.finAnio ? String(item.finAnio) : "", finMes: item.finMes ? String(item.finMes) : "", montosMensuales: getMontosMensuales(item), owner: item.owner||"", fiscalCode: item.fiscalCode || "", causalidad: item.causalidad || "", montoModo: item.montoModo || "fijo", capital: item.capital ? String(item.capital) : "", tasa: item.tasa ? String(item.tasa) : "", tasaModo: item.tasaModo || "mensual" });
     setModoIngreso("porPago"); // default al editar: mostrar el monto por pago
     // UX iter 4 (18-jul-2026 noche): detectar template correcto del item existente
     setTemplateElegido(detectarTemplate(item));
@@ -1343,6 +1345,7 @@ export default function GastosModule({ gastos, onUpdate, fmt, onImport, owners, 
                     />
                   </div>
                   )}
+                  <FechaFin que="gasto" finAnio={form.finAnio} finMes={form.finMes} tokens={T} onChange={(patch) => setForm((p) => ({ ...p, ...patch }))} />
                 </>
               ) : (
                 <div style={{ gridColumn: "1/-1", background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.2)", borderRadius: 10, padding: "12px 14px" }}>

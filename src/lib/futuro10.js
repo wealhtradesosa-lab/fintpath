@@ -1183,13 +1183,38 @@ export function vencimientosPatrimonio(user = {}, N = 10) {
   });
   return out;
 }
-/** cfg con los vencimientos de Patrimonio aplicados donde el escenario no decidió nada. */
+/**
+ * 22-nov-2026 (Santiago: "poder poner en cualquier gasto, ingreso o inversión los
+ * periodos que duran, o si no tiene caducidad… así el sistema siempre sabe para
+ * las proyecciones y el usuario no repite información"). Ingresos y Egresos
+ * pueden llevar «termina en mes/año» (finAnio/finMes). Año del plan desde el que
+ * ya no cuenta: si termina en el primer semestre, ese mismo año; si en el
+ * segundo, el siguiente. Lo de este año: si ya pasó, desde ya; si no, desde el año 2.
+ */
+function anioPlanFin(x, N) {
+  if (!x || !(n(x.finAnio) > 0)) return null;
+  const d = new Date(), hoy = d.getFullYear(), mesHoy = d.getMonth() + 1;
+  const t = Math.round(n(x.finAnio)) - hoy + 1, m = Math.max(1, Math.min(12, Math.round(n(x.finMes)) || 12));
+  if (t < 1) return 1;
+  const desde = t === 1 ? (m < mesHoy ? 1 : 2) : (m >= 7 ? t + 1 : t);
+  return desde > N ? null : desde;
+}
+export function finalesDeDatos(user = {}, N = 10) {
+  const ingresos = {}, gastos = {};
+  (user.ingresos || []).forEach((i, k) => { const t = i && i.sim !== false ? anioPlanFin(i, N) : null; if (t) ingresos[claveIngreso(user.ingresos, k)] = t; });
+  Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => { const t = g && g.sim !== false ? anioPlanFin(g, N) : null; if (t) gastos[claveGasto(cat, items, idx)] = t; }));
+  return { ingresos, gastos };
+}
+/** cfg con las fechas cargadas en Patrimonio, Ingresos y Egresos aplicadas donde el escenario no decidió nada. */
 export function conVencimientos(cfg = {}, user = {}) {
   if (cfg._conVenc) return cfg;
-  const v = vencimientosPatrimonio(user, n(cfg.anios) || 10), dec = { ...(cfg.decisiones || {}) };
-  let cambio = false;
-  Object.entries(v).forEach(([id, t]) => { if (t <= (n(cfg.anios) || 10) && !dec[id]) { dec[id] = { accion: "termina", desde: t, dePatrimonio: true }; cambio = true; } });
-  return cambio ? { ...cfg, decisiones: dec, _conVenc: true } : cfg;
+  const N = n(cfg.anios) || 10;
+  const v = vencimientosPatrimonio(user, N), dec = { ...(cfg.decisiones || {}) };
+  Object.entries(v).forEach(([id, t]) => { if (!dec[id]) dec[id] = { accion: "termina", desde: t, dePatrimonio: true }; });
+  // «sigue» = el escenario dice que NO se acaba aunque el dato tenga fecha de fin.
+  const fin = finalesDeDatos(user, N);
+  const une = (propio = {}, deDatos = {}) => { const out = { ...deDatos, ...propio }; Object.keys(out).forEach((k) => { if (out[k] === "sigue") delete out[k]; }); return out; };
+  return { ...cfg, decisiones: dec, ingresosTerminan: une(cfg.ingresosTerminan, fin.ingresos), gastosTerminan: une(cfg.gastosTerminan, fin.gastos), _conVenc: true };
 }
 /** Activos que se venden o vencen en un año siguiente: { id: año 2..N }. */
 export function leerTerminan(cfg = {}, N = 10) {
@@ -1374,7 +1399,7 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
   // 25-oct-2026: lo que se va con una venta o se acaba en este plan se marca
   // (y no suma) para que el total de Hoy cuadre con lo que de verdad sigue.
   const fuera = vinculadosQueSeVan(user, cfg);
-  const term = cfg.ingresosTerminan || {};
+  const term = conVencimientos(cfg, userIn).ingresosTerminan || {}, propio = cfg.ingresosTerminan || {};
   const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
   return (user.ingresos || []).map((i, k) => {
     if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
@@ -1383,7 +1408,7 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
     const nota = notaVigencia(o, MES, "Ingresos", "Income", true);
     const key = claveIngreso(user.ingresos, k);
     const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : term[key] ? "acaba" : null;
-    return { key, seVa, acabaAnio: term[key] || null, nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
+    return { key, seVa, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propio[key] == null, finAnio: n(i.finAnio) || null, nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
 }
 
@@ -1498,7 +1523,7 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
   const cfg = migrarClaves(cfgIn, userIn);
   const base = paraPlan(userIn), user = ajustarGastos(base, cfg);
   const trm = n(user.trm) || 4200, fx = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
-  const term = cfg.gastosTerminan || {}, fuera = vinculadosQueSeVan(user, cfg);
+  const term = conVencimientos(cfg, userIn).gastosTerminan || {}, propioG = cfg.gastosTerminan || {}, fuera = vinculadosQueSeVan(user, cfg);
   const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
   const nomAct = (id) => { const a = (user.inv || []).find((x) => x && x.id === id); return a ? a.n || a.nombre : null; };
   const out = [];
@@ -1509,7 +1534,7 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
     const enEgresos = montoPromedioMensual(o) * fx(o), mensual = montoPromedioMensual(g) * fx(g);
     if (!(enEgresos > 0.5) && !g._corregido) return;
     const seVa = fuera.has(key) || (g.activoId && vendidos.has(g.activoId)) ? "venta" : term[key] ? "acaba" : null;
-    out.push({ key, cat, nombre: g.c || g.n || g.nombre || cat, enEgresos, mensual, corregido: !!g._corregido, seVa, acabaAnio: term[key] || null, deActivo: g.activoId ? nomAct(g.activoId) : null });
+    out.push({ key, cat, nombre: g.c || g.n || g.nombre || cat, enEgresos, mensual, corregido: !!g._corregido, seVa, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propioG[key] == null, finAnio: n(g.finAnio) || null, deActivo: g.activoId ? nomAct(g.activoId) : null });
   }));
   return out.sort((a, b) => b.mensual - a.mensual);
 }
