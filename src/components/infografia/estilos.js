@@ -42,6 +42,9 @@ export const CSS_INFOGRAFIA = `
 @keyframes fpi-crecer-h { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .fpi-barra { transform-box: fill-box; transform-origin: bottom; animation: fpi-crecer .5s cubic-bezier(.2,.8,.2,1) both; }
 .fpi-banda { transition: opacity .2s ease; }
+.fpi-caneca { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: -6px -8px -6px 0; border: none; border-radius: 8px; background: transparent; color: var(--fp-txt3, #8a8f98); cursor: pointer; opacity: .55; transition: opacity .15s ease, color .15s ease, background .15s ease; }
+article:hover .fpi-caneca, .fpi-caneca:focus-visible { opacity: 1; }
+.fpi-caneca:hover { color: var(--fp-neg, #e5484d); background: rgba(229,72,77,.1); }
 .fpi-sankey:hover .fpi-banda { opacity: .35; }
 .fpi-sankey .fpi-banda:hover { opacity: 1; }
 .fpi-bloque { transition: opacity .2s ease; }
