@@ -57,3 +57,27 @@ describe("paso 1: Cambia (renta nueva; 0 = deja de rentar)", () => {
     expect(x.vende).toBe(false);
   });
 });
+
+// 22-nov-2026 (Santiago: "esta inversión dura 2 años: me devuelven el capital y dejo de recibir la renta").
+describe("paso 1: se vende o vence en un año siguiente", () => {
+  const u = () => ({ trm: 4000, inflacionPct: 4,
+    inv: [{ id: "rc", n: "Rapicredit fondeo", tipo: "otro", va: 3288e6 }, { id: "c", n: "Cash", liquido: true, va: 100e6 }],
+    ingresos: [{ nombre: "Rapicredit", tipo: "pasivo", activoId: "rc", mensual: 54.8e6, frecuencia: "mensual" }, { nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }],
+    gas: { Vida: [{ c: "Vida", mensual: 40e6, frecuencia: "mensual" }] } });
+  it("vence en el año 3: renta hasta el año 2, capital vuelve y el patrimonio no se pierde", () => {
+    const base = proyectarFuturo10(u(), {});
+    const r = proyectarFuturo10(u(), { decisiones: { rc: { accion: "termina", desde: 3 } } });
+    expect(r.filas[2].ingresos).toBeCloseTo(base.filas[2].ingresos, -3);
+    expect(base.filas[3].ingresos - r.filas[3].ingresos).toBeGreaterThan(54.8e6 * 12);
+    expect(r.filas[2].porActivo.some((x) => x.id === "rc" && x.valor > 0)).toBe(true);
+    expect(r.filas[3].porActivo.some((x) => x.id === "rc")).toBe(false);
+    // el capital no desaparece: el patrimonio del año 3 queda cerca del año 2 (no cae 3.288 M)
+    expect(r.filas[3].patrimonio).toBeGreaterThan(r.filas[2].patrimonio * 0.98);
+    expect(r.alertas.some((a) => a.tipo === "activo_termina" && a.anio === 3)).toBe(true);
+    expect(r.bolsaDetalle.vendido).toBe(0); // no es una venta de hoy
+  });
+  it("inversionesHoy lo expone y no lo marca como vendido hoy", () => {
+    const x = inversionesHoy(u(), { decisiones: { rc: { accion: "termina", desde: 3 } } }).find((y) => y.id === "rc");
+    expect(x.termina).toBe(3); expect(x.vende).toBe(false);
+  });
+});
