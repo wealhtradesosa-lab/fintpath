@@ -21,6 +21,7 @@
 //   inflación). Al final, plegada, la tabla año por año. El orden de arriba es el viejo.
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
+import { tamanoCifra } from "../lib/infografia.js";
 import { anioCal } from "../lib/futuro10.js";
 import MesCompleto from "./MesCompleto.jsx";
 import HistoriaPlata from "./infografia/HistoriaPlata.jsx";
@@ -245,7 +246,11 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   // anchas, tamaño que se ajusta al ancho y corte de línea como último recurso.
   const Ficha = ({ l, v, s, col, heroe, ancha }) => <div className={ancha ? "fp-ancha" : undefined} style={{ ...card, marginBottom: 0, padding: heroe ? 24 : 14, minWidth: 0, display: "flex", flexDirection: "column", justifyContent: heroe ? "center" : "flex-start" }}>
     <div style={{ fontSize: heroe ? 13 : 12, color: INF.tx2 }}>{l}</div>
-    <div style={{ fontSize: heroe ? "clamp(28px, 3.2vw, 40px)" : "clamp(18px, 1.5vw, 22px)", overflowWrap: "anywhere", fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", margin: "4px 0" }}>{v}</div>
+    {/* 21-nov-2026: la cifra siempre en un renglón y con tamaño moderado; se
+        achica sola según el ancho de la ficha (tamanoCifra + container query). */}
+    <div style={{ containerType: "inline-size", margin: "4px 0" }}>
+      <div style={{ fontSize: tamanoCifra(v, heroe ? 30 : 20), whiteSpace: "nowrap", fontWeight: 600, color: col || INF.tx, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{v}</div>
+    </div>
     <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.4 }}>{s}</div>
   </div>;
 

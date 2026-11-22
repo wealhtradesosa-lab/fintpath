@@ -10,6 +10,7 @@
 //   · ¿Da para vivir todos los años?
 //   · El patrimonio como empresa: cuánto factura y cuánto gana al año
 // ═══════════════════════════════════════════════════════════════════════════
+import { tamanoCifra } from "../lib/infografia.js";
 import { anioCal } from "../lib/futuro10.js";
 import { useMemo, useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
@@ -129,7 +130,7 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
             <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? tx("Punto de partida", "Starting point") : `${tx("Camino", "Path")} ${letra}`}</div>
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
             <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? tx("Si nada cambia", "If nothing changes") : p.descripcion || resumenEscenario(p.r)}</div>
-            <div style={{ fontSize: 24, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", marginTop: 10 }}>{fmM(p.med.fin.patrimonio)}</div>
+            <div style={{ containerType: "inline-size", marginTop: 10 }}><div style={{ fontSize: tamanoCifra(fmM(p.med.fin.patrimonio), 22), whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmM(p.med.fin.patrimonio)}</div></div>
             <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.txOk : INF.txBad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} ${tx("real", "real")}`}</div>
             {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.txTeja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? tx("Recomendado", "Recommended") : tx("Marcar como recomendado", "Mark as recommended")}</button>}
             {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}

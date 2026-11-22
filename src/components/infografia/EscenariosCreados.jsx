@@ -14,6 +14,7 @@
 // recomendado, r: proyectarFuturo10(...) }]
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { tamanoCifra } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
 import { resumenEscenario, anioCal } from "../../lib/futuro10.js";
 import { tx, esUS, plataCorta, num } from "../../lib/region.js";
@@ -135,7 +136,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
               <Curva serie={m.serie} min={minSerie} max={maxSerie} color={esMejor ? "var(--fp-azul)" : "color-mix(in srgb, var(--fp-azul) 60%, var(--fp-txt3))"} id={"fpi-esc-" + i} />
               <div>
                 <div style={{ fontSize: 12, color: C.txt2 }}>{tx(`Patrimonio en ${m.anioFin}`, `Net worth in ${m.anioFin}`)}</div>
-                <div style={{ fontSize: 24, fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div>
+                <div style={{ containerType: "inline-size" }}><div style={{ fontSize: tamanoCifra(fm(m.fin), 22), whiteSpace: "nowrap", fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div></div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>
                 <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("Crece al año (real)", "Annual growth (real)")}</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>

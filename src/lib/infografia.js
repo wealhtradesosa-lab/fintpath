@@ -35,6 +35,19 @@ const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 // Estima el ancho de Inter con cifras tabulares: dígitos y símbolos ≈ 0,62 em,
 // separadores (. , espacio) ≈ 0,3 em, letras ≈ 0,56 em. Margen del 6 %.
 // 10-nov-2026: con las cifras completas, "$4.238.000.000" se salía del treemap.
+// Tamaño CSS para que una cifra quepa en UNA línea dentro de su caja, sin
+// importar cuántos dígitos tenga. Se usa con `container-type: inline-size` en
+// el contenedor: el tamaño es el menor entre `max` px y el que llena el ancho.
+// 21-nov-2026 (Santiago: "no me gustan los números partidos en dos renglones y
+// no tienen que ser tan sobredimensionados").
+export function tamanoCifra(texto, max = 28) {
+  const t = String(texto ?? "");
+  let em = 0;
+  for (const ch of t) em += /[0-9$%+−\-]/.test(ch) ? 0.62 : /[.,·\s]/.test(ch) ? 0.3 : 0.56;
+  if (em === 0) return `${max}px`;
+  return `min(${max}px, ${(100 / (em * 1.08)).toFixed(2)}cqw)`;
+}
+
 export function letraQueCabe(texto, ancho, max = 32, min = 10) {
   const t = String(texto ?? "");
   let em = 0;
