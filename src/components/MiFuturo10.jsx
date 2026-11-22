@@ -782,7 +782,21 @@ function Saldo({ r }) {
     {(bd.excesoVentas || 0) - (bd.excesoCubierto || 0) > 0.5 && fila([tx("Pediste de más y no alcanza: no se invierte", "You asked for more than is available: not invested"), (bd.excesoVentas || 0) - (bd.excesoCubierto || 0)], C.rd)}
     <div style={{ fontSize: 12, color: C.tx2, marginTop: 6 }}>
       {bd.pendienteAnio1 > 0 && <div style={{ color: C.am, marginTop: 4 }}>{tx(`Lo que inviertes no alcanza con lo vendido y tu liquidez: los ${plata(bd.pendienteAnio1)} que faltan salen de lo que vaya entrando en el año 1.`, `Sale proceeds and cash don't cover what you invest: the missing ${plata(bd.pendienteAnio1)} comes from what flows in during year 1.`)}</div>}
-      {bd.programadas > 0 && <div style={{ marginTop: 4 }}>{tx(`Además programaste ${plata(bd.programadas)} para años siguientes: se pagan ese año.`, `You also scheduled ${plata(bd.programadas)} for later years: paid in that year.`)}</div>}
+      {/* 21-nov-2026 (Santiago: "le subo o bajo plata a esta inversión y no suma o baja
+          al total"). Lo programado para años siguientes no sale de lo que sobra hoy, así
+          que «Sobra para repartir» no se mueve; pero antes solo se decía en una línea
+          chica. Ahora cada inversión programada sale con su monto, año y fuente, y su
+          total, para que al cambiar el monto se vea moverse. */}
+      {bd.programadas > 0 && (() => {
+        const fuenteTxt = (f) => (f === "liquidez" ? tx("de tus cuentas", "from your accounts") : f === "nuevo" ? tx("plata nueva", "new money") : tx("de lo que vendes", "from sales"));
+        const prog = (bd.usos || []).filter((u) => u.anio > 1 && !u.apartado);
+        return <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.bd}` }}>
+          <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1 }}>{tx("Programado para años siguientes", "Scheduled for later years")}</div>
+          {prog.map((u, k) => fila([`${u.seccion}. ${u.nombre} · ${anioCal(u.anio)} · ${fuenteTxt(u.fuente)}`, u.monto], C.tx))}
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 700, padding: "4px 0" }}><span>{tx("Total programado", "Total scheduled")}</span><span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(bd.programadas))}</span></div>
+          <div style={{ marginTop: 2 }}>{tx("Se paga en ese año y no sale de lo que sobra hoy; por eso «Sobra para repartir» no cambia. Sí cambia el patrimonio y la renta de los años siguientes.", "It's paid in that year and doesn't come from today's surplus, so \"Left to allocate\" doesn't change. It does change net worth and income in later years.")}</div>
+        </div>;
+      })()}
       {bd.obrasPedido > bd.obras + 0.5 && <div style={{ color: C.am, marginTop: 4 }}>{tx(`La obra pide ${plata(bd.obrasPedido)}: ${plata(bd.obras)} salen de aquí y ${plata(bd.obrasPedido - bd.obras)} de lo que entre en el año 1.`, `The build-out needs ${plata(bd.obrasPedido)}: ${plata(bd.obras)} comes from here and ${plata(bd.obrasPedido - bd.obras)} from what flows in during year 1.`)}</div>}
 
     </div>
