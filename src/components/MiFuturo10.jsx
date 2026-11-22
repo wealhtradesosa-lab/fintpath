@@ -193,7 +193,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <p style={{ color: C.tx2, fontSize: 12 }}>{tx("Las cifras de hoy no incluyen impuestos.", "Today's figures don't include taxes.")}</p>
         </div>
       )}
-      {paso === 0 && <HoyDetalle user={user} cfg={cfg} set={set} setCfg={setCfg} r={r} />}
+      {paso === 0 && <HoyDetalle user={user} cfg={cfg} set={set} setCfg={setCfg} r={r} irInvertir={(id) => { ir(2); setTimeout(() => document.getElementById("f10-reinv-" + id)?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 120); }} />}
 
       {paso === 1 && (<>
         {/* 24-oct-2026 (Santiago: "veo que se pisan las mangueras de ambas
@@ -224,7 +224,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             const upR = (v) => set("reinversiones", cfg.reinversiones.map((y, j) => (j === iR ? { ...y, ...v } : y)));
             const detR = activo ? (r.reinversionesDetalle || []).find((y) => y.i === iR) : null;
             return (
-              <div key={a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
+              <div key={a.id} id={"f10-reinv-" + a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
                   <b>{a.nombre}</b>
                   <button style={btn(activo)} onClick={toggle}>{activo ? tx("Le voy a invertir ✓", "I'll invest in it ✓") : tx("Le voy a invertir", "I'll invest in it")}</button>
@@ -921,7 +921,7 @@ function CambiaActivo({ x, d, setD }) {
         {v == null ? tx("Pon 0 si deja de rentar (por ejemplo, si la vas a usar tú).", "Enter 0 if it stops earning (e.g. you'll use it yourself).")
           : v === 0 ? <>{tx("Deja de rentar.", "Stops earning.")}{x.costoLigado > 0.5 ? tx(` Sus gastos (${plata(Math.round(x.costoLigado))}/mes) siguen y salen de tu bolsillo.`, ` Its expenses (${plata(Math.round(x.costoLigado))}/mo) continue and come out of your pocket.`) : ""}{tx(" Se sigue valorizando.", " It keeps appreciating.")}</>
           : tx(`Pasa de ${plata(Math.round(x.usada))} a ${plata(Math.round(v))} al mes.`, `Goes from ${plata(Math.round(x.usada))} to ${plata(Math.round(v))} a month.`)}
-        {" "}{tx("Si le vas a invertir (obra, ampliación), eso va en el paso 3.", "If you'll invest in it (works, expansion), that goes in step 3.")}
+        {" "}{tx("Si además le vas a invertir (obra, construcción), usa «Le invierto o lo transformo».", "If you'll also invest in it (works, construction), use \"I'll invest or transform it\".")}
       </div>
     </div>);
 }
@@ -929,7 +929,7 @@ const vacioTxt = (v) => v === "" || v == null;
 
 // Hoy = revisar y corregir PARA EL PLAN lo que tienes y lo que te entra.
 // Las páginas Patrimonio, Ingresos y Egresos no se tocan.
-function HoyDetalle({ user, cfg, set, setCfg, r }) {
+function HoyDetalle({ user, cfg, set, setCfg, r, irInvertir }) {
   const invs = inversionesHoy(user, cfg);
   const sueltos = ingresosSueltosHoy(user, cfg);
   const [abierto, setAbierto] = useState(null);
@@ -945,7 +945,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
   return <>
     <div style={card}>
       <h3 style={{ marginTop: 0, marginBottom: 2 }}>{tx("Cada inversión: cuánto vale y cuánto renta", "Each investment: what it's worth and what it earns")}</h3>
-      <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>{tx(<>De cada una decide: <b style={{ color: C.tx }}>Sigue igual</b>, <b style={{ color: C.tx }}>Cambia la renta</b> (0 si deja de rentar) o <b style={{ color: C.tx }}>Se vende</b>. Solo cambia el plan: tus páginas no se tocan. Toca el nombre para ver de dónde sale su renta.</>, <>For each one decide: <b style={{ color: C.tx }}>Keep as is</b>, <b style={{ color: C.tx }}>Income changes</b> (0 if it stops earning) or <b style={{ color: C.tx }}>Sell</b>. It only changes the plan: your pages aren't touched. Tap the name to see where its income comes from.</>)}</p>
+      <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>{tx(<>De cada una decide: <b style={{ color: C.tx }}>Sigue igual</b>, <b style={{ color: C.tx }}>Cambia la renta</b> (0 si deja de rentar), <b style={{ color: C.tx }}>Le invierto o lo transformo</b> (una obra, una construcción) o <b style={{ color: C.tx }}>Se vende</b>. Solo cambia el plan: tus páginas no se tocan. Toca el nombre para ver de dónde sale su renta.</>, <>For each one decide: <b style={{ color: C.tx }}>Keep as is</b>, <b style={{ color: C.tx }}>Income changes</b> (0 if it stops earning), <b style={{ color: C.tx }}>I'll invest or transform it</b> (works, construction) or <b style={{ color: C.tx }}>Sell</b>. It only changes the plan: your pages aren't touched. Tap the name to see where its income comes from.</>)}</p>
       {invs.map((x) => { const ab = abierto === x.id; return (
         <div key={x.id} style={fila}>
           <div onClick={() => setAbierto(ab ? null : x.id)} style={{ cursor: "pointer" }}>
@@ -961,15 +961,24 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
             const elegir = (k) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: k === "cambia" ? { accion: "cambia", desde: d.desde || 1, mensual: d.mensual ?? "" } : { accion: k } }, reinversiones: k === "vende" ? (p.reinversiones || []).filter((y) => y.activoId !== x.id) : p.reinversiones }));
             const setD = (nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: { ...((p.decisiones || {})[x.id] || {}), ...nx } } }));
             const cambia = d.accion === "cambia";
+            const invierte = !x.vende && (cfg.reinversiones || []).some((y) => y.activoId === x.id);
             const det = (r.reinversionesDetalle || []).find((y) => y.activoId === x.id && y.aporte > 0);
             return <>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
                 <button style={{ ...btn(!x.vende && !cambia), padding: "4px 10px" }} onClick={() => elegir("continua")}>{tx("Sigue igual", "Keep as is")}</button>
                 <button style={{ ...btn(cambia), padding: "4px 10px" }} onClick={() => elegir("cambia")}>{tx("Cambia la renta", "Income changes")}</button>
+                {/* 22-nov-2026 (Santiago: "¿y si le voy a invertir o transformar? un lote y le invierto una construcción… ¿me avisa que va en otra sección?"). Se marca aquí y se llena en el paso 3, donde se ve de dónde sale la plata. */}
+                {x.clase !== "vehiculo" && <button style={{ ...btn(invierte), padding: "4px 10px" }} onClick={() => { if (!invierte) set("reinversiones", [...(cfg.reinversiones || []), { activoId: x.id, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0, fuente: "venta" }]); if (x.vende) elegir("continua"); }}>{invierte ? tx("Le invierto ✓", "I'll invest ✓") : tx("Le invierto o lo transformo", "I'll invest or transform it")}</button>}
                 <button style={{ ...btn(x.vende), padding: "4px 10px" }} onClick={() => elegir("vende")}>{tx("Se vende", "Sell")}</button>
                 {x.vende && <span style={{ fontSize: 12, color: C.am }}>{tx("No cuenta: su valor pasa a lo que vendes y su renta deja de entrar.", "Doesn't count: its value goes to your sale proceeds and its income stops.")}</span>}
-                {!x.vende && det && <span style={{ fontSize: 12, color: C.gn }}>{tx(`Le inviertes ${plata(det.aporte)} (paso 3)`, `You invest ${plata(det.aporte)} in it (step 3)`)}</span>}
               </div>
+              {invierte && <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 8, border: `1px solid ${C.gn}`, background: "rgba(0,200,5,0.06)", fontSize: 12.5, color: C.tx, display: "flex", gap: 10, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                <span style={{ flex: "1 1 260px" }}>{det ? tx(`Le inviertes ${plata(det.aporte)}. `, `You invest ${plata(det.aporte)}. `) : ""}{tx(<>Esto se llena en el <b>paso 3 · Tu plata</b>: cuánto le metes, cuándo, de dónde sale la plata y cuánto renta después (por ejemplo, la bodega que construyes en el lote).</>, <>You fill this in <b>step 3 · Your money</b>: how much, when, where the money comes from and what it earns afterwards (e.g. the warehouse you build on the lot).</>)}</span>
+                <span style={{ display: "flex", gap: 6 }}>
+                  <button style={{ ...btn(true), padding: "6px 12px" }} onClick={() => irInvertir?.(x.id)}>{tx("Ir al paso 3 →", "Go to step 3 →")}</button>
+                  <button style={{ ...btn(false), padding: "6px 10px" }} onClick={() => set("reinversiones", (cfg.reinversiones || []).filter((y) => y.activoId !== x.id))}>{tx("Ya no", "Never mind")}</button>
+                </span>
+              </div>}
               {x.vende && <SeVaConVenta user={user} activoId={x.id} d={d} setD={(nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: { ...d, ...nx } } }))} />}
               {cambia && <CambiaActivo x={x} d={d} setD={setD} />}
             </>;
