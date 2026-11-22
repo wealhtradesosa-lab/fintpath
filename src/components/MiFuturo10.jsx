@@ -739,13 +739,27 @@ function FuenteSel({ value, on }) {
 // 25-oct-2026 (Santiago: "se dificulta saber qué saldo le va quedando a uno de
 // las ventas… no sé si me pasé… uno no sabe si sobra o no"). La cuenta se
 // muestra como entra / sale / sobra, con un veredicto grande arriba.
+// 22-nov-2026 (Santiago: "voy a invertir 600 M en una bodega pero no se altera
+// el valor de lo que queda, o no se ve qué queda"). Lo programado para un año
+// siguiente con plata propia (no «plata nueva») sale de la misma plata que hoy
+// sobra —el motor la saca de la liquidez donde quedó ese sobrante—, así que se
+// resta a la vista: sobra hoy − ya tiene destino = queda libre.
+function conDestino(r) {
+  const bd = r.bolsaDetalle || {};
+  const lista = (bd.usos || []).filter((u) => u.anio > 1 && !u.apartado && u.fuente !== "nuevo" && u.monto > 0.5);
+  const total = lista.reduce((sm, u) => sm + u.monto, 0);
+  return { lista, total, libre: (bd.restante || 0) - total };
+}
 function veredictoSaldo(r) {
   const bd = r.bolsaDetalle || {};
+  const cd = conDestino(r);
   const exceso = bd.excesoVentas || 0, sobra = bd.restante || 0;
   const cub = bd.excesoCubierto || 0, noAlcanza = Math.max(0, exceso - cub);
   if (exceso > 0.5) return { ok: false, corto: tx(`Te pasaste ${plata(Math.round(exceso))}`, `Over by ${plata(Math.round(exceso))}`), largo: tx(`Te pasaste ${plata(Math.round(exceso))} de lo que vendes.${cub > 0.5 ? ` ${plata(Math.round(cub))} salen de tus cuentas de hoy (ahorros y efectivo).` : ""}${noAlcanza > 0.5 ? ` ${plata(Math.round(noAlcanza))} no alcanzan: esa parte no se invierte. Baja montos o elige «Plata nueva de afuera».` : ""}`, `You went ${plata(Math.round(exceso))} over your sale proceeds.${cub > 0.5 ? ` ${plata(Math.round(cub))} comes from your current accounts (savings and cash).` : ""}${noAlcanza > 0.5 ? ` ${plata(Math.round(noAlcanza))} isn't covered: that part isn't invested. Lower the amounts or choose "New money from outside".` : ""}`) };
   if ((bd.vendido || 0) + (bd.capitalNuevo || 0) <= 0) return { ok: true, corto: tx("Sin ventas", "No sales"), largo: tx("Todavía no vendes nada. Lo que inviertas sale de tus cuentas de hoy o de plata nueva.", "You're not selling anything yet. What you invest comes from your current accounts or new money.") };
-  return { ok: true, corto: tx(`Te sobran ${plata(Math.round(sobra))}`, `${plata(Math.round(sobra))} left over`), largo: tx(`Te sobran ${plata(Math.round(sobra))}: se reparten como digas en E.`, `${plata(Math.round(sobra))} left over: split as you choose in E.`) };
+  if (cd.total > 0.5 && cd.libre < -0.5) return { ok: false, corto: tx(`Te faltan ${plata(Math.round(-cd.libre))}`, `Short by ${plata(Math.round(-cd.libre))}`), largo: tx(`Hoy te sobran ${plata(Math.round(sobra))}, pero ya programaste ${plata(Math.round(cd.total))} para años siguientes: faltan ${plata(Math.round(-cd.libre))}, que saldrán de tus otras cuentas o de lo que te sobre cada mes.`, `You have ${plata(Math.round(sobra))} left today, but you've scheduled ${plata(Math.round(cd.total))} for later years: ${plata(Math.round(-cd.libre))} short, which will come from your other accounts or monthly surplus.`) };
+  if (cd.total > 0.5) return { ok: true, corto: tx(`Saldo disponible ${plata(Math.round(cd.libre))}`, `Available balance ${plata(Math.round(cd.libre))}`), largo: tx(`Ya descontadas todas tus inversiones, incluidos ${plata(Math.round(cd.total))} que son para años siguientes.`, `After all your investments, including ${plata(Math.round(cd.total))} set for later years.`) };
+  return { ok: true, corto: tx(`Saldo disponible ${plata(Math.round(sobra))}`, `Available balance ${plata(Math.round(sobra))}`), largo: tx("Lo que queda después de deudas e inversiones. Lo que no uses se reparte como digas en E.", "What's left after debt and investments. Whatever you don't use is split as you choose in E.") };
 }
 function Saldo({ r }) {
   const bd = r.bolsaDetalle || {};
@@ -757,15 +771,20 @@ function Saldo({ r }) {
     ...(bd.capitalNuevo > 0 ? [[tx("Plata nueva de afuera", "New money from outside"), bd.capitalNuevo]] : []),
     ...(elegidoLiquidez > 0.5 ? [[tx("De tus cuentas de hoy (lo elegiste)", "From your current accounts (your choice)"), elegidoLiquidez]] : []),
   ];
-  const sale = [
-    ...(bd.deudas > 0 ? [[tx("Pagas deudas", "Debt payoff"), bd.deudas]] : []),
-    ...(bd.colchon > 0 ? [[tx(`Colchón de ${supuestosF10().colchonMeses} meses`, `${supuestosF10().colchonMeses}-month cushion`), bd.colchon]] : []),
-    ...(bd.obras > 0 ? [[tx("Obras", "Build-outs"), bd.obras]] : []),
-    ...(bd.reinvertido > 0 ? [[tx("B. Inviertes en lo que ya tienes", "B. Invest in what you own"), bd.reinvertido]] : []),
-    ...(bd.nuevas > 0 ? [[tx("C. Inversiones nuevas", "C. New investments"), bd.nuevas]] : []),
-    ...(bd.ciclos > 0 ? [[tx("D. Negocios que se repiten", "D. Repeating deals"), bd.ciclos]] : []),
-    ...(bd.reservado > 0 ? [[tx("Apartado para invertir en años siguientes", "Set aside to invest in later years"), bd.reservado]] : []),
+  // 22-nov-2026 (Santiago: "primero el total que sobra, 1.600 M, y a medida que
+  // agrego inversiones debería aparecer 1.600 − bodega 600 − inversión X 400 =
+  // saldo disponible 600"). Una sola cuenta, renglón por renglón.
+  const antes = [
+    ...(bd.deudas > 0 ? [[tx("− Pagas deudas", "− Debt payoff"), bd.deudas]] : []),
+    ...(bd.colchon > 0 ? [[tx(`− Colchón de ${supuestosF10().colchonMeses} meses`, `− ${supuestosF10().colchonMeses}-month cushion`), bd.colchon]] : []),
   ];
+  const entraTotal = entra.reduce((sm, x) => sm + x[1], 0) + (bd.excesoCubierto || 0);
+  const disponible = entraTotal - antes.reduce((sm, x) => sm + x[1], 0);
+  const cd = conDestino(r);
+  const usosHoy = (bd.usos || []).map((u) => ({ u, m: u.anio > 1 && !u.apartado ? (u.fuente === "nuevo" ? 0 : u.monto) : (u.deVenta || 0) + (u.deCuentas || 0) + (u.deNuevo || 0) })).filter((x) => x.m > 0.5);
+  const saldoFinal = cd.libre;
+  const otros = disponible - usosHoy.reduce((sm, x) => sm + x.m, 0) - saldoFinal; // lo que no viene renglón por renglón (negocios que se repiten)
+  const hayCuenta = entraTotal > 0.5;
   const fila = ([l, val], col) => <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "3px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontFamily: "monospace" }}>{plata(Math.round(val))}</span></div>;
   return <div style={{ background: C.bg, borderRadius: 8, padding: 12 }}>
     <div style={{ padding: "10px 12px", borderRadius: 8, marginBottom: 10, background: v.ok ? "rgba(0,200,5,0.12)" : "rgba(255,80,0,0.14)", border: `1px solid ${v.ok ? C.gn : C.rd}` }}>
@@ -774,38 +793,29 @@ function Saldo({ r }) {
     </div>
     {entra.length > 0 && <><div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1 }}>{tx("Entra", "In")}</div>{entra.map((x) => fila(x, C.tx))}</>}
     {(bd.excesoCubierto || 0) > 0.5 && fila([tx("Faltó: sale de tus cuentas de hoy", "Shortfall: from your current accounts"), bd.excesoCubierto], C.rd)}
-    {sale.length > 0 && <><div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, marginTop: 8 }}>{tx("Sale", "Out")}</div>{sale.map((x) => fila(x, C.tx2))}</>}
+    {hayCuenta && <>
+      {antes.map((x) => fila(x, C.tx2))}
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{tx("Disponible para invertir", "Available to invest")}</span><span style={{ fontFamily: "monospace" }}>{plata(Math.round(disponible))}</span></div>
+      {usosHoy.map(({ u, m }, k) => fila([`− ${u.nombre}${u.anio > 1 ? ` · ${anioCal(u.anio)}` : ""}`, m], C.tx2))}
+      {otros > 0.5 && fila([tx("− Negocios que se repiten y otros", "− Repeating deals and other"), otros], C.tx2)}
+      {usosHoy.length === 0 && !(otros > 0.5) && <div style={{ fontSize: 12, color: C.tx2, padding: "3px 0" }}>{tx("Cada inversión que agregues abajo (B, C, D) se va restando aquí.", "Each investment you add below (B, C, D) is subtracted here.")}</div>}
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 16, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{saldoFinal >= -0.5 ? tx("Saldo disponible", "Available balance") : tx("Te falta", "Shortfall")}</span><span style={{ color: saldoFinal > 0.5 ? C.gn : saldoFinal < -0.5 ? C.rd : C.tx, fontFamily: "monospace" }}>{plata(Math.round(Math.abs(saldoFinal)))}</span></div>
+      <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{saldoFinal > 0.5 ? tx("Lo que no uses se reparte como digas en E.", "Whatever you don't use is split as you choose in E.") : ""}{cd.total > 0.5 ? tx(" Lo que es para un año siguiente queda guardado hasta ese año.", " Amounts for a later year stay set aside until then.") : ""}</div>
+    </>}
     {(bd.usos || []).length > 0 && <details style={{ marginTop: 6 }}>
-      <summary style={{ cursor: "pointer", fontSize: 12, color: C.tx }}>{tx("Ver cada inversión y de dónde sale su plata", "See each investment and where its money comes from")}</summary>
-      <div style={{ fontSize: 12, color: C.tx2, margin: "4px 0" }}>{tx("Solo lo que sale «de lo que vendes» cambia lo que sobra. Lo que sale de tus cuentas, de plata nueva o en años siguientes no lo mueve.", "Only what comes \"from what you sell\" changes the surplus. Money from your accounts, new money, or later years doesn't affect it.")}</div>
+      <summary style={{ cursor: "pointer", fontSize: 12, color: C.tx }}>{tx("Ver de dónde sale la plata de cada inversión", "See where each investment's money comes from")}</summary>
       {bd.usos.map((u, k) => {
         const partes = [u.deVenta > 0.5 && `${plata(Math.round(u.deVenta))} ${tx("de lo que vendes", "from sales")}`, u.deCuentas > 0.5 && `${plata(Math.round(u.deCuentas))} ${tx("de tus cuentas", "from your accounts")}`, u.deNuevo > 0.5 && `${plata(Math.round(u.deNuevo))} ${tx("plata nueva", "new money")}`].filter(Boolean);
-        const resto = u.monto - u.deVenta - u.deCuentas - u.deNuevo;
+        const fuenteTxt = u.fuente === "liquidez" ? tx("de tus cuentas", "from your accounts") : u.fuente === "nuevo" ? tx("plata nueva (no resta del saldo)", "new money (doesn't reduce the balance)") : tx("de lo que vendes", "from sales");
         return <div key={k} style={{ fontSize: 12, padding: "4px 0", borderTop: `1px solid ${C.bd}` }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}><span style={{ color: C.tx }}>{u.seccion}. {u.nombre}</span><span style={{ fontFamily: "monospace" }}>{plata(Math.round(u.monto))}</span></div>
-          <div style={{ color: u.anio > 1 ? C.tx2 : resto > 0.5 ? C.am : C.tx2 }}>{u.anio > 1 && u.apartado ? tx(`${partes.join(" + ") || "—"}: se aparta hoy y se invierte en ${anioCal(u.anio)}${u.resto > 0.5 ? `; los ${plata(Math.round(u.resto))} que no alcanzan se pagan ese año con lo que haya` : ""}`, `${partes.join(" + ") || "—"}: set aside today and invested in ${anioCal(u.anio)}${u.resto > 0.5 ? `; the ${plata(Math.round(u.resto))} not covered is paid that year from whatever is available` : ""}`) : u.anio > 1 ? tx(`En el año ${u.anio}: se paga ese año con lo que haya, no de lo que vendes hoy`, `In year ${u.anio}: paid that year from whatever is available, not from today's sales`) : `${partes.join(" + ") || "—"}${resto > 0.5 ? ` · ${tx("faltan", "short")} ${plata(Math.round(resto))}` : ""}`}</div>
+          <div style={{ color: C.tx2 }}>{u.anio > 1 ? `${anioCal(u.anio)} · ${partes.join(" + ") || fuenteTxt}` : partes.join(" + ") || fuenteTxt}</div>
         </div>;
       })}
     </details>}
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 15, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{tx("Sobra para repartir (E)", "Left to allocate (E)")}</span><span style={{ color: bd.restante > 0 ? C.gn : C.tx, fontFamily: "monospace" }}>{plata(Math.round(bd.restante || 0))}</span></div>
     {(bd.excesoVentas || 0) - (bd.excesoCubierto || 0) > 0.5 && fila([tx("Pediste de más y no alcanza: no se invierte", "You asked for more than is available: not invested"), (bd.excesoVentas || 0) - (bd.excesoCubierto || 0)], C.rd)}
     <div style={{ fontSize: 12, color: C.tx2, marginTop: 6 }}>
       {bd.pendienteAnio1 > 0 && <div style={{ color: C.am, marginTop: 4 }}>{tx(`Lo que inviertes no alcanza con lo vendido y tu liquidez: los ${plata(bd.pendienteAnio1)} que faltan salen de lo que vaya entrando en el año 1.`, `Sale proceeds and cash don't cover what you invest: the missing ${plata(bd.pendienteAnio1)} comes from what flows in during year 1.`)}</div>}
-      {/* 21-nov-2026 (Santiago: "le subo o bajo plata a esta inversión y no suma o baja
-          al total"). Lo programado para años siguientes no sale de lo que sobra hoy, así
-          que «Sobra para repartir» no se mueve; pero antes solo se decía en una línea
-          chica. Ahora cada inversión programada sale con su monto, año y fuente, y su
-          total, para que al cambiar el monto se vea moverse. */}
-      {bd.programadas > 0 && (() => {
-        const fuenteTxt = (f) => (f === "liquidez" ? tx("de tus cuentas", "from your accounts") : f === "nuevo" ? tx("plata nueva", "new money") : tx("de lo que vendes", "from sales"));
-        const prog = (bd.usos || []).filter((u) => u.anio > 1 && !u.apartado);
-        return <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${C.bd}` }}>
-          <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1 }}>{tx("Programado para años siguientes", "Scheduled for later years")}</div>
-          {prog.map((u, k) => fila([`${u.seccion}. ${u.nombre} · ${anioCal(u.anio)} · ${fuenteTxt(u.fuente)}`, u.monto], C.tx))}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 700, padding: "4px 0" }}><span>{tx("Total programado", "Total scheduled")}</span><span style={{ whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(bd.programadas))}</span></div>
-          <div style={{ marginTop: 2 }}>{tx("Se paga en ese año y no sale de lo que sobra hoy; por eso «Sobra para repartir» no cambia. Sí cambia el patrimonio y la renta de los años siguientes.", "It's paid in that year and doesn't come from today's surplus, so \"Left to allocate\" doesn't change. It does change net worth and income in later years.")}</div>
-        </div>;
-      })()}
       {bd.obrasPedido > bd.obras + 0.5 && <div style={{ color: C.am, marginTop: 4 }}>{tx(`La obra pide ${plata(bd.obrasPedido)}: ${plata(bd.obras)} salen de aquí y ${plata(bd.obrasPedido - bd.obras)} de lo que entre en el año 1.`, `The build-out needs ${plata(bd.obrasPedido)}: ${plata(bd.obras)} comes from here and ${plata(bd.obrasPedido - bd.obras)} from what flows in during year 1.`)}</div>}
 
     </div>
