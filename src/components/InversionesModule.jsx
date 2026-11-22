@@ -149,7 +149,40 @@ const In = ({ l, value, onChange, type, placeholder, options }) => (
     </div>
   );
 
-export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade, onCrearIngreso, onSyncIngreso }) {
+// 22-nov-2026 — Unidades que rentan por separado dentro de un mismo inmueble.
+const MESES_U = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+function UnidadesRenta({ form, setForm, trm, gastosMes = 0, cuotasMes = 0 }) {
+  const us = form.unidades || [];
+  const up = (i, k, v) => setForm((p) => ({ ...p, unidades: (p.unidades || []).map((u, j) => (j === i ? { ...u, [k]: v, ...(k === "valor" ? { variable: false } : {}) } : u)) }));
+  const fx = (m) => (String(m || "COP").toUpperCase() === "USD" ? (trm || 0) : 1);
+  const prom = (u) => { const d = Math.max(1, Math.min(12, parseInt(u.desde) || 1)), h = Math.max(d, Math.min(12, parseInt(u.hasta) || 12)); return (parseFloat(u.valor) || 0) * fx(u.moneda) * (h - d + 1) / 12; };
+  const total = us.reduce((t, u) => t + prom(u), 0);
+  const sel = { width: "100%", background: T.bg3, border: "1px solid " + T.border, color: T.txt, padding: "8px 8px", borderRadius: 8, fontSize: 12.5, outline: "none" };
+  const lbl = { fontSize: 11, color: T.txt3, display: "block", marginBottom: 3 };
+  return <div style={{ marginBottom: 10 }}>
+    <div style={{ fontSize: 11, color: T.txt3, lineHeight: 1.5, marginBottom: 8 }}>Una fila por cada casa, apartamento o local. Escribe lo que paga cada arrendatario, sin deducciones, y en qué meses del año. Cada unidad queda como un ingreso ligado a este activo.</div>
+    <style>{`.fp-unidad { grid-template-columns: minmax(0,1.6fr) minmax(0,1.4fr) minmax(0,0.8fr) minmax(0,0.8fr) minmax(0,0.8fr) auto; } @media (max-width: 560px) { .fp-unidad { grid-template-columns: 1fr 1fr; } }`}</style>
+    {us.map((u, i) => <div key={i} className="fp-unidad" style={{ display: "grid", gap: 6, alignItems: "end", padding: "6px 0", borderTop: i ? `1px solid ${T.border}` : "none" }}>
+      <label><span style={lbl}>Unidad</span><input style={sel} value={u.nombre} placeholder={`Unidad ${i + 1}`} onChange={(e) => up(i, "nombre", e.target.value)} /></label>
+      <label><span style={lbl}>Renta al mes</span><input style={sel} type="number" value={u.valor} placeholder="0" onChange={(e) => up(i, "valor", e.target.value)} /></label>
+      <label><span style={lbl}>Moneda</span><select style={sel} value={u.moneda || "COP"} onChange={(e) => up(i, "moneda", e.target.value)}><option value="COP">Pesos</option><option value="USD">USD</option></select></label>
+      <label><span style={lbl}>Desde</span><select style={sel} value={u.desde || "1"} onChange={(e) => up(i, "desde", e.target.value)}>{MESES_U.map((m, k) => <option key={m} value={k + 1}>{m}</option>)}</select></label>
+      <label><span style={lbl}>Hasta</span><select style={sel} value={u.hasta || "12"} onChange={(e) => up(i, "hasta", e.target.value)}>{MESES_U.map((m, k) => <option key={m} value={k + 1}>{m}</option>)}</select></label>
+      <button type="button" aria-label="Quitar unidad" onClick={() => setForm((p) => ({ ...p, unidades: (p.unidades || []).filter((_, j) => j !== i) }))} style={{ background: "transparent", border: `1px solid ${T.border}`, color: T.txt3, borderRadius: 8, padding: "7px 9px", cursor: "pointer", fontSize: 12 }}>Quitar</button>
+      {u.variable && <div style={{ gridColumn: "1/-1", fontSize: 11, color: "#f59e0b" }}>Esta renta varía mes a mes (la cargaste en Ingresos). Si cambias el valor aquí, queda fija en esos meses.</div>}
+    </div>)}
+    <button type="button" onClick={() => setForm((p) => ({ ...p, unidades: [...(p.unidades || []), { nombre: `Unidad ${(p.unidades || []).length + 1}`, valor: "", moneda: (p.unidades || [])[0]?.moneda || "COP", desde: "1", hasta: "12" }] }))} style={{ marginTop: 6, width: "100%", padding: "8px", borderRadius: 8, border: `1px dashed ${T.border}`, background: "transparent", color: T.green, cursor: "pointer", fontSize: 12.5, fontWeight: 600 }}>+ Agregar unidad</button>
+    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 13, fontWeight: 700 }}><span>{us.length} unidad{us.length === 1 ? "" : "es"} · promedio al mes</span><span style={{ fontVariantNumeric: "tabular-nums" }}>${Math.round(total).toLocaleString("es-CO")}</span></div>
+    <div style={{ fontSize: 11, color: T.txt3 }}>Promedio del año: una unidad que renta 6 meses cuenta la mitad.</div>
+    {total > 0 && (gastosMes > 0 || cuotasMes > 0) && <div style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 8, background: T.bg2, borderRadius: 10, padding: "8px 12px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: T.txt2 }}>− Gastos ligados (administración, predial, seguro…)</span><span>−${Math.round(gastosMes).toLocaleString("es-CO")}</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between" }}><span style={{ color: T.txt2 }}>− Cuota de la deuda de este activo</span><span>−${Math.round(cuotasMes).toLocaleString("es-CO")}</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, borderTop: `1px solid ${T.border}`, marginTop: 4, paddingTop: 4 }}><span>Te queda al mes</span><span style={{ color: total - gastosMes - cuotasMes >= 0 ? T.green : T.red }}>${Math.round(total - gastosMes - cuotasMes).toLocaleString("es-CO")}</span></div>
+    </div>}
+  </div>;
+}
+
+export default function InversionesModule({ inversiones, owners, deudas, onUpdate, fmt, onImport, user, trm, plan, onUpgrade, onCrearIngreso, onSyncIngreso, onSyncUnidades }) {
   // ── 14-sep-2026 · Rentabilidad por activo ────────────────────────────────
   // Primer uso del vínculo ingreso → activo. Antes un activo era solo un valor
   // de compra y uno actual: la plataforma no sabía si producía algo. Con el
@@ -278,6 +311,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // 21-oct-2026 — El ingreso que nace del activo. Hay UNO principal, marcado
   // desdePatrimonio, que este formulario crea y mantiene; otros ingresos
   // vinculados (p. ej. dos arriendos del mismo inmueble) siguen en Ingresos.
+  // Unidades iniciales para «Varias unidades»: las rentas ya ligadas al activo
+  // (la de Patrimonio y las de Ingresos), o la renta escrita aquí.
+  const unidadesIniciales = (f) => {
+    const ligadas = editId ? (user?.ingresos || []).filter((x) => x && x.activoId === editId && x.sim !== false) : [];
+    if (ligadas.length) return ligadas.map((x) => ({ id: x.id, nombre: x.nombre || "", valor: String(Math.round(Number(x.mensual) || 0)), moneda: x.moneda || "COP", desde: String(x.desdeMes || 1), hasta: String(x.hastaMes || 12), variable: x.frecuencia === "variable" }));
+    const v = parseFloat(f.renta) || 0;
+    return [{ nombre: f.ingresoNombre || "Unidad 1", valor: v ? String(v) : "", moneda: f.rentaMoneda || "COP", desde: "1", hasta: "12" }];
+  };
   const ingresoPrincipalDe = (id) => (user?.ingresos || []).find((x) => x && x.activoId === id && x.desdePatrimonio) || null;
   // 26-oct-2026 (Santiago: "esta inversión no la tuve todo el año… arrancó en febrero y no con ese monto;
   // ¿cómo le digo al sistema que de tal mes a tal mes fue tanto?"). Tramos → 12 montos (frecuencia variable).
@@ -321,13 +362,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       owner: inv.owner || "",
       moneda: inv.moneda || "COP",
       // ¿Genera ingreso? cómo y cuándo (desde el ingreso vinculado, o de los campos viejos como estimación)
-      genera: ing ? "si" : (rentaLegacy > 0 || tasaLegacy > 0 ? "si" : "no"),
+      // 22-nov-2026: si ya tiene rentas ligadas en Ingresos, genera ingreso (antes salía «No»).
+      genera: ing || (user?.ingresos || []).some((x) => x && x.activoId === inv.id && x.sim !== false) ? "si" : (rentaLegacy > 0 || tasaLegacy > 0 ? "si" : "no"),
       modo: ing ? (Number(ing.capital) > 0 && Number(ing.tasa) > 0 ? "tasa" : "fijo") : (rentaLegacy > 0 ? "fijo" : "tasa"),
       renta: ing ? String(ing.mensual || "") : (rentaLegacy > 0 ? String(rentaLegacy) : ""),
       // 22-nov-2026: la renta tiene su propia moneda (antes tomaba la del valor:
       // un inmueble en USD con arriendo escrito en pesos quedaba como dólares).
       rentaMoneda: ing ? (ing.moneda || "COP") : "COP",
       _absorber: [], _rentasDistintas: !!inv.rentasDistintas,
+      // Con 2 o más rentas ligadas (edificio, finca con varias casas) abre en «Varias unidades».
+      unidades: (() => { const lig = (user?.ingresos || []).filter((x) => x && x.activoId === inv.id && x.sim !== false); return lig.length >= 2 ? lig.map((x) => ({ id: x.id, nombre: x.nombre || "", valor: String(Math.round(Number(x.mensual) || 0)), moneda: x.moneda || "COP", desde: String(x.desdeMes || 1), hasta: String(x.hastaMes || 12), variable: x.frecuencia === "variable" })) : null; })(),
       recibePct: ing && ing.recibePct != null ? String(ing.recibePct) : "100",
       vigencia: ing ? (ing.frecuencia === "variable" ? "tramos" : ing.frecuencia === "anual" ? "anual" : (ing.vigenciaModo === "limitada" || (ing.desdeMes && ing.hastaMes && !(Number(ing.desdeMes) === 1 && Number(ing.hastaMes) === 12)) ? "meses" : "todo")) : "todo",
       desdeMes: ing && ing.desdeMes ? String(ing.desdeMes) : "1",
@@ -401,7 +445,16 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     // ingresar algo en patrimonio debe el sistema preguntar si genera o no
     // ingreso, para que fluya bien"). Un solo origen: Patrimonio dice qué es,
     // cuánto vale, cuánto paga y cuándo; Ingresos lo refleja.
-    if (onSyncIngreso) {
+    if (form.genera === "si" && form.unidades && onSyncUnidades) {
+      // Varias unidades: cada fila es un ingreso ligado al activo (reemplaza las rentas ligadas).
+      const esPart = false;
+      onSyncUnidades(idActivo, (form.unidades || []).filter((u) => (parseFloat(u.valor) || 0) > 0).map((u, k) => {
+        const d = Math.max(1, Math.min(12, parseInt(u.desde) || 1)), h = Math.max(d, Math.min(12, parseInt(u.hasta) || 12));
+        return { id: u.id, variable: !!u.variable, nombre: String(u.nombre || "").trim() || `Unidad ${k + 1}`, activoId: idActivo, desdePatrimonio: true, unidad: true, owner: form.owner || "", moneda: u.moneda || "COP", sim: true, tipo: "fijo",
+          categoria: "Arriendo", fiscalCode: esPart ? "DIV_ART49_GRAVADOS" : "NOL_ARRIENDO_INMUEBLE", mensual: Math.round(parseFloat(u.valor) || 0), frecuencia: "mensual", mesPago: 1,
+          desdeMes: d, hastaMes: h, vigenciaModo: d === 1 && h === 12 ? undefined : "limitada" };
+      }));
+    } else if (onSyncIngreso) {
       if (form.genera === "si") {
         const esInmueble = ["Real Estate", "Local Comercial", "Bodega"].includes(form.tipo);
         const esParticipacion = form.tipo === "Acciones" || form.tipo === "Fondo de Inversión";
@@ -763,6 +816,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                   {[["no","No"],["si","Sí"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, genera: v }))} style={{flex:1,padding:"9px 12px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,border:`1px solid ${(form.genera||"no")===v?T.green:T.border}`,background:(form.genera||"no")===v?"rgba(0,200,5,0.12)":"transparent",color:(form.genera||"no")===v?T.green:T.txt2}}>{l}</button>)}
                 </div>
                 {form.genera === "si" && (<>
+                  {/* 22-nov-2026 (Santiago: "Puerto Madero tiene varias propiedades, unas rentan un valor,
+                      otras otro, algunas solo unos meses; esa parte es compleja"). Un inmueble puede
+                      tener varias unidades que rentan por separado: se cargan aquí mismo, cada una con
+                      su valor y sus meses, y quedan como ingresos ligados al activo. */}
+                  {["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) && <div style={{display:"flex",gap:8,marginBottom:10}}>
+                    {[[false,"Una sola renta"],[true,"Varias unidades (casas, apartamentos, locales)"]].map(([v,l]) => <button key={String(v)} type="button" onClick={() => setForm((p) => v ? ({ ...p, unidades: p.unidades || unidadesIniciales(p) }) : ({ ...p, unidades: null }))} style={{flex:1,padding:"8px 10px",borderRadius:10,cursor:"pointer",fontSize:12.5,fontWeight:600,border:`1px solid ${!!form.unidades === v ? T.green : T.border}`,background:!!form.unidades === v ? T.bg2 : "transparent",color:!!form.unidades === v ? T.green : T.txt}}>{l}</button>)}
+                  </div>}
+                  {form.unidades ? <UnidadesRenta form={form} setForm={setForm} trm={trm} gastosMes={editId ? (gastoPorActivo[editId] || 0) / 12 : 0} cuotasMes={(deudas || []).filter((d) => d && d.sim !== false && editId && (d.la || d.link) === editId).reduce((t, d) => t + (Number(d.pg ?? d.pago) || 0) * (String(d.moneda || "COP").toUpperCase() === "USD" ? (trm || 0) : 1), 0)} /> : (<>
                   <div style={{fontSize:12,fontWeight:600,color:T.txt3,letterSpacing:"0.06em",marginBottom:6}}>¿Cómo lo recibes?</div>
                   <div style={{display:"flex",gap:8,marginBottom:10}}>
                     {[["fijo", ["Real Estate", "Bodega", "Lote", "Local Comercial"].includes(form.tipo) ? "Arriendo: $ al mes" : "Monto fijo: $ al mes"],["tasa","Rendimiento: % anual sobre el valor"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, modo: v }))} style={{flex:1,padding:"8px 10px",borderRadius:10,cursor:"pointer",fontSize:12,fontWeight:600,border:`1px solid ${(form.modo||"fijo")===v?T.blue:T.border}`,background:(form.modo||"fijo")===v?"rgba(59,130,246,0.12)":"transparent",color:(form.modo||"fijo")===v?T.blue:T.txt2}}>{l}</button>)}
@@ -869,6 +930,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       <div style={{borderTop:`1px solid ${T.border}`,marginTop:4,paddingTop:4}}>{fila(<b>Te queda</b>, <b>{fm(queda)}</b>, queda >= 0 ? T.green : T.red)}</div>
                     </div>;
                   })()}
+                </>)}
                 </>)}
                 <div style={{marginTop:8}}>
                   <In l="¿Cuánto sube el valor de este activo al año? (%)" value={form.valorizacionPct} onChange={(v) => setForm((p) => ({ ...p, valorizacionPct: v }))} type="number" placeholder="Ej: 5" />
