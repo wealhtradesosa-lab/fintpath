@@ -80,7 +80,11 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
     );
   }
 
-  const medidos = creados.map((p) => ({ p, m: medir(p.r, inflacionPct) })).filter((x) => x.m);
+  // 22-nov-2026 (Santiago: "uno de los escenarios a comparar es el de hoy: si me
+  // quedo como estoy, ¿qué pasa?"). «Quedarme como estoy» entra como un escenario
+  // más: su barra, su tarjeta y su informe completo. No se edita ni se borra.
+  const planHoy = hoy ? { ...hoy, nombre: tx("Si me quedo como estoy", "If I stay as I am"), descripcion: tx("Sin vender ni invertir en nada nuevo: tus activos, rentas, gastos y deudas siguen como hoy.", "No selling and no new investments: your assets, income, expenses and debt continue as they are today.") } : null;
+  const medidos = [...(planHoy ? [planHoy] : []), ...creados].map((p) => ({ p, m: medir(p.r, inflacionPct) })).filter((x) => x.m);
   const ranking = [...medidos].sort((a, b) => b.m.fin - a.m.fin);
   const maxFin = Math.max(mHoy ? mHoy.fin : 0, ...medidos.map((x) => x.m.fin), 1);
   // Curvas de tendencia: escala al rango real de todos los escenarios (no desde
@@ -101,8 +105,8 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
           <div>
             <h3 style={titulo}>{tx(`¿Cuál deja más patrimonio en ${anioFin}?`, `Which leaves the most net worth in ${anioFin}?`)}</h3>
             <div style={subtitulo}>
-              {mHoy ? tx(<>La línea punteada es seguir como vas ({fm(mHoy.fin)}). </>, <>The dashed line is staying the course ({fm(mHoy.fin)}). </>) : null}
-              {tx(<>«{mejor.p.nombre}» lleva la delantera{mHoy ? <> con <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> frente a hoy</> : null}.</>,
+              {mHoy ? tx(<>La línea punteada es quedarte como estás ({fm(mHoy.fin)}). </>, <>The dashed line is staying as you are ({fm(mHoy.fin)}). </>) : null}
+              {mejor.p.esHoy ? tx("Por ahora, quedarte como estás deja más patrimonio que los escenarios que creaste.", "For now, staying as you are leaves more net worth than the scenarios you created.") : tx(<>«{mejor.p.nombre}» lleva la delantera{mHoy ? <> con <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> frente a hoy</> : null}.</>,
                 <>"{mejor.p.nombre}" is ahead{mHoy ? <> by <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> vs. today</> : null}.</>)}
             </div>
           </div>
@@ -113,15 +117,16 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
             const ancho = (m.fin / maxFin) * 100;
             const dif = mHoy ? m.fin - mHoy.fin : null;
             return (
-              <div key={p.id} style={{ display: "grid", gridTemplateColumns: "minmax(110px, 26%) 1fr auto", gap: 12, alignItems: "center" }}>
-                <div style={{ fontSize: 13, color: C.txt, fontWeight: i === 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={p.nombre}>{p.nombre}</div>
-                <div style={{ position: "relative", height: 22 }}>
-                  <div className="fpi-barra-h" style={{ height: "100%", width: `${Math.max(1, ancho)}%`, borderRadius: 6, background: i === 0 ? C.azul : trama(C.azul, 40), animationDelay: `${i * 50}ms`, boxShadow: i === 0 ? "0 0 14px color-mix(in srgb, var(--fp-azul) 35%, transparent)" : "none" }} />
+              <div key={p.id || "hoy"} className="fpi-rank">
+                <div className="fpi-rank-nombre" style={{ fontSize: 13, color: C.txt, fontWeight: i === 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }} title={p.nombre}>{p.nombre}</div>
+                <div className="fpi-rank-barra" style={{ position: "relative", height: 22 }}>
+                  <div className="fpi-barra-h" style={{ height: "100%", width: `${Math.max(1, ancho)}%`, borderRadius: 6, background: p.esHoy ? "rgba(var(--fp-ink),0.28)" : i === 0 ? C.azul : trama(C.azul, 40), animationDelay: `${i * 50}ms`, boxShadow: i === 0 && !p.esHoy ? "0 0 14px color-mix(in srgb, var(--fp-azul) 35%, transparent)" : "none" }} />
                   {posHoy != null && <div aria-hidden="true" style={{ position: "absolute", top: -4, bottom: -4, left: `${posHoy}%`, borderLeft: `2px dashed ${C.txt3}` }} />}
                 </div>
-                <div style={{ textAlign: "right", minWidth: 120 }}>
+                <div className="fpi-rank-valor" style={{ textAlign: "right", minWidth: 120 }}>
                   <div style={{ fontSize: 14, fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div>
-                  {dif != null && <div style={{ fontSize: 11.5, color: dif >= 0 ? C.pos : C.neg, ...cifra }}>{dif >= 0 ? "+" : "−"}{fm(Math.abs(dif))} {tx("vs hoy", "vs. today")}</div>}
+                  {p.esHoy && <div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("sin mover nada", "changing nothing")}</div>}
+                  {dif != null && !p.esHoy && <div style={{ fontSize: 11.5, color: dif >= 0 ? C.pos : C.neg, ...cifra }}>{dif >= 0 ? "+" : "−"}{fm(Math.abs(dif))} {tx("vs hoy", "vs. today")}</div>}
                 </div>
               </div>
             );
@@ -131,15 +136,16 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
         {medidos.map(({ p, m }, i) => {
-          const esMejor = p.id === mejor.p.id;
+          const esMejor = p === mejor.p;
           const alcanza = m.peorMes >= 0;
           return (
-            <article key={p.id} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12, borderColor: esMejor ? "color-mix(in srgb, var(--fp-azul) 45%, transparent)" : undefined }}>
+            <article key={p.id || "hoy"} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12, borderStyle: p.esHoy ? "dashed" : undefined, borderColor: esMejor ? "color-mix(in srgb, var(--fp-azul) 45%, transparent)" : undefined }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
                 <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.txt, lineHeight: 1.3 }}>{p.nombre}</h4>
                 <span style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+                  {p.esHoy && <span style={{ fontSize: 11, fontWeight: 600, color: C.txt2, border: `1px solid rgba(var(--fp-ink),0.2)`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>{tx("Punto de partida", "Baseline")}</span>}
                   {p.recomendado && <span style={{ fontSize: 11, fontWeight: 600, color: C.pos, border: `1px solid ${C.pos}`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>{tx("Recomendado", "Recommended")}</span>}
-                  {onBorrar && <button type="button" className="fpi-caneca" title={tx("Borrar escenario", "Delete scenario")} aria-label={tx(`Borrar «${p.nombre}»`, `Delete "${p.nombre}"`)} onClick={() => { if (typeof window === "undefined" || window.confirm(tx(`¿Borrar «${p.nombre}»? No se puede deshacer.`, `Delete "${p.nombre}"? This can't be undone.`))) onBorrar(p.id); }}><Caneca /></button>}
+                  {onBorrar && !p.esHoy && <button type="button" className="fpi-caneca" title={tx("Borrar escenario", "Delete scenario")} aria-label={tx(`Borrar «${p.nombre}»`, `Delete "${p.nombre}"`)} onClick={() => { if (typeof window === "undefined" || window.confirm(tx(`¿Borrar «${p.nombre}»? No se puede deshacer.`, `Delete "${p.nombre}"? This can't be undone.`))) onBorrar(p.id); }}><Caneca /></button>}
                 </span>
               </div>
               <div title={p.descripcion || ""} style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, minHeight: 54, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion || resumenEscenario(p.r)}</div>
@@ -154,7 +160,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
                 <button type="button" onClick={() => onVer && onVer(p)} style={{ flex: 1, minHeight: 44, borderRadius: 10, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{tx("Ver completo", "View full report")}</button>
-                {onEditar && <button type="button" onClick={() => onEditar(p.id)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, cursor: "pointer" }}>{tx("Editar", "Edit")}</button>}
+                {onEditar && !p.esHoy && <button type="button" onClick={() => onEditar(p.id)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, cursor: "pointer" }}>{tx("Editar", "Edit")}</button>}
               </div>
             </article>
           );
