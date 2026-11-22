@@ -1,4 +1,5 @@
 import DosFormasCargar from "./DosFormasCargar.jsx";
+import FechaFin, { finParaGuardar } from "./FechaFin.jsx";
 import { useState } from "react";
 import { Interruptor, Trash2, MenuFila } from "./Iconos.jsx";
 import ExtraIngresoModal from "./ExtraIngresoModal";
@@ -511,7 +512,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
     // migrarAlCambiar no puede defenderlo: su guarda es "si ya hay montos,
     // respétalos", creyendo que el arreglo es un dato bueno.
     // `undefined` desaparece al serializar a JSON, así que el dato queda limpio.
-    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined };
+    const item = { ...form, mensual: mensualFinal, capital: capitalFinal, tasa: tasaFinal, montosMensuales: frecuenciaFinal === "variable" ? montosFinales : undefined, ...finParaGuardar(form) };
     // 5-nov-2026: "¿cuenta para tu libertad financiera?" — automático no se guarda.
     if (form.rentaPasiva === "si") item.rentaPasiva = true;
     else if (form.rentaPasiva === "no") item.rentaPasiva = false;
@@ -701,6 +702,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
       hastaMes: Number(item.hastaMes) || 12,
       // UX FIX 2 (19-jul-2026): flag persistido del modo de vigencia
       vigenciaModo: item.vigenciaModo,
+      finAnio: item.finAnio ? String(item.finAnio) : "", finMes: item.finMes ? String(item.finMes) : "",
       // Fase Variable (18-jul-2026 noche): preservar array de montos mensuales
       montosMensuales: getMontosMensuales(item),
     });
@@ -1563,6 +1565,7 @@ export default function IngresosModule({ ingresos, owners, onUpdate, trm, fmt, o
                 />
               </div>
               )}
+              <FechaFin que="ingreso" finAnio={form.finAnio} finMes={form.finMes} tokens={T} onChange={(patch) => setForm((p) => ({ ...p, ...patch }))} />
 
               <In l="Tipo" value={form.tipo} onChange={(v) => setForm((p) => ({ ...p, tipo: v }))} options={["fijo", "variable"]} />
               <In l="Fuente" value={form.fuente} onChange={(v) => setForm((p) => ({ ...p, fuente: v }))} placeholder="Empresa, propiedad, fondo..." />

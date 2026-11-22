@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -631,11 +631,11 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
       <h4 style={{ margin: "16px 0 4px" }}>{tx("Ingresos que se acaban", "Income that ends")}</h4>
       <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>{tx(<>Cada ingreso se revisa en un solo lugar: en <b style={{ color: C.tx }}>1. Lo que tienes</b> corriges cuánto te entra y marcas si sigue o se acaba.</>, <>Each income is reviewed in one place: in <b style={{ color: C.tx }}>1. What you have</b> you fix how much comes in and mark whether it continues or ends.</>)}
         {irHoy && <> <button style={{ ...btn(true), padding: "4px 10px", fontSize: 12 }} onClick={irHoy}>{tx("Ir a mis ingresos en 1. Lo que tienes", "Go to my income in 1. What you have")}</button></>}
-        {Object.keys(cfg.ingresosTerminan || {}).length > 0 && <div style={{ marginTop: 4, color: C.am }}>{tx(`Tienes ${Object.keys(cfg.ingresosTerminan || {}).length} que se acaban en este escenario.`, `${Object.keys(cfg.ingresosTerminan || {}).length} end in this scenario.`)}</div>}</div>
+        {Object.values(cfg.ingresosTerminan || {}).filter((v) => v !== "sigue").length > 0 && <div style={{ marginTop: 4, color: C.am }}>{tx(`Tienes ${Object.values(cfg.ingresosTerminan || {}).filter((v) => v !== "sigue").length} que se acaban en este escenario.`, `${Object.values(cfg.ingresosTerminan || {}).filter((v) => v !== "sigue").length} end in this scenario.`)}</div>}</div>
       <h4 style={{ margin: "16px 0 4px" }}>{tx("Gastos que se acaban o cambian", "Expenses that end or change")}</h4>
       <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>{tx(<>Igual que los ingresos: cada gasto de hoy se revisa en <b style={{ color: C.tx }}>1. Lo que tienes</b>, donde corriges cuánto sale y marcas si sigue o se acaba.</>, <>Same as income: each current expense is reviewed in <b style={{ color: C.tx }}>1. What you have</b>, where you fix how much goes out and mark whether it continues or ends.</>)}
         {irHoy && <> <button style={{ ...btn(true), padding: "4px 10px", fontSize: 12 }} onClick={irHoy}>{tx("Ir a mis gastos en 1. Lo que tienes", "Go to my expenses in 1. What you have")}</button></>}
-        {Object.keys(cfg.gastosTerminan || {}).length > 0 && <div style={{ marginTop: 4, color: C.am }}>{tx(`Tienes ${Object.keys(cfg.gastosTerminan || {}).length} que se acaban en este escenario.`, `${Object.keys(cfg.gastosTerminan || {}).length} end in this scenario.`)}</div>}</div>
+        {Object.values(cfg.gastosTerminan || {}).filter((v) => v !== "sigue").length > 0 && <div style={{ marginTop: 4, color: C.am }}>{tx(`Tienes ${Object.values(cfg.gastosTerminan || {}).filter((v) => v !== "sigue").length} que se acaban en este escenario.`, `${Object.values(cfg.gastosTerminan || {}).filter((v) => v !== "sigue").length} end in this scenario.`)}</div>}</div>
     </div>
   );
 }
@@ -1044,7 +1044,9 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
   const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {}, ch = cfg.crecHoy || {};
   const setC = (id, v) => { const nx = { ...ch }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("crecHoy", nx); };
   const setR = (id, v) => { const nx = { ...rh }; if (v === "" || v == null) delete nx[id]; else nx[id] = v; set("rentaHoy", nx); };
-  const setT = (k, v) => { const t = { ...(cfg.ingresosTerminan || {}) }; if (v) t[k] = v; else delete t[k]; set("ingresosTerminan", t); };
+  // Si el ingreso trae fecha de fin desde su página, «Sigue» tiene que quedar dicho (si no, la fecha vuelve a aplicar).
+  const finI = finalesDeDatos(user).ingresos;
+  const setT = (k, v) => { const t = { ...(cfg.ingresosTerminan || {}) }; if (v) t[k] = v; else if (finI[k]) t[k] = "sigue"; else delete t[k]; set("ingresosTerminan", t); };
   const setI = (k, v) => { const nx = { ...ih }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("ingresoHoy", nx); };
   const pctTxt = (v) => `${dec1(v)}${esUS() ? "%" : " %"} ${tx("al año", "a year")}`;
   const fila = { borderTop: `1px solid ${C.bd}`, padding: "10px 0" };
@@ -1123,6 +1125,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
             {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setI(x.key, null)}>{tx("Quitar", "Remove")}</button>}
           </div>
           {x.nota && !x.corregido && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
+          {x.finDeDatos && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx(`En tu página Ingresos dice que termina en ${x.finAnio}. Si va a seguir, elige «Sigue».`, `Your Income page says it ends in ${x.finAnio}. If it will continue, choose "Continues".`)}</div>}
           {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
             <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>{tx("Sigue", "Continues")}</button>
             <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>{tx("Se acaba", "Ends")}</button>
@@ -1257,7 +1260,8 @@ function TusGastos({ user, cfg, set }) {
   const lista = gastosLista(user, cfg);
   const gh = cfg.gastoHoy || {}, term = cfg.gastosTerminan || {};
   const setG = (k, v) => { const nx = { ...gh }; if (v === "" || v == null) delete nx[k]; else nx[k] = v; set("gastoHoy", nx); };
-  const setT = (k, v) => { const nx = { ...term }; if (v) nx[k] = v; else delete nx[k]; set("gastosTerminan", nx); };
+  const finG = finalesDeDatos(user).gastos;
+  const setT = (k, v) => { const nx = { ...term }; if (v) nx[k] = v; else if (finG[k]) nx[k] = "sigue"; else delete nx[k]; set("gastosTerminan", nx); };
   const orden = [...lista].sort((a, b) => (!!(b.corregido || b.seVa) - !!(a.corregido || a.seVa)) || b.mensual - a.mensual);
   const visibles = verTodos ? orden : orden.slice(0, 10);
   const cuenta = (x) => !(x.seVa === "venta" || (x.seVa === "acaba" && Number(x.acabaAnio) <= 1));
@@ -1278,6 +1282,7 @@ function TusGastos({ user, cfg, set }) {
           <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? tx(`corregido (en Egresos: ${plata(Math.round(x.enEgresos))})`, `edited (on Expenses: ${plata(Math.round(x.enEgresos))})`) : tx(`${plata(Math.round(x.mensual))}/mes, de tu página Egresos`, `${plata(Math.round(x.mensual))}/mo, from your Expenses page`)}</span>
           {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setG(x.key, null)}>{tx("Quitar", "Remove")}</button>}
         </div>
+        {x.finDeDatos && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx(`En tu página Egresos dice que termina en ${x.finAnio}. Si va a seguir, elige «Sigue».`, `Your Expenses page says it ends in ${x.finAnio}. If it will continue, choose "Continues".`)}</div>}
         {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
           <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>{tx("Sigue", "Continues")}</button>
           <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>{tx("Se acaba", "Ends")}</button>
