@@ -205,6 +205,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {/* 24-oct-2026 (Santiago: "veo que se pisan las mangueras de ambas
             secciones"). El paso 2 solo decide; todo lo que mueve plata va en
             el paso 3, Tu plata, con el saldo a la vista y el origen de cada peso. */}
+        <ResumenPaso1 user={user} cfg={cfg} r={r} irHoy={() => { ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
         <div style={card}>
           <Seccion n={2} titulo={tx("Lo que viene", "What's coming")} sub={tx("Lo que empieza más adelante: una pensión, un local que te entregan, tu casa, la universidad de los hijos. Lo que ya tienes (vender, apagar rentas) se decide en el paso 1.", esUS() ? "Things that start later: a pension or Social Security, a property you take over, your home, the kids' college. What you already have (selling, stopping income) is decided in step 1." : "Things that start later: a pension, a property handed over to you, your home, the kids' college. What you already have (selling, stopping income) is decided in step 1.")} />
           <LoQueViene cfg={cfg} set={set} esc={esc} owners={user.owners || []} activos={r.activos} gastosHoy={r.gastosHoy || []} ingresosHoy={r.ingresosHoy || []} fuentes={r.fuentes || []} irHoy={() => { ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
@@ -212,6 +213,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       </>)}
 
       {paso === 2 && (<>
+        <ResumenPaso1 user={user} cfg={cfg} r={r} irHoy={() => { ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
         <div style={card}>
           <h3 style={{ marginTop: 0, marginBottom: 2 }}>{tx("Tu plata", "Your money")}</h3>
           <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>{tx("Lo que tienes para mover: lo que vendes, capital nuevo que traigas de afuera o tu liquidez de hoy. Cada uso se descuenta y siempre ves cuánto te queda.", "What you can move: what you sell, new capital from outside, or the cash you have today. Each use is deducted and you always see what's left.")}</p>
@@ -222,8 +224,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           {(r.deudas || []).length + (r.deudasSinSaldo || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>{tx("No tienes deudas con saldo.", "You have no outstanding debt.")}</p>}
         </div>
         <div style={card}>
-          <Seccion n="B" titulo={tx("Invertir en lo que ya tienes", "Invest in what you already own")} sub={tx("Plata que le metes a algo tuyo: una obra (la bodega en tu lote) o más capital (IBKR). Elige de dónde sale.", "Money you put into something you own: a build-out (a warehouse on your lot) or more capital (a brokerage account). Choose where it comes from.")} />
-          {(r.activos || []).filter((a) => a.clase !== "vehiculo").map((a) => {
+          <Seccion n="B" titulo={tx("Invertir en lo que ya tienes", "Invest in what you already own")} sub={tx("Los activos que en el paso 1 marcaste «Se modifica → le voy a invertir». De cada uno: cuánto, cuándo, de dónde sale la plata y la renta que traiga.", "The assets you marked \"Modify → I'll invest\" in step 1. For each: how much, when, where the money comes from and the income it brings.")} />
+          {/* 22-nov-2026 (Santiago: "si en la primera sección se hace algo, esto se verá reflejado en los siguientes pasos; todo debe tener una lógica, un proceso"). Aquí ya no se vuelve a preguntar activo por activo: llega lo marcado en el paso 1. */}
+          {!(r.activos || []).some((a) => a.clase !== "vehiculo" && cfg.reinversiones.some((x) => x.activoId === a.id)) && <p style={{ color: C.tx2, fontSize: 13, margin: "4px 0 8px" }}>{tx("En el paso 1 no marcaste ningún activo para invertirle.", "You didn't mark any asset to invest in at step 1.")}</p>}
+          {(r.activos || []).filter((a) => a.clase !== "vehiculo" && cfg.reinversiones.some((x) => x.activoId === a.id)).map((a) => {
             const iR = cfg.reinversiones.findIndex((x) => x.activoId === a.id);
             const activo = iR >= 0;
             const toggle = () => set("reinversiones", activo ? cfg.reinversiones.filter((x) => x.activoId !== a.id) : [...cfg.reinversiones, { activoId: a.id, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0, fuente: "venta" }]);
@@ -233,7 +237,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               <div key={a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
                   <b>{a.nombre}</b>
-                  <button style={btn(activo)} onClick={toggle}>{activo ? tx("Le voy a invertir ✓", "I'll invest in it ✓") : tx("Le voy a invertir", "I'll invest in it")}</button>
+                  <button type="button" onClick={toggle} style={{ background: "transparent", border: "none", padding: "4px 0", color: C.tx2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>{tx("Quitar", "Remove")}</button>
                 </div>
                 {activo && (() => {
                   // 19-nov-2026: la renta de este activo ya escrita en Lo que viene.
@@ -286,6 +290,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               </div>
             );
           })}
+          {(() => { const libres = (r.activos || []).filter((a) => a.clase !== "vehiculo" && !cfg.reinversiones.some((x) => x.activoId === a.id)); if (!libres.length) return null; return (
+            <div style={{ borderTop: `1px solid ${C.bd}`, paddingTop: 10, marginTop: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13, color: C.tx2 }}>
+              <span>{tx("¿Le vas a invertir a otro de tus activos?", "Investing in another of your assets?")}</span>
+              <select style={{ ...inp, width: "auto", maxWidth: "100%" }} value="" onChange={(e) => { if (e.target.value) set("reinversiones", [...cfg.reinversiones, { activoId: e.target.value, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0, fuente: "venta" }]); }}>
+                <option value="">{tx("Elegir activo…", "Choose asset…")}</option>
+                {libres.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+              </select>
+            </div>); })()}
         </div>
         <div style={card}>
           <Seccion n="C" titulo={tx("Inversiones nuevas", "New investments")} sub={esUS() ? tx("Algo que todavía no tienes: un CD, un fondo, una inversión en otra cosa. Elige de dónde sale.", "Something you don't own yet: a CD, a fund, another investment. Choose where it comes from.") : tx("Algo que todavía no tienes: un CDT, un fondo, una inversión en otra cosa. Elige de dónde sale.", "Something you don't own yet: a term deposit, a fund, another investment. Choose where it comes from.")} />
@@ -945,11 +957,42 @@ function ModificaActivo({ x, d, setD, invierte, toggleInv, det }) {
           <input type="checkbox" checked={invierte} onChange={toggleInv} style={{ marginTop: 3 }} />
           <span>{tx("Le voy a invertir: construir, remodelar o meterle más capital", "I'll invest in it: build, remodel or add capital")}</span>
         </label>
-        {invierte && <div style={{ fontSize: 12, color: C.gn, marginTop: 6, lineHeight: 1.5 }}>{det ? tx(`Le inviertes ${plata(det.aporte)}. `, `You invest ${plata(det.aporte)}. `) : ""}{tx("Queda anotado. Cuánto, cuándo, de dónde sale la plata y la renta que traiga la obra se llenan en el paso 3 · Tu plata, cuando llegues allá.", "Noted. How much, when, where the money comes from and the income the works bring are filled in at step 3 · Your money, when you get there.")}</div>}
+        {invierte && <div style={{ fontSize: 12, color: C.gn, marginTop: 6, lineHeight: 1.5 }}>{det ? tx(`Le inviertes ${plata(det.aporte)}. `, `You invest ${plata(det.aporte)}. `) : ""}{tx("Queda anotado y te va a aparecer en el paso 3 · Tu plata. Allá pones cuánto, cuándo, de dónde sale la plata y la renta que traiga.", "Noted. How much, when, where the money comes from and the income the works bring are filled in at step 3 · Your money, when you get there.")}</div>}
       </>}
     </div>);
 }
 const vacioTxt = (v) => v === "" || v == null;
+
+// 22-nov-2026 (Santiago: "si en la primera sección se hace algo, esto se verá
+// reflejado en los siguientes pasos"). Lo decidido en el paso 1, a la vista en
+// los pasos 2 y 3: qué se vende, qué se modifica (y cómo) y qué se conserva.
+function ResumenPaso1({ user, cfg, r, irHoy }) {
+  const invs = inversionesHoy(user, cfg);
+  const reinv = cfg.reinversiones || [];
+  const vende = invs.filter((x) => x.vende);
+  const modif = invs.filter((x) => !x.vende && (x.cambio || reinv.some((y) => y.activoId === x.id)));
+  const conserva = invs.length - vende.length - modif.length;
+  const cuando = (t) => (t <= 1 ? tx("desde ya", "from now") : tx(`desde ${anioCal(t)}`, `from ${anioCal(t)}`));
+  const queCambia = (x) => {
+    const p = [];
+    if (x.cambio) p.push(x.cambio.modo === "propio" ? tx(`deja de rentar ${cuando(x.cambio.desde)}`, `stops earning ${cuando(x.cambio.desde)}`) : tx(`renta ${plata(Math.round(x.cambio.mensual))}/mes ${cuando(x.cambio.desde)}`, `earns ${plata(Math.round(x.cambio.mensual))}/mo ${cuando(x.cambio.desde)}`));
+    const re = reinv.find((y) => y.activoId === x.id);
+    if (re) p.push(Number(re.monto) > 0 ? tx(`le inviertes ${plata(Math.round(Number(re.monto)))}`, `you invest ${plata(Math.round(Number(re.monto)))}`) : tx("le vas a invertir (falta el monto, paso 3)", "you'll invest (amount pending, step 3)"));
+    return p.join(" · ");
+  };
+  const fila = { display: "flex", gap: 8, fontSize: 13, padding: "3px 0", alignItems: "baseline" };
+  const et = { flex: "0 0 92px", color: C.tx2, fontSize: 12 };
+  return (
+    <div style={{ ...card, padding: "12px 14px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "baseline", flexWrap: "wrap", marginBottom: 4 }}>
+        <b style={{ fontSize: 13 }}>{tx("Lo que decidiste en el paso 1", "What you decided in step 1")}</b>
+        <button type="button" onClick={irHoy} style={{ background: "transparent", border: "none", padding: 0, color: C.tx2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>{tx("Cambiar", "Change")}</button>
+      </div>
+      <div style={fila}><span style={et}>{tx("Se vende", "Sell")}</span><span style={{ minWidth: 0 }}>{vende.length ? <>{vende.map((x) => x.nombre).join(", ")} <span style={{ color: C.tx2 }}>· {plata(Math.round(vende.reduce((sm, x) => sm + x.valor, 0)))}</span></> : <span style={{ color: C.tx2 }}>{tx("Nada", "Nothing")}</span>}</span></div>
+      <div style={fila}><span style={et}>{tx("Se modifica", "Modify")}</span><span style={{ minWidth: 0 }}>{modif.length ? modif.map((x) => <div key={x.id}>{x.nombre} <span style={{ color: C.tx2 }}>· {queCambia(x)}</span></div>) : <span style={{ color: C.tx2 }}>{tx("Nada", "Nothing")}</span>}</span></div>
+      <div style={fila}><span style={et}>{tx("Se conserva", "Keep")}</span><span style={{ color: C.tx2 }}>{conserva === 1 ? tx("1 activo, tal como está", "1 asset, as it is") : tx(`${conserva} activos, tal como están`, `${conserva} assets, as they are`)}</span></div>
+    </div>);
+}
 
 // Título que se edita tocándolo (Enter o salir guarda; Esc cancela).
 function TituloEditable({ valor, onCambiar }) {
