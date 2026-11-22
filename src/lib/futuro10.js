@@ -140,7 +140,7 @@ export function claseActivo(a) {
  *                         reinversiones:[{activoId,monto}], supuestos }
  */
 export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
-  const cfg = migrarClaves(cfgIn, userIn);
+  const cfg = conVencimientos(migrarClaves(cfgIn, userIn), userIn);
   const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const sup = cfg.supuestos || supuestosF10();
   const esc = resolverEscenario(cfg.escenario || "base", user, sup);
@@ -536,6 +536,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // Solo el plan: Patrimonio, Ingresos y Egresos no se tocan.
   const cambios = leerCambios(cfg, N);
   const terminanEn = leerTerminan(cfg, N);
+  const liberados = []; // plata que queda libre en años siguientes (activos que vencen o se venden después)
   const manualOp = new Set((user.inv || []).filter((x) => x && x.rentaOrigen === "manual").map((x) => x.id));
   const costoLigado = (id) => {
     if (manualOp.has(id)) return gastosHoy.filter((g) => g.activoId === id && g.neteado).reduce((sm, g) => sm + g.mensual, 0);
@@ -604,6 +605,18 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       canasta.crecimiento = sacar(canasta.crecimiento);
       if (falta > 0) { canasta.liquidez -= falta; if (liqAgotadaAnio == null) liqAgotadaAnio = t; }
     };
+    // 22-nov-2026 (Santiago: "esta inversión dura 2 años: me devuelven el capital
+    // y dejo de recibir la renta"). Un activo que se vende o vence en un año
+    // siguiente: al empezar ese año su valor vuelve como plata y se reparte, y su
+    // renta deja de entrar.
+    activos.forEach((a) => {
+      if (terminanEn[a.id] !== t || a.terminado) return;
+      a.terminado = true; a.finRenta = true; a.devuelto = a.valor;
+      liberados.push({ id: a.id, nombre: a.nombre, anio: t, monto: a.valor });
+      if (a.valor > 0) Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
+      alertas.push({ tipo: "activo_termina", anio: t, texto: tx(`En ${anioCal(t)} sale «${a.nombre}»: recibes ${mmTxt(a.valor)} y su renta deja de entrar.`, `In ${anioCal(t)} "${a.nombre}" ends: you receive ${mmTxt(a.valor)} and its income stops.`) });
+      a.valor = 0;
+    });
     // 0) inversiones personalizadas: al inicio del año X pasan de tu liquidez/bolsa al activo nuevo.
     personalizadas.forEach((c) => {
       if (c.anio !== t) return;
@@ -628,17 +641,6 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         alertas.push({ tipo: "ciclo_fin", anio: t, texto: tx(`En ${anioCal(t)} termina «${c.nombre}»: el capital vuelve y se reparte.`, `In ${anioCal(t)} "${c.nombre}" ends: the capital comes back and is allocated.`) });
         a.valor = 0;
       }
-    });
-    // 22-nov-2026 (Santiago: "esta inversión dura 2 años: me devuelven el capital
-    // y dejo de recibir la renta"). Un activo que se vende o vence en un año
-    // siguiente: al empezar ese año su valor vuelve como plata y se reparte, y su
-    // renta deja de entrar.
-    activos.forEach((a) => {
-      if (terminanEn[a.id] !== t || a.terminado) return;
-      a.terminado = true; a.finRenta = true; a.devuelto = a.valor;
-      if (a.valor > 0) Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
-      alertas.push({ tipo: "activo_termina", anio: t, texto: tx(`En ${anioCal(t)} sale «${a.nombre}»: recibes ${mmTxt(a.valor)} y su renta deja de entrar.`, `In ${anioCal(t)} "${a.nombre}" ends: you receive ${mmTxt(a.valor)} and its income stops.`) });
-      a.valor = 0;
     });
     // 1) rendimientos y depreciación del año
     let creceAnio = 0;
@@ -899,6 +901,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
+    liberados,
     // 7-nov-2026 (La historia de tu plata): lo que rendía cada activo vendido, para explicar por qué se vende.
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => { const rentaAnual = n(b.rentaNetaPorActivo[x.id]) * 12; return { id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x), clase: claseActivo(x), rentaAnual, crec: crecimientoDefault(x, esc, sup, rentaAnual) }; }),
     reinversionesDetalle,
@@ -1161,6 +1164,33 @@ const sinTilde = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/
  *           solo se avisa.
  * Devuelve [{ k, ingreso, activoId, activo, mensual, contada, seguro }].
  */
+/**
+ * 22-nov-2026 (Santiago: "invertí en un CDT por 6 meses o 1 año: el sistema sabe
+ * cuánto capital hay, cuánto renta y hasta cuándo; en un escenario futuro debe
+ * decirme que en el año X tengo libre esa plata"). El vencimiento cargado en
+ * Patrimonio (venceAnio/venceMes) entra al plan como «termina» ese año, salvo
+ * que el escenario diga otra cosa de ese activo (se conserva = se renueva).
+ * Año del plan: 1 = año en curso. Si vence este año, la plata queda libre al
+ * empezar el siguiente (año 2). Lo que ya venció o vence después del plan no cuenta.
+ */
+export function vencimientosPatrimonio(user = {}, N = 10) {
+  const hoy = new Date().getFullYear(), out = {};
+  (user.inv || []).forEach((a) => {
+    if (!a || a.sim === false || !(n(a.venceAnio) > 0)) return;
+    const t = Math.round(n(a.venceAnio)) - hoy + 1;
+    if (t < 1 || t > N) return;
+    out[a.id] = Math.max(2, n(a.venceMes) >= 12 ? t + 1 : t);
+  });
+  return out;
+}
+/** cfg con los vencimientos de Patrimonio aplicados donde el escenario no decidió nada. */
+export function conVencimientos(cfg = {}, user = {}) {
+  if (cfg._conVenc) return cfg;
+  const v = vencimientosPatrimonio(user, n(cfg.anios) || 10), dec = { ...(cfg.decisiones || {}) };
+  let cambio = false;
+  Object.entries(v).forEach(([id, t]) => { if (t <= (n(cfg.anios) || 10) && !dec[id]) { dec[id] = { accion: "termina", desde: t, dePatrimonio: true }; cambio = true; } });
+  return cambio ? { ...cfg, decisiones: dec, _conVenc: true } : cfg;
+}
 /** Activos que se venden o vencen en un año siguiente: { id: año 2..N }. */
 export function leerTerminan(cfg = {}, N = 10) {
   const out = {};
@@ -1301,7 +1331,7 @@ export function paraPlan(user = {}) {
 
 /** Cada inversión hoy: cuánto vale y cuánto renta, con de dónde sale. */
 export function inversionesHoy(userIn = {}, cfgIn = {}) {
-  const cfg = migrarClaves(cfgIn, userIn);
+  const cfg = conVencimientos(migrarClaves(cfgIn, userIn), userIn);
   const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const { impuestoNeto, retencionMensual, ...sinImp } = user;
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
@@ -1317,7 +1347,7 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
     const esc = resolverEscenario(cfg.escenario || "base", user);
     const def = crecimientoDefault(a, esc, supuestosF10(), usada * 12);
     const ch = (cfg.crecHoy || {})[a.id];
-    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende", cambio: leerCambios(cfg)[a.id] || null, termina: leerTerminan(cfg)[a.id] || null, costoLigado: gastos.reduce((sm, g) => sm + g.mensual, 0) };
+    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende", cambio: leerCambios(cfg)[a.id] || null, termina: leerTerminan(cfg)[a.id] || null, terminaDePatrimonio: !!(cfg.decisiones || {})[a.id]?.dePatrimonio, venceAnio: n(a.venceAnio) || null, venceMes: n(a.venceMes) || null, costoLigado: gastos.reduce((sm, g) => sm + g.mensual, 0) };
   });
 }
 

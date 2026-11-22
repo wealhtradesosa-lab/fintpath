@@ -137,6 +137,9 @@ function calcMetrics(inv, deudas, trm, rentaVinculadaMes = 0, gastoVinculadoMes 
   return { ig, gs, noi, roi, cap, coc, debtTotal, debtPayment, equity };
 }
 
+// Inversiones que suelen tener plazo (vencen y devuelven el capital).
+const TIPOS_CON_PLAZO = ["Fondo de Inversión", "CDT", "Renta Fija", "Negocio", "Otro"];
+const MES_CORTO = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 const In = ({ l, value, onChange, type, placeholder, options }) => (
     <div style={{ marginBottom: 12 }}>
       <label style={{ fontSize: 12, fontWeight: 600, color: T.txt3, letterSpacing: "0.06em", display: "block", marginBottom: 4 }}>{l}</label>
@@ -356,6 +359,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       va: String(getVArw(inv) || ""),
       vc: String(getVCrw(inv) || ""),
       tasa: String(inv.tasa || ""),
+      plazo: Number(inv.venceAnio) > 0 ? "si" : "no", venceAnio: inv.venceAnio ? String(inv.venceAnio) : "", venceMes: inv.venceMes ? String(inv.venceMes) : "",
       valorizacionPct: inv.valorizacionPct != null ? String(inv.valorizacionPct) : "",
       rentaOrigen: inv.rentaOrigen || "",
       tasaLegacy: !!inv.tasa && !inv.rentaOrigen,
@@ -426,6 +430,8 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       revisarFiscal: undefined,
       pctTerreno: form.pctTerreno !== "" && form.pctTerreno != null ? Math.max(0, Math.min(100, parseFloat(form.pctTerreno))) : undefined,
       rentasDistintas: form._rentasDistintas ? true : undefined,
+      venceAnio: TIPOS_CON_PLAZO.includes(form.tipo) && form.plazo === "si" && parseInt(form.venceAnio, 10) > 0 ? parseInt(form.venceAnio, 10) : undefined,
+      venceMes: TIPOS_CON_PLAZO.includes(form.tipo) && form.plazo === "si" && parseInt(form.venceAnio, 10) > 0 ? Math.max(1, Math.min(12, parseInt(form.venceMes, 10) || 12)) : undefined,
     };
     // Store income directly on investment so coaches can read it
     let idActivo = editId;
@@ -701,7 +707,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                       {inv.revisarFiscal && (
                         <div onClick={() => openEdit(inv)} style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", cursor: "pointer", marginBottom: 2 }}>Revisa: ¿qué tipo de inversión es? Elígelo para que tu renta quede bien calculada</div>
                       )}
-                      <div style={{ fontSize: 12, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : ""].filter(Boolean).join(" • ")}</div>
+                      <div style={{ fontSize: 12, color: T.txt3 }}>{[loc, tipo, inv.tasa ? "renta " +fmtTasaEs(inv.tasa)+" anual" : "", inv.venceAnio ? `vence ${MES_CORTO[Number(inv.venceMes) || 12]} ${inv.venceAnio}` : ""].filter(Boolean).join(" • ")}</div>
                       {(()=>{
                         if(!inv.owner || inv.owner==="") return null;
                         if(inv.owner==="na") return <div style={{fontSize:11,color:"var(--fp-txt3)",marginTop:2}}>N/A</div>;
@@ -807,6 +813,24 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 }
                 return null;
               })()}
+              {/* 22-nov-2026 (Santiago: "los fondos, CDT… son por unos meses o unos años; que al
+                  ponerlos uno pueda decir cuánto duran, para que los simuladores sepan en qué año
+                  queda libre esa plata"). Opcional. Lo usa Mi futuro a 10 años. */}
+              {TIPOS_CON_PLAZO.includes(form.tipo) && (
+                <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
+                  <div style={{fontSize:12,fontWeight:700,color:T.txt2,marginBottom:10}}>¿Esta inversión tiene fecha de vencimiento?</div>
+                  <div style={{display:"flex",gap:8,marginBottom:form.plazo === "si" ? 10 : 0}}>
+                    {[["no","No, es indefinida"],["si","Sí, vence"]].map(([v,l]) => <button key={v} type="button" onClick={() => setForm((p) => ({ ...p, plazo: v, venceAnio: v === "si" ? (p.venceAnio || String(new Date().getFullYear() + 1)) : p.venceAnio, venceMes: v === "si" ? (p.venceMes || "12") : p.venceMes }))} style={{flex:1,padding:"9px 10px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:600,border:"1px solid "+((form.plazo||"no")===v?T.green:T.border),background:(form.plazo||"no")===v?"rgba(0,200,5,0.1)":"transparent",color:(form.plazo||"no")===v?T.green:T.txt2}}>{l}</button>)}
+                  </div>
+                  {form.plazo === "si" && (<>
+                    <div style={{display:"flex",gap:8}}>
+                      <div style={{flex:1}}><In l="Mes en que vence" value={form.venceMes || "12"} onChange={(v) => setForm((p) => ({ ...p, venceMes: v }))} options={["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((l, k) => ({ v: String(k + 1), l }))} /></div>
+                      <div style={{flex:1}}><In l="Año en que vence" value={form.venceAnio || ""} onChange={(v) => setForm((p) => ({ ...p, venceAnio: v }))} options={Array.from({ length: 16 }, (_, k) => String(new Date().getFullYear() + k)).map((y) => ({ v: y, l: y }))} /></div>
+                    </div>
+                    <div style={{fontSize:12,color:T.txt3,marginTop:-2}}>Ese mes te devuelven el capital y deja de rentar. En «Mi futuro a 10 años» va a aparecer como plata que queda libre ese año, para que decidas qué hacer con ella.</div>
+                  </>)}
+                </div>
+              )}
               <div style={{gridColumn:"1/-1",background:T.bg3,borderRadius:12,padding:"14px 16px"}}>
                 {/* 21-oct-2026 — Aquí nace el ingreso del activo (un solo origen).
                     Santiago: "activo Puerto Madero: cuánto vale, cuánto renta, y esa

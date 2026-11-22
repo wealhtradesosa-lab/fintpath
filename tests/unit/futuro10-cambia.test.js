@@ -81,3 +81,28 @@ describe("paso 1: se vende o vence en un año siguiente", () => {
     expect(x.termina).toBe(3); expect(x.vende).toBe(false);
   });
 });
+
+// 22-nov-2026 (Santiago): el vencimiento cargado en Patrimonio entra solo al plan.
+import { vencimientosPatrimonio } from "../../src/lib/futuro10.js";
+describe("vencimiento cargado en Patrimonio", () => {
+  const Y = new Date().getFullYear();
+  const u = (venceAnio, venceMes = 6) => ({ trm: 4000, inflacionPct: 4,
+    inv: [{ id: "cdt", n: "CDT", tipo: "CDT", va: 100e6, venceAnio, venceMes }, { id: "c", n: "Cash", liquido: true, va: 50e6 }],
+    ingresos: [{ nombre: "Int CDT", tipo: "pasivo", activoId: "cdt", mensual: 1e6, frecuencia: "mensual" }, { nombre: "Salario", mensual: 20e6, frecuencia: "mensual" }], gas: {} });
+  it("año del plan: este año → 2; a mitad del año siguiente → 2; diciembre → año siguiente", () => {
+    expect(vencimientosPatrimonio(u(Y)).cdt).toBe(2);
+    expect(vencimientosPatrimonio(u(Y + 1)).cdt).toBe(2);
+    expect(vencimientosPatrimonio(u(Y + 1, 12)).cdt).toBe(3);
+    expect(vencimientosPatrimonio(u(Y - 1)).cdt).toBeUndefined();
+    expect(vencimientosPatrimonio(u(Y + 30)).cdt).toBeUndefined();
+  });
+  it("sin decidir nada, el plan libera el capital ese año; «se conserva» lo renueva", () => {
+    const r = proyectarFuturo10(u(Y + 2), {});
+    expect(r.liberados).toHaveLength(1); expect(r.liberados[0]).toMatchObject({ id: "cdt", anio: 3 });
+    expect(r.liberados[0].monto).toBeGreaterThan(100e6 * 0.99);
+    const x = inversionesHoy(u(Y + 2), {}).find((y) => y.id === "cdt");
+    expect(x.termina).toBe(3); expect(x.terminaDePatrimonio).toBe(true);
+    const r2 = proyectarFuturo10(u(Y + 2), { decisiones: { cdt: { accion: "continua" } } });
+    expect(r2.liberados).toHaveLength(0);
+  });
+});

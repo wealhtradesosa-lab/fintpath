@@ -89,27 +89,38 @@ export function MenuFila({ onEditar, onEliminar, editarTitulo = "Editar", extra 
   const [pos, setPos] = useState(null);
   const ref = useRef(null);
   const btnRef = useRef(null);
+  const nItems = (onEditar ? 1 : 0) + (onEliminar ? 1 : 0) + extra.length;
+  const ubicar = (r) => {
+    const alto = 44 * nItems + 10;
+    const arriba = window.innerHeight - r.bottom < alto + 8 && r.top > alto + 8;
+    return { right: Math.max(8, window.innerWidth - r.right), ...(arriba ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) };
+  };
   useEffect(() => {
     if (!abierto) return;
     const fuera = (e) => { if (ref.current && !ref.current.contains(e.target)) setAbierto(false); };
-    const cerrar = () => setAbierto(false);
+    // 22-nov-2026 (Santiago: "no funcionan los 3 botones de varios ítems"). Cualquier
+    // scroll cerraba el menú: si la página aún se estaba moviendo al tocar el «⋯»
+    // (inercia del trackpad o del celular, o el salto al enfocar la fila), el menú
+    // se abría y se cerraba en el acto y parecía que el botón no servía. Ahora el
+    // menú sigue al botón mientras se mueve y solo se cierra si el botón sale de la pantalla.
+    const mover = () => {
+      const r = btnRef.current?.getBoundingClientRect();
+      if (!r || r.bottom < 0 || r.top > window.innerHeight) { setAbierto(false); return; }
+      setPos(ubicar(r));
+    };
     document.addEventListener("mousedown", fuera);
-    window.addEventListener("scroll", cerrar, true);
-    window.addEventListener("resize", cerrar);
+    window.addEventListener("scroll", mover, true);
+    window.addEventListener("resize", mover);
     return () => {
       document.removeEventListener("mousedown", fuera);
-      window.removeEventListener("scroll", cerrar, true);
-      window.removeEventListener("resize", cerrar);
+      window.removeEventListener("scroll", mover, true);
+      window.removeEventListener("resize", mover);
     };
-  }, [abierto]);
+  }, [abierto, nItems]);
   const abrir = () => {
     if (abierto) { setAbierto(false); return; }
     const r = btnRef.current?.getBoundingClientRect();
-    if (r) {
-      const alto = 44 * ((onEditar ? 1 : 0) + (onEliminar ? 1 : 0) + extra.length) + 10;
-      const arriba = window.innerHeight - r.bottom < alto + 8 && r.top > alto + 8;
-      setPos({ right: Math.max(8, window.innerWidth - r.right), ...(arriba ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }) });
-    }
+    if (r) setPos(ubicar(r));
     setAbierto(true);
   };
   const item = { display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px", background: "none", border: "none", cursor: "pointer", fontSize: 13, textAlign: "left", color: "var(--fp-txt)", borderRadius: 6 };
