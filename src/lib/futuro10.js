@@ -496,7 +496,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).forEach((g, idx) => {
     if (!g || g.sim === false || (g.activoId && vendidosIds.has(g.activoId)) || fuera.has(claveGasto(cat, items, idx))) return;
     const v = montoPromedioMensual(g) * fxG(g); if (!(v > 0.5)) return;
-    gastosHoy.push({ key: claveGasto(cat, items, idx), nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)) });
+    gastosHoy.push({ key: claveGasto(cat, items, idx), nombre: g.c || g.n || g.nombre || cat, cat, mensual: v, neteado: !!(g.activoId && conRentaOp.has(g.activoId)), activoId: g.activoId || null });
   }));
   // 24-oct-2026 (Santiago: "uno debería poder apagar y prender rentas que ya
   // no van, gastos que ya no van"). Igual que los gastos: cada ingreso de hoy
@@ -528,6 +528,29 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ingresos += nueva - antes; pasivo += nueva - antes; a.rentaAnual = nueva; a.rentaCorregida = true;
     if (nueva > 0 && a.crec != null && a.clase !== "inmueble" && a.clase !== "vehiculo") a.crec = Math.min(a.crec, inf); // el rendimiento ya llega como renta
   });
+  // 22-nov-2026 (Santiago: "quiero dejar Puerto Madero para uso propio y me
+  // sigue hablando de los ingresos… no puedo editar esa renta"). En el paso 1
+  // un activo «Sigue», «Cambia» o «Se vende». Cambia = desde un año lo usas tú
+  // (deja de rentar; sus gastos ligados —administración, predial— siguen y
+  // ahora salen de tu bolsillo) o renta distinto (nueva renta neta al mes).
+  // Solo el plan: Patrimonio, Ingresos y Egresos no se tocan.
+  const cambios = leerCambios(cfg, N);
+  const manualOp = new Set((user.inv || []).filter((x) => x && x.rentaOrigen === "manual").map((x) => x.id));
+  const costoLigado = (id) => {
+    if (manualOp.has(id)) return gastosHoy.filter((g) => g.activoId === id && g.neteado).reduce((sm, g) => sm + g.mensual, 0);
+    return Math.max(0, n((bOp.rentaPorActivo || {})[id]) - n((bOp.rentaNetaPorActivo || {})[id]));
+  };
+  const aplicarCambio = (a, t) => {
+    const c = cambios[a.id]; if (!c || c.desde !== t || a.rentaReemplazada) return;
+    const fr0 = Math.pow(1 + gIng, Math.max(0, t - 1)), frG = Math.pow(1 + gGas, Math.max(0, t - 1));
+    const nueva = c.modo === "propio" ? 0 : c.mensual * 12;
+    const dif = (nueva - (a.rentaAnual || 0)) * fr0;
+    ingresos = Math.max(0, ingresos + dif); pasivo = Math.max(0, pasivo + dif);
+    a.rentaAnual = nueva; a.cambio = c;
+    if (t <= 1) a.rentaCorregida = true;
+    if (c.modo === "propio") { const cg = costoLigado(a.id) * 12 * frG; gastos += cg; a.propioDesde = t; a.costoPropio = cg; }
+  };
+  activos.forEach((a) => aplicarCambio(a, 1));
   const todos = [...activos, ...nuevas];
   const valorTotal = () => todos.reduce((s, a) => s + a.valor + (a.reserva || 0), 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento;
   const invertible = () => todos.filter((a) => a.invertible).reduce((s, a) => s + a.valor + (a.reserva || 0), 0) + colchon + canasta.liquidez + canasta.renta + canasta.crecimiento;
@@ -623,6 +646,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // 2) flujo del año (ingresos y gastos ya crecidos)
     if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; pasivo *= 1 + gIng; }
     ingSeVan.filter((x) => x.desde === t).forEach((x) => { const v = x.mensual * 12 * Math.pow(1 + gIng, t - 1); ingresos = Math.max(0, ingresos - v); if (x.pasivo) pasivo = Math.max(0, pasivo - v); });
+    if (t > 1) activos.forEach((a) => aplicarCambio(a, t));
     // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
     const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
     const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
@@ -760,7 +784,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // Egresos con su inflación (sin los que ya se acabaron), cada ingreso de
     // trabajo con su crecimiento y la cuota de cada deuda que sigue.
     const vanG = new Set(seVan.filter((g) => t >= g.desde).map((g) => g.key));
-    f.gastosItems = gastosHoy.filter((g) => !g.neteado).map((g) => ({ nombre: g.nombre, nota: g.cat, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1), seFue: vanG.has(g.key) }));
+    const propioYa = new Set(activos.filter((a) => a.propioDesde && a.propioDesde <= t).map((a) => a.id));
+    f.gastosItems = gastosHoy.filter((g) => !g.neteado || propioYa.has(g.activoId)).map((g) => ({ nombre: g.nombre, nota: g.cat, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1), seFue: vanG.has(g.key) }));
     const vanI = new Set(ingSeVan.filter((x) => t >= x.desde).map((x) => x.key));
     f.ingresosLab = ingresosHoy.filter((x) => !x.pasivo && !vanI.has(x.key)).map((x) => ({ nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + gIng, t - 1) }));
     {
@@ -815,7 +840,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (i.activoId && conRenta.has(i.activoId) && tipoIngreso(i) === "pasivo") return; // va como renta neta del activo
       const v = mesDe(i); if (v > 0.5) entra.push({ nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), mensual: v, nota: tipoIngreso(i) === "pasivo" ? tx("renta · de tu página Ingresos", "passive · from your Income page") : tx("trabajo · de tu página Ingresos", "work · from your Income page") });
     });
-    activos.filter((a) => a.rentaCorregida && a.rentaAnual > 0).forEach((a) => entra.push({ nombre: tx(`Renta de ${a.nombre}`, `Income from ${a.nombre}`), mensual: a.rentaAnual / 12 * Math.pow(1 + gIng, 0), nota: tx("la corregiste en el paso Hoy", "you edited it in step 1") }));
+    activos.filter((a) => a.rentaCorregida && a.rentaAnual > 0).forEach((a) => entra.push({ nombre: tx(`Renta de ${a.nombre}`, `Income from ${a.nombre}`), mensual: a.rentaAnual / 12 * Math.pow(1 + gIng, 0), nota: a.cambio ? tx("renta nueva: la cambiaste en el paso 1", "new income: you changed it in step 1") : tx("la corregiste en el paso Hoy", "you edited it in step 1") }));
     Object.entries(bOp.rentaNetaPorActivo || {}).forEach(([id, v]) => { const a = activos.find((x) => x.id === id); if (a?.rentaReemplazada || a?.rentaCorregida) return; if (v > 0.5) { const br = (bOp.rentaPorActivo || {})[id] || v, mm = (x) => (esUS() ? plataCorta(x) : fmtPlataEs(x));
       // 24-oct-2026 (Santiago: "Rapicredit me da el 21 % de 3.288 M"): se muestra la cuenta, no solo el neto.
       entra.push({ nombre: tx(`Renta de ${nombreActivo(id)}`, `Income from ${nombreActivo(id)}`), mensual: v, nota: br - v > 0.5 ? tx(`${mm(br)} de renta − ${mm(br - v)} de gastos ligados en Egresos`, `${mm(br)} income − ${mm(br - v)} linked expenses on Expenses`) : tx("renta de tu página Ingresos", "income from your Income page") }); } });
@@ -831,7 +856,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ciclos.filter((c) => c.destino === "flujo" && c.desde <= 1).forEach((c) => entra.push({ nombre: c.nombre, mensual: c.gananciaAnual / 12, nota: tx("ganancia del negocio que se repite", "profit from the repeating deal") }));
     const sale = [];
     Object.entries(user.gastos || user.gas || {}).forEach(([cat, items]) => (items || []).filter(sigue).forEach((g) => {
-      if (g.activoId && conRenta.has(g.activoId)) return; // ya restado de la renta de su activo
+      if (g.activoId && conRenta.has(g.activoId) && !activos.some((a) => a.id === g.activoId && a.propioDesde === 1)) return; // ya restado de la renta de su activo
       const v = montoPromedioMensual(g) * fxI(g); const key = claveGasto(cat, items, (items || []).indexOf(g));
       if (fuera.has(key)) return;
       if (seVan.some((x) => x.key === key && x.desde <= 1)) return;
@@ -1118,6 +1143,18 @@ const sinTilde = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/
  *           solo se avisa.
  * Devuelve [{ k, ingreso, activoId, activo, mensual, contada, seguro }].
  */
+/** Cambios del paso 1: { id: { modo: "propio"|"renta", desde: 1..N, mensual } }; mensual 0 → "propio". */
+export function leerCambios(cfg = {}, N = 10) {
+  const out = {};
+  Object.entries(cfg.decisiones || {}).forEach(([id, d]) => {
+    if (!d || d.accion !== "cambia") return;
+    // Un solo dato: la renta nueva. 0 = deja de rentar (la usas tú). Vacía = sigue igual.
+    if (vacio(d.mensual)) return;
+    const mensual = Math.max(0, n(d.mensual));
+    out[id] = { modo: mensual > 0 ? "renta" : "propio", desde: Math.min(N, Math.max(1, Math.round(n(d.desde)) || 1)), mensual };
+  });
+  return out;
+}
 export function rentasDuplicadas(cfg = {}, activos = []) {
   const nombreDe = (id) => ((activos || []).find((a) => a && a.id === id) || {}).nombre || ((activos || []).find((a) => a && a.id === id) || {}).n || "";
   // Solo reinversiones de activos que siguen (un activo vendido no aplica su reinversión guardada).
@@ -1256,7 +1293,7 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
     const esc = resolverEscenario(cfg.escenario || "base", user);
     const def = crecimientoDefault(a, esc, supuestosF10(), usada * 12);
     const ch = (cfg.crecHoy || {})[a.id];
-    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende" };
+    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende", cambio: leerCambios(cfg)[a.id] || null, costoLigado: gastos.reduce((sm, g) => sm + g.mensual, 0) };
   });
 }
 
