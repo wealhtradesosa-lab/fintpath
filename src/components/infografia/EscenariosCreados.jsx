@@ -14,7 +14,6 @@
 // recomendado, r: proyectarFuturo10(...) }]
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { useState } from "react";
 import { tamanoCifra } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
 import { resumenEscenario, anioCal } from "../../lib/futuro10.js";
@@ -57,10 +56,14 @@ function Curva({ serie, min = 0, max, color, id }) {
   );
 }
 
-export default function EscenariosCreados({ planes, inflacionPct, onVer, onEditar, onRenombrar, onBorrar, onCrear, demo = false }) {
-  // 22-nov-2026 (Santiago: "¿cómo le cambio el nombre al escenario o lo borro si no lo quiero más?").
-  const [renombrando, setRenombrando] = useState(null);
-  const [nombreNuevo, setNombreNuevo] = useState("");
+// 22-nov-2026 (Santiago: "me va llenando de botones… el nombre se cambia en el
+// título al editar; eliminar puede ser un ícono de caneca"). Borrar = caneca
+// discreta junto al título; el nombre se cambia en el título del escenario.
+const Caneca = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 6h18" /><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" />
+  </svg>);
+export default function EscenariosCreados({ planes, inflacionPct, onVer, onEditar, onBorrar, onCrear, demo = false }) {
   const hoy = (planes || []).find((p) => p.esHoy);
   const creados = (planes || []).filter((p) => p.id);
   const mHoy = hoy ? medir(hoy.r, inflacionPct) : null;
@@ -134,7 +137,10 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
             <article key={p.id} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12, borderColor: esMejor ? "color-mix(in srgb, var(--fp-azul) 45%, transparent)" : undefined }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
                 <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.txt, lineHeight: 1.3 }}>{p.nombre}</h4>
-                {p.recomendado && <span style={{ fontSize: 11, fontWeight: 600, color: C.pos, border: `1px solid ${C.pos}`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>{tx("Recomendado", "Recommended")}</span>}
+                <span style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
+                  {p.recomendado && <span style={{ fontSize: 11, fontWeight: 600, color: C.pos, border: `1px solid ${C.pos}`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>{tx("Recomendado", "Recommended")}</span>}
+                  {onBorrar && <button type="button" className="fpi-caneca" title={tx("Borrar escenario", "Delete scenario")} aria-label={tx(`Borrar «${p.nombre}»`, `Delete "${p.nombre}"`)} onClick={() => { if (typeof window === "undefined" || window.confirm(tx(`¿Borrar «${p.nombre}»? No se puede deshacer.`, `Delete "${p.nombre}"? This can't be undone.`))) onBorrar(p.id); }}><Caneca /></button>}
+                </span>
               </div>
               <div title={p.descripcion || ""} style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, minHeight: 54, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion || resumenEscenario(p.r)}</div>
               <Curva serie={m.serie} min={minSerie} max={maxSerie} color={esMejor ? "var(--fp-azul)" : "color-mix(in srgb, var(--fp-azul) 60%, var(--fp-txt3))"} id={"fpi-esc-" + i} />
@@ -150,18 +156,6 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
                 <button type="button" onClick={() => onVer && onVer(p)} style={{ flex: 1, minHeight: 44, borderRadius: 10, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{tx("Ver completo", "View full report")}</button>
                 {onEditar && <button type="button" onClick={() => onEditar(p.id)} style={{ minHeight: 44, padding: "0 16px", borderRadius: 10, border: `1px solid rgba(var(--fp-ink),0.14)`, background: "transparent", color: C.txt, fontSize: 13, cursor: "pointer" }}>{tx("Editar", "Edit")}</button>}
               </div>
-              {renombrando === p.id ? (
-                <form onSubmit={(e) => { e.preventDefault(); const t = nombreNuevo.trim(); if (t) onRenombrar(p.id, t); setRenombrando(null); }} style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <input autoFocus aria-label={tx("Nuevo nombre", "New name")} value={nombreNuevo} maxLength={60} onChange={(e) => setNombreNuevo(e.target.value)} style={{ flex: "1 1 150px", minWidth: 0, minHeight: 36, padding: "0 10px", borderRadius: 8, border: `1px solid rgba(var(--fp-ink),0.2)`, background: "transparent", color: C.txt, fontSize: 13 }} />
-                  <button type="submit" style={{ minHeight: 36, padding: "0 12px", borderRadius: 8, border: "none", background: C.txt, color: "var(--fp-card)", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>{tx("Guardar", "Save")}</button>
-                  <button type="button" onClick={() => setRenombrando(null)} style={{ minHeight: 36, padding: "0 10px", borderRadius: 8, border: "none", background: "transparent", color: C.txt2, fontSize: 12.5, cursor: "pointer" }}>{tx("Cancelar", "Cancel")}</button>
-                </form>
-              ) : (onRenombrar || onBorrar) && (
-                <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
-                  {onRenombrar && <button type="button" onClick={() => { setRenombrando(p.id); setNombreNuevo(p.nombre || ""); }} style={{ background: "transparent", border: "none", padding: "4px 0", color: C.txt2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>{tx("Cambiar nombre", "Rename")}</button>}
-                  {onBorrar && <button type="button" onClick={() => { if (typeof window === "undefined" || window.confirm(tx(`¿Borrar «${p.nombre}»? No se puede deshacer.`, `Delete "${p.nombre}"? This can't be undone.`))) onBorrar(p.id); }} style={{ background: "transparent", border: "none", padding: "4px 0", color: C.neg, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>{tx("Borrar", "Delete")}</button>}
-                </div>
-              )}
             </article>
           );
         })}
