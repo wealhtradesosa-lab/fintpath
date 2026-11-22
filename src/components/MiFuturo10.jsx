@@ -162,7 +162,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       </> : <>
         <EscenariosCreados planes={planesComparar} inflacionPct={esc.inflacionPct} demo={demo}
           onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
-          onEditar={demo ? null : editarEsc}
+          onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
+          onRenombrar={demo ? null : (id, nombre) => onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => (e.id === id ? { ...e, nombre, editado: new Date().toISOString() } : e)) })}
           onCrear={() => { setVista("crear"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
         {escenarios.length > 0 && <button type="button" onClick={() => setVerDetalle((v) => !v)} style={{ ...btn(false), width: "100%", minHeight: 44, marginBottom: 12 }}>{verDetalle ? tx("Ocultar la comparación detallada", "Hide the detailed comparison") : tx("Ver la comparación detallada: curvas, reparto, ¿da para vivir? y el patrimonio como empresa", "See the detailed comparison: curves, allocation, can you live on it, and your wealth as a business")}</button>}
         {verDetalle && <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
