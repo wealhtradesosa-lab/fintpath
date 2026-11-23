@@ -221,8 +221,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <div id="f10-saldo"><Saldo r={r} cfg={cfg} set={set} /></div>
           <Liberados r={r} cfg={cfg} set={set} />
         </div>
-        <div style={card}>
-          <Seccion n="A" titulo={tx("Pagar deudas", "Pay off debt")} sub={tx("La deuda de un activo que vendes se paga sola con esa venta. Las demás, márcalas si quieres pagarlas con lo vendido.", "Debt tied to an asset you sell is paid off with that sale. Mark any other debt you want to pay with the proceeds.")} />
+        <div style={card} id="f10-deudas">
+          <Seccion n="A" titulo={tx("Pagar deudas", "Pay off debt")} sub={tx("Tú decides: cada deuda «Sigue» (sigues pagando la cuota) o «Se paga» (se cancela hoy con la plata de lo que vendes, y esa plata ya no queda para invertir). Solo la deuda de un activo que vendes se paga sola con esa venta.", "Debt tied to an asset you sell is paid off with that sale. Mark any other debt you want to pay with the proceeds.")} />
           {(r.deudas || []).length + (r.deudasSinSaldo || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>{tx("No tienes deudas con saldo.", "You have no outstanding debt.")}</p>}
         </div>
         <div style={card}>
@@ -800,7 +800,8 @@ function Saldo({ r, cfg, set }) {
   // agrego inversiones debería aparecer 1.600 − bodega 600 − inversión X 400 =
   // saldo disponible 600"). Una sola cuenta, renglón por renglón.
   const antes = [
-    ...(bd.deudas > 0 ? [[tx("− Pagas deudas", "− Debt payoff"), bd.deudas]] : []),
+    // 23-nov-2026 (Santiago: "no me quedó claro en qué se gastaron los 800 M… ¿se fue en automático en deudas?"). Deuda por deuda, con el porqué.
+    ...(r.deudas || []).filter((d) => d.pagado > 0.5).map((d) => [`− ${tx("Pagas", "Pay off")} ${d.nombre} · ${d.porVenta ? tx("se paga sola con la venta de su activo", "paid automatically with its asset's sale") : tx("tú la marcaste «Se paga»", "you marked it \"Pay off\"")}${d.pagado < d.saldo - 0.5 ? tx(` (abono; debe ${plata(Math.round(d.saldo))})`, ` (partial; owes ${plata(Math.round(d.saldo))})`) : ""}`, d.pagado]),
     ...(bd.colchon > 0 ? [[tx(`− Colchón de ${supuestosF10().colchonMeses} meses`, `− ${supuestosF10().colchonMeses}-month cushion`), bd.colchon]] : []),
   ];
   const entraTotal = entra.reduce((sm, x) => sm + x[1], 0) + (bd.excesoCubierto || 0);
@@ -819,6 +820,7 @@ function Saldo({ r, cfg, set }) {
     {(bd.excesoCubierto || 0) > 0.5 && fila([tx("Faltó: sale de tus cuentas de hoy", "Shortfall: from your current accounts"), bd.excesoCubierto], C.rd)}
     {hayCuenta && <>
       {antes.map((x) => fila(x, C.tx2))}
+      {(r.deudas || []).some((d) => d.pagado > 0.5 && !d.porVenta) && <div style={{ fontSize: 12, color: C.tx2, padding: "2px 0 4px" }}>{tx("Las deudas que marcaste las decides tú: si prefieres invertir esa plata, ponlas en «Sigue».", "The debts you marked are your call: if you'd rather invest that money, set them to \"Keep\".")} <button type="button" onClick={() => document.getElementById("f10-deudas")?.scrollIntoView?.({ behavior: "smooth", block: "start" })} style={{ background: "transparent", border: "none", padding: 0, color: C.tx, fontSize: 12, cursor: "pointer", textDecoration: "underline" }}>{tx("Cambiar en A · Pagar deudas", "Change in A · Pay off debt")}</button></div>}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{tx("Disponible para invertir", "Available to invest")}</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(disponible))}</span></div>
       {usosHoy.map(({ u, m }, k) => fila([`− ${u.nombre}${u.anio > 1 ? tx(` (apartado para ${anioCal(u.anio)})`, ` (set aside for ${anioCal(u.anio)})`) : ""}`, m], C.tx2))}
       {otros > 0.5 && fila([tx("− Negocios que se repiten y otros", "− Repeating deals and other"), otros], C.tx2)}
