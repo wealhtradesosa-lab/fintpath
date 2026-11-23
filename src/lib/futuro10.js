@@ -1441,7 +1441,8 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
     const def = def0 != null && capitalPlano(a, claseActivo(a), usada * 12, leerTerminan(cfg)) ? 0 : def0;
     const ch = (cfg.crecHoy || {})[a.id];
     return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), tipo: tipoActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende", cambio: leerCambios(cfg)[a.id] || null, termina: leerTerminan(cfg)[a.id] || null, capitalPlano: def0 != null && def === 0 && def0 !== 0 && vacio(ch), terminaDePatrimonio: !!(cfg.decisiones || {})[a.id]?.dePatrimonio, venceAnio: n(a.venceAnio) || null, venceMes: n(a.venceMes) || null, costoLigado: gastos.reduce((sm, g) => sm + g.mensual, 0) };
-  });
+  // 23-nov-2026 (Santiago: "todo debería partir en orden de mayor valor a menor").
+  }).sort((x, y) => y.valor - x.valor);
 }
 
 // 24-oct-2026 (Santiago: "el paso uno no solo debe editar patrimonio, también
