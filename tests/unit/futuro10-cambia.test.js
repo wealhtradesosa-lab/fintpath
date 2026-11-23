@@ -208,3 +208,20 @@ describe("venta en un año siguiente de un activo con deuda", () => {
     expect(Math.abs(r.filas[2].patrimonio - base.filas[2].patrimonio) / base.filas[2].patrimonio).toBeLessThan(0.03);
   });
 });
+
+// 23-nov-2026 (Santiago): "me dice que me pasé en 13.000 M cuando está bien".
+describe("invertir en un año siguiente con la plata que llega ese año", () => {
+  const u = () => ({ trm: 4000, inflacionPct: 4,
+    inv: [{ id: "pm", n: "PM", tipo: "Real Estate", va: 9000e6 }, { id: "ca", n: "Cascadas", tipo: "Real Estate", va: 800e6 }, { id: "ib", n: "IBKR", tipo: "Acciones", va: 138e6 }, { id: "c", n: "Cash", tipo: "Cash", va: 50e6 }],
+    ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {} });
+  it("«de lo que vendo» en 2027 no se cobra a las ventas de hoy ni marca «te pasaste»", () => {
+    const r = proyectarFuturo10(u(), { decisiones: { pm: { accion: "termina", desde: 2 }, ca: { accion: "vende" } },
+      reinversiones: [{ activoId: "ib", monto: 1000e6, anio: 2, fuente: "venta" }],
+      nuevas: [{ preset: "custom", nombre: "BTG", monto: 6000e6, anio: 2, fuente: "venta", rendimientoNomPct: 10 }] });
+    expect(r.bolsaDetalle.excesoVentas).toBeLessThan(1);
+    expect(r.bolsaDetalle.restante).toBeGreaterThan(700e6); // lo de hoy queda libre
+    expect(r.liqAgotadaAnio).toBeNull();
+    expect(r.filas[2].porActivo.find((x) => x.id === "nueva_0").valor).toBeGreaterThan(5900e6);
+    expect(r.filas[2].porActivo.find((x) => x.id === "ib").valor).toBeGreaterThan(1100e6);
+  });
+});

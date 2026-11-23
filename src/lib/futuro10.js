@@ -157,6 +157,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const rNom = (k, ov) => retornoNominalPreset(k, esc, sup, ov) / 100;
 
   const plazoEn = leerTerminan(cfg, N);
+  // 23-nov-2026 (Santiago: "me dice que me pasé en 13.000 M cuando está bien… no es
+  // capaz de entender los dineros que sobran para otros años"). Una inversión de un año
+  // siguiente «de lo que vendo» se cobraba toda a las ventas de HOY. Si para ese año ya
+  // habrá llegado plata (algo que se vende o vence después, o un retiro), se paga ese
+  // año con esa plata; no se aparta hoy ni cuenta como «te pasaste».
+  const aniosConPlata = [...Object.values(plazoEn), ...leerRetirosNuevas(cfg, N).map((x) => x.anio)];
+  const hayPlataPara = (anio) => anio > 1 && aniosConPlata.some((y) => y <= anio);
   // ── Activos que continúan ────────────────────────────────────────────────
   let bolsa = 0, rentaVendida = 0;
   const activos = [];
@@ -339,7 +346,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       // entre en el año 1 (la obra se hace igual): no se recorta.
       const resto = Math.max(0, n(r.monto)) - m;
       if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; deAnio1 = resto; }
-    } else if (n(r.monto) > 0 && (r.fuente || "venta") === "venta" && vendidoTotal > 0.5) {
+    } else if (n(r.monto) > 0 && (r.fuente || "venta") === "venta" && vendidoTotal > 0.5 && !hayPlataPara(anioAporte)) {
       // 25-oct-2026 (Santiago: "le bajé 100 M a Ledger y sigue saliendo que me
       // pasé"). Una inversión de un año siguiente que sale «de lo que vendo»
       // se APARTA hoy de lo vendido (rinde como liquidez) y entra al activo ese
@@ -395,7 +402,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         nuevas.push({ id: "nueva_" + k, nombre: c.nombre, clase: "nueva", valor: m, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, fuente: x.fuente || "venta", preset: "custom", montoInicial: m });
         return;
       }
-      if ((x.fuente || "venta") === "venta" && vendidoTotal > 0.5) {
+      if ((x.fuente || "venta") === "venta" && vendidoTotal > 0.5 && !hayPlataPara(c.anio)) {
         const h = apartar(c.nombre, c.monto, "C", c.anio);
         personalizadas.push({ ...c, id: "nueva_" + k, holder: h });
         return;
@@ -439,7 +446,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const m = tomar(c.capital, null, c.fuente);
       usos.push({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: c.fuente });
       a.valor = m; a.tomado = true; ciclosTotal += m;
-    } else if (c.fuente === "venta" && vendidoTotal > 0.5) {
+    } else if (c.fuente === "venta" && vendidoTotal > 0.5 && !hayPlataPara(c.desde)) {
       a.holder = apartar(c.nombre, c.capital, "D", c.desde);
     }
     nuevas.push(a);

@@ -9,7 +9,7 @@ describe("Mi futuro a 10: hallazgos QA", () => {
   it("modo demo: no guarda y muestra el aviso", () => {
     const html = renderToString(createElement(MiFuturo10, { user: vacio, guardado: { borrador: { norte: "crecer" } }, pasoInicial: 4, demo: true, onGuardar: () => { throw new Error("no debe guardar"); } }));
     expect(html).toContain(MSG_DEMO_F10);
-    expect(html).toMatch(/disabled=""[^>]*>Guardar este escenario/);
+    expect(html).toMatch(/disabled=""[^>]*>Guardar y comparar/);
     const real = renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 4 }));
     expect(real).not.toContain(MSG_DEMO_F10);
   });

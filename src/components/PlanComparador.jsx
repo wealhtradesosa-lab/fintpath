@@ -75,8 +75,8 @@ function Reparto({ m }) {
   const { orden, grupos, porPlan, totales } = useMemo(() => reparto(m), [m]);
   return (
     <div style={card}>
-      <h3 style={h3}>{tx("Cómo se reparte el patrimonio en cada camino", "How net worth is split in each path")}</h3>
-      <p style={lead}>{tx("Cada franja suma 100 % de los activos de ese camino, justo después de sus decisiones. Toca un tramo: se resalta esa inversión en todos los caminos y abajo ves cuánto vale en cada uno.", "Each bar adds up to 100% of that path's assets, right after its decisions. Tap a segment to highlight that investment across all paths and see what it's worth in each one below.")}</p>
+      <h3 style={h3}>{tx("Cómo se reparte el patrimonio en cada escenario", "How net worth is split in each scenario")}</h3>
+      <p style={lead}>{tx("Cada franja suma 100 % de los activos de ese escenario, justo después de sus decisiones. Toca un tramo: se resalta esa inversión en todos los escenarios y abajo ves cuánto vale en cada uno.", "Each bar adds up to 100% of that path's assets, right after its decisions. Tap a segment to highlight that investment across all paths and see what it's worth in each one below.")}</p>
       {m.map((p, i) => <div key={p.k} style={{ display: "grid", gridTemplateColumns: "minmax(70px,18%) minmax(0,1fr)", gap: 10, alignItems: "center", margin: "8px 0" }}>
         <span style={{ textAlign: "right", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nombre}</span>
         <div>
@@ -127,9 +127,9 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
           return <div key={p.k} role="button" tabIndex={0} onClick={() => onVer && onVer(p)} onKeyDown={(e) => { if (e.key === "Enter" && onVer) onVer(p); }}
             style={{ position: "relative", textAlign: "left", background: INF.panel, border: `1px solid ${p.recomendado ? INF.teja : INF.linea}`, borderTop: `3px solid ${p.color}`, borderRadius: 12, padding: "14px 14px 12px", color: INF.tx, cursor: onVer ? "pointer" : "default", display: "flex", flexDirection: "column", minHeight: 170 }}>
             {p.recomendado && <span style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: INF.teja, color: INF.sobreColor, fontSize: 12, fontWeight: 600, borderRadius: 999, padding: "1px 10px", whiteSpace: "nowrap" }}>{tx("Recomendado", "Recommended")}</span>}
-            <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? tx("Punto de partida", "Starting point") : `${tx("Camino", "Path")} ${letra}`}</div>
+            <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? tx("Punto de partida", "Starting point") : `${tx("Escenario", "Scenario")} ${letra}`}</div>
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
-            <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? tx("Si nada cambia", "If nothing changes") : p.descripcion || resumenEscenario(p.r)}</div>
+            <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? tx("Sin vender ni invertir en nada nuevo", "No selling and no new investments") : p.descripcion || resumenEscenario(p.r)}</div>
             <div style={{ containerType: "inline-size", marginTop: 10 }}><div style={{ fontSize: tamanoCifra(fmM(p.med.fin.patrimonio), 22), whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmM(p.med.fin.patrimonio)}</div></div>
             <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.txOk : INF.txBad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} ${tx("real", "real")}`}</div>
             {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.txTeja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? tx("Recomendado", "Recommended") : tx("Marcar como recomendado", "Mark as recommended")}</button>}
@@ -144,7 +144,7 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
       </div>
 
       <div style={card}>
-        <h3 style={h3}>{tx("El patrimonio en el tiempo, plan por plan", "Net worth over time, plan by plan")}</h3>
+        <h3 style={h3}>{tx("El patrimonio en el tiempo, escenario por escenario", "Net worth over time, scenario by scenario")}</h3>
         <p style={lead}>{tx("Patrimonio neto año a año. Todos parten del mismo punto: lo que tienes hoy. La línea gris es seguir como vas, sin cambiar nada.", "Net worth year by year. All start from the same point: what you own today. The gray line is staying the course, changing nothing.")}</p>
         <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>{[["nominal", tx(`${monedas().charAt(0).toUpperCase() + monedas().slice(1)} de cada año`, `Each year's ${monedas()}`)], ["real", tx(`En ${monedas()} de hoy (inflación ${fmPct(inflacionPct, 1)})`, `In today's ${monedas()} (inflation ${fmPct(inflacionPct, 1)})`)]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}</div>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={340}>
@@ -163,7 +163,7 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
       <Reparto m={m} />
 
       <div style={card}>
-        <h3 style={h3}>{tx("Hoy y los planes en cinco números", "Today and the plans in five numbers")}</h3>
+        <h3 style={h3}>{tx("Tus escenarios en cinco números", "Your scenarios in five numbers")}</h3>
         <p style={lead}>{tx(`Al mes, en ${anioCal(1)}. «Crece invertido» es lo que producen las inversiones que no recibes (se reinvierte); «Produce en total» suma la renta que llega y lo que crece.`, `Per month, in ${anioCal(1)}. "Grows invested" is what investments earn that you don't receive (it's reinvested); "Total earned" adds the income you receive and what grows.`)}</p>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={280}>
           <BarChart data={seis} margin={{ top: 10, right: 6, left: 6, bottom: 0 }}>
