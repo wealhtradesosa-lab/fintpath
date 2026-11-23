@@ -139,7 +139,10 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
           const esMejor = p === mejor.p;
           const alcanza = m.peorMes >= 0;
           return (
-            <article key={p.id || "hoy"} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12, borderStyle: p.esHoy ? "dashed" : undefined, borderColor: esMejor ? "color-mix(in srgb, var(--fp-azul) 45%, transparent)" : undefined }}>
+            <article key={p.id || "hoy"} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12,
+              // 23-nov-2026 (Santiago: "antes cada escenario tenía como un recuadrito, ya no tienen líneas"). Una clave de estilo en
+              // undefined borra esa parte del borde (React la pone en ''): el borde va completo, siempre.
+              border: `1px ${p.esHoy ? "dashed" : "solid"} ${esMejor && !p.esHoy ? "color-mix(in srgb, var(--fp-azul) 70%, transparent)" : "rgba(var(--fp-ink),0.32)"}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start" }}>
                 <h4 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: C.txt, lineHeight: 1.3 }}>{p.nombre}</h4>
                 <span style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
