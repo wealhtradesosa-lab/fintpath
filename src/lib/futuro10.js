@@ -164,6 +164,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // año con esa plata; no se aparta hoy ni cuenta como «te pasaste».
   const aniosConPlata = [...Object.values(plazoEn), ...leerRetirosNuevas(cfg, N).map((x) => x.anio)];
   const hayPlataPara = (anio) => anio > 1 && aniosConPlata.some((y) => y <= anio);
+  // 23-nov-2026 (Santiago: "estoy en 2027 usando el saldo de 2027 y me pide elegir
+  // de dónde sale… tengo un saldo de 2027, debo disponer de ese saldo, sea en una
+  // inversión nueva o en una actual"). Lo que se hace en un año siguiente sale del
+  // saldo de ese año (lo que sobra de hoy pasa al año siguiente en la cuenta año
+  // por año), así que ya no se aparta hoy de lo vendido. Se deja la función para
+  // poder volver al comportamiento del 25-oct si hiciera falta.
+  const apartarDeHoy = (anio) => false && vendidoTotal > 0.5 && !hayPlataPara(anio);
   // ── Activos que continúan ────────────────────────────────────────────────
   let bolsa = 0, rentaVendida = 0;
   const activos = [];
@@ -357,7 +364,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       // entre en el año 1 (la obra se hace igual): no se recorta.
       const resto = Math.max(0, n(r.monto)) - m;
       if (resto > 0.5) { pedidoTotal -= resto; pendienteAnio1 += resto; (a.aportesFuturos = a.aportesFuturos || []).push({ monto: resto, anio: 1 }); m += resto; deAnio1 = resto; }
-    } else if (n(r.monto) > 0 && (r.fuente || "venta") === "venta" && vendidoTotal > 0.5 && !hayPlataPara(anioAporte)) {
+    } else if (n(r.monto) > 0 && (r.fuente || "venta") === "venta" && apartarDeHoy(anioAporte)) {
       // 25-oct-2026 (Santiago: "le bajé 100 M a Ledger y sigue saliendo que me
       // pasé"). Una inversión de un año siguiente que sale «de lo que vendo»
       // se APARTA hoy de lo vendido (rinde como liquidez) y entra al activo ese
@@ -414,7 +421,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         nuevas.push({ id: "nueva_" + k, nombre: c.nombre, clase: "nueva", valor: m, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, fuente: x.fuente || "venta", preset: "custom", montoInicial: m });
         return;
       }
-      if ((x.fuente || "venta") === "venta" && vendidoTotal > 0.5 && !hayPlataPara(c.anio)) {
+      if ((x.fuente || "venta") === "venta" && apartarDeHoy(c.anio)) {
         const h = apartar(c.nombre, c.monto, "C", c.anio);
         personalizadas.push({ ...c, id: "nueva_" + k, holder: h });
         return;
@@ -440,7 +447,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     if (anioN > 1) {
       const rendP = vacio(x.rendimientoNomPct) ? rNom(x.preset) : n(x.rendimientoNomPct) / 100;
       const c = { nombre: x.nombre || nombreSup(sup.presets[x.preset]), monto: n(x.monto), anio: anioN, rendNom: rendP, usd: !!sup.presets[x.preset].usd, pctRecibe: Math.min(100, Math.max(0, n(x.pctRecibe))) };
-      if ((x.fuente || "venta") === "venta" && vendidoTotal > 0.5 && !hayPlataPara(c.anio)) {
+      if ((x.fuente || "venta") === "venta" && apartarDeHoy(c.anio)) {
         const h = apartar(c.nombre, c.monto, "C", c.anio);
         personalizadas.push({ ...c, id: "nueva_" + k, holder: h });
         return;
@@ -505,7 +512,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const m = tomar(c.capital, null, c.fuente);
       usos.push({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: c.fuente });
       a.valor = m; a.tomado = true; ciclosTotal += m;
-    } else if (c.fuente === "venta" && vendidoTotal > 0.5 && !hayPlataPara(c.desde)) {
+    } else if (c.fuente === "venta" && apartarDeHoy(c.desde)) {
       a.holder = apartar(c.nombre, c.capital, "D", c.desde);
       c._apartado = true;
     }
@@ -847,7 +854,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (d.t !== t || d.saldo <= 0) return;
       retirar(d.saldo); deudaUnica -= d.saldo;
       alertas.push({ tipo: "pago_unico", anio: t, texto: tx(`En ${anioCal(t)} pagas ${d.nombre} de una vez con tu liquidez.`, `In ${anioCal(t)} you pay off ${d.nombre} in one go with your cash.`) });
-      d.saldo = 0;
+      d.pagadoEnAnio = d.saldo; d.saldo = 0;
     });
     // Pagos de un activo futuro: pasan de tu liquidez al activo (no cambia el patrimonio).
     // 24-oct-2026 (Santiago: "en 5 años quiero hacer una casa propia… esa plata
@@ -1049,8 +1056,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, ventaAnio, pagaAnio, ligadaEnPlan, pagar, pagado }) => {
       const u = unicas.find((x) => x.id === id);
-      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u };
+      const x = deudas.find((y) => y.id === id);
+      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u,
+        // 23-nov-2026: lo que sale ese año para pagarla (para la cuenta año por año).
+        pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
+    // Pagos de las compras y construcciones de «Lo que viene», por año (pesos de cada año).
+    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto }))),
     // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
     // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
     // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.

@@ -304,12 +304,13 @@ describe("futuro10 · inversión personalizada del año 1 sale de lo vendido", (
     expect(r.reparto.find((x) => x.nombre === "BTG").valor).toBeCloseTo(7500e6 * 1.14 ** 10, -3);
     expect(r.filas[0].patrimonio).toBeCloseTo(11887e6, 0);
   });
-  // 25-oct-2026: si sale «de lo que vendo», se aparta hoy (Santiago: "le bajé
-  // 100 M a Ledger y sigue saliendo que me pasé"). De tus cuentas: programada.
-  it("una personalizada de un año siguiente se aparta de lo vendido; de tus cuentas queda programada", () => {
+  // 23-nov-2026 (Santiago: "tengo un saldo de 2027, debo disponer de ese saldo"):
+  // lo de un año siguiente sale del saldo de ese año; ya no se aparta hoy (antes, 25-oct).
+  it("una personalizada de un año siguiente sale del saldo de ese año, no de lo vendido hoy", () => {
     const r = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 1000e6, anio: 3 }] });
-    expect(r.bolsaDetalle.reservado).toBeCloseTo(1000e6, 0);
-    expect(r.bolsaDetalle.restante).toBeCloseTo(10787e6, 0);
+    expect(r.bolsaDetalle.reservado).toBeCloseTo(0, 0);
+    expect(r.bolsaDetalle.programadas).toBeCloseTo(1000e6, 0);
+    expect(r.bolsaDetalle.restante).toBeCloseTo(11787e6, 0);
     const l = proyectarFuturo10(U(), { decisiones: { f: { accion: "vende" } }, nuevas: [{ preset: "custom", nombre: "Negocio", monto: 1000e6, anio: 3, fuente: "liquidez" }] });
     expect(l.bolsaDetalle.programadas).toBeCloseTo(1000e6, 0);
     expect(l.bolsaDetalle.restante).toBeCloseTo(11787e6, 0);
@@ -701,28 +702,30 @@ describe("lo que sobra responde a cada inversión", () => {
   });
 });
 
-describe("inversión de un año siguiente que sale de lo vendido", () => {
-  it("se aparta hoy: bajar el monto sube lo que sobra, y entra al activo ese año", () => {
+describe("inversión de un año siguiente en algo que ya tienes", () => {
+  // 23-nov-2026: sale del saldo de ese año (lo que sobra de hoy pasa a ese año); no se aparta hoy.
+  it("no baja el saldo de hoy y entra al activo ese año", () => {
     const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }, { id: "l", n: "Ledger", tipo: "Cripto", va: 50e6 }], ingresos: [], gas: {} };
     const base = { decisiones: { pm: { accion: "vende" } } };
     const a = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 500e6, anio: 2, fuente: "venta" }] });
-    const b = proyectarFuturo10(user, { ...base, reinversiones: [{ activoId: "l", monto: 400e6, anio: 2, fuente: "venta" }] });
-    expect(b.bolsaDetalle.restante - a.bolsaDetalle.restante).toBeCloseTo(100e6, -3);
-    expect(a.bolsaDetalle.reservado).toBeCloseTo(500e6, -3);
+    const sin = proyectarFuturo10(user, base);
+    expect(a.bolsaDetalle.restante).toBeCloseTo(sin.bolsaDetalle.restante, -3);
+    expect(a.bolsaDetalle.reservado).toBeCloseTo(0, 0);
+    expect(a.bolsaDetalle.usos.some((u) => u.seccion === "B" && u.anio === 2 && !u.apartado)).toBe(true);
     const v1 = a.filas[1].porActivo.find((x) => x.id === "l").valor, v2 = a.filas[2].porActivo.find((x) => x.id === "l").valor;
-    expect(v1).toBeGreaterThan(500e6); // valor + apartado
-    expect(v2).toBeGreaterThan(550e6);
+    expect(v1).toBeLessThan(100e6);
+    expect(v2).toBeGreaterThan(500e6);
   });
 });
 
-describe("apartar de lo vendido para años siguientes (C y D)", () => {
-  it("una inversión nueva del año 3 y un negocio del año 2 bajan lo que sobra hoy", () => {
+describe("años siguientes (inversión nueva y negocio) salen del saldo de su año", () => {
+  it("una inversión nueva del año 3 y un negocio del año 2 no bajan lo que sobra hoy", () => {
     const user = { trm: 4000, inflacionPct: 4, inv: [{ id: "pm", n: "PM", tipo: "inmueble", va: 3000e6 }], ingresos: [], gas: {} };
     const base = { decisiones: { pm: { accion: "vende" } } };
     const a = proyectarFuturo10(user, base);
     const r = proyectarFuturo10(user, { ...base, nuevas: [{ preset: "custom", nombre: "BTG", monto: 500e6, anio: 3, rendimientoNomPct: 10 }], ciclos: [{ nombre: "Aso", capital: 1000e6, valorFinal: 1300e6, desde: 2, impuestoPct: 0 }] });
-    expect(a.bolsaDetalle.restante - r.bolsaDetalle.restante).toBeCloseTo(1500e6, -3);
-    expect(r.filas[1].porActivo.some((x) => /Apartado para BTG/.test(x.nombre))).toBe(true);
+    expect(a.bolsaDetalle.restante - r.bolsaDetalle.restante).toBeCloseTo(0, -3);
+    expect(r.filas[1].porActivo.some((x) => /Apartado para BTG/.test(x.nombre))).toBe(false);
     expect(r.filas[2].cicloReinv).toBeGreaterThan(0);
     expect(r.filas[3].porActivo.find((x) => x.nombre === "BTG").valor).toBeGreaterThan(500e6);
     expect(r.final.patrimonio).toBeGreaterThan(a.final.patrimonio);
