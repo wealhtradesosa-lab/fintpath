@@ -310,7 +310,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             const cuenta = cuentaPorAnio(r);
             const anioDe = (x) => Math.max(1, Number(x.anio) || 1);
             const grupos = [...new Set([1, ...cfg.nuevas.map(anioDe), ...cuenta.filter((g) => g.saldo > 0.5).map((g) => g.anio)])].sort((a, b) => a - b);
-            const agregar = (anio) => { const k = cfg.nuevas.length; set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: "", fuente: anio > 1 ? "liquidez" : "venta", anio }]); setNuevaAbierta((s) => new Set([...s, k])); };
+            // 23-nov-2026 (Santiago: "me sobran 9.000 MM de 2027, hago una inversión de 4.000 y la segunda me dice por defecto el saldo pendiente, o puedo poner otro valor"). La inversión nueva de un año arranca con lo que queda ese año; se puede cambiar.
+            const agregar = (anio, queda) => { const k = cfg.nuevas.length; set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: queda > 0.5 ? Math.round(queda) : "", fuente: anio > 1 ? "liquidez" : "venta", anio }]); setNuevaAbierta((s) => new Set([...s, k])); };
             const montoDe = (x) => (x.preset === "fincaRaiz" && x.pr ? leerPropiedadRaiz(x, 10).capital : Number(x.monto) || 0);
             return grupos.map((anio) => {
               const filas = cfg.nuevas.map((x, i) => [x, i]).filter(([x]) => anioDe(x) === anio);
@@ -350,9 +351,13 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     <option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option>
                   </select>;
                   const fuenteCampo = campo(tx("¿De dónde sale?", "Where does it come from?"), <FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} />);
+                  // 23-nov-2026 (Santiago: "en el formulario del valor debería darme la opción de traer el saldo que tengo o que me va quedando si hago varias inversiones").
+                  // Lo que queda en el año ya descuenta esta inversión; para ella está disponible lo que queda + lo que ya tiene puesto.
+                  const dispEsta = queda != null ? Math.max(0, queda + montoDe(x)) : 0;
+                  const usarSaldo = dispEsta > 0.5 && Math.round(dispEsta) !== Math.round(montoDe(x)) ? <button type="button" onClick={() => (esPR ? up({ pr: { ...x.pr, valor: Math.round(dispEsta) } }) : up({ monto: Math.round(dispEsta) }))} style={{ background: "transparent", border: "none", padding: 0, color: C.gn, fontSize: 12, cursor: "pointer", textAlign: "left", textDecoration: "underline" }}>{tx(`Usar lo que queda en ${anioCal(anio)}: ${plata(Math.round(dispEsta))}`, `Use what's left in ${anioCal(anio)}: ${plata(Math.round(dispEsta))}`)}</button> : null;
                   if (esPR) return <>
                     <div style={fila4}>{campo(tx("Tipo", "Type"), tipoSel)}{fuenteCampo}{campo(tx("Nombre (opcional)", "Name (optional)"), <input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={tx("Ej.: proyecto, constructora", "e.g. project, developer")} />)}</div>
-                    <PropiedadRaiz x={x} up={up} />
+                    <PropiedadRaiz x={x} up={up} usarSaldo={usarSaldo} />
                   </>;
                   const esCustom = x.preset === "custom";
                   const supPct = esCustom ? hint : SUP.presets[x.preset] ? retornoNominalPreset(x.preset, esc, SUP) : hint;
@@ -364,7 +369,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     <div style={fila4}>
                       {campo(tx("Tipo", "Type"), tipoSel)}
                       {campo(tx("¿Cuándo?", "When?"), <select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>)}
-                      {campo(tx("¿Cuánto? ($)", "How much? ($)"), <NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} />)}
+                      {campo(tx("¿Cuánto? ($)", "How much? ($)"), <NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} />, usarSaldo)}
                       {fuenteCampo}
                     </div>
                     <div style={fila4}>
@@ -394,7 +399,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               </div>
             );
                 })}
-                <button style={{ ...btn(false), marginTop: 8, padding: "8px 14px" }} onClick={() => agregar(anio)}>{tx(`+ Agregar inversión en ${anioCal(anio)}`, `+ Add an investment in ${anioCal(anio)}`)}</button>
+                <button style={{ ...btn(false), marginTop: 8, padding: "8px 14px" }} onClick={() => agregar(anio, queda)}>{tx(`+ Agregar inversión en ${anioCal(anio)}`, `+ Add an investment in ${anioCal(anio)}`)}</button>
               </div>;
             });
           })()}
@@ -1315,14 +1320,14 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
 // proyecto asociativo, locales o bodegas… si es permanente o se vende a los 2
 // años"). Cinco preguntas en el mismo orden para todas las modalidades y un
 // resumen en palabras. El motor lo traduce en leerPropiedadRaiz().
-function PropiedadRaiz({ x, up }) {
+function PropiedadRaiz({ x, up, usarSaldo }) {
   const pr = x.pr || {};
   const set = (v) => up({ pr: { ...pr, ...v } });
   const p = leerPropiedadRaiz(x, 10);
   const tipo = p.tipo;
   const lbl = { fontSize: 12, color: C.tx2 };
   const chip = (on) => ({ ...btn(on), padding: "6px 12px" });
-  const num = (k, l, ph) => <label style={lbl}>{l}<NumberInput style={inp} placeholder={ph || tx("Valor", "Amount")} value={pr[k] ?? ""} onChange={(v) => set({ [k]: v })} /></label>;
+  const num = (k, l, ph, extra) => <label style={{ ...lbl, display: "grid", gap: 4 }}>{l}<NumberInput style={inp} placeholder={ph || tx("Valor", "Amount")} value={pr[k] ?? ""} onChange={(v) => set({ [k]: v })} />{extra}</label>;
   const pct = (k, l, ph) => <label style={lbl}>{l}<InputDecimalEs style={inp} placeholder={ph} value={pr[k] ?? ""} onChange={(v) => set({ [k]: v })} /></label>;
   const anios = (k, l, desde = 0, hasta = 6, f) => <label style={lbl}>{l}<select style={inp} value={Number(pr[k]) || 0} onChange={(e) => set({ [k]: Number(e.target.value) })}>{Array.from({ length: hasta - desde + 1 }, (_, i) => desde + i).map((y) => <option key={y} value={y}>{f ? f(y) : enAnios(y)}</option>)}</select></label>;
   const fila = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 8 };
@@ -1342,7 +1347,7 @@ function PropiedadRaiz({ x, up }) {
       <label style={lbl}>{tx("¿Cuándo empieza?", "When does it start?")}<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
       {tipo === "planos" && <>{num("valor", tx("Valor del inmueble ($)", "Property price ($)"))}{pct("cuotaPct", tx("Cuota inicial (%)", "Down payment (%)"), "30")}{anios("plazo", tx("Entrega en", "Handover in"), 1, 5)}</>}
       {(tipo === "lote" || tipo === "rentar") && <>{num("lote", tx("Valor del lote ($)", "Lot price ($)"))}{num("m2", tx("Metros cuadrados a construir", "Square meters to build"), "0")}{num("costoM2", tx("Costo de construcción por m² ($)", "Build cost per m² ($)"))}{anios("plazo", tx("Obra lista en", "Ready in"), 0, 5, (y) => (y === 0 ? tx("Ya está lista", "Already built") : enAnios(y)))}</>}
-      {tipo === "asociativo" && <>{num("valor", tx("Capital que aportas ($)", "Capital you contribute ($)"))}<label style={lbl}>{tx("Duración del proyecto", "Project length")}<select style={inp} value={Number(pr.meses) || 12} onChange={(e) => set({ meses: Number(e.target.value) })}>{[6, 12, 18, 24, 30, 36, 48, 60].map((m) => <option key={m} value={m}>{m % 12 === 0 ? enAnios(m / 12) : tx(`${m} meses`, `${m} months`)}</option>)}</select></label></>}
+      {tipo === "asociativo" && <>{num("valor", tx("Capital que aportas ($)", "Capital you contribute ($)"), null, usarSaldo)}<label style={lbl}>{tx("Duración del proyecto", "Project length")}<select style={inp} value={Number(pr.meses) || 12} onChange={(e) => set({ meses: Number(e.target.value) })}>{[6, 12, 18, 24, 30, 36, 48, 60].map((m) => <option key={m} value={m}>{m % 12 === 0 ? enAnios(m / 12) : tx(`${m} meses`, `${m} months`)}</option>)}</select></label></>}
       {(tipo === "lote" || tipo === "rentar") && p.capital > 0 && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Inversión total", "Total investment")}: <b style={{ color: C.tx }}>{plata(Math.round(p.capital))}</b></div>}
     </div></div>
     <div>{paso(3, tx("Rentabilidad", "Return"))}<div style={fila}>
