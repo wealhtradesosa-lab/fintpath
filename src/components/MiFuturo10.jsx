@@ -288,7 +288,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   // 23-nov-2026 (Santiago: "en el formulario del valor debería darme la opción de traer el saldo que tengo o que me va quedando si hago varias inversiones").
                   // Lo que queda en el año ya descuenta esta inversión; para ella está disponible lo que queda + lo que ya tiene puesto.
                   const dispEsta = queda != null ? Math.max(0, queda + montoDe(x)) : 0;
-                  const usarSaldo = dispEsta > 0.5 && Math.round(dispEsta) !== Math.round(montoDe(x)) ? <button type="button" onClick={() => (esPR ? up({ pr: { ...x.pr, valor: Math.round(dispEsta) } }) : up({ monto: Math.round(dispEsta) }))} style={{ background: "transparent", border: "none", padding: 0, color: C.gn, fontSize: 12, cursor: "pointer", textAlign: "left", textDecoration: "underline" }}>{tx(`Usar lo que queda en ${anioCal(anio)}: ${plata(Math.round(dispEsta))}`, `Use what's left in ${anioCal(anio)}: ${plata(Math.round(dispEsta))}`)}</button> : null;
+                  const usarSaldo = <BotonSaldo disponible={dispEsta} actual={montoDe(x)} anio={anio} on={(v) => (esPR ? up({ pr: { ...x.pr, valor: v } }) : up({ monto: v }))} />;
                   if (esPR) return <>
                     <div style={fila4}>{campo(tx("Tipo", "Type"), tipoSel)}{fuenteCampo}{campo(tx("Nombre (opcional)", "Name (optional)"), <input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={tx("Ej.: proyecto, constructora", "e.g. project, developer")} />)}</div>
                     <PropiedadRaiz x={x} up={up} usarSaldo={usarSaldo} />
@@ -403,7 +403,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     </div>
                   </div>)];
                 })()}
-                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a, r.activos).some((f) => f.vinculada)} /></div>}
+                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} saldoDisp={Math.max(0, quedaEnAnio(anioSel, r) + (Number(cfg.reinversiones[iR].monto) || 0))} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a, r.activos).some((f) => f.vinculada)} /></div>}
               </div>
             );
           })}
@@ -774,7 +774,18 @@ const textoIngresoFuturo = (x) => {
 // 24-oct-2026: según el tipo de activo, la plataforma pregunta lo suyo.
 const partesF10 = () => [[0, tx("Nada: todo se reinvierte", "None: all reinvested")], [25, tx("Una cuarta parte", "A quarter")], [50, tx("La mitad", "Half")], [75, tx("Tres cuartas partes", "Three quarters")], [100, tx("Todo: me llega cada mes", "All of it: paid to me monthly")]];
 const etqTipo = () => ({ inmueble: tx("Inmueble: da renta y se valoriza", "Property: earns rent and appreciates"), liquido: tx("Renta fija o cuenta: rinde una tasa al año", "Fixed income or account: earns a yearly rate"), acciones: tx("Fondos, trading o acciones: rinde al año", "Funds, trading or stocks: returns per year"), otro: tx("Otra inversión: rinde al año", "Other investment: returns per year"), vehiculo: tx("Vehículo", "Vehicle") });
-function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [], sinRenta = false }) {
+// 23-nov-2026 (Santiago: "a medida que uno va invirtiendo la plata que sobró de un
+// año debería poder elegir saldo pendiente para la inversión; como está tiene uno
+// que tener calculadora al lado para dejar el saldo en cero"). Botón visible junto
+// al monto: pone lo que queda del año (más lo que ya tenía esa inversión).
+function BotonSaldo({ disponible, actual = 0, anio, on }) {
+  if (!(disponible > 0.5) || Math.round(disponible) === Math.round(actual)) return null;
+  return <button type="button" onClick={() => on(Math.round(disponible))} style={{ justifySelf: "start", background: "rgba(0,200,5,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "4px 10px", color: C.gn, fontSize: 12.5, cursor: "pointer", textAlign: "left", fontVariantNumeric: "tabular-nums" }}>
+    {tx(`Usar saldo pendiente de ${anio === 1 ? "hoy" : anioCal(anio)}: ${plata(Math.round(disponible))}`, `Use remaining balance${anio === 1 ? " today" : " for " + anioCal(anio)}: ${plata(Math.round(disponible))}`)}
+  </button>;
+}
+
+function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [], sinRenta = false, saldoDisp = 0 }) {
   const lbl = { fontSize: 12, color: C.tx2 };
   const desdeMes = Number(x.rentaDesdeMes) || 0;
   const clase = (activos.find((a) => a.id === x.activoId) || {}).clase || "otro";
@@ -785,7 +796,8 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [], s
     <div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>{ETQ_TIPO[clase] || ETQ_TIPO.otro}</div>
     <div className="fp10-campos" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 8 }}>
       {conActivo && <label style={lbl}>{tx("¿A cuál?", "Which one?")}<select style={inp} value={x.activoId} onChange={(e) => up({ activoId: e.target.value })}>{activos.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select></label>}
-      <label style={lbl}>{tx("¿Cuánto le vas a invertir? ($)", "How much will you invest? ($)")}<NumberInput style={inp} placeholder={ejemploMonto(600000000, 150000)} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
+      <label style={{ ...lbl, display: "grid", gap: 4 }}>{tx("¿Cuánto le vas a invertir? ($)", "How much will you invest? ($)")}<NumberInput style={inp} placeholder={ejemploMonto(600000000, 150000)} value={x.monto} onChange={(v) => up({ monto: v })} />
+        <BotonSaldo disponible={saldoDisp} actual={Number(x.monto) || 0} anio={Math.max(1, Number(x.anio) || 1)} on={(v) => up({ monto: v })} /></label>
       <label style={lbl}>{tx("¿Cuándo?", "When?")}<select style={inp} value={Number(x.anio) || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
       {/* 23-nov-2026: en un año siguiente sale del saldo de ese año; no se pregunta de dónde. */}
       {(Number(x.anio) || 1) > 1
