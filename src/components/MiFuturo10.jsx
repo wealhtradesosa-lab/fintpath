@@ -218,7 +218,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <h3 style={{ marginTop: 0, marginBottom: 2 }}>{tx("Tu plata", "Your money")}</h3>
           <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>{tx("Lo que tienes para mover: lo que vendes, capital nuevo que traigas de afuera o tu liquidez de hoy. Cada uso se descuenta y siempre ves cuánto te queda.", "What you can move: what you sell, new capital from outside, or the cash you have today. Each use is deducted and you always see what's left.")}</p>
           <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, margin: "4px 0 6px" }}>{tx(`HOY · ${anioCal(1)}`, `TODAY · ${anioCal(1)}`)}</div>
-          <div id="f10-saldo"><Saldo r={r} /></div>
+          <div id="f10-saldo"><Saldo r={r} cfg={cfg} set={set} /></div>
           <Liberados r={r} cfg={cfg} set={set} />
         </div>
         <div style={card}>
@@ -759,32 +759,34 @@ function FuenteSel({ value, on }) {
 // siguiente con plata propia (no «plata nueva») sale de la misma plata que hoy
 // sobra —el motor la saca de la liquidez donde quedó ese sobrante—, así que se
 // resta a la vista: sobra hoy − ya tiene destino = queda libre.
-function conDestino(r) {
+// 23-nov-2026 (Santiago: "súper perdido con esto… no sabe uno de dónde provienen esos 165 M, y más
+// perdido cuando el disponible de hoy se va para LOTE+CASA y BTG"). La cuenta baja año por año y
+// cada cosa resta solo en SU año: hoy = lo de hoy; cada año siguiente = lo que viene de antes + lo
+// que llega ese año − lo que inviertes ese año. Lo que sobra pasa al año siguiente; si un año no
+// alcanza, ese año lo dice. («Plata nueva de afuera» no resta: no sale de esta plata.)
+function cuentaPorAnio(r) {
   const bd = r.bolsaDetalle || {};
-  // Plata que queda libre en un año siguiente (un CDT que vence, algo que se vende
-  // después) paga primero lo programado de ese año en adelante: solo lo que no
-  // alcance a cubrir baja el saldo de hoy.
-  const lib = (r.liberados || []).map((x) => ({ ...x, queda: x.monto, usos: [] })).sort((a, b) => a.anio - b.anio);
-  const lista = (bd.usos || []).filter((u) => u.anio > 1 && !u.apartado && u.fuente !== "nuevo" && u.monto > 0.5).sort((a, b) => a.anio - b.anio).map((u) => {
-    let falta = u.monto;
-    lib.filter((l) => l.anio <= u.anio).forEach((l) => { const c = Math.min(l.queda, falta); if (c > 0.5) l.usos.push({ nombre: u.nombre, monto: c, anio: u.anio }); l.queda -= c; falta -= c; });
-    return { u, neto: falta, cubierto: u.monto - falta };
+  const prog = (bd.usos || []).filter((u) => u.anio > 1 && !u.apartado && u.fuente !== "nuevo" && u.monto > 0.5);
+  const lib = r.liberados || [];
+  const anios = [...new Set([...lib.map((l) => l.anio), ...prog.map((u) => u.anio)])].sort((a, b) => a - b);
+  let arrastre = Math.max(0, bd.restante || 0);
+  return anios.map((anio) => {
+    const llegan = lib.filter((l) => l.anio === anio), salen = prog.filter((u) => u.anio === anio);
+    const llega = llegan.reduce((sm, l) => sm + l.monto, 0), sale = salen.reduce((sm, u) => sm + u.monto, 0);
+    const antes = arrastre, saldo = antes + llega - sale;
+    arrastre = Math.max(0, saldo);
+    return { anio, antes, llegan, llega, salen, sale, saldo };
   });
-  const total = lista.reduce((sm, x) => sm + x.neto, 0);
-  return { lista, total, libre: (bd.restante || 0) - total, lib };
 }
 function veredictoSaldo(r) {
   const bd = r.bolsaDetalle || {};
-  const cd = conDestino(r);
   const exceso = bd.excesoVentas || 0, sobra = bd.restante || 0;
   const cub = bd.excesoCubierto || 0, noAlcanza = Math.max(0, exceso - cub);
   if (exceso > 0.5) return { ok: false, corto: tx(`Te pasaste ${plata(Math.round(exceso))}`, `Over by ${plata(Math.round(exceso))}`), largo: tx(`Te pasaste ${plata(Math.round(exceso))} de lo que vendes.${cub > 0.5 ? ` ${plata(Math.round(cub))} salen de tus cuentas de hoy (ahorros y efectivo).` : ""}${noAlcanza > 0.5 ? ` ${plata(Math.round(noAlcanza))} no alcanzan: esa parte no se invierte. Baja montos o elige «Plata nueva de afuera».` : ""}`, `You went ${plata(Math.round(exceso))} over your sale proceeds.${cub > 0.5 ? ` ${plata(Math.round(cub))} comes from your current accounts (savings and cash).` : ""}${noAlcanza > 0.5 ? ` ${plata(Math.round(noAlcanza))} isn't covered: that part isn't invested. Lower the amounts or choose "New money from outside".` : ""}`) };
   if ((bd.vendido || 0) + (bd.capitalNuevo || 0) <= 0) return { ok: true, corto: tx("Sin ventas", "No sales"), largo: tx("Todavía no vendes nada. Lo que inviertas sale de tus cuentas de hoy o de plata nueva.", "You're not selling anything yet. What you invest comes from your current accounts or new money.") };
-  if (cd.total > 0.5 && cd.libre < -0.5) return { ok: false, corto: tx(`Te faltan ${plata(Math.round(-cd.libre))}`, `Short by ${plata(Math.round(-cd.libre))}`), largo: tx(`Hoy te sobran ${plata(Math.round(sobra))}, pero ya programaste ${plata(Math.round(cd.total))} para años siguientes: faltan ${plata(Math.round(-cd.libre))}, que saldrán de tus otras cuentas o de lo que te sobre cada mes.`, `You have ${plata(Math.round(sobra))} left today, but you've scheduled ${plata(Math.round(cd.total))} for later years: ${plata(Math.round(-cd.libre))} short, which will come from your other accounts or monthly surplus.`) };
-  if (cd.total > 0.5) return { ok: true, corto: tx(`Saldo disponible ${plata(Math.round(cd.libre))}`, `Available balance ${plata(Math.round(cd.libre))}`), largo: tx(`Ya descontadas todas tus inversiones, incluidos ${plata(Math.round(cd.total))} que son para años siguientes.`, `After all your investments, including ${plata(Math.round(cd.total))} set for later years.`) };
-  return { ok: true, corto: tx(`Saldo disponible ${plata(Math.round(sobra))}`, `Available balance ${plata(Math.round(sobra))}`), largo: tx("Lo que queda después de deudas e inversiones. Lo que no uses se reparte como digas en E.", "What's left after debt and investments. Whatever you don't use is split as you choose in E.") };
+  return { ok: true, corto: tx(`Saldo de hoy ${plata(Math.round(sobra))}`, `Today's balance ${plata(Math.round(sobra))}`), largo: tx("Lo que te queda hoy, después de pagar deudas y de lo que inviertes hoy. Pasa al año siguiente.", "What's left today, after debt and today's investments. It carries to the next year.") };
 }
-function Saldo({ r }) {
+function Saldo({ r, cfg, set }) {
   const bd = r.bolsaDetalle || {};
   const vend = (r.vendidos || []).map((v) => v.nombre).join(", ");
   const v = veredictoSaldo(r);
@@ -803,9 +805,8 @@ function Saldo({ r }) {
   ];
   const entraTotal = entra.reduce((sm, x) => sm + x[1], 0) + (bd.excesoCubierto || 0);
   const disponible = entraTotal - antes.reduce((sm, x) => sm + x[1], 0);
-  const cd = conDestino(r);
-  const usosHoy = (bd.usos || []).map((u) => ({ u, m: u.anio > 1 && !u.apartado ? (u.fuente === "nuevo" ? 0 : (cd.lista.find((y) => y.u === u)?.neto ?? u.monto)) : (u.deVenta || 0) + (u.deCuentas || 0) + (u.deNuevo || 0) })).filter((x) => x.m > 0.5);
-  const saldoFinal = cd.libre;
+  const usosHoy = (bd.usos || []).filter((u) => !(u.anio > 1 && !u.apartado)).map((u) => ({ u, m: (u.deVenta || 0) + (u.deCuentas || 0) + (u.deNuevo || 0) })).filter((x) => x.m > 0.5);
+  const saldoFinal = bd.restante || 0;
   const otros = disponible - usosHoy.reduce((sm, x) => sm + x.m, 0) - saldoFinal; // lo que no viene renglón por renglón (negocios que se repiten)
   const hayCuenta = entraTotal > 0.5;
   const fila = ([l, val], col) => <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, padding: "3px 0" }}><span style={{ color: C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(val))}</span></div>;
@@ -819,11 +820,15 @@ function Saldo({ r }) {
     {hayCuenta && <>
       {antes.map((x) => fila(x, C.tx2))}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{tx("Disponible para invertir", "Available to invest")}</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(disponible))}</span></div>
-      {usosHoy.map(({ u, m }, k) => fila([`− ${u.nombre}${u.anio > 1 ? ` · ${anioCal(u.anio)}` : ""}`, m], C.tx2))}
+      {usosHoy.map(({ u, m }, k) => fila([`− ${u.nombre}${u.anio > 1 ? tx(` (apartado para ${anioCal(u.anio)})`, ` (set aside for ${anioCal(u.anio)})`) : ""}`, m], C.tx2))}
       {otros > 0.5 && fila([tx("− Negocios que se repiten y otros", "− Repeating deals and other"), otros], C.tx2)}
       {usosHoy.length === 0 && !(otros > 0.5) && <div style={{ fontSize: 12, color: C.tx2, padding: "3px 0" }}>{tx("Cada inversión que agregues abajo (B, C, D) se va restando aquí.", "Each investment you add below (B, C, D) is subtracted here.")}</div>}
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 16, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{saldoFinal >= -0.5 ? tx("Saldo disponible", "Available balance") : tx("Te falta", "Shortfall")}</span><span style={{ color: saldoFinal > 0.5 ? C.gn : saldoFinal < -0.5 ? C.rd : C.tx, fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(Math.abs(saldoFinal)))}</span></div>
-      <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{saldoFinal > 0.5 ? tx("Lo que no uses se reparte como digas en E.", "Whatever you don't use is split as you choose in E.") : ""}{cd.total > 0.5 ? tx(" Lo que es para un año siguiente queda guardado hasta ese año.", " Amounts for a later year stay set aside until then.") : ""}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 16, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{tx("Saldo de hoy", "Today's balance")}</span><span style={{ color: saldoFinal > 0.5 ? C.gn : saldoFinal < -0.5 ? C.rd : C.tx, fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(Math.abs(saldoFinal)))}</span></div>
+      {/* 23-nov-2026 (Santiago: "yo debería poder disponer de esos 126 M inmediatamente en una inversión, ponerlo en IBKR o lo que quiera"). */}
+      {saldoFinal > 0.5 && set && <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+        <button style={{ ...btn(true), padding: "8px 14px" }} onClick={() => { const k = (cfg.nuevas || []).length; set("nuevas", [...(cfg.nuevas || []), { preset: "rfCorto", monto: Math.round(saldoFinal), fuente: "venta" }]); setTimeout(() => document.getElementById("f10-nueva-" + k)?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 150); }}>{tx("Invertir este saldo hoy", "Invest this balance today")}</button>
+        <span style={{ fontSize: 12, color: C.tx2, flex: "1 1 240px" }}>{tx("Te crea la inversión con ese monto; eliges en qué. Para ponerlo en algo que ya tienes (por ejemplo IBKR), agrégalo abajo en B. Si no lo usas, pasa al año siguiente.", "Creates the investment with that amount; you choose what. To add it to something you own (e.g. your brokerage), add it below in B. If unused, it carries to the next year.")}</span>
+      </div>}
     </>}
     {(bd.usos || []).length > 0 && <details style={{ marginTop: 6 }}>
       <summary style={{ cursor: "pointer", fontSize: 12, color: C.tx }}>{tx("Ver de dónde sale la plata de cada inversión", "See where each investment's money comes from")}</summary>
@@ -848,31 +853,32 @@ function Saldo({ r }) {
 // año X tengo libre 100 M y ahí mismo proyectar qué hacer con él"). Plata que llega
 // en años siguientes (inversiones que vencen o se venden después) y cuánta ya tiene destino.
 function Liberados({ r, cfg, set }) {
-  const cd = conDestino(r);
-  if (!cd.lib.length) return null;
-  const fila = (l, val, col, fuerte) => <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: fuerte ? 14 : 13, fontWeight: fuerte ? 700 : 400, padding: "3px 0" }}><span style={{ color: fuerte ? C.tx : C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(val))}</span></div>;
+  const cuenta = cuentaPorAnio(r);
+  if (!cuenta.length) return null;
+  const fila = (l, val, col, fuerte, signo = "") => <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: fuerte ? 15 : 13, fontWeight: fuerte ? 700 : 400, padding: "3px 0" }}><span style={{ color: fuerte ? C.tx : C.tx2, minWidth: 0 }}>{l}</span><span style={{ color: col, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>{signo}{plata(Math.round(Math.abs(val)))}</span></div>;
   // Crea la inversión ya con el año y el monto de esa plata, para que solo falte decir en qué.
-  const invertir = (l) => {
+  const invertir = (g) => {
     const k = (cfg.nuevas || []).length;
-    set("nuevas", [...(cfg.nuevas || []), { preset: "custom", nombre: "", monto: Math.round(l.queda), anio: l.anio, fuente: "liquidez", deLiberado: l.nombre }]);
+    set("nuevas", [...(cfg.nuevas || []), { preset: "custom", nombre: "", monto: Math.round(g.saldo), anio: g.anio, fuente: "liquidez", deLiberado: g.llegan.map((l) => l.nombre).join(" + ") || tx("lo que te sobró de antes", "what was left from before") }]);
     setTimeout(() => { const el = document.getElementById("f10-nueva-" + k); el?.scrollIntoView?.({ behavior: "smooth", block: "center" }); el?.querySelector?.("input")?.focus?.({ preventScroll: true }); }, 150);
   };
-  // 23-nov-2026 (Santiago: "en esa sección deben quedar organizados los dineros que van sobrando de los respectivos años"). Un recuadro por año, en orden.
-  const porAnio = [...new Set(cd.lib.map((l) => l.anio))].sort((a, b) => a - b).map((anio) => {
-    const items = cd.lib.filter((l) => l.anio === anio);
-    return { anio, items, llega: items.reduce((sm, l) => sm + l.monto, 0), queda: items.reduce((sm, l) => sm + l.queda, 0), usos: Object.values(items.flatMap((l) => l.usos).reduce((m, u) => { const k = u.nombre + "|" + u.anio; m[k] = m[k] ? { ...m[k], monto: m[k].monto + u.monto } : { ...u }; return m; }, {})) };
-  });
   return <>
-    <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, margin: "14px 0 0" }}>{tx("PLATA QUE TE LLEGA EN AÑOS SIGUIENTES", "MONEY ARRIVING IN LATER YEARS")}</div>
-    {porAnio.map((g) => (
+    <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, margin: "14px 0 0" }}>{tx("AÑOS SIGUIENTES", "LATER YEARS")}</div>
+    <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx("La misma cuenta, año por año: lo que viene de antes, más lo que te llega, menos lo que inviertes ese año. Cada inversión resta solo en su año.", "The same account, year by year: what carries over, plus what arrives, minus what you invest that year. Each investment is subtracted only in its year.")}</div>
+    {cuenta.map((g) => (
       <div key={g.anio} style={{ background: C.bg, borderRadius: 8, padding: 12, marginTop: 8 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{tx(`${anioCal(g.anio)} · te llegan ${plata(Math.round(g.llega))}`, `${anioCal(g.anio)} · you receive ${plata(Math.round(g.llega))}`)}</div>
-        {g.items.map((l) => <div key={l.id}>{fila(`+ ${l.nombre}${l.parcial ? tx(" (retiro de una parte)", " (partial withdrawal)") : tx(" (sale)", " (leaves)")}${l.pagoDeuda > 0.5 ? tx(` · ya pagada su deuda de ${plata(Math.round(l.pagoDeuda))}`, ` · its ${plata(Math.round(l.pagoDeuda))} debt already paid`) : ""}`, l.monto, C.tx)}</div>)}
-        {g.usos.map((u, k) => <div key={k}>{fila(`− ${u.nombre}${u.anio > g.anio ? ` · ${anioCal(u.anio)}` : ""}`, u.monto, C.tx2)}</div>)}
-        <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 4, paddingTop: 6 }}>{fila(g.queda > 0.5 ? tx(`Sobra en ${anioCal(g.anio)}, sin destino`, `Left over in ${anioCal(g.anio)}, unallocated`) : tx("Toda tiene destino", "Fully allocated"), g.queda, g.queda > 0.5 ? C.am : C.gn, true)}</div>
-        {g.queda > 0.5 && <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
-          <button style={{ ...btn(true), padding: "8px 14px" }} onClick={() => invertir({ anio: g.anio, queda: g.queda, nombre: g.items.map((l) => l.nombre).join(" + ") })}>{tx(`Decidir en qué invertirla en ${anioCal(g.anio)}`, `Decide where to invest it in ${anioCal(g.anio)}`)}</button>
-          <span style={{ fontSize: 12, color: C.tx2, flex: "1 1 220px" }}>{tx("Si no decides, ese año se reparte sola como digas en E.", "If you don't decide, that year it's split as you choose in E.")}</span>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{anioCal(g.anio)}</div>
+        {g.antes > 0.5 && fila(tx("Viene del año anterior", "Carried from the previous year"), g.antes, C.tx)}
+        {g.llegan.map((l) => <div key={l.id}>{fila(`+ ${tx("Te llega de", "Arrives from")} ${l.nombre}${l.parcial ? tx(" (retiro de una parte)", " (partial withdrawal)") : ""}${l.pagoDeuda > 0.5 ? tx(` · ya pagada su deuda de ${plata(Math.round(l.pagoDeuda))}`, ` · its ${plata(Math.round(l.pagoDeuda))} debt already paid`) : ""}`, l.monto, C.tx)}</div>)}
+        {g.salen.map((u, k) => <div key={k}>{fila(`− ${tx("Inviertes en", "You invest in")} ${u.nombre}`, u.monto, C.tx2)}</div>)}
+        {g.salen.length === 0 && <div style={{ fontSize: 12, color: C.tx2, padding: "3px 0" }}>{tx(`Todavía no inviertes nada en ${anioCal(g.anio)}.`, `You're not investing anything in ${anioCal(g.anio)} yet.`)}</div>}
+        <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 4, paddingTop: 6 }}>{g.saldo >= -0.5
+          ? fila(tx(`Saldo de ${anioCal(g.anio)}`, `${anioCal(g.anio)} balance`), g.saldo, g.saldo > 0.5 ? C.gn : C.tx, true)
+          : fila(tx(`En ${anioCal(g.anio)} faltan`, `Short in ${anioCal(g.anio)}`), g.saldo, C.rd, true)}</div>
+        {g.saldo < -0.5 && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx(`Lo que inviertes en ${anioCal(g.anio)} es más que la plata que hay ese año. Lo que falta saldría de tus otras cuentas o de lo que te sobre cada mes; si no, baja el monto o pásalo a otro año.`, `What you invest in ${anioCal(g.anio)} is more than the money available that year. The shortfall would come from your other accounts or monthly surplus; otherwise lower the amount or move it to another year.`)}</div>}
+        {g.saldo > 0.5 && <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+          <button style={{ ...btn(true), padding: "8px 14px" }} onClick={() => invertir(g)}>{tx(`Invertir este saldo en ${anioCal(g.anio)}`, `Invest this balance in ${anioCal(g.anio)}`)}</button>
+          <span style={{ fontSize: 12, color: C.tx2, flex: "1 1 220px" }}>{tx("Si no, pasa al año siguiente y mientras tanto queda invertido como digas en E.", "Otherwise it carries to the next year, invested meanwhile as you choose in E.")}</span>
         </div>}
       </div>))}
   </>;
