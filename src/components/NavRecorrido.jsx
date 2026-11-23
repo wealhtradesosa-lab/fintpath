@@ -9,11 +9,9 @@ import { tx } from "../lib/region.js";
 // "Año entrante" decía 2027 fijo; ahora es el año siguiente al actual.
 const paso = (ids, go, l, s) => ({ ids, go, get l() { return tx(l[0], l[1]); }, get s() { return tx(s[0], s[1]); } });
 export const RECORRIDOS = {
-  horizonte: { get titulo() { return tx("Tu plan en el tiempo", "Your plan over time"); }, pasos: [
-    paso(["flujo", "sim"], "flujo", ["Este año", "This year"], ["mes a mes y simulador", "month by month and simulator"]),
-    { ids: ["simf"], go: "simf", get l() { return tx("Año entrante", "Next year"); }, get s() { const y = new Date().getFullYear() + 1; return tx(`lo que viene en ${y}`, `what's coming in ${y}`); } },
-    paso(["f10", "f10crear", "f10esc", "plan"], "f10", ["10 años", "10 years"], ["tus escenarios", "your scenarios"]),
-  ] },
+  // 23-nov-2026 (Santiago: "esos 3 pasos como que sobran… aparecen también en el creador
+  // de escenarios"). La barra «Paso 1 Este año → Paso 2 Año entrante → Paso 3 10 años» se
+  // quitó: repetía el menú y sus «pasos» se confundían con los pasos 1 a 5 del plan a 10 años.
   ia: { get titulo() { return tx("Asesor IA", "AI Advisor"); }, pasos: [
     paso(["asesor"], "asesor", ["Pregúntale", "Ask it"], ["lo que quieras, en un chat", "anything, in a chat"]),
     paso(["coach"], "coach", ["Tu equipo de asesores", "Your advisory team"], ["cinco miradas a tu plata", "five takes on your money"]),
