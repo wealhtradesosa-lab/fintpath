@@ -536,6 +536,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // Solo el plan: Patrimonio, Ingresos y Egresos no se tocan.
   const cambios = leerCambios(cfg, N);
   const terminanEn = leerTerminan(cfg, N);
+  const retirosNuevas = leerRetirosNuevas(cfg, N);
   const liberados = []; // plata que queda libre en años siguientes (activos que vencen o se venden después)
   const manualOp = new Set((user.inv || []).filter((x) => x && x.rentaOrigen === "manual").map((x) => x.id));
   const costoLigado = (id) => {
@@ -616,6 +617,19 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (a.valor > 0) Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
       alertas.push({ tipo: "activo_termina", anio: t, texto: tx(`En ${anioCal(t)} sale «${a.nombre}»: recibes ${mmTxt(a.valor)} y su renta deja de entrar.`, `In ${anioCal(t)} "${a.nombre}" ends: you receive ${mmTxt(a.valor)} and its income stops.`) });
       a.valor = 0;
+    });
+    // 23-nov-2026 (Santiago: "invierto todo en una renta fija por 2 años y en dos
+    // años retiro una parte y la paso a otra inversión; el modelo no me deja").
+    // Una inversión nueva puede tener plazo: ese año sale toda o una parte, llega
+    // como plata libre (para darle destino) y lo que quede sigue invertido.
+    retirosNuevas.forEach((x) => {
+      if (x.anio !== t) return;
+      const a = todos.find((y) => y.id === x.id); if (!a || !(a.valor > 0.5)) return;
+      const m = x.monto == null ? a.valor : Math.min(a.valor, x.monto);
+      Object.keys(canasta).forEach((k) => { canasta[k] += m * mezcla[k] / 100; });
+      a.valor -= m;
+      liberados.push({ id: a.id + "_retiro", nombre: a.nombre, anio: t, monto: m, parcial: a.valor > 0.5 });
+      alertas.push({ tipo: "activo_termina", anio: t, texto: tx(`En ${anioCal(t)} retiras ${mmTxt(m)} de «${a.nombre}»${a.valor > 0.5 ? "; el resto sigue invertido" : ""}.`, `In ${anioCal(t)} you withdraw ${mmTxt(m)} from "${a.nombre}"${a.valor > 0.5 ? "; the rest stays invested" : ""}.`) });
     });
     // 0) inversiones personalizadas: al inicio del año X pasan de tu liquidez/bolsa al activo nuevo.
     personalizadas.forEach((c) => {
@@ -1215,6 +1229,14 @@ export function conVencimientos(cfg = {}, user = {}) {
   const fin = finalesDeDatos(user, N);
   const une = (propio = {}, deDatos = {}) => { const out = { ...deDatos, ...propio }; Object.keys(out).forEach((k) => { if (out[k] === "sigue") delete out[k]; }); return out; };
   return { ...cfg, decisiones: dec, ingresosTerminan: une(cfg.ingresosTerminan, fin.ingresos), gastosTerminan: une(cfg.gastosTerminan, fin.gastos), _conVenc: true };
+}
+/** Inversiones nuevas con plazo: [{ id: "nueva_k", anio: 2..N, monto: null (todo) | pesos }]. */
+export function leerRetirosNuevas(cfg = {}, N = 10) {
+  return (cfg.nuevas || []).map((x, k) => {
+    const hasta = Math.round(n(x && x.hasta)), inicio = x && x.preset === "custom" ? Math.max(1, Math.round(n(x.anio)) || 1) : 1;
+    if (!x || !(hasta > inicio) || hasta > N) return null;
+    return { id: "nueva_" + k, anio: hasta, monto: x.retiraParte && n(x.retira) > 0 ? n(x.retira) : null };
+  }).filter(Boolean);
 }
 /** Activos que se venden o vencen en un año siguiente: { id: año 2..N }. */
 export function leerTerminan(cfg = {}, N = 10) {
