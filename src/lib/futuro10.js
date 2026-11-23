@@ -847,7 +847,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (d.t !== t || d.saldo <= 0) return;
       retirar(d.saldo); deudaUnica -= d.saldo;
       alertas.push({ tipo: "pago_unico", anio: t, texto: tx(`En ${anioCal(t)} pagas ${d.nombre} de una vez con tu liquidez.`, `In ${anioCal(t)} you pay off ${d.nombre} in one go with your cash.`) });
-      d.saldo = 0;
+      d.pagadoEnAnio = d.saldo; d.saldo = 0;
     });
     // Pagos de un activo futuro: pasan de tu liquidez al activo (no cambia el patrimonio).
     // 24-oct-2026 (Santiago: "en 5 años quiero hacer una casa propia… esa plata
@@ -1049,8 +1049,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, ventaAnio, pagaAnio, ligadaEnPlan, pagar, pagado }) => {
       const u = unicas.find((x) => x.id === id);
-      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u };
+      const x = deudas.find((y) => y.id === id);
+      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u,
+        // 23-nov-2026: lo que sale ese año para pagarla (para la cuenta año por año).
+        pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
+    // Pagos de las compras y construcciones de «Lo que viene», por año (pesos de cada año).
+    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto }))),
     // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
     // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
     // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
