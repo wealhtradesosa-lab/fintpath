@@ -164,3 +164,15 @@ describe("inversión nueva con plazo", () => {
     expect(r.liqAgotadaAnio).toBeNull();
   });
 });
+
+// 23-nov-2026 (Santiago): un fondo con plazo no se gasta como «plata de mis cuentas».
+describe("un fondo con plazo llega completo al año en que termina", () => {
+  it("invertir «de mis cuentas» no lo vacía", () => {
+    const u = { trm: 4000, inflacionPct: 4,
+      inv: [{ id: "rc", n: "Fondeo", tipo: "Fondo de Inversión", va: 3288e6 }, { id: "lt", n: "Lote", tipo: "Real Estate", va: 400e6 }, { id: "c", n: "Cash", tipo: "Cash", va: 100e6 }],
+      ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {} };
+    const r = proyectarFuturo10(u, { decisiones: { rc: { accion: "termina", desde: 3 } }, reinversiones: [{ activoId: "lt", monto: 600e6, anio: 1, fuente: "liquidez" }] });
+    expect(r.liberados).toHaveLength(1);
+    expect(r.liberados[0].monto).toBeGreaterThan(3288e6);
+  });
+});

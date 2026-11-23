@@ -156,6 +156,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const dec = cfg.decisiones || {};
   const rNom = (k, ov) => retornoNominalPreset(k, esc, sup, ov) / 100;
 
+  const plazoEn = leerTerminan(cfg, N);
   // ── Activos que continúan ────────────────────────────────────────────────
   let bolsa = 0, rentaVendida = 0;
   const activos = [];
@@ -165,7 +166,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const valor = n(a.va) * fxA(a);
     const rentaAnual = n(b.rentaNetaPorActivo[a.id]) * 12;
     if (d.accion === "vende") { bolsa += valor; return; } // su renta y sus gastos salen con bOp (abajo)
-    const clase = claseActivo(a);
+    // 23-nov-2026 (Santiago: "esta inversión termina en dos años pero no veo ese saldo
+    // disponible de 3.288 M"). Un fondo o CDT con plazo no es «plata de tus cuentas»:
+    // si se tomaba de ahí para otra inversión, llegaba vacío al año en que vence.
+    // Lo que tiene fecha de salida queda intacto hasta ese año.
+    const clase = claseActivo(a) === "liquido" && plazoEn[a.id] ? "otro" : claseActivo(a);
     // Crecimiento del VALOR (la renta vinculada ya entra al flujo de ingresos).
     let crec = crecimientoDefault(a, esc, sup, rentaAnual);
     // 25-oct-2026 (Santiago: "unas inversiones rentan más y está cargando
