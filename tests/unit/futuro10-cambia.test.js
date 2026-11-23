@@ -176,3 +176,35 @@ describe("un fondo con plazo llega completo al año en que termina", () => {
     expect(r.liberados[0].monto).toBeGreaterThan(3288e6);
   });
 });
+
+// 23-nov-2026 (Santiago): "dejo de recibir 57 M y me regresan 3.288 M".
+describe("inversión a plazo que paga renta: devuelve el capital que se puso", () => {
+  it("regresa exactamente el capital y la renta se acaba", () => {
+    const u = { trm: 4000, inflacionPct: 4, inv: [{ id: "rc", n: "Fondeo", tipo: "Fondo de Inversión", va: 3288e6 }],
+      ingresos: [{ nombre: "Renta fondeo", tipo: "pasivo", activoId: "rc", mensual: 57e6, frecuencia: "mensual" }, { nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {} };
+    const r = proyectarFuturo10(u, { decisiones: { rc: { accion: "termina", desde: 3 } } });
+    expect(r.liberados[0].monto).toBeCloseTo(3288e6, -3);
+    expect(r.filas[3].porActivo.some((x) => x.id === "rc")).toBe(false);
+    const x = inversionesHoy(u, { decisiones: { rc: { accion: "termina", desde: 3 } } }).find((y) => y.id === "rc");
+    expect(x.crecPct).toBe(0);
+  });
+});
+
+// 23-nov-2026: un inmueble con hipoteca que se vende en un año siguiente paga su deuda con esa venta.
+describe("venta en un año siguiente de un activo con deuda", () => {
+  const u = () => ({ trm: 4000, inflacionPct: 4, inv: [{ id: "o", n: "Casa", tipo: "Real Estate", va: 2000e6 }, { id: "c", n: "Cash", tipo: "Cash", va: 100e6 }],
+    ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {},
+    deudas: [{ id: "h", n: "Hipoteca", mt: 1100e6, pg: 9e6, la: "o" }] });
+  it("llega el valor menos lo que se debe, la deuda baja y la cuota se acaba", () => {
+    const base = proyectarFuturo10(u(), {});
+    const r = proyectarFuturo10(u(), { decisiones: { o: { accion: "termina", desde: 2 } } });
+    const l = r.liberados[0];
+    expect(l.pagoDeuda).toBeGreaterThan(900e6);
+    expect(l.monto + l.pagoDeuda).toBeCloseTo(2000e6 * 1.04, -6);
+    expect(r.filas[2].deuda).toBeLessThan(1e6);
+    expect(r.filas[2].cuota).toBeLessThan(1e6);
+    expect(base.filas[2].cuota).toBeGreaterThan(100e6);
+    // el patrimonio no cambia por vender y pagar (solo cambia de forma)
+    expect(Math.abs(r.filas[2].patrimonio - base.filas[2].patrimonio) / base.filas[2].patrimonio).toBeLessThan(0.03);
+  });
+});

@@ -173,6 +173,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const clase = claseActivo(a) === "liquido" && plazoEn[a.id] ? "otro" : claseActivo(a);
     // Crecimiento del VALOR (la renta vinculada ya entra al flujo de ingresos).
     let crec = crecimientoDefault(a, esc, sup, rentaAnual);
+    // 23-nov-2026 (Santiago: "se termina la inversión en 2028: dejo de recibir 57 M y me
+    // regresan 3.288 M"). Una inversión a plazo que ya paga su rendimiento como renta
+    // devuelve el capital que se puso, no un capital crecido: su valor no sube.
+    if (capitalPlano(a, clase, rentaAnual, plazoEn) && crec != null) crec = 0;
     // 25-oct-2026 (Santiago: "unas inversiones rentan más y está cargando
     // valores promedio"). En Hoy se corrige cuánto sube cada una al año.
     const crecHoy = (cfg.crecHoy || {})[a.id];
@@ -467,8 +471,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const esUnica = (d) => d && d.tipoInteres === "sin_interes" && !(n(d.pg ?? d.pago) > 0);
   const unicas = deudasVivas.filter(esUnica).map((d) => ({ nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), t: n(d.pagoUnicoAnio) > 0 ? Math.min(N, Math.max(1, n(d.pagoUnicoAnio) - anioHoy + 1)) : null }));
   let deudaUnica = unicas.reduce((sm, d) => sm + d.saldo, 0);
-  let deuda = bDeuda.deudaTotal - deudaUnica; const cuotaAnual = bDeuda.sd * 12;
-  const aniosDeuda = cuotaAnual > 0 ? deuda / cuotaAnual : 0;
+  let deuda = bDeuda.deudaTotal - deudaUnica; let cuotaAnual = bDeuda.sd * 12;
+  const deudaInicial = deuda, pagadasDespues = new Set();
 
   // 24-oct-2026 (Santiago: "¿y los gastos de dónde salen?"). Al vender un
   // activo se van su renta, TODOS sus gastos vinculados (también lo que cuesta
@@ -618,7 +622,16 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     activos.forEach((a) => {
       if (terminanEn[a.id] !== t || a.terminado) return;
       a.terminado = true; a.finRenta = true; a.devuelto = a.valor;
-      liberados.push({ id: a.id, nombre: a.nombre, anio: t, monto: a.valor });
+      // La deuda que cuelga de ese activo (su hipoteca) se paga con esa venta: lo
+      // que te llega es el valor menos lo que todavía debas, y su cuota se acaba.
+      let pagoDeuda = 0;
+      deudasVivas.filter((d) => d && d.sim !== false && (d.la || d.link) === a.id && !esUnica(d) && !pagadasDespues.has(d.id)).forEach((d) => {
+        const queda = deudaInicial > 0 ? n(d.mt) * fxA(d) * (deuda / deudaInicial) : 0;
+        const pago = Math.max(0, Math.min(a.valor - pagoDeuda, queda, deuda));
+        pagoDeuda += pago; deuda -= pago; cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(d.id);
+      });
+      a.valor -= pagoDeuda;
+      liberados.push({ id: a.id, nombre: a.nombre, anio: t, monto: a.valor, pagoDeuda });
       if (a.valor > 0) Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
       alertas.push({ tipo: "activo_termina", anio: t, texto: tx(`En ${anioCal(t)} sale «${a.nombre}»: recibes ${mmTxt(a.valor)} y su renta deja de entrar.`, `In ${anioCal(t)} "${a.nombre}" ends: you receive ${mmTxt(a.valor)} and its income stops.`) });
       a.valor = 0;
@@ -695,7 +708,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0), 0);
     const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * Math.pow(1 + inf, t) : 0), 0)
       - seVan.reduce((sm, g) => sm + (t >= g.desde ? g.mensual * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
-    const cuota = deuda > 0 ? Math.min(cuotaAnual, cuotaAnual * Math.max(0, aniosDeuda - (t - 1))) : 0;
+    const cuota = deuda > 0 ? Math.min(cuotaAnual, deuda) : 0;
     deuda = Math.max(0, deuda - cuota);
     // Ganancia de los negocios que se repiten este año.
     let cicloFlujo = 0, cicloReinv = 0;
@@ -828,7 +841,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const vanI = new Set(ingSeVan.filter((x) => t >= x.desde).map((x) => x.key));
     f.ingresosLab = ingresosHoy.filter((x) => !x.pasivo && !vanI.has(x.key)).map((x) => ({ nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + gIng, t - 1) }));
     {
-      const vivas = deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d) && n(d.pg ?? d.pago) > 0);
+      const vivas = deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d) && n(d.pg ?? d.pago) > 0 && !pagadasDespues.has(d.id));
       const totPg = vivas.reduce((s2, d) => s2 + n(d.pg ?? d.pago) * fxA(d), 0);
       f.cuotasItems = cuota > 0.5 && totPg > 0 ? vivas.map((d) => ({ nombre: d.n || d.nombre || tx("Deuda", "Debt"), anual: cuota * n(d.pg ?? d.pago) * fxA(d) / totPg })) : [];
     }
@@ -1243,6 +1256,8 @@ export function leerRetirosNuevas(cfg = {}, N = 10) {
     return { id: "nueva_" + k, anio: hasta, monto: x.retiraParte && n(x.retira) > 0 ? n(x.retira) : null };
   }).filter(Boolean);
 }
+/** Inversión a plazo (no inmueble ni vehículo) que paga renta: el capital vuelve igual, no crece. */
+const capitalPlano = (a, clase, rentaAnual, plazoEn) => !!plazoEn[a.id] && rentaAnual > 0.5 && clase !== "inmueble" && clase !== "vehiculo";
 /** Activos que se venden o vencen en un año siguiente: { id: año 2..N }. */
 export function leerTerminan(cfg = {}, N = 10) {
   const out = {};
@@ -1397,9 +1412,10 @@ export function inversionesHoy(userIn = {}, cfgIn = {}) {
     const corr = (cfg.rentaHoy || {})[a.id];
     const usada = corr != null && corr !== "" ? Math.max(0, n(corr)) : neta;
     const esc = resolverEscenario(cfg.escenario || "base", user);
-    const def = crecimientoDefault(a, esc, supuestosF10(), usada * 12);
+    const def0 = crecimientoDefault(a, esc, supuestosF10(), usada * 12);
+    const def = def0 != null && capitalPlano(a, claseActivo(a), usada * 12, leerTerminan(cfg)) ? 0 : def0;
     const ch = (cfg.crecHoy || {})[a.id];
-    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), tipo: tipoActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende", cambio: leerCambios(cfg)[a.id] || null, termina: leerTerminan(cfg)[a.id] || null, terminaDePatrimonio: !!(cfg.decisiones || {})[a.id]?.dePatrimonio, venceAnio: n(a.venceAnio) || null, venceMes: n(a.venceMes) || null, costoLigado: gastos.reduce((sm, g) => sm + g.mensual, 0) };
+    return { crecDefaultPct: def == null ? null : def * 100, crecPct: def == null ? null : (!vacio(ch) ? n(ch) : def * 100), crecCorregido: !vacio(ch), id: a.id, nombre: a.n || a.nombre || tx("Activo", "Asset"), clase: claseActivo(a), tipo: tipoActivo(a), valor, moneda: a.moneda, bruta, neta, manual: a.rentaOrigen === "manual", ingresos, gastos, corregida: corr != null && corr !== "", usada, pctAnual: valor > 0 ? usada * 12 / valor * 100 : 0, vende: (cfg.decisiones || {})[a.id]?.accion === "vende", cambio: leerCambios(cfg)[a.id] || null, termina: leerTerminan(cfg)[a.id] || null, capitalPlano: def0 != null && def === 0 && def0 !== 0 && vacio(ch), terminaDePatrimonio: !!(cfg.decisiones || {})[a.id]?.dePatrimonio, venceAnio: n(a.venceAnio) || null, venceMes: n(a.venceMes) || null, costoLigado: gastos.reduce((sm, g) => sm + g.mensual, 0) };
   });
 }
 
