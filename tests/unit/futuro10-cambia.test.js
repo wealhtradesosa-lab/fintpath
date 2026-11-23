@@ -138,3 +138,29 @@ describe("fecha de fin en Ingresos y Egresos", () => {
     expect(ingresosSueltosHoy(u(), { ingresosTerminan: { "i:id:con": "sigue" } }).find((x) => x.key === "i:id:con").acabaAnio).toBeNull();
   });
 });
+
+// 23-nov-2026 (Santiago): inversión nueva con plazo; al vencer, toda o una parte queda libre.
+describe("inversión nueva con plazo", () => {
+  const u = () => ({ trm: 4000, inflacionPct: 4, inv: [{ id: "o", n: "Casa", tipo: "inmueble", va: 10000e6 }], ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {} });
+  const base = { decisiones: { o: { accion: "vende" } }, mezcla: { liquidez: 100, renta: 0, crecimiento: 0 } };
+  it("retira todo en el año 3: llega como plata libre y la inversión desaparece", () => {
+    const r = proyectarFuturo10(u(), { ...base, nuevas: [{ preset: "rfCorto", monto: 10000e6, fuente: "venta", hasta: 3 }] });
+    expect(r.liberados).toHaveLength(1);
+    expect(r.liberados[0]).toMatchObject({ id: "nueva_0_retiro", anio: 3 });
+    expect(r.liberados[0].monto).toBeGreaterThan(10000e6);
+    expect(r.filas[2].porActivo.some((x) => x.id === "nueva_0")).toBe(true);
+    expect(r.filas[3].porActivo.some((x) => x.id === "nueva_0")).toBe(false);
+    expect(r.filas[3].patrimonio).toBeGreaterThan(r.filas[2].patrimonio * 0.99);
+  });
+  it("retira una parte: el resto sigue invertido", () => {
+    const r = proyectarFuturo10(u(), { ...base, nuevas: [{ preset: "rfCorto", monto: 10000e6, fuente: "venta", hasta: 3, retiraParte: true, retira: 4000e6 }] });
+    expect(r.liberados[0].monto).toBeCloseTo(4000e6, -3);
+    expect(r.liberados[0].parcial).toBe(true);
+    expect(r.filas[3].porActivo.find((x) => x.id === "nueva_0").valor).toBeGreaterThan(6000e6);
+  });
+  it("lo retirado puede ir a otra inversión de ese año", () => {
+    const r = proyectarFuturo10(u(), { ...base, nuevas: [{ preset: "rfCorto", monto: 10000e6, fuente: "venta", hasta: 3, retiraParte: true, retira: 4000e6 }, { preset: "custom", nombre: "Bodega", monto: 4000e6, anio: 3, fuente: "liquidez", rendimientoNomPct: 12 }] });
+    expect(r.filas[3].porActivo.find((x) => x.id === "nueva_1").valor).toBeGreaterThan(4000e6 * 0.99);
+    expect(r.liqAgotadaAnio).toBeNull();
+  });
+});
