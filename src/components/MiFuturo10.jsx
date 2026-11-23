@@ -652,7 +652,7 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
   const bd = r.bolsaDetalle || {};
   return (
     <div>
-      {r.deudas.map((d) => {
+      {[...r.deudas].sort((x, y) => y.saldo - x.saldo).map((d) => {
         const corto = d.pagar && d.pagado < d.saldo - 0.5;
         return (
           <div key={d.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
