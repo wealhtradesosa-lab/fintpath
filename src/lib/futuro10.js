@@ -329,7 +329,17 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // reinversión puede traer su renta (rentaMensual, pesos de hoy) y desde qué
   // mes; se devuelve el detalle hoy + aporte = total para la pantalla.
   const reinversionesDetalle = [];
-  unaPorActivo(cfg.reinversiones).forEach((r, k) => {
+  // 23-nov-2026 (Santiago: "tengo un saldo de 2028 y cuando quiero invertir en IBKR no
+  // me lo muestra"). Un activo puede recibir varios aportes, en años distintos (IBKR en
+  // 2027 y otra vez en 2028). Antes solo contaba el primero (unaPorActivo). El índice
+  // k es el de cfg.reinversiones, para que la pantalla encuentre su detalle.
+  const aportesVistos = new Set();
+  (Array.isArray(cfg.reinversiones) ? cfg.reinversiones : []).forEach((r, k) => {
+    if (!r || !r.activoId) return;
+    // Dos aportes al mismo activo en el MISMO año: cuenta el primero (el que se ve).
+    const claveAporte = r.activoId + "|" + Math.max(1, Math.round(n(r.anio)) || 1);
+    if (aportesVistos.has(claveAporte)) return;
+    aportesVistos.add(claveAporte);
     pedidoTotal += Math.max(0, n(r.monto));
     const a = activos.find((x) => x.id === r.activoId);
     if (!a) return;
@@ -1252,7 +1262,14 @@ export function migrarModifica(cfg0 = {}, esc) {
     nuevasDec[id] = { accion: "continua" };
   });
   const ya = new Set((cfg.reinversiones || []).map((r) => r && r.activoId));
-  const lista = unaPorActivo([...(cfg.reinversiones || []), ...extra.filter((x) => !ya.has(x.activoId))]);
+  // Varios aportes por activo están permitidos (en años distintos); solo se evita
+  // duplicar el que viene de un «Se modifica» viejo.
+  const vistosM = new Set();
+  const lista = [...(cfg.reinversiones || []), ...extra.filter((x) => !ya.has(x.activoId))].filter((x) => {
+    if (!x || !x.activoId) return false;
+    const c = x.activoId + "|" + Math.max(1, Math.round(n(x.anio)) || 1);
+    if (vistosM.has(c)) return false; vistosM.add(c); return true;
+  });
   if (!cambio) return lista.length === (cfg.reinversiones || []).length ? cfg : { ...cfg, reinversiones: lista };
   return { ...cfg, decisiones: nuevasDec, reinversiones: lista };
 }

@@ -343,15 +343,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <Seccion n="B" titulo={tx(`Invertir en lo que ya tienes · ${anioSel === 1 ? `hoy (${anioCal(1)})` : anioCal(anioSel)}`, `Invest in what you already own · ${anioSel === 1 ? `today (${anioCal(1)})` : anioCal(anioSel)}`)} sub={tx("Le metes capital a un activo que ya tienes (una obra, una ampliación, un aporte a un fondo). Sale del saldo de este año, igual que una inversión nueva.", "You add capital to an asset you already own (a build, an expansion, a fund contribution). It comes out of this year's balance, like a new investment.")} />
           {/* 22-nov-2026 (Santiago: "si en la primera sección se hace algo, esto se verá reflejado en los siguientes pasos; todo debe tener una lógica, un proceso"). Aquí ya no se vuelve a preguntar activo por activo: llega lo marcado en el paso 1. */}
           {/* 23-nov-2026 (Santiago: "invertir en lo que ya se tiene no está articulado con los saldos de cada año, lo toma como aparte"). Solo los aportes del año elegido; el nuevo aporte arranca con lo que queda ese año. */}
-          {!(r.activos || []).some((a) => a.clase !== "vehiculo" && cfg.reinversiones.some((x) => x.activoId === a.id && Math.max(1, Number(x.anio) || 1) === anioSel)) && <p style={{ color: C.tx2, fontSize: 13, margin: "4px 0 8px" }}>{tx(`En ${anioSel === 1 ? "hoy" : anioCal(anioSel)} no le inviertes a ningún activo que ya tienes.`, `Nothing invested in your existing assets in ${anioSel === 1 ? "today" : anioCal(anioSel)}.`)}</p>}
-          {(r.activos || []).filter((a) => a.clase !== "vehiculo" && cfg.reinversiones.some((x) => x.activoId === a.id && Math.max(1, Number(x.anio) || 1) === anioSel)).map((a) => {
-            const iR = cfg.reinversiones.findIndex((x) => x.activoId === a.id);
-            const activo = iR >= 0;
-            const toggle = () => set("reinversiones", activo ? cfg.reinversiones.filter((x) => x.activoId !== a.id) : [...cfg.reinversiones, { activoId: a.id, monto: "", anio: 1, rentaMensual: "", rentaDesdeMes: 0, fuente: "venta" }]);
+          {/* 23-nov-2026: un activo puede tener varios aportes (uno por año); se lista cada aporte del año elegido. */}
+          {!cfg.reinversiones.some((x) => x && Math.max(1, Number(x.anio) || 1) === anioSel && (r.activos || []).some((a) => a.id === x.activoId && a.clase !== "vehiculo")) && <p style={{ color: C.tx2, fontSize: 13, margin: "4px 0 8px" }}>{tx(`En ${anioSel === 1 ? "hoy" : anioCal(anioSel)} no le inviertes a ningún activo que ya tienes.`, `Nothing invested in your existing assets in ${anioSel === 1 ? "today" : anioCal(anioSel)}.`)}</p>}
+          {cfg.reinversiones.map((x0, iR) => [x0, iR]).filter(([x0]) => x0 && Math.max(1, Number(x0.anio) || 1) === anioSel).map(([x0, iR]) => {
+            const a = (r.activos || []).find((y) => y.id === x0.activoId && y.clase !== "vehiculo");
+            if (!a) return null;
+            const activo = true;
+            const toggle = () => set("reinversiones", cfg.reinversiones.filter((_, j) => j !== iR));
             const upR = (v) => { set("reinversiones", cfg.reinversiones.map((y, j) => (j === iR ? { ...y, ...v } : y))); if (v.anio && v.anio !== anioSel) setAnioSel(v.anio); };
             const detR = activo ? (r.reinversionesDetalle || []).find((y) => y.i === iR) : null;
             return (
-              <div key={a.id} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
+              <div key={a.id + "_" + iR} style={{ borderTop: `1px solid ${C.bd}`, padding: "8px 0" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
                   <b>{a.nombre}</b>
                   <button type="button" onClick={toggle} style={{ background: "transparent", border: "none", padding: "4px 0", color: C.tx2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>{tx("Quitar", "Remove")}</button>
@@ -407,7 +409,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               </div>
             );
           })}
-          {(() => { const libres = (r.activos || []).filter((a) => a.clase !== "vehiculo" && !cfg.reinversiones.some((x) => x.activoId === a.id)); if (!libres.length) return null; return (
+          {(() => { const libres = activosParaAportar(r, cfg, anioSel); if (!libres.length) return null; return (
             <div style={{ borderTop: `1px solid ${C.bd}`, paddingTop: 10, marginTop: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13, color: C.tx2 }}>
               <span>{tx(`+ Invertir en un activo que ya tienes en ${anioSel === 1 ? "hoy" : anioCal(anioSel)}:`, `+ Invest in an asset you own in ${anioSel === 1 ? "today" : anioCal(anioSel)}:`)}</span>
               <select style={{ ...inp, width: "auto", maxWidth: "100%" }} value="" onChange={(e) => { if (e.target.value) reinvEnAnio(e.target.value, anioSel); }}>
@@ -893,6 +895,17 @@ export function cuentaPorAnio(r, cfg = {}) {
   }
   return out;
 }
+// 23-nov-2026 (Santiago: "cuando quiero invertir en IBKR no me lo muestra, y me sigue
+// mostrando Puerto Madero cuando hace rato se vendió"). Activos a los que se les puede
+// meter capital en un año: los que siguen ese año (no vendidos ni vencidos antes o ese
+// mismo año), sin vehículos, y que no tengan ya un aporte en ese año. Un activo puede
+// tener aportes en varios años.
+export function activosParaAportar(r, cfg = {}, anio = 1) {
+  const fuera = new Set((r.liberados || []).filter((l) => l && !String(l.id).endsWith("_retiro") && l.anio <= anio).map((l) => l.id));
+  const yaEsteAnio = new Set((cfg.reinversiones || []).filter((x) => x && Math.max(1, Number(x.anio) || 1) === anio).map((x) => x.activoId));
+  return (r.activos || []).filter((a) => a && a.clase !== "vehiculo" && !fuera.has(a.id) && !yaEsteAnio.has(a.id));
+}
+
 // 23-nov-2026 (Santiago: "cómo hacer que esta sección lo lleve de verdad a uno
 // paso a paso, clara y fluida; si yo mismo que soy el creador me enredo").
 // El paso 3 se recorre año por año: arriba los años (con lo que queda en cada
@@ -937,7 +950,7 @@ function AnioPorAnio({ r, cfg, set, anioSel, setAnioSel, nuevaEnAnio, reinvEnAni
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
         <button type="button" style={{ ...btn(true), padding: "9px 14px" }} onClick={() => nuevaEnAnio(anioSel, quedaDe(anioSel))}>{tx(`+ Inversión nueva ${anioSel === 1 ? "hoy" : "en " + anioCal(anioSel)}`, `+ New investment ${anioSel === 1 ? "today" : "in " + anioCal(anioSel)}`)}</button>
         <button type="button" style={{ ...btn(false), padding: "9px 14px" }} onClick={() => scroll("f10-deudas")}>{tx("Pagar una deuda", "Pay off a debt")}</button>
-        {(() => { const libres = (r.activos || []).filter((a) => a.clase !== "vehiculo" && !(cfg.reinversiones || []).some((x) => x.activoId === a.id)); return libres.length > 0 &&
+        {(() => { const libres = activosParaAportar(r, cfg, anioSel); return libres.length > 0 &&
           <select aria-label={tx("Invertir en algo que ya tienes", "Invest in something you own")} style={{ ...inp, width: "auto", maxWidth: "100%", padding: "9px 12px", cursor: "pointer" }} value="" onChange={(e) => { if (e.target.value) reinvEnAnio(e.target.value, anioSel); }}>
             <option value="">{tx(`+ Invertir en algo que ya tienes…`, `+ Invest in something you own…`)}</option>
             {libres.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}

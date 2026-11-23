@@ -26,3 +26,19 @@ describe("cuenta año por año", () => {
     expect(cuentaPorAnio(r, cfg).find((g) => g.anio === 2).flujo).toBeCloseTo(0, 0);
   });
 });
+
+import { activosParaAportar } from "../../src/components/MiFuturo10.jsx";
+describe("activos a los que se les puede aportar en un año", () => {
+  it("no ofrece lo que ya se vendió ese año o antes, ni lo que ya tiene aporte ese año; sí ofrece aportar otra vez en otro año", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "pm", n: "Puerto Madero", tp: "Real Estate", va: 3000e6 }, { id: "ib", n: "IBKR", tp: "ETF", va: 500e6 }, { id: "v", n: "Carro", tp: "Vehículo", va: 100e6 }], ingresos: [], gas: {}, deu: [] };
+    const cfg = { decisiones: { pm: { accion: "termina", desde: 2 } }, reinversiones: [{ activoId: "ib", monto: 100e6, anio: 2 }] };
+    const r = proyectarFuturo10(u, cfg);
+    const ids = (t) => activosParaAportar(r, cfg, t).map((a) => a.id);
+    expect(ids(1)).toEqual(expect.arrayContaining(["pm", "ib"]));
+    expect(ids(1)).not.toContain("v");
+    expect(ids(2)).not.toContain("pm"); // se vende en el año 2
+    expect(ids(2)).not.toContain("ib"); // ya tiene aporte en el año 2
+    expect(ids(3)).toContain("ib"); // otro aporte en el año 3
+    expect(ids(3)).not.toContain("pm");
+  });
+});
