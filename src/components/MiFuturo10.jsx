@@ -1086,6 +1086,17 @@ function ResumenPaso1({ user, cfg, r, irHoy }) {
       <div style={fila}><span style={et}>{tx("Se vende o termina", "Sell or ends")}</span><span style={{ minWidth: 0 }}>{vende.length ? vende.map((x) => <div key={x.id}>{x.nombre} <span style={{ color: C.tx2 }}>· {plata(Math.round(x.valor))} · {x.termina ? tx(`en ${anioCal(x.termina)}`, `in ${anioCal(x.termina)}`) : tx("hoy", "today")}</span></div>) : <span style={{ color: C.tx2 }}>{tx("Nada", "Nothing")}</span>}</span></div>
       <div style={fila}><span style={et}>{tx("Se modifica", "Modify")}</span><span style={{ minWidth: 0 }}>{modif.length ? modif.map((x) => <div key={x.id}>{x.nombre} <span style={{ color: C.tx2 }}>· {queCambia(x)}</span></div>) : <span style={{ color: C.tx2 }}>{tx("Nada", "Nothing")}</span>}</span></div>
       <div style={fila}><span style={et}>{tx("Se conserva", "Keep")}</span><span style={{ color: C.tx2 }}>{conserva === 1 ? tx("1 activo, tal como está", "1 asset, as it is") : tx(`${conserva} activos, tal como están`, `${conserva} assets, as they are`)}</span></div>
+      {/* 23-nov-2026 (Santiago: "debe decir qué platas hay disponibles para invertir: en 2027 libero 1.000 M y en 2028 5.000 M; entonces armo cada uno"). */}
+      {(() => { const bd = r.bolsaDetalle || {}; const hoy = (bd.vendido || 0) + (bd.capitalNuevo || 0) - (bd.deudas || 0) - (bd.colchon || 0);
+        const porAnio = {}; (r.liberados || []).forEach((l) => { porAnio[l.anio] = (porAnio[l.anio] || 0) + l.monto; });
+        const anios = Object.keys(porAnio).map(Number).sort((a, b) => a - b);
+        if (!(hoy > 0.5) && !anios.length) return null;
+        const chip = { display: "inline-block", border: `1px solid ${C.bd}`, borderRadius: 8, padding: "4px 10px", marginRight: 6, marginBottom: 4, whiteSpace: "nowrap" };
+        return <div style={{ ...fila, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span style={et}>{tx("Plata para invertir", "Money to invest")}</span><span style={{ minWidth: 0 }}>
+          {hoy > 0.5 && <span style={chip}><span style={{ color: C.tx2 }}>{tx("Hoy", "Today")} · </span><b>{plata(Math.round(hoy))}</b></span>}
+          {anios.map((y) => <span key={y} style={chip}><span style={{ color: C.tx2 }}>{anioCal(y)} · </span><b>{plata(Math.round(porAnio[y]))}</b></span>)}
+          <div style={{ fontSize: 12, color: C.tx2 }}>{tx("Cada una se arma en el paso 3 · Tu plata: la de hoy y la de cada año.", "Each one is set up in step 3 · Your money: today's and each year's.")}</div>
+        </span></div>; })()}
     </div>);
 }
 
