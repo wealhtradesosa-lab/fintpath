@@ -1525,7 +1525,7 @@ export default function FinPath(){
     // 30-oct-2026 (Santiago: "monta en el demo unos 5 escenarios futuros con conceptos
     // diferentes: protección, crecer, mercado"). Van en «Mi futuro a 10 años», que es la
     // sección viva (MiPlan/caminos salió del menú). Mismo patrimonio, cinco ideas:
-    // blindar, vivir de rentas, equilibrio, crecer en mercado global y crecer en finca raíz.
+    // blindar, vivir de rentas, equilibrio, crecer en mercado global y crecer en propiedad raíz.
     const pagarTodo={d_d1:true,d_d2:true,d_d3:true,d_d4:true,d_d5:true};
     const pagarCaras={d_d3:true,d_d4:true,d_d5:true};
     const pagarConOrlando={d_d2:true,d_d3:true,d_d4:true,d_d5:true};
@@ -1558,8 +1558,8 @@ export default function FinPath(){
       f10("demo_f10_4","4 · Crecer en el mercado global","Perfil agresivo. Salir del ladrillo: vender la casa del lago, Orlando y Miami, pagar todo y llevar la plata a acciones: un portafolio global (S&P 500) y una parte en tecnología y mercados emergentes. Nada paga cada mes; todo se reinvierte. Sube y baja, pero a 10 años es el que más multiplica en el mercado.",
         {decisiones:{d_i1:{accion:"vende"},d_i2:{accion:"vende"},d_i3:{accion:"vende"}},pagarDeudas:pagarTodo,mezcla:{liquidez:5,renta:10,crecimiento:85},
          nuevas:[custom("Portafolio global de acciones (S&P 500, en dólares)",5500000000,12,0,"USD"),custom("Acciones de tecnología y mercados emergentes",3000000000,17,0,"USD")]}),
-      // 5 · Finca raíz con motor: bodega + preventa + proyectos asociativos que se repiten cada año.
-      f10("demo_f10_5","5 · Crecer en finca raíz con un motor de construcción","Perfil muy agresivo. Quedarse con los inmuebles y sumar más: construir la bodega, meter la fintech y el efectivo en un proyecto de vivienda en preventa, y poner $1.200 M a trabajar en proyectos de construcción asociativos que se construyen, se venden y vuelven a empezar cada año. La ganancia de cada vuelta se reinvierte en la preventa. Es el que más crece, y el que más depende de que cada obra salga bien.",
+      // 5 · Propiedad raíz con motor: bodega + preventa + proyectos asociativos que se repiten cada año.
+      f10("demo_f10_5","5 · Crecer en propiedad raíz con un motor de construcción","Perfil muy agresivo. Quedarse con los inmuebles y sumar más: construir la bodega, meter la fintech y el efectivo en un proyecto de vivienda en preventa, y poner $1.200 M a trabajar en proyectos de construcción asociativos que se construyen, se venden y vuelven a empezar cada año. La ganancia de cada vuelta se reinvierte en la preventa. Es el que más crece, y el que más depende de que cada obra salga bien.",
         {decisiones:{d_i5:bodegaF10,d_i7:{accion:"vende"},d_i8:{accion:"vende"}},pagarDeudas:pagarCaras,norte:"crecer",
          nuevas:[custom("Proyecto de vivienda en preventa",550000000,15,0)],
          ciclos:[{nombre:"Proyectos de construcción asociativos",capital:1200000000,valorFinal:1680000000,meses:12,desde:1,hasta:10,fuente:"venta",costosPct:8,destino:"reinvierte",destinoId:"nueva_0"}]}),
@@ -1688,7 +1688,7 @@ export default function FinPath(){
           {decisiones:{us_a2:{accion:"vende"},us_a3:{accion:"vende"}},pagarDeudas:{us_d2:true,us_d3:true,us_d6:true},norte:"crecer",
            nuevas:[{preset:"sp500",nombre:t("Portafolio indexado global (VT)","Global index portfolio (VT)"),monto:380000,anio:1,pctRecibe:0,moneda:"USD",fuente:"venta"}]}),
         // Caja: cripto $85K + brokerage $340K − tarjeta $12K ≈ $413K → $250K de entrada al fourplex.
-        f10("us_f10_5",t("5 · Crecer en finca raíz","5 · Grow in real estate"),t("Quedarse con todos los inmuebles y sumar uno: vender el cripto y la cuenta de inversión, pagar la tarjeta y poner $250K en un fourplex en San Antonio que renta y se valoriza.","Keep every property and add one: sell the crypto and the taxable brokerage, pay off the card and put $250K into a fourplex in San Antonio that rents and appreciates."),
+        f10("us_f10_5",t("5 · Crecer en propiedad raíz","5 · Grow in real estate"),t("Quedarse con todos los inmuebles y sumar uno: vender el cripto y la cuenta de inversión, pagar la tarjeta y poner $250K en un fourplex en San Antonio que renta y se valoriza.","Keep every property and add one: sell the crypto and the taxable brokerage, pay off the card and put $250K into a fourplex in San Antonio that rents and appreciates."),
           {decisiones:{us_a9:{accion:"vende"},us_a7:{accion:"vende"}},pagarDeudas:{us_d6:true},norte:"crecer",
            nuevas:[{preset:"custom",nombre:t("Fourplex — San Antonio, TX","Fourplex — San Antonio, TX"),monto:250000,anio:1,rendimientoNomPct:8.5,pctRecibe:70,moneda:"USD",fuente:"venta"}]}),
       ]};
