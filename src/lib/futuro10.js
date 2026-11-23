@@ -35,7 +35,7 @@ export const SUPUESTOS_F10 = {
   presets: {
     rfCorto: { nombre: "Renta fija corto plazo", nombreEn: "Short-term fixed income", realSpread: 2.5 },
     rfLargo: { nombre: "Renta fija largo plazo", nombreEn: "Long-term fixed income", realSpread: 3.5, topeSpread: 4.5 },
-    fincaRaiz: { nombre: "Finca raíz", nombreEn: "Real estate", rentaNetaPct: 4.5, valorizacionSpread: 0 },
+    fincaRaiz: { nombre: "Propiedad raíz", nombreEn: "Real estate", rentaNetaPct: 4.5, valorizacionSpread: 0 },
     sp500: { nombre: "S&P 500 (USD)", nombreEn: "S&P 500 (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
   },
   vehiculo: { depAnios1a3Pct: -12, depDespuesPct: -8 },
@@ -54,7 +54,7 @@ export const SUPUESTOS_F10 = {
 //   · Inflación: 3 % normal, 4,5 % prudente, 2,5 % favorable.
 //   · Renta fija: T-bills y cuentas ≈ inflación + 1 %; bonos ≈ inflación + 2 %
 //     (tope + 3 %). En Colombia el diferencial real es más alto (TES, CDT).
-//   · Finca raíz: renta neta 4 % + valorización = inflación + 0,5 %.
+//   · Propiedad raíz: renta neta 4 % + valorización = inflación + 0,5 %.
 //   · S&P 500: es la moneda de casa, sin riesgo cambiario ni devaluación.
 //   · Vehículos: −15 % los años 1 a 3 y −10 % después.
 // Son supuestos de referencia de FINPATHIA, ajustables por el usuario en cada paso.
@@ -71,7 +71,7 @@ export const SUPUESTOS_F10_US = {
   presets: {
     rfCorto: { nombre: "Efectivo y T-bills", nombreEn: "Cash & T-bills", realSpread: 1 },
     rfLargo: { nombre: "Bonos", nombreEn: "Bonds", realSpread: 2, topeSpread: 3 },
-    fincaRaiz: { nombre: "Finca raíz", nombreEn: "Real estate", rentaNetaPct: 4, valorizacionSpread: 0.5 },
+    fincaRaiz: { nombre: "Propiedad raíz", nombreEn: "Real estate", rentaNetaPct: 4, valorizacionSpread: 0.5 },
     sp500: { nombre: "S&P 500", nombreEn: "S&P 500", usd: false, devaluacionRealPct: 0 },
   },
   vehiculo: { depAnios1a3Pct: -15, depDespuesPct: -10 },
@@ -225,7 +225,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const activoId = deudaActivo(d, cfg);
     const porVenta = !!activoId && vendidos.has(activoId);
     const ventaAnio = activoId && plazoEn[activoId] ? plazoEn[activoId] : null;
-    return { id: d.id, nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), activoId, porVenta, ventaAnio, ligadaEnPlan: !!(cfg.deudaDe || {})[d.id], pagar: porVenta || (!ventaAnio && !!pagarCfg[d.id]), pagado: 0, _d: d };
+    // 23-nov-2026 (Santiago: "no hay opción de decir que se paga en X año, solo dice
+    // se paga hoy… un solo botón «Se paga» y da la opción de cualquier año"). El año
+    // de pago vive en cfg.pagarDeudas[id]: true (escenarios viejos) o el año de hoy =
+    // se paga hoy con lo vendido; un año siguiente = se paga ese año.
+    const tPlan = anioPagoDeuda(d, pagarCfg, N);
+    const pagaAnio = !porVenta && !ventaAnio && tPlan > 1 ? tPlan : null;
+    return { id: d.id, nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), activoId, porVenta, ventaAnio, pagaAnio, ligadaEnPlan: !!(cfg.deudaDe || {})[d.id], pagar: porVenta || (!ventaAnio && tPlan === 1), pagado: 0, _d: d };
   }).filter((d) => d.saldo > 0);
   [...deudas.filter((d) => d.porVenta), ...deudas.filter((d) => !d.porVenta && d.pagar)].forEach((d) => {
     const m = Math.min(bolsa, d.saldo);
@@ -416,8 +422,26 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       personalizadas.push({ ...c, id: "nueva_" + k });
       return;
     }
+    if (n(x.monto) <= 0 || !sup.presets[x.preset]) { pedidoTotal += Math.max(0, n(x.monto)); return; }
+    // 23-nov-2026 (Santiago: "creé otra inversión con el saldo que me queda de 2027
+    // y no lo toma como una inversión para hacer con la plata de 2027"). Los tipos
+    // de la lista (renta fija, propiedad raíz, S&P 500) no tenían «¿Cuándo?» y
+    // siempre salían de hoy. Ahora, si es de un año siguiente, sigue el mismo
+    // camino que la personalizada: se aparta de lo vendido o se paga ese año.
+    const anioN = Math.min(N, Math.max(1, Math.round(n(x.anio)) || 1));
+    if (anioN > 1) {
+      const rendP = vacio(x.rendimientoNomPct) ? rNom(x.preset) : n(x.rendimientoNomPct) / 100;
+      const c = { nombre: x.nombre || nombreSup(sup.presets[x.preset]), monto: n(x.monto), anio: anioN, rendNom: rendP, usd: !!sup.presets[x.preset].usd, pctRecibe: Math.min(100, Math.max(0, n(x.pctRecibe))) };
+      if ((x.fuente || "venta") === "venta" && vendidoTotal > 0.5 && !hayPlataPara(c.anio)) {
+        const h = apartar(c.nombre, c.monto, "C", c.anio);
+        personalizadas.push({ ...c, id: "nueva_" + k, holder: h });
+        return;
+      }
+      programadasTotal += c.monto;
+      personalizadas.push({ ...c, id: "nueva_" + k });
+      return;
+    }
     pedidoTotal += Math.max(0, n(x.monto));
-    if (n(x.monto) <= 0 || !sup.presets[x.preset]) return;
     const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
     const m = tomar(n(x.monto), null, x.fuente);
     usos.push({ seccion: "C", nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta" });
@@ -481,7 +505,16 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // (Tu plata → Pagar deudas) o de una vez en el año `pagoUnicoAnio`.
   const anioHoy = new Date().getFullYear();
   const esUnica = (d) => d && d.tipoInteres === "sin_interes" && !(n(d.pg ?? d.pago) > 0);
-  const unicas = deudasVivas.filter(esUnica).map((d) => ({ nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), t: n(d.pagoUnicoAnio) > 0 ? Math.min(N, Math.max(1, n(d.pagoUnicoAnio) - anioHoy + 1)) : null }));
+  // El año que se elija en el plan (Tu plata → Pagar deudas) manda sobre el que
+  // se puso en la página Deudas; «Sigue» en el plan = no se paga en el horizonte.
+  const unicas = deudasVivas.filter(esUnica).map((d) => {
+    const v = pagarCfg[d.id];
+    const t = v === false ? null : anioPagoDeuda(d, pagarCfg, N) || (n(d.pagoUnicoAnio) > 0 ? Math.min(N, Math.max(1, n(d.pagoUnicoAnio) - anioHoy + 1)) : null);
+    return { id: d.id, nombre: d.n || d.nombre || tx("Deuda", "Debt"), saldo: n(d.mt) * fxA(d), t };
+  });
+  const idsUnicas = new Set(unicas.map((d) => d.id));
+  // Deudas con cuota que se pagan completas en un año siguiente.
+  const conCuotaEnAnio = deudas.filter((d) => d.pagaAnio && !idsUnicas.has(d.id));
   let deudaUnica = unicas.reduce((sm, d) => sm + d.saldo, 0);
   let deuda = bDeuda.deudaTotal - deudaUnica; let cuotaAnual = bDeuda.sd * 12;
   const deudaInicial = deuda, pagadasDespues = new Set();
@@ -647,6 +680,18 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (a.valor > 0) Object.keys(canasta).forEach((k) => { canasta[k] += a.valor * mezcla[k] / 100; });
       alertas.push({ tipo: "activo_termina", anio: t, texto: tx(`En ${anioCal(t)} sale «${a.nombre}»: recibes ${mmTxt(a.valor)} y su renta deja de entrar.`, `In ${anioCal(t)} "${a.nombre}" ends: you receive ${mmTxt(a.valor)} and its income stops.`) });
       a.valor = 0;
+    });
+    // Deudas con cuota que el plan paga completas este año: el saldo que queda
+    // sale de lo disponible y la cuota deja de contar desde este año.
+    conCuotaEnAnio.forEach((x) => {
+      if (x.pagaAnio !== t || pagadasDespues.has(x.id)) return;
+      const d = x._d;
+      const queda = deudaInicial > 0 ? n(d.mt) * fxA(d) * (deuda / deudaInicial) : 0;
+      const pago = Math.max(0, Math.min(queda, deuda));
+      if (pago > 0.5) retirar(pago);
+      deuda -= pago; cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(x.id);
+      x.pagadoEnAnio = pago;
+      alertas.push({ tipo: "pago_deuda", anio: t, texto: tx(`En ${anioCal(t)} pagas ${x.nombre} (${mmTxt(pago)}) y su cuota deja de salir.`, `In ${anioCal(t)} you pay off ${x.nombre} (${mmTxt(pago)}) and its payment stops.`) });
     });
     // 23-nov-2026 (Santiago: "invierto todo en una renta fija por 2 años y en dos
     // años retiro una parte y la paso a otra inversión; el modelo no me deja").
@@ -971,7 +1016,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     futuros: fut,
     rentasDuplicadas: duplicadas,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
-    deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado }) => ({ id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado })),
+    deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, ventaAnio, pagaAnio, ligadaEnPlan, pagar, pagado }) => {
+      const u = unicas.find((x) => x.id === id);
+      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u };
+    }),
     // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
     // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
     // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
@@ -1263,13 +1311,25 @@ export function conVencimientos(cfg = {}, user = {}) {
 /** Inversiones nuevas con plazo: [{ id: "nueva_k", anio: 2..N, monto: null (todo) | pesos }]. */
 export function leerRetirosNuevas(cfg = {}, N = 10) {
   return (cfg.nuevas || []).map((x, k) => {
-    const hasta = Math.round(n(x && x.hasta)), inicio = x && x.preset === "custom" ? Math.max(1, Math.round(n(x.anio)) || 1) : 1;
+    const hasta = Math.round(n(x && x.hasta)), inicio = x ? Math.max(1, Math.round(n(x.anio)) || 1) : 1;
     if (!x || !(hasta > inicio) || hasta > N) return null;
     return { id: "nueva_" + k, anio: hasta, monto: x.retiraParte && n(x.retira) > 0 ? n(x.retira) : null };
   }).filter(Boolean);
 }
 /** Inversión a plazo (no inmueble ni vehículo) que paga renta: el capital vuelve igual, no crece. */
 const capitalPlano = (a, clase, rentaAnual, plazoEn) => !!plazoEn[a.id] && rentaAnual > 0.5 && clase !== "inmueble" && clase !== "vehiculo";
+/**
+ * Año del plan (1 = hoy) en que se paga una deuda según cfg.pagarDeudas:
+ * true (escenarios viejos) o un año calendario ≤ el actual → 1; un año siguiente → su índice;
+ * sin elegir o «Sigue» (false) → null.
+ */
+export function anioPagoDeuda(d, pagarCfg = {}, N = 10) {
+  const v = pagarCfg[d && d.id];
+  if (v === true) return 1;
+  const y = Math.round(n(v));
+  if (!(y > 0)) return null;
+  return Math.min(N, Math.max(1, y - new Date().getFullYear() + 1));
+}
 /** De qué activo es una deuda: lo dicho en el plan (cfg.deudaDe; "" = de ninguno) o lo cargado en Deudas. */
 export const deudaActivo = (d, cfg = {}) => { const m = (cfg.deudaDe || {})[d && d.id]; return m === "" ? null : m || (d && (d.la || d.link)) || null; };
 /**

@@ -222,7 +222,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <Liberados r={r} cfg={cfg} set={set} />
         </div>
         <div style={card} id="f10-deudas">
-          <Seccion n="A" titulo={tx("Pagar deudas", "Pay off debt")} sub={tx("Tú decides: cada deuda «Sigue» (sigues pagando la cuota) o «Se paga» (se cancela hoy con la plata de lo que vendes, y esa plata ya no queda para invertir). Solo la deuda de un activo que vendes se paga sola con esa venta.", "Debt tied to an asset you sell is paid off with that sale. Mark any other debt you want to pay with the proceeds.")} />
+          <Seccion n="A" titulo={tx("Pagar deudas", "Pay off debt")} sub={tx("Cada deuda «Sigue» con su cuota o «Se paga» en el año que elijas. La deuda de un activo que vendes se paga con esa venta.", "Each debt either keeps its payment or is paid off in the year you choose. Debt tied to an asset you sell is paid off with that sale.")} />
           {(r.deudas || []).length + (r.deudasSinSaldo || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} /> : <p style={{ color: C.tx2, fontSize: 13 }}>{tx("No tienes deudas con saldo.", "You have no outstanding debt.")}</p>}
         </div>
         <div style={card}>
@@ -330,9 +330,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                 {x.preset !== "custom" && SUP.presets[x.preset] && (() => { const rend = (x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? retornoNominalPreset(x.preset, esc, SUP) : Number(x.rendimientoNomPct)) / 100; const p = (Number(x.pctRecibe) || 0) / 100; const mes = (Number(x.monto) || 0) * rend * p / 12; return (
                   <label style={lbl}>{tx("De lo que rinde, ¿cuánto te llega?", "Of what it earns, how much do you receive?")}<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select>
                     <span style={{ fontSize: 12, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? tx(`Te llegan ${plata(Math.round(mes))} al mes y salen en Tu mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.`, `You receive ${plata(Math.round(mes))} a month, shown in Your month; ${p < 1 ? "the rest is reinvested" : "the principal stays the same"}.`) : tx("Todo se reinvierte: crece con interés compuesto y no entra a tu mes.", "Everything is reinvested: it compounds and doesn't enter your month.")}</span></label>); })()}
+                {/* 23-nov-2026 (Santiago: "creé otra inversión con el saldo de 2027 y no la toma como plata de 2027"). «¿Cuándo?» para todos los tipos, no solo la personalizada. */}
+                {<label style={lbl}>{tx("¿Cuándo?", "When?")}<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>}
                 {x.preset === "custom" && <>
                   <label style={lbl}>{tx("Nombre", "Name")}<input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esUS() ? tx("Ej.: negocio, CD, rancho", "e.g. business, CD, ranch") : tx("Ej.: negocio, CDT, finca", "e.g. business, term deposit, farm")} /></label>
-                  <label style={lbl}>{tx("¿Cuándo?", "When?")}<select style={inp} value={x.anio || 1} onChange={(e) => up({ anio: Number(e.target.value) })}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>
                   <label style={lbl}>{tx("Rendimiento anual esperado (%)", "Expected annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(hint, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />
                     <span style={{ fontSize: 12 }}>{tx("Si no sabes, usa", "If you're not sure, use")} {fmtPctEs(hint, 1)}.</span></label>
                   {/* 3-nov-2026: en EE. UU. todo va en dólares (moneda base); no hay selector de moneda. */}
@@ -343,7 +344,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                       return <span style={{ fontSize: 12, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? tx(`Te llegan ${plata(Math.round(mes))} al mes; ${p < 1 ? "el resto se reinvierte" : "el capital queda igual"}.`, `You receive ${plata(Math.round(mes))} a month; ${p < 1 ? "the rest is reinvested" : "the principal stays the same"}.`) : tx("Todo se reinvierte: crece con interés compuesto.", "Everything is reinvested: it compounds.")}</span>; })()}</label>
                 </>}
                 {/* 23-nov-2026 (Santiago: "la invierto por 2 años y en dos años retiro una parte y la paso a otra inversión… que sea fácil, práctico"). Plazo opcional: ese año sale toda o una parte y aparece arriba como plata para darle destino. */}
-                {(() => { const inicio = x.preset === "custom" ? Math.max(1, Number(x.anio) || 1) : 1; const hasta = Number(x.hasta) > inicio ? Number(x.hasta) : 0; return <>
+                {(() => { const inicio = Math.max(1, Number(x.anio) || 1); const hasta = Number(x.hasta) > inicio ? Number(x.hasta) : 0; return <>
                   <label style={lbl}>{tx("¿Hasta cuándo la tienes?", "How long will you hold it?")}<select style={inp} value={hasta || ""} onChange={(e) => up({ hasta: e.target.value ? Number(e.target.value) : "" })}>
                     <option value="">{tx("Indefinida: se queda invertida", "Ongoing: stays invested")}</option>
                     {ANIOS.filter((y) => y > inicio).map((y) => <option key={y} value={y}>{tx(`Hasta ${anioCal(y)}`, `Until ${anioCal(y)}`)}</option>)}
@@ -662,8 +663,24 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
                 ? <span style={{ fontSize: 13, color: C.gn }}>{tx("Se paga hoy con la venta de", "Paid off today with the sale of")} {nombreActivo(d.activoId)}</span>
                 : d.ventaAnio
                   ? <span style={{ fontSize: 13, color: C.gn }}>{tx(`Se paga en ${anioCal(d.ventaAnio)} con la venta de ${nombreActivo(d.activoId)}; hasta entonces sigues pagando la cuota.`, `Paid off in ${anioCal(d.ventaAnio)} with the sale of ${nombreActivo(d.activoId)}; until then you keep paying.`)}</span>
-                  : [[false, tx("Sigue", "Keep")], [true, tx("Se paga hoy", "Pay off today")]].map(([v, l]) => <button key={l} style={btn(!!sel[d.id] === v)} onClick={() => set("pagarDeudas", { ...sel, [d.id]: v })}>{l}</button>)}
+                  : (() => {
+                    // 23-nov-2026 (Santiago: "un solo botón «Se paga» y da la opción de
+                    // cualquier año, así no hay que poner varios botones"). Se guarda el
+                    // año calendario; true (escenarios viejos) = hoy.
+                    const anioSel = d.pagar ? 1 : d.pagaAnio || null;
+                    const sePaga = anioSel != null;
+                    return <>
+                      <button style={btn(!sePaga)} onClick={() => set("pagarDeudas", { ...sel, [d.id]: false })}>{tx("Sigue", "Keep")}</button>
+                      <button style={btn(sePaga)} onClick={() => !sePaga && set("pagarDeudas", { ...sel, [d.id]: anioCal(1) })}>{tx("Se paga", "Pay off")}</button>
+                      {sePaga && <select aria-label={tx("Año de pago", "Payoff year")} style={{ ...inp, width: "auto" }} value={anioSel} onChange={(e) => set("pagarDeudas", { ...sel, [d.id]: anioCal(Number(e.target.value)) })}>
+                        {ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}
+                      </select>}
+                    </>;
+                  })()}
               {corto && <span style={{ fontSize: 12, color: C.am }}>{tx("alcanza", "covers")} {plata(d.pagado)}</span>}
+              {!d.porVenta && !d.ventaAnio && (d.pagar || d.pagaAnio) && <div style={{ flexBasis: "100%", fontSize: 12, color: C.tx2 }}>{d.pagar
+                ? tx("Se cancela hoy con lo que vendes; ese capital ya no queda para invertir.", "Paid off today with what you sell; that capital is no longer available to invest.")
+                : tx(`Se cancela en ${anioCal(d.pagaAnio)} con el disponible de ese año${d.unica ? "" : "; hasta entonces sigues pagando la cuota"}.`, `Paid off in ${anioCal(d.pagaAnio)} with that year's available funds${d.unica ? "" : "; until then you keep paying"}.`)}</div>}
             </div>
             {/* 23-nov-2026 (Santiago: "la idea es vender la Volvo y esa deuda se paga con la misma venta del activo, no con Cascadas"). De qué activo es la deuda: se dice aquí, solo para el plan. */}
             {(() => { const dd = cfg.deudaDe || {}; const ligar = (id) => set("deudaDe", { ...dd, [d.id]: id });
@@ -684,7 +701,7 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{d.nombre}</b><span style={{ color: C.tx2 }}>{tx(`cuota ${plata(d.cuota)} al mes`, `payment ${plata(d.cuota)}/mo`)}</span></div>
         <div style={{ fontSize: 12, color: C.am, marginTop: 4 }}>{tx("No tiene saldo cargado, así que no se puede pagar con la venta y su cuota sigue. Ponle cuánto debes en tu página de Deudas para poder elegir «Se paga».", "It has no balance entered, so it can't be paid off with the sale and its payment continues. Enter how much you owe on your Debts page to choose \"Pay off\".")}</div>
       </div>)}
-      {bolsa === 0 && <p style={{ color: C.tx2, fontSize: 12 }}>{tx("Para pagar una deuda, vende algo en el paso 1: se paga con esa plata.", "To pay off debt, sell something in step 1: it's paid with that money.")}</p>}
+      {bolsa === 0 && (r.deudas || []).some((d) => d.pagar && !d.porVenta) && <p style={{ color: C.am, fontSize: 12 }}>{tx("Hoy no vendes ningún activo: para pagar hoy, marca una venta en el paso 1 o elige un año siguiente.", "You're not selling any asset today: to pay off today, mark a sale in step 1 or choose a later year.")}</p>}
       {bd.deudas > 0 && r.cuotasQueSalenMes > 0 && <p style={{ fontSize: 12, color: C.tx2 }}>{tx(<>Pagas {plata(bd.deudas)} y dejas de pagar <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> de cuotas al mes.</>, <>You pay {plata(bd.deudas)} and stop paying <b style={{ color: C.gn }}>{plata(r.cuotasQueSalenMes)}</b> a month in payments.</>)}</p>}
     </div>
   );
@@ -893,8 +910,8 @@ function Liberados({ r, cfg, set }) {
           : fila(tx(`En ${anioCal(g.anio)} faltan`, `Short in ${anioCal(g.anio)}`), g.saldo, C.rd, true)}</div>
         {g.saldo < -0.5 && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx(`Lo que inviertes en ${anioCal(g.anio)} es más que la plata que hay ese año. Lo que falta saldría de tus otras cuentas o de lo que te sobre cada mes; si no, baja el monto o pásalo a otro año.`, `What you invest in ${anioCal(g.anio)} is more than the money available that year. The shortfall would come from your other accounts or monthly surplus; otherwise lower the amount or move it to another year.`)}</div>}
         {g.saldo > 0.5 && <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
-          <button style={{ ...btn(true), padding: "8px 14px" }} onClick={() => invertir(g)}>{tx(`Invertir este saldo en ${anioCal(g.anio)}`, `Invest this balance in ${anioCal(g.anio)}`)}</button>
-          <span style={{ fontSize: 12, color: C.tx2, flex: "1 1 220px" }}>{tx("Si no, pasa al año siguiente y mientras tanto queda invertido como digas en E.", "Otherwise it carries to the next year, invested meanwhile as you choose in E.")}</span>
+          <button style={{ ...btn(true), padding: "8px 14px" }} onClick={() => invertir(g)}>{tx(`+ Invertir en ${anioCal(g.anio)}`, `+ Invest in ${anioCal(g.anio)}`)}</button>
+          <span style={{ fontSize: 12, color: C.tx2, flex: "1 1 220px" }}>{tx(`Puedes repartir el saldo en varias inversiones: cada una resta aquí. Lo que no asignes pasa a ${anioCal(g.anio + 1)}.`, `You can split the balance across several investments: each one is subtracted here. Whatever you don't allocate carries to ${anioCal(g.anio + 1)}.`)}</span>
         </div>}
       </div>))}
   </>;
