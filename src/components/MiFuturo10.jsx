@@ -218,7 +218,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <h3 style={{ marginTop: 0, marginBottom: 2 }}>{tx("Tu plata", "Your money")}</h3>
           <p style={{ color: C.tx2, fontSize: 12, marginTop: 0 }}>{tx("Lo que tienes para mover: lo que vendes, capital nuevo que traigas de afuera o tu liquidez de hoy. Cada uso se descuenta y siempre ves cuánto te queda.", "What you can move: what you sell, new capital from outside, or the cash you have today. Each use is deducted and you always see what's left.")}</p>
           <div style={{ fontSize: 12, color: C.tx2, letterSpacing: 1, margin: "4px 0 6px" }}>{tx(`HOY · ${anioCal(1)}`, `TODAY · ${anioCal(1)}`)}</div>
-          <div id="f10-saldo"><Saldo r={r} /></div>
+          <div id="f10-saldo"><Saldo r={r} cfg={cfg} set={set} /></div>
           <Liberados r={r} cfg={cfg} set={set} />
         </div>
         <div style={card}>
@@ -786,7 +786,7 @@ function veredictoSaldo(r) {
   if ((bd.vendido || 0) + (bd.capitalNuevo || 0) <= 0) return { ok: true, corto: tx("Sin ventas", "No sales"), largo: tx("Todavía no vendes nada. Lo que inviertas sale de tus cuentas de hoy o de plata nueva.", "You're not selling anything yet. What you invest comes from your current accounts or new money.") };
   return { ok: true, corto: tx(`Saldo de hoy ${plata(Math.round(sobra))}`, `Today's balance ${plata(Math.round(sobra))}`), largo: tx("Lo que te queda hoy, después de pagar deudas y de lo que inviertes hoy. Pasa al año siguiente.", "What's left today, after debt and today's investments. It carries to the next year.") };
 }
-function Saldo({ r }) {
+function Saldo({ r, cfg, set }) {
   const bd = r.bolsaDetalle || {};
   const vend = (r.vendidos || []).map((v) => v.nombre).join(", ");
   const v = veredictoSaldo(r);
@@ -824,7 +824,11 @@ function Saldo({ r }) {
       {otros > 0.5 && fila([tx("− Negocios que se repiten y otros", "− Repeating deals and other"), otros], C.tx2)}
       {usosHoy.length === 0 && !(otros > 0.5) && <div style={{ fontSize: 12, color: C.tx2, padding: "3px 0" }}>{tx("Cada inversión que agregues abajo (B, C, D) se va restando aquí.", "Each investment you add below (B, C, D) is subtracted here.")}</div>}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 16, fontWeight: 700, borderTop: `1px solid ${C.bd}`, marginTop: 6, paddingTop: 8 }}><span>{tx("Saldo de hoy", "Today's balance")}</span><span style={{ color: saldoFinal > 0.5 ? C.gn : saldoFinal < -0.5 ? C.rd : C.tx, fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(Math.abs(saldoFinal)))}</span></div>
-      <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{saldoFinal > 0.5 ? tx("Aquí solo resta lo que inviertes hoy. Lo que sobre pasa al año siguiente; mientras tanto queda invertido como digas en E.", "Only today's investments are subtracted here. What's left carries to the next year; meanwhile it's invested as you choose in E.") : ""}</div>
+      {/* 23-nov-2026 (Santiago: "yo debería poder disponer de esos 126 M inmediatamente en una inversión, ponerlo en IBKR o lo que quiera"). */}
+      {saldoFinal > 0.5 && set && <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 8 }}>
+        <button style={{ ...btn(true), padding: "8px 14px" }} onClick={() => { const k = (cfg.nuevas || []).length; set("nuevas", [...(cfg.nuevas || []), { preset: "rfCorto", monto: Math.round(saldoFinal), fuente: "venta" }]); setTimeout(() => document.getElementById("f10-nueva-" + k)?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 150); }}>{tx("Invertir este saldo hoy", "Invest this balance today")}</button>
+        <span style={{ fontSize: 12, color: C.tx2, flex: "1 1 240px" }}>{tx("Te crea la inversión con ese monto; eliges en qué. Para ponerlo en algo que ya tienes (por ejemplo IBKR), agrégalo abajo en B. Si no lo usas, pasa al año siguiente.", "Creates the investment with that amount; you choose what. To add it to something you own (e.g. your brokerage), add it below in B. If unused, it carries to the next year.")}</span>
+      </div>}
     </>}
     {(bd.usos || []).length > 0 && <details style={{ marginTop: 6 }}>
       <summary style={{ cursor: "pointer", fontSize: 12, color: C.tx }}>{tx("Ver de dónde sale la plata de cada inversión", "See where each investment's money comes from")}</summary>
