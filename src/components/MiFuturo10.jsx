@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, ingresosSueltosHoy } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, sugerirActivoDeDeuda, deudaActivo, ingresosSueltosHoy } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -659,10 +659,24 @@ function Deudas({ r, cfg, set, inv, bolsa }) {
             <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}><b>{d.nombre}</b><span style={{ color: C.tx2 }}>{plata(d.saldo)}</span></div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6, alignItems: "center" }}>
               {d.porVenta
-                ? <span style={{ fontSize: 12, color: C.gn }}>{tx("Se paga con la venta de", "Paid off with the sale of")} {nombreActivo(d.activoId)}</span>
-                : [[false, tx("Sigue", "Keep")], [true, tx("Se paga", "Pay off")]].map(([v, l]) => <button key={l} style={btn(!!sel[d.id] === v)} onClick={() => set("pagarDeudas", { ...sel, [d.id]: v })}>{l}</button>)}
+                ? <span style={{ fontSize: 13, color: C.gn }}>{tx("Se paga hoy con la venta de", "Paid off today with the sale of")} {nombreActivo(d.activoId)}</span>
+                : d.ventaAnio
+                  ? <span style={{ fontSize: 13, color: C.gn }}>{tx(`Se paga en ${anioCal(d.ventaAnio)} con la venta de ${nombreActivo(d.activoId)}; hasta entonces sigues pagando la cuota.`, `Paid off in ${anioCal(d.ventaAnio)} with the sale of ${nombreActivo(d.activoId)}; until then you keep paying.`)}</span>
+                  : [[false, tx("Sigue", "Keep")], [true, tx("Se paga hoy", "Pay off today")]].map(([v, l]) => <button key={l} style={btn(!!sel[d.id] === v)} onClick={() => set("pagarDeudas", { ...sel, [d.id]: v })}>{l}</button>)}
               {corto && <span style={{ fontSize: 12, color: C.am }}>{tx("alcanza", "covers")} {plata(d.pagado)}</span>}
             </div>
+            {/* 23-nov-2026 (Santiago: "la idea es vender la Volvo y esa deuda se paga con la misma venta del activo, no con Cascadas"). De qué activo es la deuda: se dice aquí, solo para el plan. */}
+            {(() => { const dd = cfg.deudaDe || {}; const ligar = (id) => set("deudaDe", { ...dd, [d.id]: id });
+              const sug = !d.activoId && dd[d.id] == null ? sugerirActivoDeDeuda(d.nombre, inv.filter((a) => a && a.sim !== false).map((a) => ({ id: a.id, nombre: a.n || a.nombre }))) : null;
+              return <div style={{ marginTop: 6, fontSize: 12, color: C.tx2 }}>
+                {sug && <div style={{ marginBottom: 6, padding: "8px 10px", border: `1px solid ${C.bd}`, borderRadius: 8, color: C.tx }}>{tx(`¿Es la deuda de ${nombreActivo(sug)}? Si la ligas, se paga con la venta de ese activo y no con otra plata.`, `Is this the debt on ${nombreActivo(sug)}? If you link it, it's paid with that asset's sale and not with other money.`)} <button style={{ ...btn(true), padding: "4px 10px", marginLeft: 6 }} onClick={() => ligar(sug)}>{tx(`Sí, es de ${nombreActivo(sug)}`, `Yes, it's ${nombreActivo(sug)}'s`)}</button></div>}
+                <label style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>{tx("¿De qué activo es esta deuda?", "Which asset is this debt on?")}
+                  <select style={{ ...inp, width: "auto", maxWidth: "100%" }} value={d.activoId || ""} onChange={(e) => ligar(e.target.value)}>
+                    <option value="">{tx("De ninguno (crédito libre)", "None (unsecured)")}</option>
+                    {inv.filter((a) => a && a.sim !== false).map((a) => <option key={a.id} value={a.id}>{a.n || a.nombre}</option>)}
+                  </select></label>
+                {d.activoId && !d.porVenta && !d.ventaAnio && <div style={{ marginTop: 4 }}>{tx(`Si en el paso 1 marcas que ${nombreActivo(d.activoId)} se vende, esta deuda se paga con esa venta.`, `If you mark ${nombreActivo(d.activoId)} as sold in step 1, this debt is paid with that sale.`)}</div>}
+              </div>; })()}
           </div>
         );
       })}
@@ -801,7 +815,7 @@ function Saldo({ r, cfg, set }) {
   // saldo disponible 600"). Una sola cuenta, renglón por renglón.
   const antes = [
     // 23-nov-2026 (Santiago: "no me quedó claro en qué se gastaron los 800 M… ¿se fue en automático en deudas?"). Deuda por deuda, con el porqué.
-    ...(r.deudas || []).filter((d) => d.pagado > 0.5).map((d) => [`− ${tx("Pagas", "Pay off")} ${d.nombre} · ${d.porVenta ? tx("se paga sola con la venta de su activo", "paid automatically with its asset's sale") : tx("tú la marcaste «Se paga»", "you marked it \"Pay off\"")}${d.pagado < d.saldo - 0.5 ? tx(` (abono; debe ${plata(Math.round(d.saldo))})`, ` (partial; owes ${plata(Math.round(d.saldo))})`) : ""}`, d.pagado]),
+    ...(r.deudas || []).filter((d) => d.pagado > 0.5).map((d) => [`− ${tx("Pagas", "Pay off")} ${d.nombre} · ${d.porVenta ? tx(`con la venta de ${((r.vendidos || []).find((v) => v.id === d.activoId) || {}).nombre || "su activo"}`, `with the sale of ${((r.vendidos || []).find((v) => v.id === d.activoId) || {}).nombre || "its asset"}`) : tx("tú la marcaste «Se paga»", "you marked it \"Pay off\"")}${d.pagado < d.saldo - 0.5 ? tx(` (abono; debe ${plata(Math.round(d.saldo))})`, ` (partial; owes ${plata(Math.round(d.saldo))})`) : ""}`, d.pagado]),
     ...(bd.colchon > 0 ? [[tx(`− Colchón de ${supuestosF10().colchonMeses} meses`, `− ${supuestosF10().colchonMeses}-month cushion`), bd.colchon]] : []),
   ];
   const entraTotal = entra.reduce((sm, x) => sm + x[1], 0) + (bd.excesoCubierto || 0);
@@ -930,8 +944,25 @@ function TablaSupuestos({ esc }) {
 // 24-oct-2026 (Santiago: "¿por qué aparece la renta de Puerto Madero si se
 // vende? Lo mismo Orlando… aparecen rentas que ya no van"). Al marcar «Se
 // vende», se ve y se confirma qué ingresos y gastos se van con la venta.
-function SeVaConVenta({ user, activoId, d, setD }) {
+function SeVaConVenta({ user, activoId, d, setD, cfg = {}, set, valor = 0 }) {
   const [verTodo, setVerTodo] = useState(false);
+  const [verDeudas, setVerDeudas] = useState(false);
+  // 23-nov-2026 (Santiago: "vendo un vehículo y se van una serie de gastos, impuestos, seguro, SOAT… pero también se va la deuda, y no la ve uno").
+  const trmD = Number(user.trm) || 4200, fxD = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trmD : 1);
+  const deudasU = (user.deudas || user.deu || []).filter((x) => x && x.sim !== false && Number(x.mt) > 0);
+  const activosN = (user.inv || []).filter((a) => a && a.sim !== false).map((a) => ({ id: a.id, nombre: a.n || a.nombre }));
+  const dd = cfg.deudaDe || {};
+  const suyas = deudasU.filter((x) => deudaActivo(x, cfg) === activoId);
+  const sugeridas = deudasU.filter((x) => !deudaActivo(x, cfg) && dd[x.id] == null && sugerirActivoDeDeuda(x.n || x.nombre, activosN) === activoId);
+  const otras = deudasU.filter((x) => !deudaActivo(x, cfg) && !sugeridas.includes(x));
+  const ligar = (id, on) => set && set("deudaDe", { ...dd, [id]: on ? activoId : "" });
+  const totalDeuda = suyas.reduce((sm, x) => sm + Number(x.mt) * fxD(x), 0);
+  const filaDeuda = (x, on) => (
+    <label key={x.id} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, padding: "3px 0", color: on ? C.tx : C.tx2 }}>
+      <input type="checkbox" checked={on} onChange={() => ligar(x.id, !on)} />
+      <span style={{ flex: 1, minWidth: 0 }}>{x.n || x.nombre || tx("Deuda", "Debt")}{Number(x.pg ?? x.pago) > 0 ? <span style={{ color: C.tx2 }}> · {tx("cuota", "payment")} {plata(Math.round(Number(x.pg ?? x.pago) * fxD(x)))}{tx("/mes", "/mo")}</span> : null}</span>
+      <span style={{ whiteSpace: "nowrap" }}>{plata(Math.round(Number(x.mt) * fxD(x)))}</span>
+    </label>);
   const sug = sugerirVinculados(user, activoId);
   const lista = [...sug.ingresos.map((x) => ({ ...x, tipo: "ing" })), ...sug.gastos.map((x) => ({ ...x, tipo: "gas" }))];
   const elegidos = new Set(Array.isArray(d.seVan) ? d.seVan : lista.filter((x) => x.sugerido).map((x) => x.key));
@@ -952,6 +983,16 @@ function SeVaConVenta({ user, activoId, d, setD }) {
       {visibles.map((x) => fila(x, elegidos.has(x.key), false))}
       {auto.length + visibles.length === 0 && <div style={{ fontSize: 12, color: C.tx2 }}>{tx("No encontré rentas ni gastos con este nombre. Búscalos abajo.", "No income or expenses found with this name. Look for them below.")}</div>}
       {lista.length > 0 && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setVerTodo(!verTodo)}>{verTodo ? tx("Ver solo los marcados", "Show only checked") : tx("Buscar otro ingreso o gasto", "Find another income or expense")}</button>}
+      {deudasU.length > 0 && <div style={{ borderTop: `1px solid ${C.bd}`, marginTop: 10, paddingTop: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>{tx("¿Tiene una deuda? Se paga con esta venta", "Does it have a debt? It's paid with this sale")}</div>
+        <div style={{ fontSize: 12, color: C.tx2, marginBottom: 4 }}>{tx("Marca la deuda de este activo (su crédito o hipoteca). Se cancela con la plata de la venta y su cuota deja de salir.", "Check this asset's debt (its loan or mortgage). It's paid off with the sale proceeds and its payment stops.")}</div>
+        {suyas.map((x) => filaDeuda(x, true))}
+        {sugeridas.map((x) => filaDeuda(x, false))}
+        {verDeudas && otras.map((x) => filaDeuda(x, false))}
+        {suyas.length + sugeridas.length === 0 && !verDeudas && <div style={{ fontSize: 12, color: C.tx2 }}>{tx("No hay una deuda ligada a este activo.", "No debt is linked to this asset.")}</div>}
+        {otras.length > 0 && <button style={{ ...btn(false), marginTop: 6, fontSize: 12 }} onClick={() => setVerDeudas(!verDeudas)}>{verDeudas ? tx("Ocultar las otras deudas", "Hide other debts") : tx("Buscar otra deuda", "Find another debt")}</button>}
+        {totalDeuda > 0.5 && <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 600, borderTop: `1px solid ${C.bd}`, marginTop: 8, paddingTop: 6 }}><span>{tx(`Te queda de la venta: ${plata(Math.round(valor))} − ${plata(Math.round(totalDeuda))} de deuda`, `Left from the sale: ${plata(Math.round(valor))} − ${plata(Math.round(totalDeuda))} of debt`)}</span><span style={{ color: valor - totalDeuda >= 0 ? C.gn : C.rd, whiteSpace: "nowrap" }}>{plata(Math.round(valor - totalDeuda))}</span></div>}
+      </div>}
     </div>);
 }
 
@@ -1173,7 +1214,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
                   <div style={{ fontSize: 12, color: C.tx2 }}>{tx("Si sale más adelante, cambia el año aquí arriba.", "If it leaves later, change the year above.")}</div>
                 </div>}
               </div>}
-              {x.vende && <SeVaConVenta user={user} activoId={x.id} d={d} setD={(nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: { ...d, ...nx } } }))} />}
+              {x.vende && <SeVaConVenta user={user} activoId={x.id} d={d} cfg={cfg} set={set} valor={x.valor} setD={(nx) => setCfg((p) => ({ ...p, decisiones: { ...p.decisiones, [x.id]: { ...d, ...nx } } }))} />}
               {modifica && <ModificaActivo x={x} d={d} setD={setD} invierte={invierte} toggleInv={toggleInv} det={det}
                 re={(cfg.reinversiones || []).find((y) => y.activoId === x.id)} upRe={(nx) => setCfg((p) => { const l = p.reinversiones || [], hay = l.some((y) => y.activoId === x.id);
                   // Al borrar el monto se quita la inversión, pero el recuadro sigue abierto (queda en «Se modifica»).

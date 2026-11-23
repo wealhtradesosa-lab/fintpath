@@ -225,3 +225,30 @@ describe("invertir en un año siguiente con la plata que llega ese año", () => 
     expect(r.filas[2].porActivo.find((x) => x.id === "ib").valor).toBeGreaterThan(1100e6);
   });
 });
+
+// 23-nov-2026 (Santiago): "vender la Volvo y esa deuda se paga con la misma venta, no con Cascadas".
+import { sugerirActivoDeDeuda } from "../../src/lib/futuro10.js";
+describe("deuda ligada a un activo en el plan", () => {
+  const u = () => ({ trm: 4000, inflacionPct: 4,
+    inv: [{ id: "vo", n: "VOLVO E60", tipo: "Vehículo", va: 250e6 }, { id: "ca", n: "50% cascadas", tipo: "Real Estate", va: 800e6 }, { id: "lm", n: "local macarena", tipo: "Local Comercial", va: 1350e6 }, { id: "lt", n: "lote bodega macarena", tipo: "Bodega", va: 410e6 }],
+    ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {},
+    deudas: [{ id: "d3", n: "SUFI VOLVO", mt: 152e6, pg: 4e6 }, { id: "d4", n: "SALDO LOCAL MACARENA", mt: 437e6, pg: 4e6 }] });
+  it("sugiere el activo solo cuando el nombre apunta a uno solo", () => {
+    const act = u().inv.map((a) => ({ id: a.id, nombre: a.n }));
+    expect(sugerirActivoDeDeuda("SUFI VOLVO", act)).toBe("vo");
+    expect(sugerirActivoDeDeuda("SALDO LOCAL MACARENA", act)).toBeNull(); // «macarena» está en dos activos
+    expect(sugerirActivoDeDeuda("Crédito libre inversión", act)).toBeNull();
+  });
+  it("ligada y vendiendo la Volvo hoy: se paga con la Volvo y Cascadas queda completa", () => {
+    const r = proyectarFuturo10(u(), { decisiones: { vo: { accion: "vende" }, ca: { accion: "vende" } }, deudaDe: { d3: "vo" } });
+    const d = r.deudas.find((x) => x.id === "d3");
+    expect(d).toMatchObject({ porVenta: true }); expect(d.pagado).toBeCloseTo(152e6, -3);
+    expect(r.bolsaDetalle.restante + r.bolsaDetalle.colchon).toBeCloseTo(800e6 + 250e6 - 152e6, -3);
+  });
+  it("si la Volvo se vende en 2027, la deuda no se paga hoy aunque esté marcada", () => {
+    const r = proyectarFuturo10(u(), { decisiones: { vo: { accion: "termina", desde: 2 }, ca: { accion: "vende" } }, deudaDe: { d3: "vo" }, pagarDeudas: { d3: true } });
+    expect(r.deudas.find((x) => x.id === "d3")).toMatchObject({ pagado: 0, ventaAnio: 2 });
+    expect(r.bolsaDetalle.restante + r.bolsaDetalle.colchon).toBeCloseTo(800e6, -3);
+    expect(r.liberados[0].pagoDeuda).toBeGreaterThan(50e6);
+  });
+});
