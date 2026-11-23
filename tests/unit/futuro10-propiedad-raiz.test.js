@@ -49,7 +49,26 @@ describe("propiedad raíz", () => {
   it("lote y construcción: capital = lote + m² × costo; valor final = m² × precio de venta", () => {
     const p = leerPropiedadRaiz({ preset: "fincaRaiz", anio: 2, pr: { tipo: "lote", lote: 400e6, m2: 500, costoM2: 2.4e6, ventaM2: 5e6, plazo: 2, final: "vende", repite: true } }, 10);
     expect(p.capital).toBeCloseTo(1600e6, 0);
-    expect(p.valorFinal).toBeCloseTo(2500e6, 0);
+    expect(p.ventaBruta).toBeCloseTo(2500e6, 0);
+    expect(p.valorFinal).toBeCloseTo(2500e6 * 0.97, 0); // 3 % de costos de venta sobre el precio
+    expect(p.retencion).toBeCloseTo(25e6, 0); // 1 % del valor de venta (art. 398)
     expect(p.ciclo.desde).toBe(2);
+  });
+
+  it("precio de venta total, por m² o margen; con pérdida no hay impuesto y se muestra la pérdida", () => {
+    const base = { preset: "fincaRaiz", anio: 1, pr: { tipo: "lote", lote: 650e6, m2: 240, costoM2: 3e6, plazo: 1, final: "vende", costosPct: 0 } };
+    const m2 = leerPropiedadRaiz({ ...base, pr: { ...base.pr, ventaModo: "m2", ventaM2: 4.6e6 } }, 10);
+    expect(m2.capital).toBeCloseTo(1370e6, 0);
+    expect(m2.ventaBruta).toBeCloseTo(1104e6, 0);
+    expect(m2.gananciaAntes).toBeCloseTo(-266e6, 0);
+    expect(m2.impuestoCiclo).toBe(0);
+    expect(m2.gananciaCiclo).toBeCloseTo(-266e6, 0);
+    const tot = leerPropiedadRaiz({ ...base, pr: { ...base.pr, ventaModo: "total", ventaTotal: 2000e6 } }, 10);
+    expect(tot.ventaBruta).toBeCloseTo(2000e6, 0);
+    const pct = leerPropiedadRaiz({ ...base, pr: { ...base.pr, ventaModo: "pct", valEntregaPct: 25 } }, 10);
+    expect(pct.ventaBruta).toBeCloseTo(1370e6 * 1.25, 0);
+    const ret = leerPropiedadRaiz({ ...base, pr: { ...base.pr, ventaModo: "total", ventaTotal: 2000e6, retencionPct: 2.5 } }, 10);
+    expect(ret.retencion).toBeCloseTo(50e6, 0);
+    expect(ret.saldoDeclaracion).toBeCloseTo(ret.impuestoCiclo - 50e6, 0);
   });
 });

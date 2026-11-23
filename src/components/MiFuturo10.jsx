@@ -1453,10 +1453,19 @@ function PropiedadRaiz({ x, up, usarSaldo }) {
   const TIPOS = [["planos", tx("Compra en planos", "Off-plan purchase")], ["lote", tx("Lote y construcción", "Lot and build")], ["asociativo", tx("Proyecto asociativo", "Joint development")], ["rentar", tx("Construir para rentar", "Build to rent")]];
   const vende = p.final === "vende";
   const anioIni = anioCal(p.anio);
+  const anioVenta = anioCal(p.anio + p.durAnios);
+  const pierde = !p.vacio && vende && p.gananciaAntes < -0.5;
   const resumen = p.vacio ? tx("Escribe los valores para ver el resultado.", "Enter the amounts to see the result.")
     : vende
-      ? tx(`Entras con ${plata(Math.round(p.capital))} en ${anioIni}. ${tipo === "planos" && !p.vendeEn ? `A la entrega vale ${plata(Math.round(p.valorEntrega))} y cedes el contrato` : `Al vender recibes ${plata(Math.round(p.valorFinal))}`} en ${anioCal(p.anio + p.durAnios)}: la ganancia por ciclo es ${plata(Math.round(p.gananciaCiclo))} después de costos e impuestos (${fmtPctEs(p.impuestoPct, 0)}, ${p.regimen === "ocasional" ? "ganancia ocasional" : "renta ordinaria"}).${p.repite ? ` Se repite cada ${enAnios(p.durAnios)}${p.veces > 1 ? `, ${p.veces} veces en el plan` : ""}.` : ""}`,
-        `You put in ${plata(Math.round(p.capital))} in ${anioIni}. ${tipo === "planos" && !p.vendeEn ? `At handover it's worth ${plata(Math.round(p.valorEntrega))} and you assign the contract` : `On sale you receive ${plata(Math.round(p.valorFinal))}`} in ${anioCal(p.anio + p.durAnios)}: profit per cycle is ${plata(Math.round(p.gananciaCiclo))} after costs and taxes (${fmtPctEs(p.impuestoPct, 0)}).${p.repite ? ` It repeats every ${p.durAnios} years${p.veces > 1 ? `, ${p.veces} times in the plan` : ""}.` : ""}`)
+      ? <>
+        {tx(`Entras con ${plata(Math.round(p.capital))} en ${anioIni}. ${tipo === "planos" && !p.vendeEn ? `A la entrega cedes el contrato por ${plata(Math.round(p.ventaBruta))}` : `Vendes en ${plata(Math.round(p.ventaBruta))}`} en ${anioVenta}${p.costoVenta > 0.5 ? `; costos de venta ${plata(Math.round(p.costoVenta))}` : ""}.`, `You put in ${plata(Math.round(p.capital))} in ${anioIni}. You sell for ${plata(Math.round(p.ventaBruta))} in ${anioVenta}${p.costoVenta > 0.5 ? `; sale costs ${plata(Math.round(p.costoVenta))}` : ""}.`)}
+        {" "}{pierde
+          ? <b style={{ color: C.rd }}>{tx(`Con estos valores pierdes ${plata(Math.round(-p.gananciaAntes))}: el precio de venta es menor que lo que inviertes.`, `With these numbers you lose ${plata(Math.round(-p.gananciaAntes))}: the sale price is below what you invest.`)}</b>
+          : tx(`Ganancia por ciclo: ${plata(Math.round(p.gananciaCiclo))} después de costos e impuesto (${fmtPctEs(p.impuestoPct, 0)}, ${p.regimen === "ocasional" ? "ganancia ocasional" : "renta ordinaria"}: ${plata(Math.round(p.impuestoCiclo))}).`, `Profit per cycle: ${plata(Math.round(p.gananciaCiclo))} after costs and tax (${fmtPctEs(p.impuestoPct, 0)}: ${plata(Math.round(p.impuestoCiclo))}).`)}
+        {p.repite && tx(` Se repite cada ${enAnios(p.durAnios)}${p.veces > 1 ? `, ${p.veces} veces en el plan` : ""}.`, ` It repeats every ${p.durAnios} years${p.veces > 1 ? `, ${p.veces} times in the plan` : ""}.`)}
+        {pierde && p.modoVenta === "m2" && (tipo === "lote" || tipo === "rentar") && <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{tx(`Revisa si el precio por m² incluye el lote: ${fmtMilesEs(p.m2)} m² × ${plata(Math.round(p.ventaBruta / Math.max(1, p.m2)))} = ${plata(Math.round(p.ventaBruta))}, frente a ${plata(Math.round(p.capital))} de lote + obra.`, `Check whether the price per m² includes the lot: ${fmtMilesEs(p.m2)} m² × ${plata(Math.round(p.ventaBruta / Math.max(1, p.m2)))} = ${plata(Math.round(p.ventaBruta))}, vs ${plata(Math.round(p.capital))} lot + build.`)}</div>}
+        {p.retencion > 0.5 && <div style={{ fontSize: 12.5, color: C.tx2, marginTop: 6 }}>{tx(`Al vender te retienen ${plata(Math.round(p.retencion))} (${fmtPctEs(p.retencionPct, 1)} de la venta). Es un anticipo del impuesto: en tu declaración ${p.saldoDeclaracion > 0.5 ? `pagas la diferencia, ${plata(Math.round(p.saldoDeclaracion))}` : p.saldoDeclaracion < -0.5 ? `te queda un saldo a favor de ${plata(Math.round(-p.saldoDeclaracion))}` : "queda en cero"}.`, `On sale ${plata(Math.round(p.retencion))} is withheld (${fmtPctEs(p.retencionPct, 1)} of the sale). It's an advance on the tax: in your return you ${p.saldoDeclaracion > 0.5 ? `pay the difference, ${plata(Math.round(p.saldoDeclaracion))}` : p.saldoDeclaracion < -0.5 ? `get a ${plata(Math.round(-p.saldoDeclaracion))} credit` : "owe nothing more"}.`)}</div>}
+      </>
       : tx(`Inviertes ${plata(Math.round(p.capital))}${tipo === "planos" ? ` (${plata(Math.round((p.pagos[0] || {}).monto || 0))} en ${anioIni} y el saldo a la entrega)` : ` en ${anioIni}`}. En ${anioCal(p.entrega)} vale ${plata(Math.round(p.valorAlTerminar))} y desde ahí se valoriza ${fmtPctEs(p.crec * 100, 1)} al año${p.renta > 0 ? `; renta ${plata(Math.round(p.renta))} al mes desde la entrega` : ""}. Se queda en tu patrimonio.`,
         `You invest ${plata(Math.round(p.capital))}. In ${anioCal(p.entrega)} it's worth ${plata(Math.round(p.valorAlTerminar))} and then appreciates ${fmtPctEs(p.crec * 100, 1)} a year${p.renta > 0 ? `; it rents ${plata(Math.round(p.renta))} a month from handover` : ""}. It stays in your net worth.`);
   return <div style={{ gridColumn: "1 / -1", display: "grid", gap: 12, background: C.bg, borderRadius: 8, padding: 12 }}>
@@ -1469,9 +1478,15 @@ function PropiedadRaiz({ x, up, usarSaldo }) {
       {(tipo === "lote" || tipo === "rentar") && p.capital > 0 && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Inversión total", "Total investment")}: <b style={{ color: C.tx }}>{plata(Math.round(p.capital))}</b></div>}
     </div></div>
     <div>{paso(3, tx("Rentabilidad", "Return"))}<div style={fila}>
-      {tipo === "planos" && pct("valEntregaPct", tx("Valorización a la entrega (%)", "Appreciation at handover (%)"), "20")}
-      {tipo === "lote" && num("ventaM2", tx("Precio de venta por m² ($)", "Sale price per m² ($)"))}
-      {tipo === "asociativo" && pct("valEntregaPct", tx("Margen del proyecto (%)", "Project margin (%)"), "20")}
+      {/* 23-nov-2026 (Santiago: "poder poner valor de venta total, por metro cuadrado o porcentaje de margen"). */}
+      <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+        <span style={{ ...lbl, marginRight: 4 }}>{vende ? tx("Precio de venta:", "Sale price:") : tx("Valor al terminar:", "Value when finished:")}</span>
+        {[["pct", tipo === "planos" ? tx("Porcentaje de valorización", "Appreciation %") : tx("Porcentaje de margen", "Margin %")], ["total", tx("Valor total", "Total value")], ...(tipo === "asociativo" ? [] : [["m2", tx("Por m²", "Per m²")]])].map(([k2, l2]) => <button key={k2} type="button" style={chip(p.modoVenta === k2)} onClick={() => set({ ventaModo: k2 })}>{l2}</button>)}
+      </div>
+      {p.modoVenta === "pct" && pct("valEntregaPct", tipo === "planos" ? tx("Valorización a la entrega (%)", "Appreciation at handover (%)") : tipo === "asociativo" ? tx("Margen del proyecto (%)", "Project margin (%)") : tx("Margen sobre lo que inviertes (%)", "Margin on what you invest (%)"), "20")}
+      {p.modoVenta === "total" && num("ventaTotal", vende ? tx("Precio de venta total ($)", "Total sale price ($)") : tx("Valor total al terminar ($)", "Total value when finished ($)"))}
+      {p.modoVenta === "m2" && <>{tipo === "planos" && num("m2", tx("Área (m²)", "Area (m²)"), "0")}{num("ventaM2", vende ? tx("Precio de venta por m² ($)", "Sale price per m² ($)") : tx("Valor por m² al terminar ($)", "Value per m² when finished ($)"))}
+        {p.m2 > 0 && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Total", "Total")}: <b style={{ color: C.tx }}>{plata(Math.round(p.valorEntrega))}</b></div>}</>}
       {tipo !== "asociativo" && (!vende || p.vendeEn > 0 || tipo === "rentar") && pct("valAnualPct", tx("Valorización anual después (%)", "Annual appreciation after (%)"), "6")}
       {(tipo === "rentar" || (tipo !== "asociativo" && !vende)) && num("rentaMensual", tx("Renta neta mensual ($)", "Net monthly rent ($)"), "0")}
     </div></div>
@@ -1490,12 +1505,13 @@ function PropiedadRaiz({ x, up, usarSaldo }) {
     </div></div>}
     <div style={{ fontSize: 13, lineHeight: 1.55, color: C.tx, borderTop: `1px solid ${C.bd}`, paddingTop: 10 }}>{resumen}</div>
     {vende && <details style={{ fontSize: 12, color: C.tx2 }}>
-      <summary style={{ cursor: "pointer", color: C.tx }}>{tx("Más detalles: costos de venta e impuestos", "More details: sale costs and taxes")}</summary>
+      <summary style={{ cursor: "pointer", color: C.tx }}>{tx("Más detalles: costos de venta, impuesto y retención", "More details: sale costs, tax and withholding")}</summary>
       <div style={{ ...fila, marginTop: 8 }}>
         {pct("costosPct", tx("Costos de venta (%)", "Sale costs (%)"), tipo === "asociativo" ? "0" : "3")}
         {pct("impuestoPct", tx("Impuesto sobre la ganancia (%)", "Tax on the gain (%)"), String(Math.round(p.impuestoPct || 0)))}
+        {pct("retencionPct", tx("Retención en la fuente al vender (%)", "Withholding on sale (%)"), "1")}
       </div>
-      <div style={{ marginTop: 6, lineHeight: 1.5 }}>{tx("Si el inmueble se tiene 2 años o más, la utilidad paga ganancia ocasional (15 %); si es menos, va a renta ordinaria. Se sugiere según la duración y se puede cambiar.", "Suggested from the holding period; you can change it.")}</div>
+      <div style={{ marginTop: 6, lineHeight: 1.5 }}>{tx("Costos de venta: comisión, notaría y registro, sobre el precio de venta. Impuesto: si el inmueble se tiene 2 años o más, la utilidad paga ganancia ocasional (15 %); si es menos, va a renta ordinaria. Retención: persona natural, 1 % del valor de venta, la cobra el notario (art. 398 del Estatuto Tributario); si vende una empresa a otra puede ser 2,5 %. La retención se descuenta del impuesto en la declaración. Todo se sugiere y se puede cambiar.", "Sale costs are on the sale price. Tax is suggested from the holding period. Withholding is an advance on the tax. All editable.")}</div>
     </details>}
   </div>;
 }

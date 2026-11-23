@@ -1230,7 +1230,7 @@ export function migrarCiclos(cfg = {}) {
   const nuevas = cs.filter((c) => c && n(c.capital) > 0 && n(c.valorFinal) > 0).map((c) => ({
     preset: "fincaRaiz", nombre: c.nombre || "", anio: Math.max(1, Math.round(n(c.desde)) || 1), fuente: c.fuente || "venta",
     pr: { tipo: "asociativo", valor: n(c.capital), valorFinal: n(c.valorFinal), meses: Math.max(1, Math.round(n(c.meses)) || 12), final: "vende", repite: true,
-      ...(vacio(c.hasta) ? {} : { hasta: Math.round(n(c.hasta)) }), costosPct: vacio(c.costosPct) ? 0 : n(c.costosPct),
+      ...(vacio(c.hasta) ? {} : { hasta: Math.round(n(c.hasta)) }), costosPct: vacio(c.costosPct) ? 0 : n(c.costosPct), costosSobre: "ganancia", ventaModo: "total",
       ...(c.regimen ? { regimen: c.regimen } : {}), ...(vacio(c.impuestoPct) ? {} : { impuestoPct: n(c.impuestoPct) }),
       destino: c.destino === "flujo" ? "flujo" : "reinvierte", ...(c.destinoId ? { destinoId: c.destinoId } : {}) },
   }));
@@ -1658,39 +1658,70 @@ export function leerPropiedadRaiz(x = {}, N = 10) {
   const k = Math.max(0, Math.round(n(pr.vendeEn)));
   const renta = Math.max(0, n(pr.rentaMensual));
   const P = Math.max(0, n(pr.valor));
-  const obra = Math.max(0, n(pr.lote)) + Math.max(0, n(pr.m2)) * Math.max(0, n(pr.costoM2));
+  const m2 = Math.max(0, n(pr.m2));
+  const obra = Math.max(0, n(pr.lote)) + m2 * Math.max(0, n(pr.costoM2));
   const nombre = String(x.nombre || "").trim() || tx({ planos: "Compra en planos", lote: "Lote y construcción", asociativo: "Proyecto asociativo", rentar: "Construcción para rentar" }[tipo], { planos: "Off-plan purchase", lote: "Lot and build", asociativo: "Joint development", rentar: "Build to rent" }[tipo]);
+  // 23-nov-2026 (Santiago: "poder poner valor de venta total de la propiedad, o por
+  // metro cuadrado, o porcentaje de margen"). Cómo se pone el precio de venta:
+  // "total" (ventaTotal), "m2" (m² × ventaM2) o "pct" (margen o valorización sobre
+  // lo que cuesta). Sin elegir, se deduce de lo que ya estaba escrito.
+  const modoVenta = ["total", "m2", "pct"].includes(pr.ventaModo) ? pr.ventaModo
+    : tipo === "asociativo" ? (n(pr.valorFinal) > 0 ? "total" : "pct")
+      : (tipo === "lote" || tipo === "rentar") && n(pr.ventaM2) > 0 && m2 > 0 ? "m2" : "pct";
+  const precio = (baseCosto) => {
+    if (modoVenta === "total") return Math.max(0, n(pr.ventaTotal) || n(pr.valorFinal));
+    if (modoVenta === "m2") return m2 * Math.max(0, n(pr.ventaM2));
+    return baseCosto * (1 + valE);
+  };
   let capital = 0, valorEntrega = 0, pagos = [], meses = 12;
   if (tipo === "planos") {
     const c = P * Math.min(100, Math.max(0, n(pr.cuotaPct))) / 100;
-    valorEntrega = P * (1 + valE);
+    valorEntrega = precio(P);
     if (final === "vende" && k === 0) { capital = c; } // cesión del contrato: solo pusiste la cuota inicial
     else capital = P;
     pagos = [{ monto: c, anio }, { monto: P - c, anio: Math.min(N, anio + plazo) }].filter((p) => p.monto > 0.5);
     meses = Math.max(1, (plazo + k) * 12);
   } else if (tipo === "asociativo") {
     capital = P;
-    valorEntrega = n(pr.valorFinal) > 0 ? n(pr.valorFinal) : P * (1 + valE);
+    valorEntrega = precio(P);
     meses = Math.min(120, Math.max(1, Math.round(n(pr.meses)) || 12));
     pagos = [{ monto: P, anio }];
   } else {
     capital = obra > 0 ? obra : P;
-    valorEntrega = n(pr.ventaM2) > 0 && n(pr.m2) > 0 ? n(pr.m2) * n(pr.ventaM2) : capital * (1 + valE);
+    valorEntrega = precio(capital);
     pagos = [{ monto: capital, anio }];
     meses = Math.max(1, (plazo + k) * 12);
   }
-  const base = { tipo, nombre, anio, capital, valorEntrega, final, plazo, vendeEn: k, renta, durAnios: Math.ceil(meses / 12) };
+  const base = { tipo, nombre, anio, capital, valorEntrega, final, plazo, vendeEn: k, renta, durAnios: Math.ceil(meses / 12), modoVenta, m2 };
   if (!(capital > 0)) return { ...base, vacio: true };
   if (final === "vende") {
-    let valorFinal = tipo === "planos" && k === 0 ? capital + (valorEntrega - P) : valorEntrega * Math.pow(1 + valA, tipo === "asociativo" ? 0 : k);
-    if (tipo === "rentar" && renta > 0) valorFinal += renta * 12 * k; // la renta de los años que la tienes
+    // Lo que te pagan al vender (en planos vendido a la entrega, la cesión del contrato: cuota + valorización).
+    let ventaBruta = tipo === "planos" && k === 0 ? capital + (valorEntrega - P) : valorEntrega * Math.pow(1 + valA, tipo === "asociativo" ? 0 : k);
+    if (tipo === "rentar" && renta > 0) ventaBruta += renta * 12 * k; // la renta de los años que la tienes
+    const costosPct = vacio(pr.costosPct) ? (tipo === "asociativo" ? 0 : 3) : n(pr.costosPct);
+    // Costos de venta (comisión, notaría, registro) sobre el precio de venta. Los
+    // negocios que venían de «Negocios que se repiten» los tenían sobre la ganancia
+    // (pr.costosSobre = "ganancia") y así se dejan para no cambiar su resultado.
+    const sobreGanancia = pr.costosSobre === "ganancia";
+    const costoVenta = sobreGanancia ? 0 : ventaBruta * costosPct / 100;
+    const valorFinal = ventaBruta - costoVenta;
     const repite = !!pr.repite;
     const durAnios = Math.ceil(meses / 12);
     const hasta = repite ? (vacio(pr.hasta) ? N : Math.min(N, Math.max(anio, Math.round(n(pr.hasta))))) : Math.min(N, anio + durAnios - 1);
-    const ciclo = { nombre, capital, valorFinal, meses, desde: anio, hasta, costosPct: vacio(pr.costosPct) ? (tipo === "asociativo" ? 0 : 3) : n(pr.costosPct), regimen: pr.regimen, impuestoPct: pr.impuestoPct, fuente: x.fuente || "venta", destino: pr.destino === "flujo" ? "flujo" : "reinvierte", destinoId: pr.destinoId || null };
+    const ciclo = { nombre, capital, valorFinal, meses, desde: anio, hasta, costosPct: sobreGanancia ? costosPct : 0, regimen: pr.regimen, impuestoPct: pr.impuestoPct, fuente: x.fuente || "venta", destino: pr.destino === "flujo" ? "flujo" : "reinvierte", destinoId: pr.destinoId || null };
     const c = leerCiclos([ciclo], N)[0];
     const veces = repite ? Math.max(1, Math.floor((hasta - anio + 1) / durAnios)) : 1;
-    return { ...base, valorFinal, repite, hasta, durAnios, veces, ciclo, gananciaCiclo: c ? c.gananciaCiclo : 0, impuestoCiclo: c ? c.impuestoCiclo : 0, impuestoPct: c ? c.impuestoPct : 0, regimen: c ? c.regimen : null };
+    // 23-nov-2026 (Santiago: "a quien en estos negocios le quitan la retención: poder poner
+    // el valor de la retención aprox., y si uno quiere cambiarlo, que lo pueda poner").
+    // Retención en la fuente al vender: persona natural 1 % del valor de venta (art. 398 E.T.,
+    // la practica el notario); editable. Es un anticipo del impuesto, no un costo adicional:
+    // se descuenta del impuesto en la declaración (si es mayor, queda saldo a favor).
+    const retencionPct = vacio(pr.retencionPct) ? 1 : Math.min(100, Math.max(0, n(pr.retencionPct)));
+    const retencion = ventaBruta * retencionPct / 100;
+    const impuestoCiclo = c ? c.impuestoCiclo : 0;
+    return { ...base, ventaBruta, costoVenta, costosPct, valorFinal, repite, hasta, durAnios, veces, ciclo,
+      gananciaAntes: valorFinal - capital, gananciaCiclo: c ? c.gananciaCiclo : 0, impuestoCiclo, impuestoPct: c ? c.impuestoPct : 0, regimen: c ? c.regimen : null,
+      retencionPct, retencion, saldoDeclaracion: impuestoCiclo - retencion };
   }
   const entrega = Math.min(N, anio + plazo);
   return { ...base, entrega, pagos, crec: valA, valorAlTerminar: valorEntrega };
@@ -1708,8 +1739,11 @@ export function leerCiclos(lista = [], N = 10) {
     const TC = tarifaCiclo();
     const regimen = TC[x.regimen] ? x.regimen : regimenSugerido(meses);
     const impuestoPct = vacio(x.impuestoPct) ? TC[regimen].pct : Math.min(100, Math.max(0, n(x.impuestoPct)));
-    const bruta = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
-    const impuestoCiclo = bruta * impuestoPct / 100;
+    // 23-nov-2026: si el valor final es menor que el capital, es una pérdida (sin
+    // impuesto); antes se tomaba como ganancia cero y el capital volvía completo.
+    const dif = valorFinal - capital;
+    const bruta = dif >= 0 ? dif * (1 - costosPct / 100) : dif;
+    const impuestoCiclo = Math.max(0, bruta) * impuestoPct / 100;
     const gananciaCiclo = bruta - impuestoCiclo;
     return { nombre: String(x.nombre || "").trim() || tx("Negocio que se repite", "Repeating deal"), capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
