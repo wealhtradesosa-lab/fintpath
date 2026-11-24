@@ -2275,6 +2275,8 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
         ? (r.vendidos || []).filter((v) => n(v.valor) > 0.5).map((v) => ({ id: "venta_" + v.id, nombre: tx(`Vendes ${v.nombre}`, `You sell ${v.nombre}`), monto: n(v.valor), tipo: "venta" }))
         : [{ id: "ventas", nombre: tx(`Lo que vendes${(r.vendidos || []).length ? `: ${(r.vendidos || []).map((v) => v.nombre).join(", ")}` : ""}`, `What you sell${(r.vendidos || []).length ? `: ${(r.vendidos || []).map((v) => v.nombre).join(", ")}` : ""}`), monto: bd.vendido, tipo: "venta" }]) : [])
       : (r.liberados || []).filter((l) => l.anio === anio && n(l.monto) > 0.5).map((l) => ({ ...l, tipo: String(l.id).endsWith("_retiro") ? "retiro" : "vence" }));
+    // Lo guardado para años siguientes al empezar este año (sin lo que vuelve este año).
+    const apartadoAntes = apartados.filter((x) => x.hasta > anio).reduce((sm, x) => sm + x.monto * Math.pow(1 + tasa, anio - x.desde), 0);
     // Lo que guardaste para este año vuelve a tu capital, con lo que rindió.
     apartados.filter((x) => x.hasta === anio && x.monto > 0.5).forEach((x) => llegan.push({ id: "reserva_" + x.desde, nombre: tx(`De tu reserva (la guardaste en ${anioCal(x.desde)})`, `From your reserve (kept in ${anioCal(x.desde)})`), monto: x.monto * Math.pow(1 + tasa, anio - x.desde), tipo: "reserva" }));
     // Lo que sacas de tu reserva este año entra a tu capital.
@@ -2362,7 +2364,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     // factorHoy: para pasar a pesos de hoy lo que se escribe en un formulario (montos de años siguientes).
     // propio: lo que el año suma o resta por sí solo (sin lo que traes de antes).
     const apartadoFin = apartados.filter((x) => x.hasta > anio).reduce((sm, x) => sm + x.monto * Math.pow(1 + tasa, anio - x.desde), 0);
-    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, reparto, repartoFuera, repartoReserva, sacasReserva, rvaCap, mesAReserva, aReservaMes, reservaHasta: hastaRes[anio] || null, aApartado, apartadoFin, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
+    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, reparto, repartoFuera, repartoReserva, sacasReserva, apartadoAntes, rvaCap, mesAReserva, aReservaMes, reservaHasta: hastaRes[anio] || null, aApartado, apartadoFin, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
       // Para lo que leía la cuenta de antes (informe): lo que sale del año y lo que queda.
       salen, sale: suma(salen), saldo: queda, flujoHoy: 0, cfPrev: n(f.cf) });
     antes = pasa; reserva = reservaFin;
