@@ -27,7 +27,11 @@ export const CSS_BARRA_F10 = `.fp10-barra { position: sticky; bottom: 0; z-index
   .fp10-barra-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
   .fp10-barra-cifra { font-size: 15px; }
   .fp10-barra-ir { margin-left: 0; align-self: end; justify-self: start; font-size: 12px; padding: 4px 0; }
-}`;
+  .fp10-barra-enc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .fp10-largo { display: none; }
+  .fp10-corto { display: inline; }
+}
+@media (min-width: 600px) { .fp10-corto { display: none; } }`;
 
 /**
  * @param rPlan  proyectarFuturo10 del escenario que se arma
@@ -37,6 +41,7 @@ export const CSS_BARRA_F10 = `.fp10-barra { position: sticky; bottom: 0; z-index
 export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct = INFLACION_PESOS_HOY_PCT }) {
   const b = resumenBarra(rPlan, rHoy, inflacionPct);
   if (!b) return null;
+  const unidadCorta = esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos");
   const unidad = esUS()
     ? tx(`Patrimonio neto en dólares de hoy (inflación ${pctTxt(b.inflacionPct)} al año)`, `Net worth in today's dollars (${pctTxt(b.inflacionPct)} yearly inflation)`)
     : tx(`Patrimonio neto en pesos de hoy (inflación ${pctTxt(b.inflacionPct)} al año)`, `Net worth in today's pesos (${pctTxt(b.inflacionPct)} yearly inflation)`);
@@ -50,7 +55,11 @@ export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct = INFLAC
         aria-label={tx(`Resultado en ${b.anioCalFin}: ver el paso 4`, `Result in ${b.anioCalFin}: go to step 4`)}>
         <div className="fp10-barra-l" style={{ marginBottom: 4, display: "flex", alignItems: "flex-start", gap: 6 }}>
           <span aria-hidden="true" data-testid="f10-barra-liquidez" data-alerta={liq ? "si" : "no"} style={{ width: 9, height: 9, marginTop: 3, borderRadius: "50%", background: liq ? ROJO : VERDE, flexShrink: 0 }} />
-          <span>{liq ? tx("Hay alertas de liquidez · ", "There are cash alerts · ") : ""}{unidad}{b.conVenta ? <> · <b data-testid="f10-barra-venta">{rotuloVenta()}</b></> : null}</span>
+          <span className="fp10-barra-enc" data-testid="f10-barra-enc">
+            <span className="fp10-largo">{liq ? tx("Hay alertas de liquidez · ", "There are cash alerts · ") : ""}{unidad}</span>
+            <span className="fp10-corto">{liq ? tx("Alerta de liquidez · ", "Cash alert · ") : ""}{unidadCorta}</span>
+            {b.conVenta ? <> · <b data-testid="f10-barra-venta">{rotuloVenta()}</b></> : null}
+          </span>
         </div>
         <div className="fp10-barra-fila">
           <div>

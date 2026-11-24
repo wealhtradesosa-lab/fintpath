@@ -147,6 +147,15 @@ describe("barra en vivo: render", () => {
     expect(h).toContain("@media (max-width: 599px)");
     expect(h).toContain("touch-action: manipulation");
   });
+  it("móvil: con alerta de liquidez y venta, el encabezado va en una sola línea con texto corto", () => {
+    const h = html(rMas);
+    expect(h).toContain('class="fp10-barra-enc"');
+    expect(h).toMatch(/\.fp10-barra-enc \{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis/);
+    expect(h).toContain(".fp10-largo { display: none; }");
+    expect(h).toContain('<span class="fp10-corto">');
+    expect(h).toContain("En pesos de hoy");
+    expect(h).toContain("antes de impuestos de la venta");
+  });
 });
 
 describe("MiFuturo10: la barra sale en los pasos 1 a 3", () => {
@@ -248,6 +257,13 @@ describe("aviso de Soporte junto a las tarjetas", () => {
     expect(mostrarAvisoCalculo(new Date(AVISO_CALCULO_HASTA + "T12:00:00Z"))).toBe(true);
     expect(mostrarAvisoCalculo(new Date("2027-01-15T12:00:00Z"))).toBe(false);
     expect(mostrarAvisoCalculo(new Date(), null)).toBe(false);
+  });
+  it("usa la fecha de Colombia, no UTC: se ve todo el 31-dic y se va el 1-ene", () => {
+    // 31-dic 19:00 y 23:59 hora Colombia = 1-ene 00:00 y 04:59 UTC
+    expect(mostrarAvisoCalculo(new Date("2027-01-01T00:00:00Z"))).toBe(true);
+    expect(mostrarAvisoCalculo(new Date("2027-01-01T04:59:00Z"))).toBe(true);
+    // 1-ene 00:00 hora Colombia
+    expect(mostrarAvisoCalculo(new Date("2027-01-01T05:00:00Z"))).toBe(false);
   });
   it("el texto va junto a las tarjetas mientras esté vigente", () => {
     const r = proyectarFuturo10(uVenta, {});

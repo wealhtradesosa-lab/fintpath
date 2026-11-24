@@ -43,7 +43,9 @@ function medir(r) {
 // 23-nov-2026 (Soporte): aviso del cambio de cálculo junto a las tarjetas. Se
 // quita solo después de AVISO_CALCULO_HASTA (o poniendo la fecha en null).
 export const AVISO_CALCULO_HASTA = "2026-12-31";
-export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && hoy.toISOString().slice(0, 10) <= hasta;
+// Fecha del día en Colombia (no UTC): el aviso se ve todo el 31-dic hora Colombia.
+export const fechaBogota = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && fechaBogota(hoy) <= hasta;
 export const avisoCalculo = () => tx("Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.", "We adjusted the math: your savings no longer count as returns and the figure is now in today's pesos, so it may look lower.");
 
 // Supuesto de las compras de «Lo que viene» (Finanzas). Sin valorización propia,
