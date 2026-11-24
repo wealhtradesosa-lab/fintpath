@@ -520,7 +520,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       </div>
       {/* 23-nov-2026: resultado en vivo mientras llenas los pasos 1 a 3; al tocarlo, paso 4. */}
       {paso <= 2 && <AvisoCalculo testId="f10-aviso-calculo-barra" style={{ margin: "0 0 8px" }} />}
-      {paso <= 2 && <BarraFuturo10 rPlan={r} rHoy={(planesComparar[0] || {}).r} onIr={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
+      {/* En Tu plata manda la barra del año (SaldoFijo): dos barras pegadas abajo se tapan y cargan la pantalla. */}
+      {paso <= 1 && <BarraFuturo10 rPlan={r} rHoy={(planesComparar[0] || {}).r} onIr={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
       </>}
 
       <details style={card}>
@@ -1315,8 +1316,9 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   const h = holg.find((x) => x.anio === anio) || { libre: 0, guardar: 0, para: [] };
   const listaAnios = (l) => {
     const tramos = []; [...l].sort((a, b) => a - b).forEach((y) => { const u = tramos[tramos.length - 1]; if (u && y === u[1] + 1) u[1] = y; else tramos.push([y, y]); });
-    const t = tramos.map(([a, b]) => (a === b ? anioCal(a) : b === a + 1 ? `${anioCal(a)} ${tx("y", "and")} ${anioCal(b)}` : tx(`de ${anioCal(a)} a ${anioCal(b)}`, `${anioCal(a)} to ${anioCal(b)}`)));
-    return t.length <= 1 ? t.join("") : `${t.slice(0, -1).join(", ")} ${tx("y", "and")} ${t[t.length - 1]}`;
+    const t = tramos.map(([a, b]) => (a === b ? anioCal(a) : b === a + 1 ? `${anioCal(a)} ${tx("y", "and")} ${anioCal(b)}` : tx(`de ${anioCal(a)} a ${anioCal(b)}`, `from ${anioCal(a)} to ${anioCal(b)}`)));
+    const txt = t.length <= 1 ? t.join("") : `${t.slice(0, -1).join(", ")} ${tx("y", "and")} ${t[t.length - 1]}`;
+    return /^(de|from) /.test(txt) || !esUS() && /^de /.test(txt) ? txt : tx(`en ${txt}`, `in ${txt}`);
   };
   const fCon = (r.filas || [])[anio] || {};
   return <div style={{ ...card, padding: 0, overflow: "visible" }} id="f10-anios">
@@ -1398,7 +1400,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
         {/* 24-nov-2026 (Santiago: "¿cómo saber uno qué acumula o qué sugiere?"). Si los años que vienen van a necesitar parte de esta plata, se dice cuánto y para cuándo, y se guarda con un toque. */}
         {h.guardar > 0.5 && g.porInvertir > 0.5 && <div style={{ background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.35)", borderRadius: 10, padding: "10px 12px", margin: "8px 0", fontSize: 12.5, lineHeight: 1.5, color: C.tx }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{tx("Lo seguro primero", "Safety first")}</div>
-          {(() => { const uno = h.para.length === 1, solos = h.para.length > 0 && (cuenta.find((y) => y.anio === h.para[0]) || {}).propio < -0.5; const razon = solos ? (uno ? tx("ese año no te alcanza solo", "that year falls short on its own") : tx("esos años no te alcanzan solos", "those years fall short on their own")) : tx("ya tienes movidas que usan esa plata", "you already have moves that use that money"); return <div>{h.libre < 0.5 ? tx(`Todo lo que te queda lo vas a necesitar en ${listaAnios(h.para)}: ${razon}.`, `You'll need everything left in ${listaAnios(h.para)}: ${razon}.`) : tx(`De lo que te queda, ${plata(Math.round(h.guardar))} lo vas a necesitar en ${listaAnios(h.para)}: ${razon}.`, `Of what's left, you'll need ${plata(Math.round(h.guardar))} in ${listaAnios(h.para)}: ${razon}.`)} {tx(`Guárdalo en tu fondo de reserva: rinde ${tasaR} al año y paga solo esos años.`, `Keep it in your reserve fund: it earns ${tasaR} a year and covers those years on its own.`)}</div>; })()}
+          {(() => { const uno = h.para.length === 1, solos = h.para.length > 0 && (cuenta.find((y) => y.anio === h.para[0]) || {}).propio < -0.5; const razon = solos ? (uno ? tx("ese año no te alcanza solo", "that year falls short on its own") : tx("esos años no te alcanzan solos", "those years fall short on their own")) : tx("ya tienes movidas que usan esa plata", "you already have moves that use that money"); return <div>{h.libre < 0.5 ? tx(`Todo lo que te queda lo vas a necesitar ${listaAnios(h.para)}: ${razon}.`, `You'll need everything left ${listaAnios(h.para)}: ${razon}.`) : tx(`De lo que te queda, ${plata(Math.round(h.guardar))} lo vas a necesitar ${listaAnios(h.para)}: ${razon}.`, `Of what's left, you'll need ${plata(Math.round(h.guardar))} ${listaAnios(h.para)}: ${razon}.`)} {tx(`Guárdalo en tu fondo de reserva: rinde ${tasaR} al año y paga solo esos años.`, `Keep it in your reserve fund: it earns ${tasaR} a year and covers those years on its own.`)}</div>; })()}
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, margin: "6px 0 8px", fontVariantNumeric: "tabular-nums" }}><span style={{ color: C.tx2 }}>{tx("Libre para invertir sin quedarte corto después", "Free to invest without falling short later")}</span><b style={{ color: C.gn, whiteSpace: "nowrap" }}>{plata(Math.round(h.libre))}</b></div>
           <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={() => ponerReserva(Math.round((Number(rva[anio]) || 0) + h.guardar))}>{tx(`Guardar ${plata(Math.round(h.guardar))} en mi reserva`, `Keep ${plata(Math.round(h.guardar))} in my reserve`)}</button>
         </div>}
