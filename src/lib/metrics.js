@@ -456,7 +456,7 @@ export function calcularBase(d = {}, opts = {}) {
     coberturaPasiva: ob > 0 ? (ip / ob) * 100 : 0,
     activosTotal, deudaTotal, patrimonioNeto,
     liquidos, colchonMeses, invertibles, invertiblesIds: invertiblesLista.map((i) => i.id),
-    rentaPorActivo, rentaNetaPorActivo, detallePasivo,
+    rentaPorActivo, rentaNetaPorActivo, costoPorActivo, detallePasivo,
     ingresosPorGrupo, gastosPorCategoria,
     // Valorización anual declarada (campo opcional `valorizacionPct` del activo).
     valorizacionAnual: inv.reduce((s, i) => s + valorActivo(i) * (num(i.valorizacionPct) / 100), 0),

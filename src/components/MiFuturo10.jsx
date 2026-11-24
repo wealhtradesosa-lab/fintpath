@@ -234,9 +234,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {paso === 0 && (
         <div style={card}>
-          <h2 style={TIPO.seccion}>{tx("Lo que tienes hoy", "What you have today")}</h2>
+          <TituloPaso n={1}>{tx("Lo que tienes hoy", "What you have today")}</TituloPaso>
           {/* 25-oct-2026 (Santiago: "deberíamos explicar que ahí se puede revisar y ajustar valores y rentabilidad de cada inversión"). */}
-          <div style={{ ...TIPO.sub, marginBottom: 14 }}>
+          <div style={{ ...SUB_PASO, marginBottom: 14 }}>
             {tx(<>Repasa lo que tienes y dile al plan qué va a pasar con cada cosa. Lo tachado ya no cuenta en este escenario. Nada de esto cambia tus páginas.</>, <>Go through what you have and tell the plan what happens to each item. Struck-through items no longer count in this scenario. None of this changes your pages.</>)}
           </div>
           <Grid items={[
@@ -480,8 +480,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {paso === 3 && (<>
         <div style={{ ...card, marginBottom: 14 }}>
-          <h2 style={TIPO.seccion}>{tx("Resultado a 10 años", "10-year result")}</h2>
-          <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{tx("Así se ve este escenario. Guárdalo en el paso 5 para compararlo con otros.", "Here's how this scenario looks. Save it in step 5 to compare it with others.")}</div>
+          <TituloPaso n={4}>{tx("Resultado a 10 años", "10-year result")}</TituloPaso>
+          <div style={SUB_PASO}>{tx("Así se ve este escenario. Guárdalo en el paso 5 para compararlo con otros.", "Here's how this scenario looks. Save it in step 5 to compare it with others.")}</div>
         </div>
         <PlanInforme r={r} nombre={tx("Este escenario", "This scenario")} inflacionPct={esc.inflacionPct} />
         {hayAlertaLiquidez(r) && <div style={{ ...card, borderColor: C.rd }}>
@@ -496,8 +496,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             sale que le ponga nombre al plan"). Guardar solo aparece cuando hay
             algo sin guardar o estás editando, y nunca encima de un informe. */}
         {!verEsc && (hayBorrador || editando) && <div style={card}>
-          <h3 style={{ marginTop: 0 }}>{editando ? `${tx("Estás editando", "You're editing")} «${editando.nombre}»` : tx("Ponle nombre a este escenario", "Name this scenario")}</h3>
-          <div style={{ fontSize: 12, color: C.tx2, marginBottom: 8 }}>{editando ? tx("Cada cambio se guarda solo en este escenario. El nombre se cambia tocando el título de arriba.", "Every change is saved to this scenario automatically. Rename it by tapping the title at the top.") : tx("Con nombre queda guardado y lo puedes comparar con los demás y con «Si me quedo como estoy».", "What you built in steps 1–3 doesn't have a name yet. Name it to save it and compare it with the others.")}</div>
+          <TituloPaso n={5}>{editando ? `${tx("Estás editando", "You're editing")} «${editando.nombre}»` : tx("Ponle nombre a este escenario", "Name this scenario")}</TituloPaso>
+          <div style={{ ...SUB_PASO, marginBottom: 8 }}>{editando ? tx("Cada cambio se guarda solo en este escenario. El nombre se cambia tocando el título de arriba.", "Every change is saved to this scenario automatically. Rename it by tapping the title at the top.") : tx("Con nombre queda guardado y lo puedes comparar con los demás y con «Si me quedo como estoy».", "What you built in steps 1–3 doesn't have a name yet. Name it to save it and compare it with the others.")}</div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {!editando && <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder={tx("Nombre del escenario, ej.: Conservador + casa", "Scenario name, e.g. Conservative + house")} value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />}
             {editando ? <>
@@ -511,8 +511,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {/* 23-nov-2026 (Santiago: "revise todo el proceso, que sea claro"). Este paso solo guarda. Comparar se hace en
             «Escenarios creados», con las mismas tarjetas y palabras: antes aquí salía otro comparador («Camino A», «Hoy»). */}
         {!hayBorrador && !editando && <div style={card}>
-          <h3 style={{ marginTop: 0, marginBottom: 4 }}>{tx("No hay nada por guardar", "Nothing to save")}</h3>
-          <div style={{ fontSize: 13, color: C.tx2 }}>{tx("Para crear un escenario, cambia algo en los pasos 1 a 3 y vuelve aquí a ponerle nombre.", "To create a scenario, change something in steps 1–3 and come back here to name it.")}</div>
+          <TituloPaso n={5}>{tx("No hay nada por guardar", "Nothing to save")}</TituloPaso>
+          <div style={SUB_PASO}>{tx("Para crear un escenario, cambia algo en los pasos 1 a 3 y vuelve aquí a ponerle nombre.", "To create a scenario, change something in steps 1–3 and come back here to name it.")}</div>
         </div>}
         <button type="button" onClick={() => { setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), width: "100%", minHeight: 48, marginBottom: 12, fontSize: 14 }}>{tx(`Ver y comparar tus escenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`, `View and compare your scenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`)}</button>
       </>)}
@@ -601,6 +601,33 @@ function decididoPorAnio(user, cfg, r) {
 function LoQueViene({ user, cfg, set, esc, owners, activos = [], fuentes = [], r, irHoy, irAPlata }) {
   const [abierto, setAbierto] = useState(null);
   const [deudaNueva, setDeudaNueva] = useState(null); // { id, anio } mientras se agrega un pago de deuda
+  // 24-nov-2026 (Santiago: "le doy click a los botones y no abre nada… se me crearon como 10 actividades, solo me di cuenta cuando
+  // bajé… y no pregunta en qué año se crea el nuevo ingreso o gasto: los está creando todos en 2027 por defecto"). Cada botón abre un
+  // formulario corto ahí mismo, que pregunta el año; el hito se crea solo al tocar «Agregar», la página baja hasta él y se resalta.
+  const [borrador, setBorrador] = useState(null); // { k: "ingresos" | "gastos" | "activos", x }
+  const [recien, setRecien] = useState(null);
+  const [enfocar, setEnfocar] = useState(null);
+  useEffect(() => {
+    if (!enfocar) return undefined;
+    const t = setTimeout(() => {
+      const el = typeof document !== "undefined" ? document.getElementById("f10-hito-" + enfocar.replace(/[^a-z0-9]/gi, "-")) : null;
+      if (el) try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch { el.scrollIntoView(); }
+      setEnfocar(null);
+    }, 80);
+    return () => clearTimeout(t);
+  }, [enfocar]);
+  useEffect(() => { if (!recien) return undefined; const t = setTimeout(() => setRecien(null), 5000); return () => clearTimeout(t); }, [recien]);
+  // Los hitos que quedaron vacíos (sin nombre ni monto, por ejemplo de tocar varias veces un botón) se quitan solos al entrar.
+  useEffect(() => {
+    const sinNombre = (x) => !String((x && x.nombre) || "").trim();
+    const vI = (x) => x && sinNombre(x) && !(Number(x.mensual) > 0);
+    const vG = (x) => x && sinNombre(x) && !(Number(x.anual) > 0);
+    const vA = (x) => x && sinNombre(x) && !(Number(x.valor) > 0) && !(Number(x.cuotaInicial) > 0) && !x.desglose && !(Array.isArray(x.pagos) && x.pagos.length);
+    const gs = f.gastos || [];
+    if (f.ingresos.some(vI) || gs.some(vG) || f.activos.some(vA)) set("futuros", { ...f, ingresos: f.ingresos.filter((x) => !vI(x)), gastos: gs.filter((x) => !vG(x)), activos: f.activos.filter((x) => !vA(x)) });
+    // Solo al entrar al paso.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const f = { ingresos: [], activos: [], gastos: [], ...(cfg.futuros || {}) };
   const put = (k, arr) => set("futuros", { ...f, [k]: arr });
   const upI = (i, v) => put("ingresos", f.ingresos.map((x, j) => (j === i ? { ...x, ...v } : x)));
@@ -650,7 +677,21 @@ function LoQueViene({ user, cfg, set, esc, owners, activos = [], fuentes = [], r
   const deudasLibres = (r.deudas || []).filter((d) => !d.porVenta && !d.ventaAnio && !(d.pagado > 0.5) && !d.pagaAnio && d.saldo > 0.5);
   const anios = [...new Set(hitos.map((h) => h.anio))].sort((a, b) => a - b);
   const abrir = (k) => setAbierto((a) => (a === k ? null : k));
-  const nuevo = (k, arr, item) => { put(k, [...arr, item]); setAbierto((k === "ingresos" ? "i:" : k === "gastos" ? "g:" : "a:") + arr.length); };
+  const BORRADOR = {
+    ingresos: { nombre: "", mensual: "", desde: "", hasta: "" },
+    gastos: { nombre: "", anual: "", desde: "", anios: "", periodo: "año" },
+    activos: { nombre: "", clase: "vivienda", valor: "", cuotaInicial: "", anioCuota: "", entrega: "", rentaMensual: "", rentaDesde: "", fuentes: [] },
+  };
+  const abrirBorrador = (k) => { setDeudaNueva(null); setAbierto(null); setBorrador((b) => (b && b.k === k ? null : { k, x: { ...BORRADOR[k] } })); };
+  const upB = (v) => setBorrador((b) => (b ? { ...b, x: { ...b.x, ...v } } : b));
+  const agregarBorrador = () => {
+    if (!borrador) return;
+    const { k, x } = borrador, arr = k === "gastos" ? (f.gastos || []) : f[k];
+    const y = Number(k === "activos" ? x.entrega : x.desde) || 0; if (!y) return;
+    put(k, [...arr, k === "activos" ? { ...x, entrega: y, anioCuota: y } : { ...x, desde: y }]);
+    const clave = (k === "ingresos" ? "i:" : k === "gastos" ? "g:" : "a:") + arr.length;
+    setBorrador(null); setRecien(clave); setEnfocar(clave);
+  };
   const aviso = (txt, boton) => <div style={{ gridColumn: "1 / -1", fontSize: 12.5, color: C.tx, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 8, padding: "8px 10px", lineHeight: 1.45 }}>{txt}{boton && <div style={{ marginTop: 6 }}>{boton}</div>}</div>;
   const pie = (quitar) => <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
     <button type="button" style={{ ...btn(false), padding: "6px 12px" }} onClick={() => { quitar(); setAbierto(null); }}>{tx("Quitar", "Remove")}</button>
@@ -755,12 +796,44 @@ function LoQueViene({ user, cfg, set, esc, owners, activos = [], fuentes = [], r
       {/* 24-nov-2026 (Santiago: "llevar a las personas paso a paso, fácilmente, que no sea un proceso complicado"). */}
       <div style={{ fontSize: 13, fontWeight: 600, margin: "0 0 8px" }}>{tx("¿Qué viene en tus próximos 10 años?", "What's coming in your next 10 years?")}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 8, marginBottom: 14 }}>
-        {[[tx("+ Ingreso que empieza", "+ Income that starts"), tx("Pensión, sueldo, honorarios", "Pension, salary, fees"), () => nuevo("ingresos", f.ingresos, { nombre: "", mensual: "", desde: 2, hasta: "" })],
-          [tx("+ Gasto que empieza", "+ Expense that starts"), tx("Universidad, aportes a pensión", "College, pension contributions"), () => nuevo("gastos", f.gastos || [], { nombre: "", anual: "", desde: 2, anios: 4, periodo: "año" })],
-          [tx("+ Compra o construcción", "+ Purchase or build"), tx("Tu casa, un local, un lote", "Your home, a storefront, a lot"), () => nuevo("activos", f.activos, { nombre: "", clase: "vivienda", valor: "", cuotaInicial: "", anioCuota: 2, entrega: 2, rentaMensual: "", rentaDesde: "", fuentes: [] })],
-          [tx("+ Pago de una deuda", "+ Paying off a debt"), tx("El saldo de un local, una hipoteca", "A property balance, a mortgage"), () => setDeudaNueva(deudaNueva ? null : { id: (deudasLibres[0] || {}).id || "", anio: 2 })],
-        ].map(([l, ej, on], k) => <button key={k} type="button" onClick={on} style={{ ...btn(k === 3 && !!deudaNueva), textAlign: "left", padding: "10px 12px", display: "grid", gap: 2 }}><span style={{ fontSize: 13, fontWeight: 600, color: C.gn }}>{l}</span><span style={{ fontSize: 12, color: C.tx2 }}>{ej}</span></button>)}
+        {[[tx("+ Ingreso que empieza", "+ Income that starts"), tx("Pensión, sueldo, honorarios", "Pension, salary, fees"), () => abrirBorrador("ingresos"), borrador && borrador.k === "ingresos"],
+          [tx("+ Gasto que empieza", "+ Expense that starts"), tx("Universidad, aportes a pensión", "College, pension contributions"), () => abrirBorrador("gastos"), borrador && borrador.k === "gastos"],
+          [tx("+ Compra o construcción", "+ Purchase or build"), tx("Tu casa, un local, un lote", "Your home, a storefront, a lot"), () => abrirBorrador("activos"), borrador && borrador.k === "activos"],
+          [tx("+ Pago de una deuda", "+ Paying off a debt"), tx("El saldo de un local, una hipoteca", "A property balance, a mortgage"), () => { setBorrador(null); setDeudaNueva(deudaNueva ? null : { id: (deudasLibres[0] || {}).id || "", anio: 2 }); }, !!deudaNueva],
+        ].map(([l, ej, on, activo], k) => <button key={k} type="button" aria-expanded={!!activo} onClick={on} style={{ ...btn(!!activo), textAlign: "left", padding: "10px 12px", display: "grid", gap: 2 }}><span style={{ fontSize: 13, fontWeight: 600, color: C.gn }}>{l}</span><span style={{ fontSize: 12, color: C.tx2 }}>{ej}</span></button>)}
       </div>
+      {borrador && (() => {
+        const { k, x } = borrador, anioK = k === "activos" ? "entrega" : "desde", y = Number(x[anioK]) || 0;
+        const monto = Number(k === "ingresos" ? x.mensual : k === "gastos" ? x.anual : x.valor) || 0;
+        const listo = y > 0 && (!!String(x.nombre || "").trim() || monto > 0);
+        const mesG = x.periodo === "mes";
+        const selY = (v, on) => <select style={inp} value={v || ""} onChange={(e) => on(e.target.value === "" ? "" : Number(e.target.value))}><option value="">{tx("Elige el año", "Choose the year")}</option>{ANIOS.map((a) => <option key={a} value={a}>{a === 1 ? tx(`Hoy (${anioCal(1)})`, `Today (${anioCal(1)})`) : anioCal(a)}</option>)}</select>;
+        const titulo = k === "ingresos" ? tx("Ingreso que empieza", "Income that starts") : k === "gastos" ? tx("Gasto que empieza", "Expense that starts") : tx("Compra o construcción", "Purchase or build");
+        const pesosHoy = esUS() ? tx("dólares de hoy", "today's dollars") : tx("pesos de hoy", "today's pesos");
+        return <div style={{ background: C.bg, border: `1px solid ${C.gn}`, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>{titulo}</div>
+          <div style={fila4}>
+            {k === "activos" && campo(tx("¿Qué es?", "What is it?"), <select style={inp} value={x.clase} onChange={(e) => upB({ clase: e.target.value })}><option value="vivienda">{tx("Casa para vivir", "Home to live in")}</option><option value="inmueble">{tx("Inmueble para rentar", "Rental property")}</option><option value="lote">{tx("Lote", "Lot")}</option><option value="negocio">{tx("Negocio", "Business")}</option><option value="otro">{tx("Otro", "Other")}</option></select>)}
+            {campo(tx("Nombre", "Name"), <input style={inp} autoFocus value={x.nombre} placeholder={k === "ingresos" ? tx("Ej.: pensión", "e.g. pension") : k === "gastos" ? tx("Ej.: universidad de los hijos", "e.g. kids' college") : tx("Ej.: casa finca", "e.g. lake house")} onChange={(e) => upB({ nombre: e.target.value })} />)}
+            {k === "ingresos" && campo(tx(`¿Cuánto al mes? ($, ${pesosHoy})`, `How much a month? ($, ${pesosHoy})`), <NumberInput style={inp} value={x.mensual} onChange={(v) => upB({ mensual: v })} />)}
+            {k === "gastos" && campo(tx(`¿Cuánto? ($, ${pesosHoy})`, `How much? ($, ${pesosHoy})`), <div style={{ display: "flex", gap: 6 }}>
+              <NumberInput style={{ ...inp, flex: 1, minWidth: 0 }} value={mesG ? (vacio(x.anual) ? "" : Math.round((Number(x.anual) || 0) / 12)) : x.anual} onChange={(v) => upB({ anual: mesG ? (vacio(v) ? "" : (Number(v) || 0) * 12) : v })} />
+              <select aria-label={tx("Al mes o al año", "Monthly or yearly")} style={{ ...inp, width: "auto" }} value={x.periodo} onChange={(e) => upB({ periodo: e.target.value })}><option value="año">{tx("al año", "yearly")}</option><option value="mes">{tx("al mes", "monthly")}</option></select>
+            </div>)}
+            {k === "activos" && campo(tx("Presupuesto ($)", "Budget ($)"), <NumberInput style={inp} value={x.valor} onChange={(v) => upB({ valor: v })} />)}
+            {campo(k === "activos" ? tx("¿En qué año está lista?", "What year is it ready?") : tx("¿En qué año empieza?", "What year does it start?"), selY(y, (v) => upB(k === "ingresos" && Number(x.hasta) && Number(x.hasta) < v ? { [anioK]: v, hasta: v } : { [anioK]: v })))}
+            {k === "ingresos" && campo(tx("¿Hasta cuándo?", "Until when?"), <select style={inp} value={vacio(x.hasta) ? "" : x.hasta} onChange={(e) => upB({ hasta: e.target.value === "" ? "" : Number(e.target.value) })}><option value="">{tx("Sigue siempre", "Ongoing")}</option>{ANIOS.filter((a) => a >= (y || 1)).map((a) => <option key={a} value={a}>{tx(`Hasta ${anioCal(a)}`, `Until ${anioCal(a)}`)}</option>)}</select>)}
+            {k === "gastos" && campo(tx("¿Cuántos años?", "For how many years?"), <select style={inp} value={vacio(x.anios) ? "" : x.anios} onChange={(e) => upB({ anios: e.target.value === "" ? "" : Number(e.target.value) })}><option value="">{tx("Siempre", "Ongoing")}</option>{ANIOS.map((a) => <option key={a} value={a}>{enAnios(a)}</option>)}</select>)}
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <button type="button" disabled={!listo} onClick={agregarBorrador} style={{ ...btn(listo), padding: "8px 14px", opacity: listo ? 1 : 0.5, cursor: listo ? "pointer" : "not-allowed" }}>{tx("Agregar", "Add")}</button>
+            <button type="button" onClick={() => setBorrador(null)} style={{ ...btn(false), padding: "8px 14px" }}>{tx("Cancelar", "Cancel")}</button>
+            {!listo && <span style={{ fontSize: 12, color: C.tx2 }}>{!y ? tx("Elige el año para agregarlo.", "Choose the year to add it.") : tx("Ponle un nombre o un monto.", "Add a name or an amount.")}</span>}
+            {listo && k !== "activos" && <span style={{ fontSize: 12, color: C.tx2 }}>{tx("Lo demás (si sale de un activo, el titular) lo completas con «Editar».", "The rest (whether it comes from an asset, the owner) you complete with \"Edit\".")}</span>}
+            {listo && k === "activos" && <span style={{ fontSize: 12, color: C.tx2 }}>{tx("La cuota inicial, la renta y de dónde sale la plata los completas con «Editar».", "Down payment, rent and where the money comes from you complete with \"Edit\".")}</span>}
+          </div>
+        </div>;
+      })()}
       {deudaNueva && <div style={{ background: C.bg, border: `1px solid ${C.gn}`, borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
         {deudasLibres.length === 0 ? <div style={{ fontSize: 13, color: C.tx2 }}>{tx("No tienes deudas con saldo pendiente por programar. Las que ya tienen año aparecen abajo, en su año.", "No outstanding debts left to schedule. Those with a year show below, in their year.")}</div> : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,200px),1fr))", gap: 10, alignItems: "end" }}>
           {campo(tx("¿Qué deuda?", "Which debt?"), <select style={inp} value={deudaNueva.id} onChange={(e) => setDeudaNueva({ ...deudaNueva, id: e.target.value })}>{deudasLibres.map((d) => <option key={d.id} value={d.id}>{`${d.nombre} · ${tx("debes", "owe")} ${plata(Math.round(d.saldo))}`}</option>)}</select>)}
@@ -781,7 +854,7 @@ function LoQueViene({ user, cfg, set, esc, owners, activos = [], fuentes = [], r
               <span style={{ fontSize: 16, fontWeight: 600 }}>{t === 1 ? tx(`Hoy · ${anioCal(1)}`, `Today · ${anioCal(1)}`) : anioCal(t)}</span>
               {Math.abs(dMes) > 0.5 && <span style={{ fontSize: 13, color: C.tx2 }}>{tx("Tu mes cambia", "Your month changes")} <b style={{ color: dMes > 0 ? C.gn : C.am, fontVariantNumeric: "tabular-nums" }}>{dMes > 0 ? "+" : "−"}{plata(Math.round(Math.abs(dMes)))}</b></span>}
             </div>
-            {hs.map((h) => <div key={h.key} id={"f10-hito-" + h.key.replace(/[^a-z0-9]/gi, "-")}>
+            {hs.map((h) => <div key={h.key} id={"f10-hito-" + h.key.replace(/[^a-z0-9]/gi, "-")} style={recien && (h.key === recien || h.key.startsWith(recien + ":")) ? { background: "rgba(0,200,5,0.10)", borderRadius: 8, transition: "background .4s" } : undefined}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: `1px solid ${C.bd}`, flexWrap: "wrap" }}>
                 <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, flex: "0 0 auto", background: h.paso1 ? "transparent" : color(h), border: `2px solid ${h.paso1 ? C.tx2 : color(h)}` }} />
                 <div style={{ flex: "1 1 220px", minWidth: 0 }}>
@@ -800,7 +873,8 @@ function LoQueViene({ user, cfg, set, esc, owners, activos = [], fuentes = [], r
                   : editable(h) ? <button type="button" style={{ ...btn(abierto === h.key), padding: "6px 12px", flex: "0 0 auto" }} onClick={() => abrir(h.key)}>{abierto === h.key ? tx("Cerrar", "Close") : tx("Editar", "Edit")}</button>
                     : <span style={{ width: 64 }} />}
               </div>
-              {abierto === h.key && <div style={{ padding: "12px 0 6px", borderBottom: `1px solid ${C.bd}` }}>{formDe(h.key)}</div>}
+              {/* 24-nov-2026 (Santiago: "sí funciona; lo que pasa es que uno no ve que se creó"). El formulario abierto se ve enmarcado. */}
+              {abierto === h.key && <div style={{ border: `1px solid ${C.gn}`, borderRadius: 12, padding: "12px 14px", margin: "8px 0" }}>{formDe(h.key)}</div>}
             </div>)}
           </div>;
         })}
@@ -892,11 +966,17 @@ function Deudas({ r, cfg, set, inv, bolsa, anioSel = 1, setAnioSel }) {
   );
 }
 
+// 24-nov-2026 (Santiago: "sea coherente: si la sección dos tiene número 2 en el título, lo mismo debería pasar en la sección 1").
+// Los cinco pasos llevan su número en el título, igual.
+function NumPaso({ n }) {
+  return <span aria-hidden="true" style={{ flex: "0 0 auto", width: 28, height: 28, borderRadius: 999, background: "rgba(0,200,5,0.15)", color: C.gn, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700 }}>{n}</span>;
+}
+function TituloPaso({ n, children }) {
+  return <h2 style={{ ...TIPO.seccion, display: "flex", alignItems: "center", gap: 10 }}><NumPaso n={n} /><span style={{ minWidth: 0 }}>{children}</span></h2>;
+}
+const SUB_PASO = { ...TIPO.sub, paddingLeft: 38 };
 function Seccion({ n, titulo, sub }) {
-  return <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 10 }}>
-    <div style={{ flex: "0 0 auto", width: 28, height: 28, borderRadius: 999, background: "rgba(0,200,5,0.15)", color: C.gn, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>{n}</div>
-    <div style={{ minWidth: 0 }}><h2 style={{ ...TIPO.seccion, fontSize: 20 }}>{titulo}</h2><div style={{ ...TIPO.sub, marginTop: 4 }}>{sub}</div></div>
-  </div>;
+  return <div style={{ marginBottom: 10 }}><TituloPaso n={n}>{titulo}</TituloPaso>{sub && <div style={SUB_PASO}>{sub}</div>}</div>;
 }
 
 const vacio = (v) => v === "" || v == null;
@@ -1415,7 +1495,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   return <div style={{ ...card, padding: 0, overflow: "visible" }} id="f10-anios">
     <div style={{ padding: "14px 16px 8px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-        <h2 style={TIPO.seccion}>{tx("Tu plata año por año", "Your money year by year")}</h2>
+        <TituloPaso n={3}>{tx("Tu plata año por año", "Your money year by year")}</TituloPaso>
         {(() => { const listos = cuenta.filter((y) => estadoAnio(y, cfg) === "listo").length, sigue = cuenta.find((y) => estadoAnio(y, cfg) !== "listo"); return <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5, color: C.tx2 }}>
           <span style={{ width: 90, height: 6, borderRadius: 999, background: C.bd, overflow: "hidden", display: "inline-block" }} aria-hidden="true"><span style={{ display: "block", height: "100%", width: `${Math.round(listos / Math.max(1, N) * 100)}%`, background: C.gn }} /></span>
           <span>{listos === N ? tx("Organizaste los 10 años ✓", "All 10 years organized ✓") : tx(`Organizaste ${listos} de ${N} años`, `${listos} of ${N} years organized`)}</span>
@@ -1423,7 +1503,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           {listos === N && <button type="button" onClick={irResultado} style={enlace}>{tx("Ver el resultado →", "See the result →")}</button>}
         </div>; })()}
       </div>
-      <p style={TIPO.sub}>{tx("Cada año, dos decisiones: qué haces con tu capital y qué haces con lo que te sobra al mes. Lo que no usas pasa al año siguiente: es la misma plata, no se cuenta dos veces. Cifras en pesos de cada año.", "Each year, two decisions: what you do with your capital and what you do with your monthly surplus. What you don't use carries to the next year: same money, never counted twice. Figures in each year's money.")}</p>
+      <p style={SUB_PASO}>{tx("Cada año, dos decisiones: qué haces con tu capital y qué haces con lo que te sobra al mes. Lo que no usas pasa al año siguiente: es la misma plata, no se cuenta dos veces. Cifras en pesos de cada año.", "Each year, two decisions: what you do with your capital and what you do with your monthly surplus. What you don't use carries to the next year: same money, never counted twice. Figures in each year's money.")}</p>
     </div>
     <div ref={tabsRef} role="tablist" aria-label={tx("Años del plan", "Plan years")} style={{ position: "sticky", top: 52, zIndex: 6, background: C.bg2, display: "flex", gap: 6, overflowX: "auto", padding: "8px 16px", borderBottom: `1px solid ${C.bd}` }}>
       {cuenta.map((y) => { const on = y.anio === anioSel, q = y.porInvertir, malo = q < -0.5 || y.faltaSinCubrir > 0.5; return <button key={y.anio} role="tab" aria-selected={on} type="button" onClick={() => ir(y.anio)} style={{ flex: "0 0 auto", textAlign: "left", padding: "6px 12px", borderRadius: 10, cursor: "pointer", background: on ? "rgba(0,200,5,0.12)" : "transparent", border: `1px solid ${on ? C.gn : C.bd}`, color: C.tx }}>
@@ -2045,8 +2125,8 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
       {sueltos.length === 0 && <div style={{ fontSize: 13, color: C.tx2 }}>{tx("No tienes otros ingresos.", "You have no other income.")}</div>}
       {sueltos.map((x) => (
         <div key={x.key} style={fila}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b style={{ textDecoration: x.seVa ? "line-through" : "none", color: x.seVa ? C.tx2 : C.tx }}>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? tx("renta", "passive") : tx("trabajo", "work")}</span></div>
-          {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? tx("Se va con una venta que marcaste arriba: no suma.", "Goes with a sale you marked above: not counted.") : tx(`Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en ${anioCal(x.acabaAnio)}`}.`, `Ends ${Number(x.acabaAnio) <= 1 ? "now: not counted" : `in ${anioCal(x.acabaAnio)}`}.`)}</div>}
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}><b style={{ textDecoration: noSuma(x) ? "line-through" : "none", color: noSuma(x) ? C.tx2 : C.tx }}>{x.nombre}</b><span style={{ fontSize: 12, color: C.tx2 }}>{x.renta ? tx("renta", "passive") : tx("trabajo", "work")}</span></div>
+          {x.seVa && <div style={{ fontSize: 12, color: noSuma(x) ? C.am : C.tx2 }}>{x.seVa === "ventaLuego" ? textoVentaLuego(x) : x.seVa === "venta" ? tx("Se va con una venta que marcaste arriba: no suma.", "Goes with a sale you marked above: not counted.") : tx(`Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en ${anioCal(x.acabaAnio)}`}.`, `Ends ${Number(x.acabaAnio) <= 1 ? "now: not counted" : `in ${anioCal(x.acabaAnio)}`}.`)}</div>}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
             <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enIngresos))} value={ih[x.key] ?? ""} onChange={(v) => setI(x.key, v)} /></span>
             <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? tx(`corregido (en Ingresos: ${plata(Math.round(x.enIngresos))})`, `edited (on Income: ${plata(Math.round(x.enIngresos))})`) : tx(`${plata(Math.round(x.mensual))}/mes, de tu página Ingresos`, `${plata(Math.round(x.mensual))}/mo, from your Income page`)}</span>
@@ -2054,9 +2134,9 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
           </div>
           {x.nota && !x.corregido && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{x.nota}</div>}
           {x.finDeDatos && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx(`En tu página Ingresos dice que termina en ${x.finAnio}. Si va a seguir, elige «Sigue».`, `Your Income page says it ends in ${x.finAnio}. If it will continue, choose "Continues".`)}</div>}
-          {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+          {x.seVa !== "venta" && x.seVa !== "ventaLuego" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
             <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>{tx("Sigue", "Continues")}</button>
-            <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>{tx("Se acaba", "Ends")}</button>
+            <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 2)}>{tx("Se acaba", "Ends")}</button>
             {x.acabaAnio && <select style={{ ...inp, width: "auto" }} value={x.acabaAnio} onChange={(e) => setT(x.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
           </div>}
         </div>))}
@@ -2288,6 +2368,10 @@ function SobraMensual({ r, cfg, set, destinos, soloRegla = false, sobraMes = nul
 // 25-oct-2026 (Santiago: "¿cómo edita uno los gastos si algún valor cambia?
 // Por ejemplo, el arriendo ya no es 16 M"). Igual que los ingresos: cada gasto
 // en un solo lugar, con su monto corregible y Sigue / Se acaba.
+// Lo que ya no suma hoy (se tacha): lo que se va con una venta de hoy o se acaba desde ya.
+const noSuma = (x) => x.seVa === "venta" || (x.seVa === "acaba" && Number(x.acabaAnio) <= 1);
+// 24-nov-2026 (Santiago: "en 2026 me aparece que me ahorro gastos que se vienen a ahorrar en el año siguiente").
+const textoVentaLuego = (x) => tx(`Se va con la venta de ${x.ventaDe}: cuenta hasta ${anioCal(x.ventaAnio - 1)} y deja de contar desde ${anioCal(x.ventaAnio)}.${x.deActivo ? ` Está conectado a ${x.deActivo} en Egresos.` : ` Si no va con esa venta, desmárcalo en «¿Qué se va con la venta?» de ${x.ventaDe}.`}`, `Goes with the sale of ${x.ventaDe}: counts until ${anioCal(x.ventaAnio - 1)} and stops in ${anioCal(x.ventaAnio)}.${x.deActivo ? ` It's linked to ${x.deActivo} on your Expenses page.` : ` If it doesn't go with that sale, uncheck it in "What goes with the sale?" for ${x.ventaDe}.`}`);
 function TusGastos({ user, cfg, set }) {
   const [verTodos, setVerTodos] = useState(false);
   const lista = gastosLista(user, cfg);
@@ -2306,19 +2390,19 @@ function TusGastos({ user, cfg, set }) {
     {visibles.map((x) => (
       <div key={x.key} style={fila}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-          <b style={{ textDecoration: x.seVa ? "line-through" : "none", color: x.seVa ? C.tx2 : C.tx }}>{x.nombre}</b>
+          <b style={{ textDecoration: noSuma(x) ? "line-through" : "none", color: noSuma(x) ? C.tx2 : C.tx }}>{x.nombre}</b>
           <span style={{ fontSize: 12, color: C.tx2 }}>{x.cat}{x.deActivo ? ` · ${tx("de", "from")} ${x.deActivo}` : ""}</span>
         </div>
-        {x.seVa && <div style={{ fontSize: 12, color: C.am }}>{x.seVa === "venta" ? tx("Se va con una venta que marcaste arriba: no suma.", "Goes with a sale you marked above: not counted.") : tx(`Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en ${anioCal(x.acabaAnio)}`}.`, `Ends ${Number(x.acabaAnio) <= 1 ? "now: not counted" : `in ${anioCal(x.acabaAnio)}`}.`)}</div>}
+        {x.seVa && <div style={{ fontSize: 12, color: noSuma(x) ? C.am : C.tx2 }}>{x.seVa === "ventaLuego" ? textoVentaLuego(x) : x.seVa === "venta" ? tx("Se va con una venta que marcaste arriba: no suma.", "Goes with a sale you marked above: not counted.") : tx(`Se acaba ${Number(x.acabaAnio) <= 1 ? "desde ya: no suma" : `en ${anioCal(x.acabaAnio)}`}.`, `Ends ${Number(x.acabaAnio) <= 1 ? "now: not counted" : `in ${anioCal(x.acabaAnio)}`}.`)}</div>}
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
           <span style={{ width: 170 }}><NumberInput style={inp} placeholder={fmtMilesEs(Math.round(x.enEgresos))} value={gh[x.key] ?? ""} onChange={(v) => setG(x.key, v)} /></span>
           <span style={{ fontSize: 12, color: x.corregido ? C.gn : C.tx2 }}>{x.corregido ? tx(`corregido (en Egresos: ${plata(Math.round(x.enEgresos))})`, `edited (on Expenses: ${plata(Math.round(x.enEgresos))})`) : tx(`${plata(Math.round(x.mensual))}/mes, de tu página Egresos`, `${plata(Math.round(x.mensual))}/mo, from your Expenses page`)}</span>
           {x.corregido && <button style={{ ...btn(false), fontSize: 12, padding: "4px 8px" }} onClick={() => setG(x.key, null)}>{tx("Quitar", "Remove")}</button>}
         </div>
         {x.finDeDatos && <div style={{ fontSize: 12, color: C.tx2, marginTop: 2 }}>{tx(`En tu página Egresos dice que termina en ${x.finAnio}. Si va a seguir, elige «Sigue».`, `Your Expenses page says it ends in ${x.finAnio}. If it will continue, choose "Continues".`)}</div>}
-        {x.seVa !== "venta" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+        {x.seVa !== "venta" && x.seVa !== "ventaLuego" && <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
           <button style={{ ...btn(!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, null)}>{tx("Sigue", "Continues")}</button>
-          <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 1)}>{tx("Se acaba", "Ends")}</button>
+          <button style={{ ...btn(!!x.acabaAnio), padding: "4px 10px" }} onClick={() => setT(x.key, x.acabaAnio || 2)}>{tx("Se acaba", "Ends")}</button>
           {x.acabaAnio && <select style={{ ...inp, width: "auto" }} value={x.acabaAnio} onChange={(e) => setT(x.key, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>}
         </div>}
       </div>))}
