@@ -40,10 +40,10 @@ export const CSS_BARRA_F10 = `.fp10-barra { position: sticky; bottom: 0; z-index
  * @param rHoy   proyectarFuturo10 de «Si me quedo como estoy»
  * @param onIr   se llama al tocar la barra (lleva al paso 4)
  */
-export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct }) {
+export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct, irTexto }) {
   const b = inflacionPct == null ? resumenBarra(rPlan, rHoy) : resumenBarra(rPlan, rHoy, inflacionPct);
   if (!b) return null;
-  const unidadCorta = esUS() ? tx(`En dólares de hoy (${pctTxt(b.inflacionPct)})`, `In today's dollars (${pctTxt(b.inflacionPct)})`) : tx(`En pesos de hoy (${pctTxt(b.inflacionPct)})`, `In today's pesos (${pctTxt(b.inflacionPct)})`);
+  const unidadCorta = esUS() ? tx(`En dólares de hoy · inflación ${pctTxt(b.inflacionPct)} al año`, `In today's dollars · ${pctTxt(b.inflacionPct)} yearly inflation`) : tx(`En pesos de hoy · inflación ${pctTxt(b.inflacionPct)} al año`, `In today's pesos · ${pctTxt(b.inflacionPct)} yearly inflation`);
   const unidad = esUS()
     ? tx(`Patrimonio neto en dólares de hoy (inflación ${pctTxt(b.inflacionPct)} al año)`, `Net worth in today's dollars (${pctTxt(b.inflacionPct)} yearly inflation)`)
     : tx(`Patrimonio neto en pesos de hoy (inflación ${pctTxt(b.inflacionPct)} al año)`, `Net worth in today's pesos (${pctTxt(b.inflacionPct)} yearly inflation)`);
@@ -54,12 +54,12 @@ export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct }) {
     <>
       <style>{CSS_BARRA_F10}</style>
       <button type="button" className="fp10-barra" data-testid="f10-barra" onClick={onIr}
-        aria-label={tx(`Resultado en ${b.anioCalFin}: ver el paso 4`, `Result in ${b.anioCalFin}: go to step 4`)}>
+        aria-label={irTexto ? tx(`Resultado en ${b.anioCalFin}. ${irTexto}`, `Result in ${b.anioCalFin}. ${irTexto}`) : tx(`Resultado en ${b.anioCalFin}: ver el paso 4`, `Result in ${b.anioCalFin}: go to step 4`)}>
         <div className="fp10-barra-l" style={{ marginBottom: 4, display: "flex", alignItems: "flex-start", gap: 6 }}>
           <span aria-hidden="true" data-testid="f10-barra-liquidez" data-alerta={liq ? "si" : "no"} style={{ width: 9, height: 9, marginTop: 3, borderRadius: "50%", background: liq ? ROJO : VERDE, flexShrink: 0 }} />
           <span className="fp10-barra-enc" data-testid="f10-barra-enc">
-            <span className="fp10-largo">{liq ? tx("Hay alertas de liquidez · ", "There are cash alerts · ") : ""}{unidad}</span>
-            <span className="fp10-corto">{liq ? tx("Alerta de liquidez · ", "Cash alert · ") : ""}{unidadCorta}</span>
+            <span className="fp10-largo">{liq ? tx("Ojo: en algún año te puede faltar plata en la cuenta · ", "Heads up: some year you may run short of cash · ") : ""}{unidad}</span>
+            <span className="fp10-corto">{liq ? tx("Ojo: falta plata · ", "Heads up: short on cash · ") : ""}{unidadCorta}</span>
             {b.conVenta ? <span className="fp10-barra-venta-sep"> · </span> : null}
             {b.conVenta ? <b className="fp10-barra-venta" data-testid="f10-barra-venta">{rotuloVenta()}</b> : null}
           </span>
@@ -77,7 +77,7 @@ export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct }) {
             <div className="fp10-barra-l">{tx("Diferencia", "Difference")}</div>
             <div className="fp10-barra-cifra" style={{ color: colorDif }} data-testid="f10-barra-dif" data-signo={dif >= 0 ? "pos" : "neg"}>{dif >= 0 ? "+" : "−"}{fm(Math.abs(dif))}</div>
           </div>}
-          <span className="fp10-barra-ir">{tx("Ver resultado →", "See result →")}</span>
+          <span className="fp10-barra-ir" data-testid="f10-barra-ir">{irTexto || tx("Ver resultado →", "See result →")}</span>
         </div>
       </button>
     </>

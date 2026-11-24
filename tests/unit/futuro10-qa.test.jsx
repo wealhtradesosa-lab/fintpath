@@ -19,8 +19,8 @@ describe("Mi futuro a 10: hallazgos QA", () => {
     const conIngreso = { ...vacio, ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 10e6 }] };
     expect(proyectarFuturo10(conIngreso, { norte: "crecer" }).hayUSD).toBe(true); // el flujo va a crecimiento (S&P)
     const html = renderToString(createElement(MiFuturo10, { user: { ...vacio, inv: [{ id: "a", tp: "Cash", va: 10e6, moneda: "USD" }] }, pasoInicial: 3 }));
-    expect(html.replace(/<!-- -->/g, "")).toContain("supuestos normales suponen");
-    expect(renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 3 }))).not.toContain("riesgo cambiario");
+    expect(html.replace(/<!-- -->/g, "")).toContain("supuestos normales dan por hecho que el dólar sube");
+    expect(renderToString(createElement(MiFuturo10, { user: vacio, pasoInicial: 3 }))).not.toContain("sube o baja con el dólar");
   });
   it("mezcla personalizada debe sumar 100%", () => {
     expect(validarMezcla({ liquidez: 10, renta: 45, crecimiento: 45 })).toBeNull();

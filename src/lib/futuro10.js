@@ -147,6 +147,8 @@ export function claseActivo(a) {
  *                         reinversiones:[{activoId,monto}], supuestos }
  */
 export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
+  // 24-nov-2026 (PR fluidez): montos en pesos de hoy → pesos del año en que se pagan.
+  if (cfgIn && cfgIn.montosHoy) return { ...proyectarFuturo10(userIn, montosANominal(cfgIn, inflacionDelPlan(userIn, cfgIn))), montosHoy: true };
   const cfg = conVencimientos(migrarClaves(cfgIn, userIn), userIn);
   const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const sup = cfg.supuestos || supuestosF10();
@@ -418,7 +420,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     if (rentaMensual > 0) (a.rentasExtra = a.rentasExtra || []).push({ anual: rentaMensual * 12, desdeMes: rentaDesdeMes });
     // «¿Cuánto queda valiendo al terminar la obra?»: el activo salta a ese valor
     // el año en que termina (el de la renta, o el del aporte si no hay renta).
-    if (n(r.valorAlTerminar) > 0) (a.saltos = a.saltos || []).push({ t: Math.max(anioAporte, rentaMensual > 0 ? Math.floor(rentaDesdeMes / 12) + 1 : anioAporte), valor: n(r.valorAlTerminar) });
+    if (n(r.valorAlTerminar) > 0) (a.saltos = a.saltos || []).push({ t: anioListaReinv(r), valor: n(r.valorAlTerminar) });
     const totalConAporte = antes + (anioAporte === 1 ? m : n(r.monto));
     const rendUsado = rendimientoPct != null ? rendimientoPct : rendActual * 100;
     const pUsado = pctRecibe != null ? pctRecibe : 0;
@@ -1948,6 +1950,18 @@ export function cuentaPorAnio(r, cfg = {}) {
     arrastre = Math.max(0, saldo);
     out.push({ anio, antes, flujoHoy, flujo, cfPrev, llegan, llega, salen, sale, disponible, saldo });
   }
+  // 24-nov-2026 (Finanzas, PR fluidez): si los montos del escenario van en pesos de hoy,
+  // la cuenta de cada año también se muestra en pesos de hoy (así «Usar saldo pendiente»
+  // pone una cifra comparable con lo que escribes). Sin cfg (Resultado) no cambia.
+  if (cfg && cfg.montosHoy && r.escenario) {
+    const inf = n(r.escenario.inflacionPct) / 100;
+    return out.map((g) => {
+      const d = Math.pow(1 + inf, g.anio - 1);
+      const k = (v) => v / d;
+      return { ...g, antes: k(g.antes), flujoHoy: k(g.flujoHoy), flujo: k(g.flujo), cfPrev: k(g.cfPrev), llega: k(g.llega), sale: k(g.sale), disponible: k(g.disponible), saldo: k(g.saldo),
+        llegan: g.llegan.map((l) => ({ ...l, monto: k(l.monto) })), salen: g.salen.map((u) => ({ ...u, monto: k(u.monto) })), pesosHoy: true };
+    });
+  }
   return out;
 }
 
@@ -2090,4 +2104,102 @@ export function loQueVieneDelPlan(r) {
   (fut.gastos || []).forEach((g) => out.push({ nombre: g.nombre, tipo: "gasto", anio: g.desde, anioFin: Math.min(N, g.hasta), monto: n(g.anual) }));
   (fut.ingresos || []).forEach((i) => out.push({ nombre: i.nombre, tipo: "ingreso", anio: i.desde, anioFin: Math.min(N, i.hasta), monto: n(i.mensual) }));
   return out.sort((a, b) => a.anio - b.anio);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 24-nov-2026 — PR fluidez de «Mi futuro a 10 años» (Soporte · QA · Finanzas).
+// Regla de Finanzas: TODO monto que escribe el usuario va en pesos de hoy (costo,
+// anticipo, aportes de años siguientes, lo que vale al terminar); el motor lo
+// lleva al año en que pasa con la inflación del escenario. Un pago del año t se
+// lleva con (1+inflación)^(t−1) (inicio del año, como los ciclos); un valor al
+// cierre del año t, con (1+inflación)^t (el mismo deflactor de las filas).
+// Los escenarios guardados antes de este cambio no traen `montosHoy`: el motor
+// los sigue leyendo como antes (pesos de ese año) y su cifra no se mueve. La
+// pantalla los pasa a pesos de hoy al abrirlos (montosAPesosDeHoy), con la misma
+// inflación, así que el resultado es el mismo.
+// ═══════════════════════════════════════════════════════════════════════════
+const anioPlan = (v) => Math.min(10, Math.max(1, Math.round(n(v)) || 1));
+/** Año en que queda lista la obra de un «Construir o mejorar» (cfg.reinversiones[i]). */
+export function anioListaReinv(r = {}) {
+  const a = anioPlan(r.anio);
+  if (!vacio(r.obraAnios)) return Math.min(10, a + Math.max(0, Math.round(n(r.obraAnios))));
+  const desdeMes = Math.min(119, Math.max(0, Math.round(n(r.rentaDesdeMes))));
+  return Math.max(a, n(r.rentaMensual) > 0 ? Math.floor(desdeMes / 12) + 1 : a);
+}
+/** Inflación (%) con la que se proyecta este cfg (la del escenario de mercado). */
+export function inflacionDelPlan(user = {}, cfg = {}) {
+  return resolverEscenario((cfg && cfg.escenario) || "base", paraPlan(user), (cfg && cfg.supuestos) || supuestosF10()).inflacionPct;
+}
+const PR_MONTOS = ["valor", "lote", "costoM2", "ventaM2", "ventaTotal", "valorFinal"];
+// dir = +1: pesos de hoy → pesos de cada año · dir = −1: al revés.
+function convertirMontos(cfg = {}, inflacionPct, dir) {
+  const inf = n(inflacionPct) / 100;
+  const kPago = (anio) => Math.pow(1 + inf, (anioPlan(anio) - 1) * dir);
+  const kValor = (t) => Math.pow(1 + inf, Math.max(0, t) * dir);
+  const por = (v, f) => (vacio(v) || !Number.isFinite(Number(v)) ? v : Number(v) * f);
+  const nuevas = Array.isArray(cfg.nuevas) ? cfg.nuevas.map((x) => {
+    if (!x) return x;
+    const a = anioPlan(x.anio), y = { ...x };
+    if (a > 1) {
+      y.monto = por(x.monto, kPago(a));
+      if (x.pr) y.pr = { ...x.pr, ...Object.fromEntries(PR_MONTOS.filter((c) => c in x.pr).map((c) => [c, por(x.pr[c], kPago(a))])) };
+    }
+    const hasta = Math.round(n(x.hasta));
+    if (hasta > a && !vacio(x.retira)) y.retira = por(x.retira, kPago(hasta));
+    return y;
+  }) : cfg.nuevas;
+  const reinversiones = Array.isArray(cfg.reinversiones) ? cfg.reinversiones.map((r) => {
+    if (!r) return r;
+    const a = anioPlan(r.anio), y = { ...r };
+    if (a > 1) y.monto = por(r.monto, kPago(a));
+    if (!vacio(r.valorAlTerminar)) y.valorAlTerminar = por(r.valorAlTerminar, kValor(anioListaReinv(r)));
+    return y;
+  }) : cfg.reinversiones;
+  const fut = cfg.futuros || null;
+  const activos = fut && Array.isArray(fut.activos) ? fut.activos.map((x) => {
+    if (!x) return x;
+    const entrega = anioPlan(x.entrega), y = { ...x };
+    if (Array.isArray(x.pagos) && x.pagos.length) y.pagos = x.pagos.map((p) => ({ ...p, monto: por(p.monto, kPago(p.anio)) }));
+    else if (!vacio(x.valor)) {
+      const valor = Math.max(0, n(x.valor)), cuota = Math.min(valor, Math.max(0, n(x.cuotaInicial)));
+      const ac = Math.min(anioPlan(x.anioCuota), entrega);
+      const cuota2 = cuota * kPago(ac), valor2 = cuota2 + (valor - cuota) * kPago(entrega);
+      y.valor = valor2;
+      if (!vacio(x.cuotaInicial)) y.cuotaInicial = cuota2;
+      // Las fuentes en pesos se leen como % del valor: se escalan igual para no cambiar el reparto.
+      if (Array.isArray(x.fuentes) && valor > 0) y.fuentes = x.fuentes.map((z) => (z && !vacio(z.monto) ? { ...z, monto: Number(z.monto) * valor2 / valor } : z));
+    }
+    if (!vacio(x.valorAlTerminar)) y.valorAlTerminar = por(x.valorAlTerminar, kValor(entrega));
+    return y;
+  }) : null;
+  return { ...cfg, ...(nuevas ? { nuevas } : {}), ...(reinversiones ? { reinversiones } : {}), ...(activos ? { futuros: { ...fut, activos } } : {}) };
+}
+/** Motor: un cfg con montos en pesos de hoy, a pesos de cada año. */
+export function montosANominal(cfg = {}, inflacionPct) {
+  const { montosHoy, ...resto } = convertirMontos(cfg, inflacionPct, 1);
+  return resto;
+}
+/** Pantalla: un cfg guardado antes del 24-nov-2026 (pesos de cada año) a pesos de hoy. */
+export function montosAPesosDeHoy(cfg = {}, user = {}) {
+  if (!cfg || cfg.montosHoy) return cfg;
+  return { ...convertirMontos(cfg, inflacionDelPlan(user, cfg), -1), montosHoy: true };
+}
+/**
+ * 24-nov-2026 (PR fluidez, «cada dato una vez»). La valorización de un inmueble
+ * que ya tienes se pedía en el paso 1 (Lo que tienes) y otra vez al invertirle en
+ * el paso 3. Ahora vive solo en el paso 1 (cfg.crecHoy). Escenarios viejos: el %
+ * que estaba en la inversión pasa al paso 1 si ahí no había otro, y el resultado
+ * es el mismo (el motor usa ese % para el activo en todos los años). Si hay dos %
+ * distintos para el mismo activo, se deja como estaba.
+ */
+export function migrarDuplicados(cfg = {}, user = {}) {
+  if (!cfg || !Array.isArray(cfg.reinversiones) || !cfg.reinversiones.length) return cfg;
+  const inmuebles = new Set((user.inv || []).filter((a) => a && claseActivo(a) === "inmueble").map((a) => a.id));
+  const ch = { ...(cfg.crecHoy || {}) };
+  const porActivo = {};
+  cfg.reinversiones.forEach((r) => { if (r && inmuebles.has(r.activoId) && !vacio(r.valorizacionNomPct)) (porActivo[r.activoId] = porActivo[r.activoId] || new Set()).add(n(r.valorizacionNomPct)); });
+  const mover = new Set(Object.entries(porActivo).filter(([id, s]) => s.size === 1 && vacio(ch[id]) && !((cfg.decisiones || {})[id] || {}).valorizacionNomPct).map(([id]) => id));
+  if (!mover.size) return cfg;
+  mover.forEach((id) => { ch[id] = [...porActivo[id]][0]; });
+  return { ...cfg, crecHoy: ch, reinversiones: cfg.reinversiones.map((r) => (r && mover.has(r.activoId) && !vacio(r.valorizacionNomPct) ? (({ valorizacionNomPct, ...resto }) => resto)(r) : r)) };
 }
