@@ -7,7 +7,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
-import { proyectarFuturo10, patrimonioFinalHoy, anioCal, retornoNominalPreset, resolverEscenario } from "../../src/lib/futuro10.js";
+import { proyectarFuturo10, patrimonioFinalHoy, anioCal, retornoNominalPreset, resolverEscenario, SUPUESTOS_F10 } from "../../src/lib/futuro10.js";
 import { fmM } from "../../src/lib/informeTheme.js";
 import MiFuturo10 from "../../src/components/MiFuturo10.jsx";
 import BarraFuturo10 from "../../src/components/BarraFuturo10.jsx";
@@ -52,11 +52,11 @@ describe("supuestos: cada % dice qué es", () => {
     expect(h).toContain("Su valor sube");
     expect(h).toContain("nominal; con inflación de 4 %, no gana en pesos de hoy");
     expect(h).toContain("supuesto general, corrígelo");
-    expect(h).toMatch(/Su valor sube[\s\S]{0,80}nominal, antes de impuestos/); // la cuenta rinde por encima de la inflación
+    expect(h).toMatch(/Su valor sube[\s\S]{0,120}nominal \(incluye la inflación\), antes de impuestos/); // la cuenta rinde por encima de la inflación
   });
   it("paso 2: la valorización de la compra se pide en nominal", () => {
     const h = htmlPaso(1);
-    expect(h).toContain("¿Cuánto sube su valor al año, nominal? (%)");
+    expect(h).toContain("¿Cuánto sube su valor al año, nominal (incluye la inflación)? (%)");
     expect(h).toContain("Es nominal: incluye la inflación.");
     expect(h).toContain("Si el % es igual a la inflación");
     expect(h).toContain("no gana en pesos de hoy");
@@ -65,7 +65,7 @@ describe("supuestos: cada % dice qué es", () => {
   it("paso 3: el rendimiento de un aporte se pide nominal y antes de impuestos", () => {
     // Las inversiones nuevas salen plegadas; «Invertir en lo que ya tienes» sí muestra los campos.
     const h = htmlPaso(2, { ...cfgRef, reinversiones: [{ activoId: "a", monto: 10e6, anio: 1, fuente: "venta" }] });
-    expect(h).toContain("¿Cuánto rinde al año, nominal, antes de impuestos? (%)");
+    expect(h).toContain("¿Cuánto rinde al año, nominal (incluye la inflación), antes de impuestos? (%)");
     expect(h).toContain("Es nominal: incluye la inflación");
     expect(h).not.toContain("¿Cuánto rinde al año? (%)");
   });
@@ -77,7 +77,7 @@ describe("supuestos: cada % dice qué es", () => {
   });
   it("en el código, la inversión nueva (plegada al abrir) pide el mismo % nominal", () => {
     const src = readFileSync(new URL("../../src/components/MiFuturo10.jsx", import.meta.url), "utf8");
-    expect(src).toContain("Rendimiento al año, nominal, antes de impuestos (%)");
+    expect(src).toContain("Rendimiento al año, nominal (incluye la inflación), antes de impuestos (%)");
     expect(src).toContain("¿Qué parte te llega a la cuenta?");
     expect(src).not.toContain("tx(\"Rendimiento anual (%)\"");
     expect(src).not.toContain("tx(\"¿Cuánto te llega?\"");
@@ -93,7 +93,7 @@ describe("supuestos: Acciones y ETF es un índice amplio", () => {
     const nom = retornoNominalPreset("sp500", esc);
     expect(nom).toBeCloseTo(10.76, 2);
     expect(h).toContain("6,5% real al año, antes de impuestos");
-    expect(h).toContain("10,8% nominal");
+    expect(h).toContain("10,8% nominal (incluye la inflación)");
   });
   it("al elegir Acciones y ETF, el formulario lo vuelve a decir", () => {
     const src = readFileSync(new URL("../../src/components/MiFuturo10.jsx", import.meta.url), "utf8");
@@ -105,10 +105,46 @@ describe("supuestos: el informe nombra nominal y real sin cambiar la cifra", () 
   const r = proyectarFuturo10(uVenta, cfgRef);
   it("la ficha de rendimiento y el veredicto aclaran el %", () => {
     const h = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4 }));
-    expect(h).toContain("al año, nominal, antes de impuestos, sobre lo que tienes");
-    expect(h).toContain("nominal, antes de impuestos, sin contar tu ahorro");
+    expect(h).toContain("al año, nominal (incluye la inflación), antes de impuestos, sobre lo que tienes");
+    expect(h).toContain("nominal (incluye la inflación), antes de impuestos, sin contar tu ahorro");
     expect(h).toContain('data-testid="f10-veredicto-fin"');
     expect(h).toContain("$1.096.083.951");
     expect(h).not.toContain("anual, sobre lo que tienes");
+  });
+});
+
+describe("supuestos: con rendimiento = inflación, el año 10 en pesos de hoy (Finanzas)", () => {
+  // Finanzas (24-nov-2026): con rendimiento igual a la inflación y flujo libre F
+  // por año, el patrimonio del año 10 en pesos de hoy debería dar unos 10×F.
+  // Hoy no se cumple: los flujos se deflactan con (1+i)^(t−1) y el patrimonio
+  // al cierre con (1+i)^t, así que se descuenta un año de más. Con i = 4 % y
+  // F = $10.000.000 el valor actual es $96.153.846,15 (exactamente 10×F / 1,04),
+  // unos 3,85 % por debajo de 10×F. No se cambia el cálculo en este PR (solo copy).
+  it.skip("con rendimiento igual a la inflación y flujo libre F, el año 10 en pesos de hoy da unos 10×F", () => {
+    const F = 10e6;
+    const inf = 4;
+    const u = {
+      inflacionPct: inf,
+      inv: [],
+      ingresos: [{ nombre: "Sueldo", categoria: "Salario", mensual: F / 12 }],
+      gas: {},
+      deu: [],
+    };
+    const supuestos = {
+      ...SUPUESTOS_F10,
+      escenarios: {
+        ...SUPUESTOS_F10.escenarios,
+        base: { ...SUPUESTOS_F10.escenarios.base, ingresosSpread: 0, gastosSpread: 0, retornoSpread: 0, spRealPct: 0 },
+      },
+      presets: {
+        ...SUPUESTOS_F10.presets,
+        rfCorto: { ...SUPUESTOS_F10.presets.rfCorto, realSpread: 0 },
+        rfLargo: { ...SUPUESTOS_F10.presets.rfLargo, realSpread: 0, topeSpread: 0 },
+      },
+    };
+    const r = proyectarFuturo10(u, { escenario: "base", supuestos });
+    const hoy = patrimonioFinalHoy(r);
+    // Valor actual con el cálculo vigente: 96_153_846.153... === 10×F / 1,04
+    expect(hoy).toBeCloseTo(10 * F, 0);
   });
 });
