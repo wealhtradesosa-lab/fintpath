@@ -73,3 +73,14 @@ describe("año en que cada deuda deja de existir (finAnio)", () => {
     expect(hoy.deudas.find((d) => d.id === "vv").finAnio).toBe(1);
   });
 });
+
+describe("informe: inversiones de años siguientes con su serie", () => {
+  it("una inversión de 2027 trae su id y en el último año vale más que lo invertido", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 9000e6 }], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 50e6 }], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { nuevas: [{ preset: "rfLargo", nombre: "SKANDIA", monto: 4000e6, anio: 2, fuente: "liquidez", rendimientoNomPct: 14 }] });
+    const d = r.nuevasDetalle.find((x) => x.nombre === "SKANDIA");
+    expect(d.id).toBe("nueva_0");
+    const fin = r.filas[r.filas.length - 1].porActivo.find((a) => a.id === d.id);
+    expect(fin.valor).toBeGreaterThan(4000e6 * 2);
+  });
+});

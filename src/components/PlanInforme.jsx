@@ -91,6 +91,26 @@ function series(filas, campo, n = 5) {
   return { top: top.map((id, i) => ({ id, nombre: nombre[id], clase: clase[id], color: INF.serie[i % INF.serie.length] })), resto };
 }
 
+/** 23-nov-2026 (Santiago: "debería desglosar aquí esos 18 mil MM, pero los mete todos en
+ * «Otros»; al menos los más grandes"). Para «Patrimonio neto por año»: los activos más
+ * grandes de CADA año (hasta 4 por año, hasta cubrir el 80 % de lo que hay ese año), no los
+ * de mayor suma en 10 años, que dejaban por fuera lo grande de los primeros años (la plata de
+ * las ventas, lo que se vende después). Los colores de los que ya salen en «Cada inversión»
+ * se respetan. */
+function seriesPatrimonio(filas, base, max = 9) {
+  const mx = {}, nombre = {}, elegidos = new Set();
+  filas.forEach((f) => {
+    const l = (f.porActivo || []).filter((a) => (a.valor || 0) > 0.5).sort((a, b) => b.valor - a.valor);
+    const tot = l.reduce((sm, a) => sm + a.valor, 0);
+    let acum = 0;
+    l.forEach((a, i) => { mx[a.id] = Math.max(mx[a.id] || 0, a.valor); nombre[a.id] = a.nombre; if (i < 2 || (i < 4 && acum < tot * 0.8)) elegidos.add(a.id); acum += a.valor; });
+  });
+  const ids = [...elegidos].sort((a, b) => mx[b] - mx[a]).slice(0, max);
+  const color = Object.fromEntries(base.map((s) => [s.id, s.color]));
+  const libres = INF.serie.filter((c) => !Object.values(color).includes(c));
+  return ids.map((id) => ({ id, nombre: nombre[id], color: color[id] || libres.shift() || INF.gris }));
+}
+
 export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct() }) {
   const [modo, setModo] = useState("nominal"); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
@@ -183,6 +203,24 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
     return row;
   });
   const sL = sV.top.slice(0, 4);
+  const sP = seriesPatrimonio(filas, sV.top);
+  // Arriba lo que tienes (cada activo grande y «Otros activos»), abajo lo que debes.
+  const patP = filas.map((f) => {
+    const row = { anio: anioTxt(f.anio), total: f.patrimonio / d(f), totalEt: f.anio % 2 === 0 || f.anio === filas.length - 1 ? fmM(f.patrimonio / d(f)) : "" };
+    const pa = Object.fromEntries((f.porActivo || []).map((a) => [a.id, a]));
+    let otros = f.activos != null ? f.activos : f.patrimonio + (f.deuda || 0);
+    sP.forEach((s) => { const v = Math.max(0, pa[s.id]?.valor || 0); row[s.id] = v / d(f); otros -= v; });
+    row.otros = Math.max(0, otros) / d(f);
+    row.deudas = -(f.deuda || 0) / d(f);
+    return row;
+  });
+  const hayDeuda = patP.some((x) => x.deudas < -0.5);
+  // Eje: pasos redondos hacia arriba; abajo, solo el espacio que ocupa la deuda (sin otra
+  // marca de miles de millones que deje media gráfica vacía).
+  const topPat = Math.max(1, ...patP.map((x) => (x.otros || 0) + sP.reduce((sm, s) => sm + (x[s.id] || 0), 0)));
+  const pasoPat = (() => { const crudo = topPat / 4, e = Math.pow(10, Math.floor(Math.log10(crudo))); return [1, 2, 2.5, 5, 10].map((m) => m * e).find((v) => v >= crudo) || 10 * e; })();
+  const ticksPat = Array.from({ length: Math.ceil(topPat / pasoPat) + 1 }, (_, i) => i * pasoPat);
+  const pisoPat = Math.min(0, ...patP.map((x) => x.deudas || 0)) * 1.15;
 
   // ── Le gana a la inflación ────────────────────────────────────────────────
   const gana = filas.slice(1).map((f, i) => { const prev = filas[i]; const g = prev.patrimonio > 0 ? (f.patrimonio / prev.patrimonio - 1) * 100 : 0; return { anio: anioTxt(f.anio), g, realTxt: `${g - inflacionPct >= 0 ? "+" : ""}${fmPct(g - inflacionPct, 1)}` }; });
@@ -191,12 +229,13 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   // ── Plata nueva ───────────────────────────────────────────────────────────
   const bd = r.bolsaDetalle || {};
   const plataNueva = [
-    ...((r.deudas || []).some((x) => x.pagado > 0) ? [{ destino: `${tx("Pagar deudas", "Pay off debts")} (${r.deudas.filter((x) => x.pagado > 0).map((x) => x.nombre).join(", ")})`, capital: bd.deudas, tasa: "—", bolsillo: tx("Limpieza", "Cleanup"), regla: r.cuotasQueSalenMes > 0 ? tx(`Se elimina ${fmM(r.cuotasQueSalenMes)}/mes de cuotas`, `Removes ${fmM(r.cuotasQueSalenMes)}/mo in payments`) : tx("Sale del patrimonio la deuda", "The debt leaves your net worth") }] : []),
-    ...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ destino: x.nombre, capital: x.aporte, tasa: x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) : "—", bolsillo: x.clase === "inmueble" || (x.pctRecibe || 0) > 0 ? tx("Sustento", "Income") : tx("Crecimiento", "Growth"), regla: [x.rentaMensual > 0 ? tx(`Renta ${fmM(x.rentaMensual)}/mes desde ${x.rentaDesdeMes ? `el mes ${x.rentaDesdeMes}` : "ya"}`, `Pays ${fmM(x.rentaMensual)}/mo ${x.rentaDesdeMes ? `from month ${x.rentaDesdeMes}` : "starting now"}`) : null, x.teLlegaMes > 0 ? tx(`Te llega ${fmM(x.teLlegaMes)}/mes`, `You receive ${fmM(x.teLlegaMes)}/mo`) : null, x.anio > 1 ? tx(`Se invierte en ${x.anio - 1} año${x.anio === 2 ? "" : "s"}`, `Invested in ${x.anio - 1} year${x.anio === 2 ? "" : "s"}`) : null].filter(Boolean).join(" · ") || tx("Se valoriza", "Appreciates") })),
-    ...(r.nuevasDetalle || []).map((x) => ({ destino: x.nombre, capital: x.monto, tasa: fmPct(x.rendPct, 1), bolsillo: x.pagaRenta ? tx("Sustento", "Income") : tx("Crecimiento", "Growth"), regla: x.pagaRenta ? tx("Paga renta al flujo", "Pays income to your cash flow") : tx("Se reinvierte", "Reinvested") })),
-    ...(bd.colchon > 0 ? [{ destino: tx("Colchón", "Emergency fund"), capital: bd.colchon, tasa: "—", bolsillo: tx("Protección", "Safety"), regla: tx("Meses de gastos a la mano", "Months of expenses on hand") }] : []),
-    ...(bd.restante > 0 ? [{ destino: tx("Lo que sobra de las ventas", "What's left from the sales"), capital: bd.restante, tasa: "—", bolsillo: tx("Mezcla", "Mix"), regla: r.destinoSobra || tx("Se reparte según el norte que elegiste", "Split by the strategy you picked") }] : []),
-  ];
+    ...((r.deudas || []).some((x) => x.pagado > 0) ? [{ anio: 1, destino: `${tx("Pagar deudas", "Pay off debts")} (${r.deudas.filter((x) => x.pagado > 0).map((x) => x.nombre).join(", ")})`, capital: bd.deudas, tasa: "—", bolsillo: tx("Limpieza", "Cleanup"), regla: r.cuotasQueSalenMes > 0 ? tx(`Se elimina ${fmM(r.cuotasQueSalenMes)}/mes de cuotas`, `Removes ${fmM(r.cuotasQueSalenMes)}/mo in payments`) : tx("Sale del patrimonio la deuda", "The debt leaves your net worth") }] : []),
+    // 23-nov-2026: cada fila con su año (antes decía «se invierte en 1 año» y no se sabía cuál).
+    ...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ anio: x.anio || 1, destino: x.nombre, capital: x.aporte, tasa: x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) : "—", bolsillo: x.clase === "inmueble" || (x.pctRecibe || 0) > 0 ? tx("Sustento", "Income") : tx("Crecimiento", "Growth"), regla: [x.rentaMensual > 0 ? tx(`Renta ${fmM(x.rentaMensual)}/mes desde ${anioCal(Math.floor((x.rentaDesdeMes || 0) / 12) + 1)}`, `Pays ${fmM(x.rentaMensual)}/mo from ${anioCal(Math.floor((x.rentaDesdeMes || 0) / 12) + 1)}`) : null, x.teLlegaMes > 0 ? tx(`Te llega ${fmM(x.teLlegaMes)}/mes`, `You receive ${fmM(x.teLlegaMes)}/mo`) : null].filter(Boolean).join(" · ") || tx("Se valoriza", "Appreciates") })),
+    ...(r.nuevasDetalle || []).map((x) => ({ anio: x.anio || 1, destino: x.nombre, capital: x.monto, tasa: fmPct(x.rendPct, 1), bolsillo: x.pagaRenta ? tx("Sustento", "Income") : tx("Crecimiento", "Growth"), regla: x.pagaRenta ? tx("Paga renta al flujo", "Pays income to your cash flow") : tx("Se reinvierte", "Reinvested") })),
+    ...(bd.colchon > 0 ? [{ anio: 1, destino: tx("Colchón", "Emergency fund"), capital: bd.colchon, tasa: "—", bolsillo: tx("Protección", "Safety"), regla: tx("Meses de gastos a la mano", "Months of expenses on hand") }] : []),
+    ...(bd.restante > 0 ? [{ anio: 1, destino: tx("Lo que sobra de las ventas", "What's left from the sales"), capital: bd.restante, tasa: "—", bolsillo: tx("Mezcla", "Mix"), regla: r.destinoSobra || tx("Se reparte según el norte que elegiste", "Split by the strategy you picked") }] : []),
+  ].sort((a, b) => a.anio - b.anio);
   const totalNueva = plataNueva.reduce((s, x) => s + (x.capital || 0), 0);
 
   // ── Todo lo que tienes / cuánto produce ───────────────────────────────────
@@ -275,20 +314,24 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         </div>
       </div>
 
-      <Capitulo id="cap-plata" n={2} titulo={tx("Qué haces con tu plata", "What you do with your money")} pregunta={tx("Qué vendes, a dónde va cada peso y cómo crece cada inversión.", "What you sell, where every dollar goes and how each investment grows.")} />
-      <HistoriaPlata r={r} />
+      {/* 23-nov-2026 (Santiago: "en Qué haces con tu plata, puntos 1 al 4, solo está mostrando
+          2026… debería mostrar también cada año, para que todo tenga el mismo lenguaje"). El
+          capítulo 2 sigue el mismo año que los capítulos 3 y 4 (un solo selector, en tres lugares). */}
+      <Capitulo id="cap-plata" n={2} titulo={tx("Qué haces con tu plata", "What you do with your money")} pregunta={tx("Elige un año: qué vendes, de dónde sale y a dónde va cada peso, cómo va cada inversión y qué cambia en tu bolsillo ese año.", "Pick a year: what you sell, where every dollar comes from and goes, how each investment is doing and what changes in your pocket that year.")} />
+      <SelAnio />
+      <HistoriaPlata r={r} anio={aSel} />
       {plataNueva.length > 0 && <div style={card}>
         <h3 style={h3}>{tx(`La plata nueva, en tabla: a dónde va cada ${moneda()}`, `New money as a table: where every ${moneda()} goes`)} · {fmM(totalNueva)}</h3>
         <p style={lead}>{tx(<>Solo la plata que se mueve: lo que vendes{bd.capitalNuevo > 0 ? ", el capital nuevo" : ""}{bd.desdeLiquidez > 0 ? " y lo que sale de tu liquidez" : ""}. Lo que ya tienes y no se mueve no aparece aquí; eso lo suma «Todo lo que tienes después del plan».</>, <>Only the money that moves: what you sell{bd.capitalNuevo > 0 ? ", new capital" : ""}{bd.desdeLiquidez > 0 ? " and what comes out of your cash" : ""}. What you already own and don't move isn't here; "Everything you own after the plan" adds it.</>)}</p>
         <details><summary style={{ cursor: "pointer", fontSize: 13, color: INF.tx2, padding: "4px 0" }}>{tx("Ver el detalle en tabla", "See the detail as a table")}</summary>
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 560 }}>
-          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Destino", "Destination")}</th><th style={th}>{tx("Capital", "Capital")}</th><th style={th}>{tx("Tasa", "Rate")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Bolsillo", "Bucket")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Regla", "Rule")}</th></tr></thead>
-          <tbody>{plataNueva.map((x, i) => <tr key={i}><td style={tdL}>{x.destino}</td><td style={td}>{fmM(x.capital)}</td><td style={td}>{x.tasa}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.bolsillo}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.regla}</td></tr>)}
-            <tr><td style={{ ...tdL, fontWeight: 700 }}>{tx("Total desplegado", "Total deployed")}</td><td style={{ ...td, fontWeight: 700 }}>{fmM(totalNueva)}</td><td style={td} /><td style={td} /><td style={{ ...tdL, color: INF.tx2 }}>{[(r.vendidos || []).map((v) => `${v.nombre} ${fmM(v.valor)}`).join(" + "), bd.capitalNuevo > 0 ? `${tx("capital nuevo", "new capital")} ${fmM(bd.capitalNuevo)}` : null, bd.desdeLiquidez > 0 ? `${tx("liquidez", "cash")} ${fmM(bd.desdeLiquidez)}` : null].filter(Boolean).join(" + ")}</td></tr>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Destino", "Destination")}</th><th style={th}>{tx("Capital", "Capital")}</th><th style={th}>{tx("Tasa", "Rate")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Bolsillo", "Bucket")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Regla", "Rule")}</th></tr></thead>
+          <tbody>{plataNueva.map((x, i) => <tr key={i}><td style={{ ...tdL, whiteSpace: "nowrap" }}>{x.anio <= 1 ? tx("Hoy", "Today") : anioCal(x.anio)}</td><td style={tdL}>{x.destino}</td><td style={td}>{fmM(x.capital)}</td><td style={td}>{x.tasa}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.bolsillo}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.regla}</td></tr>)}
+            <tr><td style={td} /><td style={{ ...tdL, fontWeight: 700 }}>{tx("Total desplegado", "Total deployed")}</td><td style={{ ...td, fontWeight: 700 }}>{fmM(totalNueva)}</td><td style={td} /><td style={td} /><td style={{ ...tdL, color: INF.tx2 }}>{[(r.vendidos || []).map((v) => `${v.nombre} ${fmM(v.valor)}`).join(" + "), bd.capitalNuevo > 0 ? `${tx("capital nuevo", "new capital")} ${fmM(bd.capitalNuevo)}` : null, bd.desdeLiquidez > 0 ? `${tx("liquidez", "cash")} ${fmM(bd.desdeLiquidez)}` : null].filter(Boolean).join(" + ")}</td></tr>
           </tbody></table></div></details>
       </div>}
 
-      <Capitulo id="cap-mes" n={3} titulo={tx("Tu mes, año por año: ¿alcanza para vivir?", "Your month, year by year: is it enough to live on?")} pregunta={tx("Elige un año y mira lo que entra, lo que sale y lo que sobra ese año. Lo que tienes y lo que produce cada activo (capítulo 4) también cambian con el año.", "Pick a year to see what comes in, what goes out and what's left that year. What you own and what each asset earns (chapter 4) follow the year too.")} />
+      <Capitulo id="cap-mes" n={3} titulo={tx("Tu mes, año por año: ¿alcanza para vivir?", "Your month, year by year: is it enough to live on?")} pregunta={tx("Lo que entra, lo que sale y lo que sobra cada mes del año elegido. El año es el mismo en los capítulos 2, 3 y 4.", "What comes in, goes out and is left each month of the chosen year. The year is the same in chapters 2, 3 and 4.")} />
       <SelAnio />
       <IndicadoresAnio />
       <MesCompleto r={r} card={card} h3={h3} lead={lead} anio={aSel} lista={listaAnio} />
@@ -354,18 +397,21 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
       <Capitulo id="cap-patrimonio" n={4} titulo={tx("Tu patrimonio: cómo crece", "Your net worth: how it grows")} pregunta={tx("Cuánto vale todo lo que tienes cada año y qué inversión lo empuja.", "What everything you own is worth each year and which investment drives it.")} />
       <div style={card}>
         <h3 style={h3}>{tx("Patrimonio neto por año", "Net worth by year")}</h3>
-        <p style={lead}>{tx("Cada color es una inversión; el número de arriba es el patrimonio neto (activos menos deudas).", "Each color is an investment; the number on top is net worth (assets minus debts).")}</p>
-        <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={280}>
-          <BarChart data={pat} margin={{ top: 22, right: 6, left: 0, bottom: 0 }}>
+        <p style={lead}>{hayDeuda ? tx("Cada color es un activo: arriba lo que tienes y abajo, en naranja, lo que debes. El número de arriba es tu patrimonio neto: lo que tienes menos lo que debes.", "Each color is an asset: above, what you own; below, in orange, what you owe. The number on top is your net worth: what you own minus what you owe.") : tx("Cada color es un activo; el número de arriba es tu patrimonio neto.", "Each color is an asset; the number on top is your net worth.")}</p>
+        <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={300}>
+          <BarChart data={patP} stackOffset="sign" margin={{ top: 22, right: 48, left: 0, bottom: 0 }}>
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} interval={1} />
-            <YAxis {...eje} tickFormatter={fmEje} width={104} />
-            <Tooltip content={<ChartTooltip formatter={tip} />} />
-            <Bar dataKey="otros" stackId="v" name={tx("Otros activos netos", "Other net assets")} fill={INF.gris} />
-            {sV.top.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sV.top.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 12 }} />}</Bar>)}
+            <YAxis {...eje} tickFormatter={fmEje} width={104} domain={[pisoPat, ticksPat[ticksPat.length - 1]]} ticks={ticksPat} allowDataOverflow />
+            {hayDeuda && <ReferenceLine y={0} stroke={INF.eje} />}
+            {/* Solo lo que vale algo ese año, de mayor a menor, con el neto arriba. */}
+            <Tooltip cursor={{ fill: "rgba(127,127,127,0.12)" }} content={(q) => { const neto = q.payload?.[0]?.payload?.total; return <ChartTooltip {...q} payload={(q.payload || []).filter((x) => Math.abs(Number(x.value) || 0) > 0.5).sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))} formatter={tip} labelFormatter={(l) => (neto != null ? `${l} · ${tx("patrimonio neto", "net worth")} ${fmM(neto)}` : l)} />; }} />
+            <Bar dataKey="otros" stackId="v" name={tx("Otros activos", "Other assets")} fill={INF.gris} />
+            {sP.map((s, i) => <Bar key={s.id} dataKey={s.id} stackId="v" name={s.nombre} fill={s.color}>{i === sP.length - 1 && <LabelList dataKey="totalEt" position="top" style={{ fill: INF.tx, fontSize: 12 }} />}</Bar>)}
+            {hayDeuda && <Bar dataKey="deudas" stackId="v" name={tx("Lo que debes", "What you owe")} fill={INF.teja} fillOpacity={0.75} />}
           </BarChart>
         </ResponsiveContainer></div></div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2 }}>{[{ nombre: tx("Otros activos netos", "Other net assets"), color: INF.gris }, ...sV.top].map((s) => <span key={s.nombre}><span style={{ display: "inline-block", width: 8, height: 8, background: s.color, marginRight: 4 }} />{s.nombre}</span>)}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px 12px", fontSize: 12, color: INF.tx2 }}>{[...sP, { nombre: tx("Otros activos", "Other assets"), color: INF.gris }, ...(hayDeuda ? [{ nombre: tx("Lo que debes", "What you owe"), color: INF.teja }] : [])].map((s) => <span key={s.nombre}><span style={{ display: "inline-block", width: 8, height: 8, background: s.color, marginRight: 4 }} />{s.nombre}</span>)}</div>
       </div>
       <div style={card}>
         <h3 style={h3}>{tx("Cada inversión, año por año", "Each investment, year by year")}</h3>
