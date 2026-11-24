@@ -5,7 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, sugerirActivoDeDeuda, deudaActivo, ingresosSueltosHoy, leerPropiedadRaiz, hayAlertaLiquidez, cuentaPorAnio } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, indexacionDefaultPct, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, sugerirActivoDeDeuda, deudaActivo, ingresosSueltosHoy, leerPropiedadRaiz, hayAlertaLiquidez, cuentaPorAnio } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
@@ -509,6 +509,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {Object.entries(SUP.escenarios).map(([k, e]) => <button key={k} style={btn(cfg.escenario === k)} onClick={() => set("escenario", k)}>{nombreSup(e)}</button>)}
         <span style={{ color: C.tx2, fontSize: 12 }}>{tx("inflación", "inflation")} {fmtPctEs(esc.inflacionPct)}</span>
       </div>
+      {/* 24-nov-2026 (indexación, Luis + Finanzas): cuánto suben al año tus ingresos y gastos; aparte de la inflación. */}
+      <label data-testid="f10-indexacion" style={{ fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4, maxWidth: 360, marginBottom: 8 }}>
+        {tx("¿Cuánto suben al año tus ingresos y gastos? (%)", "How much do your income and expenses rise each year? (%)")}
+        <InputDecimalEs style={{ ...inp, width: 120 }} placeholder={fmtPctEs(indexacionDefaultPct(SUP))} value={cfg.indexacionPct ?? ""} onChange={(v) => set("indexacionPct", v)} />
+        <span>{tx(`Sueldo, gastos, rentas e ingresos y gastos futuros. Si no sabes, déjalo en ${fmtPctEs(indexacionDefaultPct(SUP))}. Las cuotas fijas de tus créditos no suben. Lo que anotas para años futuros (compras, aportes) sube con la inflación.`, `Salary, expenses, rents and future income and expenses. If unsure, leave it at ${fmtPctEs(indexacionDefaultPct(SUP))}. Fixed loan payments don't rise. What you enter for future years (purchases, contributions) rises with inflation.`)}</span>
+      </label>
 
         <TablaSupuestos esc={esc} />
       </details>
@@ -681,7 +687,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
               <NumberInput style={inp}
                 value={x.periodo === "mes" ? (x.anual === "" || x.anual == null ? "" : Math.round((Number(x.anual) || 0) / 12)) : (x.anual ?? "")}
                 onChange={(v) => upG(i, { anual: x.periodo === "mes" ? (v === "" || v == null ? "" : (Number(v) || 0) * 12) : v })} />
-              <span style={{ fontSize: 12 }}>{tx("Sube cada año con la inflación.", "It grows with inflation every year.")}</span></div>
+              <span style={{ fontSize: 12 }}>{tx(`Sube cada año como tus ingresos y gastos (${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(SUP))} al año).`, `It rises every year like your income and expenses (${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(SUP))} a year).`)}</span></div>
             <label style={lbl}>{tx("Empieza", "Starts")}{selAnio(x.desde || 1, (v) => upG(i, { desde: v || 1 }))}</label>
             <div style={lbl}>{tx("¿Cuántos años?", "For how many years?")}
               <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -1150,7 +1156,7 @@ function TablaSupuestos({ esc }) {
     ...(p.cripto ? [[nombreSup(p.cripto), tx("sin supuesto: el rendimiento que escribas (vacío, solo la inflación)", "no assumption: the return you enter (blank, inflation only)")]] : []),
     [nombreSup(p.sp500), s.sinRiesgoCambiario ? tx(`${fmtPctEs(esc.spRealPct)} real`, `${fmtPctEs(esc.spRealPct)} real`) : tx(`${fmtPctEs(esc.spRealPct)} real; devaluación real ${fmtPctEs(p.sp500.devaluacionRealPct)}`, `${fmtPctEs(esc.spRealPct)} real; real devaluation ${fmtPctEs(p.sp500.devaluacionRealPct)}`)],
     [tx("Vehículos", "Vehicles"), tx(`${fmtPctEs(s.vehiculo.depAnios1a3Pct)} años 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} después`, `${fmtPctEs(s.vehiculo.depAnios1a3Pct)} years 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} after`)],
-    [tx("Ingresos / gastos", "Income / expenses"), `${inf} + ${fmtPctEs(esc.ingresosSpread)} / + ${fmtPctEs(esc.gastosSpread)}`],
+    [tx("Ingresos y gastos (suben al año)", "Income and expenses (yearly rise)"), `${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(s))} ${alAnio}`],
     [tx("Ajuste de retornos del escenario", "Scenario return adjustment"), fmtPctEs(esc.retornoSpread)],
     [tx("Colchón de liquidez", "Cash cushion"), tx(`${s.colchonMeses} meses de gastos`, `${s.colchonMeses} months of expenses`)],
   ];
@@ -1425,7 +1431,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
   const sueltos = ingresosSueltosHoy(user, cfg);
   // 22-nov-2026 (Santiago: "si se conserva, ¿todas deberían tener un incremento anual? y un vehículo al revés, se deprecia"). Ya se calcula así; ahora se dice en cada renglón.
   const escR = r.escenario || {};
-  const gIngPct = escR.inflacionPct != null ? ((1 + Number(escR.inflacionPct) / 100) * (1 + Number(escR.ingresosSpread || 0) / 100) - 1) * 100 : null;
+  const gIngPct = escR.indexacionPct != null ? Number(escR.indexacionPct) : null; // 24-nov-2026: las rentas suben con la indexación
   const [abierto, setAbierto] = useState(null);
   const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
   const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {}, ch = cfg.crecHoy || {};
