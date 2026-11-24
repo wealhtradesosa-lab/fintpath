@@ -19,6 +19,7 @@ describe("Mi futuro a 10: cada paso abre sin errores", () => {
   [0, 1, 2, 3, 4].forEach((paso) => it(`paso ${paso + 1}`, () => {
     const html = renderToString(createElement(MiFuturo10, { user, guardado: { borrador: cfg, escenarios: [{ id: "e1", nombre: "Uno", config: cfg }] }, pasoInicial: paso }));
     expect(html.length).toBeGreaterThan(1000);
-    if (paso === 2) expect(html).toMatch(/En qué reinviertes lo que sobra cada mes/);
+    // 24-nov-2026: Tu plata va en fichas: tu capital, tu mes y el cierre de cada año.
+    if (paso === 2) { expect(html).toMatch(/Tu capital disponible/); expect(html).toMatch(/Tu mes/); expect(html).toMatch(/Así cierra/); }
   }));
 });

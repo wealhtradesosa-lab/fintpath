@@ -595,6 +595,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // aparte para «La historia de tu plata».
   const capitalNuevoHoy = capitalNuevo;
   const sobraDestinos = (Array.isArray(cfg.sobraDestinos) ? cfg.sobraDestinos : []).filter((d) => d && d.id).map((d) => ({ id: d.id, pct: Math.min(100, Math.max(0, n(d.pct))) })).filter((d) => d.pct > 0);
+  const sobraPctAnios = leerSobraPctAnios(cfg, N);
   { let acum = 0; sobraDestinos.forEach((d) => { d.pct = Math.min(d.pct, 100 - acum); acum += d.pct; }); }
   const mezcla = normalizarMezcla(cfg.mezcla || sup.nortes[cfg.norte || "equilibrio"] || sup.nortes.equilibrio);
   // 25-oct-2026 (Santiago: "quiero dejar esos 28 M disponibles"). Con
@@ -947,7 +948,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       // del año va a los destinos elegidos (cfg.sobraDestinos: [{id, pct}]);
       // el % que no se asigne, como lo que sobra de las ventas (mezcla).
       let restoPct = 100;
-      sobraDestinos.forEach((d) => {
+      // 24-nov-2026: solo ese año se reinvierte otro porcentaje (cfg.sobraPctAnios), en los mismos destinos.
+      const totPct = sobraDestinos.reduce((sm, d) => sm + d.pct, 0), pctT = sobraPctAnios[t];
+      const destT = pctT != null && totPct > 0 ? sobraDestinos.map((d) => ({ ...d, pct: d.pct * pctT / totPct })) : sobraDestinos;
+      destT.forEach((d) => {
         const v = cf * d.pct / 100; restoPct -= d.pct;
         const dest = todos.find((x) => x.id === d.id && !x.ciclo);
         if (dest) dest.valor += v;
@@ -2049,18 +2053,24 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
  */
 export function holguraPorAnio(cuenta = []) {
   const N = cuenta.length;
+  const meta = (y) => (y.rvaCap ?? y.aReserva) + (y.mesAReserva ? Math.max(0, y.mes ?? 0) : 0);
   const repetir = (t, X) => {
     const g = cuenta[t - 1];
-    let antes = Math.max(0, g.queda - X) - Math.min(g.aReserva, Math.max(0, g.queda - X)), reserva = g.reservaAntes - g.usoReserva + Math.min(g.aReserva, Math.max(0, g.queda - X));
+    const q = g.queda - X, aR = Math.min(meta(g), Math.max(0, q));
+    let antes = Math.max(0, q) - aR, reserva = g.reservaAntes - g.usoReserva + aR;
     const out = [];
     for (let s = t + 1; s <= N; s++) {
       const y = cuenta[s - 1], tasa = y.tasaReserva || 0;
-      const base = antes + y.llega + y.flujoFoto - y.comprometido;
+      const faltaMes = y.faltaMes ?? Math.max(0, -y.flujoFoto), sobraFoto = y.sobraFoto ?? Math.max(0, y.flujoFoto);
+      const cap0 = antes + y.llega - y.comprometido - faltaMes;
+      const cubre = cap0 < 0 ? Math.min(sobraFoto, -cap0) : 0;
+      const base = cap0 + cubre;
       const resA = reserva * (1 + tasa);
       const uso = base < 0 ? Math.min(resA, -base) : 0, falta = base < 0 ? -base - uso : 0;
-      const disp = Math.max(0, base), queda = base + uso - y.movido + y.efecto;
-      const aRes = Math.min(y.aReserva, Math.max(0, queda));
-      const porInv = disp - y.movido - Math.min(aRes, Math.max(0, disp - y.movido));
+      const disp = Math.max(0, base), mes = y.flujo + faltaMes - cubre, queda = base + uso - y.movido + mes;
+      const rvaCap = y.rvaCap ?? y.aReserva;
+      const aRes = Math.min(rvaCap + (y.mesAReserva ? Math.max(0, mes) : 0), Math.max(0, queda));
+      const porInv = disp - y.movido - Math.min(rvaCap, aRes, Math.max(0, disp - y.movido));
       out.push({ anio: s, falta, porInv });
       antes = Math.max(0, queda) - aRes; reserva = resA - uso + aRes;
     }
@@ -2076,6 +2086,13 @@ export function holguraPorAnio(cuenta = []) {
     const para = malos(tope).map((y) => y.anio);
     return { anio: t, libre: Math.floor(lo), guardar: tope - Math.floor(lo), para };
   });
+}
+
+/** Lo que se reinvierte de lo que sobra, solo en ciertos años: { año: % }. */
+export function leerSobraPctAnios(cfg = {}, N = 10) {
+  const out = {};
+  Object.entries((cfg && cfg.sobraPctAnios) || {}).forEach(([k, v]) => { const t = Math.round(n(k)); if (t >= 1 && t <= N && v !== "" && v != null && Number.isFinite(Number(v))) out[t] = Math.min(100, Math.max(0, Number(v))); });
+  return out;
 }
 
 /** Lo que cada año mandas a tu fondo de reserva: { año del plan: pesos de ese año }. */
@@ -2136,8 +2153,12 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
   // Sin cfg (el Resultado solo tiene r), la parte libre de lo que sobra la trae el motor.
   const asignado = (Array.isArray(cfg && cfg.sobraDestinos) ? cfg.sobraDestinos : []).reduce((sm, d) => sm + Math.max(0, Number(d && d.pct) || 0), 0);
   const libre = Array.isArray(cfg && cfg.sobraDestinos) ? Math.max(0, 1 - Math.min(100, asignado) / 100) : (r.sobraLibre ?? 1);
-  const deLibre = (cf) => (cf > 0 ? cf * libre : cf);
+  // 24-nov-2026 (Santiago: "además te sobra al mes X plata, ¿qué quieres hacer con ese ingreso mensual?").
+  // La regla de lo que sobra se puede cambiar solo para un año (cfg.sobraPctAnios: { año: % que se reinvierte }).
+  const pctAnios = leerSobraPctAnios(cfg, N);
+  const libreAnio = (t) => (pctAnios[t] != null && asignado > 0 ? 1 - pctAnios[t] / 100 : libre);
   const rva = cfg && cfg.reservaAnual ? leerReservaAnual(cfg.reservaAnual, N) : (r.reservaAnual || {});
+  const mesARes = (cfg && cfg.mesAReserva) || {};
   const tasa = Math.max(0, n(r.tasaReserva));
   const suma = (l) => l.reduce((sm, x) => sm + (n(x.monto) || 0), 0);
   // 24-nov-2026 (indexación): lo que anotas para un año siguiente va en pesos de hoy y se paga en pesos
@@ -2152,6 +2173,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
   for (let anio = 1; anio <= N; anio++) {
     const f = filas[anio] || {};
     const foto = (fotos && fotos[anio]) || f;
+    const lib = libreAnio(anio), deLibre = (cf) => (cf > 0 ? cf * lib : cf);
     const flujo = deLibre(n(f.cf)), flujoFoto = deLibre(n(foto.cf));
     // 1. Lo que tienes
     const llegan = anio === 1
@@ -2178,29 +2200,41 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
       .forEach((u) => { const fte = u.fuente || "venta"; movidas.push({ nombre: u.nombre, monto: enAnio(u), montoHoy: n(u.monto), tipo: u.seccion === "B" ? "B" : "C", fuente: fte, cuenta: anio === 1 ? fte === "venta" : fte !== "nuevo", ref: u.ref || null }); });
     if (anio === 1 && bd.obrasPedido > 0.5) movidas.push({ nombre: tx("Obras en lo que ya tienes", "Build-outs on what you own"), monto: bd.obrasPedido, tipo: "B", cuenta: true });
     const movido = suma(movidas.filter((m) => m.cuenta));
-    // La cuenta
+    // La cuenta, en dos partes (24-nov-2026, Santiago: "este año tienes de capital disponible 900 MM,
+    // ¿qué quieres hacer? ¿pagar deudas, invertir? Y además te sobra al mes X plata: ¿qué quieres hacer
+    // con ese ingreso mensual?"):
+    //   · Capital: lo que tienes − lo comprometido − lo que falta para vivir (se aparta primero). Si lo
+    //     comprometido no alcanza con el capital, lo cubre lo que sobra en el año (cubreMes).
+    //   · Mes: lo que sobra en el año con tus movidas (lo que no se reinvierte solo), menos lo que ya pagó
+    //     lo comprometido, más lo apartado para vivir que ya no hizo falta. Llega mes a mes: no se
+    //     invierte al empezar el año; pasa al siguiente o a tu reserva.
     const tienes = antes + llega;
-    const base = tienes + flujoFoto - comprometido;
+    const faltaMes = Math.max(0, -flujoFoto), sobraFoto = Math.max(0, flujoFoto);
+    const cap0 = tienes - comprometido - faltaMes;
+    const cubreMes = cap0 < 0 ? Math.min(sobraFoto, -cap0) : 0;
+    const base = cap0 + cubreMes;
     const reservaAntes = anio === 1 ? 0 : reserva * (1 + tasa);
     const usoReserva = base < 0 ? Math.min(reservaAntes, -base) : 0;
     const faltaSinCubrir = base < 0 ? -base - usoReserva : 0;
     const disponible = Math.max(0, base);
     const efecto = flujo - flujoFoto;
-    const queda = base + usoReserva - movido + efecto;
-    const aReserva = Math.min(n(rva[anio]), Math.max(0, queda));
+    const mes = flujo + faltaMes - cubreMes;
+    const queda = base + usoReserva - movido + mes;
     // 24-nov-2026 (Santiago: "¿no hace falta un ítem que se llame reserva?"). Lo que guardas en tu
-    // reserva sale de lo que te quedaba por invertir (como una movida más): si después inviertes,
-    // ya no te dice que tienes esa plata libre. Si guardas más, la diferencia sale de lo que tus
-    // movidas te pagan ese año.
+    // reserva de tu capital sale de lo que te quedaba por invertir (como una movida más): si después
+    // inviertes, ya no te dice que tienes esa plata libre. Lo del mes también puede ir a tu reserva.
+    const rvaCap = n(rva[anio]), mesAReserva = !!mesARes[anio];
+    const aReservaMes = mesAReserva ? Math.max(0, mes) : 0;
+    const aReserva = Math.min(rvaCap + aReservaMes, Math.max(0, queda));
     const antesReserva = disponible - movido;
-    const reservaDeAqui = Math.min(aReserva, Math.max(0, antesReserva));
+    const reservaDeAqui = Math.min(rvaCap, aReserva, Math.max(0, antesReserva));
     const porInvertir = antesReserva - reservaDeAqui;
     const pasa = Math.max(0, queda) - aReserva;
     const reservaFin = reservaAntes - usoReserva + aReserva;
     const salen = [...compromisos, ...movidas.filter((m) => m.cuenta)].map((x) => ({ nombre: x.nombre, monto: x.monto, montoHoy: x.montoHoy ?? x.monto, tipo: x.tipo === "colchon" ? "F" : x.tipo }));
     // factorHoy: para pasar a pesos de hoy lo que se escribe en un formulario (montos de años siguientes).
     // propio: lo que el año suma o resta por sí solo (sin lo que traes de antes).
-    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, compromisos, comprometido, base, propio: base - antes, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
+    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, rvaCap, mesAReserva, aReservaMes, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
       // Para lo que leía la cuenta de antes (informe): lo que sale del año y lo que queda.
       salen, sale: suma(salen), saldo: queda, flujoHoy: 0, cfPrev: n(f.cf) });
     antes = pasa; reserva = reservaFin;
