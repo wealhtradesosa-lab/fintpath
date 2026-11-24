@@ -22,7 +22,7 @@
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
 import { tamanoCifra } from "../lib/infografia.js";
-import { anioCal } from "../lib/futuro10.js";
+import { anioCal, rendimientoSinAhorro, patrimonioFinalHoy, inflacionDe } from "../lib/futuro10.js";
 import MesCompleto from "./MesCompleto.jsx";
 import HistoriaPlata from "./infografia/HistoriaPlata.jsx";
 import { useMemo, useState } from "react";
@@ -91,8 +91,8 @@ function series(filas, campo, n = 5) {
   return { top: top.map((id, i) => ({ id, nombre: nombre[id], clase: clase[id], color: INF.serie[i % INF.serie.length] })), resto };
 }
 
-export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct() }) {
-  const [modo, setModo] = useState("nominal"); // nominal | real (plata de hoy)
+export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct(), modoInicial = "nominal" }) {
+  const [modo, setModo] = useState(modoInicial); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
   const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala
   // 19-nov-2026 (Santiago: "uno debería poder elegir año y ver cómo se comporta
@@ -147,8 +147,12 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   const rentaMes = (f1.rentas || 0) / 12, multiplicaMes = (f1.crece || 0) / 12;
   const saleMes = (f1.gastos || 0) / 12, entraMes = (f1.ingresos || 0) / 12;
   const rendimiento = f1.activos > 0 ? ((f1.rentas || 0) + (f1.crece || 0)) / f1.activos * 100 : 0;
-  const cagr = f0.patrimonio > 0 && fin.patrimonio > 0 ? (Math.pow(fin.patrimonio / f0.patrimonio, 1 / Math.max(1, fin.anio)) - 1) * 100 : null;
-  const real = cagr == null ? null : ((1 + cagr / 100) / (1 + inflacionPct / 100) - 1) * 100;
+  // 23-nov-2026 (Finanzas): el rendimiento es solo de los activos; el ahorro del
+  // año es aporte, no rentabilidad. Antes se comparaba el patrimonio final con el
+  // de hoy y el ahorro de 10 años salía como si fuera rendimiento.
+  const rendSA = rendimientoSinAhorro(r, inflacionPct);
+  const cagr = rendSA ? rendSA.nominalPct : null;
+  const real = rendSA ? rendSA.realPct : null;
 
   // ── Mes a mes ─────────────────────────────────────────────────────────────
   // 25-oct-2026 (Santiago: "en el año cero me sale que no ingresa BTG… no sé
@@ -210,8 +214,11 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   // forma clara, completa y que explique muy bien el escenario"). Ninguna gráfica
   // sale; se ordenan por la pregunta que responden.
   const faltan = filas.slice(1).filter((f) => f.ingresos < f.gastos).length;
-  const veredicto = tx(<>Este plan lleva tu patrimonio de <b>{fmM(f0.patrimonio)}</b> hoy a <b>{fmM(fin.patrimonio)}</b> en {anioCal(fin.anio)}{cagr != null ? <> (crece {fmPct(cagr, 1)} al año)</> : null}. {faltan === 0 ? <>Lo que entra cubre lo que sale <b>todos los años</b></> : <>En <b style={{ color: INF.txBad }}>{faltan} de {filas.length - 1} años</b> lo que entra no cubre lo que sale</>}{real != null ? <> y {real >= 0 ? <>le gana a la inflación por <b style={{ color: INF.txOk }}>{fmPct(real, 1)} real</b> al año</> : <>pierde contra la inflación (<b style={{ color: INF.txBad }}>{fmPct(real, 1)} real</b> al año)</>}</> : null}.</>,
-    <>This plan takes your net worth from <b>{fmM(f0.patrimonio)}</b> today to <b>{fmM(fin.patrimonio)}</b> in {anioCal(fin.anio)}{cagr != null ? <> (growing {fmPct(cagr, 1)} a year)</> : null}. {faltan === 0 ? <>What comes in covers what goes out <b>every year</b></> : <>In <b style={{ color: INF.txBad }}>{faltan} of {filas.length - 1} years</b> income doesn't cover spending</>}{real != null ? <> and {real >= 0 ? <>it beats inflation by <b style={{ color: INF.txOk }}>{fmPct(real, 1)} real</b> a year</> : <>it loses to inflation (<b style={{ color: INF.txBad }}>{fmPct(real, 1)} real</b> a year)</>}</> : null}.</>);
+  // 23-nov-2026 (Finanzas): el patrimonio del año 10 en pesos de hoy con la inflación del escenario, igual que la barra, la tarjeta, el comparador y la tabla.
+  const finHoy = patrimonioFinalHoy(r);
+  const infR = fmPct(inflacionDe(r), 1);
+  const veredicto = tx(<>Este plan lleva tu patrimonio de <b>{fmM(f0.patrimonio)}</b> hoy a <b data-testid="f10-veredicto-fin">{fmM(finHoy)}</b> {esUS() ? `en dólares de hoy (inflación ${infR} al año)` : `en pesos de hoy (inflación ${infR} al año)`} en {anioCal(fin.anio)}{cagr != null ? <> (tus activos rinden {fmPct(cagr, 1)} al año, sin contar tu ahorro)</> : null}. {faltan === 0 ? <>Lo que entra cubre lo que sale <b>todos los años</b></> : <>En <b style={{ color: INF.txBad }}>{faltan} de {filas.length - 1} años</b> lo que entra no cubre lo que sale</>}{real != null ? <> y {real >= 0 ? <>tus activos le ganan a la inflación por <b style={{ color: INF.txOk }}>{fmPct(real, 1)} real</b> al año</> : <>tus activos pierden contra la inflación (<b style={{ color: INF.txBad }}>{fmPct(real, 1)} real</b> al año)</>}</> : null}.</>,
+    <>This plan takes your net worth from <b>{fmM(f0.patrimonio)}</b> today to <b data-testid="f10-veredicto-fin">{fmM(finHoy)}</b> {esUS() ? `in today's dollars (${infR} yearly inflation)` : `in today's pesos (${infR} yearly inflation)`} in {anioCal(fin.anio)}{cagr != null ? <> (your assets earn {fmPct(cagr, 1)} a year, excluding savings)</> : null}. {faltan === 0 ? <>What comes in covers what goes out <b>every year</b></> : <>In <b style={{ color: INF.txBad }}>{faltan} of {filas.length - 1} years</b> income doesn't cover spending</>}{real != null ? <> and {real >= 0 ? <>your assets beat inflation by <b style={{ color: INF.txOk }}>{fmPct(real, 1)} real</b> a year</> : <>your assets lose to inflation (<b style={{ color: INF.txBad }}>{fmPct(real, 1)} real</b> a year)</>}</> : null}.</>);
   const CAPS = [["cap-veredicto", tx("Veredicto", "Verdict")], ["cap-plata", tx("Tu plata", "Your money")], ["cap-mes", tx("Tu mes", "Your month")], ["cap-patrimonio", tx("Patrimonio", "Net worth")], ["cap-bueno", tx("¿Es buen plan?", "Good plan?")]];
   const irA = (id) => { const el = typeof document !== "undefined" && document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); };
   const Indice = () => <nav aria-label={tx("Capítulos del informe", "Report chapters")} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
@@ -238,7 +245,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   </div>; };
 
   const Toggle = () => <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-    {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos")]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
+    {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx(`En dólares de hoy (inflación ${fmPct(inflacionDe(r), 1)} al año)`, `In today's dollars (${fmPct(inflacionDe(r), 1)} yearly inflation)`) : tx(`En pesos de hoy (inflación ${fmPct(inflacionDe(r), 1)} al año)`, `In today's pesos (${fmPct(inflacionDe(r), 1)} yearly inflation)`)]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
   </div>;
 
   // 19-nov-2026 (Santiago: "muchos problemas de diagramación"): con cifras
@@ -265,7 +272,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           izquierda y el resto como contexto, en vez de seis fichas iguales en fila. */}
       <style>{`.fp-veredicto { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 14px; } @media (min-width: 760px) { .fp-veredicto { grid-template-columns: minmax(260px, 1fr) 2fr; } .fp-veredicto-resto { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; } .fp-ancha { grid-column: span 2; } }`}</style>
       <div className="fp-veredicto">
-        <Ficha heroe l={tx(`Patrimonio en ${anioCal(10)}`, `Net worth in ${anioCal(10)}`)} v={fmM(fin.patrimonio / d(fin))} s={`${tx("hoy", "today")} ${fmM(f0.patrimonio)}${cagr != null ? tx(` · crece ${fmPct(cagr, 1)} al año`, ` · grows ${fmPct(cagr, 1)} a year`) : ""}`} />
+        <Ficha heroe l={esUS() ? tx(`Patrimonio en ${anioCal(fin.anio)}, en dólares de hoy (inflación ${infR})`, `Net worth in ${anioCal(fin.anio)}, in today's dollars (${infR} inflation)`) : tx(`Patrimonio en ${anioCal(fin.anio)}, en pesos de hoy (inflación ${infR})`, `Net worth in ${anioCal(fin.anio)}, in today's pesos (${infR} inflation)`)} v={fmM(finHoy)} s={`${esUS() ? tx(`en dólares de ${anioCal(fin.anio)}: `, `in ${anioCal(fin.anio)} dollars: `) : tx(`en pesos de ${anioCal(fin.anio)}: `, `in ${anioCal(fin.anio)} pesos: `)}${fmM(fin.patrimonio)} · ${tx("hoy", "today")} ${fmM(f0.patrimonio)}${cagr != null ? tx(` · tus activos rinden ${fmPct(cagr, 1)} al año`, ` · your assets earn ${fmPct(cagr, 1)} a year`) : ""}`} />
         <div className="fp-veredicto-resto" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,170px),1fr))", gap: 10 }}>
         <Ficha l={tx("Produce al mes", "Earns per month")} v={fmM(produceMes)} s={tx(`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`, `income ${fmM(rentaMes)} + compounding ${fmM(multiplicaMes)}`)} />
         <Ficha l={tx("Rendimiento del patrimonio", "Return on net worth")} v={fmPct(rendimiento, 1)} s={tx("anual, sobre lo que tienes", "per year, on what you own")} />
@@ -471,7 +478,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         <p style={lead}>{nombre}. {modo === "real" ? tx(`En ${monedas()} de hoy.`, `In today's ${monedas()}.`) : tx(`En ${monedas()} de cada año.`, `In each year's ${monedas()}.`)} {tx("Cobertura = lo que entra ÷ lo que sale.", "Coverage = money in ÷ money out.")}</p>
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 560 }}>
           <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={th}>{tx("Patrimonio", "Net worth")}</th>{sL.map((s) => <th key={s.id} style={th}>{(s.nombre || "").slice(0, 18)}</th>)}<th style={th}>{tx("Deuda", "Debt")}</th><th style={th}>{tx("Cobertura", "Coverage")}</th></tr></thead>
-          <tbody>{filas.map((f, i) => <tr key={f.anio}><td style={tdL}>{f.anio === 0 ? tx("Hoy", "Today") : anioCal(f.anio)}</td><td style={td}>{fmM(f.patrimonio / d(f))}</td>
+          <tbody>{filas.map((f, i) => <tr key={f.anio}><td style={tdL}>{f.anio === 0 ? tx("Hoy", "Today") : anioCal(f.anio)}</td><td style={td} data-testid={`f10-tabla-pat-${f.anio}`}>{fmM(f.patrimonio / d(f))}</td>
             {sL.map((s) => <td key={s.id} style={td}>{pat[i][s.id] ? fmM(pat[i][s.id]) : "—"}</td>)}
             <td style={td}>{f.deuda > 0 ? fmM(f.deuda / d(f)) : "—"}</td><td style={td}>{f.gastos > 0 ? fmPct(f.ingresos / f.gastos * 100, 0) : "—"}</td></tr>)}</tbody>
         </table></div>
