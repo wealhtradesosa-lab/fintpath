@@ -115,17 +115,19 @@ export function resolverEscenario(clave = "base", user = {}, sup = supuestosF10(
   return { ...e, clave, inflacionPct };
 }
 
-// 24-nov-2026 — Indexación (Finanzas + Luis). Dos tasas:
+// 24-nov-2026 — Indexación (Finanzas + Luis). Dos tasas, y un piso en los gastos:
 //  · Indexación (cfg.indexacionPct, editable; por defecto CO 5 %, EE. UU. 3 %): con ella
-//    suben cada año el sueldo, los gastos, los ingresos, gastos y rentas futuras. Las
+//    suben cada año el sueldo, los arriendos/rentas y los ingresos futuros. Las
 //    cuotas fijas de los créditos NO se indexan.
-//  · Inflación del escenario (Prudentes 6 %, Normales 4 %, Favorables 3 %): con ella se
-//    llevan a su año los montos únicos que escribes para años futuros (compras, anticipos,
-//    aportes, valor al terminar, retiros) y con ella misma se pasa a pesos de hoy.
+//  · Gastos (hoy y futuros): suben al max(indexación editable, inflación del escenario)
+//    — Prudentes 6 %, Normales 4 %, Favorables 3 % si la indexación es menor. Así los
+//    gastos en pesos de hoy no bajan de un año al siguiente.
+//  · Inflación del escenario: con ella se llevan a su año los montos únicos que escribes
+//    para años futuros (compras, anticipos, aportes, valor al terminar, retiros) y con
+//    ella misma se pasa a pesos de hoy.
 //  · Todo monto que escribes va en pesos de hoy. Año 1 = año en curso, tal cual; año t
 //    × (1+tasa)^(t−1). Los flujos del año t se deflactan con la misma convención:
-//    ÷ (1+inflación)^(t−1) (f.deflactorFlujo). Así, con indexación = inflación, sueldo y
-//    gastos quedan planos en pesos de hoy todos los años. El patrimonio es un saldo al
+//    ÷ (1+inflación)^(t−1) (f.deflactorFlujo). El patrimonio es un saldo al
 //    cierre del año t y sigue ÷ (1+inflación)^t (f.deflactor).
 export const INDEXACION_DEFAULT_PCT = { CO: 5, US: 3 };
 /** Indexación por defecto del país (respaldo si los supuestos no la traen). */
@@ -178,12 +180,15 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const N = n(cfg.anios) || sup.anios;
   const inf = esc.inflacionPct / 100;
   // Dos tasas: `inf` (escenario) lleva los montos únicos a su año y deflacta;
-  // `gIdx` (indexación) hace subir ingresos, gastos y rentas.
+  // `gIdx` (indexación) hace subir sueldo, arriendos/rentas e ingresos futuros.
+  // Gastos: max(indexación, inflación del escenario) para que no bajen en pesos de hoy.
   const gIdx = indexacionPct / 100;
+  const gIng = gIdx;
+  const gGas = Math.max(gIdx, inf);
+  esc.gastosIndexacionPct = gGas * 100;
   const ix = (t) => Math.pow(1 + inf, Math.max(0, t - 1));
   const ixI = (t) => Math.pow(1 + gIdx, Math.max(0, t - 1));
-  const gIng = gIdx;
-  const gGas = gIdx;
+  const ixG = (t) => Math.pow(1 + gGas, Math.max(0, t - 1));
   // Sin impuestos: se omiten impuestoNeto y retencionMensual.
   const { impuestoNeto, retencionMensual, ...sinImp } = user;
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
@@ -883,7 +888,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
     const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ixI(t) : 0)
       + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ixI(t), 0), 0);
-    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * ixI(t) : 0), 0)
+    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * ixG(t) : 0), 0)
       - seVan.reduce((sm, g) => sm + (t >= g.desde ? g.mensual * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, deuda) : 0;
     deuda = Math.max(0, deuda - cuota);
@@ -1012,7 +1017,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // gastos de ese año"). Lo que sale, partido por año (suma exacta f.gastos):
     // gastos de Egresos, gastos futuros que corren, los que ya no se pagan y cuotas.
     f.cuota = cuota; f.gastosBase = gastos;
-    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * ixI(t) }));
+    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * ixG(t) }));
     f.gastosQueSeVan = seVan.filter((g) => t >= g.desde).map((g) => ({ nombre: g.nombre, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1) }));
     // 20-nov-2026 (Santiago: "¿por qué 2026 detalla más los ingresos y gastos
     // que los otros años?"). Partida por partida en cada año: cada gasto de

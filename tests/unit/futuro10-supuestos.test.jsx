@@ -28,21 +28,21 @@ const futuros = {
 const cfgRef = { escenario: "base", decisiones: { c: { accion: "vende" } }, futuros };
 const htmlPaso = (paso, cfg = cfgRef) => renderToStaticMarkup(createElement(MiFuturo10, { user: uVenta, guardado: { borrador: cfg }, pasoInicial: paso }));
 
-describe("supuestos: la cifra de referencia de la barra no cambia (solo copy)", () => {
+describe("supuestos: la cifra de referencia de la barra (Normales, indexación 5 %)", () => {
   const rHoy = proyectarFuturo10(uVenta, {});
   const r = proyectarFuturo10(uVenta, cfgRef);
-  it("2035 en pesos de hoy sigue en $1.096.083.951", () => {
+  it("2035 en pesos de hoy queda en $1.055.431.843", () => {
     expect(anioCal(10)).toBe(2035);
-    expect(Math.round(patrimonioFinalHoy(r))).toBe(1096083951);
-    expect(fmM(patrimonioFinalHoy(r))).toBe("$1.096.083.951");
+    expect(Math.round(patrimonioFinalHoy(r))).toBe(1055431843);
+    expect(fmM(patrimonioFinalHoy(r))).toBe("$1.055.431.843");
   });
-  it("la barra muestra esa cifra en 2035 y «Si me quedo como estoy» no se mueve", () => {
+  it("la barra muestra esa cifra en 2035 y «Si me quedo como estoy»", () => {
     const h = renderToStaticMarkup(createElement(BarraFuturo10, { rPlan: r, rHoy, onIr: () => {} }));
     expect(h).toContain('data-testid="f10-barra-plan"');
-    expect(h).toContain("$1.096.083.951");
+    expect(h).toContain("$1.055.431.843");
     expect(h).toContain("2035");
-    expect(Math.round(patrimonioFinalHoy(rHoy))).toBe(1074718206);
-    expect(h).toContain("$1.074.718.206");
+    expect(Math.round(patrimonioFinalHoy(rHoy))).toBe(1037349324);
+    expect(h).toContain("$1.037.349.324");
   });
 });
 
@@ -108,7 +108,7 @@ describe("supuestos: el informe nombra nominal y real sin cambiar la cifra", () 
     expect(h).toContain("al año, nominal (incluye la inflación), antes de impuestos, sobre lo que tienes");
     expect(h).toContain("nominal (incluye la inflación), antes de impuestos, sin contar tu ahorro");
     expect(h).toContain('data-testid="f10-veredicto-fin"');
-    expect(h).toContain("$1.096.083.951");
+    expect(h).toContain("$1.055.431.843");
     expect(h).not.toContain("anual, sobre lo que tienes");
   });
 });

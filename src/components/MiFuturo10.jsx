@@ -514,7 +514,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       <label data-testid="f10-indexacion" style={{ fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4, maxWidth: 360, marginBottom: 8 }}>
         {tx("¿Cuánto suben al año tus ingresos y gastos? (%)", "How much do your income and expenses rise each year? (%)")}
         <InputDecimalEs style={{ ...inp, width: 120 }} placeholder={fmtPctEs(indexacionDefaultPct(SUP))} value={cfg.indexacionPct ?? ""} onChange={(v) => set("indexacionPct", v)} />
-        <span>{tx(`Sueldo, gastos, rentas e ingresos y gastos futuros. Si no sabes, déjalo en ${fmtPctEs(indexacionDefaultPct(SUP))}. Las cuotas fijas de tus créditos no suben. Lo que anotas para años futuros (compras, aportes) sube con la inflación.`, `Salary, expenses, rents and future income and expenses. If unsure, leave it at ${fmtPctEs(indexacionDefaultPct(SUP))}. Fixed loan payments don't rise. What you enter for future years (purchases, contributions) rises with inflation.`)}</span>
+        <span>{tx(`Sueldo, rentas e ingresos futuros. Si no sabes, déjalo en ${fmtPctEs(indexacionDefaultPct(SUP))}. Los gastos no bajan de la inflación del escenario. Las cuotas fijas de tus créditos no suben. Lo que anotas para años futuros (compras, aportes) sube con la inflación.`, `Salary, rents and future income. If unsure, leave it at ${fmtPctEs(indexacionDefaultPct(SUP))}. Expenses don't fall below the scenario's inflation. Fixed loan payments don't rise. What you enter for future years (purchases, contributions) rises with inflation.`)}</span>
       </label>
 
         <TablaSupuestos esc={esc} />
@@ -688,7 +688,7 @@ function LoQueViene({ cfg, set, esc, owners, activos = [], gastosHoy = [], ingre
               <NumberInput style={inp}
                 value={x.periodo === "mes" ? (x.anual === "" || x.anual == null ? "" : Math.round((Number(x.anual) || 0) / 12)) : (x.anual ?? "")}
                 onChange={(v) => upG(i, { anual: x.periodo === "mes" ? (v === "" || v == null ? "" : (Number(v) || 0) * 12) : v })} />
-              <span style={{ fontSize: 12 }}>{tx(`Sube cada año como tus ingresos y gastos (${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(SUP))} al año).`, `It rises every year like your income and expenses (${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(SUP))} a year).`)}</span></div>
+              <span style={{ fontSize: 12 }}>{tx(`Sube cada año como tus gastos (${fmtPctEs(esc.gastosIndexacionPct ?? Math.max(esc.indexacionPct ?? indexacionDefaultPct(SUP), esc.inflacionPct))} al año; no baja de la inflación del escenario).`, `It rises every year like your expenses (${fmtPctEs(esc.gastosIndexacionPct ?? Math.max(esc.indexacionPct ?? indexacionDefaultPct(SUP), esc.inflacionPct))} a year; it doesn't fall below the scenario's inflation).`)}</span></div>
             <label style={lbl}>{tx("Empieza", "Starts")}{selAnio(x.desde || 1, (v) => upG(i, { desde: v || 1 }))}</label>
             <div style={lbl}>{tx("¿Cuántos años?", "For how many years?")}
               <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
@@ -1157,7 +1157,8 @@ function TablaSupuestos({ esc }) {
     ...(p.cripto ? [[nombreSup(p.cripto), tx("sin supuesto: el rendimiento que escribas, antes de impuestos (vacío, solo la inflación)", "no assumption: the return you enter, before taxes (blank, inflation only)")]] : []),
     [nombreSup(p.sp500), (s.sinRiesgoCambiario ? tx(`${fmtPctEs(esc.spRealPct)} real al año, antes de impuestos (≈ ${fmtPctEs(retornoNominalPreset("sp500", esc))} nominal (incluye la inflación))`, `${fmtPctEs(esc.spRealPct)} real a year, before taxes (≈ ${fmtPctEs(retornoNominalPreset("sp500", esc))} nominal (includes inflation))`) : tx(`${fmtPctEs(esc.spRealPct)} real al año, antes de impuestos (≈ ${fmtPctEs(retornoNominalPreset("sp500", esc))} nominal (incluye la inflación)); devaluación real ${fmtPctEs(p.sp500.devaluacionRealPct)}`, `${fmtPctEs(esc.spRealPct)} real a year, before taxes (≈ ${fmtPctEs(retornoNominalPreset("sp500", esc))} nominal (includes inflation)); real devaluation ${fmtPctEs(p.sp500.devaluacionRealPct)}`)) + tx(". El supuesto es el de un índice amplio y diversificado, no de acciones sueltas.", ". The assumption is for a broad diversified index, not individual stocks.")],
     [tx("Vehículos", "Vehicles"), tx(`${fmtPctEs(s.vehiculo.depAnios1a3Pct)} años 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} después (nominal (incluye la inflación))`, `${fmtPctEs(s.vehiculo.depAnios1a3Pct)} years 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} after (nominal (includes inflation))`)],
-    [tx("Ingresos y gastos (suben al año)", "Income and expenses (yearly rise)"), `${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(s))} ${alAnio}`],
+    [tx("Ingresos (suben al año)", "Income (yearly rise)"), `${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(s))} ${alAnio}`],
+    [tx("Gastos (suben al año)", "Expenses (yearly rise)"), `${fmtPctEs(esc.gastosIndexacionPct ?? Math.max(esc.indexacionPct ?? indexacionDefaultPct(s), esc.inflacionPct))} ${alAnio}`],
     [tx("Ajuste de retornos del escenario", "Scenario return adjustment"), fmtPctEs(esc.retornoSpread)],
     [tx("Colchón de liquidez", "Cash cushion"), tx(`${s.colchonMeses} meses de gastos`, `${s.colchonMeses} months of expenses`)],
   ];

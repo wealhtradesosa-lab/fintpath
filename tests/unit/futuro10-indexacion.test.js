@@ -1,5 +1,6 @@
 // 24-nov-2026 — Indexación de «Mi futuro a 10 años» (Finanzas + Luis). Dos tasas:
-//  · Indexación (editable; CO 5 %, EE. UU. 3 %): sueldo, gastos, ingresos, gastos y rentas futuras.
+//  · Indexación (editable; CO 5 %, EE. UU. 3 %): sueldo, arriendos/rentas e ingresos futuros.
+//  · Gastos (hoy y futuros): max(indexación, inflación del escenario), para que no bajen en pesos de hoy.
 //  · Inflación del escenario (6/4/3 %): lleva a su año los montos únicos que escribes para
 //    años futuros (compras, anticipos, aportes) y pasa a pesos de hoy, cada escenario con la suya.
 //  · Año 1 = año en curso, tal cual; año t × (1+tasa)^(t−1). Los flujos del año t se deflactan
@@ -29,14 +30,24 @@ describe("indexación · la tasa", () => {
     expect(r.escenario.indexacionDefault).toBe(false);
     expect(proyectarFuturo10(U(), {}).escenario.indexacionDefault).toBe(true);
   });
-  it("sueldo y gastos suben con la indexación, no con la inflación", () => {
+  it("sueldo sube con la indexación; gastos no bajan de la inflación del escenario", () => {
     const r = proyectarFuturo10(U(), { escenario: "pesimista" });
     expect(r.filas[10].ingresos / r.filas[1].ingresos).toBeCloseTo(1.05 ** 9, 6);
-    expect(r.filas[10].gastos / r.filas[1].gastos).toBeCloseTo(1.05 ** 9, 6);
+    expect(r.filas[10].gastos / r.filas[1].gastos).toBeCloseTo(1.06 ** 9, 6);
+    expect(r.escenario.gastosIndexacionPct).toBe(6);
+    const base = proyectarFuturo10(U(), { escenario: "base" });
+    expect(base.filas[10].gastos / base.filas[1].gastos).toBeCloseTo(1.05 ** 9, 6);
+    expect(base.escenario.gastosIndexacionPct).toBe(5);
+    const fav = proyectarFuturo10(U(), { escenario: "optimista" });
+    expect(fav.filas[10].gastos / fav.filas[1].gastos).toBeCloseTo(1.05 ** 9, 6);
+    expect(fav.escenario.gastosIndexacionPct).toBe(5);
   });
-  it("indexación 0 %: sueldo y gastos quedan quietos en pesos de cada año", () => {
-    const r = proyectarFuturo10(U(), { indexacionPct: 0 });
-    r.filas.slice(1).forEach((f) => { expect(f.ingresos).toBeCloseTo(120e6, 0); expect(f.gastos).toBeCloseTo(72e6, 0); });
+  it("indexación 0 %: el sueldo queda quieto; los gastos suben con la inflación del escenario", () => {
+    const r = proyectarFuturo10(U(), { indexacionPct: 0 }); // Normales, inflación 4 %
+    r.filas.slice(1).forEach((f, i) => {
+      expect(f.ingresos).toBeCloseTo(120e6, 0);
+      expect(f.gastos).toBeCloseTo(72e6 * (1.04 ** i), 0);
+    });
   });
   it("indexación = inflación: sueldo y gastos planos en pesos de hoy todos los años", () => {
     ["base", "pesimista", "optimista"].forEach((escenario) => {
@@ -49,10 +60,11 @@ describe("indexación · la tasa", () => {
     const u = { ...U(), deu: [{ id: "d", n: "Crédito", mt: 500e6, pg: 3e6, tp: "Hipoteca" }] };
     const r = proyectarFuturo10(u, { indexacionPct: 10 });
     const sinIdx = proyectarFuturo10(u, { indexacionPct: 0 });
-    // La diferencia de gastos entre 10 % y 0 % es solo la de los gastos (72 M), no la de la cuota.
-    expect(r.filas[3].gastos - sinIdx.filas[3].gastos).toBeCloseTo(72e6 * (1.1 ** 2 - 1), 0);
-    expect(sinIdx.filas[3].gastos - 72e6).toBeCloseTo(36e6, 0); // la cuota (3 M al mes) sí está y no sube
+    // Indexación 0 % en Normales: los gastos suben con la inflación (4 %), no se quedan en 0.
+    // La diferencia es solo la de los gastos (72 M), no la de la cuota (fija).
     expect(r.filas[3].gastos - 72e6 * 1.1 ** 2).toBeCloseTo(36e6, 0);
+    expect(sinIdx.filas[3].gastos - 72e6 * 1.04 ** 2).toBeCloseTo(36e6, 0);
+    expect(r.filas[3].gastos - sinIdx.filas[3].gastos).toBeCloseTo(72e6 * (1.1 ** 2 - 1.04 ** 2), 0);
   });
 });
 
@@ -95,11 +107,11 @@ describe("indexación · pesos de hoy con la inflación de cada escenario", () =
   });
   it("caso de referencia (barra de prod 1.096.083.951 en 2035): cifras con indexación 5 %", () => {
     expect(patrimonioFinalHoy(proyectarFuturo10(U(), REF))).toBeCloseTo(1055431843, -1);
-    expect(patrimonioFinalHoy(proyectarFuturo10(U(), { ...REF, escenario: "pesimista" }))).toBeCloseTo(875134580, -1);
+    expect(patrimonioFinalHoy(proyectarFuturo10(U(), { ...REF, escenario: "pesimista" }))).toBeCloseTo(843253686, -1);
     expect(patrimonioFinalHoy(proyectarFuturo10(U(), { ...REF, escenario: "optimista" }))).toBeCloseTo(1167818840, -1);
   });
-  it("con indexación 0 % el caso de referencia da 960.838.660", () => {
-    expect(patrimonioFinalHoy(proyectarFuturo10(U(), { ...REF, indexacionPct: 0 }))).toBeCloseTo(960838660, -1);
+  it("con indexación 0 % el caso de referencia da 829.597.355 (los gastos suben con la inflación 4 %)", () => {
+    expect(patrimonioFinalHoy(proyectarFuturo10(U(), { ...REF, indexacionPct: 0 }))).toBeCloseTo(829597355, -1);
   });
 });
 
@@ -111,8 +123,32 @@ describe("indexación · el campo en Supuestos", () => {
     const html = renderToString(createElement(MiFuturo10, { user: U(), guardado: { borrador: { escenario: "base" } }, pasoInicial: 0 }));
     expect(html).toContain('data-testid="f10-indexacion"');
     expect(html).toContain("¿Cuánto suben al año tus ingresos y gastos? (%)");
-    expect(html).toMatch(/Ingresos y gastos \(suben al año\)/);
+    expect(html).toMatch(/Ingresos \(suben al año\)/);
+    expect(html).toMatch(/Gastos \(suben al año\)/);
     const html2 = renderToString(createElement(MiFuturo10, { user: U(), guardado: { borrador: { escenario: "base", indexacionPct: 7 } }, pasoInicial: 0 }));
     expect(html2).toMatch(/7(,0)?\s?%\s?al año/);
+  });
+});
+
+describe("indexación · gastos en pesos de hoy no bajan (Finanzas)", () => {
+  // En cada escenario, los gastos (recurrentes) en pesos de hoy no pueden bajar
+  // de un año al siguiente: se indexan a max(indexación editable, inflación).
+  // Un gasto puntual que empieza o termina sí puede mover el total; este test
+  // usa solo los gastos de hoy, que corren todos los años.
+  it("en todo escenario, los gastos en pesos de hoy no bajan de un año al siguiente", () => {
+    ["base", "pesimista", "optimista"].forEach((escenario) => {
+      for (const indexacionPct of [0, 3, 5, 8]) {
+        const r = proyectarFuturo10(U(), { escenario, indexacionPct });
+        const reales = r.filas.slice(1).map((f) => f.gastosReal);
+        for (let i = 1; i < reales.length; i++) {
+          expect(reales[i], `${escenario} indexación ${indexacionPct} año ${r.filas[i + 1].anio}`).toBeGreaterThanOrEqual(reales[i - 1] - 1);
+        }
+      }
+      const rDef = proyectarFuturo10(U(), { escenario });
+      const reales = rDef.filas.slice(1).map((f) => f.gastosReal);
+      for (let i = 1; i < reales.length; i++) {
+        expect(reales[i], `${escenario} default año ${rDef.filas[i + 1].anio}`).toBeGreaterThanOrEqual(reales[i - 1] - 1);
+      }
+    });
   });
 });
