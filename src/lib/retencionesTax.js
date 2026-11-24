@@ -37,6 +37,7 @@
 //   - aplicaJur: si aplica para owner jurídica
 //   - aplicaNat: si aplica para owner persona natural (algunas son distintas)
 import { totalAnualItem } from "./flowHelpers.js";
+import { trmUsable } from "./trm.js";
 
 export const RETENCIONES_DEFAULT = {
   // ── Rendimientos financieros (Art. 395 ET) ──────────────────────────────
@@ -174,11 +175,18 @@ export const RETENCIONES_DEFAULT = {
  * @returns {object} { anual: number, tasa: number, fuente: string }
  *   fuente: 'override_item' | 'override_disabled' | 'default_table' | 'default_25' | 'no_aplica'
  */
-export function calcularRetencionIngreso(ing, ownerType = "natural", trm = 4200) {
+export function calcularRetencionIngreso(ing, ownerType = "natural", trm = null) {
   // 27-sep-2026 — la base es el ingreso ANUAL del item; mensual * 12 la inflaba
   // en un ingreso de medio ano y la dejaba en cero en un variable.
-  const m = totalAnualItem(ing) * (ing.moneda === "USD" ? trm : 1);
+  // 23-nov-2026 — sin TRM real (null, 0 o TRM_PROVISIONAL) un ingreso en
+  // USD no se convierte: retención 0 y fuente "pendiente_tasa". Nunca la provisional.
   const cfg = ing.retencionConfig || {};
+  const esUSD = String(ing?.moneda || "").trim().toUpperCase() === "USD";
+  const tasaUSD = esUSD ? trmUsable(trm) : 1;
+  if (esUSD && tasaUSD == null && cfg.aplica !== false) {
+    return { anual: 0, tasa: 0, fuente: "pendiente_tasa", pendienteTasa: true };
+  }
+  const m = totalAnualItem(ing) * (esUSD ? tasaUSD : 1);
 
   // Override 1: user marcó explícitamente "no aplica"
   if (cfg.aplica === false) {
@@ -224,7 +232,7 @@ export function calcularRetencionIngreso(ing, ownerType = "natural", trm = 4200)
  *   estimacionAutomatica: number  // siempre incluido para mostrar comparación
  * }
  */
-export function calcularRetencionOwner(ingresos, owner, trm = 4200) {
+export function calcularRetencionOwner(ingresos, owner, trm = null) {
   const ownerType = owner?.type || "natural";
 
   // Calcular estimación automática (siempre, aunque haya override)
@@ -236,9 +244,11 @@ export function calcularRetencionOwner(ingresos, owner, trm = 4200) {
       anual: r.anual,
       tasa: r.tasa,
       fuente: r.fuente,
+      ...(r.pendienteTasa ? { pendienteTasa: true } : {}),
     };
   });
   const estimacionAutomatica = detallePorIngreso.reduce((s, d) => s + d.anual, 0);
+  const pendienteTasa = detallePorIngreso.some((d) => d.pendienteTasa);
 
   // Override global del owner: pisa la estimación
   const override = Number(owner?.descuentosTributarios?.retencionesEsperadasAnual);
@@ -248,6 +258,7 @@ export function calcularRetencionOwner(ingresos, owner, trm = 4200) {
       fuente: "override_global",
       detallePorIngreso,
       estimacionAutomatica,
+      pendienteTasa,
     };
   }
 
@@ -256,6 +267,7 @@ export function calcularRetencionOwner(ingresos, owner, trm = 4200) {
     fuente: "estimacion_automatica",
     detallePorIngreso,
     estimacionAutomatica,
+    pendienteTasa,
   };
 }
 

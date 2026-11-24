@@ -29,6 +29,7 @@ import { fmtTasaEs } from "../lib/formato.js";
 import { useState, useRef, useEffect } from "react";
 import { fetchAuth } from "../lib/apiFetch";
 import { montoPromedioMensual, promedioMesActivo } from "../lib/flowHelpers.js";
+import { trmUsable, TEXTO_PENDIENTE_TASA } from "../lib/trm.js";
 
 // Paleta consistente con AgenteTributarioBienvenida (alto contraste)
 const C = {
@@ -75,7 +76,7 @@ const SUGGESTIONS_JURIDICA = [
  * Construye el contexto fiscal del user para inyectar al system prompt.
  * Este string lo lee la IA para personalizar todas sus respuestas.
  */
-function buildTaxContext(user, estimacion, selectedOwner) {
+export function buildTaxContext(user, estimacion, selectedOwner) {
   if (!user || !selectedOwner) return "(sin datos cargados todavía)";
 
   const fm = (n) => "$" + Math.round(n || 0).toLocaleString("es-CO");
@@ -87,8 +88,15 @@ function buildTaxContext(user, estimacion, selectedOwner) {
 
   // Patrimonio aproximado
   const oInv = (user.inv || []).filter((i) => i.owner === selectedOwner.id && i.sim !== false);
-  const patrimonioAprox = oInv.reduce((s, i) => s + (Number(i.va || i.valor || i.ubi || 0) * (i.moneda === "USD" ? (user.trm || 4200) : 1)), 0);
-  if (patrimonioAprox > 0) ctx += `Patrimonio bruto aproximado: ${fm(patrimonioAprox)}\n`;
+  // 23-nov-2026: sin TRM real no se convierte nada en USD (nada de TRM_PROVISIONAL): esos
+  // activos quedan por fuera y el contexto dice «pendiente de tasa».
+  const trm = trmUsable(user.trm);
+  const esUSD = (x) => String(x?.moneda || "").trim().toUpperCase() === "USD";
+  const valorInv = (i) => Number(i.va || i.valor || i.ubi || 0);
+  const usdSinTasa = trm == null && oInv.some((i) => esUSD(i) && valorInv(i) > 0);
+  const patrimonioAprox = oInv.reduce((s, i) => s + (esUSD(i) ? (trm == null ? 0 : valorInv(i) * trm) : valorInv(i)), 0);
+  if (patrimonioAprox > 0) ctx += `Patrimonio bruto aproximado: ${fm(patrimonioAprox)}${usdSinTasa ? ` (sin los activos en USD: ${TEXTO_PENDIENTE_TASA})` : ""}\n`;
+  else if (usdSinTasa) ctx += `Patrimonio bruto aproximado: ${TEXTO_PENDIENTE_TASA} (hay activos en USD y no hay TRM)\n`;
 
   // Ingresos
   const oIng = (user.ingresos || []).filter((i) => i.owner === selectedOwner.id && i.sim !== false);
@@ -119,7 +127,8 @@ function buildTaxContext(user, estimacion, selectedOwner) {
   if (oDeu.length > 0) {
     ctx += `\nDEUDAS:\n`;
     oDeu.forEach((d) => {
-      ctx += `• ${d.nombre || d.fiscalCode}: saldo ${fm(d.saldo || d.s || d.mt)} a ${d.tasaAnual || d.t || d.ts || "?"}% anual\n`;
+      const mon = esUSD(d) ? " USD" : "";
+      ctx += `• ${d.nombre || d.fiscalCode}: saldo ${fm(d.saldo || d.s || d.mt)}${mon} a ${d.tasaAnual || d.t || d.ts || "?"}% anual\n`;
     });
   }
 
