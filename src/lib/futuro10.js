@@ -711,6 +711,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // 19-nov-2026: la renta de un activo puesta dos veces (ingreso futuro
   // vinculado + renta en «Invertir en lo que ya tienes») se cuenta una vez.
   const duplicadas = rentasDuplicadas(cfg, activos);
+  // 24-nov-2026 (Santiago: "la gente podría ingresar en el paso 2 los ingresos que ya puso en el
+  // paso 1… ¿se validan?"). Un ingreso de Lo que viene que sale de un activo cuya renta ya cambiaste
+  // en el paso 1 es esa misma renta: se cuenta una vez, la del paso 1 (salvo que digas que es otra).
+  {
+    const idx = (cfg.futuros?.ingresos || []).map((x, k) => (x && n(x.mensual) > 0 ? k : -1)).filter((k) => k >= 0);
+    const fuera = new Set(idx.filter((k) => { const x = cfg.futuros.ingresos[k]; return x.activoId && cambios[x.activoId] && ![].concat(x.noEsRentaDe || []).includes(x.activoId); }));
+    if (fuera.size) fut.ingresos = fut.ingresos.filter((_, j) => !fuera.has(idx[j]));
+  }
   {
     const fuera = new Set(duplicadas.filter((d) => d.seguro).map((d) => d.k));
     if (fuera.size) {
@@ -932,6 +940,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         if (saco > 0) { falta -= saco; partes.push(tx(`${mmTxt(saco)} de ${nom}`, `${mmTxt(saco)} from ${nom}`)); }
       });
       if (falta > 0.5) retirar(falta);
+      pg.deFuentes = Math.max(0, pg.monto - Math.max(0, falta)); pg.fuentesTxt = partes.join(tx(" y ", " and "));
       a.valor += pg.monto;
       alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? tx(`En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.`, `In ${anioCal(t)} you pay for ${a.nombre}: ${partes.join(" and ")}${falta > 0.5 ? ", and the rest from your cash" : ""}.`) : tx(`En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.`, `In ${anioCal(t)} you pay part of ${a.nombre} with your cash.`) });
     }));
@@ -1150,7 +1159,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
     // Pagos de las compras y construcciones de «Lo que viene», por año (pesos de cada año).
-    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto }))),
+    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto, deFuentes: p.deFuentes || 0, fuentesTxt: p.fuentesTxt || "" }))),
     // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
     // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
     // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
@@ -2029,7 +2038,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     }
     (r.deudas || []).filter((d) => d.pagaAnio === anio && n(d.pagoEnAnio) > 0.5 && !d.pagaEnPlan).forEach((d) => compromisos.push({ nombre: tx(`${d.nombre}: se paga este año`, `${d.nombre}: due this year`), monto: d.pagoEnAnio, tipo: "A" }));
     usos.filter((u) => (u.anio || 1) === anio && u.prDesde != null && u.prDesde < anio).forEach((u) => compromisos.push({ nombre: tx(`Cuota de ${u.nombre} (compra de ${anioCal(u.prDesde)})`, `${u.nombre} installment (bought in ${anioCal(u.prDesde)})`), monto: u.monto, tipo: "C" }));
-    (r.pagosFuturos || []).filter((p) => p.anio === anio).forEach((p) => compromisos.push({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.monto, tipo: "F" }));
+    (r.pagosFuturos || []).filter((p) => p.anio === anio && p.monto - (p.deFuentes || 0) > 0.5).forEach((p) => compromisos.push({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.monto - (p.deFuentes || 0), tipo: "F", nota: p.deFuentes > 0.5 ? tx(`El resto sale de ${p.fuentesTxt}.`, `The rest comes from ${p.fuentesTxt}.`) : null }));
     const comprometido = suma(compromisos);
     // Tus movidas del año. «Plata nueva de afuera» (y hoy, «de mis cuentas») no sale de esta cuenta.
     const movidas = [];

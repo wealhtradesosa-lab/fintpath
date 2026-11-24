@@ -182,3 +182,22 @@ describe("los hitos de Lo que viene caen en su año", () => {
     expect(g1.porInvertir).toBeCloseTo(g1.disponible, 0);
   });
 });
+
+describe("validaciones de Lo que viene", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 900e6 }, { id: "loc", n: "Local Macarena", tp: "Real Estate", va: 1200e6 }, { id: "btg", n: "BTG", tp: "ETF", va: 700e6 }], ingresos: [{ nombre: "Salario", mensual: 40e6, frecuencia: "mensual" }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  it("la renta de un activo que ya cambiaste en el paso 1 y vuelves a poner en Lo que viene se cuenta una vez", () => {
+    const paso1 = { decisiones: { loc: { accion: "cambia", mensual: 8.5e6, desde: 2 } } };
+    const doble = { ...paso1, futuros: { ingresos: [{ nombre: "Renta local", mensual: 8.5e6, desde: 2, activoId: "loc" }] } };
+    const a = proyectarFuturo10(u, paso1), b = proyectarFuturo10(u, doble);
+    expect(b.filas[3].ingresos).toBeCloseTo(a.filas[3].ingresos, -3);
+    const otra = { ...paso1, futuros: { ingresos: [{ nombre: "Parqueadero", mensual: 1e6, desde: 2, activoId: "loc", noEsRentaDe: ["loc"] }] } };
+    expect(proyectarFuturo10(u, otra).filas[3].ingresos).toBeGreaterThan(a.filas[3].ingresos + 11e6);
+  });
+  it("una compra pagada con una inversión elegida no resta de la plata de ese año", () => {
+    const cfg = { futuros: { activos: [{ nombre: "Bodega", clase: "inmueble", valor: 500e6, entrega: 3, fuentes: [{ id: "btg", monto: 500e6 }] }] } };
+    const r = proyectarFuturo10(u, cfg);
+    expect(r.pagosFuturos[0].deFuentes).toBeCloseTo(500e6, -3);
+    const g3 = cuentaPorAnio(r, cfg).find((g) => g.anio === 3);
+    expect(g3.compromisos.some((c) => /Bodega/.test(c.nombre))).toBe(false);
+  });
+});

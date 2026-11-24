@@ -195,7 +195,7 @@ describe("tarjeta del escenario", () => {
     expect(con[2].gastoFuturo).toBeGreaterThan(0); // la maestría arranca en el año 2
     expect(con[2].patrimonio).toBeLessThan(sin[2].patrimonio);
     // La casa se paga en el año 4: ese año sale la plata (la casa entra como activo).
-    expect(rPlan.pagosFuturos).toEqual([{ nombre: "Casa", anio: 4, monto: 300e6 }]);
+    expect(rPlan.pagosFuturos).toEqual([{ nombre: "Casa", anio: 4, monto: 300e6, deFuentes: 0, fuentesTxt: "" }]); // sin una inversión elegida, todo sale de la plata del año
     const casa = proyectarFuturo10(uVenta, { futuros: { ...futuros, gastos: [] } }).filas;
     [1, 2, 3].forEach((t) => expect(casa[t].liquidez).toBeCloseTo(sin[t].liquidez, 0)); // antes de 2029 nada
     expect(sin[4].liquidez - casa[4].liquidez).toBeGreaterThan(50e6); // en 2029 sale la plata
