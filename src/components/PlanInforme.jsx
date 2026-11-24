@@ -120,7 +120,9 @@ function seriesPatrimonio(filas, base, max = 9) {
   return ids.map((id) => ({ id, nombre: nombre[id], color: color[id] || libres.shift() || INF.gris }));
 }
 
-export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct(), modoInicial = "nominal" }) {
+export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct: infProp = inflacionDefaultPct(), modoInicial = "nominal" }) {
+  // 24-nov-2026 (indexación): «pesos de hoy» y la línea de inflación usan la tasa de pesos de hoy del resultado (una sola en todos los escenarios).
+  const inflacionPct = r && r.escenario ? inflacionDe(r) : infProp;
   const [modo, setModo] = useState(modoInicial); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
   const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala

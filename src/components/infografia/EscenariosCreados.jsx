@@ -47,7 +47,9 @@ export const AVISO_CALCULO_HASTA = "2026-12-31";
 // Fecha del día en Colombia (no UTC): el aviso se ve todo el 31-dic hora Colombia.
 export const fechaBogota = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && fechaBogota(hoy) <= hasta;
-export const avisoCalculo = () => tx("Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.", "We adjusted the math: your savings no longer count as returns and the figure is now in today's pesos, so it may look lower.");
+// 24-nov-2026 (indexación): el aviso cuenta también que lo que escribes va en pesos de hoy
+// y el plan lo lleva a su año con la inflación (Finanzas).
+export const avisoCalculo = () => tx("Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento, la cifra sale en pesos de hoy y lo que escribes para años siguientes (compras, aportes, gastos) sube con la inflación hasta su año. Por eso puede verse distinta.", "We adjusted the math: your savings no longer count as returns, the figure is in today's pesos, and what you enter for later years (purchases, contributions, expenses) grows with inflation until its year. That's why it may look different.");
 // 23-nov-2026: el aviso sale también arriba de la barra del creador (Soporte),
 // no solo en Escenarios creados. Un solo componente para los dos lugares.
 export const AvisoCalculo = ({ testId = "f10-aviso-calculo", style }) => (mostrarAvisoCalculo()
@@ -108,7 +110,8 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
   const creados = (planes || []).filter((p) => p.id);
   const mHoy = hoy ? medir(hoy.r) : null;
   const infTxt = (v) => String(Math.round(Number(v) * 10) / 10).replace(".", esUS() ? "." : ",");
-  const infHdr = infTxt(inflacionPct != null ? inflacionPct : (mHoy ? mHoy.inflacionPct : (creados[0] ? inflacionDe(creados[0].r) : inflacionDe(null))));
+  // 24-nov-2026 (indexación): «pesos de hoy» usa una sola tasa en todos los escenarios; manda la del resultado.
+  const infHdr = infTxt(mHoy ? mHoy.inflacionPct : creados[0] ? inflacionDe(creados[0].r) : inflacionPct != null ? inflacionPct : inflacionDe(null));
 
   if (!creados.length) {
     return (

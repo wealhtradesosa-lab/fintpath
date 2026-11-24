@@ -106,7 +106,9 @@ function Reparto({ m }) {
 
 export default function PlanComparador({ planes, inflacionPct = inflacionDefaultPct(), onVer, onRecomendar, onEditar, onBorrar, onGuardarBorrador, onDescartarBorrador }) {
   const [modo, setModo] = useState("nominal");
-  const m = useMemo(() => planes.map((p, i) => ({ ...p, color: p.esHoy ? INF.gris : INF.serie[i % INF.serie.length], k: "p" + i, med: medir(p.r, inflacionPct) })), [planes, inflacionPct]);
+  // 24-nov-2026 (indexación): el rótulo de «pesos de hoy» lleva la tasa de pesos de hoy de los resultados.
+  const infHoy = (planes || []).find((p) => p.r && p.r.escenario) ? inflacionDe(planes.find((p) => p.r && p.r.escenario).r) : inflacionPct;
+  const m = useMemo(() => planes.map((p, i) => ({ ...p, color: p.esHoy ? INF.gris : INF.serie[i % INF.serie.length], k: "p" + i, med: medir(p.r, p.r && p.r.escenario ? inflacionDe(p.r) : inflacionPct) })), [planes, inflacionPct]);
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
   const curvas = (m[0]?.r.filas || []).map((_, i) => { const row = { anio: anioTxt(i) }; m.forEach((p) => { const f = p.r.filas[i]; if (f) row[p.k] = f.patrimonio / d(f); }); return row; });
   const orden = [...m].sort((a, b) => b.med.fin.patrimonio - a.med.fin.patrimonio);
@@ -149,7 +151,7 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
       <div style={card}>
         <h3 style={h3}>{tx("El patrimonio en el tiempo, escenario por escenario", "Net worth over time, scenario by scenario")}</h3>
         <p style={lead}>{tx("Patrimonio neto año a año. Todos parten del mismo punto: lo que tienes hoy. La línea gris es seguir como vas, sin cambiar nada.", "Net worth year by year. All start from the same point: what you own today. The gray line is staying the course, changing nothing.")}</p>
-        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>{[["nominal", tx(`${monedas().charAt(0).toUpperCase() + monedas().slice(1)} de cada año`, `Each year's ${monedas()}`)], ["real", tx(`En ${monedas()} de hoy (inflación ${fmPct(inflacionPct, 1)})`, `In today's ${monedas()} (inflation ${fmPct(inflacionPct, 1)})`)]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}</div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>{[["nominal", tx(`${monedas().charAt(0).toUpperCase() + monedas().slice(1)} de cada año`, `Each year's ${monedas()}`)], ["real", tx(`En ${monedas()} de hoy (inflación ${fmPct(infHoy, 1)})`, `In today's ${monedas()} (inflation ${fmPct(infHoy, 1)})`)]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}</div>
         <div style={{ overflowX: "auto" }}><div style={{ minWidth: 560 }}><ResponsiveContainer width="100%" height={340}>
           <LineChart data={curvas} margin={{ top: 10, right: 150, left: 6, bottom: 0 }}>
             <CartesianGrid {...grid} />

@@ -110,8 +110,22 @@ export function resolverEscenario(clave = "base", user = {}, sup = supuestosF10(
   const e = sup.escenarios[clave] || sup.escenarios.base;
   const infUser = user.inflacionPct != null && user.inflacionPct !== "" ? n(user.inflacionPct) : (sup.inflacionDefaultPct ?? INFLACION_DEFAULT_PCT);
   const inflacionPct = e.inflacionPct == null ? infUser : e.inflacionPct;
-  return { ...e, clave, inflacionPct };
+  return { ...e, clave, inflacionPct, inflacionHoyPct: infUser };
 }
+
+// 24-nov-2026 — Indexación (Finanzas, modelo de dos tasas):
+//  · Tasa del escenario (esc.inflacionPct: Prudentes 6 %, Normales 4 %, Favorables 3 %):
+//    con ella el plan lleva al año que toca cada monto que escribes (costo, anticipo,
+//    aportes de años siguientes, ingresos y gastos futuros) y crecen ingresos y gastos.
+//  · Tasa de «pesos de hoy» (esc.inflacionHoyPct): UNA sola para toda la app, la de
+//    Normales (tu inflación o INFLACION_DEFAULT_PCT = 4 %). Con ella se deflacta el
+//    resultado en todos los escenarios, para que «pesos de hoy» signifique lo mismo
+//    en Prudentes, Normales y Favorables.
+//  · Todo monto que escribes está en pesos de hoy. El año 1 es el año en curso: va
+//    sin indexar; el año t se multiplica por (1+inflación del escenario)^(t−1), igual
+//    que el sueldo y los gastos. Los % que escribes son nominales, tal cual.
+/** Factor que lleva un monto en pesos de hoy al año t del plan (año 1 = hoy). */
+export const indexarAlAnio = (inflacionPct, t) => Math.pow(1 + n(inflacionPct) / 100, Math.max(0, n(t) - 1));
 
 /** Retorno total NOMINAL anual (%) de un preset bajo un escenario. Fisher: (1+i)(1+r)−1. */
 export function retornoNominalPreset(clave, esc, sup = supuestosF10(), override = {}) {
@@ -153,6 +167,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const esc = resolverEscenario(cfg.escenario || "base", user, sup);
   const N = n(cfg.anios) || sup.anios;
   const inf = esc.inflacionPct / 100;
+  // Dos tasas: `inf` proyecta e indexa; `infHoy` lleva a pesos de hoy.
+  const infHoy = n(esc.inflacionHoyPct ?? esc.inflacionPct) / 100;
+  const ix = (t) => Math.pow(1 + inf, Math.max(0, t - 1));
   const gIng = (1 + inf) * (1 + esc.ingresosSpread / 100) - 1;
   const gGas = (1 + inf) * (1 + esc.gastosSpread / 100) - 1;
   // Sin impuestos: se omiten impuestoNeto y retencionMensual.
@@ -530,7 +547,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     nuevasTotal += valor0;
     nuevas.push({ id: p.id, nombre: p.nombre, clase: "inmueble", valor: valor0, crec: p.crec, entrega: p.entrega, pagos, saltos: p.valorAlTerminar > 0 ? [{ t: p.entrega, valor: p.valorAlTerminar }] : [], rentaNuevaAnual: p.renta * 12, rentaDesdeMes: 12 * (Math.max(1, p.entrega) - 1), usd: false, invertible: true, montoInicial: valor0, montoTotal: p.capital, anioInicio: p.anio, propiedadRaiz: p.tipo });
   });
-  // Aportes a lo creado en el plan: entran ese año a la inversión (pesos de ese año) y salen
+  // Aportes a lo creado en el plan: entran ese año a la inversión (escritos en pesos de hoy, indexados al año) y salen
   // del saldo del año. La inversión sigue rindiendo igual y te paga en la misma proporción.
   aportesNuevas.forEach((x) => {
     const nu = nuevas.find((y) => y.id === x.id && !y.propiedadRaiz && y.clase !== "ciclo");
@@ -780,7 +797,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     retirosNuevas.forEach((x) => {
       if (x.anio !== t) return;
       const a = todos.find((y) => y.id === x.id); if (!a || !(a.valor > 0.5)) return;
-      const m = x.monto == null ? a.valor : Math.min(a.valor, x.monto);
+      const m = x.monto == null ? a.valor : Math.min(a.valor, x.monto * ix(t));
       Object.keys(canasta).forEach((k) => { canasta[k] += m * mezcla[k] / 100; });
       a.valor -= m;
       liberados.push({ id: a.id + "_retiro", nombre: a.nombre, anio: t, monto: m, parcial: a.valor > 0.5 });
@@ -789,10 +806,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // 0) inversiones personalizadas: al inicio del año X pasan de tu liquidez/bolsa al activo nuevo.
     personalizadas.forEach((c) => {
       if (c.anio !== t) return;
-      if (c.holder) { const usa = Math.min(c.holder.valor, c.monto); c.holder.valor -= usa; if (c.monto - usa > 0.5) retirar(c.monto - usa); colchon += Math.max(0, c.holder.valor); c.holder.valor = 0; }
-      else retirar(c.monto);
+      const M = c.monto * ix(t); // pesos de hoy → pesos de ese año
+      if (c.holder) { const usa = Math.min(c.holder.valor, M); c.holder.valor -= usa; if (M - usa > 0.5) retirar(M - usa); colchon += Math.max(0, c.holder.valor); c.holder.valor = 0; }
+      else retirar(M);
       // «Paga renta»: el valor sigue la inflación y el resto del rendimiento va al flujo.
-      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, aportesFuturos: c.aportesFuturos });
+      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: M, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, aportesFuturos: c.aportesFuturos });
     });
     // 0b) negocios que se repiten: arrancan (sale el capital) o terminan (vuelve).
     todos.forEach((a) => {
@@ -832,7 +850,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // patrimonio se cuenta al cierre de cada año y se lleva a pesos de hoy dividiendo
     // por (1+inflación)^t. Por eso el ahorro del año 1 (10 M) vale 10/1,05 ≈ 9,52 M de
     // hoy al cierre del año 1: no es doble deflación, es que se ahorra en pesos de 2026
-    // y se mide al cierre. Los flujos de «Lo que viene» sí se indexan a (1+inflación)^t.
+    // y se mide al cierre. 24-nov-2026 (indexación): «Lo que viene» y las rentas nuevas
+    // siguen la misma convención que el sueldo: año 1 sin indexar, año t × (1+inflación)^(t−1).
+    // Antes iban a (1+inflación)^t y el año 1 ya salía un 4 % más alto que lo que escribiste.
     if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; pasivo *= 1 + gIng; }
     ingSeVan.filter((x) => x.desde === t).forEach((x) => { const v = x.mensual * 12 * Math.pow(1 + gIng, t - 1); ingresos = Math.max(0, ingresos - v); if (x.pasivo) pasivo = Math.max(0, pasivo - v); });
     if (t > 1) activos.forEach((a) => aplicarCambio(a, t));
@@ -844,14 +864,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     });
     // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
     const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
-    const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
+    const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * ix(t) : 0), 0);
     // 23-nov-2026: lo que llega de «Lo que viene» sin un activo detrás (pensión, sueldo nuevo) es ingreso, no rendimiento.
-    const ingFuturoSinActivo = fut.ingresos.reduce((s, x) => s + (!x.activoId && t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
+    const ingFuturoSinActivo = fut.ingresos.reduce((s, x) => s + (!x.activoId && t >= x.desde && t <= x.hasta ? x.mensual * 12 * ix(t) : 0), 0);
     // Renta nueva por meses: si arranca en el mes 7, el año 1 recibe 6 de 12 meses.
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
-    const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0)
-      + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0), 0);
-    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * Math.pow(1 + inf, t) : 0), 0)
+    const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ix(t) : 0)
+      + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ix(t), 0), 0);
+    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * ix(t) : 0), 0)
       - seVan.reduce((sm, g) => sm + (t >= g.desde ? g.mensual * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, deuda) : 0;
     deuda = Math.max(0, deuda - cuota);
@@ -914,9 +934,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // fuente no alcance y el % que no se asigne salen de la liquidez.
     todos.forEach((a) => (a.pagos || []).forEach((pg) => {
       if (pg.anio !== t || pg.monto <= 0) return;
-      let falta = pg.monto; const partes = [];
+      const pm = pg.monto * ix(t); // el pago se escribe en pesos de hoy
+      let falta = pm; const partes = [];
       (a.fuentesPago || []).forEach((fp) => {
-        const quiero = pg.monto * fp.pct / 100; let saco = 0, nom = "";
+        const quiero = pm * fp.pct / 100; let saco = 0, nom = "";
         if (fp.id === "c_crecimiento" || fp.id === "c_renta") { const k = fp.id.slice(2); saco = Math.min(Math.max(0, canasta[k]), quiero); canasta[k] -= saco; nom = tx("lo que sobra reinvertido", "the reinvested surplus"); }
         else { const src = todos.find((y) => y.id === fp.id); if (src) {
           const antes = Math.max(0, src.valor);
@@ -932,26 +953,27 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         if (saco > 0) { falta -= saco; partes.push(tx(`${mmTxt(saco)} de ${nom}`, `${mmTxt(saco)} from ${nom}`)); }
       });
       if (falta > 0.5) retirar(falta);
-      a.valor += pg.monto;
+      a.valor += pm;
       alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? tx(`En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.`, `In ${anioCal(t)} you pay for ${a.nombre}: ${partes.join(" and ")}${falta > 0.5 ? ", and the rest from your cash" : ""}.`) : tx(`En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.`, `In ${anioCal(t)} you pay part of ${a.nombre} with your cash.`) });
     }));
-    // Inversión adicional (pesos de ese año): pasa de tu liquidez al activo. No cambia el patrimonio.
+    // Inversión adicional (se escribe en pesos de hoy; entra indexada al año): pasa de tu liquidez al activo. No cambia el patrimonio.
     todos.forEach((a) => {
       (a.aportesFuturos || []).forEach((x) => {
         if (x.anio !== t) return;
+        const xm = x.monto * ix(t); // aporte escrito en pesos de hoy
         if (x.apartado != null) {
           // Lo apartado de las ventas entra ahora; lo que falte, de tu liquidez.
-          const usa = Math.min(a.reserva || 0, x.monto);
+          const usa = Math.min(a.reserva || 0, xm);
           a.reserva = (a.reserva || 0) - usa;
-          if (x.monto - usa > 0.5) retirar(x.monto - usa);
-        } else if (!x.nuevo) retirar(x.monto);
-        a.valor += x.monto;
+          if (xm - usa > 0.5) retirar(xm - usa);
+        } else if (!x.nuevo) retirar(xm);
+        a.valor += xm;
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
         // lo apartado entra al activo; lo que rindió mientras tanto vuelve al colchón
         if (a.reserva > 0) { a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
-        if (a.invMonto > 0) { retirar(a.invMonto); a.valor += a.invMonto; }
+        if (a.invMonto > 0) { const im = a.invMonto * ix(t); retirar(im); a.valor += im; }
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       }
     });
@@ -959,13 +981,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // (Santiago: "hay activos que se valorizan al momento de la construcción
     // de forma muy alta y después cada año"). Desde ahí sigue su % anual.
     todos.forEach((a) => (a.saltos || []).forEach((sx) => {
-      if (sx.t !== t || !(sx.valor > a.valor)) return;
-      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: tx(`En ${anioCal(t)} ${a.nombre} queda valiendo ${mmTxt(sx.valor)} al terminar.`, `In ${anioCal(t)} ${a.nombre} is worth ${mmTxt(sx.valor)} once finished.`) });
-      a.valor = sx.valor;
+      const sv = sx.valor * ix(t); // «¿Cuánto vale cuando está lista?» en pesos de hoy
+      if (sx.t !== t || !(sv > a.valor)) return;
+      alertas.push({ tipo: "valorizacion_obra", anio: t, texto: tx(`En ${anioCal(t)} ${a.nombre} queda valiendo ${mmTxt(sv)} al terminar.`, `In ${anioCal(t)} ${a.nombre} is worth ${mmTxt(sv)} once finished.`) });
+      a.valor = sv;
     }));
     if (canasta.crecimiento > 0) expUSD = true;
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
-    const deflactor = Math.pow(1 + inf, t);
+    const deflactor = Math.pow(1 + infHoy, t);
     const activosT = valorTotal();
     const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
@@ -974,7 +997,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // gastos de ese año"). Lo que sale, partido por año (suma exacta f.gastos):
     // gastos de Egresos, gastos futuros que corren, los que ya no se pagan y cuotas.
     f.cuota = cuota; f.gastosBase = gastos;
-    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * Math.pow(1 + inf, t) }));
+    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * ix(t) }));
     f.gastosQueSeVan = seVan.filter((g) => t >= g.desde).map((g) => ({ nombre: g.nombre, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1) }));
     // 20-nov-2026 (Santiago: "¿por qué 2026 detalla más los ingresos y gastos
     // que los otros años?"). Partida por partida en cada año: cada gasto de
@@ -994,7 +1017,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.porActivo = [
       ...todos.map((a) => {
         const rentaBase = a.rentaReemplazada ? 0 : (a.rentaAnual || 0) * fr;
-        const rentaExtra = (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0) + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0) + (a.rentaPct ? a.valor / (1 + (a.crec || 0)) * a.rentaPct : 0);
+        const rentaExtra = (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ix(t) : 0) + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ix(t), 0) + (a.rentaPct ? a.valor / (1 + (a.crec || 0)) * a.rentaPct : 0);
         const cg = a.ciclo ? a.cicloG || 0 : 0;
         // rentaNueva (23-nov-2026): la parte de la renta que crea el plan (renta nueva, aportes
         // con renta, «de lo que rinde, cuánto te llega» y la renta que cambias en el paso 1 desde
@@ -1012,7 +1035,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.rentasSueltas = [
       ...ingresosHoy.filter((x) => x.pasivo && !(x.activoId && (bOp.rentaNetaPorActivo || {})[x.activoId] != null) && !ingSeVan.some((y) => y.key === x.key && y.desde <= t))
         .map((x) => ({ id: "ing_" + x.key, nombre: x.nombre, clase: "ingreso", valor: 0, renta: x.mensual * 12 * Math.pow(1 + gIng, t - 1), crece: 0 })),
-      ...fut.ingresos.map((x, k) => ({ id: "fut_" + k, nombre: x.nombre, clase: "ingreso", valor: 0, renta: t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0, crece: 0 })),
+      ...fut.ingresos.map((x, k) => ({ id: "fut_" + k, nombre: x.nombre, clase: "ingreso", valor: 0, renta: t >= x.desde && t <= x.hasta ? x.mensual * 12 * ix(t) : 0, crece: 0 })),
     ].filter((x) => x.renta > 0.5);
     f.patrimonio = activosT - deuda - deudaUnica;
     f.patrimonioReal = f.patrimonio / deflactor;
@@ -1071,6 +1094,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   })();
   // Cómo queda repartida la plata al final, inversión por inversión.
   const defl = fin.deflactor || 1;
+  // 24-nov-2026 (indexación): `monto` es lo que escribiste (pesos de hoy); `montoAnio`, lo que
+  // sale ese año en pesos de ese año (lo que usa la cuenta año por año, que va en pesos de cada año).
+  const conMontoAnio = (u) => ({ ...u, montoAnio: u.anio > 1 ? n(u.monto) * ix(u.anio) : n(u.monto) });
   const repartoFinal = [
     ...todos.filter((a) => Math.abs(a.valor) > 0.5).map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor, valorReal: a.valor / defl })),
     ...[["colchon", tx("Colchón de liquidez", "Cash cushion"), colchon], ["liquidez", tx("Canasta liquidez", "Cash bucket"), canasta.liquidez], ["renta", tx("Canasta renta", "Income bucket"), canasta.renta], ["crecimiento", tx("Canasta crecimiento", "Growth bucket"), canasta.crecimiento]]
@@ -1078,7 +1104,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.filter((c) => !c.holder).map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez" })), ...ciclos.filter((c) => c.desde > 1 && !c._apartado).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))], excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, capitalNuevoHoy, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
+    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.filter((c) => !c.holder).map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez" })), ...ciclos.filter((c) => c.desde > 1 && !c._apartado).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))].map(conMontoAnio), excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, capitalNuevoHoy, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
@@ -1141,8 +1167,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         // 23-nov-2026: lo que sale ese año para pagarla (para la cuenta año por año).
         pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
-    // Pagos de las compras y construcciones de «Lo que viene», por año (pesos de cada año).
-    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto }))),
+    // Pagos de las compras y construcciones de «Lo que viene», por año (como los escribiste: pesos de hoy).
+    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto, montoAnio: p.monto * ix(p.anio) }))),
     // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
     // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
     // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
@@ -1223,7 +1249,7 @@ export function leerPersonalizada(x = {}, esc, sup = supuestosF10()) {
  * «Lo que viene». ingresos: [{nombre, mensual (pesos de hoy), desde, hasta?, titular?}]
  * activos: [{nombre, clase: "inmueble"|"otro", valor, cuotaInicial, anioCuota, entrega,
  *            pagos?:[{monto, anio}], rentaMensual (pesos de hoy), rentaDesde, valorizacionNomPct}]
- * Pagos en pesos de cada año. Si no hay `pagos`, se arma: cuota inicial en su año y el resto en la entrega.
+ * Pagos en pesos de hoy (el plan los lleva al año con la inflación del escenario). Si no hay `pagos`, se arma: cuota inicial en su año y el resto en la entrega.
  */
 export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
   const inf = esc.inflacionPct / 100;
@@ -1939,9 +1965,9 @@ export function cuentaPorAnio(r, cfg = {}) {
     const flujo = flujoDe(anio);
     const llegan = lib.filter((l) => l.anio === anio);
     const salen = [
-      ...prog.filter((u) => u.anio === anio).map((u) => ({ nombre: u.seccion === "B" ? `${etq.B} ${u.nombre}` : u.nombre, monto: u.monto, tipo: u.seccion === "B" ? "B" : "C" })),
+      ...prog.filter((u) => u.anio === anio).map((u) => ({ nombre: u.seccion === "B" ? `${etq.B} ${u.nombre}` : u.nombre, monto: u.montoAnio ?? u.monto, montoHoy: u.monto, tipo: u.seccion === "B" ? "B" : "C" })),
       ...(r.deudas || []).filter((d) => d.pagaAnio === anio && d.pagoEnAnio > 0.5).map((d) => ({ nombre: tx(`Pagas ${d.nombre}`, `Pay off ${d.nombre}`), monto: d.pagoEnAnio, tipo: "A" })),
-      ...(r.pagosFuturos || []).filter((p) => p.anio === anio).map((p) => ({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.monto, tipo: "F" })),
+      ...(r.pagosFuturos || []).filter((p) => p.anio === anio).map((p) => ({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.montoAnio ?? p.monto, montoHoy: p.monto, tipo: "F" })),
     ];
     const llega = llegan.reduce((sm, l) => sm + l.monto, 0), sale = salen.reduce((sm, u) => sm + u.monto, 0);
     const antes = arrastre, disponible = antes + flujoHoy + flujo + llega, saldo = disponible - sale;
@@ -1970,9 +1996,10 @@ export function cuentaPorAnio(r, cfg = {}) {
 // motor proyecta (INFLACION_DEFAULT_PCT), para no volver a ver 4 % contra 5 %.
 export const INFLACION_PESOS_HOY_PCT = INFLACION_DEFAULT_PCT;
 
-/** Inflación (%) con la que el escenario pasa a pesos de hoy. */
+/** Inflación (%) con la que el resultado pasa a pesos de hoy: la misma en todos los escenarios (indexación, 24-nov-2026). */
 export const inflacionDe = (r) => {
-  const v = r && r.escenario ? r.escenario.inflacionPct : null;
+  const e = r && r.escenario;
+  const v = e ? (e.inflacionHoyPct != null ? e.inflacionHoyPct : e.inflacionPct) : null;
   return v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : INFLACION_PESOS_HOY_PCT;
 };
 
