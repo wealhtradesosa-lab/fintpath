@@ -26,6 +26,7 @@
 // Al hacerlas dinámicas, solo las baja quien realmente aprieta "Exportar".
 import { generarBorradorF110, SECCIONES_F110 } from "./borradorDeclaracion.js";
 import { generarBorradorF210, SECCIONES_F210 } from "./borradorDeclaracionF210.js";
+import { selloTrmCierre, hayUSDEn } from "./patrimonioPantalla.js";
 
 // Helpers de formato
 const fm = (v) => "$" + Math.round(Number(v) || 0).toLocaleString("es-CO");
@@ -137,6 +138,10 @@ export async function exportarBorradorPDF(user, owner, estimacion, ano = 2025) {
   if (owner.nit) { doc.text(`NIT/Cédula: ${owner.nit}`, M, y); y += 5; }
   if (isJuridica && owner.regimen) { doc.text(`Régimen: ${owner.regimen}`, M, y); y += 5; }
   doc.text(`Generado: ${fmDate()}`, M, y);
+  y += 5;
+  // 24-nov-2026 — Sello de la tasa: el borrador usa la TRM del 31-dic del año
+  // gravable (Art. 269 ET), no la de hoy. Si falta: «pendiente de tasa».
+  doc.text(selloTrmCierre(user, ano, hayUSDEn(user?.inv, user?.deu, user?.ingresos, user?.ibk, user?.gas)), M, y);
   y += 10;
 
   // ── RESUMEN EJECUTIVO ───────────────────────────────────────────────────

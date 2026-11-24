@@ -21,6 +21,8 @@ import { exportInversionesExcel } from "../lib/excelExport.js";
 import { exportPatrimonioPDF } from "../lib/pdfSectionExport.js";
 import { useRole, guardEdit } from "../lib/RoleContext.jsx";
 import { vaCOP, vcCOP, totalAnualItem, montoPromedioMensual } from "../lib/flowHelpers.js";
+import { trmUsable, TEXTO_PENDIENTE_TASA } from "../lib/trm.js";
+import { resumenPatrimonioPantalla, etiquetaTrmHoy, LINEA_TRM_DECLARACION, NOTA_PATRIMONIO_PENDIENTE_TASA, montoCOPSuma, esUSD, usdTxt } from "../lib/patrimonioPantalla.js";
 import { gastosDelUsuario, columnasPortafolio, estiloEncabezadoGrupo, estiloTablaPortafolio, estiloSeccionPortafolio, estiloFilaPortafolio, estiloCeldaCompleta, deudasSinActivo, ANCHO_ANGOSTO } from "../lib/patrimonioUI.js";
 
 const T = {
@@ -84,14 +86,18 @@ const claseDe = (i) => CLASES.find((c) => c.tipos.includes(getType(i))) || CLASE
 // El build no lo detecta: es un error de runtime, no de sintaxis.
 // Ahora la TRM se pasa como argumento, que es lo correcto para una función
 // que no está dentro del componente.
-const getVA = (i, trm) => vaCOP({ ...i, va: i.va ?? i.valor_actual ?? i.valor ?? 0 }, trm || 4200);
+// 24-nov-2026 — TRM de hoy; sin tasa real el activo en USD vale 0 en pesos (no
+// entra a los totales) y la fila lo muestra en dólares «pendiente de tasa».
+// Antes caía a 4200 y la pantalla no cuadraba con el panel (cT ya lo excluía).
+const tasaHoy = (trm) => trmUsable(trm) ?? 0;
+const getVA = (i, trm) => vaCOP({ ...i, va: i.va ?? i.valor_actual ?? i.valor ?? 0 }, tasaHoy(trm));
 // 12-ago-2026 (Santiago): "si uno pone valor en dólares lo pasa a pesos en
 // valor actual pero no en el de compra". Exacto: el 26-jul se arregló getVA
 // para convertir moneda y getVC quedó devolviendo el número crudo. En un
 // activo en USD el valor actual salía ×TRM y el de compra en dólares, así que
 // la ganancia era el disparate de restar dólares a pesos (un activo de
 // 460k→575k USD mostraba una "ganancia" de ~2.415 millones de pesos).
-const getVC = (i, trm) => vcCOP({ ...i, vc: i.vc ?? i.valor_compra ?? i.costo ?? 0 }, trm || 4200);
+const getVC = (i, trm) => vcCOP({ ...i, vc: i.vc ?? i.valor_compra ?? i.costo ?? 0 }, tasaHoy(trm));
 
 // Valores SIN convertir, en la moneda en que el usuario los cargó. Son los
 // que van al formulario: el form tiene su propio selector de moneda, así que
@@ -128,8 +134,9 @@ function calcMetrics(inv, deudas, trm, rentaVinculadaMes = 0, gastoVinculadoMes 
   // del motor para decidir si una deuda existe: activa y con saldo.
   const linkedDebt = (deudas || []).filter((d) =>
     (d.la || d.link) === inv.id && d.sim !== false && (Number(d.mt || d.monto) || 0) > 0);
-  const debtTotal = linkedDebt.reduce((s, d) => s + (d.mt || d.monto || 0), 0);
-  const debtPayment = linkedDebt.reduce((s, d) => s + (d.pg || d.pago || 0), 0);
+  // 24-nov-2026 — la deuda en USD se pasa a pesos con la TRM de hoy (antes entraba cruda).
+  const debtTotal = linkedDebt.reduce((s, d) => s + montoCOPSuma(d.mt || d.monto || 0, d, trm), 0);
+  const debtPayment = linkedDebt.reduce((s, d) => s + montoCOPSuma(d.pg || d.pago || 0, d, trm), 0);
   const equity = va - debtTotal;
   const roi = vc > 0 ? ((va - vc) / vc) * 100 : 0;
   const cap = va > 0 ? ((noi * 12) / va) * 100 : 0;
@@ -196,7 +203,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // ignorarlo por omisión del modelo.
   const rentaPorActivo = useMemo(() => {
     const mapa = {};
-    const TRM = trm || 4200;
+    const TRM = tasaHoy(trm);
     (user?.ingresos || []).forEach((ing) => {
       const id = ing?.activoId;
       if (!id || ing.sim === false) return;
@@ -214,7 +221,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
   // descontar predial, administración ni seguros) y sobreestimaría todo.
   const gastoPorActivo = useMemo(() => {
     const mapa = {};
-    const TRM = trm || 4200;
+    const TRM = tasaHoy(trm);
     // 11-oct-2026 (QA): los gastos viven en u.gas; u.gastos no existe, así que
     // este mapa quedaba siempre vacío.
     Object.values(gastosDelUsuario(user)).forEach((items) => {
@@ -291,6 +298,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
     ]);
   };
   const totalValor = activos.reduce((s, i) => s + getVA(i, trm), 0)
+  const resumenTrm = resumenPatrimonioPantalla(activos, trm);
   // 26-jul-2026 (Santiago): mismo trío en los cuatro módulos de "Mi dinero" —
   // stock · flujo mensual · flujo anual — para que el ojo busque siempre en el
   // mismo lugar. Acá el flujo es lo que RINDE el patrimonio: se veía cuánto
@@ -520,6 +528,14 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         </>}
       />
 
+      {/* 24-nov-2026 — Qué tasa usa esta pantalla (Finanzas + Tributario). */}
+      {resumenTrm.hayUSD && (
+        <div role="note" data-testid="trm-patrimonio" style={{ marginBottom: 12, fontSize: 12, color: T.txt3, lineHeight: 1.5 }}>
+          <div><strong style={{ color: T.txt2 }}>{etiquetaTrmHoy(trm)}</strong> · {LINEA_TRM_DECLARACION}</div>
+          {resumenTrm.pendienteTasa && <div style={{ color: T.orange, marginTop: 2 }}>{NOTA_PATRIMONIO_PENDIENTE_TASA}</div>}
+        </div>
+      )}
+
       {/* Banner contextual: inversiones sin propietario asignado.
           Sin owner las rentas/dividendos no se atribuyen a un contribuyente
           específico para el cálculo de Impuestos. */}
@@ -583,7 +599,12 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
 
       {(() => {
         try {
-          const met = calcularMetricas({ ingresos: user?.ingresos || [], gastos: user?.gas || {}, deudas: deudas || [], inv: activos, trm });
+          // Sin TRM real, calcularMetricas caería a 4200 por dentro: se le pasan
+          // solo los montos en pesos (lo de USD queda «pendiente de tasa»).
+          const t0 = trmUsable(trm);
+          const soloCOP = (l) => (t0 == null ? (l || []).filter((x) => !esUSD(x)) : (l || []));
+          const gasCOP = t0 == null ? Object.fromEntries(Object.entries(user?.gas || {}).map(([k, v]) => [k, Array.isArray(v) ? soloCOP(v) : v])) : (user?.gas || {});
+          const met = calcularMetricas({ ingresos: soloCOP(user?.ingresos), gastos: gasCOP, deudas: soloCOP(deudas), inv: soloCOP(activos), trm: t0 ?? 1 });
           return <MapaPatrimonio met={met} fm={fm} />;
         } catch { return null; }
       })()}
@@ -593,7 +614,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
         r={rentabilidadActivos(activos, { valor: (i) => getVA(i, trm), rentaAnual: rentaPorActivo, gastoAnual: gastoPorActivo, inflacion: inflacionGlobal(user?.inflacionPct) })} />
       <ConcentracionActivos fm={fm} activos={activos.map((i) => ({ id: i.id, nombre: getName(i), valor: getVA(i, trm) }))} />
       {(() => {
-        const ds = deudasSinActivo(deudas, activos);
+        const ds = deudasSinActivo(deudas, activos, trm);
         if (ds.n === 0) return null;
         return (
           <div style={{ marginBottom: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
@@ -678,6 +699,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                 const loc = getLoc(inv);
                 const tipo = getType(inv);
                 const va = getVA(inv, trm);
+                // 24-nov-2026 — activo en USD: «US$X» debajo; sin tasa, «pendiente de tasa» en vez de $0.
+                const pendUSD = esUSD(inv) && trmUsable(trm) == null;
+                const subUSD = esUSD(inv) ? (pendUSD ? usdTxt(getVArw(inv)) + " · " + TEXTO_PENDIENTE_TASA : usdTxt(getVArw(inv))) : null;
                 return (
                   <tr key={inv.id} style={estiloFilaPortafolio(angosto, { borderBottom: `1px solid ${T.border}`, background: "transparent" })}>
                     <td style={{ padding: pad, wordBreak: angosto ? "break-word" : undefined, overflowWrap: angosto ? "anywhere" : undefined, minWidth: angosto ? 0 : undefined }}>
@@ -718,8 +742,9 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </td>
                     {angosto ? (<>
                       <td style={{ padding: pad, textAlign: "right", whiteSpace: "nowrap", fontSize: 12 }}>
-                        <div style={{ fontWeight: 700 }}>{fm(va)}</div>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: (va-getVC(inv, trm)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv, trm))}</div>
+                        <div style={{ fontWeight: 700 }}>{pendUSD ? usdTxt(getVArw(inv)) : fm(va)}</div>
+                        {subUSD && <div style={{ fontSize: 10, color: pendUSD ? T.orange : T.txt3 }}>{pendUSD ? TEXTO_PENDIENTE_TASA : subUSD}</div>}
+                        <div style={{ fontSize: 11, fontWeight: 600, color: (va-getVC(inv, trm)) >= 0 ? T.green : T.red }}>{pendUSD ? "—" : fm(va-getVC(inv, trm))}</div>
                       </td>
                       <td style={{ padding: pad, textAlign: "right", whiteSpace: "nowrap", fontSize: 12, color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: pad }}><div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
@@ -728,8 +753,11 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
                     </div></td>
                     </>) : (<>
                       <td style={{ padding: "12px 14px", fontSize: 12, color: T.txt3 }}>{tipo}</td>
-                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>{fm(va)}</td>
-                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv, trm)) >= 0 ? T.green : T.red }}>{fm(va-getVC(inv, trm))}</td>
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 700 }}>
+                        {pendUSD ? usdTxt(getVArw(inv)) : fm(va)}
+                        {subUSD && <div style={{ fontSize: 11, fontWeight: 500, color: pendUSD ? T.orange : T.txt3 }}>{pendUSD ? TEXTO_PENDIENTE_TASA : subUSD}</div>}
+                      </td>
+                      <td style={{ padding: "12px 14px", textAlign: "right", fontWeight: 600, color: (va-getVC(inv, trm)) >= 0 ? T.green : T.red }}>{pendUSD ? "—" : fm(va-getVC(inv, trm))}</td>
                       <td style={{ padding: "12px 14px", textAlign: "right", color: m.debtTotal > 0 ? T.red : T.txt3 }}>{m.debtTotal>0?fm(m.debtTotal):"-"}</td>
                       <td style={{ padding: "12px 14px", textAlign: "center" }}>
                         <button onClick={() => { if (!guardEdit(role)) return; onUpdate(items.map(x => x.id === inv.id ? {...x, sim: !(inv.sim!==false)} : x)); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 14, padding: "2px 6px" }} title={inv.sim===false?"Mostrar en simulador":"Ocultar del simulador"}><Interruptor on={inv.sim!==false} /></button>

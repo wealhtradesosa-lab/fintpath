@@ -8,6 +8,7 @@ import {
   calculosGODelTitular, lista2026DesdeIngresos, mm,
 } from "../lib/rentaDesdeDeclaracion.js";
 import { nitDe } from "../lib/impuestoReferente";
+import { celdaContador, selloTrmContador } from "../lib/patrimonioPantalla.js";
 
 /**
  * Impuestos › Informe para el contador (30-oct-2026, Santiago: "en impuestos, una
@@ -137,6 +138,11 @@ function Detalle({ titulares }) {
   );
   return (
     <Panel titulo="Detalle" sub="Ábrelo por titular. Es lo mismo que trae el PDF.">
+      {titulares[0]?.datos && titulares.some((t) => t.datos?.hayUSD) && (
+        <div role="note" style={{ ...F.caption, marginBottom: 8 }}>
+          {selloTrmContador({ ...titulares[0].datos, hayUSD: true }).map((l) => <div key={l}>{l}</div>)}
+        </div>
+      )}
       {titulares.map((t) => (
         <details key={t.id} style={{ borderTop: `1px solid ${C.border}`, padding: "8px 0" }}>
           <summary style={{ ...F.h3, cursor: "pointer" }}>{t.nombre} <span style={F.caption}>· {t.tipo === "juridica" ? "Sociedad" : "Persona natural"}{t.nit ? ` · ${t.nit}` : ""}</span></summary>
@@ -144,10 +150,10 @@ function Detalle({ titulares }) {
             t.declaraciones.map((d) => [d.ano, mm(d.ingresos), mm(d.impuesto), mm(d.retenciones), d.saldo < 0 ? `${mm(-d.saldo)} a favor` : mm(d.saldo)]))}
           {t.e && tabla(`Estimado renta ${t.e.anoEst}`, ["Concepto", "Valor"], [
             ["Impuesto estimado", mm(t.e.total)], ["Retenciones estimadas", mm(t.e.ret)], [`Anticipo ${t.e.anoEst + 1}`, mm(t.e.anticipoSiguiente)], ["Total a pagar al declarar", mm(t.e.totalAlDeclarar)]])}
-          {tabla("Patrimonio (bienes)", ["Bien", "Tipo", "Valor"], t.datos.bienes.map((x) => [x.nombre, x.tipo, mm(x.valor)]), sum(t.datos.bienes, "valor"))}
-          {tabla("Deudas", ["Deuda", "Tipo", "Saldo"], t.datos.deudas.map((x) => [x.nombre, x.tipo, mm(x.saldo)]), sum(t.datos.deudas, "saldo"))}
-          {tabla("Ingresos", ["Ingreso", "Tipo", "Al año"], t.datos.ingresos.map((x) => [x.nombre, x.tipo, mm(x.anual)]), sum(t.datos.ingresos, "anual"))}
-          {tabla(t.tipo === "juridica" ? "Costos y gastos" : "Gastos que cuentan para la renta", ["Gasto", "Categoría", "Al año"], t.datos.gastos.map((x) => [x.nombre, x.cat, mm(x.anual)]), sum(t.datos.gastos, "anual"))}
+          {tabla("Patrimonio (bienes)", ["Bien", "Tipo", "Valor"], t.datos.bienes.map((x) => [x.nombre, x.tipo, celdaContador(x, "valor", mm)]), sum(t.datos.bienes, "valor"))}
+          {tabla("Deudas", ["Deuda", "Tipo", "Saldo"], t.datos.deudas.map((x) => [x.nombre, x.tipo, celdaContador(x, "saldo", mm)]), sum(t.datos.deudas, "saldo"))}
+          {tabla("Ingresos", ["Ingreso", "Tipo", "Al año"], t.datos.ingresos.map((x) => [x.nombre, x.tipo, celdaContador(x, "anual", mm)]), sum(t.datos.ingresos, "anual"))}
+          {tabla(t.tipo === "juridica" ? "Costos y gastos" : "Gastos que cuentan para la renta", ["Gasto", "Categoría", "Al año"], t.datos.gastos.map((x) => [x.nombre, x.cat, celdaContador(x, "anual", mm)]), sum(t.datos.gastos, "anual"))}
         </details>
       ))}
     </Panel>
