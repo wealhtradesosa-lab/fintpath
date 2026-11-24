@@ -1548,6 +1548,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
             : q < -0.5 ? <span>{tx("Te pasaste ", "Over by ")}<b style={{ color: C.rd, fontWeight: 600 }}>{plata(Math.round(-q))}</b></span>
             : <span>{tx("Por usar ", "To use ")}<b style={{ color: q > 0.5 ? C.gn : C.tx, fontWeight: 600 }}>{plata(Math.round(Math.max(0, q)))}</b></span>}
           <span>{tx("Al mes ", "Monthly ")}<b style={{ color: mesY < -0.5 ? C.am : mesY > 0.5 ? C.gn : C.tx, fontWeight: 600 }}>{mesY < -0.5 ? "−" : "+"}{plata(Math.round(Math.abs(mesY)))}</b></span>
+          {(() => { const rv = y.anio === 1 ? (y.reservaFin || 0) + (y.apartadoFin || 0) : (y.reservaAntes || 0) + (y.apartadoAntes || 0); return rv > 0.5 && <span>{tx("Reserva ", "Reserve ")}<b style={{ color: C.tx, fontWeight: 600 }}>{plata(Math.round(rv))}</b></span>; })()}
         </div>; })()}
       </button>; })}
     </div>
@@ -1561,11 +1562,6 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
         {g.antes > 0.5 && <Renglon l={tx(`Saldo que traes de ${nombreAnio(anio - 1)}`, `Balance carried from ${nombreAnio(anio - 1)}`)} v={g.antes} nota={tx("Lo que no usaste antes: no es plata nueva de este año.", "What you didn't use before: it's not new money this year.")} />}
         {g.llegan.map((l, k) => <Renglon key={k} l={(g.antes > 0.5 || k > 0 ? "+ " : "") + (l.tipo === "venta" || l.tipo === "reserva" ? l.nombre : l.tipo === "retiro" ? tx(`Sacas de ${l.nombre}${l.parcial ? " (una parte)" : ""}`, `Taken out of ${l.nombre}${l.parcial ? " (part of it)" : ""}`) : tx(`Te llega de ${l.nombre}`, `Arrives from ${l.nombre}`))} nota={l.pagoDeuda > 0.5 ? tx(`Ya descontada su deuda (${plata(Math.round(l.pagoDeuda))}).`, `Its debt (${plata(Math.round(l.pagoDeuda))}) already deducted.`) : null} v={l.monto} />)}
         {g.tienes <= 0.5 && <div style={{ fontSize: 12.5, color: C.tx2 }}>{tx(anio === 1 ? "Hoy no vendes nada ni te llega plata de una venta." : "Este año no te llega plata de ventas ni vencimientos, y no traes saldo.", anio === 1 ? "You're not selling anything today." : "No money from sales or maturities this year, and no balance carried.")}</div>}
-        {(g.reservaAntes > 0.5 || guardados.length > 0) && <>
-          <Etq>{tx("Tu reserva", "Your reserve")}</Etq>
-          {g.reservaAntes > 0.5 && <Renglon l={tx("Para cualquier año que no alcance", "For any year that falls short")} v={g.reservaAntes} nota={tx("Se usa sola cuando un año no te alcanza.", "Used automatically when a year falls short.")} />}
-          {guardados.map((x, k) => <Renglon key={"gd" + k} l={tx(`Guardada para ${anioCal(x.hasta)}`, `Kept for ${anioCal(x.hasta)}`)} v={x.monto} nota={tx(`La guardaste en ${anioCal(x.desde)}; ese año vuelve a tu capital.`, `You kept it in ${anioCal(x.desde)}; that year it returns to your capital.`)} />)}
-        </>}
         <Etq>{tx("Tu mes antes de tus movidas", "Your month before your moves")}</Etq>
         <MesAnio filas={[
           [tx("Te entra", "Comes in"), fo.ingresos || 0],
@@ -1586,6 +1582,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
         </>}
       </Ficha>
 
+      <FichaReserva g={g} cfg={cfg} set={set} anio={anio} Y={Y} tasaR={tasaR} />
       {/* 1 · Tu capital disponible: qué haces con él. Cada opción abre su menú. */}
       <Ficha fuerte id="f10-capital" titulo={tx(`1 · Tu capital disponible ${enY}`, `1 · Your available capital ${enY}`)} sub={tx("Lo que tienes, menos lo comprometido y lo que falta para vivir. No cambia cuando inviertes.", "What you have, minus commitments and any living shortfall. It doesn't change as you invest.")}
         cifra={`${g.porInvertir < -0.5 ? "−" : ""}${plata(Math.round(Math.abs(g.porInvertir)))}`} cifraSub={usado > 0.5 ? (g.porInvertir < -0.5 ? tx("te pasaste", "over") : tx("te quedan por usar", "left to use")) : tx("puedes usar", "you can use")} col={g.porInvertir < -0.5 ? C.rd : g.porInvertir > 0.5 ? C.gn : C.tx}>
@@ -1593,7 +1590,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           <div aria-hidden="true" style={{ height: 8, borderRadius: 999, background: C.bd, overflow: "hidden" }}><div style={{ height: "100%", width: `${pctU}%`, background: g.porInvertir < -0.5 ? C.rd : C.gn, transition: "width 400ms cubic-bezier(.2,.8,.2,1)" }} /></div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12, color: C.tx2, marginTop: 4, fontVariantNumeric: "tabular-nums" }}><span>{tx(`Usaste ${plata(Math.round(usado))} de ${plata(Math.round(g.disponible))}`, `You used ${plata(Math.round(usado))} of ${plata(Math.round(g.disponible))}`)}</span><span>{g.porInvertir < -0.5 ? tx(`te pasaste ${plata(Math.round(-g.porInvertir))}`, `over by ${plata(Math.round(-g.porInvertir))}`) : tx(`te quedan ${plata(Math.round(g.porInvertir))}`, `${plata(Math.round(g.porInvertir))} left`)}</span></div>
         </div>; })()}
-        {anio > 1 && (g.reservaAntes || 0) > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} />}
+        {(g.sacasReserva || 0) > 0.5 && <div style={{ fontSize: 14, color: C.tx, margin: "0 0 8px", lineHeight: 1.45 }}>{tx(`Incluye ${plata(Math.round(g.sacasReserva))} que vienen de tu reserva.`, `Includes ${plata(Math.round(g.sacasReserva))} from your reserve.`)}</div>}
         <button type="button" onClick={() => setVerOrigen(!verOrigen)} style={{ ...enlace, color: C.tx2 }} aria-expanded={verOrigen}>{verOrigen ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx("¿De dónde sale?", "Where does it come from?")}</button>
         {verOrigen && <div style={{ marginTop: 6 }}>
           {/* Lo que tienes, renglón por renglón: lo que traes y cada venta o plata que te llega. */}
@@ -1704,15 +1701,15 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
 }
 // 24-nov-2026 (Santiago: "no veo cómo puede uno disponer de la reserva… la reserva va apareciendo acumulada cada año; debería poder usarse
 // si se necesita, un botón como de usar reserva este año"). Lo que sacas entra a tu capital de ese año; lo demás sigue rindiendo.
-function UsarReserva({ g, cfg, set, anio }) {
+function UsarReserva({ g, cfg, set, anio, enFicha = false }) {
   const [abierto, setAbierto] = useState(false);
   const [monto, setMonto] = useState("");
   const total = Math.round(g.reservaAntes || 0), sacas = Math.round(g.sacasReserva || 0);
   const poner = (v) => { const x = { ...(cfg.usarReserva || {}) }; if (!(Number(v) > 0)) delete x[anio]; else x[anio] = Math.min(total, Math.round(Number(v))); set("usarReserva", x); };
   const ok = Number(monto) > 0;
-  return <div style={{ border: `1px solid ${C.bd}`, borderRadius: 12, padding: "10px 12px", margin: "0 0 10px", display: "grid", gap: 8 }}>
+  return <div style={enFicha ? { display: "grid", gap: 8, marginTop: 10 } : { border: `1px solid ${C.bd}`, borderRadius: 12, padding: "10px 12px", margin: "0 0 10px", display: "grid", gap: 8 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      <span style={{ flex: "1 1 240px", fontSize: 14, color: C.tx, lineHeight: 1.45 }}>{sacas > 0.5
+      <span style={{ flex: "1 1 240px", fontSize: 14, color: C.tx, lineHeight: 1.45 }}>{enFicha && !(sacas > 0.5) ? tx("¿La necesitas este año? Lo que saques entra a tu capital para invertir o pagar deudas.", "Need it this year? What you take goes into your capital to invest or pay off debt.") : enFicha ? tx(`Este año sacas ${plata(sacas)} y entran a tu capital.`, `This year you take ${plata(sacas)} into your capital.`) : sacas > 0.5
         ? tx(`Sacas ${plata(sacas)} de tu reserva: entran a tu capital de este año.${sacas < total ? ` Te quedan ${plata(total - sacas)} en ella.` : ""}`, `You take ${plata(sacas)} from your reserve into this year's capital.${sacas < total ? ` ${plata(total - sacas)} stays in it.` : ""}`)
         : tx(`Tienes ${plata(total)} en tu reserva.`, `You have ${plata(total)} in your reserve.`)}</span>
       {sacas > 0.5
@@ -1725,8 +1722,32 @@ function UsarReserva({ g, cfg, set, anio }) {
       <button type="button" disabled={!ok} onClick={() => { poner(monto); setAbierto(false); }} style={{ ...btn(ok), padding: "8px 14px", opacity: ok ? 1 : 0.5, cursor: ok ? "pointer" : "not-allowed" }}>{tx("Usar", "Use")}</button>
       <button type="button" onClick={() => setAbierto(false)} style={{ ...btn(false), padding: "8px 14px" }}>{tx("Cancelar", "Cancel")}</button>
     </div>}
-    <div style={TIPO.meta}>{tx("Lo que no saques sigue rindiendo, y se usa sola si un año no te alcanza.", "What you don't take keeps earning, and is used automatically if a year falls short.")}</div>
+    {!enFicha && <div style={TIPO.meta}>{tx("Lo que no saques sigue rindiendo, y se usa sola si un año no te alcanza.", "What you don't take keeps earning, and is used automatically if a year falls short.")}</div>}
   </div>;
+}
+// 24-nov-2026 (Santiago: "debería ser mucho más visible que este año tengo disponible 700 MM de reserva, que ya dispuse 300 MM para
+// este año; lo de reserva está muy oculto: cada año debería estar ahí, importante, visible"). Una ficha propia en cada año, antes del
+// capital: cuánto tienes al empezar, qué sacas o se usa, qué guardas y con cuánto cierras; y el botón para usarla.
+function FichaReserva({ g, cfg, set, anio, Y, tasaR }) {
+  const libre = g.reservaAntes || 0, guardada = g.apartadoAntes || 0, inicio = libre + guardada;
+  const vuelve = (g.llegan || []).filter((l) => String(l.id).startsWith("reserva_")).reduce((sm, l) => sm + (l.monto || 0), 0);
+  const sacas = g.sacasReserva || 0, uso = g.usoReserva || 0, guardas = (g.reservaDeAqui || 0) + (g.aReservaMes || 0);
+  const cierre = (g.reservaFin || 0) + (g.apartadoFin || 0);
+  const nada = inicio + vuelve + guardas < 0.5;
+  const enEste = anio === 1 ? tx("hoy", "today") : tx(`en ${Y}`, `in ${Y}`);
+  return <Ficha id="f10-reserva" titulo={tx(`Tu reserva ${enEste}`, `Your reserve ${enEste}`)} sub={nada ? tx("Plata guardada aparte para los años que la necesites. Aún no tienes.", "Money kept aside for the years you need it. You have none yet.") : tx(`Plata guardada aparte: rinde ${tasaR} y la usas cuando la necesites.`, `Money kept aside: earns ${tasaR}, use it when you need it.`)}
+    cifra={plata(Math.round(anio === 1 ? cierre : inicio))} cifraSub={anio === 1 ? tx("al cierre de este año", "at the end of this year") : tx("tienes al empezar el año", "at the start of the year")} col={(anio === 1 ? cierre : inicio) > 0.5 ? C.gn : C.tx2}>
+    {nada ? <div style={TIPO.meta}>{tx("La empiezas con «Guardar en tu reserva», de tu capital, o con «Ahorrar en tu reserva», de lo que te sobra cada mes.", "Start it with \"Keep in your reserve\" from your capital, or \"Save in your reserve\" from your monthly surplus.")}</div> : <>
+      {libre > 0.5 && <Renglon l={tx("Para cualquier año", "For any year")} v={libre} />}
+      {guardada > 0.5 && <Renglon l={tx("Guardada para un año siguiente", "Kept for a later year")} v={guardada} />}
+      {vuelve > 0.5 && <Renglon l={tx(`Vuelve a tu capital ${enEste} (la guardaste para este año)`, `Returns to your capital ${enEste} (you kept it for this year)`)} v={vuelve} col={C.tx2} />}
+      {sacas > 0.5 && <Renglon l={tx("− Sacas este año: entra a tu capital", "− Taken this year: goes to your capital")} v={sacas} col={C.tx2} />}
+      {uso > 0.5 && <Renglon l={tx("− Se usó sola: este año no te alcanzaba", "− Used automatically: this year fell short")} v={uso} col={C.tx2} />}
+      {guardas > 0.5 && <Renglon l={tx("+ Guardas este año", "+ Saved this year")} v={guardas} />}
+      <Renglon fuerte linea l={tx("Te quedan en tu reserva", "Left in your reserve")} v={cierre} col={C.gn} nota={tx(`Al cierre ${anio === 1 ? "de este año" : "de " + Y}; sigue rindiendo ${tasaR} al año.`, `At the end of ${anio === 1 ? "this year" : Y}; it keeps earning ${tasaR} a year.`)} />
+      {anio > 1 && libre > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} enFicha />}
+    </>}
+  </Ficha>;
 }
 // 24-nov-2026 (Santiago: "de lo que sobra cada mes, ¿qué quiere hacer? abonar a deudas mensualmente, abonar a inversión existente
 // mensualmente, gastar para ocio, o ahorrar mensualmente en el fondo de reserva, que está disponible para cuando se quiera usar en un
