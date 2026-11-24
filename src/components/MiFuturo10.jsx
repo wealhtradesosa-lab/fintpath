@@ -51,8 +51,6 @@ export const msgDemoF10 = () => tx(MSG_DEMO_F10, "Scenarios aren't saved in demo
 
 export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, vista: vistaProp, onCambiarVista }) {
   const [paso, setPaso] = useState(pasoInicial);
-  // 23-nov-2026: inversiones nuevas plegadas en una línea; se abre la que se edita.
-  const [nuevaAbierta, setNuevaAbierta] = useState(() => new Set());
   // 23-nov-2026: el paso 3 se recorre año por año; este es el año que se está viendo (1 = hoy).
   const [anioSel, setAnioSel] = useState(1);
   // 24-oct-2026 (Santiago: "los avances que uno hace en la sección como que
@@ -120,12 +118,6 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     const k = cfg.nuevas.length;
     set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: queda > 0.5 ? Math.round(queda) : "", fuente: anio > 1 ? "liquidez" : "venta", anio }]);
     return "n" + k;
-  };
-  // Para abrir el formulario completo de una movida (opciones poco usadas) en su tarjeta.
-  const abrirCompleto = (ref) => {
-    const t = String(ref)[0], k = Number(String(ref).slice(1));
-    if (t === "n") { setNuevaAbierta((st) => new Set([...st, k])); setTimeout(() => document.getElementById("f10-nueva-" + k)?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 150); }
-    else setTimeout(() => document.getElementById("f10-reinv")?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 50);
   };
   // 24-nov-2026 (Santiago: "uno no sabe que tiene que ir dejando cada año organizado… llené hoy, pero no queda
   // claro que ya quedó ok y que sigue 2027"). Cada año se deja listo y se pasa al siguiente.
@@ -266,116 +258,10 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {paso === 2 && (<>
         {/* 24-nov-2026 (Santiago: "limpiamos y damos orden"; "fichas más recogidas, no todo desplegado"; "de acuerdo a lo que quiere hacer se abre el menú"). Pagar deudas, invertir en lo que ya tienes, inversiones nuevas y lo que sobra viven dentro de cada año y se abren al elegir qué hacer. */}
-        <AnioPorAnio r={r} cfg={cfg} set={set} cuenta={cuenta} anioSel={anioSel} setAnioSel={setAnioSel} nuevaEnAnio={nuevaEnAnio} reinvEnAnio={reinvEnAnio} abrirCompleto={abrirCompleto} esc={esc} irResultado={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}  dejarListo={dejarListo} irAnio={irAnio}
+        <AnioPorAnio r={r} cfg={cfg} set={set} cuenta={cuenta} anioSel={anioSel} setAnioSel={setAnioSel} nuevaEnAnio={nuevaEnAnio} reinvEnAnio={reinvEnAnio} esc={esc} irResultado={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}  dejarListo={dejarListo} irAnio={irAnio}
           paneles={{
             deudas: <div id="f10-deudas">
           {(r.deudas || []).length + (r.deudasSinSaldo || []).length > 0 ? <Deudas r={r} cfg={cfg} set={set} inv={user.inv || []} bolsa={bolsa} anioSel={anioSel} setAnioSel={setAnioSel} /> : <p style={{ color: C.tx2, fontSize: 13 }}>{tx("No tienes deudas con saldo.", "You have no outstanding debt.")}</p>}
-            </div>,
-            nuevas: <div id="f10-nuevas">
-          {/* 23-nov-2026 (Santiago: "aquí debería ser muy claro: inversiones nuevas 2026, uno ve ahí cuáles; después inversiones nuevas 2027 y así sucesivamente"). Agrupadas por año, cada grupo con lo que queda ese año, y cada inversión plegada en una línea. */}
-          {(() => {
-            const anioDe = (x) => Math.max(1, Number(x.anio) || 1);
-            const grupos = [anioSel];
-            // 23-nov-2026 (Santiago: "me sobran 9.000 MM de 2027, hago una inversión de 4.000 y la segunda me dice por defecto el saldo pendiente, o puedo poner otro valor"). La inversión nueva de un año arranca con lo que queda ese año; se puede cambiar.
-            const agregar = (anio, queda) => { const k = cfg.nuevas.length; set("nuevas", [...cfg.nuevas, { preset: "rfCorto", monto: queda > 0.5 ? Math.round(queda) : "", fuente: anio > 1 ? "liquidez" : "venta", anio }]); setNuevaAbierta((s) => new Set([...s, k])); };
-            const montoDe = (x) => (x.preset === "fincaRaiz" && x.pr ? leerPropiedadRaiz(x, 10).capital : Number(x.monto) || 0);
-            return grupos.map((anio) => {
-              const filas = cfg.nuevas.map((x, i) => [x, i]).filter(([x]) => anioDe(x) === anio);
-              const total = filas.reduce((sm, [x]) => sm + montoDe(x), 0);
-              const g = cuenta.find((y) => y.anio === anio);
-              const queda = g ? g.porInvertir : null;
-              const factor = (g && g.factorHoy) || 1;
-              return <div key={anio} style={{ marginTop: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", padding: "8px 0", borderBottom: `1px solid ${C.bd}` }}>
-                  <span style={{ fontSize: 16, fontWeight: 600 }}>{anio === 1 ? tx(`Hoy · ${anioCal(1)}`, `Today · ${anioCal(1)}`) : anioCal(anio)}</span>
-                  <span style={{ fontSize: 13, color: C.tx2, fontVariantNumeric: "tabular-nums" }}>{tx("Inviertes", "You invest")} {plata(Math.round(total * factor))}{queda != null && <> · {queda >= -0.5 ? tx("queda", "left") : tx("faltan", "short")} <b style={{ color: queda > 0.5 ? C.gn : queda < -0.5 ? C.rd : C.tx }}>{plata(Math.round(Math.abs(queda)))}</b></>}</span>
-                </div>
-                {filas.map(([x, i]) => {
-            // Si se cambia el año de la inversión, la vista se va con ella a ese año.
-            const up = (v) => { set("nuevas", cfg.nuevas.map((y, j) => j === i ? { ...y, ...v } : y)); if (v.anio && v.anio !== anioSel) setAnioSel(v.anio); };
-            const hint = rendimientoHintPct(esc);
-            const lbl = { fontSize: 12, color: C.tx2 };
-            const esPR = x.preset === "fincaRaiz" && !!x.pr;
-            if (!nuevaAbierta.has(i)) {
-              const nom = x.nombre || (esPR ? leerPropiedadRaiz(x, 10).nombre : x.preset === "custom" ? tx("Inversión personalizada", "Custom investment") : nombreSup(SUP.presets[x.preset] || {}));
-              const det = esPR ? { planos: tx("Compra en planos", "Off-plan"), lote: tx("Lote y construcción", "Lot and build"), asociativo: tx("Proyecto asociativo", "Joint development"), rentar: tx("Construir para rentar", "Build to rent") }[leerPropiedadRaiz(x, 10).tipo]
-                : x.preset === "custom" ? null : nombreSup(SUP.presets[x.preset] || {});
-              const rend = !esPR && (x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? (x.preset === "custom" ? hint : SUP.presets[x.preset] ? retornoNominalPreset(x.preset, esc, SUP) : null) : Number(x.rendimientoNomPct));
-              return <div key={i} id={"f10-nueva-" + i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: `1px solid ${C.bd}`, flexWrap: "wrap" }}>
-                <div style={{ flex: "1 1 220px", minWidth: 0 }}><div style={{ fontWeight: 600 }}>{nom}</div><div style={{ fontSize: 12, color: C.tx2 }}>{[det && det !== nom ? det : null, rend != null && rend !== false ? tx(`rinde ${fmtPctEs(rend, 1)}`, `earns ${fmtPctEs(rend, 1)}`) : null, esPR ? (() => { const q = leerPropiedadRaiz(x, 10); return q.final === "vende" ? (q.repite ? tx(`se vende y se repite cada ${enAnios(q.durAnios)}`, `sold and repeated every ${q.durAnios} years`) : tx("se vende una vez", "sold once")) : tx("te quedas con ella", "you keep it"); })() : null].filter(Boolean).join(" · ")}</div></div>
-                <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{plata(Math.round(montoDe(x)))}</span>
-                <button style={{ ...btn(false), padding: "6px 12px" }} onClick={() => setNuevaAbierta((s) => new Set([...s, i]))}>{tx("Editar", "Edit")}</button>
-              </div>;
-            }
-            return (
-              <div key={i} id={"f10-nueva-" + i} style={{ borderBottom: `1px solid ${C.bd}`, padding: "10px 0", display: "grid", gap: 10 }}>
-                {/* 23-nov-2026 (Santiago: "mire estas dos inversiones: preguntan distinto y en diferente orden"). Todas las inversiones preguntan lo mismo y en el mismo orden: qué, cuándo, cuánto, de dónde; después cuánto rinde, cuánto te llega y hasta cuándo. */}
-                {x.deLiberado && Number(x.anio) > 1 && <div style={{ fontSize: 12.5, color: C.tx2 }}>{tx(`Con lo que te llega en ${anioCal(x.anio)} de «${x.deLiberado}».`, `With what you receive in ${anioCal(x.anio)} from "${x.deLiberado}".`)}</div>}
-                {(() => {
-                  const fila4 = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 10, alignItems: "start" };
-                  const campo = (l, ctrl, ayuda, col) => <label style={{ ...lbl, display: "grid", gap: 4, minWidth: 0 }}>{l}{ctrl}{ayuda && <span style={{ fontSize: 12, color: col || C.tx2, lineHeight: 1.35 }}>{ayuda}</span>}</label>;
-                  const tipoSel = <select style={inp} value={x.preset} onChange={(e) => up({ preset: e.target.value, ...(e.target.value === "fincaRaiz" && !x.pr ? { pr: { tipo: "planos", final: "vende", cuotaPct: 30, plazo: 2, valEntregaPct: 20, valAnualPct: 6 } } : {}) })}>
-                    {Object.entries(SUP.presets).map(([k, p]) => <option key={k} value={k}>{nombreSup(p)}</option>)}
-                    <option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option>
-                  </select>;
-                  // 23-nov-2026 (Santiago: "estoy en 2027 usando el saldo de 2027 y me pide elegir estas opciones"). En un año siguiente no se pregunta: sale del saldo de ese año.
-                  const anioX = Math.max(1, Number(x.anio) || 1);
-                  const fuenteCampo = anioX > 1
-                    ? campo(tx("¿De dónde sale?", "Where does it come from?"), <div style={{ fontSize: 13.5, color: C.tx, padding: "8px 0" }}>{tx(`Del saldo de ${anioCal(anioX)}`, `From the ${anioCal(anioX)} balance`)}</div>)
-                    : campo(tx("¿De dónde sale?", "Where does it come from?"), <FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} />);
-                  // 23-nov-2026 (Santiago: "en el formulario del valor debería darme la opción de traer el saldo que tengo o que me va quedando si hago varias inversiones").
-                  // Lo que queda en el año ya descuenta esta inversión; para ella está disponible lo que queda + lo que ya tiene puesto.
-                  const dispEsta = queda != null ? Math.max(0, queda / factor + montoDe(x)) : 0;
-                  const usarSaldo = <BotonSaldo disponible={dispEsta} actual={montoDe(x)} anio={anio} on={(v) => (esPR ? up({ pr: { ...x.pr, valor: v } }) : up({ monto: v }))} />;
-                  if (esPR) return <>
-                    <div style={fila4}>{campo(tx("Tipo", "Type"), tipoSel)}{fuenteCampo}{campo(tx("Nombre (opcional)", "Name (optional)"), <input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={tx("Ej.: proyecto, constructora", "e.g. project, developer")} />)}</div>
-                    <PropiedadRaiz x={x} up={up} usarSaldo={usarSaldo} />
-                  </>;
-                  const esCustom = x.preset === "custom";
-                  const supPct = esCustom ? hint : SUP.presets[x.preset] ? retornoNominalPreset(x.preset, esc, SUP) : hint;
-                  const rendUsado = x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? supPct : Number(x.rendimientoNomPct);
-                  const pRec = (x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)) / 100;
-                  const mes = (Number(x.monto) || 0) * rendUsado / 100 * pRec / 12;
-                  const inicio = Math.max(1, Number(x.anio) || 1); const hasta = Number(x.hasta) > inicio ? Number(x.hasta) : 0;
-                  return <>
-                    <div style={fila4}>
-                      {campo(tx("Tipo", "Type"), tipoSel)}
-                      {campo(tx("¿Cuándo?", "When?"), <select style={inp} value={x.anio || 1} onChange={(e) => { const a2 = Number(e.target.value); up({ anio: a2, ...(a2 > 1 && x.fuente !== "nuevo" ? { fuente: "liquidez" } : {}) }); }}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select>)}
-                      {campo(tx("¿Cuánto? ($)", "How much? ($)"), <NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.monto} onChange={(v) => up({ monto: v })} />, usarSaldo)}
-                      {fuenteCampo}
-                    </div>
-                    <div style={fila4}>
-                      {campo(esCustom ? tx("Nombre", "Name") : tx("Entidad (opcional)", "Institution (optional)"), <input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esCustom ? tx("Ej.: negocio, CDT", "e.g. business, term deposit") : esUS() ? tx("Ej.: Vanguard", "e.g. Vanguard") : tx("Ej.: BTG, Skandia", "e.g. BTG, Skandia")} />)}
-                      {campo(tx("Rendimiento anual (%)", "Annual return (%)"), <InputDecimalEs style={inp} placeholder={fmtPctEs(supPct, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />, x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? (SUP.presets[x.preset]?.sinSupuesto ? tx(`Sin supuesto confiable: escribe el que esperas. Vacío: ${fmtPctEs(supPct, 1)}, solo la inflación.`, `No reliable assumption: enter what you expect. Blank: ${fmtPctEs(supPct, 1)}, inflation only.`) : tx(`Vacío: ${fmtPctEs(supPct, 1)} del escenario.`, `Blank: ${fmtPctEs(supPct, 1)} from the scenario.`)) : null)}
-                      {campo(tx("¿Cuánto te llega?", "How much do you receive?"), <select style={inp} value={x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select>, mes > 0 ? tx(`${plata(Math.round(mes))} al mes`, `${plata(Math.round(mes))} a month`) : tx("Se reinvierte todo", "All reinvested"), mes > 0 ? C.gn : C.tx2)}
-                      {campo(tx("¿Hasta cuándo?", "Until when?"), <select style={inp} value={hasta || ""} onChange={(e) => up({ hasta: e.target.value ? Number(e.target.value) : "" })}>
-                        <option value="">{tx("Indefinida", "Ongoing")}</option>
-                        {ANIOS.filter((y) => y > inicio).map((y) => <option key={y} value={y}>{tx(`Hasta ${anioCal(y)}`, `Until ${anioCal(y)}`)}</option>)}
-                      </select>)}
-                    </div>
-                    {(hasta > 0 || (esCustom && !esUS())) && <div style={fila4}>
-                      {esCustom && !esUS() && campo(tx("Moneda", "Currency"), <select style={inp} value={x.moneda || monedaBase()} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>, x.moneda === "USD" ? tx("El resultado en pesos depende también de la tasa de cambio.", "The peso result also depends on the exchange rate.") : null, C.am)}
-                      {hasta > 0 && campo(tx(`En ${anioCal(hasta)} retiras`, `In ${anioCal(hasta)} you withdraw`), <select style={inp} value={x.retiraParte ? "parte" : "todo"} onChange={(e) => up({ retiraParte: e.target.value === "parte" })}>
-                        <option value="todo">{tx("Todo", "Everything")}</option>
-                        <option value="parte">{tx("Una parte", "Part of it")}</option>
-                      </select>, tx(`Aparece en la tarjeta de ${anioCal(hasta)} para reinvertirlo.`, `Shows in the ${anioCal(hasta)} card to reinvest it.`))}
-                      {hasta > 0 && x.retiraParte && campo(tx("¿Cuánto retiras? ($)", "How much do you withdraw? ($)"), <NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.retira ?? ""} onChange={(v) => up({ retira: v })} />)}
-                    </div>}
-                    {x.preset === "fincaRaiz" && !x.pr && <div><button style={{ ...btn(true), padding: "6px 12px" }} onClick={() => up({ pr: { tipo: "planos", final: "vende", cuotaPct: 30, plazo: 2, valEntregaPct: 20, valAnualPct: 6, valor: x.monto || "" } })}>{tx("Detallar: compra en planos, lote, asociativo o para rentar", "Detail: off-plan, lot, joint development or to rent")}</button></div>}
-                  </>;
-                })()}
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button style={btn(true)} onClick={() => setNuevaAbierta((s) => { const n2 = new Set(s); n2.delete(i); return n2; })}>{tx("Listo", "Done")}</button>
-                  <button style={btn(false)} onClick={() => { set("nuevas", cfg.nuevas.filter((_, j) => j !== i)); setNuevaAbierta(new Set()); }}>{tx("Quitar", "Remove")}</button>
-                </div>
-              </div>
-            );
-                })}
-                <button style={{ ...btn(false), marginTop: 8, padding: "8px 14px" }} onClick={() => agregar(anio, queda)}>{tx(`+ Agregar inversión en ${anioCal(anio)}`, `+ Add an investment in ${anioCal(anio)}`)}</button>
-              </div>;
-            });
-          })()}
-          <div style={{ fontSize: 12, color: C.tx2, marginTop: 10 }}>{tx("Para otro año, elige el año arriba, en «Tu plata año por año».", "For another year, pick the year above, in \"Your money year by year\".")}</div>
             </div>,
             tienes: <div id="f10-reinv">
           {/* 22-nov-2026 (Santiago: "si en la primera sección se hace algo, esto se verá reflejado en los siguientes pasos; todo debe tener una lógica, un proceso"). Aquí ya no se vuelve a preguntar activo por activo: llega lo marcado en el paso 1. */}
@@ -1035,24 +921,31 @@ function AporteCampos({ x, up, det, activos, conActivo = false, vendidos = [], s
         <label style={lbl}>{tx("De lo que rinde, ¿cuánto te llega?", "Of what it earns, how much do you receive?")}<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select><span style={{ fontSize: 12 }}>{tx("Lo que no te llega se reinvierte y crece con interés compuesto.", "What you don't receive is reinvested and compounds.")}</span></label>
       </>}
     </div>
-    {det && (det.aporte > 0 || det.rentaMensual > 0 || det.rindeAnual > 0) && <div style={{ marginTop: 8, background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
-      <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Queda valiendo", "Ends up worth")}</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("hoy", "today")} {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` ${tx("en", "in")} ${enAnios(det.anio - 1)}` : ""}</div></div>
-      {esInm && det.rentaMensual > 0 && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Renta al mes", "Monthly rent")}</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {pct(det.rentaPctAnual)} {tx("al año sobre el total", "a year on the total")}</div></div>}
-      {esInm && det.valorizacionPct != null && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Se valoriza", "Appreciates")}</div><div style={{ fontSize: 16, fontWeight: 700 }}>{pct(det.valorizacionPct)} {tx("al año", "a year")}</div><div style={{ fontSize: 12, color: C.tx2 }}>≈ {plata(det.total * det.valorizacionPct / 100)} {tx("el primer año", "the first year")}</div></div>}
-      {!esInm && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Rinde al año", "Earns a year")}</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.rindeAnual)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{pct(det.rendimientoPct)} {tx("sobre", "on")} {plata(det.total)}</div></div>}
-      {!esInm && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Te llega al mes", "You receive monthly")}</div><div style={{ fontSize: 16, fontWeight: 700, color: det.teLlegaMes > 0 ? C.gn : C.tx }}>{plata(det.teLlegaMes)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{det.pctRecibe >= 100 ? tx("no se reinvierte nada", "nothing is reinvested") : tx(`se reinvierten ${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} al año`, `${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} a year is reinvested`)}</div></div>}
-      {(() => {
-        const partes = [];
-        if (det.deNuevo > 0) partes.push(`${tx("capital nuevo", "new capital")}: ${plata(det.deNuevo)}`);
-        if (det.deVenta > 0) partes.push(`${tx("la venta de", "the sale of")} ${vendidos.map((v) => v.nombre).join(tx(" y ", " and ")) || tx("lo que vendes", "what you sell")}: ${plata(det.deVenta)}`);
-        if (det.deLiquidez > 0) partes.push(`${tx("tu liquidez de hoy", "your current cash")}: ${plata(det.deLiquidez)}`);
-        if (det.deAnio1 > 0) partes.push(`${tx("lo que entre en", "what comes in during")} ${anioCal(1)}: ${plata(det.deAnio1)}`);
-        if (det.anio > 1 && det.aporte > 0) partes.push(det.fuente === "nuevo" ? `${tx("plata nueva en", "new money in")} ${anioCal(det.anio)}: ${plata(det.aporte)}` : (det.fuente || "venta") === "venta" ? tx(`lo que vendes hoy (queda apartado hasta ${anioCal(det.anio)}): ${plata(det.aporte)}`, `what you sell today (set aside until ${anioCal(det.anio)}): ${plata(det.aporte)}`) : tx(`la plata que tengas en ${anioCal(det.anio)} (lo que te llegue ese año y tus cuentas): ${plata(det.aporte)}`, `the money you have in ${anioCal(det.anio)} (what arrives that year plus your accounts): ${plata(det.aporte)}`));
-        if (!partes.length) return null;
-        return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2, borderTop: `1px solid ${C.bd}`, paddingTop: 6 }}><b style={{ color: C.tx }}>{tx("Se paga con", "Paid with")}</b> {partes.join(" · ")}</div>;
-      })()}
-    </div>}
+    <ResumenAporte det={det} esInm={esInm} vendidos={vendidos} />
   </>);
+}
+
+// Lo que queda valiendo, lo que rinde, lo que te llega y con qué se paga un aporte.
+function ResumenAporte({ det, esInm, vendidos = [] }) {
+  if (!det || !(det.aporte > 0 || det.rentaMensual > 0 || det.rindeAnual > 0)) return null;
+  const pct = (v) => fmtPctEs(v, 1);
+  return <div style={{ marginTop: 8, background: C.bg, borderRadius: 8, padding: 10, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 8 }}>
+    <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Queda valiendo", "Ends up worth")}</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.total)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("hoy", "today")} {plata(det.valorHoy)} + {plata(det.aporte)}{det.anio > 1 ? ` ${tx("en", "in")} ${enAnios(det.anio - 1)}` : ""}</div></div>
+    {esInm && det.rentaMensual > 0 && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Renta al mes", "Monthly rent")}</div><div style={{ fontSize: 16, fontWeight: 700, color: C.gn }}>{plata(det.rentaMensual)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{textoMes(det.rentaDesdeMes).toLowerCase()} · {pct(det.rentaPctAnual)} {tx("al año sobre el total", "a year on the total")}</div></div>}
+    {esInm && det.valorizacionPct != null && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Se valoriza", "Appreciates")}</div><div style={{ fontSize: 16, fontWeight: 700 }}>{pct(det.valorizacionPct)} {tx("al año", "a year")}</div><div style={{ fontSize: 12, color: C.tx2 }}>≈ {plata(det.total * det.valorizacionPct / 100)} {tx("el primer año", "the first year")}</div></div>}
+    {!esInm && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Rinde al año", "Earns a year")}</div><div style={{ fontSize: 16, fontWeight: 700 }}>{plata(det.rindeAnual)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{pct(det.rendimientoPct)} {tx("sobre", "on")} {plata(det.total)}</div></div>}
+    {!esInm && <div><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Te llega al mes", "You receive monthly")}</div><div style={{ fontSize: 16, fontWeight: 700, color: det.teLlegaMes > 0 ? C.gn : C.tx }}>{plata(det.teLlegaMes)}</div><div style={{ fontSize: 12, color: C.tx2 }}>{det.pctRecibe >= 100 ? tx("no se reinvierte nada", "nothing is reinvested") : tx(`se reinvierten ${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} al año`, `${plata(det.rindeAnual * (1 - det.pctRecibe / 100))} a year is reinvested`)}</div></div>}
+    {(() => {
+      const partes = [];
+      if (det.deNuevo > 0) partes.push(`${tx("capital nuevo", "new capital")}: ${plata(det.deNuevo)}`);
+      if (det.deVenta > 0) partes.push(`${tx("la venta de", "the sale of")} ${vendidos.map((v) => v.nombre).join(tx(" y ", " and ")) || tx("lo que vendes", "what you sell")}: ${plata(det.deVenta)}`);
+      if (det.deLiquidez > 0) partes.push(`${tx("tu liquidez de hoy", "your current cash")}: ${plata(det.deLiquidez)}`);
+      if (det.deAnio1 > 0) partes.push(`${tx("lo que entre en", "what comes in during")} ${anioCal(1)}: ${plata(det.deAnio1)}`);
+      if (det.anio > 1 && det.aporte > 0) partes.push(det.fuente === "nuevo" ? `${tx("plata nueva en", "new money in")} ${anioCal(det.anio)}: ${plata(det.aporte)}` : (det.fuente || "venta") === "venta" ? tx(`lo que vendes hoy (queda apartado hasta ${anioCal(det.anio)}): ${plata(det.aporte)}`, `what you sell today (set aside until ${anioCal(det.anio)}): ${plata(det.aporte)}`) : tx(`la plata que tengas en ${anioCal(det.anio)} (lo que te llegue ese año y tus cuentas): ${plata(det.aporte)}`, `the money you have in ${anioCal(det.anio)} (what arrives that year plus your accounts): ${plata(det.aporte)}`));
+      if (!partes.length) return null;
+      return <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2, borderTop: `1px solid ${C.bd}`, paddingTop: 6 }}><b style={{ color: C.tx }}>{tx("Se paga con", "Paid with")}</b> {partes.join(" · ")}</div>;
+    })()}
+  </div>;
 }
 
 // Origen de la plata de cada inversión (motor: fuente venta | nuevo | liquidez).
@@ -1338,42 +1231,75 @@ function AjustarHito({ cfg, set, tipo, idx }) {
 // 24-nov-2026 (Santiago: "hoy tengo 800 MM para invertir, elegí invertir en algo que ya tengo, y uno no sabe
 // si guardó o no, y sigue viendo 800 MM disponibles"). Cada movida se edita en su fila, dentro de la cascada:
 // lo básico aquí (cuánto, en qué, cuánto rinde y cuánto te llega) y lo poco usado en su tarjeta de abajo.
-function MovidaEditor({ r, cfg, set, refMov, anio, esc, abrirCompleto, onListo }) {
+// 24-nov-2026 (Santiago: "este botón de más opciones no está habilitado"). «Más opciones» abría otro panel más arriba, fuera
+// de la vista, y parecía no hacer nada. Ahora las opciones de más se abren aquí mismo, debajo del formulario corto, y la
+// propiedad raíz trae todo su formulario en su fila. Si la pasas a otro año, la vista se va con ella y queda abierta allá.
+export function MovidaEditor({ r, cfg, set, refMov, anio, esc, quedaHoy = 0, onAnio, onListo }) {
+  const [verMas, setVerMas] = useState(false);
   const SUP = supuestosF10();
   const t = String(refMov)[0], k = Number(String(refMov).slice(1));
   const lbl = { fontSize: 12, color: C.tx2, display: "grid", gap: 4, minWidth: 0, alignContent: "start" };
   const fila4 = { display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,160px),1fr))", gap: 10, alignItems: "start" };
+  // Las opciones de más guardan su ancho de columna (un solo campo no se estira a todo el ancho).
+  const filaMas = { ...fila4, gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,200px),1fr))" };
+  const ayuda = { fontSize: 12, color: C.tx2, lineHeight: 1.35 };
   const enHoy = anio > 1 ? tx(" (pesos de hoy)", " (today's money)") : "";
-  const pie = (quitar, mas) => <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 2 }}>
-    {mas && <button type="button" onClick={mas} style={{ background: "transparent", border: "none", padding: 0, color: C.tx2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline", marginRight: "auto" }}>{tx("Más opciones", "More options")}</button>}
-    <button type="button" style={{ ...btn(false), padding: "6px 12px", marginLeft: mas ? 0 : "auto" }} onClick={() => { quitar(); onListo && onListo(); }}>{tx("Quitar", "Remove")}</button>
+  const pie = (quitar, conMas) => <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 2 }}>
+    {conMas && <button type="button" aria-expanded={verMas} onClick={() => setVerMas(!verMas)} style={{ background: "transparent", border: "none", padding: 0, color: verMas ? C.gn : C.tx2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline", marginRight: "auto" }}>{verMas ? tx("Menos opciones", "Fewer options") : tx("Más opciones", "More options")}</button>}
+    <button type="button" style={{ ...btn(false), padding: "6px 12px", marginLeft: conMas ? 0 : "auto" }} onClick={() => { quitar(); onListo && onListo(); }}>{tx("Quitar", "Remove")}</button>
     <button type="button" style={{ ...btn(true), padding: "6px 12px" }} onClick={onListo}>{tx("Listo", "Done")}</button>
   </div>;
   const caja = (hijos) => <div style={{ background: C.bg2, border: `1px solid ${C.gn}`, borderRadius: 10, padding: 12, margin: "4px 0 8px", display: "grid", gap: 10 }}>{hijos}</div>;
+  const masCaja = (hijos) => <div style={{ display: "grid", gap: 10, borderTop: `1px solid ${C.bd}`, paddingTop: 10 }}>{hijos}</div>;
+  // Otro año: en un año siguiente sale del saldo de ese año (salvo plata nueva de afuera).
+  const moverA = (x, up, a2) => { up({ anio: a2, ...(a2 > 1 && x.fuente !== "nuevo" ? { fuente: "liquidez" } : {}) }); if (a2 !== anio && onAnio) onAnio(a2); };
+  const selAnio = (x, up, l = tx("¿Cuándo?", "When?")) => <label style={lbl}>{l}<select style={inp} value={Math.max(1, Number(x.anio) || 1)} onChange={(e) => moverA(x, up, Number(e.target.value))}>{ANIOS.map((y) => <option key={y} value={y}>{etqAnio(y)}</option>)}</select></label>;
+  const selFuente = (x, up) => anio === 1 && <label style={lbl}>{tx("¿De dónde sale?", "Where does it come from?")}<FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} /></label>;
+  const saldo = (actual, on) => <BotonSaldo disponible={Math.max(0, quedaHoy + actual)} actual={actual} anio={anio} on={on} />;
   if (t === "n") {
     const x = (cfg.nuevas || [])[k]; if (!x) return null;
     const up = (v) => set("nuevas", cfg.nuevas.map((y, j) => (j === k ? { ...y, ...v } : y)));
     const quitar = () => set("nuevas", cfg.nuevas.filter((_, j) => j !== k));
-    if (x.preset === "fincaRaiz" && x.pr) return caja(<>
-      <div style={{ fontSize: 13, color: C.tx, lineHeight: 1.45 }}>{tx("Es una propiedad raíz: compra sobre planos, lote y construcción, proyecto con socios o construir para rentar. Sus pagos, la entrega y si se queda, se vende o se repite van en sus opciones.", "It's real estate: off-plan, lot and build, a joint project or build to rent. Its payments, delivery and whether it's kept, sold or repeated go in its options.")}</div>
-      <div><button type="button" onClick={() => abrirCompleto(refMov)} style={btnAccion(false)}>{tx("Ver sus opciones", "See its options")}</button></div>
-      {pie(quitar, null)}
-    </>);
+    // 24-nov-2026 (Santiago: "quiero hacer una inversión nueva y podría ser propiedad raíz: no le veo las opciones").
+    const selEnQue = <select style={inp} value={x.preset} onChange={(e) => { const v = e.target.value; if (v === "fincaRaiz") { up({ preset: "fincaRaiz", pr: x.pr || { tipo: "planos", final: "vende", cuotaPct: 30, plazo: 2, valEntregaPct: 20, valAnualPct: 6, ...(Number(x.monto) > 0 ? { valor: Number(x.monto) } : {}) } }); return; } up({ preset: v }); }}>{Object.entries(SUP.presets).map(([key, pz]) => <option key={key} value={key}>{nombreSup(pz)}</option>)}<option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option></select>;
+    if (x.preset === "fincaRaiz" && x.pr) {
+      // Su formulario completo, aquí mismo: modalidad, pagos, entrega y si se queda, se vende o se repite.
+      const capital = leerPropiedadRaiz(x, 10).capital;
+      const upPR = (v) => { if (v.anio != null && Number(v.anio) !== Math.max(1, Number(x.anio) || 1)) { moverA(x, up, Number(v.anio)); return; } up(v); };
+      return caja(<>
+        <div style={fila4}>
+          <label style={lbl}>{tx("¿En qué?", "In what?")}{selEnQue}</label>
+          <label style={lbl}>{tx("Nombre (opcional)", "Name (optional)")}<input style={inp} value={x.nombre || ""} placeholder={tx("Ej.: proyecto, constructora", "e.g. project, developer")} onChange={(e) => up({ nombre: e.target.value })} /></label>
+          {selFuente(x, up)}
+        </div>
+        <PropiedadRaiz x={x} up={upPR} usarSaldo={saldo(capital, (v) => up({ pr: { ...x.pr, valor: v } }))} />
+        {pie(quitar, false)}
+      </>);
+    }
     const esCustom = x.preset === "custom";
     const hint = rendimientoHintPct(esc);
     const supPct = esCustom ? hint : SUP.presets[x.preset] ? retornoNominalPreset(x.preset, esc, SUP) : hint;
     const rend = vacio(x.rendimientoNomPct) ? supPct : Number(x.rendimientoNomPct);
     const pRec = (x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)) / 100;
     const mes = (Number(x.monto) || 0) * rend / 100 * pRec / 12;
+    const inicio = Math.max(1, Number(x.anio) || 1), hasta = Number(x.hasta) > inicio ? Number(x.hasta) : 0;
     return caja(<>
       <div style={fila4}>
-        <label style={lbl}>{tx("¿En qué?", "In what?")}<select style={inp} value={x.preset} onChange={(e) => { const v = e.target.value; /* 24-nov-2026 (Santiago: "quiero hacer una inversión nueva y podría ser propiedad raíz: no le veo las opciones"). */ if (v === "fincaRaiz") { up({ preset: "fincaRaiz", pr: x.pr || { tipo: "planos", final: "vende", cuotaPct: 30, plazo: 2, valEntregaPct: 20, valAnualPct: 6, ...(Number(x.monto) > 0 ? { valor: Number(x.monto) } : {}) } }); setTimeout(() => abrirCompleto(refMov), 60); return; } up({ preset: v }); }}>{Object.entries(SUP.presets).map(([key, pz]) => <option key={key} value={key}>{nombreSup(pz)}</option>)}<option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option></select></label>
+        <label style={lbl}>{tx("¿En qué?", "In what?")}{selEnQue}</label>
         <label style={lbl}>{esCustom ? tx("Nombre", "Name") : tx("Entidad (opcional)", "Institution (optional)")}<input style={inp} value={x.nombre || ""} placeholder={esUS() ? tx("Ej.: Vanguard", "e.g. Vanguard") : tx("Ej.: BTG, Skandia", "e.g. BTG, Skandia")} onChange={(e) => up({ nombre: e.target.value })} /></label>
-        <label style={lbl}>{tx(`¿Cuánto?${enHoy}`, `How much?${enHoy}`)}<NumberInput style={inp} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
+        <label style={lbl}>{tx(`¿Cuánto?${enHoy}`, `How much?${enHoy}`)}<NumberInput style={inp} value={x.monto} onChange={(v) => up({ monto: v })} />{saldo(Number(x.monto) || 0, (v) => up({ monto: v }))}</label>
         <label style={lbl}>{tx("Rendimiento anual (%)", "Annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(supPct, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /></label>
         <label style={lbl}>{tx("¿Cuánto te llega?", "How much do you receive?")}<select style={inp} value={x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select><span style={{ fontSize: 12, color: mes > 0 ? C.gn : C.tx2 }}>{mes > 0 ? tx(`${plata(Math.round(mes))} al mes`, `${plata(Math.round(mes))} a month`) : tx("Se reinvierte todo", "All reinvested")}</span></label>
       </div>
-      {pie(quitar, () => abrirCompleto(refMov))}
+      {verMas && masCaja(<div style={filaMas}>
+        {selAnio(x, up)}
+        {selFuente(x, up)}
+        <label style={lbl}>{tx("¿Hasta cuándo?", "Until when?")}<select style={inp} value={hasta || ""} onChange={(e) => up({ hasta: e.target.value ? Number(e.target.value) : "" })}><option value="">{tx("Indefinida", "Ongoing")}</option>{ANIOS.filter((y) => y > inicio).map((y) => <option key={y} value={y}>{tx(`Hasta ${anioCal(y)}`, `Until ${anioCal(y)}`)}</option>)}</select>{hasta > 0 && <span style={ayuda}>{tx(`En ${anioCal(hasta)} la sacas y entra a tu capital de ese año.`, `In ${anioCal(hasta)} you take it out and it joins that year's capital.`)}</span>}</label>
+        {hasta > 0 && <label style={lbl}>{tx(`En ${anioCal(hasta)} retiras`, `In ${anioCal(hasta)} you withdraw`)}<select style={inp} value={x.retiraParte ? "parte" : "todo"} onChange={(e) => up({ retiraParte: e.target.value === "parte" })}><option value="todo">{tx("Todo", "Everything")}</option><option value="parte">{tx("Una parte", "Part of it")}</option></select></label>}
+        {hasta > 0 && x.retiraParte && <label style={lbl}>{tx("¿Cuánto retiras? ($)", "How much do you withdraw? ($)")}<NumberInput style={inp} placeholder={tx("Monto", "Amount")} value={x.retira ?? ""} onChange={(v) => up({ retira: v })} /></label>}
+        {esCustom && !esUS() && <label style={lbl}>{tx("Moneda", "Currency")}<select style={inp} value={x.moneda || monedaBase()} onChange={(e) => up({ moneda: e.target.value })}><option value="COP">COP</option><option value="USD">USD</option></select>{x.moneda === "USD" && <span style={{ ...ayuda, color: C.am }}>{tx("El resultado en pesos depende también de la tasa de cambio.", "The peso result also depends on the exchange rate.")}</span>}</label>}
+      </div>)}
+      {pie(quitar, true)}
     </>);
   }
   const x = (cfg.reinversiones || [])[k]; if (!x) return null;
@@ -1383,19 +1309,31 @@ function MovidaEditor({ r, cfg, set, refMov, anio, esc, abrirCompleto, onListo }
   const det = (r.reinversionesDetalle || []).find((y) => y.i === k);
   const esInm = a.clase === "inmueble";
   const desdeMes = Number(x.rentaDesdeMes) || 0;
+  const pct = (v) => fmtPctEs(v, 1);
   return caja(<>
     <div style={fila4}>
-      <label style={lbl}>{tx(`¿Cuánto inviertes?${enHoy}`, `How much do you invest?${enHoy}`)}<NumberInput style={inp} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
+      <label style={lbl}>{tx(`¿Cuánto inviertes?${enHoy}`, `How much do you invest?${enHoy}`)}<NumberInput style={inp} value={x.monto} onChange={(v) => up({ monto: v })} />{saldo(Number(x.monto) || 0, (v) => up({ monto: v }))}</label>
       {esInm ? <>
         <label style={lbl}>{tx("¿Va a dar renta? ($ al mes, opcional)", "Will it earn rent? ($ a month, optional)")}<NumberInput style={inp} value={x.rentaMensual ?? ""} onChange={(v) => up({ rentaMensual: v })} /></label>
         {(Number(x.rentaMensual) || 0) > 0 && <label style={lbl}>{tx("¿Desde cuándo renta?", "Rented out from when?")}<select style={inp} value={desdeMes} onChange={(e) => up({ rentaDesdeMes: Number(e.target.value) })}>{opcionesMes(desdeMes).map((mm) => <option key={mm} value={mm}>{textoMes(mm)}</option>)}</select></label>}
       </> : !a.delPlan && <>
-        <label style={lbl}>{tx("¿Cuánto rinde al año? (%)", "Annual return (%)")}<InputDecimalEs style={inp} placeholder={det && det.rendimientoPct != null ? fmtPctEs(det.rendimientoPct, 1) : ""} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /></label>
+        <label style={lbl}>{tx("¿Cuánto rinde al año? (%)", "Annual return (%)")}<InputDecimalEs style={inp} placeholder={det && det.rendimientoPct != null ? pct(det.rendimientoPct) : ""} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /></label>
         <label style={lbl}>{tx("De lo que rinde, ¿cuánto te llega?", "Of what it earns, how much do you receive?")}<select style={inp} value={Number(x.pctRecibe) || 0} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
       </>}
     </div>
     {a.delPlan && <div style={{ fontSize: 12, color: C.tx2 }}>{tx(`La creaste en el plan en ${anioCal(a.anio)}: lo que inviertes rinde igual que ella.`, `You created it in the plan in ${anioCal(a.anio)}: what you add earns the same.`)}</div>}
-    {pie(quitar, a.delPlan ? null : () => abrirCompleto(refMov))}
+    {verMas && !a.delPlan && masCaja(<>
+      <div style={filaMas}>
+        {selAnio(x, up)}
+        {selFuente(x, up)}
+        {esInm && <>
+          <label style={lbl}>{tx("¿Cuánto queda valiendo al terminar? ($, opcional)", "What is it worth when finished? ($, optional)")}<NumberInput style={inp} placeholder={ejemploMonto(1500000000, 400000)} value={x.valorAlTerminar ?? ""} onChange={(v) => up({ valorAlTerminar: v })} /><span style={ayuda}>{tx("Si con la obra vale más que lo que tenías más lo que inviertes.", "If after the work it's worth more than what you had plus what you invest.")}</span></label>
+          <label style={lbl}>{tx("¿Cuánto se valoriza al año? (%)", "Annual appreciation (%)")}<InputDecimalEs style={inp} placeholder={det && det.valorizacionPct != null ? pct(det.valorizacionPct) : ""} value={x.valorizacionNomPct ?? ""} onChange={(v) => up({ valorizacionNomPct: v })} /><span style={ayuda}>{tx("Lo que sube el valor cada año. Si no sabes, déjalo vacío.", "How much the value rises each year. If you're not sure, leave it blank.")}</span></label>
+        </>}
+      </div>
+      <ResumenAporte det={det} esInm={esInm} vendidos={r.vendidos || []} />
+    </>)}
+    {pie(quitar, !a.delPlan)}
   </>);
 }
 
@@ -1431,7 +1369,7 @@ function reglaSobra(r, cfg, anio) {
   return { pct, total, propia: pa != null && pa !== "" && total > 0, destinos: dest.map((d) => nom(d.id)) };
 }
 
-function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, reinvEnAnio, abrirCompleto, esc, irResultado, dejarListo, irAnio, paneles = {} }) {
+function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, reinvEnAnio, esc, irResultado, dejarListo, irAnio, paneles = {} }) {
   const [abierto, setAbierto] = useState(null);
   // La movida que se está editando en su fila y la recién agregada (se resalta y se confirma).
   const [editMov, setEditMov] = useState(null);
@@ -1444,7 +1382,14 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   const [resEnFila, setResEnFila] = useState(false);
   const [editarListo, setEditarListo] = useState(false);
   useEffect(() => { if (!recien) return undefined; const t = setTimeout(() => setRecien(null), 6000); return () => clearTimeout(t); }, [recien]);
-  useEffect(() => { setEditMov(null); setRecien(null); setPanel(null); setEditarListo(false); setVerOrigen(false); }, [anioSel]);
+  // Al cambiar de año todo se cierra, salvo la movida que se pasó a ese año: queda abierta, resaltada y a la vista.
+  const seVaCon = useRef(null);
+  const moverMovida = (ref, a2) => { seVaCon.current = ref; setAnioSel(a2); };
+  useEffect(() => {
+    const m = seVaCon.current; seVaCon.current = null;
+    setEditMov(m); setRecien(m); setPanel(null); setEditarListo(false); setVerOrigen(false);
+    if (m) setTimeout(() => document.getElementById("f10-mov-" + m)?.scrollIntoView?.({ behavior: "smooth", block: "center" }), 120);
+  }, [anioSel]);
   // En el celular, la pestaña del año elegido queda a la vista.
   const tabsRef = useRef(null);
   useEffect(() => { const l = tabsRef.current, t = l && l.querySelector('[aria-selected="true"]'); if (l && t && l.scrollTo) l.scrollTo({ left: Math.max(0, t.offsetLeft - l.clientWidth / 2 + t.clientWidth / 2), behavior: "smooth" }); }, [anioSel]);
@@ -1504,7 +1449,6 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   const regla = reglaSobra(r, cfg, anio);
   const abrir = (k) => { if (k === "reserva") setResEnFila(false); setPanel(panel === k ? null : k); };
   const editarReservaFila = () => { if (panel === "reserva" && resEnFila) { setPanel(null); return; } setResEnFila(true); setPanel("reserva"); };
-  const abrirComp = (ref) => { setPanel(String(ref).startsWith("n") ? "nuevas" : "tienes-todo"); setTimeout(() => abrirCompleto && abrirCompleto(ref), 80); };
   const libresAportar = opcionesParaMeter(r, cfg, anio, Object.fromEntries(g.movidas.filter((m) => m.ref).map((m) => [m.ref, m.monto])));
 
   // Ficha recogida de un año listo: lo que se hizo, en pocas líneas.
@@ -1640,18 +1584,17 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           <button type="button" onClick={() => setPanel("tienes-todo")} style={{ ...enlace, color: C.tx2, marginTop: 8 }}>{tx("Ver todo lo que inviertes en lo que tienes", "See everything you add to what you own")}</button>
         </div>}
         {panel === "tienes-todo" && <div style={{ marginTop: 10, borderTop: `1px solid ${C.bd}`, paddingTop: 10 }}>{paneles.tienes}</div>}
-        {panel === "nuevas" && <div style={{ marginTop: 10, borderTop: `1px solid ${C.bd}`, paddingTop: 10 }}>{paneles.nuevas}</div>}
         {panel === "reserva" && !resEnFila && <div style={{ marginTop: 10, borderTop: `1px solid ${C.bd}`, paddingTop: 10 }}>{panelReserva}</div>}
         <Etq>{tx(`Lo que haces con tu capital ${enY}`, `What you do with your capital ${enY}`)}</Etq>
         {g.movidas.length === 0 && !(g.reservaDeAqui > 0.5) && pagaste <= 0.5 && <div style={{ fontSize: 12.5, color: C.tx2, padding: "4px 0" }}>{tx("Todavía nada. Elige arriba qué haces con él.", "Nothing yet. Choose above what to do with it.")}</div>}
         {g.compromisos.filter((c) => c.tipo === "A").map((c, k) => <Renglon key={"pd" + k} l={`− ${c.nombre}`} v={c.monto} col={C.tx2} nota={c.nota} />)}
-        {g.movidas.map((m, k) => <div key={k} style={{ background: recien && m.ref === recien ? "rgba(0,200,5,0.10)" : "transparent", borderRadius: 8, transition: "background 600ms", padding: "0 6px", margin: "0 -6px" }}>
+        {g.movidas.map((m, k) => <div key={k} id={m.ref ? "f10-mov-" + m.ref : undefined} style={{ background: recien && m.ref === recien ? "rgba(0,200,5,0.10)" : "transparent", borderRadius: 8, transition: "background 600ms", padding: "0 6px", margin: "0 -6px" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <div style={{ flex: 1, minWidth: 0 }}><Renglon l={<>{`− ${nomMov(m)}`}{m.tipo === "C" && <span style={{ fontSize: 12, color: C.tx2 }}> · {tx("inversión nueva", "new investment")}</span>}</>} v={m.monto} col={m.cuenta ? C.tx : C.tx2}
               nota={m.sinMonto ? tx("Sin monto todavía: ponle cuánto con «Editar», o quítala.", "No amount yet: set it with \"Edit\", or remove it.") : !m.cuenta ? (m.fuente === "nuevo" ? tx("Con plata nueva de afuera: no sale de aquí.", "With new money from outside: not taken from here.") : tx("De tus cuentas de hoy: no sale de aquí.", "From your current accounts: not taken from here.")) : anio > 1 && m.montoHoy && Math.abs(m.montoHoy - m.monto) > 0.5 ? tx(`Escribiste ${plata(Math.round(m.montoHoy))} en pesos de hoy.`, `You entered ${plata(Math.round(m.montoHoy))} in today's money.`) : null} /></div>
             {m.ref && <button type="button" onClick={() => setEditMov(editMov === m.ref ? null : m.ref)} style={{ ...enlace, padding: "4px 0", color: editMov === m.ref ? C.gn : C.tx2, flex: "0 0 auto" }}>{editMov === m.ref ? tx("Listo", "Done") : tx("Editar", "Edit")}</button>}
           </div>
-          {m.ref && editMov === m.ref && <MovidaEditor r={r} cfg={cfg} set={set} refMov={m.ref} anio={anio} esc={esc} abrirCompleto={abrirComp} onListo={() => setEditMov(null)} />}
+          {m.ref && editMov === m.ref && <MovidaEditor r={r} cfg={cfg} set={set} refMov={m.ref} anio={anio} esc={esc} quedaHoy={g.porInvertir / (g.factorHoy || 1)} onAnio={(a2) => moverMovida(m.ref, a2)} onListo={() => setEditMov(null)} />}
         </div>)}
         {(g.reservaDeAqui > 0.5 || (Number(rva[anio]) || 0) > 0.5) && <div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
@@ -1662,7 +1605,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           </div>
           {panel === "reserva" && resEnFila && <div style={{ border: `1px solid ${C.gn}`, borderRadius: 12, padding: "12px 14px", margin: "8px 0" }}>{panelReserva}</div>}
         </div>}
-        {editMov && !g.movidas.some((m) => m.ref === editMov) && <MovidaEditor r={r} cfg={cfg} set={set} refMov={editMov} anio={anio} esc={esc} abrirCompleto={abrirComp} onListo={() => setEditMov(null)} />}
+        {editMov && !g.movidas.some((m) => m.ref === editMov) && <MovidaEditor r={r} cfg={cfg} set={set} refMov={editMov} anio={anio} esc={esc} quedaHoy={g.porInvertir / (g.factorHoy || 1)} onAnio={(a2) => moverMovida(editMov, a2)} onListo={() => setEditMov(null)} />}
         {recien && (() => { const m = g.movidas.find((y) => y.ref === recien); return <div role="status" style={{ fontSize: 12.5, color: C.gn, margin: "4px 0" }}>{m ? tx(`✓ Listo: ${plata(Math.round(m.monto))} en ${nomMov(m).replace(/^Inviertes en /, "")}. ${g.porInvertir < -0.5 ? `Te pasaste ${plata(Math.round(-g.porInvertir))}.` : `Te quedan ${plata(Math.round(g.porInvertir))}.`} Quedó en tu plan.`, `✓ Done: ${plata(Math.round(m.monto))} in ${m.nombre}. ${g.porInvertir < -0.5 ? `Over by ${plata(Math.round(-g.porInvertir))}.` : `${plata(Math.round(g.porInvertir))} left.`} It's in your plan.`) : editMov === recien ? tx("✓ Agregada. Escribe el monto.", "✓ Added. Enter the amount.") : null}</div>; })()}
         {/* 24-nov-2026 (Santiago: "aquí diría que pasa la reserva para 2027"; luego: "no me cuadra"). La reserva ya está arriba, con su
             monto: aquí solo se dice que pasa aparte, sin otro renglón que parezca plata de más. */}

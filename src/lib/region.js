@@ -55,7 +55,8 @@ export const num = (n, dec = 1) => fin(n).toLocaleString(L(), { minimumFractionD
 /** Porcentaje: 4,4% · 4.4%. */
 export const pct = (n, dec = 1) => num(n, dec) + "%";
 /** Entero con separador de miles: 638.100 · 638,100. */
-export const miles = (n) => Math.round(fin(n)).toLocaleString(L());
+// 24-nov-2026: «$-0» salía cuando quedaba un resto negativo de menos de un peso (Math.round da -0); se muestra 0.
+export const miles = (n) => (Math.round(fin(n)) || 0).toLocaleString(L());
 /** Plata completa: $638.100 · $638,100. Negativos con signo menos tipográfico. */
 export const plata = (n) => { const v = Math.round(fin(n)); return (v < 0 ? "−" : "") + "$" + Math.abs(v).toLocaleString(L()); };
 
