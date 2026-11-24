@@ -518,3 +518,24 @@ describe("reparto de lo que sobra cada mes", () => {
     expect(Math.abs(r0.filas[1].patrimonio - r.filas[1].patrimonio)).toBeLessThan(2e6);
   });
 });
+
+// 24-nov-2026 (Santiago: "la reserva va apareciendo acumulada cada año; debería poder usarse si se necesita: usar reserva este año").
+describe("usar tu reserva en un año", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 1000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 600e6 }], ingresos: [{ nombre: "Salario", mensual: 30e6, frecuencia: "mensual" }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  it("lo que sacas entra a tu capital de ese año y sale de la reserva", () => {
+    const base = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 300e6 } };
+    const c0 = cuentaPorAnio(proyectarFuturo10(u, base), base);
+    const cfg = { ...base, usarReserva: { 3: 200e6 } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    expect(c[2].sacasReserva).toBeCloseTo(200e6, -3);
+    expect(c[2].llegan.some((l) => l.id === "usaReserva")).toBe(true);
+    expect(c[2].tienes - c0[2].tienes).toBeCloseTo(200e6, -3);
+    expect(c0[2].reservaFin - c[2].reservaFin).toBeCloseTo(200e6, -3);
+  });
+  it("no se puede sacar más de lo que hay en la reserva", () => {
+    const cfg = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 300e6 }, usarReserva: { 2: 1e15 } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    expect(c[1].sacasReserva).toBeCloseTo(c[1].reservaAntes, -3);
+    expect(c[1].reservaFin).toBeGreaterThan(-1);
+  });
+});
