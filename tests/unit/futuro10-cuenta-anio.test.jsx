@@ -479,3 +479,42 @@ describe("lo que se va con una venta deja de contar el año de la venta", () => 
     expect(r.seVan.some((x) => x.desde === 1)).toBe(false);
   });
 });
+
+// 24-nov-2026 (Santiago: "de lo que sobra cada mes, ¿qué quiere hacer? abonar a deudas mensualmente, abonar a inversión existente,
+// gastar en ocio, o ahorrar en el fondo de reserva… lo que sobra pasa al año siguiente como saldo disponible").
+describe("reparto de lo que sobra cada mes", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 200e6 }, { id: "f", n: "Fondo", tp: "Fondo", va: 500e6 }],
+    ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 50e6 }], gas: { Vida: [{ c: "Mercado", m: 20e6 }] },
+    deu: [{ id: "d", n: "Carro", mt: 60e6, pg: 2e6 }] };
+  const sin = cuentaPorAnio(proyectarFuturo10(u, {}), {});
+  it("lo que repartes sale de lo que te queda del mes y ya no pasa al año siguiente", () => {
+    const cfg = { mesReparto: { 1: [{ tipo: "inversion", id: "f", mensual: 5e6 }, { tipo: "gasto", nombre: "Viajes", mensual: 2e6 }, { tipo: "reserva", mensual: 1e6 }] } };
+    const r = proyectarFuturo10(u, cfg);
+    const c = cuentaPorAnio(r, cfg);
+    expect(c[0].reparto.map((x) => Math.round(x.usado))).toEqual([60e6, 24e6, 12e6]);
+    expect(c[0].repartoFuera).toBeCloseTo(84e6, -3);
+    expect(c[0].aReservaMes).toBeCloseTo(12e6, -3);
+    expect(c[0].pasa).toBeCloseTo(sin[0].pasa - 96e6, -3);
+    // Lo gastado no queda en el patrimonio; lo invertido y lo de la reserva sí.
+    const p0 = proyectarFuturo10(u, {}).filas[1].patrimonio, p1 = r.filas[1].patrimonio;
+    expect(p0 - p1).toBeGreaterThan(20e6);
+    expect(p0 - p1).toBeLessThan(30e6);
+  });
+  it("si pides más de lo que te sobra, solo se reparte lo que hay", () => {
+    const cfg = { mesReparto: { 1: [{ tipo: "gasto", mensual: 1e12 }] } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    expect(c[0].reparto[0].usado).toBeCloseTo(Math.max(0, sin[0].mes), -3);
+    expect(c[0].pasa).toBeCloseTo(sin[0].pasa - Math.max(0, sin[0].mes), -3);
+  });
+  it("abonar a una deuda la termina antes: su cuota deja de salir desde el año siguiente", () => {
+    const cfg = { mesReparto: { 1: [{ tipo: "deuda", id: "d", mensual: 3e6 }] } };
+    const r = proyectarFuturo10(u, cfg);
+    const d = r.deudas.find((x) => x.id === "d");
+    // Debía 60 M; con la cuota (24 M al año) y el abono (36 M) se termina en el año 1.
+    expect(d.finAbono).toBe(1);
+    const r0 = proyectarFuturo10(u, {});
+    expect(r0.filas[2].gastos - r.filas[2].gastos).toBeCloseTo(24e6, -4);
+    // Abonar no te hace más pobre ese año: baja lo que debes.
+    expect(Math.abs(r0.filas[1].patrimonio - r.filas[1].patrimonio)).toBeLessThan(2e6);
+  });
+});
