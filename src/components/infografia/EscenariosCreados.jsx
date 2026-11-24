@@ -40,6 +40,12 @@ function medir(r) {
   return { serie: f.map((x) => (x.patrimonio || 0) / Math.pow(1 + INFLACION_PESOS_HOY_PCT / 100, x.anio || 0)), fin: dp.fin, anioFin: anioCal(fin.anio), real: rend ? rend.realPct : null, desglose: dp, conVenta: hayVenta(r), viene: loQueVieneDelPlan(r), cobertura, peorMes: Number.isFinite(peor) ? peor : 0 };
 }
 
+// 23-nov-2026 (Soporte): aviso del cambio de cálculo junto a las tarjetas. Se
+// quita solo después de AVISO_CALCULO_HASTA (o poniendo la fecha en null).
+export const AVISO_CALCULO_HASTA = "2026-12-31";
+export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && hoy.toISOString().slice(0, 10) <= hasta;
+export const avisoCalculo = () => tx("Ajustamos el cálculo: ahora tu ahorro se suma aparte y ya no cuenta como rendimiento, por eso la cifra puede verse más baja.", "We adjusted the math: your savings are now added separately and no longer count as returns, so the figure may look lower.");
+
 const textoViene = (x) => {
   const anios = x.anioFin && x.anioFin > x.anio ? `${anioCal(x.anio)}–${anioCal(x.anioFin)}` : `${anioCal(x.anio)}`;
   if (x.tipo === "ingreso") return { anios, monto: `+${fm(x.monto)} ${tx("al mes", "a month")}`, pos: true };
@@ -146,6 +152,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
         </div>
       </section>
 
+      {mostrarAvisoCalculo() && <div role="note" data-testid="f10-aviso-calculo" style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, padding: "8px 12px", border: `1px solid rgba(var(--fp-ink),0.14)`, borderRadius: 10 }}>{avisoCalculo()}</div>}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
         {medidos.map(({ p, m }, i) => {
           const esMejor = p === mejor.p;
@@ -180,6 +187,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
                       <span style={{ whiteSpace: "nowrap", color: t.pos ? C.pos : C.txt, ...cifra }}>{t.monto}</span>
                     </li>); })}
                 </ul>
+                {m.viene.some((x) => x.tipo === "compra") && <div data-testid="f10-card-supuesto-compra" style={{ fontSize: 11.5, color: C.txt2, marginTop: 4, lineHeight: 1.4 }}>{tx("Supuesto: las compras se pagan de contado y sin gastos de escritura, registro ni impuestos.", "Assumption: purchases are paid in cash, with no closing costs, recording fees or taxes.")}</div>}
               </div>}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>
                 <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("Rinden tus activos al año (real, sin tu ahorro)", "Your assets earn per year (real, excluding savings)")}</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>

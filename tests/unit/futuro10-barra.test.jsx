@@ -8,7 +8,7 @@ import { createElement, isValidElement, Children } from "react";
 import { proyectarFuturo10, SUPUESTOS_F10, resumenBarra, desglosePatrimonio, rendimientoSinAhorro, loQueVieneDelPlan, hayVenta, hayAlertaLiquidez, aPesosDeHoy, INFLACION_PESOS_HOY_PCT, anioCal } from "../../src/lib/futuro10.js";
 import BarraFuturo10 from "../../src/components/BarraFuturo10.jsx";
 import MiFuturo10 from "../../src/components/MiFuturo10.jsx";
-import EscenariosCreados from "../../src/components/infografia/EscenariosCreados.jsx";
+import EscenariosCreados, { mostrarAvisoCalculo, AVISO_CALCULO_HASTA } from "../../src/components/infografia/EscenariosCreados.jsx";
 
 // Supuestos con 5 % de inflación y 4 % real en la cuenta: el caso de Finanzas.
 const sup4 = JSON.parse(JSON.stringify(SUPUESTOS_F10));
@@ -17,12 +17,15 @@ sup4.escenarios.base = { ...sup4.escenarios.base, inflacionPct: 5, ingresosSprea
 const conAhorro = (activos, ahorroAnual) => ({ inflacionPct: 5, inv: [{ id: "a", n: "Cuenta", tp: "Cash", va: activos }], ingresos: [{ nombre: "Sueldo", categoria: "Salario", mensual: ahorroAnual / 12 }], gas: {}, deu: [] });
 
 describe("futuro10: el ahorro es aporte, no rendimiento", () => {
-  it("100 M en activos, 10 M de ahorro al año y 4 % real → ~114 M en pesos de hoy al año 1 (no 163 M)", () => {
+  it("100 M en activos, 10 M de ahorro al año y 4 % real → 104 M + 10/1,05 M ≈ 113,5 M en pesos de hoy al año 1 (no 163 M)", () => {
     const r = proyectarFuturo10(conAhorro(100e6, 10e6), { supuestos: sup4 });
     const f1 = r.filas[1];
     const hoy1 = aPesosDeHoy(f1.patrimonio, 1, 5);
-    expect(hoy1).toBeGreaterThan(113e6);
-    expect(hoy1).toBeLessThan(115e6);
+    // Activos: 100 M × 1,04 real = 104 M exactos. Ahorro: 10 M en pesos del año 1
+    // (convención: el año 1 va a precios de hoy), medido al cierre → 10/1,05.
+    expect(aPesosDeHoy(f1.activos - f1.cf, 1, 5)).toBeCloseTo(104e6, -2);
+    expect(f1.cf).toBeCloseTo(10e6, -2);
+    expect(hoy1).toBeCloseTo(104e6 + 10e6 / 1.05, -2); // 113.523.810
     expect(hoy1).toBeLessThan(120e6); // nunca el 163 M de aplicar el 63,5 %
     expect(desglosePatrimonio(r).despuesDelPlan).toBeCloseTo(hoy1, 0);
   });
@@ -201,5 +204,52 @@ describe("tarjeta del escenario", () => {
   it("sin venta: no aparece", () => {
     const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: planes(rPlan), inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
     expect(h).not.toContain("antes de impuestos de la venta");
+  });
+});
+
+describe("compra de «Lo que viene» (Casa): chequeos de Finanzas", () => {
+  const u = { inflacionPct: 5, inv: [{ id: "a", n: "Cuenta", tp: "Cash", va: 500e6 }], ingresos: [{ nombre: "Sueldo", categoria: "Salario", mensual: 10e6 }], gas: { Vida: [{ n: "Gastos", m: 5e6 }] }, deu: [] };
+  const fut = { ingresos: [], activos: [{ nombre: "Casa", clase: "vivienda", valor: 300e6, entrega: 4 }], gastos: [] };
+  const sin = proyectarFuturo10(u, { supuestos: sup4 });
+  const con = proyectarFuturo10(u, { supuestos: sup4, futuros: fut });
+  const casa = (t) => (con.filas[t].porActivo || []).find((a) => a.nombre === "Casa");
+  it("la compra cambia plata por un activo: el patrimonio no baja el año de la compra", () => {
+    expect(con.filas[4].patrimonio).toBeCloseTo(sin.filas[4].patrimonio, -3);
+    expect(casa(4).valor).toBeCloseTo(300e6, -3);
+  });
+  it("desde 2029 esa plata deja de rendir lo de la inversión y la casa se valoriza a su propia tasa", () => {
+    const crec = con.futuros.activos[0].crec;
+    expect(crec).toBeCloseTo(0.05, 6); // finca raíz: inflación + 0
+    expect(casa(5).valor).toBeCloseTo(300e6 * (1 + crec), -3);
+    expect(casa(6).valor).toBeCloseTo(300e6 * (1 + crec) ** 2, -3);
+    // la brecha contra no comprar crece por la diferencia de tasas (la cuenta rinde 9,2 %, la casa 5 %)
+    const brecha = (t) => sin.filas[t].patrimonio - con.filas[t].patrimonio;
+    expect(brecha(5)).toBeGreaterThan(0);
+    expect(brecha(6)).toBeGreaterThan(brecha(5));
+  });
+  it("sin datos de gastos de compra ni crédito: no se suman, y la tarjeta lo dice", () => {
+    expect(con.filas[4].deuda).toBe(0); // no entra un crédito como pasivo
+    const v = loQueVieneDelPlan(con).find((x) => x.tipo === "compra");
+    expect(v.sinGastosCompra).toBe(true);
+    expect(v.deContado).toBe(true);
+    const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r: sin }, { id: "e", nombre: "Casa", r: con }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
+    expect(h).toContain("Supuesto: las compras se pagan de contado y sin gastos de escritura, registro ni impuestos.");
+    const h2 = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r: sin }, { id: "e", nombre: "Igual", r: sin }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
+    expect(h2).not.toContain("Supuesto: las compras");
+  });
+});
+
+describe("aviso de Soporte junto a las tarjetas", () => {
+  it("sale hasta la fecha del aviso y después no", () => {
+    expect(mostrarAvisoCalculo(new Date("2026-11-23T12:00:00Z"))).toBe(true);
+    expect(mostrarAvisoCalculo(new Date(AVISO_CALCULO_HASTA + "T12:00:00Z"))).toBe(true);
+    expect(mostrarAvisoCalculo(new Date("2027-01-15T12:00:00Z"))).toBe(false);
+    expect(mostrarAvisoCalculo(new Date(), null)).toBe(false);
+  });
+  it("el texto va junto a las tarjetas mientras esté vigente", () => {
+    const r = proyectarFuturo10(uVenta, {});
+    const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r }, { id: "e", nombre: "Uno", r }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
+    const txt = "Ajustamos el cálculo: ahora tu ahorro se suma aparte y ya no cuenta como rendimiento, por eso la cifra puede verse más baja";
+    if (mostrarAvisoCalculo()) expect(h).toContain(txt); else expect(h).not.toContain(txt);
   });
 });

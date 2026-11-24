@@ -785,6 +785,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     Object.keys(canasta).forEach((k) => { creceCan[k] += canasta[k] * rCan[k]; canasta[k] *= 1 + rCan[k]; });
     creceAnio += creceCan.colchon + creceCan.liquidez + creceCan.renta + creceCan.crecimiento;
     // 2) flujo del año (ingresos y gastos ya crecidos)
+    // Convención (23-nov-2026, Finanzas): el año 1 es el año en curso y sus ingresos y
+    // gastos van a precios de hoy (sin indexar); desde el año 2 suben con su tasa. El
+    // patrimonio se cuenta al cierre de cada año y se lleva a pesos de hoy dividiendo
+    // por (1+inflación)^t. Por eso el ahorro del año 1 (10 M) vale 10/1,05 ≈ 9,52 M de
+    // hoy al cierre del año 1: no es doble deflación, es que se ahorra en pesos de 2026
+    // y se mide al cierre. Los flujos de «Lo que viene» sí se indexan a (1+inflación)^t.
     if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; pasivo *= 1 + gIng; }
     ingSeVan.filter((x) => x.desde === t).forEach((x) => { const v = x.mensual * 12 * Math.pow(1 + gIng, t - 1); ingresos = Math.max(0, ingresos - v); if (x.pasivo) pasivo = Math.max(0, pasivo - v); });
     if (t > 1) activos.forEach((a) => aplicarCambio(a, t));
@@ -1907,7 +1913,9 @@ export function loQueVieneDelPlan(r) {
     const pagos = (a.pagos || []).filter((p) => n(p.monto) > 0);
     const total = pagos.reduce((s, p) => s + n(p.monto), 0);
     const anio = pagos.length ? Math.min(...pagos.map((p) => p.anio)) : n(a.entrega);
-    out.push({ nombre: a.nombre, tipo: "compra", anio, anioFin: n(a.entrega) || anio, monto: total });
+    // Supuestos visibles (Finanzas): el motor no suma gastos de compra (escritura,
+    // registro, impuestos) ni modela un crédito: la compra se paga de contado.
+    out.push({ nombre: a.nombre, tipo: "compra", anio, anioFin: n(a.entrega) || anio, monto: total, sinGastosCompra: true, deContado: true, valorizacionPct: a.crec == null ? null : a.crec * 100 });
   });
   (fut.gastos || []).forEach((g) => out.push({ nombre: g.nombre, tipo: "gasto", anio: g.desde, anioFin: Math.min(N, g.hasta), monto: n(g.anual) }));
   (fut.ingresos || []).forEach((i) => out.push({ nombre: i.nombre, tipo: "ingreso", anio: i.desde, anioFin: Math.min(N, i.hasta), monto: n(i.mensual) }));
