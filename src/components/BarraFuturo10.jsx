@@ -28,6 +28,8 @@ export const CSS_BARRA_F10 = `.fp10-barra { position: sticky; bottom: 0; z-index
   .fp10-barra-cifra { font-size: 15px; }
   .fp10-barra-ir { margin-left: 0; align-self: end; justify-self: start; font-size: 12px; padding: 4px 0; }
   .fp10-barra-enc { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .fp10-barra-venta-sep { display: none; }
+  .fp10-barra-venta { display: block; white-space: normal; overflow: visible; }
   .fp10-largo { display: none; }
   .fp10-corto { display: inline; }
 }
@@ -58,7 +60,8 @@ export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct }) {
           <span className="fp10-barra-enc" data-testid="f10-barra-enc">
             <span className="fp10-largo">{liq ? tx("Hay alertas de liquidez · ", "There are cash alerts · ") : ""}{unidad}</span>
             <span className="fp10-corto">{liq ? tx("Alerta de liquidez · ", "Cash alert · ") : ""}{unidadCorta}</span>
-            {b.conVenta ? <> · <b data-testid="f10-barra-venta">{rotuloVenta()}</b></> : null}
+            {b.conVenta ? <span className="fp10-barra-venta-sep"> · </span> : null}
+            {b.conVenta ? <b className="fp10-barra-venta" data-testid="f10-barra-venta">{rotuloVenta()}</b> : null}
           </span>
         </div>
         <div className="fp10-barra-fila">

@@ -22,7 +22,7 @@
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
 import { tamanoCifra } from "../lib/infografia.js";
-import { anioCal, rendimientoSinAhorro, patrimonioFinalHoy } from "../lib/futuro10.js";
+import { anioCal, rendimientoSinAhorro, patrimonioFinalHoy, inflacionDe } from "../lib/futuro10.js";
 import MesCompleto from "./MesCompleto.jsx";
 import HistoriaPlata from "./infografia/HistoriaPlata.jsx";
 import { useMemo, useState } from "react";
@@ -91,8 +91,8 @@ function series(filas, campo, n = 5) {
   return { top: top.map((id, i) => ({ id, nombre: nombre[id], clase: clase[id], color: INF.serie[i % INF.serie.length] })), resto };
 }
 
-export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct() }) {
-  const [modo, setModo] = useState("nominal"); // nominal | real (plata de hoy)
+export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct(), modoInicial = "nominal" }) {
+  const [modo, setModo] = useState(modoInicial); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
   const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala
   // 19-nov-2026 (Santiago: "uno debería poder elegir año y ver cómo se comporta
@@ -244,7 +244,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   </div>; };
 
   const Toggle = () => <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-    {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos")]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
+    {[["nominal", esUS() ? tx("Dólares de cada año", "Each year's dollars") : tx("Pesos de cada año", "Each year's pesos")], ["real", esUS() ? tx(`En dólares de hoy (inflación ${fmPct(inflacionDe(r), 1)} al año)`, `In today's dollars (${fmPct(inflacionDe(r), 1)} yearly inflation)`) : tx(`En pesos de hoy (inflación ${fmPct(inflacionDe(r), 1)} al año)`, `In today's pesos (${fmPct(inflacionDe(r), 1)} yearly inflation)`)]].map(([k, l]) => <button key={k} onClick={() => setModo(k)} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${modo === k ? INF.tx : INF.linea}`, background: modo === k ? INF.tx : "transparent", color: modo === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}
   </div>;
 
   // 19-nov-2026 (Santiago: "muchos problemas de diagramación"): con cifras
@@ -477,7 +477,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         <p style={lead}>{nombre}. {modo === "real" ? tx(`En ${monedas()} de hoy.`, `In today's ${monedas()}.`) : tx(`En ${monedas()} de cada año.`, `In each year's ${monedas()}.`)} {tx("Cobertura = lo que entra ÷ lo que sale.", "Coverage = money in ÷ money out.")}</p>
         <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 560 }}>
           <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={th}>{tx("Patrimonio", "Net worth")}</th>{sL.map((s) => <th key={s.id} style={th}>{(s.nombre || "").slice(0, 18)}</th>)}<th style={th}>{tx("Deuda", "Debt")}</th><th style={th}>{tx("Cobertura", "Coverage")}</th></tr></thead>
-          <tbody>{filas.map((f, i) => <tr key={f.anio}><td style={tdL}>{f.anio === 0 ? tx("Hoy", "Today") : anioCal(f.anio)}</td><td style={td}>{fmM(f.patrimonio / d(f))}</td>
+          <tbody>{filas.map((f, i) => <tr key={f.anio}><td style={tdL}>{f.anio === 0 ? tx("Hoy", "Today") : anioCal(f.anio)}</td><td style={td} data-testid={`f10-tabla-pat-${f.anio}`}>{fmM(f.patrimonio / d(f))}</td>
             {sL.map((s) => <td key={s.id} style={td}>{pat[i][s.id] ? fmM(pat[i][s.id]) : "—"}</td>)}
             <td style={td}>{f.deuda > 0 ? fmM(f.deuda / d(f)) : "—"}</td><td style={td}>{f.gastos > 0 ? fmPct(f.ingresos / f.gastos * 100, 0) : "—"}</td></tr>)}</tbody>
         </table></div>

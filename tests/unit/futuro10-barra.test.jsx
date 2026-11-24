@@ -348,7 +348,17 @@ describe("una sola tasa de «pesos de hoy»: la inflación del escenario (Finanz
     const hc = renderToStaticMarkup(createElement(PlanComparador, { planes, inflacionPct: 4 }));
     expect([...hc.matchAll(/data-testid="f10-comp-fin"[^>]*>([^<]+)</g)].map((x) => x[1])).toContain(cifra);
     const hi = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4 }));
-    expect(conTest(hi, "f10-veredicto-fin")).toBe(cifra);
+    expect(conTest(hi, "f10-veredicto-fin")).toBe(cifra);    // interruptor en «pesos de hoy»: la fila del año 10 de la tabla da la misma cifra y el rótulo dice 4 %
+    const hr = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4, modoInicial: "real" }));
+    expect(conTest(hr, `f10-tabla-pat-${fin.anio}`)).toBe(cifra);
+    expect(conTest(hr, "f10-veredicto-fin")).toBe(cifra);
+    expect(hr).toContain("En pesos de hoy (inflación 4");
+  });
+  it("móvil: con venta y alerta, «antes de impuestos de la venta» va en su propia línea y no se corta", () => {
+    const h = renderToStaticMarkup(createElement(BarraFuturo10, { rPlan: r, rHoy, onIr: () => {} }));
+    expect(h).toContain('class="fp10-barra-venta"');
+    expect(h).toContain(".fp10-barra-venta { display: block; white-space: normal; overflow: visible; }");
+    expect(h).toContain("antes de impuestos de la venta");
   });
   it("la vivienda al 0 % real crece con esa misma inflación (4 %)", () => {
     const u = { inflacionPct: 4, inv: [{ id: "a", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] };
