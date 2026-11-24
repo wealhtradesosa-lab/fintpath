@@ -1339,7 +1339,7 @@ export function MovidaEditor({ r, cfg, set, refMov, anio, esc, quedaHoy = 0, onA
 
 // 24-nov-2026 (Santiago: "fichas más recogidas, no todo desplegado, para que sea más simple de ver").
 // Una ficha: título, una cifra y su contenido; si se puede recoger, recogida muestra un resumen de una línea.
-function Ficha({ titulo, sub, cifra, cifraSub, col, abierta = true, onToggle, resumen, fuerte, tam, id, children }) {
+function Ficha({ titulo, sub, cifra, cifraSub, col, abierta = true, onToggle, resumen, fuerte, tam, id, accion, children }) {
   const cabeza = <>
     <div style={{ minWidth: 0 }}>
       <div style={{ ...TIPO.ficha, display: "flex", alignItems: "center", gap: 8 }}>{onToggle && <span aria-hidden="true" style={{ color: C.tx2, fontSize: 12, width: 12 }}>{abierta ? "▾" : "▸"}</span>}{titulo}</div>
@@ -1349,6 +1349,7 @@ function Ficha({ titulo, sub, cifra, cifraSub, col, abierta = true, onToggle, re
       <div style={{ fontSize: tam || (fuerte ? 28 : 20), fontWeight: 700, color: col || C.tx, fontVariantNumeric: "tabular-nums", lineHeight: 1.15 }}>{cifra}</div>
       {cifraSub && <div style={{ fontSize: 12, color: C.tx2 }}>{cifraSub}</div>}
     </div>}
+    {accion && <div style={{ marginLeft: "auto", flex: "0 0 auto" }}>{accion}</div>}
   </>;
   const estiloCabeza = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" };
   return <section id={id} style={{ background: C.bg, border: `1px solid ${fuerte ? C.gn : C.bd}`, borderRadius: 12, padding: "16px 18px", marginTop: 12 }}>
@@ -1374,8 +1375,8 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   // La movida que se está editando en su fila y la recién agregada (se resalta y se confirma).
   const [editMov, setEditMov] = useState(null);
   const [recien, setRecien] = useState(null);
-  // Qué ficha está abierta: «Así arranca» empieza recogida; la opción elegida abre su menú.
-  const [verArranca, setVerArranca] = useState(false);
+  // Qué está abierto: lo que cambia en tu mes empieza recogido; la opción elegida abre su menú.
+  const [verCambios, setVerCambios] = useState(false);
   const [verOrigen, setVerOrigen] = useState(false);
   const [panel, setPanel] = useState(null);
   // 24-nov-2026 (Santiago: "va uno a editar y no pasa nada… ¿cerrar qué es?"). La reserva se edita en su fila, donde uno está mirando.
@@ -1424,11 +1425,18 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
     : tx("La usas en cualquier año siguiente con «Usar tu reserva este año», y se usa sola si un año no te alcanza.", "Use it in any later year with \"Use your reserve this year\"; it's also used automatically if a year falls short.");
   const hastaCuandoViejo = usosRes.length ? tx(`Se queda rindiendo y se usa sola el año que no te alcance: según tu plan, ${listaAnios(usosRes)}.${resFinal > 0.5 ? ` Al final de ${anioCal(N)} quedarían ${plata(Math.round(resFinal))}.` : ""}`, `It keeps earning and is used automatically the year you fall short: per your plan, ${listaAnios(usosRes)}.${resFinal > 0.5 ? ` By the end of ${anioCal(N)} ${plata(Math.round(resFinal))} would be left.` : ""}`)
     : tx(`Se queda rindiendo y se usa sola el año que no te alcance. Con tu plan no hace falta usarla${resFinal > 0.5 ? `: al final de ${anioCal(N)} tendrías ${plata(Math.round(resFinal))}` : ""}.`, `It keeps earning and is used automatically the year you fall short. Your plan doesn't need it${resFinal > 0.5 ? `: by the end of ${anioCal(N)} you'd have ${plata(Math.round(resFinal))}` : ""}.`);
-  const guardados = cuenta.filter((y) => y.anio < anio && (y.aApartado || 0) > 0.5 && y.reservaHasta > anio).map((y) => ({ desde: y.anio, hasta: y.reservaHasta, monto: y.aApartado * Math.pow(1 + tasaN, anio - y.anio) }));
-  const totGuardado = guardados.reduce((sm, x) => sm + x.monto, 0);
   const ponerHasta = (v) => { const x = { ...(cfg.reservaHasta || {}) }; if (!v) delete x[anio]; else x[anio] = Number(v); set("reservaHasta", x); };
   const listo = !!(cfg.aniosListos || {})[anio], problema = g.faltaSinCubrir > 0.5 || g.porInvertir < -0.5;
   const usado = Math.max(0, g.movido) + (g.reservaDeAqui || 0);
+  const partesDesc = [g.comprometido > 0.5 && tx(`lo comprometido para este año (${plata(Math.round(g.comprometido))})`, `this year's commitments (${plata(Math.round(g.comprometido))})`), g.faltaMes > 0.5 && tx(`lo que te falta para vivir este año (${plata(Math.round(g.faltaMes))})`, `this year's living shortfall (${plata(Math.round(g.faltaMes))})`)].filter(Boolean);
+  const descuenta = partesDesc.length ? tx(` Ya le restamos ${partesDesc.join(" y ")}.`, ` Already net of ${partesDesc.join(" and ")}.`) : "";
+  const yLista = (l) => (l.length <= 1 ? l.join("") : `${l.slice(0, -1).join(", ")} ${tx("y", "and")} ${l[l.length - 1]}`);
+  const origenCap = yLista([
+    g.antes > 0.5 && tx(`lo que te sobró de ${anioCal(anio - 1)}`, `what was left from ${anioCal(anio - 1)}`),
+    g.llegan.some((l) => l.tipo === "venta" || l.tipo === "vence") && tx("tus ventas", "your sales"),
+    g.llegan.some((l) => l.tipo === "retiro") && tx("lo que retiras de tus inversiones", "what you withdraw from your investments"),
+    g.llegan.some((l) => String(l.id).startsWith("reserva_")) && tx("lo que guardaste para este año", "what you kept for this year"),
+  ].filter(Boolean));
   // El formulario de la reserva: se abre arriba con «Guardar en tu reserva» o en su fila con «Editar».
   const panelReserva = <>
           <div style={{ ...TIPO.meta, marginBottom: 8 }}>{tx("Para años que vienen.", "For coming years.")} {hastaCuando}{g.porInvertir > 0.5 ? tx(` Te quedan ${plata(Math.round(g.porInvertir))} de tu capital.`, ` ${plata(Math.round(g.porInvertir))} of your capital is left.`) : ""}</div>
@@ -1451,19 +1459,28 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   const editarReservaFila = () => { if (panel === "reserva" && resEnFila) { setPanel(null); return; } setResEnFila(true); setPanel("reserva"); };
   const libresAportar = opcionesParaMeter(r, cfg, anio, Object.fromEntries(g.movidas.filter((m) => m.ref).map((m) => [m.ref, m.monto])));
 
-  // Ficha recogida de un año listo: lo que se hizo, en pocas líneas.
-  const resumenListo = <Ficha fuerte titulo={tx(`✓ ${anio === 1 ? "Hoy" : Y} quedó listo`, `✓ ${anio === 1 ? "Today" : Y} is done`)} sub={tx("Así lo dejaste. Si cambias algo, se guarda solo.", "This is how you left it. Any change saves automatically.")}>
-    <Renglon l={tx("Capital disponible", "Available capital")} v={g.disponible} />
-    {g.movido > 0.5 && <Renglon l={tx(`Invertiste (${g.movidas.filter((m) => m.cuenta).length} ${g.movidas.filter((m) => m.cuenta).length === 1 ? "movida" : "movidas"})`, `You invested (${g.movidas.filter((m) => m.cuenta).length} moves)`)} v={g.movido} />}
-    {pagaste > 0.5 && <Renglon l={tx("Pagaste deudas", "You paid off debt")} v={pagaste} />}
-    {g.aReserva > 0.5 && <Renglon l={tx("Guardaste en tu reserva", "You kept in your reserve")} v={g.aReserva} />}
-    <Renglon l={(fCon.cf || 0) < -0.5 ? tx("Tu mes: te faltan al mes", "Your month: short each month") : tx("Tu mes: te sobran al mes", "Your month: left each month")} v={(fCon.cf || 0) / 12} col={(fCon.cf || 0) < -0.5 ? C.am : C.gn} signo={(fCon.cf || 0) < -0.5 ? "−" : ""} />
-    {sigY && <Renglon fuerte linea l={tx(`Pasa a ${sigY} para invertir o pagar deudas`, `Carries to ${sigY} to invest or pay off debt`)} v={g.pasa} col={C.gn} />}
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-      <button type="button" style={{ ...btn(false), padding: "8px 12px" }} onClick={() => setEditarListo(true)}>{tx(`Editar ${anio === 1 ? "hoy" : Y}`, `Edit ${anio === 1 ? "today" : Y}`)}</button>
+  // 24-nov-2026 (Santiago: "«Hoy quedó listo», ¿qué? ¿qué es ese título? Es terrible. Es mejor «Así quedó tu 2026»: resumen de tu 2026
+  // después de las inversiones ejecutadas"). El resumen de un año que dejaste organizado suma de arriba abajo: tu capital disponible, lo
+  // que hiciste con él, lo que te quedó de tu mes y lo que pasa al año siguiente. La reserva dice de dónde salió (capital o mes).
+  const resumenListo = (() => {
+    const deCap = Math.min(g.reservaDeAqui || 0, g.aReserva || 0), deMes = Math.max(0, (g.aReserva || 0) - deCap);
+    const cf = fCon.cf || 0, mesQueda = (g.mes || 0) - (g.repartoFuera || 0), reinvSolo = cf > 0.5 ? Math.max(0, cf - (g.flujo || 0)) : 0;
+    const nInv = g.movidas.filter((m) => m.cuenta).length, A = anioCal(anio);
+    const notaMes = cf > 0.5 ? tx(`Te sobran ${plata(Math.round(cf / 12))} al mes (${plata(Math.round(cf))} al año)${reinvSolo > 0.5 || (g.repartoFuera || 0) > 0.5 ? `; de eso, ${[reinvSolo > 0.5 && `${plata(Math.round(reinvSolo))} se reinvierten solos`, (g.repartoFuera || 0) > 0.5 && `${plata(Math.round(g.repartoFuera))} los repartiste en abonos, inversiones o gastos`].filter(Boolean).join(" y ")}` : ""}.`,
+      `You have ${plata(Math.round(cf / 12))} left each month (${plata(Math.round(cf))} a year).`) : null;
+    return <Ficha fuerte titulo={tx(`Así quedó tu ${A}`, `How your ${A} turned out`)} sub={tx(`Resumen de tu ${A} después de tus inversiones y pagos. Si cambias algo, se guarda solo.`, `Summary of your ${A} after your investments and payments. Any change saves automatically.`)} accion={<button type="button" style={btnAccion(false)} onClick={() => setEditarListo(true)}>{tx(`Editar tu ${A}`, `Edit your ${A}`)}</button>}>
+      <Renglon l={tx("Capital disponible", "Available capital")} v={g.disponible} nota={pagaste > 0.5 ? tx(`Ya sin las deudas que pagaste: ${plata(Math.round(pagaste))}.`, `Already net of the debt you paid off: ${plata(Math.round(pagaste))}.`) : null} />
+      {g.movido > 0.5 && <Renglon l={tx(`− Invertiste (${nInv} ${nInv === 1 ? "inversión" : "inversiones"})`, `− You invested (${nInv})`)} v={g.movido} />}
+      {deCap > 0.5 && <Renglon l={tx("− A tu reserva, de tu capital", "− To your reserve, from your capital")} v={deCap} />}
+      {Math.abs(mesQueda) > 0.5 && <Renglon l={mesQueda > 0 ? tx("+ Te quedó de tu mes", "+ Left from your month") : tx("− Tu mes te restó", "− Your month took")} v={Math.abs(mesQueda)} col={mesQueda > 0 ? C.gn : C.am} nota={mesQueda > 0 ? notaMes : null} />}
+      {deMes > 0.5 && <Renglon l={tx("− A tu reserva, de lo que te sobra al mes", "− To your reserve, from your monthly surplus")} v={deMes} />}
+      <Renglon fuerte linea l={sigY ? tx(`= Pasa a ${sigY} para invertir o pagar deudas`, `= Carries to ${sigY} to invest or pay off debt`) : tx("= Te queda al cierre", "= Left at year end")} v={g.pasa} col={C.gn} />
+      {(g.aReserva || 0) > 0.5 && <div style={{ ...TIPO.meta, marginTop: 6 }}>{tx(`Tu fondo de reserva al cierre de ${A}: ${plata(Math.round((g.reservaFin || 0) + (g.apartadoFin || 0)))}.`, `Your reserve fund at the end of ${A}: ${plata(Math.round((g.reservaFin || 0) + (g.apartadoFin || 0)))}.`)}</div>}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
       {sigY ? <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={() => (irAnio ? irAnio(anio + 1) : ir(anio + 1))}>{tx(`Seguir con ${sigY} →`, `Go on to ${sigY} →`)}</button> : <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={irResultado}>{tx("Ver el resultado →", "See the result →")}</button>}
-    </div>
-  </Ficha>;
+      </div>
+    </Ficha>;
+  })();
 
   return <div style={{ ...card, padding: 0, overflow: "visible" }} id="f10-anios">
     <div style={{ padding: "14px 16px 8px" }}>
@@ -1492,66 +1509,45 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
             : q < -0.5 ? <span>{tx("Te pasaste ", "Over by ")}<b style={{ color: C.rd, fontWeight: 600 }}>{plata(Math.round(-q))}</b></span>
             : <span>{tx("Por usar ", "To use ")}<b style={{ color: q > 0.5 ? C.gn : C.tx, fontWeight: 600 }}>{plata(Math.round(Math.max(0, q)))}</b></span>}
           <span>{tx("Al mes ", "Monthly ")}<b style={{ color: mesY < -0.5 ? C.am : mesY > 0.5 ? C.gn : C.tx, fontWeight: 600 }}>{mesY < -0.5 ? "−" : "+"}{plata(Math.round(Math.abs(mesY)))}</b></span>
-          {(() => { const rv = y.anio === 1 ? (y.reservaFin || 0) + (y.apartadoFin || 0) : (y.reservaAntes || 0) + (y.apartadoAntes || 0); return rv > 0.5 && <span>{tx("Reserva ", "Reserve ")}<b style={{ color: C.tx, fontWeight: 600 }}>{plata(Math.round(rv))}</b></span>; })()}
+          {(() => { const rv = reservaDelAnio(y).queda; return rv > 0.5 && <span>{tx("Reserva ", "Reserve ")}<b style={{ color: C.tx, fontWeight: 600 }}>{plata(Math.round(rv))}</b></span>; })()}
         </div>; })()}
       </button>; })}
     </div>
     <div style={{ padding: "4px 16px 16px" }}>
       {listo && !problema && !editarListo ? resumenListo : <>
-      {/* Así arranca: lo que tienes y lo que te cuesta vivir, recogido en una línea. */}
-      <Ficha titulo={tx(`Así arranca ${anio === 1 ? "este año" : Y}`, `How ${anio === 1 ? "this year" : Y} starts`)} abierta={verArranca} onToggle={() => setVerArranca(!verArranca)}
-        resumen={tx(`Tienes ${plata(Math.round(g.tienes))} · tu mes ${(fo.cf || 0) < -0.5 ? "te falta" : "te sobra"} ${plata(Math.round(Math.abs((fo.cf || 0) / 12)))} al mes${g.reservaAntes + totGuardado > 0.5 ? ` · reserva ${plata(Math.round(g.reservaAntes + totGuardado))}` : ""}${cambios.length ? ` · ${cambios.length} ${cambios.length === 1 ? "cambio" : "cambios"} este año` : ""}`, `You have ${plata(Math.round(g.tienes))} · your month is ${(fo.cf || 0) < -0.5 ? "short" : "left with"} ${plata(Math.round(Math.abs((fo.cf || 0) / 12)))} a month${g.reservaAntes + totGuardado > 0.5 ? ` · reserve ${plata(Math.round(g.reservaAntes + totGuardado))}` : ""}${cambios.length ? ` · ${cambios.length} changes this year` : ""}`)}
-        sub={tx("Lo que tienes y tu mes con lo que ya decidiste, antes de tus movidas de este año.", "What you have and your month with what you've decided, before this year's moves.")}>
-        <Etq>{tx("Lo que tienes", "What you have")}</Etq>
-        {g.antes > 0.5 && <Renglon l={tx(`Saldo que traes de ${nombreAnio(anio - 1)}`, `Balance carried from ${nombreAnio(anio - 1)}`)} v={g.antes} nota={tx("Lo que no usaste antes: no es plata nueva de este año.", "What you didn't use before: it's not new money this year.")} />}
-        {g.llegan.map((l, k) => <Renglon key={k} l={(g.antes > 0.5 || k > 0 ? "+ " : "") + (l.tipo === "venta" || l.tipo === "reserva" ? l.nombre : l.tipo === "retiro" ? tx(`Sacas de ${l.nombre}${l.parcial ? " (una parte)" : ""}`, `Taken out of ${l.nombre}${l.parcial ? " (part of it)" : ""}`) : tx(`Te llega de ${l.nombre}`, `Arrives from ${l.nombre}`))} nota={l.pagoDeuda > 0.5 ? tx(`Ya descontada su deuda (${plata(Math.round(l.pagoDeuda))}).`, `Its debt (${plata(Math.round(l.pagoDeuda))}) already deducted.`) : null} v={l.monto} />)}
-        {g.tienes <= 0.5 && <div style={{ fontSize: 12.5, color: C.tx2 }}>{tx(anio === 1 ? "Hoy no vendes nada ni te llega plata de una venta." : "Este año no te llega plata de ventas ni vencimientos, y no traes saldo.", anio === 1 ? "You're not selling anything today." : "No money from sales or maturities this year, and no balance carried.")}</div>}
-        <Etq>{tx("Tu mes antes de tus movidas", "Your month before your moves")}</Etq>
-        <MesAnio filas={[
-          [tx("Te entra", "Comes in"), fo.ingresos || 0],
-          [tx("Vivir te cuesta", "Living costs"), fo.gastos || 0, { nota: (fo.cuota || 0) > 0.5 ? tx(`Incluye ${plata(Math.round(fo.cuota / 12))} al mes de cuotas de deudas.`, `Includes ${plata(Math.round(fo.cuota / 12))} a month in loan payments.`) : null }],
-          [(fo.cf || 0) < -0.5 ? tx("Te faltan", "Short") : tx("Te sobran", "Left over"), fo.cf || 0, { fuerte: true, linea: true, col: (fo.cf || 0) < -0.5 ? C.am : C.gn, signo: (fo.cf || 0) < -0.5 ? "−" : "" }],
-        ]} />
-        {cambios.length > 0 && <>
-          <Etq>{tx("Lo que cambia este año", "What changes this year")}</Etq>
-          {cambios.map((c, k) => { const clave = c.ajustar ? `aj:${c.ajustar.tipo}:${c.ajustar.idx}` : null; return <div key={k}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "4px 0", fontSize: 13, flexWrap: "wrap" }}>
-              <span style={{ color: C.tx, minWidth: 0 }}>{c.nombre} <span style={{ fontSize: 12, color: C.tx2 }}>· {c.que}{c.paso1 ? tx(" · del paso 1", " · from step 1") : ""}</span>
-                {clave && <button type="button" onClick={() => setAbierto(abierto === clave ? null : clave)} style={{ ...enlace, fontSize: 12, paddingLeft: 8 }}>{abierto === clave ? tx("Listo", "Done") : tx("Ajustar", "Adjust")}</button>}
-                {c.quitarPaga && <button type="button" onClick={() => set("nuevas", cfg.nuevas.map((x, j) => { if (j !== c.quitarPaga.k) return x; const pa = { ...(x.pagaAnios || {}) }; delete pa[c.quitarPaga.anio]; return { ...x, pagaAnios: pa }; }))} style={{ ...enlace, color: C.tx2, fontSize: 12, paddingLeft: 8 }}>{tx("Quitar", "Remove")}</button>}</span>
-              {c.mes != null && <span style={{ color: c.mes > 0 ? C.gn : C.am, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", marginLeft: "auto" }}>{c.ahorro ? tx(`te ahorras ${plata(Math.round(Math.abs(c.mes)))} al mes`, `you save ${plata(Math.round(Math.abs(c.mes)))} a month`) : <>{c.mes > 0 ? "+" : "−"}{plata(Math.round(Math.abs(c.mes)))} {tx("al mes", "a month")}</>}</span>}
-            </div>
-            {clave && abierto === clave && <AjustarHito cfg={cfg} set={set} tipo={c.ajustar.tipo} idx={c.ajustar.idx} />}
-          </div>; })}
-        </>}
-      </Ficha>
-
-      <FichaReserva g={g} cfg={cfg} set={set} anio={anio} Y={Y} tasaR={tasaR} />
-      {/* 1 · Tu capital disponible: qué haces con él. Cada opción abre su menú. */}
-      <Ficha fuerte id="f10-capital" titulo={tx(`1 · Tu capital disponible ${enY}`, `1 · Your available capital ${enY}`)} sub={tx("Lo que tienes, menos lo comprometido y lo que falta para vivir. No cambia cuando inviertes.", "What you have, minus commitments and any living shortfall. It doesn't change as you invest.")}
-        cifra={`${g.porInvertir < -0.5 ? "−" : ""}${plata(Math.round(Math.abs(g.porInvertir)))}`} cifraSub={usado > 0.5 ? (g.porInvertir < -0.5 ? tx("te pasaste", "over") : tx("te quedan por usar", "left to use")) : tx("puedes usar", "you can use")} col={g.porInvertir < -0.5 ? C.rd : g.porInvertir > 0.5 ? C.gn : C.tx}>
-        {g.disponible > 0.5 && usado > 0.5 && (() => { const pctU = Math.min(100, usado / g.disponible * 100); return <div style={{ margin: "0 0 10px" }}>
-          <div aria-hidden="true" style={{ height: 8, borderRadius: 999, background: C.bd, overflow: "hidden" }}><div style={{ height: "100%", width: `${pctU}%`, background: g.porInvertir < -0.5 ? C.rd : C.gn, transition: "width 400ms cubic-bezier(.2,.8,.2,1)" }} /></div>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12, color: C.tx2, marginTop: 4, fontVariantNumeric: "tabular-nums" }}><span>{tx(`Usaste ${plata(Math.round(usado))} de ${plata(Math.round(g.disponible))}`, `You used ${plata(Math.round(usado))} of ${plata(Math.round(g.disponible))}`)}</span><span>{g.porInvertir < -0.5 ? tx(`te pasaste ${plata(Math.round(-g.porInvertir))}`, `over by ${plata(Math.round(-g.porInvertir))}`) : tx(`te quedan ${plata(Math.round(g.porInvertir))}`, `${plata(Math.round(g.porInvertir))} left`)}</span></div>
-        </div>; })()}
-        {(g.sacasReserva || 0) > 0.5 && <div style={{ fontSize: 14, color: C.tx, margin: "0 0 8px", lineHeight: 1.45 }}>{tx(`Incluye ${plata(Math.round(g.sacasReserva))} que vienen de tu reserva.`, `Includes ${plata(Math.round(g.sacasReserva))} from your reserve.`)}</div>}
-        <button type="button" onClick={() => setVerOrigen(!verOrigen)} style={{ ...enlace, color: C.tx2 }} aria-expanded={verOrigen}>{verOrigen ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx("¿De dónde sale?", "Where does it come from?")}</button>
-        {verOrigen && <div style={{ marginTop: 6 }}>
-          {/* Lo que tienes, renglón por renglón: lo que traes y cada venta o plata que te llega. */}
-          {g.antes > 0.5 && <Renglon l={tx(`Saldo que traes de ${nombreAnio(anio - 1)}`, `Balance carried from ${nombreAnio(anio - 1)}`)} v={g.antes} />}
-          {g.llegan.map((l, k) => <Renglon key={"ll" + k} l={(g.antes > 0.5 || k > 0 ? "+ " : "") + (l.tipo === "venta" || l.tipo === "reserva" ? l.nombre : l.tipo === "retiro" ? tx(`Sacas de ${l.nombre}${l.parcial ? " (una parte)" : ""}`, `Taken out of ${l.nombre}${l.parcial ? " (part of it)" : ""}`) : tx(`Te llega de ${l.nombre}`, `Arrives from ${l.nombre}`))} v={l.monto} nota={l.pagoDeuda > 0.5 ? tx(`Ya descontada su deuda (${plata(Math.round(l.pagoDeuda))}).`, `Its debt (${plata(Math.round(l.pagoDeuda))}) already deducted.`) : null} />)}
-          {(g.antes > 0.5 ? 1 : 0) + g.llegan.length > 1 && <Renglon fuerte l={tx("= Lo que tienes", "= What you have")} v={g.tienes} />}
-          {g.tienes <= 0.5 && <Renglon l={tx(anio === 1 ? "Lo que tienes (hoy no vendes nada)" : "Lo que tienes (no traes saldo ni te llega plata)", "What you have (nothing sold or carried)")} v={0} />}
-          {g.faltaMes > 0.5 && <Renglon l={tx("− Lo que falta para vivir", "− Short on living costs")} v={g.faltaMes} col={C.am} nota={tx("Se aparta primero, antes de invertir.", "Set aside first, before investing.")} />}
-          {g.compromisos.map((c, k) => { const clave = c.tipo === "F" && c.idx != null && c.k === 0 ? `dc:${c.idx}` : null; const xa = clave ? ((cfg.futuros || {}).activos || [])[c.idx] : null; return <div key={k}>
-            <Renglon l={`− ${c.nombre}`} v={c.monto} col={C.tx2} nota={c.nota || (c.tipo === "F" && c.k > 0 ? tx("Otra parte de esa compra.", "Another part of that purchase.") : null)} />
-            {clave && <button type="button" onClick={() => setAbierto(abierto === clave ? null : clave)} style={{ ...enlace, padding: "0 0 6px" }}>{abierto === clave ? tx("Cerrar el detalle", "Close the detail") : xa && xa.desglose ? tx("Ver el detalle de la compra", "See the purchase detail") : tx("Detallar cómo la compras", "Detail how you buy it")}</button>}
-            {clave && abierto === clave && <DesgloseCompra r={r} cfg={cfg} set={set} idx={c.idx} anio0={anio} />}
-          </div>; })}
-          {g.cubreMes > 0.5 && <Renglon l={tx("+ Lo cubre lo que te sobra en el año", "+ Covered by this year's surplus")} v={g.cubreMes} nota={tx("Lo comprometido no cabía en tu capital: una parte la paga tu mes.", "Commitments didn't fit your capital: part is paid by your month.")} />}
-          {g.usoReserva > 0.5 && <Renglon l={tx("+ Sale de tu fondo de reserva", "+ From your reserve fund")} v={g.usoReserva} col={C.am} nota={tx("Lo que tienes no alcanza para vivir y pagar lo comprometido; lo cubre tu reserva.", "What you have doesn't cover living costs and commitments; your reserve does.")} />}
-          <Renglon fuerte linea l={tx("Puedes usar", "You can use")} v={g.disponible} col={g.disponible > 0.5 ? C.gn : C.tx} />
-        </div>}
+      {/* 24-nov-2026 (Santiago: "uno aquí se pierde: arranca el año con… y luego tu reserva hoy… no sé con qué cuento finalmente";
+          "demos orden: tienes para este año 1.000 MM disponibles y 300 MM en reserva"; "tienes este año 2.000 MM disponibles y 250 MM en reserva"; "lo más importante es el capital disponible y lo
+          segundo la reserva"; "uno cree que lo único que hay es la reserva"). Arriba, una sola respuesta: con qué cuentas este año. Tu
+          capital disponible, grande, y al lado tu reserva, aparte y más pequeña: las dos se suman sin contar nada dos veces. De dónde
+          sale va plegado; lo que cambia en tu mes pasó a «2 · Tu mes». */}
+      <section id="f10-cuentas" style={{ background: C.bg, border: `1px solid ${C.gn}`, borderRadius: 12, padding: "16px 18px", marginTop: 12 }}>
+        <div style={TIPO.ficha}>{anio === 1 ? tx("Tienes este año", "This year you have") : tx(`Tienes en ${Y}`, `In ${Y} you have`)}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, marginTop: 12, alignItems: "flex-start" }}>
+          <div style={{ flex: "1.6 1 300px", minWidth: 0 }}>
+            <div style={{ fontSize: "clamp(26px, 8vw, 40px)", fontWeight: 700, lineHeight: 1.1, color: g.disponible > 0.5 ? C.gn : C.tx, fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere" }}>{plata(Math.round(g.disponible))}</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: C.tx, marginTop: 2 }}>{tx("de capital disponible", "of available capital")}</div>
+            <div style={{ ...TIPO.meta, marginTop: 6 }}>{origenCap ? tx(`Viene de ${origenCap}. `, `From ${origenCap}. `) : ""}{tx("Para invertir, pagar deudas o guardar en tu reserva.", "To invest, pay off debt or keep in your reserve.")}{descuenta}</div>
+            {(g.sacasReserva || 0) > 0.5 && <div style={{ fontSize: 14, color: C.tx, marginTop: 6, lineHeight: 1.45 }}>{tx(`Incluye ${plata(Math.round(g.sacasReserva))} que sacas de tu reserva.`, `Includes ${plata(Math.round(g.sacasReserva))} you take from your reserve.`)}</div>}
+            <button type="button" onClick={() => setVerOrigen(!verOrigen)} style={{ ...enlace, color: C.tx2, marginTop: 8 }} aria-expanded={verOrigen}>{verOrigen ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx("¿De dónde sale?", "Where does it come from?")}</button>
+            {verOrigen && <div style={{ marginTop: 6 }}>
+              {/* Lo que tienes, renglón por renglón: lo que traes y cada venta o plata que te llega. */}
+              {g.antes > 0.5 && <Renglon l={tx(`Saldo que traes de ${nombreAnio(anio - 1)}`, `Balance carried from ${nombreAnio(anio - 1)}`)} v={g.antes} />}
+              {g.llegan.map((l, k) => <Renglon key={"ll" + k} l={(g.antes > 0.5 || k > 0 ? "+ " : "") + (l.tipo === "venta" || l.tipo === "reserva" ? l.nombre : l.tipo === "retiro" ? tx(`Sacas de ${l.nombre}${l.parcial ? " (una parte)" : ""}`, `Taken out of ${l.nombre}${l.parcial ? " (part of it)" : ""}`) : tx(`Te llega de ${l.nombre}`, `Arrives from ${l.nombre}`))} v={l.monto} nota={l.pagoDeuda > 0.5 ? tx(`Ya descontada su deuda (${plata(Math.round(l.pagoDeuda))}).`, `Its debt (${plata(Math.round(l.pagoDeuda))}) already deducted.`) : null} />)}
+              {(g.antes > 0.5 ? 1 : 0) + g.llegan.length > 1 && <Renglon fuerte l={tx("= Lo que tienes", "= What you have")} v={g.tienes} />}
+              {g.tienes <= 0.5 && <Renglon l={tx(anio === 1 ? "Lo que tienes (hoy no vendes nada)" : "Lo que tienes (no traes saldo ni te llega plata)", "What you have (nothing sold or carried)")} v={0} />}
+              {g.faltaMes > 0.5 && <Renglon l={tx("− Lo que falta para vivir", "− Short on living costs")} v={g.faltaMes} col={C.am} nota={tx("Se aparta primero, antes de invertir.", "Set aside first, before investing.")} />}
+              {g.compromisos.map((c, k) => { const clave = c.tipo === "F" && c.idx != null && c.k === 0 ? `dc:${c.idx}` : null; const xa = clave ? ((cfg.futuros || {}).activos || [])[c.idx] : null; return <div key={k}>
+              <Renglon l={`− ${c.nombre}`} v={c.monto} col={C.tx2} nota={c.nota || (c.tipo === "F" && c.k > 0 ? tx("Otra parte de esa compra.", "Another part of that purchase.") : null)} />
+              {clave && <button type="button" onClick={() => setAbierto(abierto === clave ? null : clave)} style={{ ...enlace, padding: "0 0 6px" }}>{abierto === clave ? tx("Cerrar el detalle", "Close the detail") : xa && xa.desglose ? tx("Ver el detalle de la compra", "See the purchase detail") : tx("Detallar cómo la compras", "Detail how you buy it")}</button>}
+              {clave && abierto === clave && <DesgloseCompra r={r} cfg={cfg} set={set} idx={c.idx} anio0={anio} />}
+              </div>; })}
+              {g.cubreMes > 0.5 && <Renglon l={tx("+ Lo cubre lo que te sobra en el año", "+ Covered by this year's surplus")} v={g.cubreMes} nota={tx("Lo comprometido no cabía en tu capital: una parte la paga tu mes.", "Commitments didn't fit your capital: part is paid by your month.")} />}
+              {g.usoReserva > 0.5 && <Renglon l={tx("+ Sale de tu fondo de reserva", "+ From your reserve fund")} v={g.usoReserva} col={C.am} nota={tx("Lo que tienes no alcanza para vivir y pagar lo comprometido; lo cubre tu reserva.", "What you have doesn't cover living costs and commitments; your reserve does.")} />}
+              <Renglon fuerte linea l={tx("= Capital disponible", "= Available capital")} v={g.disponible} col={g.disponible > 0.5 ? C.gn : C.tx} />
+            </div>}
+          </div>
+          <ReservaAnio g={g} cfg={cfg} set={set} anio={anio} Y={Y} tasaR={tasaR} />
+        </div>
         {/* Compras de Lo que viene que todavía no tienen valor: se detallan en su año. */}
         {((cfg.futuros || {}).activos || []).map((x, i) => [x, i]).filter(([x, i]) => x && !(Number(x.valor) > 0) && !(r.pagosFuturos || []).some((p) => p.idx === i) && Math.max(1, Number((x.desglose || {}).anio0) || Number(x.entrega) || 1) === anio).map(([x, i]) => <div key={"dp" + i} style={{ marginTop: 6 }}>
           <Renglon l={tx(`${x.nombre || "Compra"}: todavía sin valor`, `${x.nombre || "Purchase"}: no value yet`)} v={0} col={C.tx2} />
@@ -1559,6 +1555,14 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           {abierto === `dc:${i}` && <DesgloseCompra r={r} cfg={cfg} set={set} idx={i} anio0={anio} />}
         </div>)}
         {g.faltaSinCubrir > 0.5 && <div role="alert" style={{ fontSize: 12.5, color: C.rd, margin: "6px 0 2px", lineHeight: 1.45 }}>{tx(`No alcanza: faltan ${plata(Math.round(g.faltaSinCubrir))} para vivir y pagar lo comprometido este año. Salen de tus cuentas e inversiones líquidas.`, `Not enough: ${plata(Math.round(g.faltaSinCubrir))} short for living costs and commitments this year. It comes out of your accounts and liquid investments.`)}</div>}
+      </section>
+      {/* 1 · Qué haces con tu capital: cada opción abre su menú. */}
+      <Ficha tam={24} id="f10-capital" titulo={tx(`1 · Qué haces con tu capital ${enY}`, `1 · What you do with your capital ${enY}`)} sub={sigY ? tx(`Pagar deudas, invertir o guardar en tu reserva. Lo que no uses pasa a ${sigY}.`, `Pay off debt, invest or keep in your reserve. What you don't use carries to ${sigY}.`) : tx("Pagar deudas, invertir o guardar en tu reserva.", "Pay off debt, invest or keep in your reserve.")}
+        cifra={usado > 0.5 ? `${g.porInvertir < -0.5 ? "−" : ""}${plata(Math.round(Math.abs(g.porInvertir)))}` : null} cifraSub={g.porInvertir < -0.5 ? tx("te pasaste", "over") : tx("te quedan por usar", "left to use")} col={g.porInvertir < -0.5 ? C.rd : g.porInvertir > 0.5 ? C.gn : C.tx}>
+        {g.disponible > 0.5 && usado > 0.5 && (() => { const pctU = Math.min(100, usado / g.disponible * 100); return <div style={{ margin: "0 0 10px" }}>
+          <div aria-hidden="true" style={{ height: 8, borderRadius: 999, background: C.bd, overflow: "hidden" }}><div style={{ height: "100%", width: `${pctU}%`, background: g.porInvertir < -0.5 ? C.rd : C.gn, transition: "width 400ms cubic-bezier(.2,.8,.2,1)" }} /></div>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12, color: C.tx2, marginTop: 4, fontVariantNumeric: "tabular-nums" }}><span>{tx(`Usaste ${plata(Math.round(usado))} de ${plata(Math.round(g.disponible))}`, `You used ${plata(Math.round(usado))} of ${plata(Math.round(g.disponible))}`)}</span><span>{g.porInvertir < -0.5 ? tx(`te pasaste ${plata(Math.round(-g.porInvertir))}`, `over by ${plata(Math.round(-g.porInvertir))}`) : tx(`te quedan ${plata(Math.round(g.porInvertir))}`, `${plata(Math.round(g.porInvertir))} left`)}</span></div>
+        </div>; })()}
         {/* 24-nov-2026 (Santiago: "¿cómo saber uno qué acumula o qué sugiere?"). */}
         {h.guardar > 0.5 && g.porInvertir > 0.5 && <div style={{ background: "rgba(0,200,5,0.06)", border: "1px solid rgba(0,200,5,0.35)", borderRadius: 10, padding: "10px 12px", margin: "10px 0 0", fontSize: 12.5, lineHeight: 1.5, color: C.tx }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 2 }}>{tx("Lo seguro primero", "Safety first")}</div>
@@ -1631,6 +1635,21 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           [cf < -0.5 ? tx("Te faltan", "Short") : tx("Te sobran", "Left over"), cf, { fuerte: true, linea: true, col: cf < -0.5 ? C.am : C.gn, signo: cf < -0.5 ? "−" : "" }],
         ]} />
         {Math.abs(cf - (fo.cf || 0)) > 6 && <div style={{ fontSize: 12, color: C.tx2, marginTop: 6 }}>{tx(`Antes de tus movidas ${(fo.cf || 0) < -0.5 ? "te faltaban" : "te sobraban"} ${plata(Math.round(Math.abs((fo.cf || 0) / 12)))} al mes: tus inversiones nuevas te pagan y las cuotas que dejas de pagar suman.`, `Before your moves you were ${(fo.cf || 0) < -0.5 ? "short" : "left with"} ${plata(Math.round(Math.abs((fo.cf || 0) / 12)))} a month: your new investments pay you and the payments you stop making add up.`)}</div>}
+        {/* 24-nov-2026: lo que cambia en tu mes este año (antes estaba en «Así arranca»). */}
+        {cambios.length > 0 && <div style={{ marginTop: 8 }}>
+          <button type="button" onClick={() => setVerCambios(!verCambios)} style={{ ...enlace, color: C.tx2 }} aria-expanded={verCambios}>{verCambios ? tx("Ocultar lo que cambia este año", "Hide what changes this year") : tx(`Lo que cambia en tu mes este año (${cambios.length})`, `What changes in your month this year (${cambios.length})`)}</button>
+          {verCambios && <div style={{ marginTop: 6 }}>
+            {cambios.map((c, k) => { const clave = c.ajustar ? `aj:${c.ajustar.tipo}:${c.ajustar.idx}` : null; return <div key={k}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "4px 0", fontSize: 13, flexWrap: "wrap" }}>
+                <span style={{ color: C.tx, minWidth: 0 }}>{c.nombre} <span style={{ fontSize: 12, color: C.tx2 }}>· {c.que}{c.paso1 ? tx(" · del paso 1", " · from step 1") : ""}</span>
+                  {clave && <button type="button" onClick={() => setAbierto(abierto === clave ? null : clave)} style={{ ...enlace, fontSize: 12, paddingLeft: 8 }}>{abierto === clave ? tx("Listo", "Done") : tx("Ajustar", "Adjust")}</button>}
+                  {c.quitarPaga && <button type="button" onClick={() => set("nuevas", cfg.nuevas.map((x, j) => { if (j !== c.quitarPaga.k) return x; const pa = { ...(x.pagaAnios || {}) }; delete pa[c.quitarPaga.anio]; return { ...x, pagaAnios: pa }; }))} style={{ ...enlace, color: C.tx2, fontSize: 12, paddingLeft: 8 }}>{tx("Quitar", "Remove")}</button>}</span>
+                {c.mes != null && <span style={{ color: c.mes > 0 ? C.gn : C.am, whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", marginLeft: "auto" }}>{c.ahorro ? tx(`te ahorras ${plata(Math.round(Math.abs(c.mes)))} al mes`, `you save ${plata(Math.round(Math.abs(c.mes)))} a month`) : <>{c.mes > 0 ? "+" : "−"}{plata(Math.round(Math.abs(c.mes)))} {tx("al mes", "a month")}</>}</span>}
+              </div>
+              {clave && abierto === clave && <AjustarHito cfg={cfg} set={set} tipo={c.ajustar.tipo} idx={c.ajustar.idx} />}
+            </div>; })}
+          </div>}
+        </div>}
         {cf < -0.5 && <>
           <div style={{ fontSize: 12.5, color: C.tx, margin: "8px 0 4px", lineHeight: 1.45 }}>{g.faltaMes > 0.5 ? tx("Lo que te falta ya lo apartaste de tu capital, antes de invertir.", "What you're short was already set aside from your capital, before investing.") : tx("Lo que te falta sale de lo que tienes.", "The shortfall comes out of what you have.")}</div>
           {(g.flujoFoto < -0.5) && <FaltaExplica r={r} cfg={cfg} set={set} anio={anio} falta={-g.flujoFoto} />}
@@ -1644,19 +1663,20 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
 }
 // 24-nov-2026 (Santiago: "no veo cómo puede uno disponer de la reserva… la reserva va apareciendo acumulada cada año; debería poder usarse
 // si se necesita, un botón como de usar reserva este año"). Lo que sacas entra a tu capital de ese año; lo demás sigue rindiendo.
-function UsarReserva({ g, cfg, set, anio, enFicha = false }) {
+// «compacto»: solo el botón (o Cambiar y Quitar) y el formulario; el texto lo pone quien lo usa.
+function UsarReserva({ g, cfg, set, anio, compacto = false }) {
   const [abierto, setAbierto] = useState(false);
   const [monto, setMonto] = useState("");
   const total = Math.round(g.reservaAntes || 0), sacas = Math.round(g.sacasReserva || 0);
   const poner = (v) => { const x = { ...(cfg.usarReserva || {}) }; if (!(Number(v) > 0)) delete x[anio]; else x[anio] = Math.min(total, Math.round(Number(v))); set("usarReserva", x); };
   const ok = Number(monto) > 0;
-  return <div style={enFicha ? { display: "grid", gap: 8, marginTop: 10 } : { border: `1px solid ${C.bd}`, borderRadius: 12, padding: "10px 12px", margin: "0 0 10px", display: "grid", gap: 8 }}>
+  return <div style={compacto ? { display: "grid", gap: 8, marginTop: 4 } : { border: `1px solid ${C.bd}`, borderRadius: 12, padding: "10px 12px", margin: "0 0 10px", display: "grid", gap: 8 }}>
     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-      <span style={{ flex: "1 1 240px", fontSize: 14, color: C.tx, lineHeight: 1.45 }}>{enFicha && !(sacas > 0.5) ? tx("¿La necesitas este año? Lo que saques entra a tu capital para invertir o pagar deudas.", "Need it this year? What you take goes into your capital to invest or pay off debt.") : enFicha ? tx(`Este año sacas ${plata(sacas)} y entran a tu capital.`, `This year you take ${plata(sacas)} into your capital.`) : sacas > 0.5
+      {!compacto && <span style={{ flex: "1 1 240px", fontSize: 14, color: C.tx, lineHeight: 1.45 }}>{sacas > 0.5
         ? tx(`Sacas ${plata(sacas)} de tu reserva: entran a tu capital de este año.${sacas < total ? ` Te quedan ${plata(total - sacas)} en ella.` : ""}`, `You take ${plata(sacas)} from your reserve into this year's capital.${sacas < total ? ` ${plata(total - sacas)} stays in it.` : ""}`)
-        : tx(`Tienes ${plata(total)} en tu reserva.`, `You have ${plata(total)} in your reserve.`)}</span>
+        : tx(`Tienes ${plata(total)} en tu reserva.`, `You have ${plata(total)} in your reserve.`)}</span>}
       {sacas > 0.5
-        ? <span style={{ display: "flex", gap: 12 }}><button type="button" onClick={() => { setMonto(sacas); setAbierto(!abierto); }} style={{ ...enlace, color: C.tx2 }}>{tx("Cambiar", "Change")}</button><button type="button" onClick={() => { poner(0); setAbierto(false); }} style={{ ...enlace, color: C.tx2 }}>{tx("Quitar", "Remove")}</button></span>
+        ? <span style={{ display: "flex", gap: 12 }}><button type="button" onClick={() => { setMonto(sacas); setAbierto(!abierto); }} style={{ ...enlace, color: C.tx2 }}>{tx("Cambiar lo que sacas", "Change the amount")}</button><button type="button" onClick={() => { poner(0); setAbierto(false); }} style={{ ...enlace, color: C.tx2 }}>{tx("Quitar", "Remove")}</button></span>
         : <button type="button" aria-expanded={abierto} onClick={() => { setMonto(total); setAbierto(!abierto); }} style={btnAccion(abierto)}>{tx("Usar tu reserva este año", "Use your reserve this year")}</button>}
     </div>
     {abierto && <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
@@ -1665,32 +1685,56 @@ function UsarReserva({ g, cfg, set, anio, enFicha = false }) {
       <button type="button" disabled={!ok} onClick={() => { poner(monto); setAbierto(false); }} style={{ ...btn(ok), padding: "8px 14px", opacity: ok ? 1 : 0.5, cursor: ok ? "pointer" : "not-allowed" }}>{tx("Usar", "Use")}</button>
       <button type="button" onClick={() => setAbierto(false)} style={{ ...btn(false), padding: "8px 14px" }}>{tx("Cancelar", "Cancel")}</button>
     </div>}
-    {!enFicha && <div style={TIPO.meta}>{tx("Lo que no saques sigue rindiendo, y se usa sola si un año no te alcanza.", "What you don't take keeps earning, and is used automatically if a year falls short.")}</div>}
+    {!compacto && <div style={TIPO.meta}>{tx("Lo que no saques sigue rindiendo, y se usa sola si un año no te alcanza.", "What you don't take keeps earning, and is used automatically if a year falls short.")}</div>}
   </div>;
 }
-// 24-nov-2026 (Santiago: "debería ser mucho más visible que este año tengo disponible 700 MM de reserva, que ya dispuse 300 MM para
-// este año; lo de reserva está muy oculto: cada año debería estar ahí, importante, visible"). Una ficha propia en cada año, antes del
-// capital: cuánto tienes al empezar, qué sacas o se usa, qué guardas y con cuánto cierras; y el botón para usarla.
-function FichaReserva({ g, cfg, set, anio, Y, tasaR }) {
+// 24-nov-2026 (Santiago: "lo más importante es el capital disponible y lo segundo la reserva"; "uno cree que lo único que hay es la
+// reserva"; "la reserva es un fondo que está disponible para cualquier emergencia"). Lo que queda guardado aparte en el año: sin lo que
+// sacas o se usa, que ya está en tu capital. Así las dos cifras de arriba se suman sin contar nada dos veces.
+export function reservaDelAnio(g = {}) {
   const libre = g.reservaAntes || 0, guardada = g.apartadoAntes || 0, inicio = libre + guardada;
   const vuelve = (g.llegan || []).filter((l) => String(l.id).startsWith("reserva_")).reduce((sm, l) => sm + (l.monto || 0), 0);
-  const sacas = g.sacasReserva || 0, uso = g.usoReserva || 0, guardas = (g.reservaDeAqui || 0) + (g.aReservaMes || 0);
+  const sacas = g.sacasReserva || 0, uso = g.usoReserva || 0;
+  const queda = Math.max(0, inicio - sacas - uso);
   const cierre = (g.reservaFin || 0) + (g.apartadoFin || 0);
-  const nada = inicio + vuelve + guardas < 0.5;
-  const enEste = anio === 1 ? tx("hoy", "today") : tx(`en ${Y}`, `in ${Y}`);
-  return <Ficha id="f10-reserva" titulo={tx(`Tu reserva ${enEste}`, `Your reserve ${enEste}`)} sub={nada ? tx("Plata guardada aparte para los años que la necesites. Aún no tienes.", "Money kept aside for the years you need it. You have none yet.") : tx(`Plata guardada aparte: rinde ${tasaR} y la usas cuando la necesites.`, `Money kept aside: earns ${tasaR}, use it when you need it.`)}
-    cifra={plata(Math.round(anio === 1 ? cierre : inicio))} cifraSub={anio === 1 ? tx("al cierre de este año", "at the end of this year") : tx("tienes al empezar el año", "at the start of the year")} col={(anio === 1 ? cierre : inicio) > 0.5 ? C.gn : C.tx2}>
-    {nada ? <div style={TIPO.meta}>{tx("La empiezas con «Guardar en tu reserva», de tu capital, o con «Ahorrar en tu reserva», de lo que te sobra cada mes.", "Start it with \"Keep in your reserve\" from your capital, or \"Save in your reserve\" from your monthly surplus.")}</div> : <>
-      {libre > 0.5 && <Renglon l={tx("Para cualquier año", "For any year")} v={libre} />}
-      {guardada > 0.5 && <Renglon l={tx("Guardada para un año siguiente", "Kept for a later year")} v={guardada} />}
-      {vuelve > 0.5 && <Renglon l={tx(`Vuelve a tu capital ${enEste} (la guardaste para este año)`, `Returns to your capital ${enEste} (you kept it for this year)`)} v={vuelve} col={C.tx2} />}
-      {sacas > 0.5 && <Renglon l={tx("− Sacas este año: entra a tu capital", "− Taken this year: goes to your capital")} v={sacas} col={C.tx2} />}
-      {uso > 0.5 && <Renglon l={tx("− Se usó sola: este año no te alcanzaba", "− Used automatically: this year fell short")} v={uso} col={C.tx2} />}
-      {guardas > 0.5 && <Renglon l={tx("+ Guardas este año", "+ Saved this year")} v={guardas} />}
-      <Renglon fuerte linea l={tx("Te quedan en tu reserva", "Left in your reserve")} v={cierre} col={C.gn} nota={tx(`Al cierre ${anio === 1 ? "de este año" : "de " + Y}; sigue rindiendo ${tasaR} al año.`, `At the end of ${anio === 1 ? "this year" : Y}; it keeps earning ${tasaR} a year.`)} />
-      {anio > 1 && libre > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} enFicha />}
+  return { libre, guardada, inicio, vuelve, sacas, uso, queda, cierre, guardas: Math.max(0, cierre - queda) };
+}
+// Tu fondo de reserva, al lado del capital y más pequeño: cuánto hay, qué es, qué se mueve este año y el botón para usarlo.
+function ReservaAnio({ g, cfg, set, anio, Y, tasaR }) {
+  const rv = reservaDelAnio(g);
+  const nota = { fontSize: 12.5, color: C.tx2, lineHeight: 1.45 };
+  const nada = rv.inicio + rv.vuelve + rv.guardas < 0.5;
+  const que = tx("Plata guardada aparte para cualquier emergencia.", "Money kept aside for any emergency.");
+  // 24-nov-2026 (Santiago: "arranqué el año inicial de mi plan con una reserva de 200 MM y francamente no sé de dónde vino"). Lo que guardas
+  // este año dice de dónde sale —tu capital o lo que te sobra al mes— y se quita ahí mismo.
+  const deCapital = g.reservaDeAqui || 0, deMesFijo = g.repartoReserva || 0;
+  const deMesTodo = g.mesAReserva ? Math.max(0, (g.mes || 0) - (g.repartoFuera || 0) - (g.repartoReserva || 0)) : 0;
+  const quitarCapital = () => { const x = { ...(cfg.reservaAnual || {}) }; delete x[anio]; set("reservaAnual", x); };
+  const quitarMesTodo = () => { const x = { ...(cfg.mesAReserva || {}) }; delete x[anio]; set("mesAReserva", x); };
+  const quitarMesFijo = () => { const x = { ...(cfg.mesReparto || {}) }; const arr = (Array.isArray(x[anio]) ? x[anio] : []).filter((f) => f && f.tipo !== "reserva"); if (arr.length) x[anio] = arr; else delete x[anio]; set("mesReparto", x); };
+  const origen = (v, txt, quitar) => v > 0.5 && <div style={{ display: "flex", gap: 8, alignItems: "baseline", justifyContent: "space-between", flexWrap: "wrap", fontSize: 12.5, color: C.tx2, lineHeight: 1.45, borderTop: `1px solid ${C.bd}`, paddingTop: 6 }}>
+    <span style={{ flex: "1 1 160px", minWidth: 0 }}><b style={{ color: C.tx, fontWeight: 600 }}>{plata(Math.round(v))}</b> {txt}</span>
+    <button type="button" onClick={quitar} style={{ ...enlace, color: C.tx2 }}>{tx("Quitar", "Remove")}</button>
+  </div>;
+  return <div id="f10-reserva" style={{ flex: "1 1 240px", minWidth: 0, background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 10, padding: "12px 14px", display: "grid", gap: 6, alignContent: "start" }}>
+    <div style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.15, color: rv.queda > 0.5 ? C.tx : C.tx2, fontVariantNumeric: "tabular-nums", overflowWrap: "anywhere" }}>{plata(Math.round(rv.queda))}</div>
+    <div style={{ fontSize: 14, fontWeight: 600, color: C.tx }}>{tx("en tu fondo de reserva", "in your reserve fund")}</div>
+    {nada ? <div style={nota}>{que} {tx("Aún no tienes: la empiezas con «Guardar en tu reserva», de tu capital, o con «Ahorrar en tu reserva», de lo que te sobra al mes.", "You don't have one yet: start it with \"Keep in your reserve\" from your capital, or \"Save in your reserve\" from your monthly surplus.")}</div>
+      : rv.queda > 0.5 ? <div style={nota}>{que} {tx(`Rinde ${tasaR} al año. No hace parte de tu capital disponible: la usas cuando la necesites, y si un año no te alcanza la plata, se usa sola.`, `It earns ${tasaR} a year. It isn't part of your available capital: use it when you need it, and if a year falls short it's used automatically.`)}</div>
+      : <div style={nota}>{que}</div>}
+    {rv.sacas > 0.5 && <div style={{ ...nota, color: C.tx }}>{tx(`Al empezar el año tenías ${plata(Math.round(rv.inicio))}. Sacas ${plata(Math.round(rv.sacas))} y pasan a tu capital disponible.`, `At the start of the year you had ${plata(Math.round(rv.inicio))}. You take ${plata(Math.round(rv.sacas))} into your available capital.`)}</div>}
+    {rv.uso > 0.5 && <div style={nota}>{tx(`Se usan ${plata(Math.round(rv.uso))} solos porque este año no alcanza para vivir y pagar lo comprometido.`, `${plata(Math.round(rv.uso))} is used automatically: this year fell short of living costs and commitments.`)}</div>}
+    {rv.vuelve > 0.5 && <div style={nota}>{tx(`${plata(Math.round(rv.vuelve))} vuelven a tu capital: los guardaste para ${anioCal(anio)}.`, `${plata(Math.round(rv.vuelve))} returns to your capital: you kept it for ${anioCal(anio)}.`)}</div>}
+    {rv.guardada > 0.5 && <div style={nota}>{tx(`De esto, ${plata(Math.round(rv.guardada))} están guardados para un año siguiente y vuelven solos ese año.`, `Of this, ${plata(Math.round(rv.guardada))} is kept for a later year: it returns on its own that year.`)}</div>}
+    {rv.guardas > 0.5 && <div style={rv.queda > 0.5 ? nota : { ...nota, color: C.tx }}>{rv.queda > 0.5 ? tx(`Este año le sumas ${plata(Math.round(rv.guardas))}; al cierre del año tendrás ${plata(Math.round(rv.cierre))}. Lo que sumas sale de:`, `This year you add ${plata(Math.round(rv.guardas))}; at the end of the year you'll have ${plata(Math.round(rv.cierre))}. What you add comes from:`)
+      : tx(`${anio === 1 ? "Hoy no tienes reserva" : "No te queda reserva"}. Este año guardas ${plata(Math.round(rv.guardas))}, que salen de:`, `${anio === 1 ? "You have no reserve today" : "No reserve left"}. This year you keep ${plata(Math.round(rv.guardas))}, which comes from:`)}</div>}
+    {rv.guardas > 0.5 && <>
+      {origen(deCapital, tx("de tu capital: lo pediste en «Guardar en tu reserva».", "from your capital: you chose it in \"Keep in your reserve\"."), quitarCapital)}
+      {origen(deMesTodo, tx("de lo que te sobra al mes: pediste que todo lo que te queda del mes vaya a tu reserva.", "from your monthly surplus: you asked for everything left each month to go to your reserve."), quitarMesTodo)}
+      {origen(deMesFijo, tx("de lo que te sobra al mes: lo pediste en «Ahorrar en tu reserva» («2 · Tu mes»).", "from your monthly surplus: \"Save in your reserve\", in \"2 · Your month\"."), quitarMesFijo)}
     </>}
-  </Ficha>;
+    {anio > 1 && rv.libre > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} compacto />}
+  </div>;
 }
 // 24-nov-2026 (Santiago: "de lo que sobra cada mes, ¿qué quiere hacer? abonar a deudas mensualmente, abonar a inversión existente
 // mensualmente, gastar para ocio, o ahorrar mensualmente en el fondo de reserva, que está disponible para cuando se quiera usar en un
@@ -1814,7 +1858,7 @@ function ResultadoAnio({ r, cfg, cuenta, anioSel, setAnioSel, dejarListo, irAnio
     <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
       {anio > 1 ? <button type="button" style={{ ...btn(false), padding: "8px 12px" }} onClick={() => ir(anio - 1)}>← {anio === 2 ? tx("Hoy", "Today") : anioCal(anio - 1)}</button> : <span />}
       {listo && !problema ? (sigY ? <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={() => (irAnio ? irAnio(anio + 1) : ir(anio + 1))}>{tx(`Seguir con ${sigY} →`, `Go on to ${sigY} →`)}</button> : <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={() => dejarListo && dejarListo(anio)}>{tx("Ver el resultado →", "See the result →")}</button>)
-        : <button type="button" disabled={problema} style={{ ...btn(true), padding: "8px 12px", opacity: problema ? 0.5 : 1, cursor: problema ? "not-allowed" : "pointer" }} onClick={() => dejarListo && dejarListo(anio)}>{sigY ? tx(`Listo, seguir con ${sigY} →`, `Done, go on to ${sigY} →`) : tx("Listo, ver el resultado →", "Done, see the result →")}</button>}
+        : <button type="button" disabled={problema} style={{ ...btn(true), padding: "8px 12px", opacity: problema ? 0.5 : 1, cursor: problema ? "not-allowed" : "pointer" }} onClick={() => dejarListo && dejarListo(anio)}>{sigY ? tx(`Terminé ${anioCal(anio)}, seguir con ${sigY} →`, `Done with ${anioCal(anio)}, go on to ${sigY} →`) : tx(`Terminé ${anioCal(anio)}, ver el resultado →`, `Done with ${anioCal(anio)}, see the result →`)}</button>}
     </div>
   </Ficha>;
 }
@@ -1859,20 +1903,20 @@ function TasaReserva({ r, cfg, set }) {
 function SaldoFijo({ cuenta, cfg = {}, anioSel = 1, estadoGuardado = null, dejarListo, onVer }) {
   const g = cuenta.find((y) => y.anio === anioSel);
   if (!g) return null;
-  const N = cuenta.length, Y = anioSel === 1 ? tx("Hoy", "Today") : anioCal(anioSel), sigY = anioSel < N ? anioCal(anioSel + 1) : null;
+  const N = cuenta.length, Y = anioCal(anioSel), sigY = anioSel < N ? anioCal(anioSel + 1) : null;
   const falta = g.faltaSinCubrir > 0.5, pasado = g.porInvertir < -0.5, ok = !falta && !pasado;
   const listo = !!(cfg.aniosListos || {})[anioSel];
   const txt = falta ? tx(`${Y}: faltan ${plata(Math.round(g.faltaSinCubrir))} este año`, `${Y}: ${plata(Math.round(g.faltaSinCubrir))} short this year`)
     : pasado ? tx(`${Y}: te pasaste ${plata(Math.round(-g.porInvertir))}`, `${Y}: over by ${plata(Math.round(-g.porInvertir))}`)
       : tx(`${Y}: te quedan ${plata(Math.round(g.porInvertir))} de tu capital`, `${Y}: ${plata(Math.round(g.porInvertir))} of your capital left`);
   const guard = { guardando: tx("Guardando…", "Saving…"), listo: tx("Guardado ✓", "Saved ✓"), error: tx("No se pudo guardar", "Couldn't save"), demo: tx("En la demo no se guarda", "The demo doesn't save") }[estadoGuardado] || null;
-  const sub = [guard, listo && ok ? tx(`${Y} quedó listo`, `${Y} is done`) : null].filter(Boolean).join(" · ");
+  const sub = [guard, listo && ok ? tx(`Ya organizaste tu ${anioCal(anioSel)}`, `Your ${anioCal(anioSel)} is organized`) : null].filter(Boolean).join(" · ");
   return <div onClick={onVer} style={{ position: "sticky", bottom: 8, zIndex: 5, margin: "8px 0", padding: "10px 14px", borderRadius: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", background: ok ? "rgba(15,42,26,0.97)" : "rgba(58,20,20,0.97)", border: `1px solid ${ok ? C.gn : C.rd}`, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
     <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
       <span style={{ fontWeight: 700, color: ok ? C.gn : C.rd, fontVariantNumeric: "tabular-nums" }}>{txt}</span>
       {sub && <span role="status" style={{ fontSize: 12, color: estadoGuardado === "error" ? C.rd : C.tx2 }}>{sub}</span>}
     </div>
-    {ok && dejarListo && <button type="button" onClick={(e) => { e.stopPropagation(); dejarListo(anioSel); }} style={{ ...btn(true), padding: "8px 12px", whiteSpace: "nowrap" }}>{sigY ? (listo ? tx(`Seguir con ${sigY} →`, `Go on to ${sigY} →`) : tx(`Listo, seguir con ${sigY} →`, `Done, go on to ${sigY} →`)) : (listo ? tx("Ver el resultado →", "See the result →") : tx("Listo, ver el resultado →", "Done, see the result →"))}</button>}
+    {ok && dejarListo && <button type="button" onClick={(e) => { e.stopPropagation(); dejarListo(anioSel); }} style={{ ...btn(true), padding: "8px 12px", whiteSpace: "nowrap" }}>{sigY ? (listo ? tx(`Seguir con ${sigY} →`, `Go on to ${sigY} →`) : tx(`Terminé ${Y}, seguir con ${sigY} →`, `Done with ${Y}, go on to ${sigY} →`)) : (listo ? tx("Ver el resultado →", "See the result →") : tx(`Terminé ${Y}, ver el resultado →`, `Done with ${Y}, see the result →`))}</button>}
   </div>;
 }
 

@@ -555,3 +555,31 @@ describe("lo que sacas de la reserva queda como capital", () => {
     expect(g.reservaDeAqui).toBeCloseTo(Math.max(0, g.antesReserva - 200e6), -3);
   });
 });
+
+// 24-nov-2026 (Santiago: "demos orden: tienes este año 2.000 MM disponibles y 250 MM en reserva"; "arranqué el año inicial con una reserva
+// de 200 MM y no sé de dónde vino"). Arriba de cada año van dos cifras que se suman sin contar nada dos veces: el capital disponible y lo
+// que queda en tu reserva (sin lo que sacas, que ya está en el capital). Lo que guardas el primer año no es una reserva con la que arrancas.
+import { reservaDelAnio } from "../../src/components/MiFuturo10.jsx";
+describe("con esto cuentas: capital disponible y reserva, sin contar dos veces", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 1000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 600e6 }], ingresos: [{ nombre: "Salario", mensual: 30e6, frecuencia: "mensual" }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  it("el primer año no arrancas con reserva: lo que guardas sale de ese año", () => {
+    const cfg = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 300e6 } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    const rv = reservaDelAnio(c[0]);
+    expect(rv.queda).toBe(0);
+    expect(rv.guardas).toBeCloseTo(300e6, -3);
+    expect(c[0].reservaDeAqui).toBeCloseTo(300e6, -3);
+  });
+  it("lo que sacas de la reserva pasa al capital y deja de contar en la reserva", () => {
+    const base = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 300e6 } };
+    const c0 = cuentaPorAnio(proyectarFuturo10(u, base), base);
+    const cfg = { ...base, usarReserva: { 3: 200e6 } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    const r0 = reservaDelAnio(c0[2]), r1 = reservaDelAnio(c[2]);
+    expect(r1.inicio).toBeCloseTo(r0.inicio, -3);
+    expect(r0.queda - r1.queda).toBeCloseTo(200e6, -3);
+    expect(c[2].disponible - c0[2].disponible).toBeCloseTo(200e6, -3);
+    // La suma de las dos cifras no cambia: la plata solo se mueve de la reserva al capital.
+    expect(c[2].disponible + r1.queda).toBeCloseTo(c0[2].disponible + r0.queda, -3);
+  });
+});
