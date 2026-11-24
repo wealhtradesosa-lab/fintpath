@@ -249,7 +249,7 @@ describe("aviso de Soporte junto a las tarjetas", () => {
   it("el texto va junto a las tarjetas mientras esté vigente", () => {
     const r = proyectarFuturo10(uVenta, {});
     const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r }, { id: "e", nombre: "Uno", r }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
-    const txt = "Ajustamos el cálculo: ahora tu ahorro se suma aparte y ya no cuenta como rendimiento, por eso la cifra puede verse más baja";
+    const txt = "Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.";
     if (mostrarAvisoCalculo()) expect(h).toContain(txt); else expect(h).not.toContain(txt);
   });
 });

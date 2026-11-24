@@ -44,7 +44,7 @@ function medir(r) {
 // quita solo después de AVISO_CALCULO_HASTA (o poniendo la fecha en null).
 export const AVISO_CALCULO_HASTA = "2026-12-31";
 export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && hoy.toISOString().slice(0, 10) <= hasta;
-export const avisoCalculo = () => tx("Ajustamos el cálculo: ahora tu ahorro se suma aparte y ya no cuenta como rendimiento, por eso la cifra puede verse más baja.", "We adjusted the math: your savings are now added separately and no longer count as returns, so the figure may look lower.");
+export const avisoCalculo = () => tx("Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.", "We adjusted the math: your savings no longer count as returns and the figure is now in today's pesos, so it may look lower.");
 
 const textoViene = (x) => {
   const anios = x.anioFin && x.anioFin > x.anio ? `${anioCal(x.anio)}–${anioCal(x.anioFin)}` : `${anioCal(x.anio)}`;
