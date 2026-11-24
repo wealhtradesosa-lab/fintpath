@@ -10,6 +10,6 @@ describe("Mi futuro a 10: montos con puntos de miles", () => {
   });
   it("MiFuturo10 usa NumberInput para montos (paso Reinvierte)", () => {
     const html = renderToString(createElement(MiFuturo10, { user: { inflacionPct: 4, inv: [], ingresos: [], gas: {}, deu: [] }, pasoInicial: 2 }));
-    expect(html).toContain("Inversiones nuevas");
+    expect(html).toContain("Inversión nueva"); // 24-nov-2026: la opción abre la inversión en su fila
   });
 });

@@ -168,7 +168,7 @@ describe("MiFuturo10: la barra del escenario sale en los pasos 1 y 2; en el 3, l
       expect(h).toContain('data-testid="f10-barra"');
       expect(h).toContain("antes de impuestos de la venta");
     } else expect(h).not.toContain('data-testid="f10-barra"');
-    if (paso === 2) expect(h).toMatch(/por invertir|te pasaste|faltan/);
+    if (paso === 2) expect(h).toMatch(/de tu capital|te pasaste|faltan/);
   }));
   it("sin venta, la barra no muestra el rótulo de impuestos", () => {
     const h = renderToStaticMarkup(createElement(MiFuturo10, { user: uVenta, guardado: { borrador: { ...cfg, decisiones: {} } }, pasoInicial: 0 }));

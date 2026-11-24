@@ -51,17 +51,20 @@ describe("lo que puedes hacer con tu plata no se mueve al invertir", () => {
     expect(con.disponible).toBeCloseTo(sin.disponible, -3);
     expect(con.porInvertir).toBeCloseTo(sin.disponible - 1000e6 * con.factorHoy, -3); // los 1.000 MM de hoy salen en pesos de 2028
     expect(con.efecto).toBeGreaterThan(100e6); // lo que el CDT alcanza a pagar ese año
-    expect(con.queda).toBeCloseTo(con.porInvertir + con.efecto, -3);
-    // Sin la foto, lo disponible sí cambiaba (lo que veía Santiago).
+    // Al cierre: lo que te quedó de tu capital + lo que deja tu mes con tus movidas (incluye lo que paga el CDT).
+    expect(con.mes - sin.mes).toBeCloseTo(con.efecto, -3);
+    expect(con.queda).toBeCloseTo(con.porInvertir + (con.reservaDeAqui || 0) + con.mes, -3);
+    // Con el capital aparte de lo que sobra en el año, ni siquiera sin la foto cambia cuando el mes sobra.
     const r = proyectarFuturo10(u, cfg);
-    expect(cuentaPorAnio(r, cfg).find((g) => g.anio === 3).disponible).toBeGreaterThan(sin.disponible + 100e6);
+    expect(cuentaPorAnio(r, cfg).find((g) => g.anio === 3).disponible).toBeCloseTo(sin.disponible, -3);
   });
   it("pagar una deuda un año: es un compromiso antes de invertir; la cuota que dejas de pagar llega al cierre", () => {
     const sin = cuenta(base).find((g) => g.anio === 2);
     const con = cuenta({ ...base, pagarDeudas: { h: Y + 1 } }).find((g) => g.anio === 2);
     const pago = con.compromisos.find((c) => c.tipo === "A");
     expect(pago).toBeTruthy();
-    expect(con.base).toBeCloseTo(sin.base - pago.monto, -3); // si no alcanza, lo que falta lo dice la cuenta (faltaSinCubrir)
+    // El pago sale del capital; si el capital no alcanza, lo cubre lo que sobra en el año (cubreMes) y, si tampoco, la cuenta lo dice (faltaSinCubrir).
+    expect(con.base - con.cubreMes).toBeCloseTo(sin.base - sin.cubreMes - pago.monto, -3);
     expect(con.movidas.some((m) => m.tipo === "A")).toBe(false);
     expect(con.efecto).toBeCloseTo(9e6 * 12, -6);
   });
@@ -170,7 +173,8 @@ describe("los hitos de Lo que viene caen en su año", () => {
     const g1 = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg)[0];
     expect(g1.compromisos.some((c) => c.tipo === "A" && Math.round(c.monto) === 300e6)).toBe(true);
     expect(g1.movidas.some((m) => m.tipo === "A")).toBe(false);
-    expect(g1.disponible).toBeCloseTo(900e6 - 300e6 + g1.flujoFoto - (g1.comprometido - 300e6), -3);
+    // El capital de hoy: lo que vendes − su deuda − lo demás comprometido (lo que sobra en el año va aparte, en Tu mes).
+    expect(g1.disponible).toBeCloseTo(Math.max(0, 900e6 - 300e6 - (g1.comprometido - 300e6) - g1.faltaMes + g1.cubreMes), -3);
   });
   it("la compra de un local en 2028 es un compromiso de 2028; la universidad entra en lo que cuesta vivir", () => {
     const cfg = { futuros: { activos: [{ nombre: "Local", clase: "inmueble", valor: 500e6, cuotaInicial: 500e6, anioCuota: 3, entrega: 3 }], gastos: [{ nombre: "Universidad", anual: 170e6, desde: 3, anios: 4 }] } };
@@ -240,7 +244,7 @@ describe("reserva, holgura y lo que suma cada año", () => {
   const cuenta = (cfg) => { const r = proyectarFuturo10(u, cfg); return cuentaPorAnio(r, cfg, fotosPorAnio(u, cfg, r)); };
   it("propio es lo que el año suma o resta sin lo que traes", () => {
     const c = cuenta(cfgBase);
-    c.forEach((g) => expect(g.propio).toBeCloseTo(g.base - g.antes, 0));
+    c.forEach((g) => expect(g.propio).toBeCloseTo(g.llega + g.flujoFoto - g.comprometido, 0));
     const g4 = c.find((g) => g.anio === 4);
     expect(g4.propio).toBeLessThan(0); // el año de la universidad resta
     expect(g4.porInvertir).toBeGreaterThan(0); // pero la plata que traes lo cubre
@@ -253,22 +257,20 @@ describe("reserva, holgura y lo que suma cada año", () => {
     expect(con.disponible).toBeCloseTo(sin.disponible, 0); // lo que puedes usar no cambia
   });
   it("la holgura dice cuánto guardar para los años que no alcanzan y cuánto queda libre", () => {
-    const c = cuenta(cfgBase);
+    // Universidad más grande: lo que sobra en el año 3 (llega mes a mes) ya no alcanza para los años 4 y 5.
+    const cfgU = { ...cfgBase, futuros: { gastos: [{ nombre: "Universidad", anual: 700e6, desde: 4, anios: 2 }] } };
+    const c = cuenta(cfgU);
     const h = holguraPorAnio(c);
-    // Hoy sobra: los años 2 y 3 dejan más de lo que restan los años de la universidad.
-    expect(h.find((x) => x.anio === 1).guardar).toBeLessThan(0.5);
-    // En el año 3, si lo inviertes todo, los años 4 y 5 se quedan cortos: eso es lo que hay que guardar.
     const h3 = h.find((x) => x.anio === 3), g3 = c.find((g) => g.anio === 3);
-    const g4 = c.find((g) => g.anio === 4), g5 = c.find((g) => g.anio === 5);
-    expect(h3.para).toEqual([4, 5]);
-    expect(h3.guardar).toBeGreaterThan(-(g4.propio + g5.propio) - 1e6);
+    expect(h3.guardar).toBeGreaterThan(0.5);
+    expect(h3.para).toContain(4);
     expect(h3.libre + h3.guardar).toBeCloseTo(Math.max(0, g3.porInvertir), 0);
     // Si inviertes lo libre, ningún año siguiente se queda corto; con todo, sí.
-    const inv = (m) => cuenta({ ...cfgBase, nuevas: [{ preset: "rfLargo", monto: m / g3.factorHoy, fuente: "liquidez", anio: 3 }] });
+    const inv = (m) => cuenta({ ...cfgU, nuevas: [{ preset: "rfLargo", monto: m / g3.factorHoy, fuente: "liquidez", anio: 3 }] });
     expect(inv(h3.libre).every((g) => g.faltaSinCubrir < 1)).toBe(true);
     expect(inv(h3.libre + h3.guardar).some((g) => g.anio > 3 && g.faltaSinCubrir > 1)).toBe(true);
     // Guardado en la reserva, ya no hay nada que guardar y lo libre es lo que queda por invertir.
-    const cR = cuenta({ ...cfgBase, reservaAnual: { 3: Math.ceil(h3.guardar) } });
+    const cR = cuenta({ ...cfgU, reservaAnual: { 3: Math.ceil(h3.guardar) } });
     const hR = holguraPorAnio(cR).find((x) => x.anio === 3);
     expect(hR.guardar).toBeLessThan(1);
     expect(hR.libre).toBeCloseTo(cR.find((g) => g.anio === 3).porInvertir, -1);
@@ -320,5 +322,42 @@ describe("la tasa de tu fondo de reserva", () => {
     expect(r1.tasaReserva).toBeCloseTo(0.10, 10);
     const g2 = cuentaPorAnio(r1, { ...cfg, reservaTasaPct: 10 }).find((g) => g.anio === 2);
     expect(g2.reservaAntes).toBeCloseTo(100e6 * 1.10, 0);
+  });
+});
+
+// 24-nov-2026 (Santiago: "este año tienes de capital disponible 900 MM, ¿qué quieres hacer? Y además te sobra
+// al mes X plata, ¿qué quieres hacer con ese ingreso mensual?").
+describe("capital y mes por separado", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 500e6 }], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 40e6 }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  const cuenta = (cfg) => { const r = proyectarFuturo10(u, cfg); return cuentaPorAnio(r, cfg, fotosPorAnio(u, cfg, r)); };
+  it("el capital no incluye lo que sobra en el año; eso es Tu mes y pasa al año siguiente", () => {
+    const c = cuenta({ decisiones: { l: { accion: "vende" } } });
+    const g1 = c[0], g2 = c[1];
+    expect(g1.disponible).toBeCloseTo(g1.tienes - g1.comprometido, 0);
+    expect(g1.mes).toBeCloseTo(g1.flujo, 0);
+    expect(g1.queda).toBeCloseTo(g1.disponible + g1.mes, 0);
+    expect(g2.antes).toBeCloseTo(g1.pasa, 0);
+  });
+  it("si lo comprometido no cabe en el capital, lo cubre lo que sobra en el año", () => {
+    const cfg = { futuros: { activos: [{ nombre: "Local", valor: 300e6, entrega: 2 }] } };
+    const g2 = cuenta(cfg).find((g) => g.anio === 2);
+    expect(g2.cubreMes).toBeGreaterThan(0.5);
+    expect(g2.faltaSinCubrir).toBeLessThan(1);
+    expect(g2.mes).toBeCloseTo(g2.flujo - g2.cubreMes, 0);
+  });
+  it("lo que sobra en el mes puede ir a tu reserva", () => {
+    const sin = cuenta({ decisiones: { l: { accion: "vende" } } })[0];
+    const con = cuenta({ decisiones: { l: { accion: "vende" } }, mesAReserva: { 1: true } })[0];
+    expect(con.aReserva).toBeCloseTo(sin.mes, 0);
+    expect(con.porInvertir).toBeCloseTo(sin.porInvertir, 0); // el capital no cambia
+    expect(con.pasa).toBeCloseTo(sin.pasa - sin.mes, 0);
+  });
+  it("la regla de lo que sobra se cambia solo para un año", () => {
+    const base = { sobraDestinos: [{ id: "c_renta", pct: 50 }] };
+    const c0 = cuenta(base), c1 = cuenta({ ...base, sobraPctAnios: { 2: 0 } });
+    expect(c0[1].libre).toBeCloseTo(0.5, 6);
+    expect(c1[1].libre).toBeCloseTo(1, 6);
+    expect(c1[1].mes).toBeGreaterThan(c0[1].mes + 1e6);
+    expect(c1[2].libre).toBeCloseTo(0.5, 6); // los demás años, la regla de siempre
   });
 });
