@@ -1532,12 +1532,13 @@ function PropiedadRaiz({ x, up, usarSaldo }) {
     <div>{paso(3, tx("Rentabilidad", "Return"))}<div style={fila}>
       {/* 23-nov-2026 (Santiago: "poder poner valor de venta total, por metro cuadrado o porcentaje de margen"). */}
       <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-        <span style={{ ...lbl, marginRight: 4 }}>{vende ? tx("Precio de venta:", "Sale price:") : tx("Valor al terminar:", "Value when finished:")}</span>
+        {/* 23-nov-2026 (Santiago: "precio de venta una vez terminada, para ser más claros"). */}
+        <span style={{ ...lbl, marginRight: 4 }}>{tipo === "asociativo" ? tx("Lo que recibes al terminar el proyecto:", "What you receive when the project ends:") : vende ? tx("Precio de venta una vez terminada:", "Sale price once finished:") : tx("Valor una vez terminada:", "Value once finished:")}</span>
         {[["pct", tipo === "planos" ? tx("Porcentaje de valorización", "Appreciation %") : tx("Porcentaje de margen", "Margin %")], ["total", tx("Valor total", "Total value")], ...(tipo === "asociativo" ? [] : [["m2", tx("Por m²", "Per m²")]])].map(([k2, l2]) => <button key={k2} type="button" style={chip(p.modoVenta === k2)} onClick={() => set({ ventaModo: k2 })}>{l2}</button>)}
       </div>
       {p.modoVenta === "pct" && pct("valEntregaPct", tipo === "planos" ? tx("Valorización a la entrega (%)", "Appreciation at handover (%)") : tipo === "asociativo" ? tx("Margen del proyecto (%)", "Project margin (%)") : tx("Margen sobre lo que inviertes (%)", "Margin on what you invest (%)"), "20")}
-      {p.modoVenta === "total" && num("ventaTotal", vende ? tx("Precio de venta total ($)", "Total sale price ($)") : tx("Valor total al terminar ($)", "Total value when finished ($)"))}
-      {p.modoVenta === "m2" && <>{tipo === "planos" && num("m2", tx("Área (m²)", "Area (m²)"), "0")}{num("ventaM2", vende ? tx("Precio de venta por m² ($)", "Sale price per m² ($)") : tx("Valor por m² al terminar ($)", "Value per m² when finished ($)"))}
+      {p.modoVenta === "total" && num("ventaTotal", tipo === "asociativo" ? tx("Valor total que recibes ($)", "Total you receive ($)") : vende ? tx("Precio de venta total, una vez terminada ($)", "Total sale price, once finished ($)") : tx("Valor total, una vez terminada ($)", "Total value, once finished ($)"))}
+      {p.modoVenta === "m2" && <>{tipo === "planos" && num("m2", tx("Área (m²)", "Area (m²)"), "0")}{num("ventaM2", vende ? tx("Precio de venta por m², una vez terminada ($)", "Sale price per m², once finished ($)") : tx("Valor por m², una vez terminada ($)", "Value per m², once finished ($)"))}
         {p.m2 > 0 && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Total", "Total")}: <b style={{ color: C.tx }}>{plata(Math.round(p.valorEntrega))}</b></div>}</>}
       {tipo !== "asociativo" && (!vende || p.vendeEn > 0 || tipo === "rentar") && pct("valAnualPct", tx("Valorización anual después (%)", "Annual appreciation after (%)"), "6")}
       {(tipo === "rentar" || (tipo !== "asociativo" && !vende)) && num("rentaMensual", tx("Renta neta mensual ($)", "Net monthly rent ($)"), "0")}
