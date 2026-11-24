@@ -124,18 +124,25 @@ describe("TRM en pantalla: viva → guardada → pendiente (sin 4200)", async ()
     expect(vaCOP({ va: 1000, moneda: "USD" }, A.estadoTrm({ ...conUSD, trm: 4200 }).trm)).toBe(0);
   });
   it("nota F-210/F-110 solo con ítems USD", () => {
-    const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: conUSD }));
-    expect(con).toContain(A.NOTA_TRM_DECLARACION);
-    expect(con).toContain("31-dic-2025");
-    expect(A.NOTA_TRM_DECLARACION).toBe("Tus montos en dólares de este borrador todavía no están convertidos correctamente. No lo uses para declarar. En tu declaración usa la TRM del 31-dic-2025 para patrimonio y la del día de cada pago para ingresos.");
+    const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: conUSD, ano: 2025 }));
+    expect(con).toContain(A.notaTrmDeclaracion(conUSD, 2025));
+    expect(A.notaTrmDeclaracion(conUSD, 2025)).toBe("Tus montos en dólares de este borrador todavía no están convertidos correctamente. No lo uses para declarar. En tu declaración usa la TRM del 31-dic-2025 ($3.757,08) para patrimonio y la del día de cada pago para ingresos.");
     expect(con).not.toContain("Convertido con la TRM actual");
     expect(renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: soloCOP }))).toBe("");
   });
-  it("sin tasa real, la nota dice «pendiente de tasa»; con tasa real no", () => {
-    const sin = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: { ...conUSD, trm: 4200 } }));
+  it("sin TRM de hoy, la nota dice «pendiente de tasa»; con tasa real y AG con cierre, no", () => {
+    const sin = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: { ...conUSD, trm: 4200 }, ano: 2025 }));
     expect(sin).toContain("pendiente de tasa");
-    const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: { ...conUSD, trm: 3958 } }));
+    const con = renderToStaticMarkup(React.createElement(A.NotaTrmDeclaracion, { u: { ...conUSD, trm: 3958 }, ano: 2025 }));
     expect(con).not.toContain("pendiente de tasa");
-    expect(con).toContain(A.NOTA_TRM_DECLARACION);
+    expect(con).toContain("31-dic-2025 ($3.757,08)");
+  });
+  it("AG 2026: 31-dic-2026 y «pendiente de tasa» mientras no exista esa TRM (ni la de hoy ni 4200 sirven)", () => {
+    const n = A.notaTrmDeclaracion({ ...conUSD, trm: 4100 }, 2026);
+    expect(n).toContain("TRM del 31-dic-2026 (pendiente de tasa)");
+    expect(n).not.toContain("2025");
+    expect(n).not.toContain("4.100");
+    expect(A.notaTrmDeclaracion({ ...conUSD, trmCierre: { 2026: 4200 } }, 2026)).toContain("(pendiente de tasa)");
+    expect(A.notaTrmDeclaracion({ ...conUSD, trmCierre: { 2026: 4012.5 } }, 2026)).toContain("31-dic-2026 ($4.012,50)");
   });
 });

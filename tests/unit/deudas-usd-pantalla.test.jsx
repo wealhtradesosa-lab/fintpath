@@ -1,16 +1,16 @@
 // 24-nov-2026 — deudas-usd-en-pantalla. La pantalla de Deudas sumaba los USD
 // como pesos. Ahora: TRM de hoy para el total y el plan («TRM de hoy: $X»);
 // sin tasa, «pendiente de tasa» y la deuda en USD queda fuera del total en
-// pesos (nunca 4200). El aviso del año gravable nombra la TRM del 31-dic de ese
-// año. Datos de prueba inventados; ninguna cifra es de un usuario real.
+// pesos (nunca 4200). Recuerda que la declaración usa la TRM del 31-dic, sin
+// aviso del año gravable (ese va en Impuestos). Datos de prueba inventados; ninguna cifra es de un usuario real.
 import { describe, it, expect, beforeEach } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import {
-  resumenDeudasPantalla, sumaCOP, etiquetaTrmHoy, avisoDeudasAnoGravable,
+  resumenDeudasPantalla, sumaCOP, etiquetaTrmHoy, LINEA_TRM_DECLARACION,
   deudasParaPlan, subLineaDeudaUSD, aCOP,
 } from "../../src/lib/deudasPantalla.js";
-import { TRM_CIERRE_ANO, TRM_PROVISIONAL } from "../../src/lib/trm.js";
+import { TRM_PROVISIONAL } from "../../src/lib/trm.js";
 import { setRegion } from "../../src/lib/region.js";
 import DeudasModule from "../../src/components/DeudasModule.jsx";
 
@@ -58,24 +58,6 @@ describe("«TRM de hoy» del plan de pago", () => {
   });
 });
 
-describe("aviso del año gravable", () => {
-  it("AG 2026 sin TRM del 31-dic-2026 → nombra 31-dic-2026 y dice pendiente de tasa", () => {
-    expect(TRM_CIERRE_ANO[2026]).toBeUndefined();
-    const a = avisoDeudasAnoGravable({ trm: 4100 }, 2026);
-    expect(a.pendienteTasa).toBe(true);
-    expect(a.texto).toContain("AG 2026");
-    expect(a.texto).toContain("TRM del 31-dic-2026");
-    expect(a.texto).toContain("pendiente de tasa");
-    expect(a.texto).not.toContain("2025");
-    expect(a.texto).not.toContain("4.100");
-  });
-  it("cuando la tasa existe (AG 2025) la muestra", () => {
-    const a = avisoDeudasAnoGravable({}, 2025);
-    expect(a.pendienteTasa).toBe(false);
-    expect(a.texto).toContain("TRM del 31-dic-2025 ($3.757,08)");
-  });
-});
-
 describe("pantalla de Deudas (render)", () => {
   beforeEach(() => setRegion({ idioma: "es", pais: "CO" }));
   const render = (trm) => renderToStaticMarkup(createElement(DeudasModule, {
@@ -87,7 +69,11 @@ describe("pantalla de Deudas (render)", () => {
     expect(html).toContain("US$1.000");
     expect(html).toContain("≈ $4.000.000");
     expect(html).toContain("TRM de hoy: $4.000,00");
-    expect(html).toContain(`TRM del 31-dic-${new Date().getFullYear()}`);
+    expect(html).toContain("En tu declaración se usa la TRM del 31-dic.");
+    expect(LINEA_TRM_DECLARACION).toBe("En tu declaración se usa la TRM del 31-dic.");
+    // Ya no hay aviso del año gravable en Deudas: ese va en Impuestos.
+    expect(html).not.toMatch(/AG 20\d\d/);
+    expect(html).not.toMatch(/31-dic-20\d\d/);
   });
   it("sin TRM: pendiente de tasa y el total es solo pesos", () => {
     const html = render(0);
@@ -95,5 +81,7 @@ describe("pantalla de Deudas (render)", () => {
     expect(html).toContain("sin tus USD");
     expect(html).not.toContain("$4.200.000");
     expect(html).not.toContain("$5.001.000");
+    expect(html).toContain("En tu declaración se usa la TRM del 31-dic.");
+    expect(html).not.toMatch(/AG 20\d\d/);
   });
 });

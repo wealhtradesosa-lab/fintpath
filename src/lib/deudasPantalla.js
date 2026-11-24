@@ -7,10 +7,10 @@
 //  - Total de la pantalla y plan de pago: TRM de hoy.
 //  - Sin TRM real: la deuda en USD NO entra al total en pesos (ni como pesos ni
 //    con 4200). Se muestra en dólares y la pantalla avisa «pendiente de tasa».
-//  - Para la declaración del año gravable en curso, la tasa es la del 31-dic de
-//    ese año (Art. 269 ET). Mientras no exista en TRM_CIERRE_ANO (ni la haya
-//    cargado el usuario), el aviso dice «pendiente de tasa».
-import { trmUsable, trmCierreAno, TEXTO_PENDIENTE_TASA } from "./trm.js";
+//  - La declaración usa la TRM del 31-dic del año gravable (Art. 269 ET): esta
+//    pantalla solo lo recuerda (LINEA_TRM_DECLARACION). La tasa del AG va en las
+//    pantallas de Impuestos (notaTrmDeclaracion en App.jsx, con DEFAULT_AG).
+import { trmUsable, TEXTO_PENDIENTE_TASA } from "./trm.js";
 
 export const esDeudaUSD = (d) => String(d?.moneda || "").toUpperCase() === "USD";
 
@@ -83,21 +83,5 @@ export function lineaDeudaUSD(d, trm, fmt = pesos) {
 
 export const NOTA_TOTAL_PENDIENTE_TASA = "Todavía no tenemos la TRM de hoy: tus deudas en dólares quedan por fuera de los totales en pesos (pendiente de tasa). Las ves en dólares en la lista.";
 
-/**
- * Aviso del año gravable en curso para las deudas en USD. La declaración usa la
- * TRM del 31-dic de ese año, no la de hoy. Sin esa tasa: «pendiente de tasa».
- */
-export function avisoDeudasAnoGravable(user, ano = new Date().getFullYear()) {
-  const t = trmCierreAno(user, ano);
-  const fecha = `31-dic-${ano}`;
-  return {
-    ano,
-    fecha,
-    tasa: t,
-    pendienteTasa: t == null,
-    texto: `AG ${ano}: en tu declaración, las deudas en dólares se pasan a pesos con la TRM del ${fecha}` +
-      (t == null
-        ? `, que todavía no existe: ${TEXTO_PENDIENTE_TASA}. Los totales de esta pantalla usan la TRM de hoy y sirven para tu plan, no para declarar.`
-        : ` (${tasaTxt(t)}). Los totales de esta pantalla usan la TRM de hoy y sirven para tu plan, no para declarar.`),
-  };
-}
+/** Línea fija bajo «TRM de hoy»: la declaración no usa la tasa de hoy. */
+export const LINEA_TRM_DECLARACION = "En tu declaración se usa la TRM del 31-dic.";

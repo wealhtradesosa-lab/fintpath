@@ -23,7 +23,7 @@ import AbonoDeudaModal from "./AbonoDeudaModal";
 import BarraComposicion from "./BarraComposicion";
 import { MESES, costoCredito, montoPromedioMensual, montoDelMes, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 import { tx, esUS, plata, pct as pctR, monedaBase, nombreMes } from "../lib/region.js";
-import { esDeudaUSD, factorCOP, sumaCOP, resumenDeudasPantalla, deudasParaPlan, etiquetaTrmHoy, subLineaDeudaUSD, avisoDeudasAnoGravable, NOTA_TOTAL_PENDIENTE_TASA, usdTxt } from "../lib/deudasPantalla.js";
+import { esDeudaUSD, factorCOP, sumaCOP, resumenDeudasPantalla, deudasParaPlan, etiquetaTrmHoy, subLineaDeudaUSD, LINEA_TRM_DECLARACION, NOTA_TOTAL_PENDIENTE_TASA, usdTxt } from "../lib/deudasPantalla.js";
 
 const T = {
   bg2: C.surface, bg3: "var(--fp-raised)",
@@ -228,7 +228,6 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   const interesAnual = sumaCOP(activos, trm, (d) => (d.mt || 0) * ((Number(d.ts) || 0) / 100));
   const totalInteresAnual = sumaCOP(activos, trm, (d) => costoCredito(d).interesAnual);
   const hayUSD = !esUS() && resumenUSD.hayUSD;
-  const avisoAG = hayUSD ? avisoDeudasAnoGravable(user) : null;
 
   // 27-sep-2026 (Santiago: "no le veo uso a seleccionar todos los items").
   // Se quitó la selección múltiple: servía solo para borrar en lote, la app
@@ -381,13 +380,13 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         ))}
       </div>
 
-      {/* 24-nov-2026 — Deudas en dólares: tasa usada, «pendiente de tasa» y el aviso
-          del año gravable (TRM del 31-dic, Art. 269 ET). Solo en Colombia. */}
+      {/* 24-nov-2026 — Deudas en dólares: tasa usada, «pendiente de tasa» y que la
+          declaración usa la TRM del 31-dic. Solo en Colombia. */}
       {hayUSD && (
         <div role="note" data-testid="aviso-deudas-usd" style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
           <div style={{ fontWeight: 600, color: T.txt }}>{etiquetaTrmHoy(resumenUSD.tasa)}</div>
           {resumenUSD.pendienteTasa && <div style={{ color: T.orange, marginTop: 2 }}>{NOTA_TOTAL_PENDIENTE_TASA} {tx("Por fuera: ", "Left out: ")}{usdTxt(resumenUSD.usdPendiente)}.</div>}
-          {avisoAG && <div data-testid="aviso-ag" style={{ marginTop: 4 }}>{avisoAG.texto}</div>}
+          <div style={{ marginTop: 2 }}>{LINEA_TRM_DECLARACION}</div>
         </div>
       )}
 
