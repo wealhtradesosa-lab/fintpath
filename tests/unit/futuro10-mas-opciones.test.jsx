@@ -41,3 +41,17 @@ describe("cifras: un resto de menos de un peso no sale como «$-0»", () => {
     expect(miles(-1234)).toMatch(/1.234/);
   });
 });
+
+// 24-nov-2026 (Santiago: "me sale que la plata está en un asociativo pero no me deja quitar ni cambiar"). Un proyecto que se vende y
+// se repite trae en cada vuelta la referencia a su inversión, para poder editarlo y quitarlo en el año en que aparece.
+import { cuentaPorAnio } from "../../src/lib/futuro10.js";
+describe("las vueltas de un proyecto asociativo se pueden editar y quitar", () => {
+  it("cada vuelta del proyecto lleva la referencia a su inversión nueva", () => {
+    const cfg = { ...base, nuevas: [{ preset: "fincaRaiz", anio: 2, fuente: "liquidez", pr: { tipo: "asociativo", valor: 100e6, valorFinal: 130e6, meses: 12, final: "vende", repite: true } }] };
+    const r = proyectarFuturo10(user, cfg);
+    const c = cuentaPorAnio(r, cfg);
+    const conProyecto = c.filter((y) => y.movidas.some((m) => /asociativo/i.test(m.nombre)));
+    expect(conProyecto.length).toBeGreaterThan(0);
+    conProyecto.forEach((y) => y.movidas.filter((m) => /asociativo/i.test(m.nombre)).forEach((m) => expect(m.ref).toBe("n0")));
+  });
+});
