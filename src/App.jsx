@@ -4430,7 +4430,7 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
     default:return<div style={{padding:56,textAlign:"center",color:T.tx3}}>Próximamente</div>}};
 
   return <RoleProvider value={{role,isLegacy,accountId}}><div className="fp-app" style={{background:T.bg,minHeight:"100vh",display:"flex",fontFamily:"'Inter',system-ui",color:T.tx}}><DefsIconos/>
-    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:${T.bg};overflow-x:hidden}input:focus,select:focus{border-color:${T.gn}!important;outline:none}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.bg3};border-radius:3px}::selection{background:${T.gn}30}
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap');*{box-sizing:border-box;margin:0}body{margin:0;background:${T.bg};overflow-x:hidden;overflow-x:clip}input:focus,select:focus{border-color:${T.gn}!important;outline:none}::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.bg3};border-radius:3px}::selection{background:${T.gn}30}
 
 /* ═══════════════════════════════════════════════════════════════════
    MOBILE RESPONSIVE GLOBAL — Sesión 5-may-2026
@@ -4439,7 +4439,9 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
    que se desbordan, tap targets muy chicos.
    Los componentes individuales también usan clamp() para fontSizes.
    ═══════════════════════════════════════════════════════════════════ */
-html, body, #root { max-width: 100vw; overflow-x: hidden; }
+html, body, #root { max-width: 100vw; overflow-x: hidden; overflow-x: clip; }
+/* 24-nov-2026: «clip» corta igual que «hidden» pero no vuelve a #root un contenedor con scroll; con «hidden» nada
+   pegajoso (position: sticky) se quedaba pegado: ni las pestañas de los años ni la barra de abajo de Tu plata. */
 img, video, iframe, canvas, svg { max-width: 100%; height: auto; }
 
 /* En mobile las tablas se vuelven scrollables horizontalmente en lugar de desbordar */
