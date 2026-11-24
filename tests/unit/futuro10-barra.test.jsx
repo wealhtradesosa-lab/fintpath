@@ -158,14 +158,17 @@ describe("barra en vivo: render", () => {
   });
 });
 
-describe("MiFuturo10: la barra sale en los pasos 1 a 3", () => {
+// 24-nov-2026: en el paso 3 (Tu plata) manda la barra del año (te quedan por invertir, Guardado, Listo, seguir…);
+// la del escenario queda en los pasos 1 y 2. Ahora que las barras sí se pegan abajo, las dos se tapaban.
+describe("MiFuturo10: la barra del escenario sale en los pasos 1 y 2; en el 3, la del año", () => {
   const cfg = { escenario: "base", norte: "equilibrio", decisiones: { c: { accion: "vende" } }, nuevas: [], reinversiones: [], futuros: { ingresos: [], activos: [], gastos: [] } };
   [0, 1, 2, 3, 4].forEach((paso) => it(`paso ${paso + 1}`, () => {
     const h = renderToStaticMarkup(createElement(MiFuturo10, { user: uVenta, guardado: { borrador: cfg }, pasoInicial: paso }));
-    if (paso <= 2) {
+    if (paso <= 1) {
       expect(h).toContain('data-testid="f10-barra"');
       expect(h).toContain("antes de impuestos de la venta");
     } else expect(h).not.toContain('data-testid="f10-barra"');
+    if (paso === 2) expect(h).toMatch(/por invertir|te pasaste|faltan/);
   }));
   it("sin venta, la barra no muestra el rótulo de impuestos", () => {
     const h = renderToStaticMarkup(createElement(MiFuturo10, { user: uVenta, guardado: { borrador: { ...cfg, decisiones: {} } }, pasoInicial: 0 }));
