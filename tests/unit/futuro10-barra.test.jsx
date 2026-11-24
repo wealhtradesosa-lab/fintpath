@@ -5,7 +5,7 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement, isValidElement, Children } from "react";
-import { patrimonioFinalHoy, proyectarFuturo10, SUPUESTOS_F10, resumenBarra, desglosePatrimonio, rendimientoSinAhorro, loQueVieneDelPlan, hayVenta, hayAlertaLiquidez, aPesosDeHoy, INFLACION_PESOS_HOY_PCT, anioCal } from "../../src/lib/futuro10.js";
+import { patrimonioFinalHoy, proyectarFuturo10, SUPUESTOS_F10, resumenBarra, desglosePatrimonio, rendimientoSinAhorro, loQueVieneDelPlan, hayVenta, hayAlertaLiquidez, aPesosDeHoy, crecimientoDefault, INFLACION_PESOS_HOY_PCT, anioCal } from "../../src/lib/futuro10.js";
 import BarraFuturo10 from "../../src/components/BarraFuturo10.jsx";
 import MiFuturo10 from "../../src/components/MiFuturo10.jsx";
 import PlanComparador from "../../src/components/PlanComparador.jsx";
@@ -316,5 +316,47 @@ describe("la misma cifra del año 10 en la barra, la tarjeta, el comparador y el
     expect(h).toContain(`en pesos de hoy en ${anioCal(10)}`);
     expect(h).toContain(`Patrimonio en ${anioCal(10)}, en pesos de hoy`);
     expect(h).toContain(`en pesos de ${anioCal(10)}: ${fmM(r.filas[10].patrimonio)}`);
+  });
+});
+
+describe("una sola tasa de «pesos de hoy»: la inflación del escenario (Finanzas, escenario al 4 %)", () => {
+  const u4 = { ...uVenta, inflacionPct: 4 };
+  const futuros = { ingresos: [], activos: [{ nombre: "Casa", clase: "vivienda", valor: 300e6, entrega: 4 }], gastos: [{ nombre: "Maestría", anual: 60e6, desde: 2, anios: 2 }] };
+  const rHoy = proyectarFuturo10(u4, {});
+  const r = proyectarFuturo10(u4, { futuros, decisiones: { c: { accion: "vende" } } });
+  const fin = r.filas[r.filas.length - 1];
+  const cifra = fmM(patrimonioFinalHoy(r));
+  const conTest = (h, id) => { const m = h.match(new RegExp(`data-testid="${id}"[^>]*>([^<]+)<`)); return m && m[1]; };
+  it("el año 10 se deflacta con la inflación del escenario, igual que el último punto de la gráfica en pesos de hoy", () => {
+    expect(r.escenario.inflacionPct).toBe(4);
+    expect(fin.deflactor).toBeCloseTo(1.04 ** 10, 10);
+    // último punto de la gráfica en pesos de hoy (PlanInforme/PlanComparador: patrimonio ÷ f.deflactor)
+    expect(patrimonioFinalHoy(r)).toBeCloseTo(fin.patrimonio / fin.deflactor, 0);
+    expect(desglosePatrimonio(r).fin).toBeCloseTo(fin.patrimonio / fin.deflactor, 0);
+    expect(resumenBarra(r, rHoy).plan).toBeCloseTo(fin.patrimonio / fin.deflactor, 0);
+    expect(resumenBarra(r, rHoy).inflacionPct).toBe(4);
+  });
+  it("barra, tarjeta, comparador y veredicto: la misma cifra y el rótulo con 4 %", () => {
+    const hb = renderToStaticMarkup(createElement(BarraFuturo10, { rPlan: r, rHoy, onIr: () => {} }));
+    expect(conTest(hb, "f10-barra-plan")).toBe(cifra);
+    expect(hb).toContain("Patrimonio neto en pesos de hoy (inflación 4 % al año)");
+    const planes = [{ nombre: "Hoy", esHoy: true, r: rHoy }, { id: "e", nombre: "Plan", r }];
+    const ht = renderToStaticMarkup(createElement(EscenariosCreados, { planes, inflacionPct: 4, onVer: () => {}, onCrear: () => {} }));
+    expect(ht).toContain(`>${cifra}<`);
+    expect(ht).toContain("en pesos de hoy (inflación 4 % al año)");
+    expect(ht).not.toContain("inflación 5 %");
+    const hc = renderToStaticMarkup(createElement(PlanComparador, { planes, inflacionPct: 4 }));
+    expect([...hc.matchAll(/data-testid="f10-comp-fin"[^>]*>([^<]+)</g)].map((x) => x[1])).toContain(cifra);
+    const hi = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4 }));
+    expect(conTest(hi, "f10-veredicto-fin")).toBe(cifra);
+  });
+  it("la vivienda al 0 % real crece con esa misma inflación (4 %)", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "a", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] };
+    const rc = proyectarFuturo10(u, { futuros: { ingresos: [], activos: [{ nombre: "Casa", clase: "vivienda", valor: 100e6, entrega: 2 }], gastos: [] } });
+    // sin otra valorización, la casa sube al ritmo de la inflación del escenario
+    expect(SUPUESTOS_F10.presets.fincaRaiz.valorizacionSpread).toBe(0);
+    expect(crecimientoDefault({ id: "x", tp: "Real Estate", va: 100e6 }, rc.escenario)).toBeCloseTo(0.04, 6);
+    expect(rc.escenario.inflacionPct).toBe(4);
+    expect(loQueVieneDelPlan(rc)[0].valorizacionDefault).not.toBe(false);
   });
 });

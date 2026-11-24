@@ -3,12 +3,12 @@
 // 23-nov-2026 (Luis: «conservar lo bueno y hacerla fácil»). Barra pegada abajo
 // con el resultado en vivo mientras llenas los pasos: tu patrimonio neto al
 // final del plan frente a «Si me quedo como estoy», los dos en pesos de hoy
-// (inflación del 5 % al año), y la diferencia en verde o rojo. Al tocarla vas
+// (con la inflación del escenario), y la diferencia en verde o rojo. Al tocarla vas
 // al paso 4 (Resultado). El punto rojo usa la misma regla que las «Alertas de
 // liquidez» del paso 4. Si vendes algo, el resultado va «antes de impuestos
 // de la venta». Criterios: Finanzas, Tributario y QA.
 // ═══════════════════════════════════════════════════════════════════════════
-import { resumenBarra, rotuloVenta, INFLACION_PESOS_HOY_PCT } from "../lib/futuro10.js";
+import { resumenBarra, rotuloVenta } from "../lib/futuro10.js";
 import { tx, esUS, plataCorta, num } from "../lib/region.js";
 import { fmtPlataEs } from "../lib/formato.js";
 
@@ -38,8 +38,8 @@ export const CSS_BARRA_F10 = `.fp10-barra { position: sticky; bottom: 0; z-index
  * @param rHoy   proyectarFuturo10 de «Si me quedo como estoy»
  * @param onIr   se llama al tocar la barra (lleva al paso 4)
  */
-export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct = INFLACION_PESOS_HOY_PCT }) {
-  const b = resumenBarra(rPlan, rHoy, inflacionPct);
+export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct }) {
+  const b = inflacionPct == null ? resumenBarra(rPlan, rHoy) : resumenBarra(rPlan, rHoy, inflacionPct);
   if (!b) return null;
   const unidadCorta = esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos");
   const unidad = esUS()

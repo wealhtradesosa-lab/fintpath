@@ -16,7 +16,7 @@
 
 import { tamanoCifra } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
-import { resumenEscenario, anioCal, desglosePatrimonio, rendimientoSinAhorro, hayVenta, rotuloVenta, loQueVieneDelPlan, INFLACION_PESOS_HOY_PCT } from "../../lib/futuro10.js";
+import { resumenEscenario, anioCal, desglosePatrimonio, rendimientoSinAhorro, hayVenta, rotuloVenta, loQueVieneDelPlan, inflacionDe } from "../../lib/futuro10.js";
 import { tx, esUS, plataCorta, num } from "../../lib/region.js";
 
 import { fmtPlataEs } from "../../lib/formato.js";
@@ -33,11 +33,12 @@ function medir(r) {
   const f = (r && r.filas) || [];
   if (!f.length) return null;
   const fin = f[f.length - 1];
-  const dp = desglosePatrimonio(r, INFLACION_PESOS_HOY_PCT);
-  const rend = rendimientoSinAhorro(r, INFLACION_PESOS_HOY_PCT);
+  const infl = inflacionDe(r);
+  const dp = desglosePatrimonio(r, infl);
+  const rend = rendimientoSinAhorro(r, infl);
   const cobertura = fin.gastos > 0 ? (fin.ingresos / fin.gastos) * 100 : null;
   const peor = f.slice(1).reduce((m, x) => Math.min(m, (x.ingresos - x.gastos) / 12), Infinity);
-  return { serie: f.map((x) => (x.patrimonio || 0) / Math.pow(1 + INFLACION_PESOS_HOY_PCT / 100, x.anio || 0)), fin: dp.fin, anioFin: anioCal(fin.anio), real: rend ? rend.realPct : null, desglose: dp, conVenta: hayVenta(r), viene: loQueVieneDelPlan(r), cobertura, peorMes: Number.isFinite(peor) ? peor : 0 };
+  return { serie: f.map((x) => (x.patrimonio || 0) / (x.deflactor || Math.pow(1 + infl / 100, x.anio || 0))), inflacionPct: infl, fin: dp.fin, anioFin: anioCal(fin.anio), real: rend ? rend.realPct : null, desglose: dp, conVenta: hayVenta(r), viene: loQueVieneDelPlan(r), cobertura, peorMes: Number.isFinite(peor) ? peor : 0 };
 }
 
 // 23-nov-2026 (Soporte): aviso del cambio de cálculo junto a las tarjetas. Se
@@ -101,6 +102,8 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
   const hoy = (planes || []).find((p) => p.esHoy);
   const creados = (planes || []).filter((p) => p.id);
   const mHoy = hoy ? medir(hoy.r) : null;
+  const infTxt = (v) => String(Math.round(Number(v) * 10) / 10).replace(".", esUS() ? "." : ",");
+  const infHdr = infTxt(inflacionPct != null ? inflacionPct : (mHoy ? mHoy.inflacionPct : (creados[0] ? inflacionDe(creados[0].r) : 5)));
 
   if (!creados.length) {
     return (
@@ -139,7 +142,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
           <div>
             <h3 style={titulo}>{tx(`¿Cuál deja más patrimonio en ${anioFin}?`, `Which leaves the most net worth in ${anioFin}?`)}</h3>
             <div style={subtitulo}>
-              {esUS() ? tx(`Patrimonio neto en dólares de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año). `, `Net worth in today's dollars (${INFLACION_PESOS_HOY_PCT}% yearly inflation). `) : tx(`Patrimonio neto en pesos de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año). `, `Net worth in today's pesos (${INFLACION_PESOS_HOY_PCT}% yearly inflation). `)}
+              {esUS() ? tx(`Patrimonio neto en dólares de hoy (inflación ${infHdr} % al año). `, `Net worth in today's dollars (${infHdr}% yearly inflation). `) : tx(`Patrimonio neto en pesos de hoy (inflación ${infHdr} % al año). `, `Net worth in today's pesos (${infHdr}% yearly inflation). `)}
               {mHoy ? tx(<>La línea punteada es quedarte como estás ({fm(mHoy.fin)}). </>, <>The dashed line is staying as you are ({fm(mHoy.fin)}). </>) : null}
               {mejor.p.esHoy ? tx("Por ahora, quedarte como estás deja más patrimonio que los escenarios que creaste.", "For now, staying as you are leaves more net worth than the scenarios you created.") : tx(<>«{mejor.p.nombre}» lleva la delantera{mHoy ? <> con <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> frente a hoy</> : null}.</>,
                 <>"{mejor.p.nombre}" is ahead{mHoy ? <> by <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> vs. today</> : null}.</>)}
@@ -192,7 +195,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
               <div>
                 <div style={{ fontSize: 12, color: C.txt2 }}>{tx(`Patrimonio neto en ${m.anioFin}`, `Net worth in ${m.anioFin}`)}</div>
                 <div style={{ containerType: "inline-size" }}><div style={{ fontSize: tamanoCifra(fm(m.fin), 22), whiteSpace: "nowrap", fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div></div>
-                <div style={{ fontSize: 11.5, color: C.txt2 }}>{esUS() ? tx(`en dólares de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año)`, `in today's dollars (${INFLACION_PESOS_HOY_PCT}% yearly inflation)`) : tx(`en pesos de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año)`, `in today's pesos (${INFLACION_PESOS_HOY_PCT}% yearly inflation)`)}{m.conVenta ? <> · <b data-testid="f10-card-venta" style={{ color: C.txt }}>{rotuloVenta()}</b></> : null}</div>
+                <div style={{ fontSize: 11.5, color: C.txt2 }}>{esUS() ? tx(`en dólares de hoy (inflación ${infTxt(m.inflacionPct)} % al año)`, `in today's dollars (${infTxt(m.inflacionPct)}% yearly inflation)`) : tx(`en pesos de hoy (inflación ${infTxt(m.inflacionPct)} % al año)`, `in today's pesos (${infTxt(m.inflacionPct)}% yearly inflation)`)}{m.conVenta ? <> · <b data-testid="f10-card-venta" style={{ color: C.txt }}>{rotuloVenta()}</b></> : null}</div>
                 {m.desglose && <div data-testid="f10-card-desglose" style={{ fontSize: 11.5, color: C.txt2, marginTop: 4, lineHeight: 1.45 }}>{tx(<>Hoy {fm(m.desglose.hoy)} · tu ahorro {m.desglose.ahorro >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.ahorro))} · lo que rinden tus activos {m.desglose.rendimientoReal >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.rendimientoReal))}</>, <>Today {fm(m.desglose.hoy)} · your savings {m.desglose.ahorro >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.ahorro))} · what your assets earn {m.desglose.rendimientoReal >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.rendimientoReal))}</>)}</div>}
               </div>
               {m.viene.length > 0 && <div data-testid="f10-card-viene" style={{ paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>

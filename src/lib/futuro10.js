@@ -1805,8 +1805,11 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
 // ═══════════════════════════════════════════════════════════════════════════
 // 23-nov-2026 — Barra de resultado en vivo y tarjeta del escenario.
 // (Finanzas · Tributario · QA). Reglas:
-//  · Las cifras a 10 años van en patrimonio neto en pesos de hoy, con una
-//    inflación fija del 5 % al año (INFLACION_PESOS_HOY_PCT), y se rotulan así.
+//  · Las cifras a 10 años van en patrimonio neto en pesos de hoy, con la
+//    inflación del escenario (la misma del interruptor «pesos de hoy» y de las
+//    gráficas del informe: f.deflactor), y se rotulan con esa tasa. Finanzas,
+//    23-nov-2026: una sola tasa define «pesos de hoy» en toda la app; subir el
+//    valor por defecto a 5 % queda para el PR de indexación.
 //  · El rendimiento se aplica solo sobre los activos. El ahorro del año entra
 //    como aporte y nunca cuenta como rendimiento: el «crece al año» de antes
 //    salía de comparar el patrimonio final con el de hoy y metía el ahorro de
@@ -1814,13 +1817,19 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
 //  · Vender un activo no baja el patrimonio del año 0 (solo pasa a efectivo).
 //  · Si hay un activo vendido, el resultado va «antes de impuestos de la venta».
 // ═══════════════════════════════════════════════════════════════════════════
-export const INFLACION_PESOS_HOY_PCT = 5;
+export const INFLACION_PESOS_HOY_PCT = 5; // solo si el resultado no trae escenario
+
+/** Inflación (%) con la que el escenario pasa a pesos de hoy. */
+export const inflacionDe = (r) => {
+  const v = r && r.escenario ? r.escenario.inflacionPct : null;
+  return v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : INFLACION_PESOS_HOY_PCT;
+};
 
 /** Lleva una cifra nominal del año `anio` a pesos de hoy con la inflación dada. */
 export const aPesosDeHoy = (nominal, anio, inflacionPct = INFLACION_PESOS_HOY_PCT) => n(nominal) / Math.pow(1 + n(inflacionPct) / 100, Math.max(0, n(anio)));
 
-/** Patrimonio neto del último año del plan en pesos de hoy (5 %). La misma cifra en la barra, la tarjeta, el comparador y el veredicto. */
-export function patrimonioFinalHoy(r, inflacionPct = INFLACION_PESOS_HOY_PCT) {
+/** Patrimonio neto del último año del plan en pesos de hoy, con la inflación del escenario. La misma cifra en la barra, la tarjeta, el comparador, el veredicto y el último punto de la gráfica en pesos de hoy. */
+export function patrimonioFinalHoy(r, inflacionPct = inflacionDe(r)) {
   const f = (r && r.filas) || [];
   if (!f.length) return 0;
   const fin = f[f.length - 1];
@@ -1841,7 +1850,7 @@ export const hayAlertaLiquidez = (r) => !!(r && Array.isArray(r.alertas) && r.al
  * arrancó el año. Se encadena (tasa ponderada en el tiempo) y se pasa a real
  * con la inflación dada. Devuelve null si no hay activos.
  */
-export function rendimientoSinAhorro(r, inflacionPct = INFLACION_PESOS_HOY_PCT) {
+export function rendimientoSinAhorro(r, inflacionPct = inflacionDe(r)) {
   const f = (r && r.filas) || [];
   if (f.length < 2) return null;
   let factor = 1, anios = 0;
@@ -1865,7 +1874,7 @@ export function rendimientoSinAhorro(r, inflacionPct = INFLACION_PESOS_HOY_PCT) 
  * rendimiento real = lo que producen los activos menos lo que la inflación
  * le quita al patrimonio de cada año.
  */
-export function desglosePatrimonio(r, inflacionPct = INFLACION_PESOS_HOY_PCT) {
+export function desglosePatrimonio(r, inflacionPct = inflacionDe(r)) {
   const f = (r && r.filas) || [];
   if (!f.length) return null;
   const d = (t) => Math.pow(1 + n(inflacionPct) / 100, t);
@@ -1891,7 +1900,7 @@ export function desglosePatrimonio(r, inflacionPct = INFLACION_PESOS_HOY_PCT) {
  * Lo que muestra la barra de resultado en vivo (pasos 1 a 3).
  * rPlan = el escenario que se está armando; rHoy = «Si me quedo como estoy».
  */
-export function resumenBarra(rPlan, rHoy, inflacionPct = INFLACION_PESOS_HOY_PCT) {
+export function resumenBarra(rPlan, rHoy, inflacionPct = inflacionDe(rPlan)) {
   const dp = desglosePatrimonio(rPlan, inflacionPct);
   if (!dp) return null;
   const dh = rHoy ? desglosePatrimonio(rHoy, inflacionPct) : null;
