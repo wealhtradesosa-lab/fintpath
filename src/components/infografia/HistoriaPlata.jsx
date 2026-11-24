@@ -59,6 +59,8 @@ export default function HistoriaPlata({ r, anio = 1 }) {
   const usos = (bd.usos || []).filter((u) => u.monto > 0.5);
   const usoDe = (nombre, k) => usos.filter((u) => u.nombre === nombre && (u.anio || 1) === k && !(k === 1 && u.apartado)).reduce((s, u) => s + u.monto, 0);
   const mz = r.mezcla || {};
+  // 24-nov-2026: la cuenta en cascada de cada año (la misma del paso 3), con el fondo de reserva.
+  const cuentas = cuentaPorAnio(r) || [];
   const mezclaTxt = tx(`${Math.round(mz.liquidez || 0)} % liquidez, ${Math.round(mz.renta || 0)} % renta fija y ${Math.round(mz.crecimiento || 0)} % crecimiento`, `${Math.round(mz.liquidez || 0)}% cash, ${Math.round(mz.renta || 0)}% fixed income and ${Math.round(mz.crecimiento || 0)}% growth`);
 
   // ── Lo vendido hoy y por qué ──────────────────────────────────────────────
@@ -169,12 +171,21 @@ export default function HistoriaPlata({ r, anio = 1 }) {
     return COL.crece;
   };
   let fuentes, destinos, queda = 0, cuenta = null;
+  // Lo que no se usa: una parte a tu fondo de reserva y el resto pasa al año siguiente.
+  const cierre = (c) => [
+    ...(c.aReserva > 0.5 ? [{ key: "reserva", tipo: "colchon", nombre: tx("A tu fondo de reserva", "To your reserve fund"), sub: tx("Para años futuros: rinde como renta fija corta.", "For future years: earns like short-term fixed income."), monto: c.aReserva, color: INF.gris }] : []),
+    ...(c.pasa > 0.5 ? [{ key: "queda", nombre: c.anio < nAnios ? tx(`Queda: pasa a ${anioCal(c.anio + 1)}`, `Left: carries to ${anioCal(c.anio + 1)}`) : tx("Queda invertido", "Stays invested"), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}.`, `Meanwhile it's invested: ${mezclaTxt}.`), monto: c.pasa, color: COL.queda, queda: true }] : []),
+  ];
   if (hoyT) {
+    const c1 = cuentas.find((c) => c.anio === 1) || { flujo: 0, aReserva: 0, pasa: 0, queda: 0, anio: 1 };
+    cuenta = c1;
+    // Lo de tus cuentas que elegiste usar; lo que te pasaste de lo vendido lo cubre lo que te sobra en el año.
+    const elegido = Math.max(0, (bd.desdeLiquidez || 0) - (bd.excesoCubierto || 0));
     fuentes = [
       ...vendidos.map((v, i) => ({ key: "v" + v.id, nombre: v.nombre, monto: v.valor, color: INF.serie[(i + 5) % INF.serie.length] })),
       ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [{ key: "cn", nombre: tx("Capital nuevo", "New capital"), monto: bd.capitalNuevoHoy ?? bd.capitalNuevo, color: INF.navy }] : []),
-      ...(bd.desdeLiquidez > 0.5 ? [{ key: "lq", nombre: tx("De tu liquidez", "From your cash"), monto: bd.desdeLiquidez, color: INF.gris }] : []),
-      ...(bd.pendienteAnio1 > 0.5 ? [{ key: "pa", nombre: tx(`De lo que entra en ${anioCal(1)}`, `From what comes in during ${anioCal(1)}`), monto: bd.pendienteAnio1, color: INF.serie[3] }] : []),
+      ...(elegido > 0.5 ? [{ key: "lq", nombre: tx("De tus cuentas (lo elegiste)", "From your accounts (your choice)"), monto: elegido, color: INF.gris }] : []),
+      ...(c1.flujo > 0.5 ? [{ key: "fl", nombre: tx(`Lo que te sobra en ${anioCal(1)}`, `Your ${anioCal(1)} surplus`), monto: c1.flujo, color: COL.sobra }] : []),
     ];
     const grupos = {};
     usos.filter((u) => (u.anio || 1) === 1 || u.apartado).forEach((u) => {
@@ -183,28 +194,29 @@ export default function HistoriaPlata({ r, anio = 1 }) {
       const g = grupos[k] = grupos[k] || { key: k, nombre: apartado ? tx(`Apartas para ${u.nombre} (${anioCal(u.anio)})`, `Set aside for ${u.nombre} (${anioCal(u.anio)})`) : u.nombre, monto: 0, color: apartado ? INF.gris : colorUso(u.nombre, u.seccion) };
       g.monto += apartado ? (u.deVenta || 0) + (u.deCuentas || 0) : u.monto;
     });
-    queda = bd.restante || 0;
+    queda = c1.queda < -0.5 ? c1.queda : c1.pasa;
     destinos = [
       ...(bd.deudas > 0.5 ? [{ key: "deudas", tipo: "deuda", nombre: tx("Pagar deudas", "Pay off debts"), sub: (r.deudas || []).filter((x) => x.pagado > 0).map((x) => x.nombre).join(", "), monto: bd.deudas, color: COL.deuda }] : []),
       ...Object.values(grupos).filter((g) => g.monto > 0.5),
       ...(bd.obras > 0.5 ? [{ key: "obras", nombre: tx("Obras", "Build-outs"), monto: bd.obras, color: COL.obra }] : []),
       ...(bd.colchon > 0.5 ? [{ key: "colchon", tipo: "colchon", nombre: tx("Colchón para imprevistos", "Emergency cushion"), monto: bd.colchon, color: INF.gris }] : []),
-      ...(queda > 0.5 ? [{ key: "queda", nombre: tx(`Queda: pasa a ${anioCal(2)}`, `Left: carries to ${anioCal(2)}`), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}`, `Meanwhile it's invested: ${mezclaTxt}`), monto: queda, color: COL.queda, queda: true }] : []),
+      ...(c1.flujo < -0.5 ? [{ key: "falta", tipo: "falta", nombre: tx(`Lo que falta para tus gastos de ${anioCal(1)}`, `Shortfall for your ${anioCal(1)} expenses`), monto: -c1.flujo, color: COL.falta }] : []),
+      ...cierre(c1),
     ].sort((a, b) => (a.queda ? 1 : 0) - (b.queda ? 1 : 0) || b.monto - a.monto);
   } else {
-    cuenta = (cuentaPorAnio(r) || []).find((g) => g.anio === t) || null;
-    const g = cuenta || { antes: 0, flujoHoy: 0, flujo: 0, llegan: [], salen: [], saldo: 0 };
+    cuenta = cuentas.find((g) => g.anio === t) || null;
+    const g = cuenta || { anio: t, antes: 0, flujo: 0, llegan: [], salen: [], queda: 0, pasa: 0, aReserva: 0, usoReserva: 0 };
     fuentes = [
       ...(g.antes > 0.5 ? [{ key: "antes", nombre: tx(`Viene de ${anioCal(t - 1)}`, `Carried from ${anioCal(t - 1)}`), monto: g.antes, color: COL.queda }] : []),
-      ...(g.flujoHoy > 0.5 ? [{ key: "fh", nombre: tx(`Lo que te sobró en ${anioCal(1)}`, `Your ${anioCal(1)} surplus`), monto: g.flujoHoy, color: COL.sobra }] : []),
       ...(g.flujo > 0.5 ? [{ key: "fl", nombre: tx(`Lo que te sobra en ${anioCal(t)}`, `Your ${anioCal(t)} surplus`), monto: g.flujo, color: COL.sobra }] : []),
       ...g.llegan.map((l, i) => ({ key: "l" + l.id, nombre: String(l.id).endsWith("_retiro") ? tx(`Sacas de ${l.nombre}`, `Taken out of ${l.nombre}`) : tx(`Venta de ${l.nombre}`, `Sale of ${l.nombre}`), monto: l.monto, color: INF.serie[(i + 5) % INF.serie.length] })),
+      ...(g.usoReserva > 0.5 ? [{ key: "ur", nombre: tx("De tu fondo de reserva", "From your reserve fund"), monto: g.usoReserva, color: INF.gris }] : []),
     ].filter((x) => x.monto > 0.5);
-    queda = g.saldo;
+    queda = g.queda < -0.5 ? g.queda : g.pasa;
     destinos = [
       ...g.salen.map((u, i) => ({ key: "s" + i, tipo: u.tipo === "A" ? "deuda" : u.tipo === "F" ? "pago" : "inversion", nombre: u.nombre, monto: u.monto, color: u.tipo === "A" ? COL.deuda : u.tipo === "F" ? COL.pago : colorUso(u.nombre.replace(/^(Invertir en|Invest in) /, ""), u.tipo) })),
       ...(g.flujo < -0.5 ? [{ key: "falta", tipo: "falta", nombre: tx(`Lo que falta para tus gastos de ${anioCal(t)}`, `Shortfall for your ${anioCal(t)} expenses`), monto: -g.flujo, color: COL.falta }] : []),
-      ...(g.saldo > 0.5 ? [{ key: "queda", nombre: t < nAnios ? tx(`Queda: pasa a ${anioCal(t + 1)}`, `Left: carries to ${anioCal(t + 1)}`) : tx("Queda invertido", "Stays invested"), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}`, `Meanwhile it's invested: ${mezclaTxt}`), monto: g.saldo, color: COL.queda, queda: true }] : []),
+      ...cierre(g),
     ].filter((x) => x.monto > 0.5);
   }
   const totFuentes = fuentes.reduce((s, x) => s + x.monto, 0);
