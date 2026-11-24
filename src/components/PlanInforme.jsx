@@ -120,7 +120,7 @@ function seriesPatrimonio(filas, base, max = 9) {
   return ids.map((id) => ({ id, nombre: nombre[id], color: color[id] || libres.shift() || INF.gris }));
 }
 
-export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct(), modoInicial = "nominal" }) {
+export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct(), modoInicial = "real" }) {
   const [modo, setModo] = useState(modoInicial); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
   const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala
@@ -132,6 +132,11 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
   const ev = useMemo(() => eventosDelPlan(r), [r]);
   const f0 = filas[0] || {}, f1 = filas[1] || f0, fin = filas[filas.length - 1] || f0;
+  // 24-nov-2026 (QA + Finanzas, PR fluidez): «Renta pasiva al mes» de cada año = lo que llega a la cuenta sin
+  // trabajar: rentas netas de costos, intereses y dividendos que te pagan, pensiones e ingresos futuros.
+  // Nunca el sueldo ni la valorización (ni la ganancia de un negocio que se vende y se repite). Misma base del
+  // ingreso pasivo de Nivel de patrimonio (hoy = calcularBase().ip).
+  const rentaPasivaMes = (f) => Math.max(0, (Number(f.rentas) || 0) - (Number(f.cicloFlujo) || 0)) / 12;
   const nAniosSel = Math.max(1, filas.length - 1);
   const aSel = Math.min(Math.max(1, anioSel), nAniosSel);
   const fy = filas[aSel] || f1;
@@ -546,9 +551,11 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
           </ComposedChart>
         </ResponsiveContainer></div></div>
         <div style={{ overflowX: "auto", marginTop: 8 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 640 }}>
-          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={th}>{tx("Llega a la cuenta", "Reaches your account")}</th><th style={th}>{tx("Crece invertido", "Grows invested")}</th><th style={th}>{tx("Produce en total", "Total earned")}</th><th style={th}>{tx("Sale para vivir", "Living costs")}</th><th style={th}>{tx("Sobra al mes (se reinvierte)", "Monthly surplus (reinvested)")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Qué cambia ese año", "What changes that year")}</th></tr></thead>
-          <tbody>{filas.slice(1).map((f) => { const qe = ev.filter((e) => e.anio === f.anio).map((e) => e.texto); return <tr key={f.anio}>
-            <td style={tdL}>{anioTxt(f.anio)}</td><td style={td}>{fmM(f.rentas / d(f))}</td><td style={td}>{fmM(f.crece / d(f))}</td><td style={td}>{fmM(f.produce / d(f))}</td><td style={td}>{fmM(f.gastos / d(f))}</td>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={th}>{tx("Renta pasiva (al mes)", "Passive income (per month)")}</th><th style={th}>{tx("Llega a la cuenta (al año)", "Reaches your account (per year)")}</th><th style={th}>{tx("Crece invertido (al año)", "Grows invested (per year)")}</th><th style={th}>{tx("Produce en total (al año)", "Total earned (per year)")}</th><th style={th}>{tx("Sale para vivir (al año)", "Living costs (per year)")}</th><th style={th}>{tx("Sobra (al mes, se reinvierte)", "Surplus (per month, reinvested)")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Qué cambia ese año", "What changes that year")}</th></tr></thead>
+          <tbody>{filas.map((f) => { const qe = ev.filter((e) => e.anio === f.anio).map((e) => e.texto); if (f.anio === 0) return <tr key="hoy" data-testid="f10-renta-pasiva-fila-0">
+            <td style={tdL}>{tx("Hoy", "Today")}</td><td style={td} data-testid="f10-renta-pasiva-0">{fmM(rentaPasivaMes(f))}</td><td style={td}>{fmM(f.rentas || 0)}</td><td style={td}>—</td><td style={td}>—</td><td style={td}>{fmM(f.gastos || 0)}</td><td style={td}>—</td><td style={{ ...tdL, color: INF.tx2 }}>{tx("Lo que tienes hoy", "What you have today")}</td></tr>;
+            return <tr key={f.anio}>
+            <td style={tdL}>{anioTxt(f.anio)}</td><td style={td} data-testid={`f10-renta-pasiva-${f.anio}`}>{fmM(rentaPasivaMes(f) / d(f))}</td><td style={td}>{fmM(f.rentas / d(f))}</td><td style={td}>{fmM(f.crece / d(f))}</td><td style={td}>{fmM(f.produce / d(f))}</td><td style={td}>{fmM(f.gastos / d(f))}</td>
             <td style={{ ...td, color: f.ingresos - f.gastos >= 0 ? INF.tx : INF.txBad }}>{fmM((f.ingresos - f.gastos) / 12 / d(f))}</td>
             <td style={{ ...tdL, color: INF.tx2 }}>{qe.length ? qe.join(" · ") : tx("Sin cambios", "No changes")}</td></tr>; })}</tbody>
         </table></div>

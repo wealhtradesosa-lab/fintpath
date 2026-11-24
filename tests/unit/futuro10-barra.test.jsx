@@ -92,7 +92,7 @@ describe("barra en vivo: cifras y reglas", () => {
     expect(resumenBarra(rHoy, rHoy).alertaLiquidez).toBe(rHoy.alertas.length > 0);
     const html = renderToStaticMarkup(createElement(BarraFuturo10, { rPlan: r, rHoy: r, onIr: () => {} }));
     expect(html).toContain('data-alerta="si"');
-    expect(html).toContain("Hay alertas de liquidez");
+    expect(html).toContain("Ojo: en algún año te puede faltar plata en la cuenta");
   });
 });
 
@@ -153,7 +153,7 @@ describe("barra en vivo: render", () => {
     expect(h).toMatch(/\.fp10-barra-enc \{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis/);
     expect(h).toContain(".fp10-largo { display: none; }");
     expect(h).toContain('<span class="fp10-corto">');
-    expect(h).toContain("En pesos de hoy (5 %)");
+    expect(h).toContain("En pesos de hoy · inflación 5 % al año");
     expect(h).toContain("antes de impuestos de la venta");
   });
 });
