@@ -57,3 +57,19 @@ describe("futuro10 · pago de deudas por año e inversiones con año", () => {
     expect(en2.filas[2].porActivo.some((a) => a.id === id && a.valor > 400e6)).toBe(true);
   });
 });
+
+describe("año en que cada deuda deja de existir (finAnio)", () => {
+  const Y2 = new Date().getFullYear();
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 3000e6 }, { id: "v", n: "Volvo", tp: "Vehículo", va: 200e6 }], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 50e6 }], gas: {},
+    deu: [{ id: "s", n: "Saldo local", mt: 437e6, pg: 0, tipoInteres: "sin_interes" }, { id: "vv", n: "Sufi Volvo", mt: 152e6, pg: 5e6, ts: 15, la: "v" }, { id: "k", n: "Consumo", mt: 60e6, pg: 3e6, ts: 20 }] };
+  it("pagada en un año, con la venta de su activo o con su cuota", () => {
+    const r = proyectarFuturo10(u, { pagarDeudas: { s: Y2 + 1, vv: Y2 + 1 } });
+    const f = (id) => r.deudas.find((d) => d.id === id);
+    expect(f("s").finAnio).toBe(2);
+    expect(f("vv").finAnio).toBe(2);
+    expect(f("k").finPorCuota).toBe(true);
+    expect(f("k").finAnio).toBe(3); // 60 M a 3 M/mes con 20 % E.A.: unos 24 meses → se acaba al empezar el año 3
+    const hoy = proyectarFuturo10(u, { decisiones: { v: { accion: "vende" } } });
+    expect(hoy.deudas.find((d) => d.id === "vv").finAnio).toBe(1);
+  });
+});

@@ -1067,7 +1067,24 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, ventaAnio, pagaAnio, ligadaEnPlan, pagar, pagado }) => {
       const u = unicas.find((x) => x.id === id);
       const x = deudas.find((y) => y.id === id);
-      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u,
+      // 23-nov-2026 (Santiago: "pagué la Volvo en 2027 y sigue apareciendo en 2029"; "me sigue
+      // apareciendo local la Macarena que se pagó en 2027"). Año en que la deuda ya no existe:
+      // la que se paga hoy o con una venta de hoy (1), la que se paga en un año (ese año), la que
+      // se paga con la venta de su activo en un año (ese año) o la que se termina de pagar con su
+      // cuota (estimado con saldo, cuota y tasa). La pantalla no la muestra en los años siguientes.
+      const d0 = x && x._d;
+      let finCuota = null;
+      if (d0 && !u) {
+        const P = n(d0.pg ?? d0.pago) * fxA(d0), S = saldo, ea = n(d0.ts) / 100;
+        const im = ea > 0 ? Math.pow(1 + ea, 1 / 12) - 1 : 0;
+        if (P > 0 && S > 0 && P > im * S) {
+          const meses = im > 0 ? -Math.log(1 - im * S / P) / Math.log(1 + im) : S / P;
+          finCuota = Math.min(N + 1, 1 + Math.floor(meses / 12));
+        }
+      }
+      const pagaEn = pagaAnio || (u && u.t >= 1 ? u.t : null);
+      const finAnio = pagar || porVenta ? 1 : pagaEn ? pagaEn : ventaAnio ? ventaAnio : finCuota;
+      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaEn, unica: !!u, finAnio, finPorCuota: !pagar && !porVenta && !pagaEn && !ventaAnio && finCuota != null,
         // 23-nov-2026: lo que sale ese año para pagarla (para la cuenta año por año).
         pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),

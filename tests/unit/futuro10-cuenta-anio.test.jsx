@@ -13,17 +13,20 @@ describe("cuenta año por año", () => {
     const c = cuentaPorAnio(r, cfg);
     const g2 = c.find((g) => g.anio === 2);
     expect(g2.antes).toBeCloseTo(Math.max(0, r.bolsaDetalle.restante), 0);
-    expect(g2.flujo).toBeCloseTo(r.filas[1].cf, 0);
+    expect(g2.flujo).toBeCloseTo(r.filas[2].cf, 0); // lo que sobra del flujo de ese mismo año
+    expect(g2.flujoHoy).toBeCloseTo(r.filas[1].cf, 0); // y lo del año en curso llega al siguiente
     expect(g2.salen.some((u) => u.tipo === "A" && Math.round(u.monto) === 300e6)).toBe(true);
     expect(g2.salen.some((u) => u.tipo === "C" && Math.round(u.monto) === 200e6)).toBe(true);
-    expect(g2.saldo).toBeCloseTo(g2.antes + g2.flujo + g2.llega - g2.sale, 0);
+    expect(g2.saldo).toBeCloseTo(g2.antes + g2.flujoHoy + g2.flujo + g2.llega - g2.sale, 0);
     const g3 = c.find((g) => g.anio === 3);
     expect(g3.antes).toBeCloseTo(Math.max(0, g2.saldo), 0);
   });
   it("lo que sobra cada mes con destino fijo en D no se suma al año siguiente", () => {
     const cfg = { sobraDestinos: [{ id: "c", pct: 100 }] };
     const r = proyectarFuturo10(user, cfg);
-    expect(cuentaPorAnio(r, cfg).find((g) => g.anio === 2).flujo).toBeCloseTo(0, 0);
+    const g = cuentaPorAnio(r, cfg).find((x) => x.anio === 2);
+    expect(g.flujo).toBeCloseTo(0, 0);
+    expect(g.flujoHoy).toBeCloseTo(0, 0);
   });
 });
 
