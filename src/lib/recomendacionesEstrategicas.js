@@ -2,6 +2,7 @@ import { fmtPctEs } from "./formato.js";
 import { estimarImpuesto, DEFAULT_AG, uvtForYear } from "./taxCO.js";
 import { sugerenciaPvAfc, textoSugerenciaPvAfc, textoTopePvAfc, flujoLibreTrasEmergencia } from "./sugerenciaPvAfc.js";
 import { saldoAFavorDe, notaAhorroConSaldoAFavor, montoSugeridoAcotado } from "./saldoAFavor.js";
+import { trmUsable } from "./trm.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // FINPATHIA · recomendacionesEstrategicas.js · Sesión 1-may-2026
 //
@@ -54,7 +55,7 @@ export const NOTA_FIJA_PV_AFC = "Es un cálculo del ahorro en impuesto, no una r
 // ANÁLISIS DEL PERFIL DEL OWNER
 // ─────────────────────────────────────────────────────────────────────────
 
-function analizarPerfil(owner, det, user) {
+export function analizarPerfil(owner, det, user) {
   if (!owner || !det) return null;
 
   const isJuridica = owner.type === "juridica";
@@ -67,16 +68,24 @@ function analizarPerfil(owner, det, user) {
   const ingNoLaboral = Number(det.ingNoLaboral) || 0;
   const divAnual = Number(det.divAnual) || 0;
 
+  // 23-nov-2026: sin TRM real, los montos en USD no se convierten (nada de
+  // TRM_PROVISIONAL): quedan por fuera y el perfil marca «pendiente de tasa».
+  const trm = trmUsable(user?.trm);
+  const esUSD = (x) => String(x?.moneda || "").trim().toUpperCase() === "USD";
+  let pendienteTasa = false;
+  const enPesos = (x, valor) => {
+    if (!esUSD(x)) return valor;
+    if (trm == null) { if (valor > 0) pendienteTasa = true; return 0; }
+    return valor * trm;
+  };
+
   // Patrimonio (suma de inversiones del owner)
   const oInv = (user?.inv || []).filter(i => i.owner === owner.id && i.sim !== false);
-  const patrimonioAprox = oInv.reduce((s, i) => {
-    const valor = Number(i.valor || i.va || i.cv) || 0;
-    return s + (i.moneda === "USD" ? valor * (user?.trm || 4200) : valor);
-  }, 0);
+  const patrimonioAprox = oInv.reduce((s, i) => s + enPesos(i, Number(i.valor || i.va || i.cv) || 0), 0);
 
   // Deudas
   const oDeu = (user?.deu || []).filter(d => d.owner === owner.id && d.sim !== false);
-  const deudasTotal = oDeu.reduce((s, d) => s + (Number(d.mt || d.saldo) || 0), 0);
+  const deudasTotal = oDeu.reduce((s, d) => s + enPesos(d, Number(d.mt || d.saldo) || 0), 0);
 
   // Tipo de perfil
   let tipoPerfil = "general";
@@ -102,6 +111,7 @@ function analizarPerfil(owner, det, user) {
     divAnual,
     patrimonioAprox,
     deudasTotal,
+    pendienteTasa,
     capacidadInversion: Math.max(0, patrimonioAprox * 0.20), // 20% del patrimonio típico
     saldoAFavor: saldoAFavorDe(det),
     // 1-nov-2026: tope de donaciones/inversiones = flujo libre del año tras el
@@ -248,6 +258,17 @@ function recomendacionesNaturalNoLaboral(perfil) {
 // RECOMENDACIONES PARA PERSONA NATURAL CON CÉDULA LABORAL
 // ─────────────────────────────────────────────────────────────────────────
 
+// 23-nov-2026 — El aporte a PV/AFC también queda acotado al flujo libre del
+// perfil (tras el fondo de emergencia), igual que donaciones e inversiones. Sin
+// dato de flujo: aporte 0 y la tarjeta explica por qué no hay monto.
+function acotarPvAfc(perfil, sug) {
+  const tope = montoSugeridoAcotado(sug?.aporte, perfil.flujoLibreAnual);
+  if (tope == null) return { ...sug, aporte: 0, ahorro: null, sinFlujo: true, motivo: "sinDato" };
+  if (tope >= (sug?.aporte || 0)) return sug;
+  if (!(tope > 0)) return { ...sug, aporte: 0, ahorro: null, sinFlujo: true, motivo: sug?.motivo || "fondo" };
+  return { ...sug, aporte: tope, ahorro: Math.round(ahorroAporteTaxCO(perfil, tope, { fiscalCode: "AP_TRIB_PV" })) };
+}
+
 function recomendacionesNaturalLaboral(perfil) {
   const recs = [];
   const { impuestoACargo, ingLaboral } = perfil;
@@ -265,7 +286,7 @@ function recomendacionesNaturalLaboral(perfil) {
   if (!yaAportaPV) {
     // Tope conjunto PV+AFC: 30% del ingreso laboral, máx 3.800 UVT/año (UVT del AG_RECOS).
     // Mismo aporte y ahorro que la tarjeta del simulador (helper compartido, regla Finanzas).
-    const sug = sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS });
+    const sug = acotarPvAfc(perfil, sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS }));
     const aporteSugerido = sug.aporte;
     const ahorroPV = sug.ahorro || 0;
     const topeAnual = sug.topeAnual;
@@ -292,7 +313,7 @@ function recomendacionesNaturalLaboral(perfil) {
   }
 
   // REC 2: Cuenta AFC — mismo aporte/ahorro compartido (tope conjunto con PV).
-  const sugAFC = sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS });
+  const sugAFC = acotarPvAfc(perfil, sugerenciaPvAfc(perfil._user, perfil._owner, { ag: AG_RECOS }));
   recs.push({
     id: "cuenta_afc",
       ejecutaEn: "personal",
@@ -316,6 +337,10 @@ function recomendacionesNaturalLaboral(perfil) {
 // ─────────────────────────────────────────────────────────────────────────
 // RECOMENDACIONES PARA SOCIEDADES (JURÍDICAS)
 // ─────────────────────────────────────────────────────────────────────────
+
+const VEHICULO_BASE = 200_000_000;
+const VEHICULO_AHORRO_ANO1 = 51_000_000; // $40M depreciación × 35% + IVA descontable, año 1
+const CAPACITACION_BASE = 30_000_000;
 
 function recomendacionesJuridica(perfil) {
   const recs = [];
@@ -358,21 +383,27 @@ function recomendacionesJuridica(perfil) {
   // REC 1b: Adquirir vehículo / equipo productivo (movida desde el flow de
   // persona natural — 18-jul-2026 noche, Santiago: "una cosa son las
   // optimizaciones a Sosa, otras a Lagoon, no tienen por qué mezclarse").
-  if (impuestoACargo > 8_000_000) {
+  // 23-nov-2026 (regla Finanzas): misma regla de tope que la bodega y CT&I.
+  // Hasta $200M, nunca más que el flujo libre tras el fondo de emergencia; sin
+  // dato de flujo, no se sugiere.
+  const inversionVehiculo = montoSugeridoAcotado(VEHICULO_BASE, perfil.flujoLibreAnual);
+  if (impuestoACargo > 8_000_000 && inversionVehiculo > 0) {
+    const ahorroVehiculo = Math.round(inversionVehiculo * VEHICULO_AHORRO_ANO1 / VEHICULO_BASE);
+    const fmtM = (n) => `$${Math.round(n).toLocaleString("es-CO")}`;
     recs.push({
       id: "vehiculo_productivo_sociedad",
       ejecutaEn: "sociedad",
       icono: "",
       titulo: "Adquirir vehículo / equipo productivo",
       descripcion: "Comprar un activo productivo (vehículo, equipo, maquinaria) bajo la sociedad genera triple beneficio: depreciación deducible (20% anual lineal), IVA descontable, y reduce dividendos distribuibles.",
-      accion: "Compra una camioneta/vehículo productivo de ~$200M a nombre de la sociedad. Se usa para gestión de propiedades y reuniones de negocios.",
+      accion: `Compra un vehículo o equipo productivo de hasta ~${fmtM(inversionVehiculo)} a nombre de la sociedad, para la actividad del negocio.`,
       inversion: {
-        monto: 200_000_000,
-        descripcion: "$200M iniciales (puede ser financiado). El vehículo es activo de la empresa.",
+        monto: inversionVehiculo,
+        descripcion: `${fmtM(inversionVehiculo)} (puede ser financiado). El vehículo es activo de la empresa. Tope: el flujo libre del año tras el fondo de emergencia.`,
       },
       ahorroAnual: {
-        monto: 51_000_000, // $40M depreciación × 35% + $38M IVA primer año dividido
-        calculoDetallado: "Año 1: depreciación $40M × 35% = $14M + IVA descontable $38M (Art. 258-1) = $52M total año 1. Recurrente $14M anuales por 5 años.",
+        monto: Math.min(ahorroVehiculo, impuestoACargo),
+        calculoDetallado: `Año 1: depreciación (20% anual) × 35% + IVA descontable (Art. 258-1) ≈ ${fmtM(ahorroVehiculo)} sobre ${fmtM(inversionVehiculo)}.`,
       },
       roi: {
         porcentaje: 26,
@@ -416,6 +447,12 @@ function recomendacionesJuridica(perfil) {
   }
 
   // REC 3: Capacitación a empleados (175%)
+  // 23-nov-2026 (regla Finanzas): hasta $30M, acotada al flujo libre tras el
+  // fondo de emergencia; sin dato de flujo, no se sugiere.
+  const inversionCapacitacion = montoSugeridoAcotado(CAPACITACION_BASE, perfil.flujoLibreAnual);
+  if (inversionCapacitacion > 0) {
+  const fmtC = (n) => `$${Math.round(n).toLocaleString("es-CO")}`;
+  const ahorroCapacitacion = Math.round(inversionCapacitacion * 1.75 * 0.35);
   recs.push({
     id: "capacitacion_empleados",
       ejecutaEn: "sociedad",
@@ -423,16 +460,17 @@ function recomendacionesJuridica(perfil) {
     titulo: "Capacitación certificada a empleados",
     descripcion: "Las inversiones en capacitación certificada (cursos, diplomados, posgrados) de tu equipo generan deducción del 175% del valor invertido (Art. 158-1 inc 2 ET).",
     accion: "Invertir en capacitación certificada para equipo (Coursera Business, EAFIT, Andes, Universidad de los Andes).",
-    inversion: { monto: 30_000_000, descripcion: "$30M anuales en capacitación del equipo." },
+    inversion: { monto: inversionCapacitacion, descripcion: `${fmtC(inversionCapacitacion)} al año en capacitación del equipo. Tope: el flujo libre del año tras el fondo de emergencia.` },
     ahorroAnual: {
-      monto: Math.min(Math.round(30_000_000 * 1.75 * 0.35), impuestoACargo),
-      calculoDetallado: "$30M × 175% = $52.5M deducción × 35% tarifa = $18.4M ahorro fiscal."
+      monto: Math.min(ahorroCapacitacion, impuestoACargo),
+      calculoDetallado: `${fmtC(inversionCapacitacion)} × 175% = ${fmtC(inversionCapacitacion * 1.75)} de deducción × 35% de tarifa = ${fmtC(ahorroCapacitacion)} de ahorro estimado.`
     },
     roi: { porcentaje: 61, descripcion: "Doble retorno: ahorro fiscal + equipo más productivo." },
     baseLegal: "Art. 158-1 inc 2 ET",
     caveat: "Capacitación debe ser certificada (no informal). Conservar facturas y certificados de cada empleado.",
     prioridad: "media",
   });
+  }
 
   // REC 4: Donación ESAL
   if (impuestoACargo > 10_000_000) {
