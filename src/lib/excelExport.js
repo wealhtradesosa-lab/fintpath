@@ -20,7 +20,7 @@
 //   Cada módulo tiene 1-3 hojas: detalle + agregados útiles.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { montoCOP, montoCOPSuma, usdTxt, selloTrmHoy, hayUSDEn } from "./patrimonioPantalla.js";
+import { montoCOP, montoCOPSuma, usdTxt, selloTrmHoy, hayUSDEn, lineaGenerado } from "./patrimonioPantalla.js";
 import { TEXTO_PENDIENTE_TASA } from "./trm.js";
 
 // Helper: nombre de archivo con fecha ISO limpia
@@ -138,7 +138,8 @@ const celdaCOP = (monto, item, trm, factor = 1) => {
   return cop == null ? `${usdTxt((Number(monto) || 0) * factor)} · ${TEXTO_PENDIENTE_TASA}` : Math.round(cop * factor);
 };
 // Filas del sello (solo en español: en los módulos US todo está en dólares).
-const filasSello = (en, trm, hayUSD) => (en ? [] : [[], ...selloTrmHoy(trm, hayUSD).map((l) => [l])]);
+// 24-nov-2026 — Como los PDF, el Excel dice cuándo se generó (hora de Bogotá).
+const filasSello = (en, trm, hayUSD) => (en ? [] : [[], [lineaGenerado()], ...selloTrmHoy(trm, hayUSD).map((l) => [l])]);
 
 // Helper: encontrar el nombre del owner por su ID
 const ownerName = (ownerId, owners) => {

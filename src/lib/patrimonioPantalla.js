@@ -112,15 +112,22 @@ export function selloTrmCierre(user, ano, hayUSD) {
  * Sello del informe/resumen para el contador (sale de Impuestos): TRM del
  * 31-dic del año gravable para lo que está en dólares (datosParaContador).
  */
+export const LINEA_CONTADOR_USD = "Ingresos en dólares: van con la TRM del día de cada pago. Patrimonio y deudas en dólares: con la TRM del 31-dic.";
+
 export function selloTrmContador(datos) {
   if (!datos?.hayUSD) return ["Tasa del dólar: no hay montos en dólares, no se usó TRM."];
   const t = trmUsable(datos.tasa);
   return [
     "Tasa del dólar: TRM del 31-dic-" + datos.ano + ": " + (t == null ? TEXTO_PENDIENTE_TASA : tasaTxt(t)) + " (Art. 269 ET)." +
       (t == null ? " Tus montos en dólares quedan por fuera de los totales en pesos." : ""),
-    "Ingresos en dólares: en la declaración van con la TRM del día de cada pago.",
+    LINEA_CONTADOR_USD,
   ];
 }
 
 /** Celda de un monto del informe del contador: pesos, o «US$X · pendiente de tasa». */
 export const celdaContador = (x, campo, fmt) => (x?.pendienteTasa ? usdTxt(x.usd) + " · " + TEXTO_PENDIENTE_TASA : fmt(x?.[campo]));
+
+/** Fecha de generación en hora de Bogotá: «Generado el 24 de noviembre de 2026». */
+export function lineaGenerado(fecha = new Date()) {
+  return "Generado el " + fecha.toLocaleDateString("es-CO", { timeZone: "America/Bogota", year: "numeric", month: "long", day: "numeric" });
+}

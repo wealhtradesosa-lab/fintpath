@@ -36,7 +36,7 @@ vi.mock("jspdf-autotable", () => ({
 
 import {
   montoCOP, resumenPatrimonioPantalla, etiquetaTrmHoy, selloTrmHoy, selloTrmCierre, selloTrmContador,
-  LINEA_TRM_DECLARACION, lineaActivoUSD, hayUSDEn,
+  LINEA_TRM_DECLARACION, lineaActivoUSD, hayUSDEn, LINEA_CONTADOR_USD, lineaGenerado,
 } from "../../src/lib/patrimonioPantalla.js";
 import { TRM_PROVISIONAL, TRM_CIERRE_ANO } from "../../src/lib/trm.js";
 import { exportInversionesExcel, exportDeudasExcel, exportIngresosExcel, exportGastosExcel } from "../../src/lib/excelExport.js";
@@ -125,6 +125,11 @@ describe("Excel de Patrimonio (TRM de hoy)", () => {
     const aviso = (await filas(wb, "Aviso legal")).flat().join(" | ");
     expect(aviso).toContain("TRM de hoy: $4.000,00");
     expect(aviso).toContain(LINEA_TRM_DECLARACION);
+    expect(aviso).toContain(lineaGenerado());
+    expect(textoDet).toMatch(/Generado el \d{1,2} de [a-z]+ de 20\d\d/);
+  });
+  it("«Generado el» usa la fecha de Bogotá (03:00 UTC del 25-nov = 24-nov en Bogotá)", () => {
+    expect(lineaGenerado(new Date("2026-11-25T03:00:00Z"))).toBe("Generado el 24 de noviembre de 2026");
   });
   for (const t of SIN_TASA) {
     it(`trm=${t}: celda «pendiente de tasa», el total solo en pesos, nunca 4200`, async () => {
@@ -216,6 +221,8 @@ describe("informe del contador (Impuestos → TRM del 31-dic del AG)", () => {
     const celdas = doc.tablas.flatMap((t) => t.body || []).flat();
     expect(celdas).toContain("US$10.000 · pendiente de tasa");
     expect(selloTrmContador(datosParaContador(u, "o1", 2025))[0]).toBe("Tasa del dólar: TRM del 31-dic-2025: $3.757,08 (Art. 269 ET).");
+    expect(selloTrmContador(datosParaContador(u, "o1", 2025))[1]).toBe("Ingresos en dólares: van con la TRM del día de cada pago. Patrimonio y deudas en dólares: con la TRM del 31-dic.");
+    expect(txt).toContain(LINEA_CONTADOR_USD);
   });
 });
 
