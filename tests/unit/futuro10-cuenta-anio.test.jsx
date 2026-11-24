@@ -361,3 +361,81 @@ describe("capital y mes por separado", () => {
     expect(c1[2].libre).toBeCloseTo(0.5, 6); // los demás años, la regla de siempre
   });
 });
+
+// 24-nov-2026 (Santiago: "me sale como si ya estuviera ahorrando cosas de la propiedad que se vende en 2027";
+// "esto no funciona bien: no muestra las otras inversiones, como fondos").
+import { opcionesParaMeter } from "../../src/components/MiFuturo10.jsx";
+describe("por qué se acaba cada cosa y a qué le puedes meter", () => {
+  const anioHoy = new Date().getFullYear();
+  const u = { inflacionPct: 4, inv: [{ id: "pm", n: "Puerto Madero", tp: "Inmueble", va: 9000e6 }, { id: "f", n: "Fondo Skandia", tp: "Fondo", va: 500e6 }], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 60e6 }],
+    gas: { Finca: [{ n: "Salario mayordomo", m: 2e6 }], Vida: [{ n: "Mercado", m: 20e6 }, { n: "Colegio", m: 5e6, finAnio: anioHoy, finMes: 1 }] } };
+  it("lo que se va con una venta futura dice de qué venta; lo que tiene fecha de fin en su página, que viene de ahí", () => {
+    const r = proyectarFuturo10(u, { decisiones: { pm: { accion: "termina", desde: 2, seVan: ["Finca::salario mayordomo"] } } });
+    const may = r.seVan.find((x) => x.key === "Finca::salario mayordomo");
+    expect(may.desde).toBe(2);
+    expect(may.origen).toBe("venta");
+    expect(may.conVentaDe).toBe("Puerto Madero");
+    const col = r.seVan.find((x) => x.key === "Vida::colegio");
+    expect(col.origen).toBe("datos");
+  });
+  it("para meterle, también salen lo que ya tiene un aporte este año y lo que creas este año, para abrir su fila", () => {
+    const cfg = { reinversiones: [{ activoId: "f", monto: 100e6, anio: 1 }], nuevas: [{ preset: "rfCorto", monto: 50e6, anio: 1, fuente: "nuevo" }] };
+    const r = proyectarFuturo10(u, cfg);
+    const ops = opcionesParaMeter(r, cfg, 1);
+    expect(ops.find((a) => a.id === "f").abrir).toBe("r0");
+    expect(ops.find((a) => a.id === "nueva_0").abrir).toBe("n0");
+    expect(ops.some((a) => a.id === "pm" && !a.abrir)).toBe(true);
+  });
+});
+
+// 24-nov-2026 (Santiago: "en la lista de poder invertir en inversiones actuales no me sale IBKR… deberían salir todas").
+describe("a qué le puedes meter: salen todas", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "ib", n: "Portafolio IBKR", tp: "Acciones", va: 800e6 }, { id: "pm", n: "Puerto Madero", tp: "Real Estate", va: 9000e6 }, { id: "v", n: "Volvo", tp: "Vehículo", va: 150e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 2000e6 }],
+    ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 60e6 }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  it("IBKR sale aunque ya le metas plata ese año; lo vendido sale sin poder elegirse y con el porqué; el carro no", () => {
+    const cfg = { decisiones: { pm: { accion: "termina", desde: 2 }, v: { accion: "vende" } }, reinversiones: [{ activoId: "ib", monto: 100e6, anio: 3 }], nuevas: [{ preset: "rfCorto", monto: 50e6, anio: 2, fuente: "nuevo" }] };
+    cfg.reinversiones.push({ activoId: "nueva_0", monto: 20e6, anio: 3 });
+    const r = proyectarFuturo10(u, cfg);
+    const ops = opcionesParaMeter(r, cfg, 3);
+    const ib = ops.find((a) => a.id === "ib");
+    expect(ib && ib.abrir).toBe("r0");
+    expect(ops.find((a) => a.id === "nueva_0").abrir).toBe("r1");
+    const pm = ops.find((a) => a.id === "no_pm");
+    expect(pm.noDisp).toBe(true);
+    expect(pm.nota).toMatch(/se vende en/);
+    expect(ops.some((a) => a.id === "pm")).toBe(false);
+    expect(ops.some((a) => /v$/.test(a.id) && a.nombre === "Volvo")).toBe(false);
+    // Sin aportes, todo lo que sigue se puede elegir.
+    const libres = opcionesParaMeter(proyectarFuturo10(u, {}), {}, 1).filter((a) => !a.noDisp).map((a) => a.id);
+    expect(libres).toEqual(expect.arrayContaining(["ib", "pm", "c"]));
+    expect(libres).not.toContain("v");
+  });
+});
+
+// 24-nov-2026 (Santiago: "la reserva debería uno poder tenerla por años para que en el año malo la pueda disponer…
+// uno ve cada año qué capital tiene de reserva; ese capital es para eso").
+describe("reserva guardada para un año", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 1000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 600e6 }], ingresos: [{ nombre: "Salario", mensual: 30e6, frecuencia: "mensual" }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  it("lo guardado para 2029 queda aparte, no se usa antes, y ese año vuelve a tu capital con lo que rindió", () => {
+    const cfg = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 300e6 }, reservaHasta: { 1: 4 } };
+    const r = proyectarFuturo10(u, cfg);
+    const c = cuentaPorAnio(r, cfg);
+    const t = r.tasaReserva || 0;
+    expect(c[0].aApartado).toBeCloseTo(300e6, -3);
+    expect(c[0].reservaHasta).toBe(4);
+    // No entra al fondo general.
+    expect(c[0].reservaFin).toBeCloseTo(0, -3);
+    expect(c[1].apartadoFin).toBeCloseTo(300e6 * (1 + t), -3);
+    expect(c[2].llegan.some((l) => l.tipo === "reserva")).toBe(false);
+    // En el año 4 llega con lo que rindió.
+    const vuelve = c[3].llegan.find((l) => l.tipo === "reserva");
+    expect(vuelve.monto).toBeCloseTo(300e6 * Math.pow(1 + t, 3), -3);
+    expect(c[3].apartadoFin).toBeCloseTo(0, -3);
+  });
+  it("sin año, va al fondo de siempre (se usa solo cuando un año no alcanza)", () => {
+    const cfg = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 300e6 } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    expect(c[0].reservaFin).toBeCloseTo(300e6, -3);
+    expect(c[0].aApartado || 0).toBe(0);
+  });
+});
