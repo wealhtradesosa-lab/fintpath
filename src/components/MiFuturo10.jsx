@@ -1530,16 +1530,25 @@ function PropiedadRaiz({ x, up, usarSaldo }) {
       {(tipo === "lote" || tipo === "rentar") && p.capital > 0 && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Inversión total", "Total investment")}: <b style={{ color: C.tx }}>{plata(Math.round(p.capital))}</b></div>}
     </div></div>
     <div>{paso(3, tx("Rentabilidad", "Return"))}<div style={fila}>
-      {/* 23-nov-2026 (Santiago: "poder poner valor de venta total, por metro cuadrado o porcentaje de margen"). */}
-      <div style={{ gridColumn: "1 / -1", display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-        {/* 23-nov-2026 (Santiago: "precio de venta una vez terminada, para ser más claros"). */}
-        <span style={{ ...lbl, marginRight: 4 }}>{tipo === "asociativo" ? tx("Lo que recibes al terminar el proyecto:", "What you receive when the project ends:") : vende ? tx("Precio de venta una vez terminada:", "Sale price once finished:") : tx("Valor una vez terminada:", "Value once finished:")}</span>
-        {[["pct", tipo === "planos" ? tx("Porcentaje de valorización", "Appreciation %") : tx("Porcentaje de margen", "Margin %")], ["total", tx("Valor total", "Total value")], ...(tipo === "asociativo" ? [] : [["m2", tx("Por m²", "Per m²")]])].map(([k2, l2]) => <button key={k2} type="button" style={chip(p.modoVenta === k2)} onClick={() => set({ ventaModo: k2 })}>{l2}</button>)}
-      </div>
-      {p.modoVenta === "pct" && pct("valEntregaPct", tipo === "planos" ? tx("Valorización a la entrega (%)", "Appreciation at handover (%)") : tipo === "asociativo" ? tx("Margen del proyecto (%)", "Project margin (%)") : tx("Margen sobre lo que inviertes (%)", "Margin on what you invest (%)"), "20")}
-      {p.modoVenta === "total" && num("ventaTotal", tipo === "asociativo" ? tx("Valor total que recibes ($)", "Total you receive ($)") : vende ? tx("Precio de venta total, una vez terminada ($)", "Total sale price, once finished ($)") : tx("Valor total, una vez terminada ($)", "Total value, once finished ($)"))}
-      {p.modoVenta === "m2" && <>{tipo === "planos" && num("m2", tx("Área (m²)", "Area (m²)"), "0")}{num("ventaM2", vende ? tx("Precio de venta por m², una vez terminada ($)", "Sale price per m², once finished ($)") : tx("Valor por m², una vez terminada ($)", "Value per m², once finished ($)"))}
-        {p.m2 > 0 && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Total", "Total")}: <b style={{ color: C.tx }}>{plata(Math.round(p.valorEntrega))}</b></div>}</>}
+      {/* 23-nov-2026 (Santiago: "precio de venta una vez terminada"; "tener la opción de poner valor de venta por m² o margen %: compré en 3.840 MM y estimo vender un 35 % más, o a un valor de m² de X; una o la otra, y si pongo uno se pone el otro"). Tres campos ligados: el que escribes manda y los otros se calculan. */}
+      <div style={{ gridColumn: "1 / -1", ...lbl }}>{tipo === "asociativo" ? tx("Lo que recibes al terminar el proyecto (escribe uno; el otro se calcula)", "What you receive when the project ends (enter one; the other is calculated)") : vende ? tx("Precio de venta una vez terminada (escribe uno; los otros se calculan)", "Sale price once finished (enter one; the others are calculated)") : tx("Valor una vez terminada (escribe uno; los otros se calculan)", "Value once finished (enter one; the others are calculated)")}</div>
+      {(() => {
+        const baseM = tipo === "planos" ? Math.max(0, Number(pr.valor) || 0) : Math.max(0, p.capital || 0);
+        const ve = Math.max(0, p.valorEntrega || 0);
+        const margen = baseM > 0 && ve > 0 ? Math.round((ve / baseM - 1) * 1000) / 10 : "";
+        const porM2 = p.m2 > 0 && ve > 0 ? Math.round(ve / p.m2) : "";
+        return <>
+          <label style={{ ...lbl, display: "grid", gap: 4 }}>{tipo === "planos" ? tx("Valorización (%)", "Appreciation (%)") : tx("Margen sobre lo que inviertes (%)", "Margin on what you invest (%)")}
+            <InputDecimalEs style={inp} placeholder="35" value={p.modoVenta === "pct" ? (pr.valEntregaPct ?? "") : margen} onChange={(v) => set({ ventaModo: "pct", valEntregaPct: v })} /></label>
+          {tipo !== "asociativo" && <>
+            {tipo === "planos" && <label style={{ ...lbl, display: "grid", gap: 4 }}>{tx("Área (m²)", "Area (m²)")}<NumberInput style={inp} placeholder="0" value={pr.m2 ?? ""} onChange={(v) => set({ m2: v })} /></label>}
+            <label style={{ ...lbl, display: "grid", gap: 4 }}>{tx("Precio por m² ($)", "Price per m² ($)")}
+              <NumberInput style={inp} placeholder={p.m2 > 0 ? tx("Valor", "Amount") : tx("Pon los m²", "Enter the m²")} value={p.modoVenta === "m2" ? (pr.ventaM2 ?? "") : porM2} onChange={(v) => set({ ventaModo: "m2", ventaM2: v })} /></label>
+          </>}
+          <label style={{ ...lbl, display: "grid", gap: 4 }}>{tx("Valor total ($)", "Total value ($)")}
+            <NumberInput style={inp} placeholder={tx("Valor", "Amount")} value={p.modoVenta === "total" ? (pr.ventaTotal ?? "") : (ve > 0 ? Math.round(ve) : "")} onChange={(v) => set({ ventaModo: "total", ventaTotal: v })} /></label>
+        </>;
+      })()}
       {tipo !== "asociativo" && (!vende || p.vendeEn > 0 || tipo === "rentar") && pct("valAnualPct", tx("Valorización anual después (%)", "Annual appreciation after (%)"), "6")}
       {(tipo === "rentar" || (tipo !== "asociativo" && !vende)) && num("rentaMensual", tx("Renta neta mensual ($)", "Net monthly rent ($)"), "0")}
     </div></div>
@@ -1557,15 +1566,19 @@ function PropiedadRaiz({ x, up, usarSaldo }) {
       </select>
     </div></div>}
     <div style={{ fontSize: 13, lineHeight: 1.55, color: C.tx, borderTop: `1px solid ${C.bd}`, paddingTop: 10 }}>{resumen}</div>
-    {vende && <details style={{ fontSize: 12, color: C.tx2 }}>
-      <summary style={{ cursor: "pointer", color: C.tx }}>{tx("Más detalles: costos de venta, impuesto y retención", "More details: sale costs, tax and withholding")}</summary>
-      <div style={{ ...fila, marginTop: 8 }}>
+    {/* 23-nov-2026 (Santiago: "no veo lo de impuestos estimados; si se vende 4 años después… 15 % ganancia ocasional o renta, que lo siga pero el usuario pueda poner su valor; el impuesto estimado es X pero todo depende de la gestión tributaria del individuo"). Visible, con el régimen sugerido por el tiempo de tenencia y todo editable. */}
+    {vende && <div>{paso(tipo === "asociativo" ? 5 : 6, tx("Costos e impuesto estimados", "Estimated costs and tax"))}
+      <div style={{ fontSize: 12.5, color: C.tx, marginBottom: 6 }}>{p.regimen === "ocasional"
+        ? tx(`La tienes ${enAnios(p.durAnios)}: por ser 2 años o más, la utilidad paga ganancia ocasional (sugerido ${fmtPctEs(p.impuestoPct, 0)}).`, `Held ${p.durAnios} years: 2 years or more pays capital-gains tax (suggested ${fmtPctEs(p.impuestoPct, 0)}).`)
+        : tx(`La tienes menos de 2 años: la utilidad va a renta ordinaria (sugerido ${fmtPctEs(p.impuestoPct, 0)}, la tarifa marginal más alta).`, `Held under 2 years: the gain is ordinary income (suggested ${fmtPctEs(p.impuestoPct, 0)}).`)}</div>
+      <div style={fila}>
         {pct("costosPct", tx("Costos de venta (%)", "Sale costs (%)"), tipo === "asociativo" ? "0" : "3")}
-        {pct("impuestoPct", tx("Impuesto sobre la ganancia (%)", "Tax on the gain (%)"), String(Math.round(p.impuestoPct || 0)))}
-        {pct("retencionPct", tx("Retención en la fuente al vender (%)", "Withholding on sale (%)"), "1")}
+        {pct("impuestoPct", tx("Impuesto sobre la utilidad (%)", "Tax on the gain (%)"), String(Math.round(p.impuestoPct || 0)))}
+        {pct("retencionPct", tx("Retención al vender (%)", "Withholding on sale (%)"), "1")}
+        {!p.vacio && <div style={{ ...lbl, alignSelf: "end" }}>{tx("Impuesto estimado", "Estimated tax")}: <b style={{ color: C.tx }}>{plata(Math.round(p.impuestoCiclo || 0))}</b>{p.repite && p.veces > 1 ? tx(" por ciclo", " per cycle") : ""}</div>}
       </div>
-      <div style={{ marginTop: 6, lineHeight: 1.5 }}>{tx("Costos de venta: comisión, notaría y registro, sobre el precio de venta. Impuesto: si el inmueble se tiene 2 años o más, la utilidad paga ganancia ocasional (15 %); si es menos, va a renta ordinaria. Retención: persona natural, 1 % del valor de venta, la cobra el notario (art. 398 del Estatuto Tributario); si vende una empresa a otra puede ser 2,5 %. La retención se descuenta del impuesto en la declaración. Todo se sugiere y se puede cambiar.", "Sale costs are on the sale price. Tax is suggested from the holding period. Withholding is an advance on the tax. All editable.")}</div>
-    </details>}
+      <div style={{ fontSize: 12, color: C.tx2, marginTop: 6, lineHeight: 1.5 }}>{tx("Es un estimado: el impuesto real depende de la planeación tributaria de cada persona (costo fiscal, exenciones como la de la vivienda de habitación, pérdidas que se compensan). Cámbialo si tu contador te da otra cifra. La retención (1 % si vende una persona natural, la cobra el notario) es un anticipo y se descuenta del impuesto en la declaración.", "It's an estimate: the actual tax depends on each person's tax planning. Change it if your accountant gives you another figure. Withholding is an advance that's credited in your return.")}</div>
+    </div>}
   </div>;
 }
 
