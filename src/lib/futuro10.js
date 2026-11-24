@@ -1170,7 +1170,7 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
     }
     const def = ["inmueble", "vivienda", "lote"].includes(x.clase) ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
     return { nombre: String(x.nombre || "").trim() || tx("Activo futuro", "Future asset"), clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos,
-      crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100,
+      crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100, valorizacionDefault: vacio(x.valorizacionNomPct),
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
   // 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen nuevos
@@ -1819,6 +1819,14 @@ export const INFLACION_PESOS_HOY_PCT = 5;
 /** Lleva una cifra nominal del año `anio` a pesos de hoy con la inflación dada. */
 export const aPesosDeHoy = (nominal, anio, inflacionPct = INFLACION_PESOS_HOY_PCT) => n(nominal) / Math.pow(1 + n(inflacionPct) / 100, Math.max(0, n(anio)));
 
+/** Patrimonio neto del último año del plan en pesos de hoy (5 %). La misma cifra en la barra, la tarjeta, el comparador y el veredicto. */
+export function patrimonioFinalHoy(r, inflacionPct = INFLACION_PESOS_HOY_PCT) {
+  const f = (r && r.filas) || [];
+  if (!f.length) return 0;
+  const fin = f[f.length - 1];
+  return aPesosDeHoy(fin.patrimonio, fin.anio, inflacionPct);
+}
+
 /** ¿El escenario vende al menos un activo? */
 export const hayVenta = (r) => !!(r && Array.isArray(r.vendidos) && r.vendidos.length > 0);
 export const rotuloVenta = () => tx("antes de impuestos de la venta", "before taxes on the sale");
@@ -1872,7 +1880,7 @@ export function desglosePatrimonio(r, inflacionPct = INFLACION_PESOS_HOY_PCT) {
   return {
     hoy: n(f[0].patrimonio),
     despuesDelPlan: f[1] ? n(f[1].patrimonio) / d(1) : n(f[0].patrimonio),
-    fin: n(fin.patrimonio) / d(fin.anio),
+    fin: patrimonioFinalHoy(r, inflacionPct),
     anioFin: n(fin.anio),
     ahorro, rendimiento, inflacion, rendimientoReal: rendimiento - inflacion,
     inflacionPct: n(inflacionPct),
@@ -1915,7 +1923,9 @@ export function loQueVieneDelPlan(r) {
     const anio = pagos.length ? Math.min(...pagos.map((p) => p.anio)) : n(a.entrega);
     // Supuestos visibles (Finanzas): el motor no suma gastos de compra (escritura,
     // registro, impuestos) ni modela un crédito: la compra se paga de contado.
-    out.push({ nombre: a.nombre, tipo: "compra", anio, anioFin: n(a.entrega) || anio, monto: total, sinGastosCompra: true, deContado: true, valorizacionPct: a.crec == null ? null : a.crec * 100 });
+    // Valorización por defecto: finca raíz (presets.fincaRaiz.valorizacionSpread = 0) u
+    // otros (otrosRealSpread = 0) → sube con la inflación del escenario, 0 % real.
+    out.push({ nombre: a.nombre, tipo: "compra", vivienda: !!a.vivienda, anio, anioFin: n(a.entrega) || anio, monto: total, sinGastosCompra: true, deContado: true, valorizacionPct: a.crec == null ? null : a.crec * 100, valorizacionDefault: a.valorizacionDefault !== false });
   });
   (fut.gastos || []).forEach((g) => out.push({ nombre: g.nombre, tipo: "gasto", anio: g.desde, anioFin: Math.min(N, g.hasta), monto: n(g.anual) }));
   (fut.ingresos || []).forEach((i) => out.push({ nombre: i.nombre, tipo: "ingreso", anio: i.desde, anioFin: Math.min(N, i.hasta), monto: n(i.mensual) }));

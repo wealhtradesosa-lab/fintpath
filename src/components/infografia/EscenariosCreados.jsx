@@ -46,6 +46,21 @@ export const AVISO_CALCULO_HASTA = "2026-12-31";
 export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && hoy.toISOString().slice(0, 10) <= hasta;
 export const avisoCalculo = () => tx("Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.", "We adjusted the math: your savings no longer count as returns and the figure is now in today's pesos, so it may look lower.");
 
+// Supuesto de las compras de «Lo que viene» (Finanzas). Sin valorización propia,
+// la compra sube con la inflación del escenario: propiedad raíz con
+// valorizacionSpread 0 (o otrosRealSpread 0), es decir 0 % real.
+export const supuestoCompras = (compras = []) => {
+  const quien = compras.length && compras.every((x) => x.vivienda) ? tx("la vivienda", "the home") : tx("lo que compras", "what you buy");
+  const todasDefault = compras.every((x) => x.valorizacionDefault !== false);
+  const algunaDefault = compras.some((x) => x.valorizacionDefault !== false);
+  const val = todasDefault
+    ? tx(`, y ${quien} se valoriza al ritmo de la inflación (0 % real)`, `, and ${quien} appreciates with inflation (0% real)`)
+    : algunaDefault
+      ? tx(", y se valoriza al ritmo de la inflación (0 % real), salvo donde pusiste cuánto sube su valor al año", ", and it appreciates with inflation (0% real), except where you set its yearly appreciation")
+      : tx(", y se valoriza a la tasa que pusiste en «¿Cuánto sube su valor al año?»", ", and it appreciates at the rate you set");
+  return tx(`Supuesto: las compras se pagan de contado, sin gastos de escritura, registro ni impuestos${val}.`, `Assumption: purchases are paid in cash, with no closing costs, recording fees or taxes${val}.`);
+};
+
 const textoViene = (x) => {
   const anios = x.anioFin && x.anioFin > x.anio ? `${anioCal(x.anio)}–${anioCal(x.anioFin)}` : `${anioCal(x.anio)}`;
   if (x.tipo === "ingreso") return { anios, monto: `+${fm(x.monto)} ${tx("al mes", "a month")}`, pos: true };
@@ -187,7 +202,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
                       <span style={{ whiteSpace: "nowrap", color: t.pos ? C.pos : C.txt, ...cifra }}>{t.monto}</span>
                     </li>); })}
                 </ul>
-                {m.viene.some((x) => x.tipo === "compra") && <div data-testid="f10-card-supuesto-compra" style={{ fontSize: 11.5, color: C.txt2, marginTop: 4, lineHeight: 1.4 }}>{tx("Supuesto: las compras se pagan de contado y sin gastos de escritura, registro ni impuestos.", "Assumption: purchases are paid in cash, with no closing costs, recording fees or taxes.")}</div>}
+                {m.viene.some((x) => x.tipo === "compra") && <div data-testid="f10-card-supuesto-compra" style={{ fontSize: 11.5, color: C.txt2, marginTop: 4, lineHeight: 1.4 }}>{supuestoCompras(m.viene.filter((x) => x.tipo === "compra"))}</div>}
               </div>}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>
                 <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("Rinden tus activos al año (real, sin tu ahorro)", "Your assets earn per year (real, excluding savings)")}</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>

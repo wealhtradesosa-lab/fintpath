@@ -5,10 +5,13 @@
 import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement, isValidElement, Children } from "react";
-import { proyectarFuturo10, SUPUESTOS_F10, resumenBarra, desglosePatrimonio, rendimientoSinAhorro, loQueVieneDelPlan, hayVenta, hayAlertaLiquidez, aPesosDeHoy, INFLACION_PESOS_HOY_PCT, anioCal } from "../../src/lib/futuro10.js";
+import { patrimonioFinalHoy, proyectarFuturo10, SUPUESTOS_F10, resumenBarra, desglosePatrimonio, rendimientoSinAhorro, loQueVieneDelPlan, hayVenta, hayAlertaLiquidez, aPesosDeHoy, INFLACION_PESOS_HOY_PCT, anioCal } from "../../src/lib/futuro10.js";
 import BarraFuturo10 from "../../src/components/BarraFuturo10.jsx";
 import MiFuturo10 from "../../src/components/MiFuturo10.jsx";
-import EscenariosCreados, { mostrarAvisoCalculo, AVISO_CALCULO_HASTA } from "../../src/components/infografia/EscenariosCreados.jsx";
+import PlanComparador from "../../src/components/PlanComparador.jsx";
+import PlanInforme from "../../src/components/PlanInforme.jsx";
+import { fmM } from "../../src/lib/informeTheme.js";
+import EscenariosCreados, { mostrarAvisoCalculo, AVISO_CALCULO_HASTA, supuestoCompras } from "../../src/components/infografia/EscenariosCreados.jsx";
 
 // Supuestos con 5 % de inflación y 4 % real en la cuenta: el caso de Finanzas.
 const sup4 = JSON.parse(JSON.stringify(SUPUESTOS_F10));
@@ -233,7 +236,7 @@ describe("compra de «Lo que viene» (Casa): chequeos de Finanzas", () => {
     expect(v.sinGastosCompra).toBe(true);
     expect(v.deContado).toBe(true);
     const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r: sin }, { id: "e", nombre: "Casa", r: con }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
-    expect(h).toContain("Supuesto: las compras se pagan de contado y sin gastos de escritura, registro ni impuestos.");
+    expect(h).toContain("Supuesto: las compras se pagan de contado, sin gastos de escritura, registro ni impuestos, y la vivienda se valoriza al ritmo de la inflación (0 % real).");
     const h2 = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r: sin }, { id: "e", nombre: "Igual", r: sin }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
     expect(h2).not.toContain("Supuesto: las compras");
   });
@@ -251,5 +254,51 @@ describe("aviso de Soporte junto a las tarjetas", () => {
     const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r }, { id: "e", nombre: "Uno", r }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
     const txt = "Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.";
     if (mostrarAvisoCalculo()) expect(h).toContain(txt); else expect(h).not.toContain(txt);
+  });
+});
+
+describe("supuesto de compras: valorización", () => {
+  it("con valorización propia lo dice; sin ella, inflación (0 % real)", () => {
+    expect(supuestoCompras([{ tipo: "compra", vivienda: false, valorizacionDefault: true }])).toContain("lo que compras se valoriza al ritmo de la inflación (0 % real)");
+    expect(supuestoCompras([{ tipo: "compra", vivienda: true, valorizacionDefault: false }])).toContain("a la tasa que pusiste");
+    const u = { inflacionPct: 5, inv: [{ id: "a", tp: "Cash", va: 500e6 }], ingresos: [], gas: {}, deu: [] };
+    const r = proyectarFuturo10(u, { futuros: { ingresos: [], activos: [{ nombre: "Casa", clase: "vivienda", valor: 100e6, entrega: 2, valorizacionNomPct: 8 }], gastos: [] } });
+    expect(loQueVieneDelPlan(r)[0].valorizacionDefault).toBe(false);
+  });
+});
+
+describe("la misma cifra del año 10 en la barra, la tarjeta, el comparador y el veredicto", () => {
+  const futuros = { ingresos: [], activos: [{ nombre: "Casa", clase: "vivienda", valor: 300e6, entrega: 4 }], gastos: [{ nombre: "Maestría", anual: 60e6, desde: 2, anios: 2 }] };
+  const rHoy = proyectarFuturo10(uVenta, {});
+  const r = proyectarFuturo10(uVenta, { futuros, decisiones: { c: { accion: "vende" } } });
+  const cifra = fmM(patrimonioFinalHoy(r));
+  const conTest = (h, id) => { const m = h.match(new RegExp(`data-testid="${id}"[^>]*>([^<]+)<`)); return m && m[1]; };
+  it("es el patrimonio neto del año 10 en pesos de hoy al 5 %", () => {
+    expect(patrimonioFinalHoy(r)).toBeCloseTo(r.filas[10].patrimonio / 1.05 ** 10, 0);
+    expect(cifra).toBe(fmM(r.filas[10].patrimonio / 1.05 ** 10));
+  });
+  it("barra", () => {
+    const h = renderToStaticMarkup(createElement(BarraFuturo10, { rPlan: r, rHoy, onIr: () => {} }));
+    expect(conTest(h, "f10-barra-plan")).toBe(cifra);
+    expect(h).toContain("en pesos de hoy");
+  });
+  it("tarjeta del escenario", () => {
+    const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r: rHoy }, { id: "e", nombre: "Plan", r }], inflacionPct: 4, onVer: () => {}, onCrear: () => {} }));
+    expect(h).toContain(`>${cifra}<`);
+    expect(h).toContain("en pesos de hoy");
+  });
+  it("comparador (aunque el escenario use otra inflación)", () => {
+    const h = renderToStaticMarkup(createElement(PlanComparador, { planes: [{ nombre: "Hoy", esHoy: true, r: rHoy }, { id: "e", nombre: "Plan", r }], inflacionPct: 4 }));
+    const cifras = [...h.matchAll(/data-testid="f10-comp-fin"[^>]*>([^<]+)</g)].map((x) => x[1]);
+    expect(cifras).toContain(cifra);
+    expect(cifras).toContain(fmM(patrimonioFinalHoy(rHoy)));
+    expect(h).toContain("en pesos de hoy");
+  });
+  it("veredicto del informe; si queda una cifra nominal dice «en pesos de» su año", () => {
+    const h = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4 }));
+    expect(conTest(h, "f10-veredicto-fin")).toBe(cifra);
+    expect(h).toContain(`en pesos de hoy en ${anioCal(10)}`);
+    expect(h).toContain(`Patrimonio en ${anioCal(10)}, en pesos de hoy`);
+    expect(h).toContain(`en pesos de ${anioCal(10)}: ${fmM(r.filas[10].patrimonio)}`);
   });
 });

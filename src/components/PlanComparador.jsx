@@ -11,7 +11,7 @@
 //   · El patrimonio como empresa: cuánto factura y cuánto gana al año
 // ═══════════════════════════════════════════════════════════════════════════
 import { tamanoCifra } from "../lib/infografia.js";
-import { anioCal, rendimientoSinAhorro } from "../lib/futuro10.js";
+import { anioCal, rendimientoSinAhorro, patrimonioFinalHoy } from "../lib/futuro10.js";
 import { useMemo, useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
@@ -132,7 +132,8 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
             <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? tx("Punto de partida", "Starting point") : `${tx("Escenario", "Scenario")} ${letra}`}</div>
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
             <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? tx("Sin vender ni invertir en nada nuevo", "No selling and no new investments") : p.descripcion || resumenEscenario(p.r)}</div>
-            <div style={{ containerType: "inline-size", marginTop: 10 }}><div style={{ fontSize: tamanoCifra(fmM(p.med.fin.patrimonio), 22), whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmM(p.med.fin.patrimonio)}</div></div>
+            <div style={{ containerType: "inline-size", marginTop: 10 }}><div data-testid="f10-comp-fin" style={{ fontSize: tamanoCifra(fmM(patrimonioFinalHoy(p.r)), 22), whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmM(patrimonioFinalHoy(p.r))}</div></div>
+            <div style={{ fontSize: 11.5, color: INF.tx2 }}>{esUS() ? tx("en dólares de hoy", "in today's dollars") : tx("en pesos de hoy", "in today's pesos")}</div>
             <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.txOk : INF.txBad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} ${tx("real al año, sin tu ahorro", "real a year, excluding savings")}`}</div>
             {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.txTeja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? tx("Recomendado", "Recommended") : tx("Marcar como recomendado", "Mark as recommended")}</button>}
             {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}
