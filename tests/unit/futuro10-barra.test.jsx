@@ -153,7 +153,7 @@ describe("barra en vivo: render", () => {
     expect(h).toMatch(/\.fp10-barra-enc \{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis/);
     expect(h).toContain(".fp10-largo { display: none; }");
     expect(h).toContain('<span class="fp10-corto">');
-    expect(h).toContain("En pesos de hoy");
+    expect(h).toContain("En pesos de hoy (5 %)");
     expect(h).toContain("antes de impuestos de la venta");
   });
 });
@@ -313,7 +313,7 @@ describe("la misma cifra del año 10 en la barra, la tarjeta, el comparador y el
   it("veredicto del informe; si queda una cifra nominal dice «en pesos de» su año", () => {
     const h = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4 }));
     expect(conTest(h, "f10-veredicto-fin")).toBe(cifra);
-    expect(h).toContain(`en pesos de hoy en ${anioCal(10)}`);
+    expect(h).toMatch(new RegExp(`en pesos de hoy \\(inflación 5[^)]*al año\\) en ${anioCal(10)}`));
     expect(h).toContain(`Patrimonio en ${anioCal(10)}, en pesos de hoy`);
     expect(h).toContain(`en pesos de ${anioCal(10)}: ${fmM(r.filas[10].patrimonio)}`);
   });
@@ -347,6 +347,7 @@ describe("una sola tasa de «pesos de hoy»: la inflación del escenario (Finanz
     expect(ht).not.toContain("inflación 5 %");
     const hc = renderToStaticMarkup(createElement(PlanComparador, { planes, inflacionPct: 4 }));
     expect([...hc.matchAll(/data-testid="f10-comp-fin"[^>]*>([^<]+)</g)].map((x) => x[1])).toContain(cifra);
+    expect(hc).toMatch(/en pesos de hoy \(inflación 4[^)]*al año\)/);
     const hi = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4 }));
     expect(conTest(hi, "f10-veredicto-fin")).toBe(cifra);    // interruptor en «pesos de hoy»: la fila del año 10 de la tabla da la misma cifra y el rótulo dice 4 %
     const hr = renderToStaticMarkup(createElement(PlanInforme, { r, nombre: "Plan", inflacionPct: 4, modoInicial: "real" }));

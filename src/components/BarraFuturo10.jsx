@@ -43,7 +43,7 @@ export const CSS_BARRA_F10 = `.fp10-barra { position: sticky; bottom: 0; z-index
 export default function BarraFuturo10({ rPlan, rHoy, onIr, inflacionPct }) {
   const b = inflacionPct == null ? resumenBarra(rPlan, rHoy) : resumenBarra(rPlan, rHoy, inflacionPct);
   if (!b) return null;
-  const unidadCorta = esUS() ? tx("En dólares de hoy", "In today's dollars") : tx("En pesos de hoy", "In today's pesos");
+  const unidadCorta = esUS() ? tx(`En dólares de hoy (${pctTxt(b.inflacionPct)})`, `In today's dollars (${pctTxt(b.inflacionPct)})`) : tx(`En pesos de hoy (${pctTxt(b.inflacionPct)})`, `In today's pesos (${pctTxt(b.inflacionPct)})`);
   const unidad = esUS()
     ? tx(`Patrimonio neto en dólares de hoy (inflación ${pctTxt(b.inflacionPct)} al año)`, `Net worth in today's dollars (${pctTxt(b.inflacionPct)} yearly inflation)`)
     : tx(`Patrimonio neto en pesos de hoy (inflación ${pctTxt(b.inflacionPct)} al año)`, `Net worth in today's pesos (${pctTxt(b.inflacionPct)} yearly inflation)`);

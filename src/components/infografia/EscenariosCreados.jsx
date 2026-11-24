@@ -25,8 +25,8 @@ import { fmtPlataEs } from "../../lib/formato.js";
 const fm = (n) => (esUS() ? plataCorta(n) : fmtPlataEs(n));
 const pct = (n, d = 1) => (n == null ? "—" : esUS() ? num(n, d) + "%" : n.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %");
 
-// 23-nov-2026 (Finanzas): el patrimonio final va en pesos de hoy (inflación 5 %),
-// igual que la barra en vivo, y el «crece al año» ya no mete tu ahorro como si
+// 23-nov-2026 (Finanzas): el patrimonio final va en pesos de hoy con la inflación
+// del escenario, igual que la barra en vivo y el informe, y el «crece al año» ya no mete tu ahorro como si
 // fuera rentabilidad: es lo que rinden tus activos, sin el ahorro. Debajo, de
 // dónde sale el patrimonio final: hoy + ahorro + lo que rinden tus activos.
 function medir(r) {
@@ -103,7 +103,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
   const creados = (planes || []).filter((p) => p.id);
   const mHoy = hoy ? medir(hoy.r) : null;
   const infTxt = (v) => String(Math.round(Number(v) * 10) / 10).replace(".", esUS() ? "." : ",");
-  const infHdr = infTxt(inflacionPct != null ? inflacionPct : (mHoy ? mHoy.inflacionPct : (creados[0] ? inflacionDe(creados[0].r) : 5)));
+  const infHdr = infTxt(inflacionPct != null ? inflacionPct : (mHoy ? mHoy.inflacionPct : (creados[0] ? inflacionDe(creados[0].r) : inflacionDe(null))));
 
   if (!creados.length) {
     return (
