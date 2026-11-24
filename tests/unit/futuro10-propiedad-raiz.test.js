@@ -40,8 +40,9 @@ describe("propiedad raíz", () => {
     const r = proyectarFuturo10(user, { nuevas: [x] });
     const a = (t) => r.filas[t].porActivo.find((y) => y.id === "nueva_0");
     expect(a(0).valor).toBeCloseTo(240e6, 0);
-    expect(a(3).valor).toBeCloseTo(960e6, -3);
-    expect(a(4).valor).toBeCloseTo(960e6 * 1.06, -3);
+    // 24-nov-2026: el valor a la entrega (960 M de hoy) se lleva a 2028 con la inflación (× 1,04²).
+    expect(a(3).valor).toBeCloseTo(960e6 * 1.04 ** 2, -3);
+    expect(a(4).valor).toBeCloseTo(960e6 * 1.04 ** 2 * 1.06, -3);
     expect(r.bolsaDetalle.usos.some((u) => u.anio === 3 && Math.round(u.monto) === 560e6)).toBe(true);
     expect(r.filas[3].rentaNueva).toBeGreaterThan(0);
   });

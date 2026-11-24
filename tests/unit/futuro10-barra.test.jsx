@@ -195,7 +195,9 @@ describe("tarjeta del escenario", () => {
     expect(con[2].gastoFuturo).toBeGreaterThan(0); // la maestría arranca en el año 2
     expect(con[2].patrimonio).toBeLessThan(sin[2].patrimonio);
     // La casa se paga en el año 4: ese año sale la plata (la casa entra como activo).
-    expect(rPlan.pagosFuturos).toEqual([{ nombre: "Casa", anio: 4, monto: 300e6, deFuentes: 0, fuentesTxt: "", idx: 0, k: 0 }]); // sin una inversión elegida, todo sale de la plata del año
+    // 24-nov-2026: `monto` es lo que escribiste (pesos de hoy); `montoAnio`, lo que sale ese año. Sin una inversión elegida, todo sale de la plata del año.
+    expect(rPlan.pagosFuturos).toEqual([{ nombre: "Casa", anio: 4, monto: 300e6, montoAnio: expect.any(Number), deFuentes: 0, fuentesTxt: "", idx: 0, k: 0 }]);
+    expect(rPlan.pagosFuturos[0].montoAnio).toBeCloseTo(300e6 * (1 + rPlan.escenario.inflacionPct / 100) ** 3, 0);
     const casa = proyectarFuturo10(uVenta, { futuros: { ...futuros, gastos: [] } }).filas;
     [1, 2, 3].forEach((t) => expect(casa[t].liquidez).toBeCloseTo(sin[t].liquidez, 0)); // antes de 2029 nada
     expect(sin[4].liquidez - casa[4].liquidez).toBeGreaterThan(50e6); // en 2029 sale la plata
@@ -227,13 +229,13 @@ describe("compra de «Lo que viene» (Casa): chequeos de Finanzas", () => {
   const casa = (t) => (con.filas[t].porActivo || []).find((a) => a.nombre === "Casa");
   it("la compra cambia plata por un activo: el patrimonio no baja el año de la compra", () => {
     expect(con.filas[4].patrimonio).toBeCloseTo(sin.filas[4].patrimonio, -3);
-    expect(casa(4).valor).toBeCloseTo(300e6, -3);
+    expect(casa(4).valor).toBeCloseTo(300e6 * 1.05 ** 3, -3); // 24-nov-2026: 300 M de hoy pagados en 2029
   });
   it("desde 2029 esa plata deja de rendir lo de la inversión y la casa se valoriza a su propia tasa", () => {
     const crec = con.futuros.activos[0].crec;
     expect(crec).toBeCloseTo(0.05, 6); // finca raíz: inflación + 0
-    expect(casa(5).valor).toBeCloseTo(300e6 * (1 + crec), -3);
-    expect(casa(6).valor).toBeCloseTo(300e6 * (1 + crec) ** 2, -3);
+    expect(casa(5).valor).toBeCloseTo(300e6 * 1.05 ** 3 * (1 + crec), -3);
+    expect(casa(6).valor).toBeCloseTo(300e6 * 1.05 ** 3 * (1 + crec) ** 2, -3);
     // la brecha contra no comprar crece por la diferencia de tasas (la cuenta rinde 9,2 %, la casa 5 %)
     const brecha = (t) => sin.filas[t].patrimonio - con.filas[t].patrimonio;
     expect(brecha(5)).toBeGreaterThan(0);
@@ -268,7 +270,7 @@ describe("aviso de Soporte junto a las tarjetas", () => {
   it("el texto va junto a las tarjetas mientras esté vigente", () => {
     const r = proyectarFuturo10(uVenta, {});
     const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r }, { id: "e", nombre: "Uno", r }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
-    const txt = "Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.";
+    const txt = "Ajustamos el cálculo y tu cifra puede cambiar. Todo se muestra en pesos de hoy. Tus ingresos y gastos suben cada año (5% por defecto; puedes cambiarlo), y lo que anotas para años futuros (compras, aportes) sube con la inflación hasta ese año.";
     if (mostrarAvisoCalculo()) expect(h).toContain(txt); else expect(h).not.toContain(txt);
   });
 });
@@ -379,5 +381,27 @@ describe("respaldo de inflación: una sola constante con el motor", () => {
     expect(r.escenario.inflacionPct).toBe(INFLACION_DEFAULT_PCT);
     const sinEsc = { ...r, escenario: undefined };
     expect(patrimonioFinalHoy(sinEsc)).toBeCloseTo(patrimonioFinalHoy(r), 0);
+  });
+});
+
+describe("aviso del cálculo arriba de la barra del creador (Soporte)", () => {
+  it("MiFuturo10 pinta el aviso antes de la barra mientras esté vigente", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/components/MiFuturo10.jsx", "utf8");
+    const iAviso = src.indexOf('testId="f10-aviso-calculo-barra"');
+    const iBarra = src.indexOf("<BarraFuturo10 ");
+    expect(iAviso).toBeGreaterThan(-1);
+    expect(iAviso).toBeLessThan(iBarra);
+  });
+  it("AvisoCalculo muestra el texto de indexación y se apaga con la fecha", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const React = await import("react");
+    const { AvisoCalculo } = await import("../../src/components/infografia/EscenariosCreados.jsx");
+    const h = renderToStaticMarkup(React.createElement(AvisoCalculo, { testId: "x" }));
+    if (mostrarAvisoCalculo()) {
+      expect(h).toContain("Todo se muestra en pesos de hoy");
+      expect(h).toContain("Tus ingresos y gastos suben cada año (5% por defecto; puedes cambiarlo)");
+      expect(h).toContain("sube con la inflación hasta ese año");
+    } else expect(h).toBe("");
   });
 });

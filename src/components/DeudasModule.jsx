@@ -23,6 +23,7 @@ import AbonoDeudaModal from "./AbonoDeudaModal";
 import BarraComposicion from "./BarraComposicion";
 import { MESES, costoCredito, montoPromedioMensual, montoDelMes, cuotaFija, tasaDesdeCuota } from "../lib/flowHelpers.js";
 import { tx, esUS, plata, pct as pctR, monedaBase, nombreMes } from "../lib/region.js";
+import { esDeudaUSD, factorCOP, sumaCOP, resumenDeudasPantalla, deudasParaPlan, etiquetaTrmHoy, subLineaDeudaUSD, LINEA_TRM_DECLARACION, NOTA_TOTAL_PENDIENTE_TASA, usdTxt } from "../lib/deudasPantalla.js";
 
 const T = {
   bg2: C.surface, bg3: "var(--fp-raised)",
@@ -202,7 +203,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
     const grupos = Object.entries(porTipo)
       .map(([tipo, its]) => ({ tipo, items: its,
         sub: its.filter(d => d.sim !== false)
-               .reduce((s, d) => s + (d.mt || 0) * (d.moneda === "USD" ? (trm || 4200) : 1), 0) }))
+               .reduce((s, d) => s + (d.mt || 0) * (factorCOP(d, trm) ?? 0), 0) }))
       .sort((a, b) => b.sub - a.sub);
     const tot = grupos.reduce((s, g) => s + g.sub, 0);
     return grupos.flatMap(gr => [
@@ -211,8 +212,11 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       ...((!!busqueda.trim()) || !cerrados["__h_" + (gr.cat ?? gr.tipo)] ? [...gr.items].sort((a, b) => (b.mt || 0) - (a.mt || 0)) : []),
     ]);
   };
-  const totalDeuda = activos.reduce((s, d) => s + (d.mt || 0), 0);
-  const totalCuotas = activos.reduce((s, d) => s + montoPromedioMensual({ ...d, mensual: d.pg || 0 }), 0)
+  // 24-nov-2026 — Los USD se pasan a pesos con la TRM de hoy antes de sumar.
+  // Sin tasa, quedan por fuera del total en pesos (deudasPantalla.js). Nunca 4200.
+  const resumenUSD = resumenDeudasPantalla(activos, trm);
+  const totalDeuda = resumenUSD.totalCOP;
+  const totalCuotas = sumaCOP(activos, trm, (d) => montoPromedioMensual({ ...d, mensual: d.pg || 0 }));
   // 26-jul-2026 (Santiago: "deudas: valor total, valor pago mensual y valor de
   // intereses anuales"). Los intereses son EL costo real de la deuda y no se
   // mostraban en ninguna parte del módulo: se veía el saldo y la cuota, pero
@@ -221,8 +225,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
   // del PRIMER año: como el saldo baja con cada abono a capital, en años
   // siguientes será menor. Se declara así en el pie para no dar por exacto un
   // número que es una referencia.
-  const interesAnual = activos.reduce((s, d) => s + (d.mt || 0) * ((Number(d.ts) || 0) / 100), 0);
-  const totalInteresAnual = activos.reduce((s, d) => s + costoCredito(d).interesAnual, 0);
+  const interesAnual = sumaCOP(activos, trm, (d) => (d.mt || 0) * ((Number(d.ts) || 0) / 100));
+  const totalInteresAnual = sumaCOP(activos, trm, (d) => costoCredito(d).interesAnual);
+  const hayUSD = !esUS() && resumenUSD.hayUSD;
 
   // 27-sep-2026 (Santiago: "no le veo uso a seleccionar todos los items").
   // Se quitó la selección múltiple: servía solo para borrar en lote, la app
@@ -363,7 +368,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
       {/* KPIs */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 20 }}>
         {[
-          { l: tx("Deuda total", "Total debt"), v: fm(totalDeuda), c: T.txt },
+          { l: tx("Deuda total", "Total debt") + (hayUSD && resumenUSD.pendienteTasa ? tx(" · sin tus USD", " · without USD") : ""), v: fm(totalDeuda), c: T.txt },
           { l: tx("Cuotas al mes", "Monthly payments"), v: fm(totalCuotas), c: T.txt },
           { l: tx("Cuotas al año", "Yearly payments"), v: fm(totalCuotas * 12), c: T.txt },
           { l: tx("Intereses al año", "Interest per year"), v: interesAnual > 0 ? fm(interesAnual) : "—", c: "#ff5000" },
@@ -374,6 +379,16 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           </div>
         ))}
       </div>
+
+      {/* 24-nov-2026 — Deudas en dólares: tasa usada, «pendiente de tasa» y que la
+          declaración usa la TRM del 31-dic. Solo en Colombia. */}
+      {hayUSD && (
+        <div role="note" data-testid="aviso-deudas-usd" style={{ marginBottom: 16, padding: "10px 14px", borderRadius: 10, background: "rgba(59,130,246,0.08)", border: "1px solid rgba(59,130,246,0.25)", fontSize: 12, color: T.txt2, lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 600, color: T.txt }}>{etiquetaTrmHoy(resumenUSD.tasa)}</div>
+          {resumenUSD.pendienteTasa && <div style={{ color: T.orange, marginTop: 2 }}>{NOTA_TOTAL_PENDIENTE_TASA} {tx("Por fuera: ", "Left out: ")}{usdTxt(resumenUSD.usdPendiente)}.</div>}
+          <div style={{ marginTop: 2 }}>{LINEA_TRM_DECLARACION}</div>
+        </div>
+      )}
 
       {/* 26-jul-2026 (Santiago): barra por tipo de crédito. En deudas la
           proporción que importa es del SALDO, no de la cuota: es lo que dice
@@ -390,7 +405,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         const grupos = {};
         (items || []).filter(d => d.sim !== false && (d.mt || 0) > 0).forEach(d => {
           const k = NOM[d.tp] || OTRO();
-          grupos[k] = (grupos[k] || 0) + (d.mt || 0) * (d.moneda === "USD" ? (trm || 4200) : 1);
+          grupos[k] = (grupos[k] || 0) + (d.mt || 0) * (factorCOP(d, trm) ?? 0);
         });
         const datos = Object.entries(grupos).map(([name, value]) => ({ name, value })).filter(d => d.value > 0);
         // 26-jul-2026 — ANTES: si había un solo tipo, la barra no aparecía y
@@ -539,7 +554,9 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
                     <td style={{ padding: "10px 9px", textAlign: "right" }}>
                       <span style={{ background: T.orange + "15", color: T.orange, fontSize: 12, fontWeight: 600, padding: "2px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>{esUS() ? (nombreTipo(d.tp) || d.tp) : (tx({ mortgage: "Hipoteca", vehiculo: "Vehículo", loan: "Libre inversión", card: "Tarjeta", tarjeta: "Tarjeta", leasing: "Leasing" }[d.tp], nombreTipo(d.tp)) || d.tp)}</span>
                     </td>
-                    <td style={{ padding: "10px 9px", textAlign: "right", fontWeight: 600, color: T.txt, whiteSpace: "nowrap" }}>{fm(d.mt)}</td>
+                    <td style={{ padding: "10px 9px", textAlign: "right", fontWeight: 600, color: T.txt, whiteSpace: "nowrap" }}>{!esUS() && esDeudaUSD(d)
+                      ? <><span data-testid="deuda-usd">{usdTxt(d.mt)}</span><div style={{ fontSize: 11, fontWeight: 500, marginTop: 2, color: factorCOP(d, trm) == null ? T.orange : T.txt3 }}>{subLineaDeudaUSD(d, trm, fm)}</div></>
+                      : fm(d.mt)}</td>
                     {(() => {
                       const ah = new Date(), base = { ...d, mensual: Number(d.pg) || 0, m: undefined };
                       const hoy = d.pagada ? 0 : montoDelMes(base, ah.getFullYear(), ah.getMonth() + 1);
@@ -659,7 +676,7 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
         {(() => {
           const b = separarPorLimite(items, plan).bloqueados;
           if (!b.length) return null;
-          return <BloqueadosPorPlan cantidad={b.length} monto={b.reduce((s,d)=>s+((d.mt)||0),0)}
+          return <BloqueadosPorPlan cantidad={b.length} monto={sumaCOP(b, trm)}
             fmt={fm} T={T} onUpgrade={onUpgrade} que={tx("deudas", "debts")} />;
         })()}
         </div>
@@ -670,10 +687,17 @@ export default function DeudasModule({ deudas, owners, inversiones, onUpdate, fm
           invierte el orden en que uno piensa: primero se mira qué se debe y
           después qué hacer al respecto. Un plan de pago mostrado antes de las
           deudas es una respuesta sin pregunta. */}
+      {/* 24-nov-2026 — El plan usa la TRM de hoy y lo dice. Sin tasa, las deudas
+          en USD quedan fuera del plan (nada de 4200). */}
+      {hayUSD && (
+        <div data-testid="trm-hoy-plan" style={{ fontSize: 12, color: resumenUSD.tasa == null ? T.orange : T.txt3, margin: "0 0 6px" }}>
+          {etiquetaTrmHoy(resumenUSD.tasa)}{resumenUSD.tasa == null ? " · tus deudas en dólares quedan fuera del plan hasta tener la tasa." : " · el plan pasa tus deudas en dólares a pesos con esta tasa."}
+        </div>
+      )}
       <PlanDeudasACero
-        deudas={deudas}
+        deudas={hayUSD ? deudasParaPlan(deudas, resumenUSD.tasa) : deudas}
         user={user}
-        trm={trm || user?.trm || 4200}
+        trm={resumenUSD.tasa ?? (esUS() ? 1 : 0)}
         cashFlow={cashFlow}
         fmt={fm}
         onExtraADeudasChange={onExtraADeudasChange}

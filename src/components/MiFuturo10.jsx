@@ -5,11 +5,11 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
-import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, sugerirActivoDeDeuda, deudaActivo, ingresosSueltosHoy, leerPropiedadRaiz, hayAlertaLiquidez, cuentaPorAnio, fotosPorAnio } from "../lib/futuro10.js";
+import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, validarMezcla, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, indexacionDefaultPct, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, sugerirActivoDeDeuda, deudaActivo, ingresosSueltosHoy, leerPropiedadRaiz, hayAlertaLiquidez, cuentaPorAnio, fotosPorAnio } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
-import EscenariosCreados from "./infografia/EscenariosCreados";
+import EscenariosCreados, { AvisoCalculo } from "./infografia/EscenariosCreados";
 import BarraFuturo10 from "./BarraFuturo10";
 
 import { fmtPlataEs } from "../lib/formato.js";
@@ -92,7 +92,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const cuenta = useMemo(() => cuentaPorAnio(r, cfg, fotos), [r, cfg, fotos]);
   // Lo que te queda por invertir ese año (estable: sale de lo que puedes usar menos tus movidas).
   // El monto que viene lleno y «Usar saldo pendiente» usan esto: dejan el año exactamente en cero.
-  const quedaEnAnio = (anio) => ((cuenta.find((g) => g.anio === anio) || {}).porInvertir || 0);
+  // Lo que se escribe para un año siguiente va en pesos de hoy (se paga indexado): se convierte con factorHoy.
+  const quedaEnAnio = (anio) => { const g = cuenta.find((y) => y.anio === anio) || {}; return (g.porInvertir || 0) / (g.factorHoy || 1); };
   const reinvEnAnio = (activoId, anio) => {
     const q = quedaEnAnio(anio);
     set("reinversiones", [...cfg.reinversiones, { activoId, monto: q > 0.5 ? Math.round(q) : "", anio, rentaMensual: "", rentaDesdeMes: 0, fuente: anio > 1 ? "liquidez" : "venta" }]);
@@ -253,10 +254,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
               const total = filas.reduce((sm, [x]) => sm + montoDe(x), 0);
               const g = cuenta.find((y) => y.anio === anio);
               const queda = g ? g.porInvertir : null;
+              const factor = (g && g.factorHoy) || 1;
               return <div key={anio} style={{ marginTop: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap", padding: "8px 0", borderBottom: `1px solid ${C.bd}` }}>
                   <span style={{ fontSize: 16, fontWeight: 600 }}>{anio === 1 ? tx(`Hoy · ${anioCal(1)}`, `Today · ${anioCal(1)}`) : anioCal(anio)}</span>
-                  <span style={{ fontSize: 13, color: C.tx2, fontVariantNumeric: "tabular-nums" }}>{tx("Inviertes", "You invest")} {plata(Math.round(total))}{queda != null && <> · {queda >= -0.5 ? tx("queda", "left") : tx("faltan", "short")} <b style={{ color: queda > 0.5 ? C.gn : queda < -0.5 ? C.rd : C.tx }}>{plata(Math.round(Math.abs(queda)))}</b></>}</span>
+                  <span style={{ fontSize: 13, color: C.tx2, fontVariantNumeric: "tabular-nums" }}>{tx("Inviertes", "You invest")} {plata(Math.round(total * factor))}{queda != null && <> · {queda >= -0.5 ? tx("queda", "left") : tx("faltan", "short")} <b style={{ color: queda > 0.5 ? C.gn : queda < -0.5 ? C.rd : C.tx }}>{plata(Math.round(Math.abs(queda)))}</b></>}</span>
                 </div>
                 {filas.map(([x, i]) => {
             // Si se cambia el año de la inversión, la vista se va con ella a ese año.
@@ -293,7 +295,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     : campo(tx("¿De dónde sale?", "Where does it come from?"), <FuenteSel value={x.fuente} on={(v) => up({ fuente: v })} />);
                   // 23-nov-2026 (Santiago: "en el formulario del valor debería darme la opción de traer el saldo que tengo o que me va quedando si hago varias inversiones").
                   // Lo que queda en el año ya descuenta esta inversión; para ella está disponible lo que queda + lo que ya tiene puesto.
-                  const dispEsta = queda != null ? Math.max(0, queda + montoDe(x)) : 0;
+                  const dispEsta = queda != null ? Math.max(0, queda / factor + montoDe(x)) : 0;
                   const usarSaldo = <BotonSaldo disponible={dispEsta} actual={montoDe(x)} anio={anio} on={(v) => (esPR ? up({ pr: { ...x.pr, valor: v } }) : up({ monto: v }))} />;
                   if (esPR) return <>
                     <div style={fila4}>{campo(tx("Tipo", "Type"), tipoSel)}{fuenteCampo}{campo(tx("Nombre (opcional)", "Name (optional)"), <input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={tx("Ej.: proyecto, constructora", "e.g. project, developer")} />)}</div>
@@ -499,6 +501,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {paso < PASOS.length - 1 && <button style={{ ...btn(true), flex: 1, padding: "12px", fontWeight: 600 }} onClick={() => { ir(paso + 1); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Siguiente:", "Next:")} {PASOS[paso + 1]} →</button>}
       </div>
       {/* 23-nov-2026: resultado en vivo mientras llenas los pasos 1 a 3; al tocarlo, paso 4. */}
+      {paso <= 2 && <AvisoCalculo testId="f10-aviso-calculo-barra" style={{ margin: "0 0 8px" }} />}
       {paso <= 2 && <BarraFuturo10 rPlan={r} rHoy={(planesComparar[0] || {}).r} onIr={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
       </>}
 
@@ -510,6 +513,12 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {Object.entries(SUP.escenarios).map(([k, e]) => <button key={k} style={btn(cfg.escenario === k)} onClick={() => set("escenario", k)}>{nombreSup(e)}</button>)}
         <span style={{ color: C.tx2, fontSize: 12 }}>{tx("inflación", "inflation")} {fmtPctEs(esc.inflacionPct)}</span>
       </div>
+      {/* 24-nov-2026 (indexación, Luis + Finanzas): cuánto suben al año tus ingresos y gastos; aparte de la inflación. */}
+      <label data-testid="f10-indexacion" style={{ fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4, maxWidth: 360, marginBottom: 8 }}>
+        {tx("¿Cuánto suben al año tus ingresos y gastos? (%)", "How much do your income and expenses rise each year? (%)")}
+        <InputDecimalEs style={{ ...inp, width: 120 }} placeholder={fmtPctEs(indexacionDefaultPct(SUP))} value={cfg.indexacionPct ?? ""} onChange={(v) => set("indexacionPct", v)} />
+        <span>{tx(`Sueldo, gastos, rentas e ingresos y gastos futuros. Si no sabes, déjalo en ${fmtPctEs(indexacionDefaultPct(SUP))}. Las cuotas fijas de tus créditos no suben. Lo que anotas para años futuros (compras, aportes) sube con la inflación.`, `Salary, expenses, rents and future income and expenses. If unsure, leave it at ${fmtPctEs(indexacionDefaultPct(SUP))}. Fixed loan payments don't rise. What you enter for future years (purchases, contributions) rises with inflation.`)}</span>
+      </label>
 
         <TablaSupuestos esc={esc} />
       </details>
@@ -656,7 +665,7 @@ function LoQueViene({ user, cfg, set, esc, owners, activos = [], fuentes = [], r
       {campo(tx("Empieza", "Starts"), selAnio(Math.max(1, Number(x.desde) || 1), (v) => upG(i, { desde: v })))}
       {campo(tx("¿Cuántos años?", "For how many years?"), <select style={inp} value={n} onChange={(e) => upG(i, { anios: e.target.value === "" ? "" : Number(e.target.value) })}><option value="">{tx("Siempre", "Ongoing")}</option>{ANIOS.map((y) => <option key={y} value={y}>{enAnios(y)}</option>)}</select>)}
     </div>
-    {(Number(x.anual) || 0) > 0 && <div style={{ fontSize: 12, color: C.am }}>{tx(`Sale ${plata(Math.round(Number(x.anual) / 12))} al mes (${plata(Number(x.anual))} al año) desde ${anioCal(Math.max(1, Number(x.desde) || 1))}${n ? `, durante ${enAnios(n)}` : ", siempre"}. Sube cada año con la inflación.`, `${plata(Math.round(Number(x.anual) / 12))} a month (${plata(Number(x.anual))} a year) from ${anioCal(Math.max(1, Number(x.desde) || 1))}${n ? `, for ${enAnios(n)}` : ", ongoing"}. Grows with inflation.`)}</div>}
+    {(Number(x.anual) || 0) > 0 && <div style={{ fontSize: 12, color: C.am }}>{tx(`Sale ${plata(Math.round(Number(x.anual) / 12))} al mes (${plata(Number(x.anual))} al año) desde ${anioCal(Math.max(1, Number(x.desde) || 1))}${n ? `, durante ${enAnios(n)}` : ", siempre"}. Sube cada año como tus ingresos y gastos (${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(SUP))} al año).`, `${plata(Math.round(Number(x.anual) / 12))} a month (${plata(Number(x.anual))} a year) from ${anioCal(Math.max(1, Number(x.desde) || 1))}${n ? `, for ${enAnios(n)}` : ", ongoing"}. It rises every year like your income and expenses (${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(SUP))} a year).`)}</div>}
     {pie(() => put("gastos", (f.gastos || []).filter((_, j) => j !== i)))}
   </div>; };
   const formCompra = (i) => {
@@ -886,7 +895,7 @@ const etqTipo = () => ({ inmueble: tx("Inmueble: da renta y se valoriza", "Prope
 function BotonSaldo({ disponible, actual = 0, anio, on }) {
   if (!(disponible > 0.5) || Math.round(disponible) === Math.round(actual)) return null;
   return <button type="button" onClick={() => on(Math.round(disponible))} style={{ justifySelf: "start", background: "rgba(0,200,5,0.08)", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "4px 10px", color: C.gn, fontSize: 12.5, cursor: "pointer", textAlign: "left", fontVariantNumeric: "tabular-nums" }}>
-    {tx(`Usar saldo pendiente de ${anio === 1 ? "hoy" : anioCal(anio)}: ${plata(Math.round(disponible))}`, `Use remaining balance${anio === 1 ? " today" : " for " + anioCal(anio)}: ${plata(Math.round(disponible))}`)}
+    {anio === 1 ? tx(`Usar saldo pendiente de hoy: ${plata(Math.round(disponible))}`, `Use today's remaining balance: ${plata(Math.round(disponible))}`) : tx(`Usar lo que queda en ${anioCal(anio)}: ${plata(Math.round(disponible))} en pesos de hoy`, `Use what's left in ${anioCal(anio)}: ${plata(Math.round(disponible))} in today's money`)}
   </button>;
 }
 
@@ -1160,7 +1169,7 @@ function DesgloseCompra({ r, cfg, set, idx, anio0 }) {
     </div>
     {c.total > 0.5 && <div style={{ borderTop: `1px solid ${C.bd}`, paddingTop: 10, display: "grid", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>{tx("Cuesta", "It costs")}</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{tx("Cuesta", "It costs")} <span style={{ fontWeight: 400, fontSize: 12, color: C.tx2 }}>{tx("(pesos de hoy; en cada año se paga con la inflación)", "(today's money; each year it's paid with inflation)")}</span></span>
         <span style={{ fontSize: 20, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(c.total))}</span>
       </div>
       {c.partes.filter(([, v]) => v > 0.5).map(([l, v], k) => <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12.5, color: C.tx2 }}><span>{l}</span><span style={{ fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(v))}</span></div>)}
@@ -1209,7 +1218,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   return <div style={{ ...card, padding: 0, overflow: "visible" }} id="f10-anios">
     <div style={{ padding: "14px 16px 8px" }}>
       <h3 style={{ margin: 0 }}>{tx("Tu plata año por año", "Your money year by year")}</h3>
-      <p style={{ color: C.tx2, fontSize: 12.5, margin: "4px 0 0", lineHeight: 1.45 }}>{tx("Elige un año. Primero ves lo que tienes, lo que te cuesta vivir y lo que puedes hacer con tu plata; abajo haces tus movidas y ves cómo te queda.", "Pick a year. First see what you have, what living costs and what you can do with your money; below, make your moves and see how the year ends.")}</p>
+      <p style={{ color: C.tx2, fontSize: 12.5, margin: "4px 0 0", lineHeight: 1.45 }}>{tx("Elige un año. Primero ves lo que tienes, lo que te cuesta vivir y lo que puedes hacer con tu plata; abajo haces tus movidas y ves cómo te queda. Las cifras van en pesos de cada año.", "Pick a year. First see what you have, what living costs and what you can do with your money; below, make your moves and see how the year ends. Figures are in each year's money.")}</p>
     </div>
     <div role="tablist" aria-label={tx("Años del plan", "Plan years")} style={{ position: "sticky", top: 52, zIndex: 6, background: C.bg2, display: "flex", gap: 6, overflowX: "auto", padding: "8px 16px", borderBottom: `1px solid ${C.bd}` }}>
       {cuenta.map((y) => { const on = y.anio === anioSel, q = y.porInvertir, malo = q < -0.5 || y.faltaSinCubrir > 0.5; return <button key={y.anio} role="tab" aria-selected={on} type="button" onClick={() => ir(y.anio)} style={{ flex: "0 0 auto", textAlign: "left", padding: "6px 12px", borderRadius: 10, cursor: "pointer", background: on ? "rgba(0,200,5,0.12)" : "transparent", border: `1px solid ${on ? C.gn : C.bd}`, color: C.tx }}>
@@ -1268,12 +1277,12 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
         <Etq>{tx(`Tus movidas ${anio === 1 ? "de hoy" : "de " + Y}`, `Your moves ${anio === 1 ? "today" : "in " + Y}`)}</Etq>
         {g.movidas.length === 0 && <div style={{ fontSize: 12.5, color: C.tx2, padding: "4px 0" }}>{tx("Todavía no haces nada con esta plata. Agrega una inversión, métele a algo que ya tienes o paga una deuda.", "Nothing done with this money yet. Add an investment, add to something you own or pay off a debt.")}</div>}
         {g.movidas.map((m, k) => <Renglon key={k} l={<>{`− ${nomMov(m)}`}{m.tipo === "C" && <span style={{ fontSize: 12, color: C.tx2 }}> · {tx("inversión nueva", "new investment")}</span>}</>} v={m.monto} col={m.cuenta ? C.tx : C.tx2}
-          nota={!m.cuenta ? (m.fuente === "nuevo" ? tx("Con plata nueva de afuera: no sale de aquí.", "With new money from outside: not taken from here.") : tx("De tus cuentas de hoy: no sale de aquí.", "From your current accounts: not taken from here.")) : m.abono ? tx("Abono: no alcanza para pagarla toda.", "Partial payment: not enough to pay it all.") : null} />)}
+          nota={!m.cuenta ? (m.fuente === "nuevo" ? tx("Con plata nueva de afuera: no sale de aquí.", "With new money from outside: not taken from here.") : tx("De tus cuentas de hoy: no sale de aquí.", "From your current accounts: not taken from here.")) : anio > 1 && m.montoHoy && Math.abs(m.montoHoy - m.monto) > 0.5 ? tx(`Escribiste ${plata(Math.round(m.montoHoy))} en pesos de hoy.`, `You entered ${plata(Math.round(m.montoHoy))} in today's money.`) : null} />)}
         <Renglon fuerte linea l={g.porInvertir < -0.5 ? tx("Te pasaste", "You went over") : tx("Te queda por invertir", "Left to invest")} v={g.porInvertir} col={g.porInvertir < -0.5 ? C.rd : g.porInvertir > 0.5 ? C.gn : C.tx} signo={g.porInvertir < -0.5 ? "−" : ""} />
         {g.porInvertir < -0.5 && <div style={{ fontSize: 12, color: C.tx2, lineHeight: 1.45 }}>{tx("Lo que te pasaste sale de tus cuentas e inversiones líquidas. Si prefieres, baja un monto o pásalo a otro año.", "What you went over comes out of your accounts and liquid investments. Or lower an amount or move it to another year.")}</div>}
         {anio === 1 && sinCubrir > 0.5 && <div style={{ fontSize: 12, color: C.rd, marginTop: 4 }}>{tx(`Pediste ${plata(Math.round(sinCubrir))} más de lo que hay, también en tus cuentas: esa parte no se invierte.`, `You asked for ${plata(Math.round(sinCubrir))} more than there is, even in your accounts: that part isn't invested.`)}</div>}
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <button type="button" style={{ ...btn(true), padding: "9px 14px" }} onClick={() => nuevaEnAnio(anio, g.porInvertir)}>{tx(`+ Inversión nueva ${anio === 1 ? "hoy" : "en " + Y}`, `+ New investment ${anio === 1 ? "today" : "in " + Y}`)}</button>
+          <button type="button" style={{ ...btn(true), padding: "9px 14px" }} onClick={() => nuevaEnAnio(anio, g.porInvertir / (g.factorHoy || 1))}>{tx(`+ Inversión nueva ${anio === 1 ? "hoy" : "en " + Y}`, `+ New investment ${anio === 1 ? "today" : "in " + Y}`)}</button>
           {(() => { const libres = activosParaAportar(r, cfg, anio); return libres.length > 0 &&
             <select aria-label={tx("Meterle a algo que ya tienes", "Add to something you own")} style={{ ...inp, width: "auto", maxWidth: "100%", padding: "9px 12px", cursor: "pointer" }} value="" onChange={(e) => { if (e.target.value) reinvEnAnio(e.target.value, anio); }}>
               <option value="">{tx("+ Meterle a algo que ya tienes…", "+ Add to something you own…")}</option>
@@ -1417,7 +1426,7 @@ function TablaSupuestos({ esc }) {
     ...(p.cripto ? [[nombreSup(p.cripto), tx("sin supuesto: el rendimiento que escribas (vacío, solo la inflación)", "no assumption: the return you enter (blank, inflation only)")]] : []),
     [nombreSup(p.sp500), s.sinRiesgoCambiario ? tx(`${fmtPctEs(esc.spRealPct)} real`, `${fmtPctEs(esc.spRealPct)} real`) : tx(`${fmtPctEs(esc.spRealPct)} real; devaluación real ${fmtPctEs(p.sp500.devaluacionRealPct)}`, `${fmtPctEs(esc.spRealPct)} real; real devaluation ${fmtPctEs(p.sp500.devaluacionRealPct)}`)],
     [tx("Vehículos", "Vehicles"), tx(`${fmtPctEs(s.vehiculo.depAnios1a3Pct)} años 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} después`, `${fmtPctEs(s.vehiculo.depAnios1a3Pct)} years 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} after`)],
-    [tx("Ingresos / gastos", "Income / expenses"), `${inf} + ${fmtPctEs(esc.ingresosSpread)} / + ${fmtPctEs(esc.gastosSpread)}`],
+    [tx("Ingresos y gastos (suben al año)", "Income and expenses (yearly rise)"), `${fmtPctEs(esc.indexacionPct ?? indexacionDefaultPct(s))} ${alAnio}`],
     [tx("Ajuste de retornos del escenario", "Scenario return adjustment"), fmtPctEs(esc.retornoSpread)],
     [tx("Colchón de liquidez", "Cash cushion"), tx(`${s.colchonMeses} meses de gastos`, `${s.colchonMeses} months of expenses`)],
   ];
@@ -1610,7 +1619,7 @@ function HoyDetalle({ user, cfg, set, setCfg, r }) {
   const sueltos = ingresosSueltosHoy(user, cfg);
   // 22-nov-2026 (Santiago: "si se conserva, ¿todas deberían tener un incremento anual? y un vehículo al revés, se deprecia"). Ya se calcula así; ahora se dice en cada renglón.
   const escR = r.escenario || {};
-  const gIngPct = escR.inflacionPct != null ? ((1 + Number(escR.inflacionPct) / 100) * (1 + Number(escR.ingresosSpread || 0) / 100) - 1) * 100 : null;
+  const gIngPct = escR.indexacionPct != null ? Number(escR.indexacionPct) : null; // 24-nov-2026: las rentas suben con la indexación
   const [abierto, setAbierto] = useState(null);
   const lbl = { fontSize: 12, color: C.tx2, display: "flex", flexDirection: "column", gap: 4 };
   const rh = cfg.rentaHoy || {}, ih = cfg.ingresoHoy || {}, ch = cfg.crecHoy || {};

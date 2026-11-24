@@ -21,7 +21,9 @@ describe("cuenta año por año", () => {
     expect(g2.flujoHoy).toBe(0);
     expect(g2.flujo).toBeCloseTo(r.filas[2].cf, 0);
     expect(g2.compromisos.some((u) => u.tipo === "A" && Math.round(u.monto) === 300e6)).toBe(true); // la deuda que pagas ese año es un compromiso
-    expect(g2.movidas.some((u) => u.tipo === "C" && Math.round(u.monto) === 200e6)).toBe(true);
+    // La cuenta va en pesos de cada año: los 200 M que escribiste (pesos de hoy) salen en el año 2 × (1 + inflación).
+    const k2 = 1 + r.escenario.inflacionPct / 100;
+    expect(g2.movidas.some((u) => u.tipo === "C" && Math.abs(u.monto - 200e6 * k2) < 1 && Math.round(u.montoHoy) === 200e6)).toBe(true);
     expect(g2.queda).toBeCloseTo(g2.antes + g2.llega + g2.flujo - g2.comprometido - g2.movido, 0);
     const g3 = c.find((g) => g.anio === 3);
     expect(g3.antes).toBeCloseTo(Math.max(0, g2.queda), 0);
@@ -47,7 +49,7 @@ describe("lo que puedes hacer con tu plata no se mueve al invertir", () => {
     const cfg = { ...base, nuevas: [{ preset: "custom", nombre: "CDT", monto: 1000e6, anio: 3, rendimientoNomPct: 12, pctRecibe: 100 }] };
     const con = cuenta(cfg).find((g) => g.anio === 3);
     expect(con.disponible).toBeCloseTo(sin.disponible, -3);
-    expect(con.porInvertir).toBeCloseTo(sin.disponible - 1000e6, -3);
+    expect(con.porInvertir).toBeCloseTo(sin.disponible - 1000e6 * con.factorHoy, -3); // los 1.000 MM de hoy salen en pesos de 2028
     expect(con.efecto).toBeGreaterThan(100e6); // lo que el CDT alcanza a pagar ese año
     expect(con.queda).toBeCloseTo(con.porInvertir + con.efecto, -3);
     // Sin la foto, lo disponible sí cambiaba (lo que veía Santiago).
@@ -107,10 +109,11 @@ describe("aportes a una inversión creada en el plan", () => {
     const con = proyectar2(u, { ...base, reinversiones: [{ activoId: "nueva_0", monto: 500e6, anio: 3 }] });
     const v = (r, t) => r.filas[t].porActivo.find((a) => a.id === "nueva_0").valor;
     expect(v(con, 2)).toBeCloseTo(v(sin, 2), -3);
-    expect(v(con, 3) - v(sin, 3)).toBeCloseTo(500e6, -3); // entra ese año
-    expect(v(con, 4) - v(sin, 4)).toBeGreaterThan(500e6); // y desde ahí rinde
+    const k3 = 1.04 ** 2; // 24-nov-2026: 500 MM de hoy entran en 2028 a pesos de ese año
+    expect(v(con, 3) - v(sin, 3)).toBeCloseTo(500e6 * k3, -3); // entra ese año
+    expect(v(con, 4) - v(sin, 4)).toBeGreaterThan(500e6 * k3); // y desde ahí rinde
     const g = cuenta2(con).find((x) => x.anio === 3);
-    expect(g.salen.some((s) => /CDT Bancolombia/.test(s.nombre) && Math.abs(s.monto - 500e6) < 1)).toBe(true);
+    expect(g.salen.some((s) => /CDT Bancolombia/.test(s.nombre) && Math.abs(s.monto - 500e6 * k3) < 1 && Math.abs(s.montoHoy - 500e6) < 1)).toBe(true);
     expect(con.reinversionesDetalle.some((d) => d.aNueva && d.activoId === "nueva_0" && d.anio === 3)).toBe(true);
   });
   it("la lista de «meterle más» trae lo creado en años anteriores, no lo del mismo año", () => {
@@ -126,8 +129,8 @@ describe("aportes a una inversión creada en el plan", () => {
     const sin = proyectar2(u, cfg);
     const con = proyectar2(u, { ...cfg, reinversiones: [{ activoId: "nueva_0", monto: 200e6, anio: 4 }] });
     const v = (r, t) => (r.filas[t].porActivo.find((a) => a.id === "nueva_0") || {}).valor || 0;
-    expect(v(con, 4) - v(sin, 4)).toBeCloseTo(200e6, -3);
-    expect(v(con, 5) - v(sin, 5)).toBeGreaterThan(200e6);
+    expect(v(con, 4) - v(sin, 4)).toBeCloseTo(200e6 * 1.04 ** 3, -3);
+    expect(v(con, 5) - v(sin, 5)).toBeGreaterThan(200e6 * 1.04 ** 3);
   });
 });
 
@@ -198,7 +201,7 @@ describe("validaciones de Lo que viene", () => {
   it("una compra pagada con una inversión elegida no resta de la plata de ese año", () => {
     const cfg = { futuros: { activos: [{ nombre: "Bodega", clase: "inmueble", valor: 500e6, entrega: 3, fuentes: [{ id: "btg", monto: 500e6 }] }] } };
     const r = proyectarFuturo10(u, cfg);
-    expect(r.pagosFuturos[0].deFuentes).toBeCloseTo(500e6, -3);
+    expect(r.pagosFuturos[0].deFuentes).toBeCloseTo(r.pagosFuturos[0].montoAnio, -3); // todo sale de BTG (en pesos de ese año)
     const g3 = cuentaPorAnio(r, cfg).find((g) => g.anio === 3);
     expect(g3.compromisos.some((c) => /Bodega/.test(c.nombre))).toBe(false);
   });

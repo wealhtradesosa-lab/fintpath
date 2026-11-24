@@ -154,7 +154,7 @@ describe("inversión nueva con plazo", () => {
   });
   it("retira una parte: el resto sigue invertido", () => {
     const r = proyectarFuturo10(u(), { ...base, nuevas: [{ preset: "rfCorto", monto: 10000e6, fuente: "venta", hasta: 3, retiraParte: true, retira: 4000e6 }] });
-    expect(r.liberados[0].monto).toBeCloseTo(4000e6, -3);
+    expect(r.liberados[0].monto).toBeCloseTo(4000e6 * 1.04 ** 2, -3); // 24-nov-2026: 4.000 M de hoy, retirados en el año 3
     expect(r.liberados[0].parcial).toBe(true);
     expect(r.filas[3].porActivo.find((x) => x.id === "nueva_0").valor).toBeGreaterThan(6000e6);
   });

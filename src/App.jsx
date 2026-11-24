@@ -115,7 +115,7 @@ import BotonTema from "./components/BotonTema.jsx";
 import { IconoMenu, DefsIconos } from "./components/Iconos.jsx";
 import { Eye, EyeOff, Menu as IconoMenuHamburguesa, X as IconoCerrar } from "lucide-react";
 import NavRecorrido from "./components/NavRecorrido.jsx";
-import { TRM_PROVISIONAL, usdPendienteDeTasa, NOTA_TRM_PENDIENTE } from "./lib/trm.js";
+import { TRM_PROVISIONAL, usdPendienteDeTasa, NOTA_TRM_PENDIENTE, trmCierreAno, TEXTO_PENDIENTE_TASA } from "./lib/trm.js";
 import { registrarMes, resumenHistoria, etiquetaMes, fotoPatrimonio } from "./lib/historiaPatrimonio.js";
 import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
@@ -626,8 +626,11 @@ const In=({l,value:v,onChange:oc,type:tp,placeholder:ph,options:opts})=><div sty
 const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.6)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1e3,padding:20}}><div onClick={e=>e.stopPropagation()} style={{background:T.bg2,border:`1px solid ${T.borderL}`,borderRadius:12,width:"100%",maxWidth:wide?700:520,maxHeight:"85vh",overflow:"auto",padding:32}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}><h3 style={{fontSize:18,fontWeight:700,margin:0,color:T.tx}}>{title}</h3><button onClick={onClose} style={{background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:18}}>✕</button></div>{children}</div></div>};
 
 // Sin tasa real el motor y el borrador dejan los USD por fuera: arriba va «pendiente de tasa».
-export const NOTA_TRM_DECLARACION="Tus montos en dólares de este borrador todavía no están convertidos correctamente. No lo uses para declarar. En tu declaración usa la TRM del 31-dic-2025 para patrimonio y la del día de cada pago para ingresos.";
-export const NotaTrmDeclaracion=({u})=>tieneUSD(u)?<div role="note" style={{margin:"0 0 12px",padding:"10px 14px",borderRadius:10,background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.25)",fontSize:12,color:"#bfdbfe"}}>{usdPendienteDeTasa(u)&&<strong style={{display:"block",marginBottom:4,color:"#fbbf24"}}>{NOTA_TRM_PENDIENTE}</strong>}{NOTA_TRM_DECLARACION}</div>:null;
+// 24-nov-2026 — La TRM del 31-dic sale del año gravable de la pantalla (DEFAULT_AG,
+// el mismo del borrador F-210), no de un 2025 fijo ni del año calendario. Si esa
+// tasa no existe todavía (TRM_CIERRE_ANO / user.trmCierre): «pendiente de tasa». Nunca 4200.
+export const notaTrmDeclaracion=(u,ano=DEFAULT_AG)=>{const t=trmCierreAno(u,ano);return"Tus montos en dólares de este borrador todavía no están convertidos correctamente. No lo uses para declarar. En tu declaración usa la TRM del 31-dic-"+ano+" ("+(t!=null?"$"+t.toLocaleString("es-CO",{minimumFractionDigits:2,maximumFractionDigits:2}):TEXTO_PENDIENTE_TASA)+") para patrimonio y la del día de cada pago para ingresos."};
+export const NotaTrmDeclaracion=({u,ano=DEFAULT_AG})=>tieneUSD(u)?<div role="note" style={{margin:"0 0 12px",padding:"10px 14px",borderRadius:10,background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.25)",fontSize:12,color:"#bfdbfe"}}>{usdPendienteDeTasa(u)&&<strong style={{display:"block",marginBottom:4,color:"#fbbf24"}}>{NOTA_TRM_PENDIENTE}</strong>}{notaTrmDeclaracion(u,ano)}</div>:null;
 export const AvisoTasa=({est,t,fm})=>{
   if(est.modo==="pendiente")return<div role="status" style={{background:"rgba(245,158,11,0.1)",borderBottom:"1px solid rgba(245,158,11,0.3)",padding:"8px 20px",fontSize:12,color:"#fbbf24"}}>No pudimos obtener la TRM; vuelve a intentar. Tus totales, flujo y nivel quedan <strong>pendientes de tasa</strong>: tus montos en USD se muestran en dólares. Patrimonio {fm?fm(t?.nw||0):""} <em>sin tus montos en USD</em>.</div>;
   if(est.modo==="guardada"&&est.fecha)return<div role="status" style={{padding:"4px 20px",fontSize:12,color:"var(--fp-txt2)"}}>Tasa usada: TRM del {est.fecha}</div>;
@@ -3753,13 +3756,13 @@ case"inv":return isUS?<AssetsModuleUS inversiones={(u&&u.inv)||[]} deudas={(u&&u
       // estimar cuánto voy a pagar"). Impuestos abre «Lo que viene»: parte de la
       // última declaración de cada titular y solo pregunta qué cambió. El borrador
       // detallado desde cero sigue en "taxdet" para quien lo necesite.
-      return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/>
+      return gated("tax","Pro",<><NotaTrmDeclaracion u={u} ano={DEFAULT_AG}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/>
         <button type="button" onClick={()=>setPg("taxdet")} style={{marginTop:12,background:"none",border:"none",color:T.tx3,cursor:"pointer",fontSize:12,textDecoration:"underline"}}>¿Prefieres el borrador detallado, renglón por renglón? Ábrelo aquí</button></>);
     }
     case"taxinf":return gated("tax","Pro",<InformeContador u={u} onNavigate={setPg}/>);
     case"contclientes":return <VistaContador supabase={supabase} clientes={clientesContador}/>;
-    case"taxcalc":return gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/></>);
-    case"taxdet":return isUS?null:gated("tax","Pro",<><NotaTrmDeclaracion u={u}/><DeclaracionFlow
+    case"taxcalc":return gated("tax","Pro",<><NotaTrmDeclaracion u={u} ano={DEFAULT_AG}/><EstimadoRenta u={u} onGuardar={(est)=>upd("estimadoRenta",est)} onGuardarVersiones={(l)=>upd("versionesRenta",l)} onNavigate={setPg} onCambiarMes={(id,m)=>upd("owners",(u?.owners||[]).map(o=>o.id===id?{...o,mesDeclaracion:m}:o))}/></>);
+    case"taxdet":return isUS?null:gated("tax","Pro",<><NotaTrmDeclaracion u={u} ano={DEFAULT_AG}/><DeclaracionFlow
         user={u}
         estimacion={estimarImpuesto(u)}
         onUpdateUser={(newUser)=>setU(newUser)}
