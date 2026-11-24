@@ -271,16 +271,24 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
     Object.entries(g1).forEach(([nombre, monto]) => f1.push({ destino: nombre, monto, ...info(nombre) }));
     if (bd.obras > 0.5) f1.push({ destino: tx("Obras", "Build-outs"), monto: bd.obras, tasa: "—", hace: tx("Mejoran lo que tienes", "Improve what you own") });
     if (bd.colchon > 0.5) f1.push({ destino: tx("Colchón para imprevistos", "Emergency cushion"), monto: bd.colchon, tasa: "—", hace: tx("Plata a la mano", "Cash on hand") });
-    const de1 = [...(r.vendidos || []).map((v) => v.nombre), ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [tx("capital nuevo", "new capital")] : []), ...(bd.desdeLiquidez > 0.5 ? [tx("tu liquidez", "your cash")] : [])];
-    if (f1.length) grupos.push({ anio: 1, filas: f1, de: de1, queda: bd.restante || 0 });
-    // Años siguientes: la cuenta del año (viene del anterior + lo que sobra + lo que llega).
-    cuentaPorAnio(r).forEach((g) => {
-      if (!g.salen.length) return;
+    // 24-nov-2026: la misma cuenta en cascada del paso 3 (hoy también cuenta lo que te sobra en el
+    // año); lo que mandas a tu fondo de reserva va como un renglón y «queda» es lo que pasa al siguiente.
+    const cuentas = cuentaPorAnio(r);
+    const reservaFila = (g) => (g.aReserva > 0.5 ? [{ destino: tx("Tu fondo de reserva", "Your reserve fund"), monto: g.aReserva, tasa: fmPct((g.tasaReserva || 0) * 100, 1), hace: tx("Guardado para años futuros", "Saved for future years") }] : []);
+    const quedaDe = (g) => (g.queda < -0.5 ? g.queda : g.pasa);
+    const c1 = cuentas.find((g) => g.anio === 1) || { flujo: 0, aReserva: 0, pasa: bd.restante || 0, queda: bd.restante || 0 };
+    f1.push(...reservaFila(c1));
+    const de1 = [...(r.vendidos || []).map((v) => v.nombre), ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [tx("capital nuevo", "new capital")] : []), ...(bd.desdeLiquidez - (bd.excesoCubierto || 0) > 0.5 ? [tx("tu liquidez", "your cash")] : []), ...(c1.flujo > 0.5 ? [tx("lo que te sobra", "your surplus")] : [])];
+    if (f1.length) grupos.push({ anio: 1, filas: f1, de: de1, queda: quedaDe(c1) });
+    // Años siguientes: la cuenta del año (lo que traes + lo que sobra + lo que llega − lo que usas).
+    cuentas.filter((g) => g.anio > 1).forEach((g) => {
+      if (!g.salen.length && !(g.aReserva > 0.5)) return;
       const filasA = g.salen.map((u) => u.tipo === "A" ? { destino: u.nombre, monto: u.monto, tasa: "—", hace: deudaHace(u.nombre) }
         : u.tipo === "F" ? { destino: u.nombre, monto: u.monto, tasa: "—", hace: tx("Pago de una compra de Lo que viene", "Payment for an upcoming purchase") }
         : { destino: u.nombre.replace(/^(Invertir en|Invest in) /, ""), monto: u.monto, ...info(u.nombre.replace(/^(Invertir en|Invest in) /, "")) });
       const de = [...(g.antes > 0.5 ? [tx(`lo que venía de ${anioCal(g.anio - 1)}`, `carried from ${anioCal(g.anio - 1)}`)] : []), ...(g.flujoHoy + Math.max(0, g.flujo) > 0.5 ? [tx("lo que te sobra", "your surplus")] : []), ...g.llegan.map((l) => String(l.id).endsWith("_retiro") ? tx(`lo que sacas de ${l.nombre}`, `what you take out of ${l.nombre}`) : tx(`la venta de ${l.nombre}`, `the sale of ${l.nombre}`))];
-      grupos.push({ anio: g.anio, filas: filasA, de, queda: g.saldo });
+      filasA.push(...reservaFila(g));
+      grupos.push({ anio: g.anio, filas: filasA, de, queda: quedaDe(g) });
     });
     return grupos.map((g) => ({ ...g, total: g.filas.reduce((t2, x) => t2 + x.monto, 0) }));
   }, [r]);
