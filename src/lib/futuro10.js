@@ -628,6 +628,25 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   let deudaUnica = unicas.reduce((sm, d) => sm + d.saldo, 0);
   let deuda = bDeuda.deudaTotal - deudaUnica; let cuotaAnual = bDeuda.sd * 12;
   const deudaInicial = deuda, pagadasDespues = new Set();
+  // 24-nov-2026 — Abonos a una deuda con lo que sobra cada mes (cfg.mesReparto). Lo abonado baja lo que debes; cuando cubre lo que
+  // le queda (según sus cuotas), la terminas de pagar y su cuota deja de salir desde el año siguiente.
+  const mesReparto = leerMesReparto(cfg.mesReparto, N), repartoUsado = {}, abonado = {}, finAbono = {};
+  let abonosVivos = 0;
+  function abonar(id, v, t) {
+    if (pagadasDespues.has(id)) return 0;
+    const d = deudasVivas.find((x) => x && x.id === id && !esUnica(x)); if (!d) return 0;
+    const cuotaD = n(d.pg ?? d.pago) * fxA(d) * 12;
+    const queda = Math.max(0, n(d.mt) * fxA(d) - cuotaD * t - (abonado[id] || 0));
+    const usa = Math.min(v, queda);
+    if (!(usa > 0.5)) return 0;
+    abonado[id] = (abonado[id] || 0) + usa; abonosVivos += usa;
+    if (queda - usa <= 0.5) {
+      deuda = Math.max(0, deuda - abonado[id]); abonosVivos -= abonado[id]; abonado[id] = 0;
+      cuotaAnual = Math.max(0, cuotaAnual - cuotaD); pagadasDespues.add(id); finAbono[id] = t;
+      alertas.push({ tipo: "pago_deuda", anio: t, texto: tx(`En ${anioCal(t)} terminas de pagar ${d.n || d.nombre || "una deuda"} con tus abonos: su cuota deja de salir.`, `In ${anioCal(t)} you finish paying ${d.n || d.nombre || "a debt"} with your extra payments: its installment stops.`) });
+    }
+    return usa;
+  }
 
   // 24-oct-2026 (Santiago: "¿y los gastos de dónde salen?"). Al vender un
   // activo se van su renta, TODOS sus gastos vinculados (también lo que cuesta
@@ -815,8 +834,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       let pagoDeuda = 0;
       deudasVivas.filter((d) => d && d.sim !== false && deudaActivo(d, cfg) === a.id && !esUnica(d) && !pagadasDespues.has(d.id)).forEach((d) => {
         const queda = deudaInicial > 0 ? n(d.mt) * fxA(d) * (deuda / deudaInicial) : 0;
-        const pago = Math.max(0, Math.min(a.valor - pagoDeuda, queda, deuda));
-        pagoDeuda += pago; deuda -= pago; cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(d.id);
+        const ab = Math.min(abonado[d.id] || 0, queda); abonosVivos -= ab; abonado[d.id] = 0;
+        const pago = Math.max(0, Math.min(a.valor - pagoDeuda, queda - ab, deuda));
+        pagoDeuda += pago; deuda = Math.max(0, deuda - pago - ab); cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(d.id);
       });
       a.valor -= pagoDeuda;
       liberados.push({ id: a.id, nombre: a.nombre, anio: t, monto: a.valor, pagoDeuda });
@@ -830,9 +850,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (x.pagaAnio !== t || pagadasDespues.has(x.id)) return;
       const d = x._d;
       const queda = deudaInicial > 0 ? n(d.mt) * fxA(d) * (deuda / deudaInicial) : 0;
-      const pago = Math.max(0, Math.min(queda, deuda));
+      const ab = Math.min(abonado[x.id] || 0, queda); abonosVivos -= ab; abonado[x.id] = 0;
+      const pago = Math.max(0, Math.min(queda - ab, deuda));
       if (pago > 0.5) retirar(pago);
-      deuda -= pago; cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(x.id);
+      deuda = Math.max(0, deuda - pago - ab); cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(x.id);
       x.pagadoEnAnio = pago;
       alertas.push({ tipo: "pago_deuda", anio: t, texto: tx(`En ${anioCal(t)} pagas ${x.nombre} (${mmTxt(pago)}) y su cuota deja de salir.`, `In ${anioCal(t)} you pay off ${x.nombre} (${mmTxt(pago)}) and its payment stops.`) });
     });
@@ -973,7 +994,20 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         else if (d.id === "c_disponible") colchon += v; // 25-oct-2026: «se deja disponible para cualquier eventualidad»
         else restoPct += d.pct;
       });
-      if (restoPct > 0) { if (disponible) colchon += cf * restoPct / 100; else Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; }); }
+      // 24-nov-2026 (Santiago: "de lo que sobra cada mes, ¿qué quiere hacer? abonar a deudas mensualmente, abonar a una inversión
+      // existente, gastar en ocio, o ahorrar en el fondo de reserva; lo que sobra pasa al año siguiente"). El reparto de ese año
+      // sale de lo que no se reinvierte solo, en el orden de las filas; lo que queda sigue como antes.
+      let resto = restoPct > 0 ? cf * restoPct / 100 : 0;
+      repartoUsado[t] = (mesReparto[t] || []).map((x) => {
+        if (!(resto > 0.5) || !(x.mensual > 0)) return 0;
+        let v = Math.min(resto, x.mensual * 12);
+        if (x.tipo === "inversion") { const dest = todos.find((y) => y.id === x.id && !y.ciclo && !y.terminado); if (dest) dest.valor += v; else v = 0; }
+        else if (x.tipo === "deuda") v = abonar(x.id, v, t);
+        else if (x.tipo === "reserva") canasta.liquidez += v;
+        // «gasto»: lo gastas; no queda en tu patrimonio.
+        resto -= v; return v;
+      });
+      if (resto > 0) { if (disponible) colchon += resto; else Object.keys(canasta).forEach((k) => { canasta[k] += resto * mezcla[k] / 100; }); }
     } else {
       retirar(-cf);
       alertas.push({ tipo: "cf_negativo", anio: t, texto: tx(`En ${anioCal(t)} sale más de lo que entra; se usa tu liquidez.`, `In ${anioCal(t)} more goes out than comes in; your cash covers it.`) });
@@ -1053,7 +1087,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const deflactor = Math.pow(1 + inf, t);
     const deflactorFlujo = deflactorAnio(esc.inflacionPct, t);
     const activosT = valorTotal();
-    const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
+    const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: Math.max(0, deuda - abonosVivos) + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
     f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio; f.ingFuturoSinActivo = ingFuturoSinActivo;
     // 19-nov-2026 (Santiago: "si me paro en 2028 que me muestre mis ingresos y
@@ -1101,7 +1135,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         .map((x) => ({ id: "ing_" + x.key, nombre: x.nombre, clase: "ingreso", valor: 0, renta: x.mensual * 12 * Math.pow(1 + gIng, t - 1), crece: 0 })),
       ...fut.ingresos.map((x, k) => ({ id: "fut_" + k, nombre: x.nombre, clase: "ingreso", valor: 0, renta: t >= x.desde && t <= x.hasta ? x.mensual * 12 * ixI(t) : 0, crece: 0 })),
     ].filter((x) => x.renta > 0.5);
-    f.patrimonio = activosT - deuda - deudaUnica;
+    f.patrimonio = activosT - Math.max(0, deuda - abonosVivos) - deudaUnica;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
     f.deflactorFlujo = deflactorFlujo;
@@ -1192,6 +1226,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     tasaReservaEscenario: rNom("rfCorto"),
     // 23-nov-2026: parte de lo que sobra cada año que no tiene destino fijo (cuentaPorAnio).
     sobraLibre: Math.max(0, 1 - Math.min(100, sobraDestinos.reduce((sm, d) => sm + d.pct, 0)) / 100),
+    repartoMes: repartoUsado,
     destinoSobraLista: (() => {
       const DISP = tx("Disponible", "Available"), LIQ = tx("Liquidez", "Cash"), RF = tx("Renta fija", "Fixed income"), CREC = tx("Crecimiento", "Growth");
       const nom = (id) => id === "c_disponible" ? DISP : id === "c_liquidez" ? LIQ : id === "c_renta" ? RF : id === "c_crecimiento" ? CREC : ((todos.find((x) => x.id === id) || {}).nombre || id);
@@ -1239,7 +1274,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaEn, pagaEnPlan, unica: !!u, finAnio, finPorCuota: !pagar && !porVenta && !pagaEn && !ventaAnio && finCuota != null,
         // 23-nov-2026: cuota mensual y año en que se acabaría sola con su cuota (para saber
         // desde y hasta cuándo el plan te libera esa cuota, año por año).
-        cuotaMes: d0 && !u ? n(d0.pg ?? d0.pago) * fxA(d0) : 0, finNatural: finCuota,
+        cuotaMes: d0 && !u ? n(d0.pg ?? d0.pago) * fxA(d0) : 0, finNatural: finCuota, finAbono: finAbono[id] || null,
         // 23-nov-2026: lo que sale ese año para pagarla (para la cuenta año por año).
         pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
@@ -2083,7 +2118,7 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
  */
 export function holguraPorAnio(cuenta = []) {
   const N = cuenta.length;
-  const meta = (y) => (y.rvaCap ?? y.aReserva) + (y.mesAReserva ? Math.max(0, y.mes ?? 0) : 0);
+  const meta = (y) => (y.rvaCap ?? y.aReserva) + (y.mesAReserva ? Math.max(0, (y.mes ?? 0) - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0);
   const repetir = (t, X) => {
     const g = cuenta[t - 1];
     const q = g.queda - X, aR = Math.min(meta(g), Math.max(0, q)), apT = g.reservaHasta ? Math.min(g.rvaCap ?? 0, aR) : 0;
@@ -2097,9 +2132,9 @@ export function holguraPorAnio(cuenta = []) {
       const base = cap0 + cubre;
       const resA = reserva * (1 + tasa);
       const uso = base < 0 ? Math.min(resA, -base) : 0, falta = base < 0 ? -base - uso : 0;
-      const disp = Math.max(0, base), mes = y.flujo + faltaMes - cubre, queda = base + uso - y.movido + mes;
+      const disp = Math.max(0, base), mes = y.flujo + faltaMes - cubre, queda = base + uso - y.movido + mes - (y.repartoFuera || 0);
       const rvaCap = y.rvaCap ?? y.aReserva;
-      const aRes = Math.min(rvaCap + (y.mesAReserva ? Math.max(0, mes) : 0), Math.max(0, queda));
+      const aRes = Math.min(rvaCap + (y.mesAReserva ? Math.max(0, mes - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0), Math.max(0, queda));
       const porInv = disp - y.movido - Math.min(rvaCap, aRes, Math.max(0, disp - y.movido));
       const apS = y.reservaHasta ? Math.min(rvaCap, aRes) : 0;
       out.push({ anio: s, falta, porInv });
@@ -2120,6 +2155,19 @@ export function holguraPorAnio(cuenta = []) {
 }
 
 /** Lo que se reinvierte de lo que sobra, solo en ciertos años: { año: % }. */
+/** 24-nov-2026 — Reparto de lo que sobra cada mes, por año: { año: [{ tipo, id, mensual, nombre }] }, en pesos de ese año.
+ * tipo: "deuda" (abono), "inversion" (aporte a una que ya tienes), "gasto" (lo gastas) o "reserva" (a tu fondo de reserva).
+ * Las filas que no sirven quedan con mensual 0 para no correr el orden. */
+export function leerMesReparto(raw, N = 10) {
+  const out = {};
+  Object.entries(raw || {}).forEach(([k, arr]) => {
+    const t = Math.round(n(k)); if (!(t >= 1 && t <= N) || !Array.isArray(arr)) return;
+    const l = arr.map((x) => { const ok = x && ["deuda", "inversion", "gasto", "reserva"].includes(x.tipo) && n(x.mensual) > 0 && (x.tipo === "gasto" || x.tipo === "reserva" || x.id);
+      return ok ? { tipo: x.tipo, id: x.id || null, mensual: n(x.mensual), nombre: String(x.nombre || "") } : { tipo: "nada", id: null, mensual: 0, nombre: "" }; });
+    if (l.length) out[t] = l;
+  });
+  return out;
+}
 export function leerSobraPctAnios(cfg = {}, N = 10) {
   const out = {};
   Object.entries((cfg && cfg.sobraPctAnios) || {}).forEach(([k, v]) => { const t = Math.round(n(k)); if (t >= 1 && t <= N && v !== "" && v != null && Number.isFinite(Number(v))) out[t] = Math.min(100, Math.max(0, Number(v))); });
@@ -2148,9 +2196,10 @@ export function sinMovidasDesde(cfg = {}, t = 1, N = 10) {
   Object.keys(pd).forEach((id) => { const y = anioPagoDeuda({ id }, pd, N); if (y != null && y >= t) pd[id] = false; });
   out.pagarDeudas = pd;
   if (Array.isArray(cfg.ciclos)) out.ciclos = cfg.ciclos.map((c) => (c && Math.max(1, Math.round(n(c.desde)) || 1) >= t ? { ...c, capital: 0 } : c));
+  if (cfg.mesReparto && typeof cfg.mesReparto === "object") out.mesReparto = Object.fromEntries(Object.entries(cfg.mesReparto).filter(([k]) => Math.round(n(k)) < t));
   return out;
 }
-const hayMovidasDesde = (cfg = {}, t = 1, N = 10) => JSON.stringify(sinMovidasDesde(cfg, t, N)) !== JSON.stringify({ ...cfg, nuevas: cfg.nuevas || [], reinversiones: cfg.reinversiones || [], pagarDeudas: { ...(cfg.pagarDeudas || {}) }, ...(Array.isArray(cfg.ciclos) ? { ciclos: cfg.ciclos } : {}) });
+const hayMovidasDesde = (cfg = {}, t = 1, N = 10) => JSON.stringify(sinMovidasDesde(cfg, t, N)) !== JSON.stringify({ ...cfg, nuevas: cfg.nuevas || [], reinversiones: cfg.reinversiones || [], pagarDeudas: { ...(cfg.pagarDeudas || {}) }, ...(Array.isArray(cfg.ciclos) ? { ciclos: cfg.ciclos } : {}), ...(cfg.mesReparto && typeof cfg.mesReparto === "object" ? { mesReparto: cfg.mesReparto } : {}) });
 
 /**
  * La foto de cada año antes de tus movidas de ese año: [null, fila 1, …, fila N]. Cada
@@ -2190,6 +2239,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
   const libreAnio = (t) => (pctAnios[t] != null && asignado > 0 ? 1 - pctAnios[t] / 100 : libre);
   const rva = cfg && cfg.reservaAnual ? leerReservaAnual(cfg.reservaAnual, N) : (r.reservaAnual || {});
   const mesARes = (cfg && cfg.mesAReserva) || {};
+  const repCfg = leerMesReparto(cfg && cfg.mesReparto, N);
   // 24-nov-2026 (Santiago: "la reserva debería uno poder tenerla por años, para que en el año malo la pueda disponer").
   // Lo que guardas un año puede tener un año de destino (cfg.reservaHasta: { año en que guardas: año en que vuelve }): queda
   // aparte, rinde, y ese año vuelve a tu capital. Sin destino, va a la reserva de siempre (se usa sola el año que no alcanza).
@@ -2265,12 +2315,28 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     const disponible = Math.max(0, base);
     const efecto = flujo - flujoFoto;
     const mes = flujo + faltaMes - cubreMes;
-    const queda = base + usoReserva - movido + mes;
+    // 24-nov-2026 — Reparto de lo que sobra cada mes (abonos a deudas, inversiones, gasto y reserva): sale de lo que te queda del mes,
+    // en el orden de las filas; lo que no cabe no se reparte. Lo que queda pasa al año siguiente.
+    let dispMes = Math.max(0, mes);
+    const motorRep = (r.repartoMes && r.repartoMes[anio]) || [];
+    const nomDeuda = (id) => ((r.deudas || []).find((d) => d.id === id) || {}).nombre;
+    const nomInv = (id) => ((r.activos || []).find((a) => a.id === id) || (r.nuevasDetalle || []).find((a) => a.id === id) || {}).nombre;
+    const reparto = (repCfg[anio] || []).map((x, i) => {
+      const pedido = x.mensual * 12, tope = motorRep[i] != null ? Math.min(pedido, motorRep[i]) : pedido, usado = Math.max(0, Math.min(dispMes, tope));
+      dispMes -= usado;
+      const nombre = x.tipo === "deuda" ? tx(`Abono a ${nomDeuda(x.id) || "una deuda"}`, `Extra payment to ${nomDeuda(x.id) || "a debt"}`)
+        : x.tipo === "inversion" ? tx(`Inviertes en ${nomInv(x.id) || "una inversión"}`, `Invest in ${nomInv(x.id) || "an investment"}`)
+        : x.tipo === "gasto" ? (x.nombre || tx("Gasto de ocio", "Leisure spending")) : x.tipo === "reserva" ? tx("A tu reserva", "To your reserve") : "";
+      return { ...x, i, nombre, pedido, usado };
+    });
+    const repartoReserva = reparto.filter((x) => x.tipo === "reserva").reduce((sm, x) => sm + x.usado, 0);
+    const repartoFuera = reparto.filter((x) => x.tipo !== "reserva").reduce((sm, x) => sm + x.usado, 0);
+    const queda = base + usoReserva - movido + mes - repartoFuera;
     // 24-nov-2026 (Santiago: "¿no hace falta un ítem que se llame reserva?"). Lo que guardas en tu
     // reserva de tu capital sale de lo que te quedaba por invertir (como una movida más): si después
     // inviertes, ya no te dice que tienes esa plata libre. Lo del mes también puede ir a tu reserva.
     const rvaCap = n(rva[anio]), mesAReserva = !!mesARes[anio];
-    const aReservaMes = mesAReserva ? Math.max(0, mes) : 0;
+    const aReservaMes = (mesAReserva ? Math.max(0, mes - repartoFuera - repartoReserva) : 0) + repartoReserva;
     const aReserva = Math.min(rvaCap + aReservaMes, Math.max(0, queda));
     const antesReserva = disponible - movido;
     const reservaDeAqui = Math.min(rvaCap, aReserva, Math.max(0, antesReserva));
@@ -2284,7 +2350,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     // factorHoy: para pasar a pesos de hoy lo que se escribe en un formulario (montos de años siguientes).
     // propio: lo que el año suma o resta por sí solo (sin lo que traes de antes).
     const apartadoFin = apartados.filter((x) => x.hasta > anio).reduce((sm, x) => sm + x.monto * Math.pow(1 + tasa, anio - x.desde), 0);
-    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, rvaCap, mesAReserva, aReservaMes, reservaHasta: hastaRes[anio] || null, aApartado, apartadoFin, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
+    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, reparto, repartoFuera, repartoReserva, rvaCap, mesAReserva, aReservaMes, reservaHasta: hastaRes[anio] || null, aApartado, apartadoFin, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
       // Para lo que leía la cuenta de antes (informe): lo que sale del año y lo que queda.
       salen, sale: suma(salen), saldo: queda, flujoHoy: 0, cfPrev: n(f.cf) });
     antes = pasa; reserva = reservaFin;
