@@ -16,7 +16,7 @@
 
 import { tamanoCifra } from "../../lib/infografia.js";
 import { C, trama, tarjeta, titulo, subtitulo, cifra, CSS_INFOGRAFIA } from "./estilos.js";
-import { resumenEscenario, anioCal } from "../../lib/futuro10.js";
+import { resumenEscenario, anioCal, desglosePatrimonio, rendimientoSinAhorro, hayVenta, rotuloVenta, loQueVieneDelPlan, INFLACION_PESOS_HOY_PCT } from "../../lib/futuro10.js";
 import { tx, esUS, plataCorta, num } from "../../lib/region.js";
 
 import { fmtPlataEs } from "../../lib/formato.js";
@@ -25,16 +25,27 @@ import { fmtPlataEs } from "../../lib/formato.js";
 const fm = (n) => (esUS() ? plataCorta(n) : fmtPlataEs(n));
 const pct = (n, d = 1) => (n == null ? "—" : esUS() ? num(n, d) + "%" : n.toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %");
 
-function medir(r, inflacionPct) {
+// 23-nov-2026 (Finanzas): el patrimonio final va en pesos de hoy (inflación 5 %),
+// igual que la barra en vivo, y el «crece al año» ya no mete tu ahorro como si
+// fuera rentabilidad: es lo que rinden tus activos, sin el ahorro. Debajo, de
+// dónde sale el patrimonio final: hoy + ahorro + lo que rinden tus activos.
+function medir(r) {
   const f = (r && r.filas) || [];
   if (!f.length) return null;
-  const f0 = f[0], fin = f[f.length - 1];
-  const cagr = f0.patrimonio > 0 && fin.patrimonio > 0 ? (Math.pow(fin.patrimonio / f0.patrimonio, 1 / Math.max(1, fin.anio)) - 1) * 100 : null;
-  const real = cagr == null ? null : ((1 + cagr / 100) / (1 + (inflacionPct || 0) / 100) - 1) * 100;
+  const fin = f[f.length - 1];
+  const dp = desglosePatrimonio(r, INFLACION_PESOS_HOY_PCT);
+  const rend = rendimientoSinAhorro(r, INFLACION_PESOS_HOY_PCT);
   const cobertura = fin.gastos > 0 ? (fin.ingresos / fin.gastos) * 100 : null;
   const peor = f.slice(1).reduce((m, x) => Math.min(m, (x.ingresos - x.gastos) / 12), Infinity);
-  return { serie: f.map((x) => x.patrimonio || 0), fin: fin.patrimonio || 0, anioFin: anioCal(fin.anio), real, cobertura, peorMes: Number.isFinite(peor) ? peor : 0 };
+  return { serie: f.map((x) => (x.patrimonio || 0) / Math.pow(1 + INFLACION_PESOS_HOY_PCT / 100, x.anio || 0)), fin: dp.fin, anioFin: anioCal(fin.anio), real: rend ? rend.realPct : null, desglose: dp, conVenta: hayVenta(r), viene: loQueVieneDelPlan(r), cobertura, peorMes: Number.isFinite(peor) ? peor : 0 };
 }
+
+const textoViene = (x) => {
+  const anios = x.anioFin && x.anioFin > x.anio ? `${anioCal(x.anio)}–${anioCal(x.anioFin)}` : `${anioCal(x.anio)}`;
+  if (x.tipo === "ingreso") return { anios, monto: `+${fm(x.monto)} ${tx("al mes", "a month")}`, pos: true };
+  if (x.tipo === "gasto") return { anios, monto: `−${fm(x.monto)} ${tx("al año", "a year")}`, pos: false };
+  return { anios, monto: `−${fm(x.monto)}`, pos: false };
+};
 
 function Curva({ serie, min = 0, max, color, id }) {
   const W = 240, H = 64;
@@ -66,7 +77,7 @@ const Caneca = () => (
 export default function EscenariosCreados({ planes, inflacionPct, onVer, onEditar, onBorrar, onCrear, demo = false }) {
   const hoy = (planes || []).find((p) => p.esHoy);
   const creados = (planes || []).filter((p) => p.id);
-  const mHoy = hoy ? medir(hoy.r, inflacionPct) : null;
+  const mHoy = hoy ? medir(hoy.r) : null;
 
   if (!creados.length) {
     return (
@@ -84,7 +95,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
   // quedo como estoy, ¿qué pasa?"). «Quedarme como estoy» entra como un escenario
   // más: su barra, su tarjeta y su informe completo. No se edita ni se borra.
   const planHoy = hoy ? { ...hoy, nombre: tx("Si me quedo como estoy", "If I stay as I am"), descripcion: tx("Sin vender ni invertir en nada nuevo: tus activos, rentas, gastos y deudas siguen como hoy.", "No selling and no new investments: your assets, income, expenses and debt continue as they are today.") } : null;
-  const medidos = [...(planHoy ? [planHoy] : []), ...creados].map((p) => ({ p, m: medir(p.r, inflacionPct) })).filter((x) => x.m);
+  const medidos = [...(planHoy ? [planHoy] : []), ...creados].map((p) => ({ p, m: medir(p.r) })).filter((x) => x.m);
   const ranking = [...medidos].sort((a, b) => b.m.fin - a.m.fin);
   const maxFin = Math.max(mHoy ? mHoy.fin : 0, ...medidos.map((x) => x.m.fin), 1);
   // Curvas de tendencia: escala al rango real de todos los escenarios (no desde
@@ -105,6 +116,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
           <div>
             <h3 style={titulo}>{tx(`¿Cuál deja más patrimonio en ${anioFin}?`, `Which leaves the most net worth in ${anioFin}?`)}</h3>
             <div style={subtitulo}>
+              {esUS() ? tx(`Patrimonio neto en dólares de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año). `, `Net worth in today's dollars (${INFLACION_PESOS_HOY_PCT}% yearly inflation). `) : tx(`Patrimonio neto en pesos de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año). `, `Net worth in today's pesos (${INFLACION_PESOS_HOY_PCT}% yearly inflation). `)}
               {mHoy ? tx(<>La línea punteada es quedarte como estás ({fm(mHoy.fin)}). </>, <>The dashed line is staying as you are ({fm(mHoy.fin)}). </>) : null}
               {mejor.p.esHoy ? tx("Por ahora, quedarte como estás deja más patrimonio que los escenarios que creaste.", "For now, staying as you are leaves more net worth than the scenarios you created.") : tx(<>«{mejor.p.nombre}» lleva la delantera{mHoy ? <> con <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> frente a hoy</> : null}.</>,
                 <>"{mejor.p.nombre}" is ahead{mHoy ? <> by <b style={{ color: C.txt, ...cifra }}>{mejor.m.fin >= mHoy.fin ? "+" : "−"}{fm(Math.abs(mejor.m.fin - mHoy.fin))}</b> vs. today</> : null}.</>)}
@@ -154,11 +166,23 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
               <div title={p.descripcion || ""} style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, minHeight: 54, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion || resumenEscenario(p.r)}</div>
               <Curva serie={m.serie} min={minSerie} max={maxSerie} color={esMejor ? "var(--fp-azul)" : "color-mix(in srgb, var(--fp-azul) 60%, var(--fp-txt3))"} id={"fpi-esc-" + i} />
               <div>
-                <div style={{ fontSize: 12, color: C.txt2 }}>{tx(`Patrimonio en ${m.anioFin}`, `Net worth in ${m.anioFin}`)}</div>
+                <div style={{ fontSize: 12, color: C.txt2 }}>{tx(`Patrimonio neto en ${m.anioFin}`, `Net worth in ${m.anioFin}`)}</div>
                 <div style={{ containerType: "inline-size" }}><div style={{ fontSize: tamanoCifra(fm(m.fin), 22), whiteSpace: "nowrap", fontWeight: 600, color: C.txt, ...cifra }}>{fm(m.fin)}</div></div>
+                <div style={{ fontSize: 11.5, color: C.txt2 }}>{esUS() ? tx(`en dólares de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año)`, `in today's dollars (${INFLACION_PESOS_HOY_PCT}% yearly inflation)`) : tx(`en pesos de hoy (inflación ${INFLACION_PESOS_HOY_PCT} % al año)`, `in today's pesos (${INFLACION_PESOS_HOY_PCT}% yearly inflation)`)}{m.conVenta ? <> · <b data-testid="f10-card-venta" style={{ color: C.txt }}>{rotuloVenta()}</b></> : null}</div>
+                {m.desglose && <div data-testid="f10-card-desglose" style={{ fontSize: 11.5, color: C.txt2, marginTop: 4, lineHeight: 1.45 }}>{tx(<>Hoy {fm(m.desglose.hoy)} · tu ahorro {m.desglose.ahorro >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.ahorro))} · lo que rinden tus activos {m.desglose.rendimientoReal >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.rendimientoReal))}</>, <>Today {fm(m.desglose.hoy)} · your savings {m.desglose.ahorro >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.ahorro))} · what your assets earn {m.desglose.rendimientoReal >= 0 ? "+" : "−"}{fm(Math.abs(m.desglose.rendimientoReal))}</>)}</div>}
               </div>
+              {m.viene.length > 0 && <div data-testid="f10-card-viene" style={{ paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>
+                <div style={{ fontSize: 11.5, color: C.txt2, marginBottom: 4 }}>{tx("Lo que viene (ya restado o sumado en su año)", "What's coming (already counted in its year)")}</div>
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                  {m.viene.map((x, k) => { const t = textoViene(x); return (
+                    <li key={k} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 12.5, color: C.txt }}>
+                      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{x.nombre} · {t.anios}</span>
+                      <span style={{ whiteSpace: "nowrap", color: t.pos ? C.pos : C.txt, ...cifra }}>{t.monto}</span>
+                    </li>); })}
+                </ul>
+              </div>}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, paddingTop: 10, borderTop: `1px solid ${C.linea}` }}>
-                <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("Crece al año (real)", "Annual growth (real)")}</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>
+                <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{tx("Rinden tus activos al año (real, sin tu ahorro)", "Your assets earn per year (real, excluding savings)")}</div><div style={{ fontSize: 15, fontWeight: 600, color: m.real != null && m.real < 0 ? C.neg : C.txt, ...cifra }}>{pct(m.real)}</div></div>
                 <div><div style={{ fontSize: 11.5, color: C.txt2 }}>{alcanza ? tx("Te alcanza", "It's enough") : tx("Hay años justos", "Some years are tight")}</div><div style={{ fontSize: 15, fontWeight: 600, color: alcanza ? C.pos : C.neg }}>{alcanza ? tx("Todos los años", "Every year") : tx("Revisa el flujo", "Check cash flow")}</div></div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: "auto" }}>
