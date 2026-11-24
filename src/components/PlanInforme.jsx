@@ -120,9 +120,7 @@ function seriesPatrimonio(filas, base, max = 9) {
   return ids.map((id) => ({ id, nombre: nombre[id], color: color[id] || libres.shift() || INF.gris }));
 }
 
-export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct: infProp = inflacionDefaultPct(), modoInicial = "nominal" }) {
-  // 24-nov-2026 (indexación): «pesos de hoy» y la línea de inflación usan la tasa de pesos de hoy del resultado (una sola en todos los escenarios).
-  const inflacionPct = r && r.escenario ? inflacionDe(r) : infProp;
+export default function PlanInforme({ r, nombre = tx("Este escenario", "This scenario"), inflacionPct = inflacionDefaultPct(), modoInicial = "nominal" }) {
   const [modo, setModo] = useState(modoInicial); // nominal | real (plata de hoy)
   const [verTodo, setVerTodo] = useState({}); // listas «Lo que entra / Lo que sale»: 10 más grandes o todas
   const [vistaInv, setVistaInv] = useState("juntas"); // «Cada inversión»: juntas | cada una con su escala
@@ -132,6 +130,8 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   const [anioSel, setAnioSel] = useState(1);
   const filas = r.filas || [];
   const d = (f) => (modo === "real" ? f.deflactor || 1 : 1);
+  // 24-nov-2026 (indexación): los flujos del año t (año 1 = hoy) se llevan a pesos de hoy ÷ (1+i)^(t−1); el patrimonio, al cierre, ÷ (1+i)^t.
+  const dF = (f) => (modo === "real" ? f.deflactorFlujo || f.deflactor || 1 : 1);
   const ev = useMemo(() => eventosDelPlan(r), [r]);
   const f0 = filas[0] || {}, f1 = filas[1] || f0, fin = filas[filas.length - 1] || f0;
   const nAniosSel = Math.max(1, filas.length - 1);
@@ -190,21 +190,21 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
   // por qué no se ve de una"). El flujo mes a mes arranca en el año 1: el plan
   // empieza ya y lo que produce se cuenta desde el primer mes. «Hoy» (antes del
   // plan) solo confundía.
-  const mes = filas.slice(1).map((f) => { const e = (f.ingresos || 0) / 12 / d(f), s = (f.gastos || 0) / 12 / d(f); return { anio: anioTxt(f.anio), entra: e, sale: s, base: Math.min(e, s), sobra: Math.max(0, e - s) }; });
-  const apretado = filas.slice(1).reduce((m, f) => { const s = (f.ingresos - f.gastos) / 12 / d(f); return m == null || s < m.s ? { s, f } : m; }, null);
+  const mes = filas.slice(1).map((f) => { const e = (f.ingresos || 0) / 12 / dF(f), s = (f.gastos || 0) / 12 / dF(f); return { anio: anioTxt(f.anio), entra: e, sale: s, base: Math.min(e, s), sobra: Math.max(0, e - s) }; });
+  const apretado = filas.slice(1).reduce((m, f) => { const s = (f.ingresos - f.gastos) / 12 / dF(f); return m == null || s < m.s ? { s, f } : m; }, null);
   const marcas = []; ev.forEach((e) => { if (e.anio > 0 && !marcas.some((m) => m.anio === e.anio)) marcas.push({ anio: e.anio, txt: ev.filter((x) => x.anio === e.anio).map((x) => x.corto).slice(0, 2).join(" + ") }); });
 
   // ── Año a año: lo que produce ─────────────────────────────────────────────
   const conSueltas = (f) => ({ ...f, porActivo: [...(f.porActivo || []), ...(f.rentasSueltas || [])] });
   const sR = series(filas.slice(1).map(conSueltas), "renta", 6), sC = series(filas.slice(1), "crece", 4);
   const prod = filas.slice(1).map((f) => {
-    const row = { anio: anioTxt(f.anio), total: f.produce / d(f), sale: f.gastos / d(f) };
+    const row = { anio: anioTxt(f.anio), total: f.produce / dF(f), sale: f.gastos / dF(f) };
     const pa = Object.fromEntries((f.porActivo || []).map((a) => [a.id, a]));
     const paR = Object.fromEntries(conSueltas(f).porActivo.map((a) => [a.id, a]));
-    let rOtros = (f.rentas || 0); sR.top.forEach((s) => { const v = (paR[s.id]?.renta || 0); row["r_" + s.id] = v / d(f); rOtros -= v; });
-    row.r_otros = Math.max(0, rOtros) / d(f);
-    let cOtros = (f.crece || 0); sC.top.forEach((s) => { const v = Math.max(0, pa[s.id]?.crece || 0); row["c_" + s.id] = v / d(f); cOtros -= v; });
-    row.c_otros = Math.max(0, cOtros) / d(f);
+    let rOtros = (f.rentas || 0); sR.top.forEach((s) => { const v = (paR[s.id]?.renta || 0); row["r_" + s.id] = v / dF(f); rOtros -= v; });
+    row.r_otros = Math.max(0, rOtros) / dF(f);
+    let cOtros = (f.crece || 0); sC.top.forEach((s) => { const v = Math.max(0, pa[s.id]?.crece || 0); row["c_" + s.id] = v / dF(f); cOtros -= v; });
+    row.c_otros = Math.max(0, cOtros) / dF(f);
     return row;
   });
 
@@ -550,8 +550,8 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         <div style={{ overflowX: "auto", marginTop: 8 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5, minWidth: 640 }}>
           <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={th}>{tx("Llega a la cuenta", "Reaches your account")}</th><th style={th}>{tx("Crece invertido", "Grows invested")}</th><th style={th}>{tx("Produce en total", "Total earned")}</th><th style={th}>{tx("Sale para vivir", "Living costs")}</th><th style={th}>{tx("Sobra al mes (se reinvierte)", "Monthly surplus (reinvested)")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Qué cambia ese año", "What changes that year")}</th></tr></thead>
           <tbody>{filas.slice(1).map((f) => { const qe = ev.filter((e) => e.anio === f.anio).map((e) => e.texto); return <tr key={f.anio}>
-            <td style={tdL}>{anioTxt(f.anio)}</td><td style={td}>{fmM(f.rentas / d(f))}</td><td style={td}>{fmM(f.crece / d(f))}</td><td style={td}>{fmM(f.produce / d(f))}</td><td style={td}>{fmM(f.gastos / d(f))}</td>
-            <td style={{ ...td, color: f.ingresos - f.gastos >= 0 ? INF.tx : INF.txBad }}>{fmM((f.ingresos - f.gastos) / 12 / d(f))}</td>
+            <td style={tdL}>{anioTxt(f.anio)}</td><td style={td}>{fmM(f.rentas / dF(f))}</td><td style={td}>{fmM(f.crece / dF(f))}</td><td style={td}>{fmM(f.produce / dF(f))}</td><td style={td}>{fmM(f.gastos / dF(f))}</td>
+            <td style={{ ...td, color: f.ingresos - f.gastos >= 0 ? INF.tx : INF.txBad }}>{fmM((f.ingresos - f.gastos) / 12 / dF(f))}</td>
             <td style={{ ...tdL, color: INF.tx2 }}>{qe.length ? qe.join(" · ") : tx("Sin cambios", "No changes")}</td></tr>; })}</tbody>
         </table></div>
       </div>

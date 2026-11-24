@@ -21,12 +21,14 @@ describe("futuro10", () => {
     expect(b.final.patrimonio).toBeLessThan(a.final.patrimonio + 80e6);
     expect(b.final.activos - a.final.activos).toBeCloseTo(80e6 * 0.88 ** 3 * 0.92 ** 7, 0);
   });
-  it("ingresos y gastos se proyectan con inflación (base: ingresos infl+1)", () => {
+  it("ingresos y gastos suben con la indexación (5 % por defecto; 24-nov-2026)", () => {
     const u = { inflacionPct: 4, inv: [], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 10e6 }], gas: { Vivienda: [{ n: "Arriendo", m: 6e6 }] }, deu: [] };
     const r = proyectarFuturo10(u, {});
     const f1 = r.filas[1], f10 = r.filas[10];
-    expect(f10.gastos / f1.gastos).toBeCloseTo(1.04 ** 9, 6);
-    expect(f10.ingresos / f1.ingresos).toBeCloseTo((1.04 * 1.01) ** 9, 6);
+    expect(f10.gastos / f1.gastos).toBeCloseTo(1.05 ** 9, 6);
+    expect(f10.ingresos / f1.ingresos).toBeCloseTo(1.05 ** 9, 6);
+    const r3 = proyectarFuturo10(u, { indexacionPct: 3 });
+    expect(r3.filas[10].ingresos / r3.filas[1].ingresos).toBeCloseTo(1.03 ** 9, 6);
   });
   it("CF negativo consume liquidez y alerta", () => {
     const u = { inflacionPct: 4, inv: [{ id: "a", tp: "Cash", va: 10e6 }], ingresos: [], gas: { Vida: [{ n: "Mercado", m: 1e6 }] }, deu: [] };
@@ -103,7 +105,7 @@ describe("futuro10", () => {
       const r = proyectarFuturo10(lote, { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 5e6, rentaNuevaDesde: 3 } } });
       const r0 = proyectarFuturo10(lote, {});
       expect(r.filas[2].cf).toBeCloseTo(r0.filas[2].cf, 0);
-      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(60e6 * 1.04 ** 2, 0); // 24-nov-2026: pesos de hoy, año t × 1,04^(t−1)
+      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(60e6 * 1.05 ** 2, 0); // 24-nov-2026: pesos de hoy, año t × (1+indexación 5 %)^(t−1)
     });
     it("escenario guardado con retornoRealPct viejo sigue cargando", () => {
       const viejo = proyectarFuturo10(lote, { decisiones: { l: { accion: "modifica", retornoRealPct: 2 } } });
@@ -143,7 +145,7 @@ describe("futuro10", () => {
       const r0 = proyectarFuturo10(u, { supuestos: cero });
       const r = proyectarFuturo10(u, { supuestos: cero, futuros: { ingresos: [{ nombre: "Pensión", mensual: 5e6, desde: 4, hasta: 6 }] } });
       [1, 2, 3, 7, 10].forEach((t) => expect(r.filas[t].cf).toBeCloseTo(r0.filas[t].cf, 0));
-      [4, 5, 6].forEach((t) => expect(r.filas[t].cf - r0.filas[t].cf).toBeCloseTo(60e6 * 1.04 ** (t - 1), 0));
+      [4, 5, 6].forEach((t) => expect(r.filas[t].cf - r0.filas[t].cf).toBeCloseTo(60e6 * 1.05 ** (t - 1), 0));
     });
     it("pagos del activo futuro no cambian el patrimonio y se valoriza desde la entrega", () => {
       const r0 = proyectarFuturo10(u, { supuestos: cero });
@@ -159,7 +161,7 @@ describe("futuro10", () => {
       const r0 = proyectarFuturo10(u, { supuestos: cero });
       const r = proyectarFuturo10(u, { supuestos: cero, futuros: { activos: [{ nombre: "Local", valor: 500e6, entrega: 2, rentaMensual: 4e6, rentaDesde: 3 }] } });
       expect(r.filas[2].cf).toBeCloseTo(r0.filas[2].cf, 0);
-      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(48e6 * 1.04 ** 2, 0);
+      expect(r.filas[3].cf - r0.filas[3].cf).toBeCloseTo(48e6 * 1.05 ** 2, 0);
     });
     it("escenario viejo sin futuros carga igual", () => {
       expect(proyectarFuturo10(u, {}).final.patrimonio).toBeCloseTo(proyectarFuturo10(u, { futuros: undefined }).final.patrimonio, 0);
@@ -269,7 +271,7 @@ describe("futuro10 · lote que se transforma en bodega", () => {
     const r = proyectarFuturo10(U(), { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 8.5e6, rentaNuevaDesdeMes: 6 } } });
     // 24-nov-2026: la renta se escribe en pesos de hoy; el año 1 (el año en curso) va tal cual.
     expect(r.filas[1].rentaNueva).toBeCloseTo(8.5e6 * 6, 0);
-    expect(r.filas[2].rentaNueva).toBeCloseTo(8.5e6 * 12 * 1.04, 0);
+    expect(r.filas[2].rentaNueva).toBeCloseTo(8.5e6 * 12 * 1.05, 0);
     expect(r.filas[1].cf - sin.filas[1].cf).toBeCloseTo(8.5e6 * 6, 0);
   });
 
@@ -283,7 +285,7 @@ describe("futuro10 · lote que se transforma en bodega", () => {
   it("escenarios guardados con rentaNuevaDesde (año) siguen funcionando", () => {
     const r = proyectarFuturo10(U(), { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 5e6, rentaNuevaDesde: 3 } } });
     expect(r.filas[2].rentaNueva).toBe(0);
-    expect(r.filas[3].rentaNueva).toBeCloseTo(60e6 * 1.04 ** 2, 0);
+    expect(r.filas[3].rentaNueva).toBeCloseTo(60e6 * 1.05 ** 2, 0);
   });
 });
 
@@ -292,10 +294,10 @@ describe("futuro10 · la tabla de ingresos muestra la renta nueva", () => {
     const u = { inflacionPct: 4, inv: [{ id: "l", n: "Lote", tp: "Lote", va: 400e6 }, { id: "c", tp: "Cash", va: 900e6 }], ingresos: [{ nombre: "Honorarios", categoria: "Salario", mensual: 30e6 }], gas: {}, deu: [] };
     const sin = proyectarFuturo10(u, {});
     const r = proyectarFuturo10(u, { decisiones: { l: { accion: "modifica", rentaNuevaMensual: 8.5e6, rentaNuevaDesdeMes: 6 } } });
-    // 24-nov-2026: la renta sigue la regla del sueldo (año t × 1,04^(t−1)) y la fila se lleva a
-    // pesos de hoy al cierre del año (÷ 1,04^t), igual que el sueldo.
-    expect((r.filas[2].ingresosReal - sin.filas[2].ingresosReal) / 12).toBeCloseTo(8.5e6 / 1.04, 0);
-    expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(8.5e6 / 2 / 1.04, 0);
+    // 24-nov-2026: la renta sube con la indexación (5 %) y el flujo del año t se lleva a pesos
+    // de hoy ÷ (1+inflación)^(t−1), igual que el sueldo. El año 1 va tal cual.
+    expect((r.filas[2].ingresosReal - sin.filas[2].ingresosReal) / 12).toBeCloseTo(8.5e6 * 1.05 / 1.04, 0);
+    expect((r.filas[1].ingresosReal - sin.filas[1].ingresosReal) / 12).toBeCloseTo(8.5e6 / 2, 0);
   });
 });
 
@@ -513,8 +515,8 @@ describe("futuro10 · gastos futuros (universidad de los hijos)", () => {
     const sin = proyectarFuturo10(u, {});
     const r = proyectarFuturo10(u, { futuros: { gastos: [{ nombre: "Universidad", anual: 180e6, desde: 4, anios: 4 }] } });
     expect(r.filas[3].gastos).toBeCloseTo(sin.filas[3].gastos, 0);
-    expect(r.filas[4].gastos - sin.filas[4].gastos).toBeCloseTo(180e6 * 1.04 ** 3, -2);
-    expect(r.filas[7].gastos - sin.filas[7].gastos).toBeCloseTo(180e6 * 1.04 ** 6, -2);
+    expect(r.filas[4].gastos - sin.filas[4].gastos).toBeCloseTo(180e6 * 1.05 ** 3, -2);
+    expect(r.filas[7].gastos - sin.filas[7].gastos).toBeCloseTo(180e6 * 1.05 ** 6, -2);
     expect(r.filas[8].gastos).toBeCloseTo(sin.filas[8].gastos, 0);
     expect(r.final.patrimonio).toBeLessThan(sin.final.patrimonio);
   });
@@ -527,7 +529,7 @@ describe("futuro10 · gastos que se acaban", () => {
     expect(sin.gastosHoy.find((g) => g.key === "Mantenimiento::finca").nombre).toBe("Finca");
     const r = proyectarFuturo10(u, { gastosTerminan: { "Mantenimiento::0": 3 } });
     expect(r.filas[2].gastos).toBeCloseTo(sin.filas[2].gastos, 0);
-    expect(sin.filas[3].gastos - r.filas[3].gastos).toBeCloseTo(3e6 * 12 * (1.04) ** 2, -2);
+    expect(sin.filas[3].gastos - r.filas[3].gastos).toBeCloseTo(3e6 * 12 * (1.05) ** 2, -2);
     const ya = proyectarFuturo10(u, { gastosTerminan: { "Mantenimiento::0": 1 } });
     expect(ya.desglose.sale.some((x) => x.nombre === "Finca")).toBe(false);
     expect(ya.desglose.sale.reduce((s, x) => s + x.mensual, 0)).toBeCloseTo(ya.filas[1].gastos / 12, -2);

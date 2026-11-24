@@ -25,6 +25,7 @@ import { fmtPlataEs } from "./formato.js";
 export const SUPUESTOS_F10 = {
   validadoPor: "Finpathia · Finanzas, 24-oct-2026",
   anios: 10,
+  indexacionDefaultPct: 5, // 24-nov-2026: ingresos y gastos suben 5 % al año (editable)
   colchonMeses: 6, // colchón de liquidez, aparte de las mezclas
   escenarios: {
     pesimista: { nombre: "Prudentes", nombreEn: "Cautious", inflacionPct: 6, ingresosSpread: 0, gastosSpread: 1, retornoSpread: -1.5, spRealPct: 3.5 },
@@ -67,6 +68,7 @@ export const SUPUESTOS_F10_US = {
   ...SUPUESTOS_F10,
   validadoPor: "Finpathia · supuestos EE. UU., 3-nov-2026",
   inflacionDefaultPct: 3,
+  indexacionDefaultPct: 3,
   sinRiesgoCambiario: true,
   escenarios: {
     pesimista: { nombre: "Prudentes", nombreEn: "Cautious", inflacionPct: 4.5, ingresosSpread: 0, gastosSpread: 1, retornoSpread: -1.5, spRealPct: 3.5 },
@@ -110,21 +112,28 @@ export function resolverEscenario(clave = "base", user = {}, sup = supuestosF10(
   const e = sup.escenarios[clave] || sup.escenarios.base;
   const infUser = user.inflacionPct != null && user.inflacionPct !== "" ? n(user.inflacionPct) : (sup.inflacionDefaultPct ?? INFLACION_DEFAULT_PCT);
   const inflacionPct = e.inflacionPct == null ? infUser : e.inflacionPct;
-  return { ...e, clave, inflacionPct, inflacionHoyPct: infUser };
+  return { ...e, clave, inflacionPct };
 }
 
-// 24-nov-2026 — Indexación (Finanzas, modelo de dos tasas):
-//  · Tasa del escenario (esc.inflacionPct: Prudentes 6 %, Normales 4 %, Favorables 3 %):
-//    con ella el plan lleva al año que toca cada monto que escribes (costo, anticipo,
-//    aportes de años siguientes, ingresos y gastos futuros) y crecen ingresos y gastos.
-//  · Tasa de «pesos de hoy» (esc.inflacionHoyPct): UNA sola para toda la app, la de
-//    Normales (tu inflación o INFLACION_DEFAULT_PCT = 4 %). Con ella se deflacta el
-//    resultado en todos los escenarios, para que «pesos de hoy» signifique lo mismo
-//    en Prudentes, Normales y Favorables.
-//  · Todo monto que escribes está en pesos de hoy. El año 1 es el año en curso: va
-//    sin indexar; el año t se multiplica por (1+inflación del escenario)^(t−1), igual
-//    que el sueldo y los gastos. Los % que escribes son nominales, tal cual.
-/** Factor que lleva un monto en pesos de hoy al año t del plan (año 1 = hoy). */
+// 24-nov-2026 — Indexación (Finanzas + Luis). Dos tasas:
+//  · Indexación (cfg.indexacionPct, editable; por defecto CO 5 %, EE. UU. 3 %): con ella
+//    suben cada año el sueldo, los gastos, los ingresos, gastos y rentas futuras. Las
+//    cuotas fijas de los créditos NO se indexan.
+//  · Inflación del escenario (Prudentes 6 %, Normales 4 %, Favorables 3 %): con ella se
+//    llevan a su año los montos únicos que escribes para años futuros (compras, anticipos,
+//    aportes, valor al terminar, retiros) y con ella misma se pasa a pesos de hoy.
+//  · Todo monto que escribes va en pesos de hoy. Año 1 = año en curso, tal cual; año t
+//    × (1+tasa)^(t−1). Los flujos del año t se deflactan con la misma convención:
+//    ÷ (1+inflación)^(t−1) (f.deflactorFlujo). Así, con indexación = inflación, sueldo y
+//    gastos quedan planos en pesos de hoy todos los años. El patrimonio es un saldo al
+//    cierre del año t y sigue ÷ (1+inflación)^t (f.deflactor).
+export const INDEXACION_DEFAULT_PCT = { CO: 5, US: 3 };
+/** Indexación por defecto del país (respaldo si los supuestos no la traen). */
+export const indexacionDefaultPct = (sup = supuestosF10()) => (sup && sup.indexacionDefaultPct != null ? sup.indexacionDefaultPct : esUS() ? INDEXACION_DEFAULT_PCT.US : INDEXACION_DEFAULT_PCT.CO);
+/** Indexación (%) de ingresos y gastos para un escenario guardado: la que escribiste o la del país. */
+export const indexacionDe = (cfg = {}, sup = supuestosF10()) => (cfg && !vacio(cfg.indexacionPct) && Number.isFinite(Number(cfg.indexacionPct)) ? Math.max(0, n(cfg.indexacionPct)) : indexacionDefaultPct(sup));
+/** Deflactor de un año del plan: el año 1 (año en curso) ya está en pesos de hoy. */
+export const deflactorAnio = (inflacionPct, t) => Math.pow(1 + n(inflacionPct) / 100, Math.max(0, n(t) - 1));
 export const indexarAlAnio = (inflacionPct, t) => Math.pow(1 + n(inflacionPct) / 100, Math.max(0, n(t) - 1));
 
 /** Retorno total NOMINAL anual (%) de un preset bajo un escenario. Fisher: (1+i)(1+r)−1. */
@@ -164,14 +173,17 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const cfg = conVencimientos(migrarClaves(cfgIn, userIn), userIn);
   const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const sup = cfg.supuestos || supuestosF10();
-  const esc = resolverEscenario(cfg.escenario || "base", user, sup);
+  const indexacionPct = indexacionDe(cfg, sup);
+  const esc = { ...resolverEscenario(cfg.escenario || "base", user, sup), indexacionPct, indexacionDefault: vacio(cfg.indexacionPct) };
   const N = n(cfg.anios) || sup.anios;
   const inf = esc.inflacionPct / 100;
-  // Dos tasas: `inf` proyecta e indexa; `infHoy` lleva a pesos de hoy.
-  const infHoy = n(esc.inflacionHoyPct ?? esc.inflacionPct) / 100;
+  // Dos tasas: `inf` (escenario) lleva los montos únicos a su año y deflacta;
+  // `gIdx` (indexación) hace subir ingresos, gastos y rentas.
+  const gIdx = indexacionPct / 100;
   const ix = (t) => Math.pow(1 + inf, Math.max(0, t - 1));
-  const gIng = (1 + inf) * (1 + esc.ingresosSpread / 100) - 1;
-  const gGas = (1 + inf) * (1 + esc.gastosSpread / 100) - 1;
+  const ixI = (t) => Math.pow(1 + gIdx, Math.max(0, t - 1));
+  const gIng = gIdx;
+  const gGas = gIdx;
   // Sin impuestos: se omiten impuestoNeto y retencionMensual.
   const { impuestoNeto, retencionMensual, ...sinImp } = user;
   const b = calcularBase({ ...sinImp, gastos: user.gastos || user.gas }, {});
@@ -850,9 +862,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // patrimonio se cuenta al cierre de cada año y se lleva a pesos de hoy dividiendo
     // por (1+inflación)^t. Por eso el ahorro del año 1 (10 M) vale 10/1,05 ≈ 9,52 M de
     // hoy al cierre del año 1: no es doble deflación, es que se ahorra en pesos de 2026
-    // y se mide al cierre. 24-nov-2026 (indexación): «Lo que viene» y las rentas nuevas
-    // siguen la misma convención que el sueldo: año 1 sin indexar, año t × (1+inflación)^(t−1).
-    // Antes iban a (1+inflación)^t y el año 1 ya salía un 4 % más alto que lo que escribiste.
+    // y se mide al cierre. 24-nov-2026 (indexación): sueldo, gastos, «Lo que viene» y rentas
+    // nuevas suben con la indexación: año 1 tal cual, año t × (1+indexación)^(t−1); el
+    // deflactor usa la misma convención con la inflación del escenario.
     if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; pasivo *= 1 + gIng; }
     ingSeVan.filter((x) => x.desde === t).forEach((x) => { const v = x.mensual * 12 * Math.pow(1 + gIng, t - 1); ingresos = Math.max(0, ingresos - v); if (x.pasivo) pasivo = Math.max(0, pasivo - v); });
     if (t > 1) activos.forEach((a) => aplicarCambio(a, t));
@@ -862,16 +874,16 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const v = (a.rentaAnual || 0) * Math.pow(1 + gIng, t - 1);
       ingresos = Math.max(0, ingresos - v); pasivo = Math.max(0, pasivo - v); a.rentaAnual = 0;
     });
-    // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
+    // Renta nueva de un activo modificado: pesos de hoy, sube con la indexación.
     const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
-    const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * ix(t) : 0), 0);
+    const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * ixI(t) : 0), 0);
     // 23-nov-2026: lo que llega de «Lo que viene» sin un activo detrás (pensión, sueldo nuevo) es ingreso, no rendimiento.
-    const ingFuturoSinActivo = fut.ingresos.reduce((s, x) => s + (!x.activoId && t >= x.desde && t <= x.hasta ? x.mensual * 12 * ix(t) : 0), 0);
+    const ingFuturoSinActivo = fut.ingresos.reduce((s, x) => s + (!x.activoId && t >= x.desde && t <= x.hasta ? x.mensual * 12 * ixI(t) : 0), 0);
     // Renta nueva por meses: si arranca en el mes 7, el año 1 recibe 6 de 12 meses.
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
-    const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ix(t) : 0)
-      + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ix(t), 0), 0);
-    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * ix(t) : 0), 0)
+    const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ixI(t) : 0)
+      + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ixI(t), 0), 0);
+    const gastoFuturo = (fut.gastos || []).reduce((sm, x) => sm + (t >= x.desde && t <= x.hasta ? x.anual * ixI(t) : 0), 0)
       - seVan.reduce((sm, g) => sm + (t >= g.desde ? g.mensual * 12 * Math.pow(1 + gGas, t - 1) : 0), 0);
     const cuota = deuda > 0 ? Math.min(cuotaAnual, deuda) : 0;
     deuda = Math.max(0, deuda - cuota);
@@ -988,7 +1000,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     }));
     if (canasta.crecimiento > 0) expUSD = true;
     const liquidez = colchon + canasta.liquidez + todos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
-    const deflactor = Math.pow(1 + infHoy, t);
+    // Patrimonio (saldo al cierre del año t) ÷ (1+i)^t; flujos del año t (a precios del
+    // año t, con el año 1 = hoy) ÷ (1+i)^(t−1): la misma convención con que se indexan.
+    const deflactor = Math.pow(1 + inf, t);
+    const deflactorFlujo = deflactorAnio(esc.inflacionPct, t);
     const activosT = valorTotal();
     const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
@@ -997,7 +1012,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // gastos de ese año"). Lo que sale, partido por año (suma exacta f.gastos):
     // gastos de Egresos, gastos futuros que corren, los que ya no se pagan y cuotas.
     f.cuota = cuota; f.gastosBase = gastos;
-    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * ix(t) }));
+    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * ixI(t) }));
     f.gastosQueSeVan = seVan.filter((g) => t >= g.desde).map((g) => ({ nombre: g.nombre, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1) }));
     // 20-nov-2026 (Santiago: "¿por qué 2026 detalla más los ingresos y gastos
     // que los otros años?"). Partida por partida en cada año: cada gasto de
@@ -1017,7 +1032,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.porActivo = [
       ...todos.map((a) => {
         const rentaBase = a.rentaReemplazada ? 0 : (a.rentaAnual || 0) * fr;
-        const rentaExtra = (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ix(t) : 0) + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ix(t), 0) + (a.rentaPct ? a.valor / (1 + (a.crec || 0)) * a.rentaPct : 0);
+        const rentaExtra = (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * ixI(t) : 0) + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * ixI(t), 0) + (a.rentaPct ? a.valor / (1 + (a.crec || 0)) * a.rentaPct : 0);
         const cg = a.ciclo ? a.cicloG || 0 : 0;
         // rentaNueva (23-nov-2026): la parte de la renta que crea el plan (renta nueva, aportes
         // con renta, «de lo que rinde, cuánto te llega» y la renta que cambias en el paso 1 desde
@@ -1035,13 +1050,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.rentasSueltas = [
       ...ingresosHoy.filter((x) => x.pasivo && !(x.activoId && (bOp.rentaNetaPorActivo || {})[x.activoId] != null) && !ingSeVan.some((y) => y.key === x.key && y.desde <= t))
         .map((x) => ({ id: "ing_" + x.key, nombre: x.nombre, clase: "ingreso", valor: 0, renta: x.mensual * 12 * Math.pow(1 + gIng, t - 1), crece: 0 })),
-      ...fut.ingresos.map((x, k) => ({ id: "fut_" + k, nombre: x.nombre, clase: "ingreso", valor: 0, renta: t >= x.desde && t <= x.hasta ? x.mensual * 12 * ix(t) : 0, crece: 0 })),
+      ...fut.ingresos.map((x, k) => ({ id: "fut_" + k, nombre: x.nombre, clase: "ingreso", valor: 0, renta: t >= x.desde && t <= x.hasta ? x.mensual * 12 * ixI(t) : 0, crece: 0 })),
     ].filter((x) => x.renta > 0.5);
     f.patrimonio = activosT - deuda - deudaUnica;
     f.patrimonioReal = f.patrimonio / deflactor;
     f.invertibleReal = f.invertible / deflactor;
-    f.ingresosReal = (ingresos + rentaNueva + cicloFlujo) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)
-    f.gastosReal = f.gastos / deflactor;
+    f.deflactorFlujo = deflactorFlujo;
+    f.ingresosReal = (ingresos + rentaNueva + cicloFlujo) / deflactorFlujo; // incluye la renta nueva (bodega, ingresos futuros)
+    f.gastosReal = f.gastos / deflactorFlujo;
     if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: tx(`En ${anioCal(t)} un activo o tu liquidez queda en negativo.`, `In ${anioCal(t)} an asset or your cash goes negative.`) });
     else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: tx(`En ${anioCal(t)} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.`, `In ${anioCal(t)} your cash covers less than ${sup.colchonMeses} months of expenses.`) });
     filas.push(f);
@@ -1273,7 +1289,7 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
   // 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen nuevos
   // gastos: mis hijos en la universidad afuera, unos 180 M por año").
-  // gastos: [{nombre, anual (pesos de hoy), desde, anios?}] — sube con la inflación.
+  // gastos: [{nombre, anual (pesos de hoy), desde, anios?}] — sube con la indexación.
   const gastos = (f?.gastos || []).map((x) => {
     const desde = anio(x.desde);
     const anios = vacio(x.anios) ? null : Math.max(1, Math.round(n(x.anios)));
@@ -1996,10 +2012,9 @@ export function cuentaPorAnio(r, cfg = {}) {
 // motor proyecta (INFLACION_DEFAULT_PCT), para no volver a ver 4 % contra 5 %.
 export const INFLACION_PESOS_HOY_PCT = INFLACION_DEFAULT_PCT;
 
-/** Inflación (%) con la que el resultado pasa a pesos de hoy: la misma en todos los escenarios (indexación, 24-nov-2026). */
+/** Inflación (%) con la que el escenario pasa a pesos de hoy (cada escenario con la suya). */
 export const inflacionDe = (r) => {
-  const e = r && r.escenario;
-  const v = e ? (e.inflacionHoyPct != null ? e.inflacionHoyPct : e.inflacionPct) : null;
+  const v = r && r.escenario ? r.escenario.inflacionPct : null;
   return v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : INFLACION_PESOS_HOY_PCT;
 };
 

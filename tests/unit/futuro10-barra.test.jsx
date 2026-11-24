@@ -270,7 +270,7 @@ describe("aviso de Soporte junto a las tarjetas", () => {
   it("el texto va junto a las tarjetas mientras esté vigente", () => {
     const r = proyectarFuturo10(uVenta, {});
     const h = renderToStaticMarkup(createElement(EscenariosCreados, { planes: [{ nombre: "Hoy", esHoy: true, r }, { id: "e", nombre: "Uno", r }], inflacionPct: 5, onVer: () => {}, onCrear: () => {} }));
-    const txt = "Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento, la cifra sale en pesos de hoy y lo que escribes para años siguientes (compras, aportes, gastos) sube con la inflación hasta su año. Por eso puede verse distinta.";
+    const txt = "Ajustamos el cálculo y tu cifra puede cambiar. Todo se muestra en pesos de hoy. Tus ingresos y gastos suben cada año (5% por defecto; puedes cambiarlo), y lo que anotas para años futuros (compras, aportes) sube con la inflación hasta ese año.";
     if (mostrarAvisoCalculo()) expect(h).toContain(txt); else expect(h).not.toContain(txt);
   });
 });
@@ -393,14 +393,15 @@ describe("aviso del cálculo arriba de la barra del creador (Soporte)", () => {
     expect(iAviso).toBeGreaterThan(-1);
     expect(iAviso).toBeLessThan(iBarra);
   });
-  it("AvisoCalculo muestra las dos causas y se apaga con la fecha", async () => {
+  it("AvisoCalculo muestra el texto de indexación y se apaga con la fecha", async () => {
     const { renderToStaticMarkup } = await import("react-dom/server");
     const React = await import("react");
     const { AvisoCalculo } = await import("../../src/components/infografia/EscenariosCreados.jsx");
     const h = renderToStaticMarkup(React.createElement(AvisoCalculo, { testId: "x" }));
     if (mostrarAvisoCalculo()) {
-      expect(h).toContain("ahorro ya no cuenta como rendimiento");
-      expect(h).toContain("pesos de hoy");
+      expect(h).toContain("Todo se muestra en pesos de hoy");
+      expect(h).toContain("Tus ingresos y gastos suben cada año (5% por defecto; puedes cambiarlo)");
+      expect(h).toContain("sube con la inflación hasta ese año");
     } else expect(h).toBe("");
   });
 });
