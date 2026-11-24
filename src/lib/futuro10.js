@@ -983,8 +983,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // gastos de ese año"). Lo que sale, partido por año (suma exacta f.gastos):
     // gastos de Egresos, gastos futuros que corren, los que ya no se pagan y cuotas.
     f.cuota = cuota; f.gastosBase = gastos;
-    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * Math.pow(1 + inf, t), desde: x.desde, hasta: x.hasta }));
-    f.ingresosFut = fut.ingresos.filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + inf, t), desde: x.desde }));
+    f.gastosFut = (fut.gastos || []).filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.anual * Math.pow(1 + inf, t), desde: x.desde, hasta: x.hasta, idx: x.idx, deCompra: x.deCompra }));
+    f.ingresosFut = fut.ingresos.filter((x) => t >= x.desde && t <= x.hasta).map((x) => ({ nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + inf, t), desde: x.desde, idx: x.idx }));
     f.gastosQueSeVan = seVan.filter((g) => t >= g.desde).map((g) => ({ nombre: g.nombre, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1) }));
     // 20-nov-2026 (Santiago: "¿por qué 2026 detalla más los ingresos y gastos
     // que los otros años?"). Partida por partida en cada año: cada gasto de
@@ -1159,7 +1159,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
     // Pagos de las compras y construcciones de «Lo que viene», por año (pesos de cada año).
-    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto, deFuentes: p.deFuentes || 0, fuentesTxt: p.fuentesTxt || "" }))),
+    pagosFuturos: fut.activos.flatMap((x) => (x.pagos || []).filter((p) => p.monto > 0.5).map((p, k) => ({ nombre: x.nombre, anio: p.anio, monto: p.monto, deFuentes: p.deFuentes || 0, fuentesTxt: p.fuentesTxt || "", idx: x.idx, k }))),
     // 19-nov-2026 (Santiago: "en Pagar deudas no veo todas: no me sale la deuda
     // del carro"). Las deudas con cuota pero sin saldo cargado no se pueden
     // pagar con la venta (no se sabe cuánto se debe): se listan aparte con su cuota.
@@ -1245,11 +1245,11 @@ export function leerPersonalizada(x = {}, esc, sup = supuestosF10()) {
 export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
   const inf = esc.inflacionPct / 100;
   const anio = (v, d = 1) => Math.min(10, Math.max(1, Math.round(n(v) || d)));
-  const ingresos = (f?.ingresos || []).map((x) => {
+  const ingresos = (f?.ingresos || []).map((x, idx) => {
     const desde = anio(x.desde);
-    return { nombre: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), mensual: Math.max(0, n(x.mensual)), desde, hasta: vacio(x.hasta) ? 99 : Math.max(desde, anio(x.hasta)), titular: x.titular || null, activoId: x.activoId || null, valorizacionNomPct: vacio(x.valorizacionNomPct) ? null : n(x.valorizacionNomPct) };
+    return { idx, nombre: String(x.nombre || "").trim() || tx("Ingreso futuro", "Future income"), mensual: Math.max(0, n(x.mensual)), desde, hasta: vacio(x.hasta) ? 99 : Math.max(desde, anio(x.hasta)), titular: x.titular || null, activoId: x.activoId || null, valorizacionNomPct: vacio(x.valorizacionNomPct) ? null : n(x.valorizacionNomPct) };
   }).filter((x) => x.mensual > 0);
-  const activos = (f?.activos || []).map((x) => {
+  const activos = (f?.activos || []).map((x, idx) => {
     const entrega = anio(x.entrega);
     let pagos;
     if (Array.isArray(x.pagos) && x.pagos.length) pagos = x.pagos.map((p) => ({ monto: Math.max(0, n(p.monto)), anio: anio(p.anio) }));
@@ -1258,18 +1258,22 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
       pagos = [{ monto: cuota, anio: Math.min(anio(x.anioCuota), entrega) }, { monto: valor - cuota, anio: entrega }];
     }
     const def = ["inmueble", "vivienda", "lote"].includes(x.clase) ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
-    return { nombre: String(x.nombre || "").trim() || tx("Activo futuro", "Future asset"), clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos,
+    return { idx, nombre: String(x.nombre || "").trim() || tx("Activo futuro", "Future asset"), clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos, gastoMensual: Math.max(0, n(x.gastoMensual)),
       crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100, valorizacionDefault: vacio(x.valorizacionNomPct),
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
   // 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen nuevos
   // gastos: mis hijos en la universidad afuera, unos 180 M por año").
   // gastos: [{nombre, anual (pesos de hoy), desde, anios?}] — sube con la inflación.
-  const gastos = (f?.gastos || []).map((x) => {
+  const gastos = [...(f?.gastos || []).map((x, idx) => {
     const desde = anio(x.desde);
     const anios = vacio(x.anios) ? null : Math.max(1, Math.round(n(x.anios)));
-    return { nombre: String(x.nombre || "").trim() || tx("Gasto futuro", "Future expense"), anual: Math.max(0, n(x.anual)), desde, hasta: anios == null ? 99 : desde + anios - 1 };
-  }).filter((x) => x.anual > 0);
+    return { idx, nombre: String(x.nombre || "").trim() || tx("Gasto futuro", "Future expense"), anual: Math.max(0, n(x.anual)), desde, hasta: anios == null ? 99 : desde + anios - 1 };
+  }),
+  // 24-nov-2026 (Santiago: "en 5 años quiero comprar una casa… lote + casa, metro cuadrado,
+  // valorización"). Lo que cuesta tener lo que compras (predial, administración, mantenimiento)
+  // empieza cuando lo recibes y entra en lo que te cuesta vivir.
+  ...activos.filter((a) => a.gastoMensual > 0).map((a) => ({ nombre: tx(`Lo que cuesta tener ${a.nombre}`, `Cost of owning ${a.nombre}`), anual: a.gastoMensual * 12, desde: a.entrega, hasta: 99, deCompra: a.idx }))].filter((x) => x.anual > 0);
   return { ingresos, activos, gastos };
 }
 
@@ -2036,14 +2040,16 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
       (r.deudas || []).filter((d) => d.porVenta && d.pagado > 0.5).forEach((d) => compromisos.push({ nombre: tx(`${d.nombre}: se paga con la venta de ${nomActivo(d.activoId)}`, `${d.nombre}: paid with the sale of ${nomActivo(d.activoId)}`), monto: d.pagado, tipo: "A" }));
       if (bd.colchon > 0.5) compromisos.push({ nombre: tx(`Colchón de ${mesesColchon} meses de gastos (queda en tu liquidez)`, `${mesesColchon}-month expense cushion (stays in your cash)`), monto: bd.colchon, tipo: "colchon" });
     }
-    (r.deudas || []).filter((d) => d.pagaAnio === anio && n(d.pagoEnAnio) > 0.5 && !d.pagaEnPlan).forEach((d) => compromisos.push({ nombre: tx(`${d.nombre}: se paga este año`, `${d.nombre}: due this year`), monto: d.pagoEnAnio, tipo: "A" }));
+    // 24-nov-2026 (Santiago: "este año dispone de esto después de gastos y ventas, pero debe pagar el
+    // local, debe pagar la universidad, y lo que sobra se invierte"). Pagar una deuda ese año es un
+    // compromiso de ese año (lo decidas en el plan o venga con fecha de la página Deudas).
+    if (anio === 1) (r.deudas || []).filter((d) => !d.porVenta && d.pagado > 0.5).forEach((d) => compromisos.push({ nombre: tx(`Pagas ${d.nombre}`, `Pay off ${d.nombre}`), monto: d.pagado, tipo: "A", nota: d.pagado < d.saldo - 0.5 ? tx("Abono: no alcanza para pagarla toda.", "Partial payment: not enough to pay it all.") : null }));
+    (r.deudas || []).filter((d) => d.pagaAnio === anio && n(d.pagoEnAnio) > 0.5).forEach((d) => compromisos.push({ nombre: d.pagaEnPlan ? tx(`Pagas ${d.nombre}`, `Pay off ${d.nombre}`) : tx(`${d.nombre}: se paga este año`, `${d.nombre}: due this year`), monto: d.pagoEnAnio, tipo: "A" }));
     usos.filter((u) => (u.anio || 1) === anio && u.prDesde != null && u.prDesde < anio).forEach((u) => compromisos.push({ nombre: tx(`Cuota de ${u.nombre} (compra de ${anioCal(u.prDesde)})`, `${u.nombre} installment (bought in ${anioCal(u.prDesde)})`), monto: u.monto, tipo: "C" }));
-    (r.pagosFuturos || []).filter((p) => p.anio === anio && p.monto - (p.deFuentes || 0) > 0.5).forEach((p) => compromisos.push({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.monto - (p.deFuentes || 0), tipo: "F", nota: p.deFuentes > 0.5 ? tx(`El resto sale de ${p.fuentesTxt}.`, `The rest comes from ${p.fuentesTxt}.`) : null }));
+    (r.pagosFuturos || []).filter((p) => p.anio === anio && p.monto - (p.deFuentes || 0) > 0.5).forEach((p) => compromisos.push({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.monto - (p.deFuentes || 0), tipo: "F", idx: p.idx, k: p.k, nota: p.deFuentes > 0.5 ? tx(`El resto sale de ${p.fuentesTxt}.`, `The rest comes from ${p.fuentesTxt}.`) : null }));
     const comprometido = suma(compromisos);
     // Tus movidas del año. «Plata nueva de afuera» (y hoy, «de mis cuentas») no sale de esta cuenta.
     const movidas = [];
-    if (anio === 1) (r.deudas || []).filter((d) => !d.porVenta && d.pagado > 0.5).forEach((d) => movidas.push({ nombre: tx(`Pagas ${d.nombre}`, `Pay off ${d.nombre}`), monto: d.pagado, tipo: "A", cuenta: true, abono: d.pagado < d.saldo - 0.5 }));
-    (r.deudas || []).filter((d) => d.pagaAnio === anio && n(d.pagoEnAnio) > 0.5 && d.pagaEnPlan).forEach((d) => movidas.push({ nombre: tx(`Pagas ${d.nombre}`, `Pay off ${d.nombre}`), monto: d.pagoEnAnio, tipo: "A", cuenta: true }));
     usos.filter((u) => (anio === 1 ? (u.anio || 1) === 1 || u.apartado : u.anio === anio && !u.apartado) && !(u.prDesde != null && u.prDesde < (u.anio || 1)))
       .forEach((u) => { const fte = u.fuente || "venta"; movidas.push({ nombre: u.nombre, monto: u.monto, tipo: u.seccion === "B" ? "B" : "C", fuente: fte, cuenta: anio === 1 ? fte === "venta" : fte !== "nuevo" }); });
     if (anio === 1 && bd.obrasPedido > 0.5) movidas.push({ nombre: tx("Obras en lo que ya tienes", "Build-outs on what you own"), monto: bd.obrasPedido, tipo: "B", cuenta: true });

@@ -20,7 +20,7 @@ describe("cuenta año por año", () => {
     expect(g2.antes).toBeCloseTo(Math.max(0, g1.queda), 0); // lo de hoy pasa al año siguiente
     expect(g2.flujoHoy).toBe(0);
     expect(g2.flujo).toBeCloseTo(r.filas[2].cf, 0);
-    expect(g2.movidas.some((u) => u.tipo === "A" && Math.round(u.monto) === 300e6)).toBe(true); // la deuda que decides pagar ese año
+    expect(g2.compromisos.some((u) => u.tipo === "A" && Math.round(u.monto) === 300e6)).toBe(true); // la deuda que pagas ese año es un compromiso
     expect(g2.movidas.some((u) => u.tipo === "C" && Math.round(u.monto) === 200e6)).toBe(true);
     expect(g2.queda).toBeCloseTo(g2.antes + g2.llega + g2.flujo - g2.comprometido - g2.movido, 0);
     const g3 = c.find((g) => g.anio === 3);
@@ -54,11 +54,13 @@ describe("lo que puedes hacer con tu plata no se mueve al invertir", () => {
     const r = proyectarFuturo10(u, cfg);
     expect(cuentaPorAnio(r, cfg).find((g) => g.anio === 3).disponible).toBeGreaterThan(sin.disponible + 100e6);
   });
-  it("pagar una deuda un año: lo disponible no cambia; la cuota que dejas de pagar llega al cierre", () => {
+  it("pagar una deuda un año: es un compromiso antes de invertir; la cuota que dejas de pagar llega al cierre", () => {
     const sin = cuenta(base).find((g) => g.anio === 2);
     const con = cuenta({ ...base, pagarDeudas: { h: Y + 1 } }).find((g) => g.anio === 2);
-    expect(con.disponible).toBeCloseTo(sin.disponible, -3);
-    expect(con.movidas.some((m) => m.tipo === "A")).toBe(true);
+    const pago = con.compromisos.find((c) => c.tipo === "A");
+    expect(pago).toBeTruthy();
+    expect(con.base).toBeCloseTo(sin.base - pago.monto, -3); // si no alcanza, lo que falta lo dice la cuenta (faltaSinCubrir)
+    expect(con.movidas.some((m) => m.tipo === "A")).toBe(false);
     expect(con.efecto).toBeCloseTo(9e6 * 12, -6);
   });
   it("la foto deja en cero solo lo de ese año en adelante", () => {
@@ -199,5 +201,28 @@ describe("validaciones de Lo que viene", () => {
     expect(r.pagosFuturos[0].deFuentes).toBeCloseTo(500e6, -3);
     const g3 = cuentaPorAnio(r, cfg).find((g) => g.anio === 3);
     expect(g3.compromisos.some((c) => /Bodega/.test(c.nombre))).toBe(false);
+  });
+});
+
+// 24-nov-2026 (Santiago: "en 5 años quiero comprar una casa… en 2031 me desglosa: lote + casa, metro cuadrado, valorización").
+import { calcularCompra } from "../../src/components/MiFuturo10.jsx";
+describe("detalle de una compra en su año", () => {
+  it("lote + construcción: el lote y la obra se pagan en los años de la obra y el valor salta al terminar", () => {
+    const c = calcularCompra({ modo: "lote", lote: 1200e6, m2: 230, costoM2: 10e6, obraAnios: 2, ventaM2: 18e6 }, 7, 10);
+    expect(c.total).toBe(3500e6);
+    expect(c.pagos).toEqual([{ anio: 7, monto: 2350e6 }, { anio: 8, monto: 1150e6 }]);
+    expect(c.entrega).toBe(8);
+    expect(c.valorFinal).toBe(230 * 18e6);
+  });
+  it("sobre planos: la cuota inicial durante la obra y el resto al recibirla", () => {
+    const c = calcularCompra({ modo: "planos", precio: 1000e6, cuotaPct: 30, entregaAnios: 2 }, 3, 10);
+    expect(c.pagos).toEqual([{ anio: 3, monto: 150e6 }, { anio: 4, monto: 150e6 }, { anio: 5, monto: 700e6 }]);
+    expect(c.entrega).toBe(5);
+  });
+  it("lo que cuesta tenerla entra en lo que cuesta vivir desde que la recibes", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 5000e6 }], ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {} };
+    const r = proyectarFuturo10(u, { futuros: { activos: [{ nombre: "Casa", clase: "vivienda", valor: 3500e6, pagos: [{ anio: 7, monto: 2350e6 }, { anio: 8, monto: 1150e6 }], entrega: 8, gastoMensual: 3.5e6 }] } });
+    expect(r.filas[7].gastosFut.some((x) => /Casa/.test(x.nombre))).toBe(false);
+    expect(r.filas[8].gastosFut.find((x) => /Casa/.test(x.nombre))).toMatchObject({ desde: 8 });
   });
 });
