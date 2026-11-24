@@ -415,7 +415,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
       m = n(r.monto) > 0 ? tomar(n(r.monto), a.id, r.fuente) : 0;
       deVenta = b0 - bolsa; deLiquidez = desdeLiquidez - l0; deNuevo = capitalNuevo - c0;
-      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta, deCuentas: deLiquidez, deNuevo, anio: 1, fuente: r.fuente || "venta" });
+      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta, deCuentas: deLiquidez, deNuevo, anio: 1, fuente: r.fuente || "venta", ref: "r" + k });
       if (m > 0) { a.valor += m; reinvertidoTotal += m; }
       // Si lo vendido y la liquidez no alcanzan, el resto se paga con lo que
       // entre en el año 1 (la obra se hace igual): no se recorta.
@@ -432,12 +432,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const m2 = tomar(n(r.monto), a.id, "venta");
       const resto2 = n(r.monto) - m2;
       if (resto2 > 0.5) { pedidoTotal -= resto2; programadasTotal += resto2; }
-      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: 0, anio: anioAporte, fuente: "venta", apartado: true, resto: resto2 });
+      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: 0, anio: anioAporte, fuente: "venta", apartado: true, resto: resto2, ref: "r" + k });
       reservadoTotal += m2;
       a.reserva = (a.reserva || 0) + m2;
       (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte, apartado: m2 });
     } else if (n(r.monto) > 0) {
-      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: 0, deCuentas: 0, deNuevo: 0, anio: anioAporte, fuente: r.fuente || "venta" });
+      usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: 0, deCuentas: 0, deNuevo: 0, anio: anioAporte, fuente: r.fuente || "venta", ref: "r" + k });
       // Aporte de un año siguiente: se paga ese año con lo que haya (como una obra futura).
       pedidoTotal -= Math.max(0, n(r.monto)); programadasTotal += n(r.monto);
       (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte, nuevo: r.fuente === "nuevo" });
@@ -472,7 +472,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         pedidoTotal += c.monto;
         const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
         const m = tomar(c.monto, null, x.fuente);
-        usos.push({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta" });
+        usos.push({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta", ref: "n" + k });
         if (m <= 0) return;
         nuevasTotal += m;
         nuevas.push({ id: "nueva_" + k, nombre: c.nombre, clase: "nueva", valor: m, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, fuente: x.fuente || "venta", preset: "custom", montoInicial: m });
@@ -516,7 +516,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     pedidoTotal += Math.max(0, n(x.monto));
     const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
     const m = tomar(n(x.monto), null, x.fuente);
-    usos.push({ seccion: "C", nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta" });
+    usos.push({ seccion: "C", nombre: x.nombre || sup.presets[x.preset].nombre, monto: n(x.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: x.fuente || "venta", ref: "n" + k });
     if (m <= 0) return;
     nuevasTotal += m;
     // 19-nov-2026 (Santiago: "puse inversiones de renta fija pero no tiene
@@ -549,10 +549,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         pedidoTotal += pg.monto;
         const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
         valor0 += tomar(pg.monto, null, p.fuente);
-        usos.push({ seccion: "C", nombre: p.nombre, monto: pg.monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: p.fuente, prDesde: p.anio });
+        usos.push({ seccion: "C", nombre: p.nombre, monto: pg.monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: p.fuente, prDesde: p.anio, ref: "n" + String(p.id).replace("nueva_", "") });
       } else {
         programadasTotal += pg.monto;
-        usos.push({ seccion: "C", nombre: p.nombre, monto: pg.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: pg.anio, fuente: "liquidez", prDesde: p.anio });
+        usos.push({ seccion: "C", nombre: p.nombre, monto: pg.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: pg.anio, fuente: "liquidez", prDesde: p.anio, ref: "n" + String(p.id).replace("nueva_", "") });
         pagos.push(pg);
       }
     });
@@ -567,7 +567,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const destino = nu || pe;
     if (!destino || x.anio <= (nu ? 1 : (pe.anio || 1))) return;
     (destino.aportesFuturos = destino.aportesFuturos || []).push({ monto: x.monto, anio: x.anio });
-    usos.push({ seccion: "B", nombre: destino.nombre, monto: x.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: x.anio, fuente: "liquidez" });
+    usos.push({ seccion: "B", nombre: destino.nombre, monto: x.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: x.anio, fuente: "liquidez", ref: "r" + x.k });
     const rend = nu ? ((nu.crec || 0) + (nu.rentaPct || 0)) * 100 : (pe.rendNom || 0) * 100;
     const pct = nu ? (rend > 0 ? (nu.rentaPct || 0) * 100 / rend * 100 : 0) : (pe.pctRecibe || 0);
     reinversionesDetalle.push({ i: x.k, activoId: x.id, nombre: destino.nombre, clase: "nueva", valorHoy: 0, aporte: x.monto, anio: x.anio, total: x.monto, rentaMensual: 0, rentaDesdeMes: 0, rentaPctAnual: 0, valorizacionPct: null, rendimientoPct: rend, pctRecibe: pct, deVenta: 0, deLiquidez: 0, deAnio1: 0, deNuevo: 0, fuente: "liquidez", rindeAnual: 0, teLlegaMes: 0, aNueva: true });
@@ -670,9 +670,21 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const v = montoPromedioMensual(i) * fxIng(i); if (!(v > 0.5)) return;
     ingresosHoy.push({ key: claveIngreso(user.ingresos, k), nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), mensual: v, pasivo: tipoIngreso(i) === "pasivo", activoId: i.activoId || null });
   });
-  const ingTerminan = cfg.ingresosTerminan || {};
+  // 24-nov-2026 (Santiago: "¿por qué en este ítem no me marca que se va con esa venta, como sí lo
+  // hace en el carro Volvo? Se va el salario de los mayordomos, unos servicios públicos, el
+  // predial"). Lo que se va con una venta de un año siguiente deja de contar desde ese año: lo que
+  // marcas en «¿Qué se va con la venta?» y los gastos ligados al activo que no van dentro de su
+  // renta neta (los que sí van, se van con la renta).
+  const seVanConVenta = {};
+  Object.entries(leerTerminan(cfg, N)).forEach(([id, y]) => {
+    const d = dec[id] || {}, sug = sugerirVinculados(user, id);
+    const elegidos = Array.isArray(d.seVan) ? d.seVan : [...sug.ingresos, ...sug.gastos].filter((x) => x.sugerido).map((x) => x.key);
+    [...elegidos, ...sug.auto.gastos.map((x) => x.key)].forEach((k) => { seVanConVenta[k] = Math.min(seVanConVenta[k] || N + 1, y); });
+  });
+  const conVenta = (m, lista) => { const out = { ...m }; lista.forEach((x) => { const v = seVanConVenta[x.key]; if (v) out[x.key] = out[x.key] ? Math.min(Math.round(n(out[x.key])) || 1, v) : v; }); return out; };
+  const ingTerminan = conVenta(cfg.ingresosTerminan || {}, ingresosHoy);
   const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => ({ ...x, desde: Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)) }));
-  const terminan = cfg.gastosTerminan || {};
+  const terminan = conVenta(cfg.gastosTerminan || {}, gastosHoy);
   const seVan = gastosHoy.filter((g) => !g.neteado && terminan[g.key]).map((g) => ({ ...g, desde: Math.min(N, Math.max(1, Math.round(n(terminan[g.key])) || 1)) }));
   // 24-oct-2026 (Santiago: "los gráficos de los escenarios están muy flojos…
   // que se vea como el HTML", su plan SALEM). Para graficar lo que produce el
@@ -699,6 +711,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const cambios = leerCambios(cfg, N);
   const terminanEn = leerTerminan(cfg, N);
   const retirosNuevas = leerRetirosNuevas(cfg, N);
+  const pagaAnios = leerPagaAnios(cfg, N);
   const liberados = []; // plata que queda libre en años siguientes (activos que vencen o se venden después)
   const manualOp = new Set((user.inv || []).filter((x) => x && x.rentaOrigen === "manual").map((x) => x.id));
   const costoLigado = (id) => {
@@ -848,6 +861,16 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         alertas.push({ tipo: "ciclo_fin", anio: t, texto: tx(`En ${anioCal(t)} termina «${c.nombre}»: el capital vuelve y se reparte.`, `In ${anioCal(t)} "${c.nombre}" ends: the capital comes back and is allocated.`) });
         a.valor = 0;
       }
+    });
+    // 24-nov-2026 (Santiago: "en 2029 mi vida cambia, hay más gastos… que me diga: puede cambiar el
+    // porcentaje de lo que reinvierte de estas inversiones, pero para ese año, no para todos").
+    // «De lo que rinde, cuánto te llega» por año: cfg.nuevas[k].pagaAnios = { año: % }. Ese año la
+    // inversión te paga ese porcentaje y el resto se reinvierte; los demás años, lo de siempre.
+    todos.forEach((a) => {
+      const pa = pagaAnios[a.id]; if (!pa) return;
+      if (a.rendTot == null) { a.rendTot = (a.crec || 0) + (a.rentaPct || 0); a.pBase = a.rendTot > 0 ? (a.rentaPct || 0) / a.rendTot : 0; }
+      const p = pa[t] != null ? pa[t] / 100 : a.pBase;
+      a.crec = a.rendTot * (1 - p); a.rentaPct = a.rendTot * p;
     });
     // 1) rendimientos y depreciación del año
     let creceAnio = 0;
@@ -1072,6 +1095,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: tx(`En ${anioCal(t)} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.`, `In ${anioCal(t)} your cash covers less than ${sup.colchonMeses} months of expenses.`) });
     filas.push(f);
   }
+  // Fuera del año a año, cada inversión vuelve a lo que te paga siempre (lo que se muestra en su ficha).
+  todos.forEach((a) => { if (a.rendTot != null) { a.crec = a.rendTot * (1 - a.pBase); a.rentaPct = a.rendTot * a.pBase; } });
   const fin = filas[filas.length - 1];
   // 24-oct-2026 (Santiago: "no me dan los números"). Lo que entra y lo que
   // sale en el AÑO 1, partida por partida, al mes (como su plan SALEM: «Lo que
@@ -1130,7 +1155,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.filter((c) => !c.holder).map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez" })), ...ciclos.filter((c) => c.desde > 1 && !c._apartado).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))].map(conMontoAnio), excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, capitalNuevoHoy, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
+    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.filter((c) => !c.holder).map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez", ref: "n" + String(c.id).replace("nueva_", "") })), ...ciclos.filter((c) => c.desde > 1 && !c._apartado).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))].map(conMontoAnio), excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, capitalNuevoHoy, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
@@ -1146,7 +1171,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // a tu fondo de reserva ({ año: pesos de ese año }) y lo que rinde (renta fija corta). La cuenta
     // año por año (cuentaPorAnio) lo lleva; si un año falta para vivir, sale de ahí.
     reservaAnual: leerReservaAnual(cfg.reservaAnual, N),
-    tasaReserva: rNom("rfCorto"),
+    // 24-nov-2026 (Santiago: "debería poder poner uno el interés que considera, no 6,6 % por defecto").
+    tasaReserva: !vacio(cfg.reservaTasaPct) && Number.isFinite(Number(cfg.reservaTasaPct)) ? Math.max(0, Number(cfg.reservaTasaPct)) / 100 : rNom("rfCorto"),
+    tasaReservaEscenario: rNom("rfCorto"),
     // 23-nov-2026: parte de lo que sobra cada año que no tiene destino fijo (cuentaPorAnio).
     sobraLibre: Math.max(0, 1 - Math.min(100, sobraDestinos.reduce((sm, d) => sm + d.pct, 0)) / 100),
     destinoSobraLista: (() => {
@@ -1522,6 +1549,17 @@ export function conVencimientos(cfg = {}, user = {}) {
   return { ...cfg, decisiones: dec, ingresosTerminan: une(cfg.ingresosTerminan, fin.ingresos), gastosTerminan: une(cfg.gastosTerminan, fin.gastos), _conVenc: true };
 }
 /** Inversiones nuevas con plazo: [{ id: "nueva_k", anio: 2..N, monto: null (todo) | pesos }]. */
+/** Lo que te paga cada inversión nueva en años puntuales: { "nueva_k": { año: % } }. */
+export function leerPagaAnios(cfg = {}, N = 10) {
+  const out = {};
+  (cfg.nuevas || []).forEach((x, k) => {
+    if (!x || !x.pagaAnios || typeof x.pagaAnios !== "object") return;
+    const m = {};
+    Object.entries(x.pagaAnios).forEach(([y, v]) => { const t = Math.round(n(y)); if (t >= 1 && t <= N && v !== "" && v != null && Number.isFinite(Number(v))) m[t] = Math.min(100, Math.max(0, Number(v))); });
+    if (Object.keys(m).length) out["nueva_" + k] = m;
+  });
+  return out;
+}
 export function leerRetirosNuevas(cfg = {}, N = 10) {
   return (cfg.nuevas || []).map((x, k) => {
     const hasta = Math.round(n(x && x.hasta)), inicio = x ? Math.max(1, Math.round(n(x.anio)) || 1) : 1;
@@ -2001,6 +2039,45 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
 // no se suma. El motor guarda esa plata en el colchón y las canastas.
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * 24-nov-2026 (Santiago: "se ve que cada año queda disponible 700 MM y creo que es la misma plata
+ * que pasa de año a año… ¿cómo saber uno qué acumula o qué sugiere?"). Para cada año: de lo que te
+ * queda por invertir, cuánto puedes invertir sin que un año siguiente se quede corto (libre) y
+ * cuánto vas a necesitar después (guardar), con los años que lo necesitan. Repite la cuenta de los
+ * años siguientes como si invirtieras X más ese año (lo invertido no te devuelve nada en la cuenta:
+ * es conservador) y busca el X más grande que no deja a otro año con faltante ni pasado.
+ */
+export function holguraPorAnio(cuenta = []) {
+  const N = cuenta.length;
+  const repetir = (t, X) => {
+    const g = cuenta[t - 1];
+    let antes = Math.max(0, g.queda - X) - Math.min(g.aReserva, Math.max(0, g.queda - X)), reserva = g.reservaAntes - g.usoReserva + Math.min(g.aReserva, Math.max(0, g.queda - X));
+    const out = [];
+    for (let s = t + 1; s <= N; s++) {
+      const y = cuenta[s - 1], tasa = y.tasaReserva || 0;
+      const base = antes + y.llega + y.flujoFoto - y.comprometido;
+      const resA = reserva * (1 + tasa);
+      const uso = base < 0 ? Math.min(resA, -base) : 0, falta = base < 0 ? -base - uso : 0;
+      const disp = Math.max(0, base), queda = base + uso - y.movido + y.efecto;
+      const aRes = Math.min(y.aReserva, Math.max(0, queda));
+      const porInv = disp - y.movido - Math.min(aRes, Math.max(0, disp - y.movido));
+      out.push({ anio: s, falta, porInv });
+      antes = Math.max(0, queda) - aRes; reserva = resA - uso + aRes;
+    }
+    return out;
+  };
+  return cuenta.map((g) => {
+    const t = g.anio, tope = Math.max(0, g.porInvertir);
+    const ref = repetir(t, 0);
+    const malos = (X) => repetir(t, X).filter((y, k) => y.falta > ref[k].falta + 0.5 || y.porInv < Math.min(0, ref[k].porInv) - 0.5);
+    if (tope <= 0.5 || !malos(tope).length) return { anio: t, libre: tope, guardar: 0, para: [] };
+    let lo = 0, hi = tope;
+    for (let k = 0; k < 48 && hi - lo > 0.5; k++) { const m = (lo + hi) / 2; if (malos(m).length) hi = m; else lo = m; }
+    const para = malos(tope).map((y) => y.anio);
+    return { anio: t, libre: Math.floor(lo), guardar: tope - Math.floor(lo), para };
+  });
+}
+
 /** Lo que cada año mandas a tu fondo de reserva: { año del plan: pesos de ese año }. */
 export function leerReservaAnual(v = {}, N = 10) {
   const out = {};
@@ -2098,7 +2175,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     // Tus movidas del año. «Plata nueva de afuera» (y hoy, «de mis cuentas») no sale de esta cuenta.
     const movidas = [];
     usos.filter((u) => (anio === 1 ? (u.anio || 1) === 1 || u.apartado : u.anio === anio && !u.apartado) && !(u.prDesde != null && u.prDesde < (u.anio || 1)))
-      .forEach((u) => { const fte = u.fuente || "venta"; movidas.push({ nombre: u.nombre, monto: enAnio(u), montoHoy: n(u.monto), tipo: u.seccion === "B" ? "B" : "C", fuente: fte, cuenta: anio === 1 ? fte === "venta" : fte !== "nuevo" }); });
+      .forEach((u) => { const fte = u.fuente || "venta"; movidas.push({ nombre: u.nombre, monto: enAnio(u), montoHoy: n(u.monto), tipo: u.seccion === "B" ? "B" : "C", fuente: fte, cuenta: anio === 1 ? fte === "venta" : fte !== "nuevo", ref: u.ref || null }); });
     if (anio === 1 && bd.obrasPedido > 0.5) movidas.push({ nombre: tx("Obras en lo que ya tienes", "Build-outs on what you own"), monto: bd.obrasPedido, tipo: "B", cuenta: true });
     const movido = suma(movidas.filter((m) => m.cuenta));
     // La cuenta
@@ -2108,15 +2185,22 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     const usoReserva = base < 0 ? Math.min(reservaAntes, -base) : 0;
     const faltaSinCubrir = base < 0 ? -base - usoReserva : 0;
     const disponible = Math.max(0, base);
-    const porInvertir = disponible - movido;
     const efecto = flujo - flujoFoto;
     const queda = base + usoReserva - movido + efecto;
     const aReserva = Math.min(n(rva[anio]), Math.max(0, queda));
+    // 24-nov-2026 (Santiago: "¿no hace falta un ítem que se llame reserva?"). Lo que guardas en tu
+    // reserva sale de lo que te quedaba por invertir (como una movida más): si después inviertes,
+    // ya no te dice que tienes esa plata libre. Si guardas más, la diferencia sale de lo que tus
+    // movidas te pagan ese año.
+    const antesReserva = disponible - movido;
+    const reservaDeAqui = Math.min(aReserva, Math.max(0, antesReserva));
+    const porInvertir = antesReserva - reservaDeAqui;
     const pasa = Math.max(0, queda) - aReserva;
     const reservaFin = reservaAntes - usoReserva + aReserva;
     const salen = [...compromisos, ...movidas.filter((m) => m.cuenta)].map((x) => ({ nombre: x.nombre, monto: x.monto, montoHoy: x.montoHoy ?? x.monto, tipo: x.tipo === "colchon" ? "F" : x.tipo }));
     // factorHoy: para pasar a pesos de hoy lo que se escribe en un formulario (montos de años siguientes).
-    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, compromisos, comprometido, base, usoReserva, faltaSinCubrir, disponible, movidas, movido, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
+    // propio: lo que el año suma o resta por sí solo (sin lo que traes de antes).
+    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, compromisos, comprometido, base, propio: base - antes, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
       // Para lo que leía la cuenta de antes (informe): lo que sale del año y lo que queda.
       salen, sale: suma(salen), saldo: queda, flujoHoy: 0, cfPrev: n(f.cf) });
     antes = pasa; reserva = reservaFin;
