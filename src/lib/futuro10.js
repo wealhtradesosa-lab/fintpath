@@ -169,6 +169,10 @@ export function claseActivo(a) {
  *                         mezcla:{liquidez,renta,crecimiento}, nuevas:[{nombre,preset,monto}],
  *                         reinversiones:[{activoId,monto}], supuestos }
  */
+// Promedio de un CDT a un año en Colombia. Fuente: reporte mensual de tasas de 40 bancos (finanzasplus.co, 3-nov-2026): 11,09 % EA;
+// la Superintendencia Financiera (corte 3-nov-2026) ubica los CDT a 360 días entre 8,72 % y 13,4 %. Actualizar cada tanto.
+export const CDT_CO = { pct: 11.09, min: 8.72, max: 13.4, fecha: "noviembre de 2026" };
+export const tasaReservaDefecto = (rNom) => (esUS() ? rNom("rfCorto") : CDT_CO.pct / 100);
 export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const cfgM = migrarClaves(cfgIn, userIn);
   const cfg = conVencimientos(cfgM, userIn);
@@ -311,10 +315,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // Plata apartada hoy de lo vendido para algo que se hace un año siguiente:
   // queda como «Apartado para …», rinde como liquidez y se usa ese año.
   const apartados = [];
-  const apartar = (nombre, monto, seccion, anio) => {
+  const apartar = (nombre, monto, seccion, anio, ref) => {
     const b0 = bolsa, l0 = desdeLiquidez;
     const m = tomar(monto, null, "venta");
-    usos.push({ seccion, nombre, monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: 0, anio, fuente: "venta", apartado: true, resto: monto - m });
+    usos.push({ seccion, nombre, monto, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: 0, anio, fuente: "venta", apartado: true, resto: monto - m, ref: ref || undefined });
     reservadoTotal += m;
     const h = { id: "apartado_" + apartados.length, nombre: tx(`Apartado para ${nombre}`, `Set aside for ${nombre}`), clase: "otro", valor: m, crec: rNom("rfCorto"), usd: false, invertible: true, apartadoDe: nombre };
     apartados.push(h);
@@ -480,7 +484,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         return;
       }
       if ((x.fuente || "venta") === "venta" && apartarDeHoy(c.anio)) {
-        const h = apartar(c.nombre, c.monto, "C", c.anio);
+        const h = apartar(c.nombre, c.monto, "C", c.anio, "n" + k);
         personalizadas.push({ ...c, id: "nueva_" + k, holder: h });
         return;
       }
@@ -491,7 +495,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     if (x.preset === "fincaRaiz" && x.pr) {
       const p = leerPropiedadRaiz(x, N);
       if (p.vacio) return;
-      if (p.final === "vende") prCiclos.push(p.ciclo);
+      // 24-nov-2026 (Santiago: "el proyecto asociativo no me deja quitar ni cambiar"): el ciclo recuerda su inversión (ref).
+      if (p.final === "vende") prCiclos.push({ ...p.ciclo, ref: "n" + k });
       else prQueda.push({ ...p, id: "nueva_" + k, fuente: x.fuente || "venta" });
       return;
     }
@@ -506,7 +511,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       const rendP = vacio(x.rendimientoNomPct) ? rNom(x.preset) : n(x.rendimientoNomPct) / 100;
       const c = { nombre: x.nombre || nombreSup(sup.presets[x.preset]), monto: n(x.monto), anio: anioN, rendNom: rendP, usd: !!sup.presets[x.preset].usd, pctRecibe: Math.min(100, Math.max(0, n(x.pctRecibe))) };
       if ((x.fuente || "venta") === "venta" && apartarDeHoy(c.anio)) {
-        const h = apartar(c.nombre, c.monto, "C", c.anio);
+        const h = apartar(c.nombre, c.monto, "C", c.anio, "n" + k);
         personalizadas.push({ ...c, id: "nueva_" + k, holder: h });
         return;
       }
@@ -581,10 +586,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       pedidoTotal += c.capital;
       const b0 = bolsa, l0 = desdeLiquidez, c0 = capitalNuevo;
       const m = tomar(c.capital, null, c.fuente);
-      usos.push({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: c.fuente });
+      usos.push({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: capitalNuevo - c0, anio: 1, fuente: c.fuente, ref: c.ref || undefined });
       a.valor = m; a.tomado = true; ciclosTotal += m;
     } else if (c.fuente === "venta" && apartarDeHoy(c.desde)) {
-      a.holder = apartar(c.nombre, c.capital, "D", c.desde);
+      a.holder = apartar(c.nombre, c.capital, "D", c.desde, c.ref);
       c._apartado = true;
     }
     nuevas.push(a);
@@ -1205,7 +1210,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   ].sort((x, y) => y.valor - x.valor);
   return {
     escenario: esc, mezcla, filas, alertas, liqAgotadaAnio,
-    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.filter((c) => !c.holder).map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez", ref: "n" + String(c.id).replace("nueva_", "") })), ...ciclos.filter((c) => c.desde > 1 && !c._apartado).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente }))].map(conMontoAnio), excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, capitalNuevoHoy, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
+    bolsaDetalle: { reservado: reservadoTotal, usos: [...usos, ...personalizadas.filter((c) => !c.holder).map((c) => ({ seccion: "C", nombre: c.nombre, monto: c.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.anio, fuente: "liquidez", ref: "n" + String(c.id).replace("nueva_", "") })), ...ciclos.filter((c) => c.desde > 1 && !c._apartado).map((c) => ({ seccion: "D", nombre: c.nombre, monto: c.capital, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: c.desde, fuente: c.fuente, ref: c.ref || undefined }))].map(conMontoAnio), excesoVentas, excesoCubierto, ciclos: ciclosTotal, vendido: vendidoTotal, deudas: deudasPagadasTotal, deudaSinCubrir, colchon: colchonInicial, reinvertido: reinvertidoTotal, nuevas: nuevasTotal, restante: bolsa, pedido: pedidoTotal, obras: obrasTotal, obrasPedido, capitalNuevo, capitalNuevoHoy, programadas: programadasTotal, pendienteAnio1, desdeLiquidez, faltante: Math.max(0, pedidoTotal - reinvertidoTotal - nuevasTotal - ciclosTotal - reservadoTotal) },
     reparto: repartoFinal,
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
@@ -1222,8 +1227,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // año por año (cuentaPorAnio) lo lleva; si un año falta para vivir, sale de ahí.
     reservaAnual: leerReservaAnual(cfg.reservaAnual, N),
     // 24-nov-2026 (Santiago: "debería poder poner uno el interés que considera, no 6,6 % por defecto").
-    tasaReserva: !vacio(cfg.reservaTasaPct) && Number.isFinite(Number(cfg.reservaTasaPct)) ? Math.max(0, Number(cfg.reservaTasaPct)) / 100 : rNom("rfCorto"),
-    tasaReservaEscenario: rNom("rfCorto"),
+    // 24-nov-2026 (Santiago: "que el fondo de reserva tome como base un CDT en Colombia, pero uno pueda modificar la casilla de
+    // rendimiento; no ponerlo como defecto fijo"). Vacío: en Colombia, el promedio de un CDT a un año (CDT_CO); en EE. UU., la renta
+    // fija corta del escenario. Lo que escribas manda.
+    tasaReserva: !vacio(cfg.reservaTasaPct) && Number.isFinite(Number(cfg.reservaTasaPct)) ? Math.max(0, Number(cfg.reservaTasaPct)) / 100 : tasaReservaDefecto(rNom),
+    tasaReservaEscenario: tasaReservaDefecto(rNom),
     // 23-nov-2026: parte de lo que sobra cada año que no tiene destino fijo (cuentaPorAnio).
     sobraLibre: Math.max(0, 1 - Math.min(100, sobraDestinos.reduce((sm, d) => sm + d.pct, 0)) / 100),
     repartoMes: repartoUsado,
@@ -2000,7 +2008,7 @@ export function leerCiclos(lista = [], N = 10) {
     const bruta = dif >= 0 ? dif * (1 - costosPct / 100) : dif;
     const impuestoCiclo = Math.max(0, bruta) * impuestoPct / 100;
     const gananciaCiclo = bruta - impuestoCiclo;
-    return { nombre: String(x.nombre || "").trim() || tx("Negocio que se repite", "Repeating deal"), capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
+    return { ref: x.ref || null, nombre: String(x.nombre || "").trim() || tx("Negocio que se repite", "Repeating deal"), capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
 }
 
@@ -2121,7 +2129,7 @@ export function holguraPorAnio(cuenta = []) {
   const meta = (y) => (y.rvaCap ?? y.aReserva) + (y.mesAReserva ? Math.max(0, (y.mes ?? 0) - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0);
   const repetir = (t, X) => {
     const g = cuenta[t - 1];
-    const resT = Math.min(g.rvaCap ?? g.aReserva ?? 0, Math.max(0, (g.disponible ?? 0) - (g.movido ?? 0) - X - (g.sacasReserva || 0)));
+    const resT = Math.min(g.rvaCap ?? g.aReserva ?? 0, Math.max(0, Math.min((g.disponible ?? 0) - (g.movido ?? 0) - X, (g.disponible ?? 0) - (g.sacasReserva || 0))));
     const q = g.queda - X, aR = Math.min(resT + (meta(g) - (g.rvaCap ?? g.aReserva ?? 0)), Math.max(0, q)), apT = g.reservaHasta ? Math.min(resT, aR) : 0;
     let antes = Math.max(0, q) - aR, reserva = g.reservaAntes - (g.sacasReserva || 0) - g.usoReserva + aR - apT;
     const out = [];
@@ -2136,7 +2144,7 @@ export function holguraPorAnio(cuenta = []) {
       const uso = base < 0 ? Math.min(resA, -base) : 0, falta = base < 0 ? -base - uso : 0;
       const disp = Math.max(0, base), mes = y.flujo + faltaMes - cubre, queda = base + uso - y.movido + mes - (y.repartoFuera || 0);
       const rvaCap = y.rvaCap ?? y.aReserva;
-      const resS = Math.min(rvaCap, Math.max(0, disp - y.movido - sac), Math.max(0, queda));
+      const resS = Math.min(rvaCap, Math.max(0, Math.min(disp - y.movido, disp - sac)), Math.max(0, queda));
       const aRes = Math.min(resS + (y.mesAReserva ? Math.max(0, mes - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0), Math.max(0, queda));
       const porInv = disp - y.movido - resS;
       const apS = y.reservaHasta ? Math.min(resS, aRes) : 0;
@@ -2352,7 +2360,7 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     // reserva es que queda un capital disponible para ese año, que suma al capital para cualquier cosa: invertir, pagar deudas"). Lo que
     // guardas este año en tu reserva sale de tu capital sin tocar lo que sacaste de ella.
     const antesReserva = disponible - movido;
-    const reservaDeAqui = Math.min(rvaCap, Math.max(0, antesReserva - sacasReserva), Math.max(0, queda));
+    const reservaDeAqui = Math.min(rvaCap, Math.max(0, Math.min(antesReserva, disponible - sacasReserva)), Math.max(0, queda));
     const aReserva = Math.min(reservaDeAqui + aReservaMes, Math.max(0, queda));
     const porInvertir = antesReserva - reservaDeAqui;
     const pasa = Math.max(0, queda) - aReserva;
