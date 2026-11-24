@@ -276,7 +276,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
     Object.entries(g1).forEach(([nombre, monto]) => f1.push({ destino: nombre, monto, ...info(nombre) }));
     if (bd.obras > 0.5) f1.push({ destino: tx("Obras", "Build-outs"), monto: bd.obras, tasa: "—", hace: tx("Mejoran lo que tienes", "Improve what you own") });
     if (bd.colchon > 0.5) f1.push({ destino: tx("Colchón para imprevistos", "Emergency cushion"), monto: bd.colchon, tasa: "—", hace: tx("Plata a la mano", "Cash on hand") });
-    const de1 = [...(r.vendidos || []).map((v) => v.nombre), ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [tx("capital nuevo", "new capital")] : []), ...(bd.desdeLiquidez > 0.5 ? [tx("tu liquidez", "your cash")] : [])];
+    const de1 = [...(r.vendidos || []).map((v) => v.nombre), ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [tx("capital nuevo", "new capital")] : []), ...(bd.desdeLiquidez > 0.5 ? [tx("tu plata disponible", "your cash")] : [])];
     if (f1.length) grupos.push({ anio: 1, filas: f1, de: de1, queda: bd.restante || 0 });
     // Años siguientes: la cuenta del año (viene del anterior + lo que sobra + lo que llega).
     cuentaPorAnio(r).forEach((g) => {
@@ -365,7 +365,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
         <Ficha l={tx("Produce al mes", "Earns per month")} v={fmM(produceMes)} s={tx(`renta ${fmM(rentaMes)} + multiplica ${fmM(multiplicaMes)}`, `income ${fmM(rentaMes)} + compounding ${fmM(multiplicaMes)}`)} />
         <Ficha l={tx("Rendimiento del patrimonio", "Return on net worth")} v={fmPct(rendimiento, 1)} s={tx("anual, sobre lo que tienes", "per year, on what you own")} />
         <Ficha l={tx("Sale al mes", "Goes out per month")} v={fmM(saleMes)} s={tx("gastos + cuotas", "expenses + loan payments")} />
-        <Ficha ancha l={entraMes - saleMes >= 0 ? tx("Sobra al mes y se reinvierte", "Monthly surplus, reinvested") : tx("Falta al mes", "Monthly shortfall")} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || tx("lo que entra menos lo que sale", "what comes in minus what goes out")) : tx("sale de tu liquidez", "comes out of your cash")} col={entraMes - saleMes >= 0 ? INF.txOk : INF.txBad} />
+        <Ficha ancha l={entraMes - saleMes >= 0 ? tx("Sobra al mes y se reinvierte", "Monthly surplus, reinvested") : tx("Falta al mes", "Monthly shortfall")} v={`${entraMes - saleMes >= 0 ? "+" : ""}${fmM(entraMes - saleMes)}`} s={entraMes - saleMes >= 0 ? (r.destinoSobra || tx("lo que entra menos lo que sale", "what comes in minus what goes out")) : tx("sale de tu plata disponible", "comes out of your cash")} col={entraMes - saleMes >= 0 ? INF.txOk : INF.txBad} />
         <Ficha l={tx("Le gana a la inflación", "Beats inflation")} v={real == null ? "—" : `${real >= 0 ? "+" : ""}${fmPct(real, 1)}`} s={tx(`real al año · en ${ganaN} de ${gana.length} años`, `real per year · in ${ganaN} of ${gana.length} years`)} col={real != null && real >= 0 ? INF.txOk : INF.txBad} />
         </div>
       </div>

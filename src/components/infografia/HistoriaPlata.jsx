@@ -59,7 +59,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
   const usos = (bd.usos || []).filter((u) => u.monto > 0.5);
   const usoDe = (nombre, k) => usos.filter((u) => u.nombre === nombre && (u.anio || 1) === k && !(k === 1 && u.apartado)).reduce((s, u) => s + u.monto, 0);
   const mz = r.mezcla || {};
-  const mezclaTxt = tx(`${Math.round(mz.liquidez || 0)} % liquidez, ${Math.round(mz.renta || 0)} % renta fija y ${Math.round(mz.crecimiento || 0)} % crecimiento`, `${Math.round(mz.liquidez || 0)}% cash, ${Math.round(mz.renta || 0)}% fixed income and ${Math.round(mz.crecimiento || 0)}% growth`);
+  const mezclaTxt = tx(`${Math.round(mz.liquidez || 0)} % plata disponible, ${Math.round(mz.renta || 0)} % renta fija y ${Math.round(mz.crecimiento || 0)} % crecimiento`, `${Math.round(mz.liquidez || 0)}% cash, ${Math.round(mz.renta || 0)}% fixed income and ${Math.round(mz.crecimiento || 0)}% growth`);
 
   // ── Lo vendido hoy y por qué ──────────────────────────────────────────────
   const rendDest = [
@@ -89,7 +89,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
   const futuroDe = (id) => { const m = /^futuro_(\d+)$/.exec(String(id || "")); return m ? ((r.futuros || {}).activos || [])[Number(m[1])] : null; };
   const nuevasIds = new Set((r.nuevasDetalle || []).filter((x) => x.id).map((x) => x.id));
   const orden = (l) => l.filter((a) => a.valor > 0.5).sort((x, y) => y.valor - x.valor);
-  const canastasDe = (f, det) => { const v = (f.porActivo || []).filter(esCanasta).reduce((s, a) => s + (a.valor || 0), 0); return v > 0.5 ? [{ id: "canastas", nombre: tx("Liquidez, colchón y lo que sobra", "Cash, cushion and leftover"), valor: v, tag: "canasta", det }] : []; };
+  const canastasDe = (f, det) => { const v = (f.porActivo || []).filter(esCanasta).reduce((s, a) => s + (a.valor || 0), 0); return v > 0.5 ? [{ id: "canastas", nombre: tx("Plata disponible, colchón y lo que sobra", "Available cash, cushion and leftover"), valor: v, tag: "canasta", det }] : []; };
   let inicio;
   if (hoyT) {
     // Hoy, antes del plan: lo que vendes (con su porqué) y lo que conservas (con su valor de antes).
@@ -173,7 +173,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
     fuentes = [
       ...vendidos.map((v, i) => ({ key: "v" + v.id, nombre: v.nombre, monto: v.valor, color: INF.serie[(i + 5) % INF.serie.length] })),
       ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [{ key: "cn", nombre: tx("Capital nuevo", "New capital"), monto: bd.capitalNuevoHoy ?? bd.capitalNuevo, color: INF.navy }] : []),
-      ...(bd.desdeLiquidez > 0.5 ? [{ key: "lq", nombre: tx("De tu liquidez", "From your cash"), monto: bd.desdeLiquidez, color: INF.gris }] : []),
+      ...(bd.desdeLiquidez > 0.5 ? [{ key: "lq", nombre: tx("De tu plata disponible", "From your cash"), monto: bd.desdeLiquidez, color: INF.gris }] : []),
       ...(bd.pendienteAnio1 > 0.5 ? [{ key: "pa", nombre: tx(`De lo que entra en ${anioCal(1)}`, `From what comes in during ${anioCal(1)}`), monto: bd.pendienteAnio1, color: INF.serie[3] }] : []),
     ];
     const grupos = {};
@@ -262,7 +262,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
       rinde: fmPct(x.rendPct, 1) + tx(" al año", " a year"),
       mes: (k) => (x.pagaRenta ? (s[k]?.renta || 0) / 12 : 0), pagaEtq: tx("Te paga", "Pays you"), serie });
   });
-  const nomActivo = (id) => (id === "c_crecimiento" ? tx("Crecimiento (lo que sobra)", "Growth (leftover)") : id === "c_renta" ? tx("Renta fija (lo que sobra)", "Fixed income (leftover)") : id === "c_liquidez" ? tx("Liquidez y colchón", "Cash and cushion") : id === "c_disponible" ? tx("disponible", "available") : ((f0.porActivo || []).find((a) => a.id === id) || {}).nombre || null);
+  const nomActivo = (id) => (id === "c_crecimiento" ? tx("Crecimiento (lo que sobra)", "Growth (leftover)") : id === "c_renta" ? tx("Renta fija (lo que sobra)", "Fixed income (leftover)") : id === "c_liquidez" ? tx("Plata disponible", "Available cash") : id === "c_disponible" ? tx("disponible", "available") : ((f0.porActivo || []).find((a) => a.id === id) || {}).nombre || null);
   (r.ciclosDetalle || []).filter((c) => c.capital > 0).forEach((c) => {
     const s0 = serieDe(c.id);
     let ac = 0;
@@ -276,7 +276,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
   const colchon = bd.colchon || 0, restante = bd.restante || 0;
   const sumMz = (mz.liquidez || 0) + (mz.renta || 0) + (mz.crecimiento || 0);
   [
-    ["c_liquidez", "caja", tx("Liquidez y colchón", "Cash and cushion"), colchon + (sumMz > 0 ? restante * (mz.liquidez || 0) / sumMz : restante)],
+    ["c_liquidez", "caja", tx("Plata disponible", "Available cash"), colchon + (sumMz > 0 ? restante * (mz.liquidez || 0) / sumMz : restante)],
     ["c_renta", "crece", tx("Renta fija (lo que sobra)", "Fixed income (leftover)"), sumMz > 0 ? restante * (mz.renta || 0) / sumMz : 0],
     ["c_crecimiento", "crece", tx("Crecimiento (lo que sobra)", "Growth (leftover)"), sumMz > 0 ? restante * (mz.crecimiento || 0) / sumMz : 0],
   ].filter(([, , , m]) => m > 0.5).forEach(([id, tipo, nombre, m]) => {
@@ -380,7 +380,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
           <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "14px 0 10px", fontSize: 13, color: INF.tx2 }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M12 4v16M6 14l6 6 6-6" /></svg>
             {hoyT && Math.abs(diferencia) > 0.5 ? (diferencia > 0
-              ? tx(<>Quedan <b style={{ color: INF.tx }}>{fmM(diferencia)}</b> sin asignar: se suman a tu liquidez.</>, <><b style={{ color: INF.tx }}>{fmM(diferencia)}</b> left unassigned: it adds to your cash.</>)
+              ? tx(<>Quedan <b style={{ color: INF.tx }}>{fmM(diferencia)}</b> sin asignar: se suman a tu plata disponible.</>, <><b style={{ color: INF.tx }}>{fmM(diferencia)}</b> left unassigned: it adds to your cash.</>)
               : tx(<>Faltan <b style={{ color: INF.txBad }}>{fmM(-diferencia)}</b>: lo que pides supera lo que vendes.</>, <><b style={{ color: INF.txBad }}>{fmM(-diferencia)}</b> short: you ask for more than you sell.</>))
               : tx("Y así se usa:", "And it's used like this:")}
           </div>
@@ -391,7 +391,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
             <span>{tx("Entra", "In")} <b style={cifra}>{fmM(totFuentes)}</b></span><span style={{ color: INF.tx2 }}>−</span>
             <span>{tx("usas", "you use")} <b style={cifra}>{fmM(usado)}</b></span><span style={{ color: INF.tx2 }}>=</span>
             {queda >= -0.5 ? <span>{t < nAnios ? tx(`queda para ${anioCal(t + 1)}`, `left for ${anioCal(t + 1)}`) : tx("queda invertido", "stays invested")} <b style={{ ...cifra, color: INF.txOk }}>{fmM(Math.max(0, queda))}</b></span>
-              : <span style={{ color: INF.txBad }}>{tx("faltan", "short")} <b style={cifra}>{fmM(-queda)}</b>{tx(": sale de tu liquidez", ": comes out of your cash")}</span>}
+              : <span style={{ color: INF.txBad }}>{tx("faltan", "short")} <b style={cifra}>{fmM(-queda)}</b>{tx(": sale de tu plata disponible", ": comes out of your cash")}</span>}
           </div>
         </div> : <div style={{ background: "var(--fp-raised)", borderRadius: 12, padding: 16, fontSize: 13, color: INF.tx2 }}>{tx(`${EnAnio(t)} no entra ni sale plata del plan: todo sigue invertido.`, `${EnAnio(t)} no plan money comes in or goes out: everything stays invested.`)}</div>}
       </Paso>

@@ -47,7 +47,7 @@ export const INF = {
 // Color estable por clase de activo (Patrimonio neto por año, Todo lo que tienes).
 export const COLOR_CLASE = { inmueble: INF.teja, liquido: INF.azul, acciones: INF.morado, nueva: INF.dorado, otro: INF.gris, vehiculo: INF.gris, canasta: INF.oliva };
 // 3-nov-2026: etiqueta en el idioma de la sesión (getter: se lee al pintar, no al importar).
-const ETQ_CLASE_ES = { inmueble: "Inmuebles", liquido: "Liquidez", acciones: "Bolsa", nueva: "Inversiones nuevas", otro: "Otros", vehiculo: "Vehículos", canasta: "Lo que sobra reinvertido" };
+const ETQ_CLASE_ES = { inmueble: "Inmuebles", liquido: "Plata disponible", acciones: "Bolsa", nueva: "Inversiones nuevas", otro: "Otros", vehiculo: "Vehículos", canasta: "Lo que sobra reinvertido" };
 const ETQ_CLASE_EN = { inmueble: "Real estate", liquido: "Cash", acciones: "Stocks", nueva: "New investments", otro: "Other", vehiculo: "Vehicles", canasta: "Surplus reinvested" };
 export const ETQ_CLASE = new Proxy({}, { get: (_, k) => tx(ETQ_CLASE_ES[k], ETQ_CLASE_EN[k]), ownKeys: () => Object.keys(ETQ_CLASE_ES), getOwnPropertyDescriptor: (_, k) => (k in ETQ_CLASE_ES ? { enumerable: true, configurable: true, value: tx(ETQ_CLASE_ES[k], ETQ_CLASE_EN[k]) } : undefined) });
 

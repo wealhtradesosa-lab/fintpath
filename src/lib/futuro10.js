@@ -702,7 +702,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   fila0.ingresosReal = ingresos; fila0.gastosReal = fila0.gastos;
   fila0.porActivo = [
     ...todos.map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: a.rentaReemplazada ? 0 : (a.rentaAnual || 0), crece: 0, crec: a.crec, rentaPct: a.rentaPct || 0, deLiquidez: a.tomadoLiq || 0 })),
-    { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: rCan.liquidez },
+    { id: "c_liquidez", nombre: tx("Plata disponible", "Available cash"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: rCan.liquidez },
     { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: 0, crec: rCan.renta },
     { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: 0, crec: rCan.crecimiento },
   ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
@@ -899,13 +899,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (restoPct > 0) { if (disponible) colchon += cf * restoPct / 100; else Object.keys(canasta).forEach((k) => { canasta[k] += cf * (restoPct / 100) * mezcla[k] / 100; }); }
     } else {
       retirar(-cf);
-      alertas.push({ tipo: "cf_negativo", anio: t, texto: tx(`En ${anioCal(t)} sale más de lo que entra; se usa tu liquidez.`, `In ${anioCal(t)} more goes out than comes in; your cash covers it.`) });
+      alertas.push({ tipo: "cf_negativo", anio: t, texto: tx(`En ${anioCal(t)} sale más de lo que entra; se usa tu plata disponible.`, `In ${anioCal(t)} more goes out than comes in; your cash covers it.`) });
     }
     // Deuda sin intereses que se paga de una vez este año: sale de tu liquidez.
     unicas.forEach((d) => {
       if (d.t !== t || d.saldo <= 0) return;
       retirar(d.saldo); deudaUnica -= d.saldo;
-      alertas.push({ tipo: "pago_unico", anio: t, texto: tx(`En ${anioCal(t)} pagas ${d.nombre} de una vez con tu liquidez.`, `In ${anioCal(t)} you pay off ${d.nombre} in one go with your cash.`) });
+      alertas.push({ tipo: "pago_unico", anio: t, texto: tx(`En ${anioCal(t)} pagas ${d.nombre} de una vez con tu plata disponible.`, `In ${anioCal(t)} you pay off ${d.nombre} in one go with your cash.`) });
       d.pagadoEnAnio = d.saldo; d.saldo = 0;
     });
     // Pagos de un activo futuro: pasan de tu liquidez al activo (no cambia el patrimonio).
@@ -935,7 +935,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       });
       if (falta > 0.5) retirar(falta);
       a.valor += pg.monto;
-      alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? tx(`En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.`, `In ${anioCal(t)} you pay for ${a.nombre}: ${partes.join(" and ")}${falta > 0.5 ? ", and the rest from your cash" : ""}.`) : tx(`En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.`, `In ${anioCal(t)} you pay part of ${a.nombre} with your cash.`) });
+      alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? tx(`En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu plata disponible" : ""}.`, `In ${anioCal(t)} you pay for ${a.nombre}: ${partes.join(" and ")}${falta > 0.5 ? ", and the rest from your cash" : ""}.`) : tx(`En ${anioCal(t)} pagas parte de ${a.nombre} con tu plata disponible.`, `In ${anioCal(t)} you pay part of ${a.nombre} with your cash.`) });
     }));
     // Inversión adicional (pesos de ese año): pasa de tu liquidez al activo. No cambia el patrimonio.
     todos.forEach((a) => {
@@ -948,13 +948,13 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
           if (x.monto - usa > 0.5) retirar(x.monto - usa);
         } else if (!x.nuevo) retirar(x.monto);
         a.valor += x.monto;
-        alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu plata disponible a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
         // lo apartado entra al activo; lo que rindió mientras tanto vuelve al colchón
         if (a.reserva > 0) { a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
         if (a.invMonto > 0) { retirar(a.invMonto); a.valor += a.invMonto; }
-        alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
+        alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu plata disponible a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       }
     });
     // Salto de valor al terminar una obra o al recibir lo que se construye
@@ -1004,7 +1004,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         const cambioRenta = a.cambio && !a.rentaReemplazada && a.rentaAntesCambio != null ? ((a.rentaAnual || 0) - a.rentaAntesCambio) * fr : 0;
         return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), rentaNueva: rentaExtra + cambioRenta, crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0) };
       }),
-      { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
+      { id: "c_liquidez", nombre: tx("Plata disponible", "Available cash"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
       { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
       { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: creceCan.crecimiento },
     ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
@@ -1021,8 +1021,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     f.invertibleReal = f.invertible / deflactor;
     f.ingresosReal = (ingresos + rentaNueva + cicloFlujo) / deflactor; // incluye la renta nueva (bodega, ingresos futuros)
     f.gastosReal = f.gastos / deflactor;
-    if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: tx(`En ${anioCal(t)} un activo o tu liquidez queda en negativo.`, `In ${anioCal(t)} an asset or your cash goes negative.`) });
-    else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: tx(`En ${anioCal(t)} tu liquidez cubre menos de ${sup.colchonMeses} meses de gastos.`, `In ${anioCal(t)} your cash covers less than ${sup.colchonMeses} months of expenses.`) });
+    if (liquidez < 0 || todos.some((a) => a.valor < 0)) alertas.push({ tipo: "activo_negativo", anio: t, texto: tx(`En ${anioCal(t)} un activo o tu plata disponible queda en negativo.`, `In ${anioCal(t)} an asset or your cash goes negative.`) });
+    else if (obAnual > 0 && liquidez < metaColchon) alertas.push({ tipo: "liquidez_baja", anio: t, texto: tx(`En ${anioCal(t)} tu plata disponible cubre menos de ${sup.colchonMeses} meses de gastos.`, `In ${anioCal(t)} your cash covers less than ${sup.colchonMeses} months of expenses.`) });
     filas.push(f);
   }
   const fin = filas[filas.length - 1];
@@ -1094,7 +1094,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // 23-nov-2026: parte de lo que sobra cada año que no tiene destino fijo (cuentaPorAnio).
     sobraLibre: Math.max(0, 1 - Math.min(100, sobraDestinos.reduce((sm, d) => sm + d.pct, 0)) / 100),
     destinoSobraLista: (() => {
-      const DISP = tx("Disponible", "Available"), LIQ = tx("Liquidez", "Cash"), RF = tx("Renta fija", "Fixed income"), CREC = tx("Crecimiento", "Growth");
+      const DISP = tx("Disponible", "Available"), LIQ = tx("Plata disponible", "Cash"), RF = tx("Renta fija", "Fixed income"), CREC = tx("Crecimiento", "Growth");
       const nom = (id) => id === "c_disponible" ? DISP : id === "c_liquidez" ? LIQ : id === "c_renta" ? RF : id === "c_crecimiento" ? CREC : ((todos.find((x) => x.id === id) || {}).nombre || id);
       const l = sobraDestinos.map((d) => ({ nombre: nom(d.id), pct: d.pct }));
       const resto = 100 - sobraDestinos.reduce((sm, d) => sm + d.pct, 0);
@@ -1102,10 +1102,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       return l;
     })(),
     destinoSobra: (() => {
-      const nom = (id) => id === "c_disponible" ? tx("disponible", "available") : id === "c_liquidez" ? tx("liquidez", "cash") : id === "c_renta" ? tx("renta fija", "fixed income") : id === "c_crecimiento" ? tx("crecimiento", "growth") : ((todos.find((x) => x.id === id) || {}).nombre || id);
+      const nom = (id) => id === "c_disponible" ? tx("disponible", "available") : id === "c_liquidez" ? tx("plata disponible", "cash") : id === "c_renta" ? tx("renta fija", "fixed income") : id === "c_crecimiento" ? tx("crecimiento", "growth") : ((todos.find((x) => x.id === id) || {}).nombre || id);
       const partes = sobraDestinos.map((d) => tx(`${Math.round(d.pct)} % a ${nom(d.id)}`, `${Math.round(d.pct)}% to ${nom(d.id)}`));
       const resto = 100 - sobraDestinos.reduce((sm, d) => sm + d.pct, 0);
-      if (resto > 0.5) partes.push(disponible ? tx(`${Math.round(resto)} % queda disponible`, `${Math.round(resto)}% stays available`) : tx(`${Math.round(resto)} % se reparte (${Math.round(mezcla.liquidez)} % liquidez, ${Math.round(mezcla.renta)} % renta fija, ${Math.round(mezcla.crecimiento)} % crecimiento)`, `${Math.round(resto)}% is split (${Math.round(mezcla.liquidez)}% cash, ${Math.round(mezcla.renta)}% fixed income, ${Math.round(mezcla.crecimiento)}% growth)`));
+      if (resto > 0.5) partes.push(disponible ? tx(`${Math.round(resto)} % queda disponible`, `${Math.round(resto)}% stays available`) : tx(`${Math.round(resto)} % se reparte (${Math.round(mezcla.liquidez)} % plata disponible, ${Math.round(mezcla.renta)} % renta fija, ${Math.round(mezcla.crecimiento)} % crecimiento)`, `${Math.round(resto)}% is split (${Math.round(mezcla.liquidez)}% cash, ${Math.round(mezcla.renta)}% fixed income, ${Math.round(mezcla.crecimiento)}% growth)`));
       return partes.join(" · ");
     })(),
     // 23-nov-2026 (Santiago: "gráficos como ceros o sin mostrar nada": SKANDIA y BTG de 2027

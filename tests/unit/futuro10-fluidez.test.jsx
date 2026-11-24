@@ -6,6 +6,7 @@ import { calcularBase } from "../../src/lib/metrics.js";
 import MiFuturo10, { FUENTE_NUEVA, textoObra } from "../../src/components/MiFuturo10.jsx";
 import PlanInforme from "../../src/components/PlanInforme.jsx";
 import BarraFuturo10 from "../../src/components/BarraFuturo10.jsx";
+import HistoriaPlata from "../../src/components/infografia/HistoriaPlata.jsx";
 
 // 24-nov-2026 — PR fluidez de «Mi futuro a 10 años» (Soporte · QA · Finanzas).
 const Y = new Date().getFullYear();
@@ -78,6 +79,22 @@ describe("3 y 4 · palabras claras y unidades en cada monto", () => {
     expect(h).not.toMatch(/>Liquidez</);
     expect(h).not.toContain("Fees");
     expect(h).not.toContain("Bolsa: acciones y ETF");
+  });
+  it("canastas, mezcla, informe e historia dicen «Plata disponible», no «Liquidez»", () => {
+    const palabra = /(^|[^A-Za-z_])[Ll]iquidez([^A-Za-z_]|$)/;
+    const r = proyectarFuturo10(user, {});
+    const nombres = r.filas.flatMap((f) => (f.porActivo || []).filter((a) => a.id === "c_liquidez").map((a) => a.nombre));
+    expect(nombres.length).toBeGreaterThan(0);
+    expect(new Set(nombres)).toEqual(new Set(["Plata disponible"]));
+    expect(JSON.stringify(r.destinoSobraLista)).not.toMatch(palabra);
+    expect(r.destinoSobra).not.toMatch(palabra);
+    expect((r.alertas || []).every((a) => !palabra.test(a.texto || ""))).toBe(true);
+    const informe = renderToStaticMarkup(createElement(PlanInforme, { r, inflacionPct: 4 }));
+    expect(informe).toContain("Plata disponible");
+    expect(informe).not.toMatch(palabra);
+    expect(renderToStaticMarkup(createElement(HistoriaPlata, { r }))).not.toMatch(palabra);
+    const paso3 = renderToStaticMarkup(createElement(MiFuturo10, { user, guardado: { borrador: {} }, pasoInicial: 3 })).replace(/<!-- -->/g, "");
+    expect(paso3).not.toMatch(palabra);
   });
   it("paso 3: cada monto dice una sola vez / pesos de hoy, y nunca «pesos de AAAA»", () => {
     const cfg = { nuevas: [{ preset: "rfCorto", monto: 50e6, anio: 1, fuente: "liquidez" }], reinversiones: [{ activoId: "a", monto: 10e6, anio: 1, fuente: "liquidez", obraAnios: 0 }] };

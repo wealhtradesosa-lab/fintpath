@@ -72,7 +72,7 @@ export default function MesCompleto({ r, card, h3, lead, anio = 1, lista = null 
   const add = (name, valor, lado, color) => { nodes.push({ name, valor, lado, color }); return nodes.length - 1; };
   const centro = add(sobra < -0.5 ? tr("Total del mes", "Monthly total") : tr("Lo que entra al mes", "Monthly income"), entra.reduce((s, x) => s + x.mensual, 0) + Math.max(0, -sobra), "centro", INF.navy);
   entra.forEach((x, i) => links.push({ source: add(x.nombre, x.mensual, "izq", TONOS_ENTRA[i % TONOS_ENTRA.length]), target: centro, value: x.mensual }));
-  if (sobra < -0.5) links.push({ source: add(tr("Sale de tu liquidez", "From your cash"), -sobra, "izq", INF.bad), target: centro, value: -sobra });
+  if (sobra < -0.5) links.push({ source: add(tr("Sale de tu plata disponible", "From your cash"), -sobra, "izq", INF.bad), target: centro, value: -sobra });
   sale.forEach((x) => links.push({ source: centro, target: add(x.nombre, x.mensual, "der", INF.teja), value: x.mensual }));
   if (sobra > 0.5) {
     const lista = (r.destinoSobraLista && r.destinoSobraLista.length ? r.destinoSobraLista : [{ nombre: tr("Se reinvierte", "Reinvested"), pct: 100 }]);
