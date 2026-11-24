@@ -1565,6 +1565,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           <div aria-hidden="true" style={{ height: 8, borderRadius: 999, background: C.bd, overflow: "hidden" }}><div style={{ height: "100%", width: `${pctU}%`, background: g.porInvertir < -0.5 ? C.rd : C.gn, transition: "width 400ms cubic-bezier(.2,.8,.2,1)" }} /></div>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12, color: C.tx2, marginTop: 4, fontVariantNumeric: "tabular-nums" }}><span>{tx(`Usaste ${plata(Math.round(usado))} de ${plata(Math.round(g.disponible))}`, `You used ${plata(Math.round(usado))} of ${plata(Math.round(g.disponible))}`)}</span><span>{g.porInvertir < -0.5 ? tx(`te pasaste ${plata(Math.round(-g.porInvertir))}`, `over by ${plata(Math.round(-g.porInvertir))}`) : tx(`te quedan ${plata(Math.round(g.porInvertir))}`, `${plata(Math.round(g.porInvertir))} left`)}</span></div>
         </div>; })()}
+        {anio > 1 && (g.reservaAntes || 0) > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} />}
         <button type="button" onClick={() => setVerOrigen(!verOrigen)} style={{ ...enlace, color: C.tx2 }} aria-expanded={verOrigen}>{verOrigen ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx("¿De dónde sale?", "Where does it come from?")}</button>
         {verOrigen && <div style={{ marginTop: 6 }}>
           {/* Lo que tienes, renglón por renglón: lo que traes y cada venta o plata que te llega. */}
@@ -1680,6 +1681,32 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
       <ResultadoAnio r={r} cfg={cfg} set={set} cuenta={cuenta} anioSel={anioSel} setAnioSel={setAnioSel} dejarListo={dejarListo} irAnio={irAnio} />
       </>}
     </div>
+  </div>;
+}
+// 24-nov-2026 (Santiago: "no veo cómo puede uno disponer de la reserva… la reserva va apareciendo acumulada cada año; debería poder usarse
+// si se necesita, un botón como de usar reserva este año"). Lo que sacas entra a tu capital de ese año; lo demás sigue rindiendo.
+function UsarReserva({ g, cfg, set, anio }) {
+  const [abierto, setAbierto] = useState(false);
+  const [monto, setMonto] = useState("");
+  const total = Math.round(g.reservaAntes || 0), sacas = Math.round(g.sacasReserva || 0);
+  const poner = (v) => { const x = { ...(cfg.usarReserva || {}) }; if (!(Number(v) > 0)) delete x[anio]; else x[anio] = Math.min(total, Math.round(Number(v))); set("usarReserva", x); };
+  const ok = Number(monto) > 0;
+  return <div style={{ border: `1px solid ${C.bd}`, borderRadius: 12, padding: "10px 12px", margin: "0 0 10px", display: "grid", gap: 8 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <span style={{ flex: "1 1 240px", fontSize: 14, color: C.tx, lineHeight: 1.45 }}>{sacas > 0.5
+        ? tx(`Sacas ${plata(sacas)} de tu reserva: entran a tu capital de este año.${sacas < total ? ` Te quedan ${plata(total - sacas)} en ella.` : ""}`, `You take ${plata(sacas)} from your reserve into this year's capital.${sacas < total ? ` ${plata(total - sacas)} stays in it.` : ""}`)
+        : tx(`Tienes ${plata(total)} en tu reserva.`, `You have ${plata(total)} in your reserve.`)}</span>
+      {sacas > 0.5
+        ? <span style={{ display: "flex", gap: 12 }}><button type="button" onClick={() => { setMonto(sacas); setAbierto(!abierto); }} style={{ ...enlace, color: C.tx2 }}>{tx("Cambiar", "Change")}</button><button type="button" onClick={() => { poner(0); setAbierto(false); }} style={{ ...enlace, color: C.tx2 }}>{tx("Quitar", "Remove")}</button></span>
+        : <button type="button" aria-expanded={abierto} onClick={() => { setMonto(total); setAbierto(!abierto); }} style={btnAccion(abierto)}>{tx("Usar tu reserva este año", "Use your reserve this year")}</button>}
+    </div>
+    {abierto && <div style={{ display: "flex", gap: 8, alignItems: "flex-end", flexWrap: "wrap" }}>
+      <label style={{ fontSize: 12, color: C.tx2, display: "grid", gap: 4 }}>{tx("¿Cuánto sacas? ($)", "How much do you take? ($)")}<span style={{ width: 200, maxWidth: "100%" }}><NumberInput style={inp} value={monto} onChange={setMonto} /></span></label>
+      <button type="button" onClick={() => setMonto(total)} style={{ ...btn(false), padding: "8px 12px" }}>{tx(`Todo (${plata(total)})`, `All (${plata(total)})`)}</button>
+      <button type="button" disabled={!ok} onClick={() => { poner(monto); setAbierto(false); }} style={{ ...btn(ok), padding: "8px 14px", opacity: ok ? 1 : 0.5, cursor: ok ? "pointer" : "not-allowed" }}>{tx("Usar", "Use")}</button>
+      <button type="button" onClick={() => setAbierto(false)} style={{ ...btn(false), padding: "8px 14px" }}>{tx("Cancelar", "Cancel")}</button>
+    </div>}
+    <div style={TIPO.meta}>{tx("Lo que no saques sigue rindiendo, y se usa sola si un año no te alcanza.", "What you don't take keeps earning, and is used automatically if a year falls short.")}</div>
   </div>;
 }
 // 24-nov-2026 (Santiago: "de lo que sobra cada mes, ¿qué quiere hacer? abonar a deudas mensualmente, abonar a inversión existente
