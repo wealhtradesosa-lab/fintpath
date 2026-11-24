@@ -228,25 +228,38 @@ export default function HistoriaPlata({ r, anio = 1 }) {
     cards.push({ key: "deudas", tipo: "deuda", nombre: tx("Pagar deudas", "Pay off debts"), sub: (r.deudas || []).filter((d) => !d.finPorCuota && d.finAnio != null && (d.pagado > 0.5 || d.pagoEnAnio > 0.5 || d.ventaAnio)).map((d) => `${d.nombre} (${d.finAnio <= 1 ? tx("hoy", "today") : anioCal(d.finAnio)})`).join(", "),
       monto: montoDeudas, rinde: tx("Ahorras los intereses", "You save the interest"), desde, mes: libreDeuda, pagaEtq: tx("Dejas de pagar", "You stop paying"), serie });
   }
-  (r.reinversionesDetalle || []).filter((x) => x.aporte > 0).forEach((x) => {
+  // Lo que ya tenías y le metes más: una tarjeta por activo con todos sus aportes (uno por año).
+  const porActivoRe = {};
+  (r.reinversionesDetalle || []).filter((x) => x.aporte > 0 && !x.aNueva).forEach((x) => { (porActivoRe[x.activoId] = porActivoRe[x.activoId] || []).push(x); });
+  const aportesTxt = (lista) => lista.map((y) => tx(`${fmM(y.aporte)} ${(y.anio || 1) <= 1 ? "hoy" : "en " + anioCal(y.anio)}`, `${fmM(y.aporte)} ${(y.anio || 1) <= 1 ? "today" : "in " + anioCal(y.anio)}`)).join(tx(" y ", " and "));
+  Object.values(porActivoRe).forEach((lista) => {
+    lista.sort((a, b) => (a.anio || 1) - (b.anio || 1));
+    const x = lista[0];
     const s = serieDe(x.activoId);
     let ac = 0;
     const serie = s.map((a, k) => { if (k > 0) ac += a.renta || 0; return { v: a.valor || 0, c: ac }; });
-    const paga = x.rentaMensual > 0 || x.teLlegaMes > 0 || s.some((a, k) => k > 0 && (a.rentaNueva || 0) > 0.5);
+    const paga = lista.some((y) => y.rentaMensual > 0 || y.teLlegaMes > 0) || s.some((a, k) => k > 0 && (a.rentaNueva || 0) > 0.5);
     const tipo = paga ? (x.clase === "inmueble" ? "mixto" : "renta") : "crece";
     const an = x.anio || 1;
-    cards.push({ key: "re" + x.i, tipo, nombre: x.nombre,
-      sub: x.valorHoy > 0.5 ? (an > 1 ? tx(`Ya lo tienes · le pones ${fmM(x.aporte)} en ${anioCal(an)}`, `Already yours · you add ${fmM(x.aporte)} in ${anioCal(an)}`) : tx(`Ya vale ${fmM(x.valorHoy)} y le inviertes más`, `Already worth ${fmM(x.valorHoy)}, you add more`)) : (an > 1 ? tx(`Se invierte en ${anioCal(an)}`, `Invested in ${anioCal(an)}`) : ""),
-      monto: x.aporte, base: x.valorHoy || 0, desde: an,
-      rinde: x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) + tx(" al año", " a year") : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) + tx(" al año", " a year") : x.valorizacionPct != null ? fmPct(x.valorizacionPct, 1) + tx(" al año + renta", " a year + rent") : "—",
+    const det = lista.find((y) => y.rendimientoPct != null) || x;
+    cards.push({ key: "re" + x.activoId, tipo, nombre: x.nombre,
+      sub: x.valorHoy > 0.5 ? tx(`Ya lo tienes · le pones ${aportesTxt(lista)}`, `Already yours · you add ${aportesTxt(lista)}`) : (an > 1 ? tx(`Se invierte en ${anioCal(an)}`, `Invested in ${anioCal(an)}`) : ""),
+      monto: lista.reduce((t2, y) => t2 + y.aporte, 0), base: x.valorHoy || 0, desde: an, extra: lista.map((y) => ({ anio: y.anio || 1, monto: y.aporte })),
+      rinde: det.rendimientoPct != null ? fmPct(det.rendimientoPct, 1) + tx(" al año", " a year") : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) + tx(" al año", " a year") : x.valorizacionPct != null ? fmPct(x.valorizacionPct, 1) + tx(" al año + renta", " a year + rent") : "—",
       mes: (k) => (s[k]?.rentaNueva || 0) / 12, pagaEtq: tx("Te paga", "Pays you"), serie });
   });
+  // Lo creado en el plan, con lo que le metes después (23-nov-2026: «ampliar los fondos de renta»).
+  const masANueva = (id) => (r.reinversionesDetalle || []).filter((y) => y.aNueva && y.activoId === id && y.aporte > 0).sort((a, b) => a.anio - b.anio);
   (r.nuevasDetalle || []).filter((x) => x.monto > 0.5).forEach((x, k0) => {
     const s = x.id ? serieDe(x.id) : filas.map(() => ({ valor: 0, renta: 0 }));
     let ac = 0;
     const serie = s.map((a, k) => { if (k > 0) ac += a.renta || 0; return { v: a.valor || 0, c: ac }; });
-    cards.push({ key: x.id || "nu" + k0, tipo: x.pagaRenta ? "renta" : "crece", nombre: x.nombre, sub: (x.anio || 1) > 1 ? tx(`Se invierte en ${anioCal(x.anio)}`, `Invested in ${anioCal(x.anio)}`) : "",
-      monto: x.monto, desde: x.anio || 1, rinde: fmPct(x.rendPct, 1) + tx(" al año", " a year"),
+    const mas = x.id ? masANueva(x.id) : [];
+    const subBase = (x.anio || 1) > 1 ? tx(`Se invierte en ${anioCal(x.anio)}`, `Invested in ${anioCal(x.anio)}`) : "";
+    cards.push({ key: x.id || "nu" + k0, tipo: x.pagaRenta ? "renta" : "crece", nombre: x.nombre,
+      sub: [subBase, mas.length ? tx(`le metes ${aportesTxt(mas)} más`, `you add ${aportesTxt(mas)} more`) : ""].filter(Boolean).join(" · "),
+      monto: x.monto + mas.reduce((t2, y) => t2 + y.aporte, 0), desde: x.anio || 1, extra: [{ anio: x.anio || 1, monto: x.monto }, ...mas.map((y) => ({ anio: y.anio, monto: y.aporte }))],
+      rinde: fmPct(x.rendPct, 1) + tx(" al año", " a year"),
       mes: (k) => (x.pagaRenta ? (s[k]?.renta || 0) / 12 : 0), pagaEtq: tx("Te paga", "Pays you"), serie });
   });
   const nomActivo = (id) => (id === "c_crecimiento" ? tx("Crecimiento (lo que sobra)", "Growth (leftover)") : id === "c_renta" ? tx("Renta fija (lo que sobra)", "Fixed income (leftover)") : id === "c_liquidez" ? tx("Liquidez y colchón", "Cash and cushion") : id === "c_disponible" ? tx("disponible", "available") : ((f0.porActivo || []).find((a) => a.id === id) || {}).nombre || null);
@@ -389,7 +402,9 @@ export default function HistoriaPlata({ r, anio = 1 }) {
           {cards.filter((x) => x.serie && !(x.canasta && x.monto < cards.reduce((s, y) => s + y.monto, 0) * 0.02)).map((x) => {
             const s = x.serie, ult = s[s.length - 1], pt = s[t];
             const top = Math.max(1, ...s.map((p) => p.v + p.c));
-            const inicioV = x.monto + (x.base || 0);
+            // Lo invertido hasta el año elegido (los aportes de años siguientes todavía no cuentan).
+            const inicioV = x.extra ? x.extra.filter((y) => y.anio <= t).reduce((t2, y) => t2 + y.monto, 0) + (x.base || 0) : x.monto + (x.base || 0);
+            const inicioFin = x.monto + (x.base || 0);
             const empezo = (x.desde || 1) <= t;
             const valT = x.tipo === "deuda" ? pt.c : pt.v + pt.c;
             const valFin = x.tipo === "deuda" ? ult.c : ult.v + ult.c;
@@ -425,7 +440,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
               <div aria-hidden="true" style={{ display: "flex", gap: 4, fontSize: 11.5, color: INF.tx2, marginTop: -8 }}>
                 {s.map((p, k) => <span key={k} style={{ flex: 1, textAlign: "center", whiteSpace: "nowrap", overflow: "visible", fontWeight: k === t ? 700 : 400, color: k === t ? INF.tx : INF.tx2 }}>{k === t ? anioCal(k) : k === 0 && t >= 2 ? tx("Hoy", "Today") : k === nAnios && t <= nAnios - 2 ? anioCal(k) : ""}</span>)}
               </div>
-              {t < nAnios && <div style={{ fontSize: 12, color: INF.tx2, marginTop: -4 }}>{x.tipo === "deuda" ? tx(`En ${nAnios} años dejas de pagar `, `Over ${nAnios} years you don't pay `) : tx(`En ${anioCal(nAnios)} vale `, `Worth in ${anioCal(nAnios)}: `)}<b style={{ ...cifra, color: INF.tx }}>{fmM(valFin)}</b>{x.tipo !== "deuda" && !x.canasta && inicioV > 0 ? <> · ×{num(valFin / inicioV, 1)}</> : null}</div>}
+              {t < nAnios && <div style={{ fontSize: 12, color: INF.tx2, marginTop: -4 }}>{x.tipo === "deuda" ? tx(`En ${nAnios} años dejas de pagar `, `Over ${nAnios} years you don't pay `) : tx(`En ${anioCal(nAnios)} vale `, `Worth in ${anioCal(nAnios)}: `)}<b style={{ ...cifra, color: INF.tx }}>{fmM(valFin)}</b>{x.tipo !== "deuda" && !x.canasta && inicioFin > 0 ? <> · ×{num(valFin / inicioFin, 1)}</> : null}</div>}
               <div style={{ fontSize: 13, lineHeight: 1.5, color: INF.tx, background: INF.panel, borderRadius: 10, padding: "10px 12px" }}>{FRASE(x, ult)}</div>
             </div>;
           })}

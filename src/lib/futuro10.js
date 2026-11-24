@@ -36,7 +36,12 @@ export const SUPUESTOS_F10 = {
     rfCorto: { nombre: "Renta fija corto plazo", nombreEn: "Short-term fixed income", realSpread: 2.5 },
     rfLargo: { nombre: "Renta fija largo plazo", nombreEn: "Long-term fixed income", realSpread: 3.5, topeSpread: 4.5 },
     fincaRaiz: { nombre: "Propiedad raíz", nombreEn: "Real estate", rentaNetaPct: 4.5, valorizacionSpread: 0 },
-    sp500: { nombre: "S&P 500 (USD)", nombreEn: "S&P 500 (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
+    // 23-nov-2026 (Santiago: "una de las opciones no debería ser S&P 500, debería ser acciones u
+    // otra cripto"). La llave sigue siendo sp500 (escenarios guardados); el supuesto es el de un
+    // índice amplio como el S&P 500. Cripto no tiene supuesto validado: solo inflación si no
+    // escribes el rendimiento que esperas.
+    sp500: { nombre: "Acciones y ETF (USD)", nombreEn: "Stocks & ETFs (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
+    cripto: { nombre: "Cripto (USD)", nombreEn: "Crypto (USD)", usd: true, realSpread: 0, sinSupuesto: true },
   },
   vehiculo: { depAnios1a3Pct: -12, depDespuesPct: -8 },
   otrosRealSpread: 0, // crypto, otros: sin supuesto validado → solo inflación
@@ -72,7 +77,8 @@ export const SUPUESTOS_F10_US = {
     rfCorto: { nombre: "Efectivo y T-bills", nombreEn: "Cash & T-bills", realSpread: 1 },
     rfLargo: { nombre: "Bonos", nombreEn: "Bonds", realSpread: 2, topeSpread: 3 },
     fincaRaiz: { nombre: "Propiedad raíz", nombreEn: "Real estate", rentaNetaPct: 4, valorizacionSpread: 0.5 },
-    sp500: { nombre: "S&P 500", nombreEn: "S&P 500", usd: false, devaluacionRealPct: 0 },
+    sp500: { nombre: "Acciones y ETF", nombreEn: "Stocks & ETFs", usd: false, devaluacionRealPct: 0 },
+    cripto: { nombre: "Cripto", nombreEn: "Crypto", usd: false, realSpread: 0, sinSupuesto: true },
   },
   vehiculo: { depAnios1a3Pct: -15, depDespuesPct: -10 },
 };
@@ -113,6 +119,7 @@ export function retornoNominalPreset(clave, esc, sup = supuestosF10(), override 
   const i = esc.inflacionPct / 100;
   let real;
   if (clave === "sp500") real = (override.realPct ?? esc.spRealPct) + n(p.devaluacionRealPct);
+  else if (p.sinSupuesto) real = n(p.realSpread); // cripto: sin supuesto, solo inflación
   else if (clave === "fincaRaiz") {
     // renta neta (sobre el valor) + valorización = inflación + spread
     const val = (1 + i) * (1 + (n(p.valorizacionSpread)) / 100) - 1;
@@ -334,6 +341,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // 2027 y otra vez en 2028). Antes solo contaba el primero (unaPorActivo). El índice
   // k es el de cfg.reinversiones, para que la pantalla encuentre su detalle.
   const aportesVistos = new Set();
+  // 23-nov-2026 (Santiago: "uno no necesariamente invierte en activos que tenía; puede ampliar
+  // su inversión en los fondos de renta, CDTs o, por ejemplo, Rapicredit"). Aportes a una
+  // inversión creada en el plan en un año anterior: se resuelven cuando ya existen las nuevas.
+  const aportesNuevas = [];
   (Array.isArray(cfg.reinversiones) ? cfg.reinversiones : []).forEach((r, k) => {
     if (!r || !r.activoId) return;
     // Dos aportes al mismo activo en el MISMO año: cuenta el primero (el que se ve).
@@ -342,7 +353,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     aportesVistos.add(claveAporte);
     pedidoTotal += Math.max(0, n(r.monto));
     const a = activos.find((x) => x.id === r.activoId);
-    if (!a) return;
+    if (!a) {
+      if (String(r.activoId).startsWith("nueva_") && n(r.monto) > 0) {
+        // Sale del saldo de ese año, como cualquier aporte de un año siguiente.
+        pedidoTotal -= n(r.monto); programadasTotal += n(r.monto);
+        aportesNuevas.push({ k, id: r.activoId, monto: n(r.monto), anio: Math.min(10, Math.max(2, Math.round(n(r.anio)) || 1)) });
+      }
+      return;
+    }
     const antes = a.valor;
     if (!vacio(r.valorizacionNomPct)) a.crec = n(r.valorizacionNomPct) / 100;
     // 24-oct-2026 (Santiago: "según el tipo de inversión la plataforma debe
@@ -511,6 +529,19 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     });
     nuevasTotal += valor0;
     nuevas.push({ id: p.id, nombre: p.nombre, clase: "inmueble", valor: valor0, crec: p.crec, entrega: p.entrega, pagos, saltos: p.valorAlTerminar > 0 ? [{ t: p.entrega, valor: p.valorAlTerminar }] : [], rentaNuevaAnual: p.renta * 12, rentaDesdeMes: 12 * (Math.max(1, p.entrega) - 1), usd: false, invertible: true, montoInicial: valor0, montoTotal: p.capital, anioInicio: p.anio, propiedadRaiz: p.tipo });
+  });
+  // Aportes a lo creado en el plan: entran ese año a la inversión (pesos de ese año) y salen
+  // del saldo del año. La inversión sigue rindiendo igual y te paga en la misma proporción.
+  aportesNuevas.forEach((x) => {
+    const nu = nuevas.find((y) => y.id === x.id && !y.propiedadRaiz && y.clase !== "ciclo");
+    const pe = nu ? null : personalizadas.find((y) => y.id === x.id);
+    const destino = nu || pe;
+    if (!destino || x.anio <= (nu ? 1 : (pe.anio || 1))) return;
+    (destino.aportesFuturos = destino.aportesFuturos || []).push({ monto: x.monto, anio: x.anio });
+    usos.push({ seccion: "B", nombre: destino.nombre, monto: x.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: x.anio, fuente: "liquidez" });
+    const rend = nu ? ((nu.crec || 0) + (nu.rentaPct || 0)) * 100 : (pe.rendNom || 0) * 100;
+    const pct = nu ? (rend > 0 ? (nu.rentaPct || 0) * 100 / rend * 100 : 0) : (pe.pctRecibe || 0);
+    reinversionesDetalle.push({ i: x.k, activoId: x.id, nombre: destino.nombre, clase: "nueva", valorHoy: 0, aporte: x.monto, anio: x.anio, total: x.monto, rentaMensual: 0, rentaDesdeMes: 0, rentaPctAnual: 0, valorizacionPct: null, rendimientoPct: rend, pctRecibe: pct, deVenta: 0, deLiquidez: 0, deAnio1: 0, deNuevo: 0, fuente: "liquidez", rindeAnual: 0, teLlegaMes: 0, aNueva: true });
   });
   const ciclos = leerCiclos([...(Array.isArray(cfg.ciclos) ? cfg.ciclos : []), ...prCiclos], N);
   const ciclosDetalle = [];
@@ -761,7 +792,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (c.holder) { const usa = Math.min(c.holder.valor, c.monto); c.holder.valor -= usa; if (c.monto - usa > 0.5) retirar(c.monto - usa); colchon += Math.max(0, c.holder.valor); c.holder.valor = 0; }
       else retirar(c.monto);
       // «Paga renta»: el valor sigue la inflación y el resto del rendimiento va al flujo.
-      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true });
+      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, aportesFuturos: c.aportesFuturos });
     });
     // 0b) negocios que se repiten: arrancan (sale el capital) o terminan (vuelve).
     todos.forEach((a) => {
@@ -1071,7 +1102,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // salían «Vale en 2035 $0 ×0,0»). Las inversiones de años siguientes no llevaban su id, y
     // el informe no encontraba su serie. Ahora llevan id (y la propiedad raíz que te quedas,
     // su monto total y su año).
-    nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoTotal ?? x.montoInicial ?? 0, anio: x.anioInicio || 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0 || (x.rentaNuevaAnual || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ id: c.id, nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta ?? ((c.pctRecibe || 0) > 0), fuente: "liquidez" }))],
+    nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoTotal ?? x.montoInicial ?? 0, anio: x.anioInicio || 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0 || (x.rentaNuevaAnual || 0) > 0, fuente: x.fuente, pr: !!x.propiedadRaiz })), ...personalizadas.map((c) => ({ id: c.id, nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta ?? ((c.pctRecibe || 0) > 0), fuente: "liquidez" }))],
     futuros: fut,
     rentasDuplicadas: duplicadas,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),

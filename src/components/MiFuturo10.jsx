@@ -312,7 +312,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     </div>
                     <div style={fila4}>
                       {campo(esCustom ? tx("Nombre", "Name") : tx("Entidad (opcional)", "Institution (optional)"), <input style={inp} value={x.nombre || ""} onChange={(e) => up({ nombre: e.target.value })} placeholder={esCustom ? tx("Ej.: negocio, CDT", "e.g. business, term deposit") : esUS() ? tx("Ej.: Vanguard", "e.g. Vanguard") : tx("Ej.: BTG, Skandia", "e.g. BTG, Skandia")} />)}
-                      {campo(tx("Rendimiento anual (%)", "Annual return (%)"), <InputDecimalEs style={inp} placeholder={fmtPctEs(supPct, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />, x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? tx(`Vacío: ${fmtPctEs(supPct, 1)} del escenario.`, `Blank: ${fmtPctEs(supPct, 1)} from the scenario.`) : null)}
+                      {campo(tx("Rendimiento anual (%)", "Annual return (%)"), <InputDecimalEs style={inp} placeholder={fmtPctEs(supPct, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} />, x.rendimientoNomPct === "" || x.rendimientoNomPct == null ? (SUP.presets[x.preset]?.sinSupuesto ? tx(`Sin supuesto confiable: escribe el que esperas. Vacío: ${fmtPctEs(supPct, 1)}, solo la inflación.`, `No reliable assumption: enter what you expect. Blank: ${fmtPctEs(supPct, 1)}, inflation only.`) : tx(`Vacío: ${fmtPctEs(supPct, 1)} del escenario.`, `Blank: ${fmtPctEs(supPct, 1)} from the scenario.`)) : null)}
                       {campo(tx("¿Cuánto te llega?", "How much do you receive?"), <select style={inp} value={x.pctRecibe ?? (x.tipo === "renta" ? 100 : 0)} onChange={(e) => up({ pctRecibe: Number(e.target.value) })}>{partesF10().map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select>, mes > 0 ? tx(`${plata(Math.round(mes))} al mes`, `${plata(Math.round(mes))} a month`) : tx("Se reinvierte todo", "All reinvested"), mes > 0 ? C.gn : C.tx2)}
                       {campo(tx("¿Hasta cuándo?", "Until when?"), <select style={inp} value={hasta || ""} onChange={(e) => up({ hasta: e.target.value ? Number(e.target.value) : "" })}>
                         <option value="">{tx("Indefinida", "Ongoing")}</option>
@@ -348,9 +348,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           {/* 22-nov-2026 (Santiago: "si en la primera sección se hace algo, esto se verá reflejado en los siguientes pasos; todo debe tener una lógica, un proceso"). Aquí ya no se vuelve a preguntar activo por activo: llega lo marcado en el paso 1. */}
           {/* 23-nov-2026 (Santiago: "invertir en lo que ya se tiene no está articulado con los saldos de cada año, lo toma como aparte"). Solo los aportes del año elegido; el nuevo aporte arranca con lo que queda ese año. */}
           {/* 23-nov-2026: un activo puede tener varios aportes (uno por año); se lista cada aporte del año elegido. */}
-          {!cfg.reinversiones.some((x) => x && Math.max(1, Number(x.anio) || 1) === anioSel && (r.activos || []).some((a) => a.id === x.activoId && a.clase !== "vehiculo")) && <p style={{ color: C.tx2, fontSize: 13, margin: "4px 0 8px" }}>{tx(`${anioSel === 1 ? "Hoy" : "En " + anioCal(anioSel)} no le inviertes a ningún activo que ya tienes.`, `Nothing invested in your existing assets in ${anioSel === 1 ? "today" : anioCal(anioSel)}.`)}</p>}
+          {!cfg.reinversiones.some((x) => x && Math.max(1, Number(x.anio) || 1) === anioSel && ((r.activos || []).some((a) => a.id === x.activoId && a.clase !== "vehiculo") || delPlanDe(r, x.activoId))) && <p style={{ color: C.tx2, fontSize: 13, margin: "4px 0 8px" }}>{tx(`${anioSel === 1 ? "Hoy" : "En " + anioCal(anioSel)} no le inviertes a ningún activo que ya tienes.`, `Nothing invested in your existing assets in ${anioSel === 1 ? "today" : anioCal(anioSel)}.`)}</p>}
           {cfg.reinversiones.map((x0, iR) => [x0, iR]).filter(([x0]) => x0 && Math.max(1, Number(x0.anio) || 1) === anioSel).map(([x0, iR]) => {
-            const a = (r.activos || []).find((y) => y.id === x0.activoId && y.clase !== "vehiculo");
+            const a = (r.activos || []).find((y) => y.id === x0.activoId && y.clase !== "vehiculo") || delPlanDe(r, x0.activoId);
             if (!a) return null;
             const activo = true;
             const toggle = () => set("reinversiones", cfg.reinversiones.filter((_, j) => j !== iR));
@@ -362,7 +362,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                   <b>{a.nombre}</b>
                   <button type="button" onClick={toggle} style={{ background: "transparent", border: "none", padding: "4px 0", color: C.tx2, fontSize: 12.5, cursor: "pointer", textDecoration: "underline" }}>{tx("Quitar", "Remove")}</button>
                 </div>
-                {activo && (() => {
+                {activo && !a.delPlan && (() => {
                   // 19-nov-2026: la renta de este activo ya escrita en Lo que viene.
                   // Se ofrece juntarla aquí (una sola renta) o decir que es otra.
                   const futs = rentasFuturasDelActivo(cfg, a, r.activos);
@@ -409,16 +409,22 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
                     </div>
                   </div>)];
                 })()}
-                {activo && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} saldoDisp={Math.max(0, quedaEnAnio(anioSel, r) + (Number(cfg.reinversiones[iR].monto) || 0))} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a, r.activos).some((f) => f.vinculada)} /></div>}
+                {activo && a.delPlan && <div className="fp10-campos" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 8, marginTop: 8 }}>
+                  <div style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2 }}>{tx(`La creaste en el plan en ${anioCal(a.anio)}. Lo que le metes se suma a ella y rinde igual${detR && detR.rendimientoPct != null ? ` (${fmtPctEs(detR.rendimientoPct, 1)} al año)` : ""}; si te paga una parte, te paga en la misma proporción.`, `You created it in the plan in ${anioCal(a.anio)}. What you add joins it and earns the same${detR && detR.rendimientoPct != null ? ` (${fmtPctEs(detR.rendimientoPct, 1)} a year)` : ""}; if it pays you a share, it pays in the same proportion.`)}</div>
+                  <label style={{ fontSize: 12, color: C.tx2, display: "grid", gap: 4 }}>{tx("¿Cuánto le metes? ($)", "How much do you add? ($)")}<NumberInput style={inp} value={x0.monto} onChange={(v) => upR({ monto: v })} />
+                    <BotonSaldo disponible={Math.max(0, quedaEnAnio(anioSel, r) + (Number(x0.monto) || 0))} actual={Number(x0.monto) || 0} anio={anioSel} on={(v) => upR({ monto: v })} /></label>
+                  <div style={{ fontSize: 12, color: C.tx2, display: "grid", gap: 4 }}>{tx("¿De dónde sale?", "Where does it come from?")}<div style={{ fontSize: 13.5, color: C.tx, padding: "8px 0" }}>{tx(`Del saldo de ${anioCal(anioSel)}`, `From the ${anioCal(anioSel)} balance`)}</div></div>
+                </div>}
+                {activo && !a.delPlan && <div style={{ marginTop: 8 }}><AporteCampos x={cfg.reinversiones[iR]} up={upR} det={detR} activos={r.activos} vendidos={r.vendidos || []} saldoDisp={Math.max(0, quedaEnAnio(anioSel, r) + (Number(cfg.reinversiones[iR].monto) || 0))} sinRenta={!(Number(cfg.reinversiones[iR].rentaMensual) > 0) && rentasFuturasDelActivo(cfg, a, r.activos).some((f) => f.vinculada)} /></div>}
               </div>
             );
           })}
           {(() => { const libres = activosParaAportar(r, cfg, anioSel); if (!libres.length) return null; return (
             <div style={{ borderTop: `1px solid ${C.bd}`, paddingTop: 10, marginTop: 4, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13, color: C.tx2 }}>
-              <span>{tx(`+ Invertir en un activo que ya tienes ${anioSel === 1 ? "hoy" : "en " + anioCal(anioSel)}:`, `+ Invest in an asset you own in ${anioSel === 1 ? "today" : anioCal(anioSel)}:`)}</span>
+              <span>{tx(`+ Meterle más a algo que ya tienes ${anioSel === 1 ? "hoy" : "en " + anioCal(anioSel)}:`, `+ Add more to something you own in ${anioSel === 1 ? "today" : anioCal(anioSel)}:`)}</span>
               <select style={{ ...inp, width: "auto", maxWidth: "100%" }} value="" onChange={(e) => { if (e.target.value) reinvEnAnio(e.target.value, anioSel); }}>
-                <option value="">{tx("Elegir activo…", "Choose asset…")}</option>
-                {libres.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+                <option value="">{tx("Elegir…", "Choose…")}</option>
+                <OpcionesAportar libres={libres} />
               </select>
             </div>); })()}
         </div>
@@ -893,11 +899,29 @@ export { cuentaPorAnio };
 // meter capital en un año: los que siguen ese año (no vendidos ni vencidos antes o ese
 // mismo año), sin vehículos, y que no tengan ya un aporte en ese año. Un activo puede
 // tener aportes en varios años.
+// 23-nov-2026 (Santiago: "uno no necesariamente invierte en activos que tenía; puede ampliar su
+// inversión en los fondos de renta, CDTs…"). También las inversiones que creaste en el plan en
+// un año anterior (no la propiedad raíz), mientras sigan (no retiradas del todo).
 export function activosParaAportar(r, cfg = {}, anio = 1) {
   const fuera = new Set((r.liberados || []).filter((l) => l && !String(l.id).endsWith("_retiro") && l.anio <= anio).map((l) => l.id));
+  const retiradas = new Set((r.liberados || []).filter((l) => l && String(l.id).endsWith("_retiro") && !l.parcial && l.anio <= anio).map((l) => String(l.id).replace(/_retiro$/, "")));
   const yaEsteAnio = new Set((cfg.reinversiones || []).filter((x) => x && Math.max(1, Number(x.anio) || 1) === anio).map((x) => x.activoId));
-  return (r.activos || []).filter((a) => a && a.clase !== "vehiculo" && !fuera.has(a.id) && !yaEsteAnio.has(a.id));
+  const propios = (r.activos || []).filter((a) => a && a.clase !== "vehiculo" && !fuera.has(a.id) && !yaEsteAnio.has(a.id));
+  const delPlan = (r.nuevasDetalle || []).filter((x) => x && String(x.id || "").startsWith("nueva_") && !x.pr && (x.anio || 1) < anio && !yaEsteAnio.has(x.id) && !retiradas.has(x.id))
+    .map((x) => ({ id: x.id, nombre: x.nombre, clase: "nueva", delPlan: true, anio: x.anio || 1 }));
+  return [...propios, ...delPlan];
 }
+// Las opciones del selector, en dos grupos: lo que ya tenías y lo que creaste en el plan.
+function OpcionesAportar({ libres }) {
+  const propios = libres.filter((a) => !a.delPlan), delPlan = libres.filter((a) => a.delPlan);
+  if (!delPlan.length) return propios.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>);
+  return <>
+    {propios.length > 0 && <optgroup label={tx("Lo que ya tenías", "What you already had")}>{propios.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</optgroup>}
+    <optgroup label={tx("Lo que creaste en el plan", "What you created in the plan")}>{delPlan.map((a) => <option key={a.id} value={a.id}>{`${a.nombre} (${tx("desde", "since")} ${anioCal(a.anio)})`}</option>)}</optgroup>
+  </>;
+}
+// Lo creado en el plan, como «activo» de la sección C (para nombrarlo y armar su formulario).
+const delPlanDe = (r, id) => { const x = (r.nuevasDetalle || []).find((y) => y.id === id && !y.pr); return x ? { id: x.id, nombre: x.nombre, clase: "nueva", delPlan: true, anio: x.anio || 1 } : null; };
 
 // 23-nov-2026 (Santiago: "cómo hacer que esta sección lo lleve de verdad a uno
 // paso a paso, clara y fluida; si yo mismo que soy el creador me enredo").
@@ -963,7 +987,7 @@ function AnioPorAnio({ r, cfg, set, anioSel, setAnioSel, nuevaEnAnio, reinvEnAni
         {(() => { const libres = activosParaAportar(r, cfg, anioSel); return libres.length > 0 &&
           <select aria-label={tx("Invertir en algo que ya tienes", "Invest in something you own")} style={{ ...inp, width: "auto", maxWidth: "100%", padding: "9px 12px", cursor: "pointer" }} value="" onChange={(e) => { if (e.target.value) reinvEnAnio(e.target.value, anioSel); }}>
             <option value="">{tx(`+ Invertir en algo que ya tienes…`, `+ Invest in something you own…`)}</option>
-            {libres.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
+            <OpcionesAportar libres={libres} />
           </select>; })()}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 12 }}>
@@ -1119,6 +1143,7 @@ function TablaSupuestos({ esc }) {
     [esUS() ? nombreSup(p.rfCorto) : tx("Renta fija corto", "Short-term fixed income"), `${inf} + ${fmtPctEs(p.rfCorto.realSpread + esc.retornoSpread)} ≈ ${fmtPctEs(retornoNominalPreset("rfCorto", esc))} ${alAnio}`],
     [esUS() ? nombreSup(p.rfLargo) : tx("Renta fija largo", "Long-term fixed income"), `${inf} + ${fmtPctEs(p.rfLargo.realSpread)} (${tx("tope", "cap")} + ${fmtPctEs(p.rfLargo.topeSpread)})`],
     [nombreSup(p.fincaRaiz), tx(`renta neta ${fmtPctEs(p.fincaRaiz.rentaNetaPct)} + valorización = inflación${vSpread}`, `net rent ${fmtPctEs(p.fincaRaiz.rentaNetaPct)} + appreciation = inflation${vSpread}`)],
+    ...(p.cripto ? [[nombreSup(p.cripto), tx("sin supuesto: el rendimiento que escribas (vacío, solo la inflación)", "no assumption: the return you enter (blank, inflation only)")]] : []),
     [nombreSup(p.sp500), s.sinRiesgoCambiario ? tx(`${fmtPctEs(esc.spRealPct)} real`, `${fmtPctEs(esc.spRealPct)} real`) : tx(`${fmtPctEs(esc.spRealPct)} real; devaluación real ${fmtPctEs(p.sp500.devaluacionRealPct)}`, `${fmtPctEs(esc.spRealPct)} real; real devaluation ${fmtPctEs(p.sp500.devaluacionRealPct)}`)],
     [tx("Vehículos", "Vehicles"), tx(`${fmtPctEs(s.vehiculo.depAnios1a3Pct)} años 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} después`, `${fmtPctEs(s.vehiculo.depAnios1a3Pct)} years 1–3, ${fmtPctEs(s.vehiculo.depDespuesPct)} after`)],
     [tx("Ingresos / gastos", "Income / expenses"), `${inf} + ${fmtPctEs(esc.ingresosSpread)} / + ${fmtPctEs(esc.gastosSpread)}`],

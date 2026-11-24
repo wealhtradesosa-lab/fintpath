@@ -22,7 +22,7 @@
 // Solo lee el resultado del motor (proyectarFuturo10); no calcula nada nuevo.
 // ═══════════════════════════════════════════════════════════════════════════
 import { tamanoCifra } from "../lib/infografia.js";
-import { anioCal } from "../lib/futuro10.js";
+import { anioCal, cuentaPorAnio } from "../lib/futuro10.js";
 import MesCompleto from "./MesCompleto.jsx";
 import HistoriaPlata from "./infografia/HistoriaPlata.jsx";
 import { useMemo, useState } from "react";
@@ -45,6 +45,15 @@ const td = { textAlign: "right", padding: "6px 8px", borderBottom: `1px solid ${
 const tdL = { ...td, textAlign: "left", whiteSpace: "normal" };
 const anioTxt = (a) => (a === 0 ? tx("Hoy", "Today") : String(anioCal(a)));
 const tip = (v) => fmM(v);
+// 23-nov-2026 (Santiago: "muy difícil de ver y navegar este gráfico, no se deja desplegar bien";
+// "no debería mostrar lo que está en ceros"). El detalle de cada barra lista solo lo que vale algo
+// ese año, de mayor a menor (las líneas, al final), y el total va en el título.
+const tipLimpio = (titulo) => (q) => {
+  const p = (q.payload || []).filter((x) => x.dataKey !== "base" && Math.abs(Number(x.value) || 0) > 0.5)
+    .sort((a, b) => (a.dataKey === "sale" ? 1 : 0) - (b.dataKey === "sale" ? 1 : 0) || (Number(b.value) || 0) - (Number(a.value) || 0));
+  const row = q.payload?.[0]?.payload;
+  return <ChartTooltip {...q} payload={p} formatter={tip} labelFormatter={(l) => (titulo && row ? titulo(l, row) : l)} />;
+};
 
 /** Etiquetas al final de cada línea, ordenadas y sin montarse (Customized de recharts). */
 function EtiquetasFin({ formattedGraphicalItems = [] }) {
@@ -228,15 +237,50 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
 
   // ── Plata nueva ───────────────────────────────────────────────────────────
   const bd = r.bolsaDetalle || {};
-  const plataNueva = [
-    ...((r.deudas || []).some((x) => x.pagado > 0) ? [{ anio: 1, destino: `${tx("Pagar deudas", "Pay off debts")} (${r.deudas.filter((x) => x.pagado > 0).map((x) => x.nombre).join(", ")})`, capital: bd.deudas, tasa: "—", bolsillo: tx("Limpieza", "Cleanup"), regla: r.cuotasQueSalenMes > 0 ? tx(`Se elimina ${fmM(r.cuotasQueSalenMes)}/mes de cuotas`, `Removes ${fmM(r.cuotasQueSalenMes)}/mo in payments`) : tx("Sale del patrimonio la deuda", "The debt leaves your net worth") }] : []),
-    // 23-nov-2026: cada fila con su año (antes decía «se invierte en 1 año» y no se sabía cuál).
-    ...(r.reinversionesDetalle || []).filter((x) => x.aporte > 0).map((x) => ({ anio: x.anio || 1, destino: x.nombre, capital: x.aporte, tasa: x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) : "—", bolsillo: x.clase === "inmueble" || (x.pctRecibe || 0) > 0 ? tx("Sustento", "Income") : tx("Crecimiento", "Growth"), regla: [x.rentaMensual > 0 ? tx(`Renta ${fmM(x.rentaMensual)}/mes desde ${anioCal(Math.floor((x.rentaDesdeMes || 0) / 12) + 1)}`, `Pays ${fmM(x.rentaMensual)}/mo from ${anioCal(Math.floor((x.rentaDesdeMes || 0) / 12) + 1)}`) : null, x.teLlegaMes > 0 ? tx(`Te llega ${fmM(x.teLlegaMes)}/mes`, `You receive ${fmM(x.teLlegaMes)}/mo`) : null].filter(Boolean).join(" · ") || tx("Se valoriza", "Appreciates") })),
-    ...(r.nuevasDetalle || []).map((x) => ({ anio: x.anio || 1, destino: x.nombre, capital: x.monto, tasa: fmPct(x.rendPct, 1), bolsillo: x.pagaRenta ? tx("Sustento", "Income") : tx("Crecimiento", "Growth"), regla: x.pagaRenta ? tx("Paga renta al flujo", "Pays income to your cash flow") : tx("Se reinvierte", "Reinvested") })),
-    ...(bd.colchon > 0 ? [{ anio: 1, destino: tx("Colchón", "Emergency fund"), capital: bd.colchon, tasa: "—", bolsillo: tx("Protección", "Safety"), regla: tx("Meses de gastos a la mano", "Months of expenses on hand") }] : []),
-    ...(bd.restante > 0 ? [{ anio: 1, destino: tx("Lo que sobra de las ventas", "What's left from the sales"), capital: bd.restante, tasa: "—", bolsillo: tx("Mezcla", "Mix"), regla: r.destinoSobra || tx("Se reparte según el norte que elegiste", "Split by the strategy you picked") }] : []),
-  ].sort((a, b) => a.anio - b.anio);
-  const totalNueva = plataNueva.reduce((s, x) => s + (x.capital || 0), 0);
+  // 23-nov-2026 (Santiago: "diagramar mejor"). La plata que mueves, agrupada por año: cada año
+  // dice de dónde sale y en qué la pones (la misma cuenta del paso 3 y del capítulo 2). Antes era
+  // una sola lista sin años y el total decía que todo salía de lo que vendes hoy.
+  const plataAnios = useMemo(() => {
+    const reinv = r.reinversionesDetalle || [], nuevas = r.nuevasDetalle || [];
+    const deNombre = (nombre) => reinv.find((x) => x.nombre === nombre) || nuevas.find((x) => x.nombre === nombre) || null;
+    const anioDe = (m) => anioCal(Math.floor((m || 0) / 12) + 1);
+    const info = (nombre) => {
+      const x = deNombre(nombre);
+      if (!x) return { tasa: "—", hace: tx("Se invierte", "Invested") };
+      if (x.aporte != null) {
+        const tasa = x.rendimientoPct != null ? fmPct(x.rendimientoPct, 1) : x.rentaPctAnual > 0 ? fmPct(x.rentaPctAnual, 1) : x.valorizacionPct != null ? fmPct(x.valorizacionPct, 1) : "—";
+        // La renta que le pusiste en el paso 1 (un local, la bodega) también cuenta.
+        const kR = (r.filas || []).findIndex((f, k) => k > 0 && ((f.porActivo || []).find((a) => a.id === x.activoId)?.rentaNueva || 0) > 0.5);
+        const rN = kR > 0 ? ((r.filas[kR].porActivo || []).find((a) => a.id === x.activoId).rentaNueva || 0) / 12 : 0;
+        const hace = !(x.rentaMensual > 0) && !(x.teLlegaMes > 0) && rN > 0.5 ? tx(`Te paga ${fmM(rN)}/mes desde ${anioCal(kR)}`, `Pays you ${fmM(rN)}/mo from ${anioCal(kR)}`) : x.rentaMensual > 0 ? tx(`Te paga ${fmM(x.rentaMensual)}/mes desde ${anioDe(x.rentaDesdeMes)}`, `Pays you ${fmM(x.rentaMensual)}/mo from ${anioDe(x.rentaDesdeMes)}`) : x.teLlegaMes > 0 ? tx(`Te paga ${fmM(x.teLlegaMes)}/mes`, `Pays you ${fmM(x.teLlegaMes)}/mo`) : x.clase === "inmueble" ? tx("Se valoriza", "Appreciates") : tx("Se reinvierte", "Reinvested");
+        return { tasa, hace };
+      }
+      return { tasa: fmPct(x.rendPct, 1), hace: x.pagaRenta ? tx("Te paga renta cada mes", "Pays you income monthly") : tx("Se reinvierte", "Reinvested") };
+    };
+    const deudaHace = (nombre) => { const d = (r.deudas || []).find((y) => nombre.includes(y.nombre)); return d && d.cuotaMes > 0.5 ? tx(`Dejas de pagar ${fmM(d.cuotaMes)}/mes`, `You stop paying ${fmM(d.cuotaMes)}/mo`) : tx("Baja lo que debes", "Lowers what you owe"); };
+    const grupos = [];
+    // Hoy: lo que vendes (y el capital nuevo, y tu liquidez) → deudas, inversiones, obras, colchón.
+    const f1 = [];
+    if (bd.deudas > 0.5) f1.push({ destino: `${tx("Pagar deudas", "Pay off debts")} (${(r.deudas || []).filter((x) => x.pagado > 0).map((x) => x.nombre).join(", ")})`, monto: bd.deudas, tasa: "—", hace: r.cuotasQueSalenMes > 0 ? tx(`Dejas de pagar ${fmM(r.cuotasQueSalenMes)}/mes`, `You stop paying ${fmM(r.cuotasQueSalenMes)}/mo`) : tx("Baja lo que debes", "Lowers what you owe") });
+    const g1 = {};
+    (bd.usos || []).filter((u) => (u.anio || 1) === 1 && u.monto > 0.5).forEach((u) => { g1[u.nombre] = (g1[u.nombre] || 0) + u.monto; });
+    Object.entries(g1).forEach(([nombre, monto]) => f1.push({ destino: nombre, monto, ...info(nombre) }));
+    if (bd.obras > 0.5) f1.push({ destino: tx("Obras", "Build-outs"), monto: bd.obras, tasa: "—", hace: tx("Mejoran lo que tienes", "Improve what you own") });
+    if (bd.colchon > 0.5) f1.push({ destino: tx("Colchón para imprevistos", "Emergency cushion"), monto: bd.colchon, tasa: "—", hace: tx("Plata a la mano", "Cash on hand") });
+    const de1 = [...(r.vendidos || []).map((v) => v.nombre), ...((bd.capitalNuevoHoy ?? bd.capitalNuevo) > 0.5 ? [tx("capital nuevo", "new capital")] : []), ...(bd.desdeLiquidez > 0.5 ? [tx("tu liquidez", "your cash")] : [])];
+    if (f1.length) grupos.push({ anio: 1, filas: f1, de: de1, queda: bd.restante || 0 });
+    // Años siguientes: la cuenta del año (viene del anterior + lo que sobra + lo que llega).
+    cuentaPorAnio(r).forEach((g) => {
+      if (!g.salen.length) return;
+      const filasA = g.salen.map((u) => u.tipo === "A" ? { destino: u.nombre, monto: u.monto, tasa: "—", hace: deudaHace(u.nombre) }
+        : u.tipo === "F" ? { destino: u.nombre, monto: u.monto, tasa: "—", hace: tx("Pago de una compra de Lo que viene", "Payment for an upcoming purchase") }
+        : { destino: u.nombre.replace(/^(Invertir en|Invest in) /, ""), monto: u.monto, ...info(u.nombre.replace(/^(Invertir en|Invest in) /, "")) });
+      const de = [...(g.antes > 0.5 ? [tx(`lo que venía de ${anioCal(g.anio - 1)}`, `carried from ${anioCal(g.anio - 1)}`)] : []), ...(g.flujoHoy + Math.max(0, g.flujo) > 0.5 ? [tx("lo que te sobra", "your surplus")] : []), ...g.llegan.map((l) => String(l.id).endsWith("_retiro") ? tx(`lo que sacas de ${l.nombre}`, `what you take out of ${l.nombre}`) : tx(`la venta de ${l.nombre}`, `the sale of ${l.nombre}`))];
+      grupos.push({ anio: g.anio, filas: filasA, de, queda: g.saldo });
+    });
+    return grupos.map((g) => ({ ...g, total: g.filas.reduce((t2, x) => t2 + x.monto, 0) }));
+  }, [r]);
+  const totalNueva = plataAnios.reduce((t2, g) => t2 + g.total, 0);
 
   // ── Todo lo que tienes / cuánto produce ───────────────────────────────────
   const tienes = (fy.porActivo || []).filter((a) => a.valor > 0.5).sort((a, b) => b.valor - a.valor);
@@ -320,15 +364,25 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
       <Capitulo id="cap-plata" n={2} titulo={tx("Qué haces con tu plata", "What you do with your money")} pregunta={tx("Elige un año: qué vendes, de dónde sale y a dónde va cada peso, cómo va cada inversión y qué cambia en tu bolsillo ese año.", "Pick a year: what you sell, where every dollar comes from and goes, how each investment is doing and what changes in your pocket that year.")} />
       <SelAnio />
       <HistoriaPlata r={r} anio={aSel} />
-      {plataNueva.length > 0 && <div style={card}>
-        <h3 style={h3}>{tx(`La plata nueva, en tabla: a dónde va cada ${moneda()}`, `New money as a table: where every ${moneda()} goes`)} · {fmM(totalNueva)}</h3>
-        <p style={lead}>{tx(<>Solo la plata que se mueve: lo que vendes{bd.capitalNuevo > 0 ? ", el capital nuevo" : ""}{bd.desdeLiquidez > 0 ? " y lo que sale de tu liquidez" : ""}. Lo que ya tienes y no se mueve no aparece aquí; eso lo suma «Todo lo que tienes después del plan».</>, <>Only the money that moves: what you sell{bd.capitalNuevo > 0 ? ", new capital" : ""}{bd.desdeLiquidez > 0 ? " and what comes out of your cash" : ""}. What you already own and don't move isn't here; "Everything you own after the plan" adds it.</>)}</p>
-        <details><summary style={{ cursor: "pointer", fontSize: 13, color: INF.tx2, padding: "4px 0" }}>{tx("Ver el detalle en tabla", "See the detail as a table")}</summary>
-        <div style={{ overflowX: "auto" }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 560 }}>
-          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("Año", "Year")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Destino", "Destination")}</th><th style={th}>{tx("Capital", "Capital")}</th><th style={th}>{tx("Tasa", "Rate")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Bolsillo", "Bucket")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Regla", "Rule")}</th></tr></thead>
-          <tbody>{plataNueva.map((x, i) => <tr key={i}><td style={{ ...tdL, whiteSpace: "nowrap" }}>{x.anio <= 1 ? tx("Hoy", "Today") : anioCal(x.anio)}</td><td style={tdL}>{x.destino}</td><td style={td}>{fmM(x.capital)}</td><td style={td}>{x.tasa}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.bolsillo}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.regla}</td></tr>)}
-            <tr><td style={td} /><td style={{ ...tdL, fontWeight: 700 }}>{tx("Total desplegado", "Total deployed")}</td><td style={{ ...td, fontWeight: 700 }}>{fmM(totalNueva)}</td><td style={td} /><td style={td} /><td style={{ ...tdL, color: INF.tx2 }}>{[(r.vendidos || []).map((v) => `${v.nombre} ${fmM(v.valor)}`).join(" + "), bd.capitalNuevo > 0 ? `${tx("capital nuevo", "new capital")} ${fmM(bd.capitalNuevo)}` : null, bd.desdeLiquidez > 0 ? `${tx("liquidez", "cash")} ${fmM(bd.desdeLiquidez)}` : null].filter(Boolean).join(" + ")}</td></tr>
-          </tbody></table></div></details>
+      {plataAnios.length > 0 && <div style={card}>
+        <h3 style={h3}>{tx("La plata que mueves, año por año", "The money you move, year by year")} · {fmM(totalNueva)}</h3>
+        <p style={lead}>{tx("Cada año, de dónde sale la plata y en qué la pones. Lo que ya tienes y no se mueve no aparece aquí; lo que no usas un año pasa al siguiente.", "Each year, where the money comes from and what you put it into. What you own and don't move isn't here; what you don't use carries to the next year.")}</p>
+        <details><summary style={{ cursor: "pointer", fontSize: 13, color: INF.tx2, padding: "4px 0" }}>{tx("Ver la tabla de todos los años", "See the table for all years")}</summary>
+        <div style={{ overflowX: "auto", marginTop: 8 }}><table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 560 }}>
+          <thead><tr><th style={{ ...th, textAlign: "left" }}>{tx("En qué la pones", "What you put it into")}</th><th style={th}>{tx("Monto", "Amount")}</th><th style={th}>{tx("Rinde", "Returns")}</th><th style={{ ...th, textAlign: "left" }}>{tx("Qué hace", "What it does")}</th></tr></thead>
+          {plataAnios.map((g) => <tbody key={g.anio}>
+            <tr><td colSpan={4} style={{ ...tdL, background: "var(--fp-raised)", padding: "10px 8px 8px", borderBottom: "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+                <b style={{ fontSize: 14 }}>{g.anio <= 1 ? tx(`Hoy · ${anioCal(1)}`, `Today · ${anioCal(1)}`) : anioCal(g.anio)}</b>
+                <b style={{ fontVariantNumeric: "tabular-nums" }}>{fmM(g.total)}</b>
+              </div>
+              {g.de.length > 0 && <div style={{ fontSize: 12, color: INF.tx2, marginTop: 2 }}>{tx("Sale de ", "Comes from ")}{g.de.join(", ")}.</div>}
+            </td></tr>
+            {g.filas.map((x, i) => <tr key={i}><td style={tdL}>{x.destino}</td><td style={{ ...td, fontVariantNumeric: "tabular-nums" }}>{fmM(x.monto)}</td><td style={td}>{x.tasa}</td><td style={{ ...tdL, color: INF.tx2 }}>{x.hace}</td></tr>)}
+            {g.queda > 0.5 && <tr><td style={{ ...tdL, color: INF.tx2 }}>{g.anio < nAniosSel ? tx(`Queda para ${anioCal(g.anio + 1)}`, `Left for ${anioCal(g.anio + 1)}`) : tx("Queda invertido", "Stays invested")}</td><td style={{ ...td, color: INF.tx2, fontVariantNumeric: "tabular-nums" }}>{fmM(g.queda)}</td><td style={td} /><td style={{ ...tdL, color: INF.tx2 }}>{tx("Mientras tanto se invierte según tu mezcla", "Invested per your mix meanwhile")}</td></tr>}
+          </tbody>)}
+          <tbody><tr><td style={{ ...tdL, fontWeight: 700, borderBottom: "none", paddingTop: 12 }}>{tx(`Lo que pones a trabajar en ${nAniosSel} años`, `What you put to work over ${nAniosSel} years`)}</td><td style={{ ...td, fontWeight: 700, borderBottom: "none", paddingTop: 12, fontVariantNumeric: "tabular-nums" }}>{fmM(totalNueva)}</td><td style={{ ...td, borderBottom: "none" }} /><td style={{ ...td, borderBottom: "none" }} /></tr></tbody>
+        </table></div></details>
       </div>}
 
       <Capitulo id="cap-mes" n={3} titulo={tx("Tu mes, año por año: ¿alcanza para vivir?", "Your month, year by year: is it enough to live on?")} pregunta={tx("Lo que entra, lo que sale y lo que sobra cada mes del año elegido. El año es el mismo en los capítulos 2, 3 y 4.", "What comes in, goes out and is left each month of the chosen year. The year is the same in chapters 2, 3 and 4.")} />
@@ -423,7 +477,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             <div style={{ fontSize: 12, color: INF.tx2, margin: "2px 0 6px" }}>{fmM(v0)} → <b style={{ color: INF.tx }}>{fmM(vf)}</b></div>
             <ResponsiveContainer width="100%" height={110}><ComposedChart data={pat} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
               <XAxis dataKey="anio" hide /><YAxis hide domain={[0, "auto"]} />
-              <Tooltip content={<ChartTooltip formatter={tip} />} />
+              <Tooltip content={tipLimpio()} />
               <Area type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} fill={s.color} fillOpacity={0.18} isAnimationActive={false} />
             </ComposedChart></ResponsiveContainer>
           </div>; })}
@@ -432,7 +486,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} interval={1} />
             <YAxis {...eje} tickFormatter={fmEje} width={104} />
-            <Tooltip content={<ChartTooltip formatter={tip} />} />
+            <Tooltip content={tipLimpio()} />
             {sL.map((s) => <Line key={s.id} type="monotone" dataKey={s.id} name={s.nombre} stroke={s.color} strokeWidth={2} dot={false} />)}
             {/* 19-nov-2026 (Santiago: "mal alineado"): las etiquetas del final se
                 montaban unas sobre otras (BTG y rapcicredit terminan casi igual) y
@@ -474,7 +528,7 @@ export default function PlanInforme({ r, nombre = tx("Este escenario", "This sce
             <CartesianGrid {...grid} />
             <XAxis dataKey="anio" {...eje} />
             <YAxis {...eje} tickFormatter={fmEje} width={104} />
-            <Tooltip content={<ChartTooltip formatter={tip} />} />
+            <Tooltip cursor={{ fill: "rgba(127,127,127,0.12)" }} content={tipLimpio((l, row) => `${l} · ${tx("produce", "earns")} ${fmM(row.total)}`)} />
             {sR.top.map((s, i) => <Bar key={"r" + s.id} dataKey={"r_" + s.id} stackId="p" name={`${s.nombre} (${tx("renta", "income")})`} fill={[INF.azul, INF.serie[4], INF.oliva, INF.navy, INF.serie[6], INF.serie[8]][i % 6]} />)}
             <Bar dataKey="r_otros" stackId="p" name={sR.resto.length ? tx("Resto de rentas (más pequeñas)", "Other income (smaller)") : tx("Ajuste (costos de inmuebles sin ligar)", "Adjustment (unlinked property costs)")} fill={INF.gris} />
             {sC.top.map((s, i) => <Bar key={"c" + s.id} dataKey={"c_" + s.id} stackId="p" name={`${s.nombre} (${tx("crece", "grows")})`} fill={[INF.navy, INF.morado, INF.dorado, INF.serie[6]][i % 4]} />)}
