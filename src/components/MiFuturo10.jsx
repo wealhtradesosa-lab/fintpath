@@ -9,7 +9,7 @@ import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendi
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
-import EscenariosCreados from "./infografia/EscenariosCreados";
+import EscenariosCreados, { AvisoCalculo } from "./infografia/EscenariosCreados";
 import BarraFuturo10 from "./BarraFuturo10";
 
 import { fmtPlataEs } from "../lib/formato.js";
@@ -489,6 +489,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         {paso < PASOS.length - 1 && <button style={{ ...btn(true), flex: 1, padding: "12px", fontWeight: 600 }} onClick={() => { ir(paso + 1); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Siguiente:", "Next:")} {PASOS[paso + 1]} →</button>}
       </div>
       {/* 23-nov-2026: resultado en vivo mientras llenas los pasos 1 a 3; al tocarlo, paso 4. */}
+      {paso <= 2 && <AvisoCalculo testId="f10-aviso-calculo-barra" style={{ margin: "0 0 8px" }} />}
       {paso <= 2 && <BarraFuturo10 rPlan={r} rHoy={(planesComparar[0] || {}).r} onIr={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
       </>}
 

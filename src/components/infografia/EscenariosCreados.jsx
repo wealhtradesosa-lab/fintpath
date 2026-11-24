@@ -48,6 +48,11 @@ export const AVISO_CALCULO_HASTA = "2026-12-31";
 export const fechaBogota = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
 export const mostrarAvisoCalculo = (hoy = new Date(), hasta = AVISO_CALCULO_HASTA) => !!hasta && fechaBogota(hoy) <= hasta;
 export const avisoCalculo = () => tx("Ajustamos el cálculo: tu ahorro ya no cuenta como rendimiento y la cifra ahora sale en pesos de hoy, por eso puede verse más baja.", "We adjusted the math: your savings no longer count as returns and the figure is now in today's pesos, so it may look lower.");
+// 23-nov-2026: el aviso sale también arriba de la barra del creador (Soporte),
+// no solo en Escenarios creados. Un solo componente para los dos lugares.
+export const AvisoCalculo = ({ testId = "f10-aviso-calculo", style }) => (mostrarAvisoCalculo()
+  ? <div role="note" data-testid={testId} style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, padding: "8px 12px", border: `1px solid rgba(var(--fp-ink),0.14)`, borderRadius: 10, ...(style || {}) }}>{avisoCalculo()}</div>
+  : null);
 
 // Supuesto de las compras de «Lo que viene» (Finanzas). Sin valorización propia,
 // la compra sube con la inflación del escenario: propiedad raíz con
@@ -172,7 +177,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
         </div>
       </section>
 
-      {mostrarAvisoCalculo() && <div role="note" data-testid="f10-aviso-calculo" style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, padding: "8px 12px", border: `1px solid rgba(var(--fp-ink),0.14)`, borderRadius: 10 }}>{avisoCalculo()}</div>}
+      <AvisoCalculo />
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 280px), 1fr))", gap: 16 }}>
         {medidos.map(({ p, m }, i) => {
           const esMejor = p === mejor.p;

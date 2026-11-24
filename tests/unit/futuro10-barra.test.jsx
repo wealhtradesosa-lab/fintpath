@@ -381,3 +381,24 @@ describe("respaldo de inflación: una sola constante con el motor", () => {
     expect(patrimonioFinalHoy(sinEsc)).toBeCloseTo(patrimonioFinalHoy(r), 0);
   });
 });
+
+describe("aviso del cálculo arriba de la barra del creador (Soporte)", () => {
+  it("MiFuturo10 pinta el aviso antes de la barra mientras esté vigente", async () => {
+    const fs = await import("node:fs");
+    const src = fs.readFileSync("src/components/MiFuturo10.jsx", "utf8");
+    const iAviso = src.indexOf('testId="f10-aviso-calculo-barra"');
+    const iBarra = src.indexOf("<BarraFuturo10 ");
+    expect(iAviso).toBeGreaterThan(-1);
+    expect(iAviso).toBeLessThan(iBarra);
+  });
+  it("AvisoCalculo muestra las dos causas y se apaga con la fecha", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const React = await import("react");
+    const { AvisoCalculo } = await import("../../src/components/infografia/EscenariosCreados.jsx");
+    const h = renderToStaticMarkup(React.createElement(AvisoCalculo, { testId: "x" }));
+    if (mostrarAvisoCalculo()) {
+      expect(h).toContain("ahorro ya no cuenta como rendimiento");
+      expect(h).toContain("pesos de hoy");
+    } else expect(h).toBe("");
+  });
+});
