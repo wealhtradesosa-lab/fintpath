@@ -1402,7 +1402,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   const fCon = (r.filas || [])[anio] || {};
   // 24-nov-2026 (Santiago: "¿y esto de guardar en tu reserva no dice hasta cuándo?"). Se usa sola el año que no te alcance;
   // según tu plan, en qué años, y cuánto queda al final.
-  const usosRes = cuenta.filter((y) => y.anio > anio && y.usoReserva > 0.5).map((y) => y.anio), resFinal = (cuenta[N - 1] || {}).reservaFin || 0;
+  const usosRes = cuenta.filter((y) => y.anio > anio && y.usoReserva > 0.5).map((y) => y.anio), resFinal = cuenta[N - 1] ? partesReserva(cuenta[N - 1], null).fin : 0;
   const tasaN = g.tasaReserva || 0, destino = (cfg.reservaHasta || {})[anio];
   const vuelveCon = Math.round((g.aApartado || Number(rva[anio]) || 0) * Math.pow(1 + tasaN, (destino || anio) - anio));
   const hastaCuando = destino ? tx(`Queda guardada aparte hasta ${anioCal(destino)}: ese año vuelve a tu capital con lo que rindió (unos ${plata(vuelveCon)}).`, `It's kept aside until ${anioCal(destino)}: that year it returns to your capital with what it earned (about ${plata(vuelveCon)}).`)
@@ -1453,20 +1453,9 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
   // después de las inversiones ejecutadas"). El resumen de un año que dejaste organizado suma de arriba abajo: tu capital disponible, lo
   // que hiciste con él, lo que te quedó de tu mes y lo que pasa al año siguiente. La reserva dice de dónde salió (capital o mes).
   const resumenListo = (() => {
-    const deCap = Math.min(g.reservaDeAqui || 0, g.aReserva || 0), deMes = Math.max(0, (g.aReserva || 0) - deCap);
-    const cf = fCon.cf || 0, mesQueda = (g.mes || 0) - (g.repartoFuera || 0), reinvSolo = cf > 0.5 ? Math.max(0, cf - (g.flujo || 0)) : 0;
-    const nInv = g.movidas.filter((m) => m.cuenta).length, A = anioCal(anio);
-    const notaMes = cf > 0.5 ? tx(`Te sobran ${plata(Math.round(cf / 12))} al mes (${plata(Math.round(cf))} al año)${reinvSolo > 0.5 || (g.repartoFuera || 0) > 0.5 ? `; de eso, ${[reinvSolo > 0.5 && `${plata(Math.round(reinvSolo))} se reinvierten solos`, (g.repartoFuera || 0) > 0.5 && `${plata(Math.round(g.repartoFuera))} los repartiste en abonos, inversiones o gastos`].filter(Boolean).join(" y ")}` : ""}.`,
-      `You have ${plata(Math.round(cf / 12))} left each month (${plata(Math.round(cf))} a year).`) : null;
+    const A = anioCal(anio);
     return <Ficha fuerte titulo={tx(`Así quedó tu ${A}`, `How your ${A} turned out`)} sub={tx(`Resumen de tu ${A} después de tus inversiones y pagos. Si cambias algo, se guarda solo.`, `Summary of your ${A} after your investments and payments. Any change saves automatically.`)} accion={<button type="button" style={btnAccion(false)} onClick={() => setEditarListo(true)}>{tx(`Editar tu ${A}`, `Edit your ${A}`)}</button>}>
-      <Renglon l={tx("Capital disponible", "Available capital")} v={g.disponible} nota={pagaste > 0.5 ? tx(`Ya sin las deudas que pagaste: ${plata(Math.round(pagaste))}.`, `Already net of the debt you paid off: ${plata(Math.round(pagaste))}.`) : null} />
-      {g.movido > 0.5 && <Renglon l={tx(`− Invertiste (${nInv} ${nInv === 1 ? "inversión" : "inversiones"})`, `− You invested (${nInv})`)} v={g.movido} />}
-      {deCap > 0.5 && <Renglon l={tx("− A tu reserva, de tu capital", "− To your reserve, from your capital")} v={deCap} />}
-      {Math.abs(mesQueda) > 0.5 && <Renglon l={mesQueda > 0 ? tx("+ Te quedó de tu mes", "+ Left from your month") : tx("− Tu mes te restó", "− Your month took")} v={Math.abs(mesQueda)} col={mesQueda > 0 ? C.gn : C.am} nota={mesQueda > 0 ? notaMes : null} />}
-      {deMes > 0.5 && <Renglon l={tx("− A tu reserva, de lo que te sobra al mes", "− To your reserve, from your monthly surplus")} v={deMes} />}
-      <Renglon fuerte linea l={sigY ? tx(`= Pasa a ${sigY} para invertir o pagar deudas`, `= Carries to ${sigY} to invest or pay off debt`) : tx("= Te queda al cierre", "= Left at year end")} v={g.pasa} col={C.gn} />
-      {(g.aReserva || 0) > 0.5 && (() => { const sg = cuenta.find((y) => y.anio === anio + 1), rs = sg ? reservaDelAnio(sg) : null, v = rs ? rs.inicio + rs.vuelve : (g.reservaFin || 0) + (g.apartadoFin || 0);
-        return <div style={{ ...TIPO.meta, marginTop: 6 }}>{sg ? tx(`Tu fondo de reserva para ${anioCal(sg.anio)}: ${plata(Math.round(v))}.`, `Your reserve fund for ${anioCal(sg.anio)}: ${plata(Math.round(v))}.`) : tx(`Tu fondo de reserva al cierre de ${A}: ${plata(Math.round(v))}.`, `Your reserve fund at the end of ${A}: ${plata(Math.round(v))}.`)}</div>; })()}
+      <SumaCierre g={g} sig={cuenta.find((y) => y.anio === anio + 1)} anio={anio} cf={fCon.cf || 0} />
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
       {sigY ? <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={() => (irAnio ? irAnio(anio + 1) : ir(anio + 1))}>{tx(`Seguir con ${sigY} →`, `Go on to ${sigY} →`)}</button> : <button type="button" style={{ ...btn(true), padding: "8px 12px" }} onClick={irResultado}>{tx("Ver el resultado →", "See the result →")}</button>}
       </div>
@@ -1542,7 +1531,7 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
               <Renglon fuerte linea l={tx("= Capital disponible", "= Available capital")} v={g.disponible} col={g.disponible > 0.5 ? C.gn : C.tx} />
             </div>}
           </div>
-          <ReservaAnio r={r} g={g} sig={cuenta.find((y) => y.anio === anio + 1)} cfg={cfg} set={set} anio={anio} Y={Y} tasaR={tasaR} />
+          <ReservaAnio r={r} g={g} sig={cuenta.find((y) => y.anio === anio + 1)} cuenta={cuenta} cfg={cfg} set={set} anio={anio} tasaR={tasaR} />
         </div>
         {/* Compras de Lo que viene que todavía no tienen valor: se detallan en su año. */}
         {((cfg.futuros || {}).activos || []).map((x, i) => [x, i]).filter(([x, i]) => x && !(Number(x.valor) > 0) && !(r.pagosFuturos || []).some((p) => p.idx === i) && Math.max(1, Number((x.desglose || {}).anio0) || Number(x.entrega) || 1) === anio).map(([x, i]) => <div key={"dp" + i} style={{ marginTop: 6 }}>
@@ -1695,32 +1684,57 @@ export function reservaDelAnio(g = {}) {
   const cierre = (g.reservaFin || 0) + (g.apartadoFin || 0);
   return { libre, guardada, inicio, vuelve, sacas, uso, queda, cierre, guardas: Math.max(0, cierre - queda) };
 }
+// 24-nov-2026 (Santiago: "¿me quedan 228 o 292, o una es la suma de la otra?"; "y esos 592, ¿de qué son, de dónde vienen? Cada valor
+// debemos entender qué es y de dónde proviene"). Tu reserva en un año, como una suma de arriba abajo: lo que tienes al empezar, lo que
+// sale, lo que guardas (de dónde) y lo que rinde = lo que tienes al terminar, que es con lo que empieza el año siguiente. En pesos
+// redondeados y con lo que rinde como la parte que cierra la cuenta, para que lo que se ve sume exacto.
+export function partesReserva(g = {}, sig = null) {
+  const R = Math.round, rv = reservaDelAnio(g), s = sig ? reservaDelAnio(sig) : null;
+  const empieza = R(rv.inicio + rv.vuelve), vuelve = R(rv.vuelve), sacas = R(rv.sacas), uso = R(rv.uso);
+  const queda = empieza - vuelve - sacas - uso;
+  const capRaw = Math.min(g.reservaDeAqui || 0, rv.guardas), fijoRaw = Math.min(g.repartoReserva || 0, Math.max(0, rv.guardas - capRaw));
+  const todoRaw = g.mesAReserva ? Math.max(0, rv.guardas - capRaw - fijoRaw) : 0;
+  const deCapital = R(capRaw), deMesFijo = R(fijoRaw), deMesTodo = R(todoRaw), otros = R(Math.max(0, rv.guardas - capRaw - fijoRaw - todoRaw));
+  const guardas = deCapital + deMesFijo + deMesTodo + otros;
+  const fin = s ? R(s.inicio + s.vuelve) : queda + guardas;
+  const guardadaFin = R(s ? s.guardada + s.vuelve : g.apartadoFin || 0);
+  return { ...rv, empieza, vuelve, sacas, uso, queda, deCapital, deMesFijo, deMesTodo, otros, guardas, rinde: s ? fin - queda - guardas : 0, fin, guardadaFin };
+}
+// De dónde sale lo que tienes en tu reserva al terminar un año, desde que empieza tu plan: lo que guardaste de tu capital o de lo que te
+// sobraba al mes, lo que rindió y lo que sacaste o se usó, cada parte con sus años. Cada año empieza con lo que terminó el anterior, así
+// que las partes suman exacto lo que tienes al terminar.
+export function origenReserva(cuenta = [], hasta = 1) {
+  const o = { inicial: 0, fin: 0, capital: [], mes: [], otros: [], rinde: [], sacas: [], uso: [], vuelve: [] };
+  cuenta.filter((y) => y.anio <= hasta).sort((a, b) => a.anio - b.anio).forEach((g, i) => {
+    const p = partesReserva(g, cuenta.find((y) => y.anio === g.anio + 1) || null);
+    if (i === 0) o.inicial = p.empieza;
+    [["capital", p.deCapital], ["mes", p.deMesFijo + p.deMesTodo], ["otros", p.otros], ["rinde", p.rinde], ["sacas", p.sacas], ["uso", p.uso], ["vuelve", p.vuelve]]
+      .forEach(([k, v]) => { if (Math.abs(v) > 0.5) o[k].push({ anio: g.anio, v }); });
+    o.fin = p.fin;
+  });
+  o.total = Object.fromEntries(["capital", "mes", "otros", "rinde", "sacas", "uso", "vuelve"].map((k) => [k, o[k].reduce((sm, x) => sm + x.v, 0)]));
+  return o;
+}
 // Tu fondo de reserva, al lado del capital y más pequeño. 24-nov-2026 (Santiago: "aquí sería más claro: reserva este año cero, reserva
-// para el año entrante XXXX, y que uno sepa de dónde viene o cómo se logró"). Una cuenta que suma: lo que hay este año, lo que le sumas
-// (de tu capital o de lo que te sobra al mes, cada parte con «Quitar») y lo que rinde = lo que tendrás el año entrante.
-function ReservaAnio({ r, g, sig, cfg, set, anio, Y, tasaR }) {
+// para el año entrante XXXX, y que uno sepa de dónde viene o cómo se logró"; "¿me quedan 228 o 292, o una es la suma de la otra?";
+// "cada valor debemos entender qué es y de dónde proviene"). Una suma de arriba abajo con todos los renglones del mismo tamaño: lo que
+// tienes al empezar el año (lo que tenías al terminar el anterior), lo que sale, lo que guardas (de tu capital o de lo que te sobra al
+// mes, cada parte con «Quitar») y lo que rinde = lo que tienes al terminar. Solo el total va resaltado; debajo se abre de dónde sale,
+// año por año, desde que empieza tu plan.
+export function ReservaAnio({ r, g, sig, cuenta = [], cfg, set, anio, tasaR }) {
   const [verTasa, setVerTasa] = useState(false);
+  const [verOrigen, setVerOrigen] = useState(false);
   const tasaPropia = !(cfg.reservaTasaPct === "" || cfg.reservaTasaPct == null);
-  const rv = reservaDelAnio(g);
-  const rvS = sig ? reservaDelAnio(sig) : null;
-  const paraSig = rvS ? rvS.inicio + rvS.vuelve : null;
-  const rinde = paraSig != null ? Math.max(0, paraSig - rv.cierre) : 0;
-  const inicioTotal = rv.inicio + rv.vuelve;
-  const hayAntes = rv.vuelve > 0.5 || rv.sacas > 0.5 || rv.uso > 0.5;
-  const nada = inicioTotal + rv.guardas < 0.5;
-  // De dónde sale lo que le sumas este año. Se reparte lo que de verdad cupo (rv.guardas), para que la cuenta cuadre.
-  const deCapital = Math.min(g.reservaDeAqui || 0, rv.guardas);
-  const deMesFijo = Math.min(g.repartoReserva || 0, Math.max(0, rv.guardas - deCapital));
-  const deMesTodo = g.mesAReserva ? Math.max(0, rv.guardas - deCapital - deMesFijo) : 0;
+  const p = partesReserva(g, sig);
+  const hayAntes = p.vuelve > 0.5 || p.sacas > 0.5 || p.uso > 0.5;
+  const nada = p.empieza + p.guardas < 0.5;
   const quitarCapital = () => { const x = { ...(cfg.reservaAnual || {}) }; delete x[anio]; set("reservaAnual", x); };
   const quitarMesTodo = () => { const x = { ...(cfg.mesAReserva || {}) }; delete x[anio]; set("mesAReserva", x); };
   const quitarMesFijo = () => { const x = { ...(cfg.mesReparto || {}) }; const arr = (Array.isArray(x[anio]) ? x[anio] : []).filter((f) => f && f.tipo !== "reserva"); if (arr.length) x[anio] = arr; else delete x[anio]; set("mesReparto", x); };
-  const A = anioCal(anio), sigA = sig ? anioCal(sig.anio) : null;
-  const fila = (l, v, { fuerte, col, quitar, nota, linea } = {}) => <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", columnGap: 10, alignItems: "baseline", ...(linea ? { borderTop: `1px solid ${C.bd}`, paddingTop: 6, marginTop: 2 } : {}) }}>
-    <span style={{ fontSize: fuerte ? 14 : 12.5, fontWeight: fuerte ? 600 : 400, color: fuerte ? C.tx : C.tx2, lineHeight: 1.4 }}>{l}{quitar && <button type="button" onClick={quitar} style={{ ...enlace, color: C.tx2, fontSize: 12, marginLeft: 8 }}>{tx("Quitar", "Remove")}</button>}</span>
-    <span style={{ fontSize: fuerte ? 18 : 13, fontWeight: fuerte ? 700 : 400, color: col || (fuerte ? C.tx : C.tx2), fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{plata(Math.round(v))}</span>
-    {nota && <span style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2, lineHeight: 1.4 }}>{nota}</span>}
-  </div>;
+  const A = anioCal(anio), antA = anio > 1 ? anioCal(anio - 1) : null, sigA = sig ? anioCal(sig.anio) : null;
+  const notaGuardada = p.guardada > 0.5 ? tx(`De esto, ${plata(Math.round(p.guardada))} están guardados para un año siguiente y vuelven solos ese año.`, `Of this, ${plata(Math.round(p.guardada))} is kept for a later year and returns on its own.`) : null;
+  const notaEmpieza = [anio === 1 ? tx("Tu plan empieza sin fondo de reserva.", "Your plan starts with no reserve fund.") : p.empieza > 0.5 ? tx(`Es lo que tenías al terminar ${antA}.`, `It's what you had at the end of ${antA}.`) : tx(`Al terminar ${antA} no tenías reserva.`, `You had no reserve at the end of ${antA}.`), !hayAntes && notaGuardada].filter(Boolean).join(" ");
+  const promedioMes = (v) => tx(`En promedio, ${plata(Math.round(v / 12))} al mes durante los 12 meses de ${A}.`, `On average ${plata(Math.round(v / 12))} a month over the 12 months of ${A}.`);
   return <div id="f10-reserva" style={{ flex: "1 1 260px", minWidth: 0, background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 10, padding: "12px 14px", display: "grid", gap: 6, alignContent: "start" }}>
     <div style={{ fontSize: 15, fontWeight: 600, color: C.tx }}>{tx("Tu fondo de reserva", "Your reserve fund")}</div>
     <div style={{ fontSize: 12.5, color: C.tx2, lineHeight: 1.45 }}>{tx("Plata guardada aparte para cualquier emergencia.", "Money kept aside for any emergency.")} {nada
@@ -1728,22 +1742,50 @@ function ReservaAnio({ r, g, sig, cfg, set, anio, Y, tasaR }) {
       : tx(`Rinde ${tasaR} al año${tasaPropia ? " (el que escribiste)" : esUS() ? "" : " (el promedio de un CDT a un año)"} y no hace parte de tu capital disponible: la usas cuando la necesites, y si un año no te alcanza la plata, se usa sola.`, `It earns ${tasaR} a year${tasaPropia ? " (your rate)" : ""} and isn't part of your available capital: use it when you need it; if a year falls short it's used automatically.`)}
       {" "}<button type="button" onClick={() => setVerTasa(!verTasa)} aria-expanded={verTasa} style={{ ...enlace, color: C.tx2, fontSize: 12.5 }}>{verTasa ? tx("Listo", "Done") : tx("Cambiar el rendimiento", "Change the rate")}</button></div>
     {verTasa && r && <TasaReserva r={r} cfg={cfg} set={set} />}
-    {!nada && <div style={{ display: "grid", gap: 5, marginTop: 4 }}>
-      {hayAntes && fila(tx(`Al empezar ${A}`, `At the start of ${A}`), inicioTotal)}
-      {rv.vuelve > 0.5 && fila(tx(`− Vuelve a tu capital: la guardaste para ${A}`, `− Returns to your capital: you kept it for ${A}`), rv.vuelve)}
-      {rv.sacas > 0.5 && fila(tx("− Sacas para tu capital disponible", "− You take it into your available capital"), rv.sacas)}
-      {rv.uso > 0.5 && fila(tx("− Se usa sola: este año no alcanza para vivir y pagar lo comprometido", "− Used automatically: this year falls short"), rv.uso)}
-      {fila(hayAntes ? tx(`= Este año (${A})`, `= This year (${A})`) : tx(`Este año (${A})`, `This year (${A})`), rv.queda, { fuerte: true, linea: hayAntes, col: rv.queda > 0.5 ? C.tx : C.tx2,
-        nota: rv.guardada > 0.5 ? tx(`De esto, ${plata(Math.round(rv.guardada))} están guardados para un año siguiente y vuelven solos ese año.`, `Of this, ${plata(Math.round(rv.guardada))} is kept for a later year and returns on its own.`) : null })}
-      {deCapital > 0.5 && fila(tx("+ De tu capital: lo pediste en «Guardar en tu reserva»", "+ From your capital: \"Keep in your reserve\""), deCapital, { quitar: quitarCapital })}
-      {deMesFijo > 0.5 && fila(tx("+ De lo que te sobra al mes: lo pediste en «Ahorrar en tu reserva» («2 · Tu mes»)", "+ From your monthly surplus: \"Save in your reserve\""), deMesFijo, { quitar: quitarMesFijo })}
-      {deMesTodo > 0.5 && fila(tx("+ De lo que te sobra al mes: pediste que todo lo que te queda vaya a tu reserva", "+ From your monthly surplus: everything left goes to your reserve"), deMesTodo, { quitar: quitarMesTodo })}
-      {sig ? <>
-        {rinde > 0.5 && fila(tx(`+ Lo que rinde en el año (${tasaR})`, `+ What it earns in the year (${tasaR})`), rinde)}
-        {fila(tx(`= Para ${sigA}`, `= For ${sigA}`), paraSig, { fuerte: true, linea: true, col: paraSig > 0.5 ? C.gn : C.tx2 })}
-      </> : rv.guardas > 0.5 && fila(tx(`= Al cierre de ${A}`, `= At the end of ${A}`), rv.cierre, { fuerte: true, linea: true, col: C.gn })}
+    {!nada && <div style={{ display: "grid", gap: 6, marginTop: 4 }}>
+      <FilaSuma l={tx(`Tienes al empezar ${A}`, `You have at the start of ${A}`)} v={p.empieza} nota={notaEmpieza} />
+      {p.vuelve > 0.5 && <FilaSuma l={tx(`− Vuelve a tu capital disponible: la guardaste para ${A}`, `− Returns to your available capital: you kept it for ${A}`)} v={p.vuelve} />}
+      {p.sacas > 0.5 && <FilaSuma l={tx(`− Sacas para tu capital disponible de ${A}`, `− You take it into your ${A} available capital`)} v={p.sacas} />}
+      {p.uso > 0.5 && <FilaSuma l={tx(`− Se usa sola: en ${A} no alcanza para vivir y pagar lo comprometido`, `− Used automatically: ${A} falls short`)} v={p.uso} />}
+      {hayAntes && <FilaSuma linea l={tx(`= Te queda en tu reserva en ${A}`, `= Left in your reserve in ${A}`)} v={p.queda} nota={notaGuardada} />}
+      {p.deCapital > 0.5 && <FilaSuma l={tx(`+ Guardas de tu capital disponible de ${A}`, `+ You keep from your ${A} available capital`)} v={p.deCapital} quitar={quitarCapital} />}
+      {p.deMesFijo > 0.5 && <FilaSuma l={tx("+ Guardas de lo que te sobra al mes", "+ You save from your monthly surplus")} v={p.deMesFijo} quitar={quitarMesFijo} nota={promedioMes(p.deMesFijo)} />}
+      {p.deMesTodo > 0.5 && <FilaSuma l={tx("+ Guardas todo lo que te sobra al mes", "+ You save all your monthly surplus")} v={p.deMesTodo} quitar={quitarMesTodo} nota={promedioMes(p.deMesTodo)} />}
+      {p.otros > 0.5 && <FilaSuma l={tx("+ Otros aportes a tu reserva", "+ Other additions to your reserve")} v={p.otros} />}
+      {p.rinde > 0.5 && <FilaSuma l={tx(`+ Rinde en ${A} (${tasaR} al año)`, `+ Earns in ${A} (${tasaR} a year)`)} v={p.rinde} />}
+      <FilaSuma fuerte linea l={tx(`= Tienes al terminar ${A}`, `= You have at the end of ${A}`)} v={p.fin} col={p.fin > 0.5 ? C.gn : C.tx2} nota={sigA ? tx(`Con esto empiezas ${sigA}.`, `You start ${sigA} with this.`) : null} />
+      {anio > 1 && p.fin > 0.5 && <button type="button" onClick={() => setVerOrigen(!verOrigen)} aria-expanded={verOrigen} style={{ ...enlace, color: C.tx2, fontSize: 12.5, justifySelf: "start", textAlign: "left" }}>{verOrigen ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx(`¿De dónde salen los ${plata(p.fin)}?`, `Where does ${plata(p.fin)} come from?`)}</button>}
+      {verOrigen && <OrigenReserva cuenta={cuenta} anio={anio} />}
     </div>}
-    {anio > 1 && rv.libre > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} compacto />}
+    {anio > 1 && p.libre > 0.5 && <UsarReserva g={g} cfg={cfg} set={set} anio={anio} compacto />}
+  </div>;
+}
+// Un renglón de una suma pequeña: el texto a la izquierda, la cifra a la derecha y, si hace falta, de dónde sale debajo. Todos del mismo
+// tamaño; solo el total (fuerte) se resalta, para que ningún renglón parezca el resultado.
+function FilaSuma({ l, v, fuerte, col, quitar, nota, linea }) {
+  return <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", columnGap: 10, alignItems: "baseline", ...(linea ? { borderTop: `1px solid ${C.bd}`, paddingTop: 6, marginTop: 2 } : {}) }}>
+    <span style={{ fontSize: fuerte ? 14 : 13, fontWeight: fuerte ? 600 : 400, color: fuerte ? C.tx : C.tx2, lineHeight: 1.4 }}>{l}{quitar && <button type="button" onClick={quitar} style={{ ...enlace, color: C.tx2, fontSize: 12, marginLeft: 8 }}>{tx("Quitar", "Remove")}</button>}</span>
+    <span style={{ fontSize: fuerte ? 15 : 13, fontWeight: fuerte ? 600 : 400, color: col || C.tx, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{plata(Math.round(Math.abs(v)))}</span>
+    {nota && <span style={{ gridColumn: "1 / -1", fontSize: 12, color: C.tx2, lineHeight: 1.4 }}>{nota}</span>}
+  </div>;
+}
+// De dónde sale lo que tienes en tu reserva, desde que empieza tu plan hasta el final del año que ves: cada parte dice de dónde vino y en
+// qué años, y la suma da exacto lo que tienes al terminar.
+function OrigenReserva({ cuenta, anio }) {
+  const o = origenReserva(cuenta, anio), A = anioCal(anio), A1 = anioCal(1);
+  const anios = (xs) => xs.map((x) => `${anioCal(x.anio)}: ${plata(Math.round(x.v))}`).join(" · ");
+  const t = o.total;
+  return <div style={{ display: "grid", gap: 6, borderLeft: `2px solid ${C.bd}`, paddingLeft: 10 }}>
+    <div style={{ fontSize: 12.5, color: C.tx2, lineHeight: 1.4 }}>{tx(`Desde ${A1}, cuando empieza tu plan, hasta el final de ${A}:`, `From ${A1}, when your plan starts, to the end of ${A}:`)}</div>
+    {o.inicial > 0.5 && <FilaSuma l={tx(`Tenías al empezar ${A1}`, `You had at the start of ${A1}`)} v={o.inicial} />}
+    {t.capital > 0.5 && <FilaSuma l={tx("+ Guardaste de tu capital disponible", "+ Kept from your available capital")} v={t.capital} nota={anios(o.capital)} />}
+    {t.mes > 0.5 && <FilaSuma l={tx("+ Guardaste de lo que te sobraba al mes", "+ Saved from your monthly surplus")} v={t.mes} nota={anios(o.mes)} />}
+    {t.otros > 0.5 && <FilaSuma l={tx("+ Otros aportes a tu reserva", "+ Other additions")} v={t.otros} nota={anios(o.otros)} />}
+    {t.rinde > 0.5 && <FilaSuma l={tx("+ Rindió", "+ Earned")} v={t.rinde} nota={anios(o.rinde)} />}
+    {t.sacas > 0.5 && <FilaSuma l={tx("− Sacaste para tu capital disponible", "− Taken into your available capital")} v={t.sacas} nota={anios(o.sacas)} />}
+    {t.uso > 0.5 && <FilaSuma l={tx("− Se usó sola para vivir", "− Used automatically for living costs")} v={t.uso} nota={anios(o.uso)} />}
+    {t.vuelve > 0.5 && <FilaSuma l={tx("− Volvió a tu capital disponible: la guardaste para ese año", "− Returned to your available capital")} v={t.vuelve} nota={anios(o.vuelve)} />}
+    <FilaSuma fuerte linea l={tx(`= Tienes al terminar ${A}`, `= You have at the end of ${A}`)} v={o.fin} />
   </div>;
 }
 // 24-nov-2026 (Santiago: "de lo que sobra cada mes, ¿qué quiere hacer? abonar a deudas mensualmente, abonar a inversión existente
@@ -1809,9 +1851,47 @@ function RepartoMes({ r, cfg, set, g, anio, Y, sigY, regla, reinv, tasaR }) {
       {(g.reparto || []).filter((x) => x.tipo !== "nada").map((x) => fila("rep" + x.i, { l: `− ${x.nombre}`, v: x.usado, acc: accion(tx("Quitar", "Remove"), () => quitar(x.i)),
         nota: x.usado + 0.5 < x.pedido ? (x.tipo === "deuda" && x.usado > 0.5 ? tx(`Con ${plata(Math.round(x.usado / 12))} al mes la terminas de pagar este año.`, `${plata(Math.round(x.usado / 12))} a month finishes it this year.`) : tx(`Pediste ${plata(Math.round(x.pedido / 12))} al mes: solo alcanzan ${plata(Math.round(x.usado / 12))}.`, `You asked for ${plata(Math.round(x.pedido / 12))} a month: only ${plata(Math.round(x.usado / 12))} fits.`)) : x.tipo === "reserva" ? tx(`Rinde ${tasaR}; la usas en un año siguiente.`, `Earns ${tasaR}; use it in a later year.`) : null }))}
       {g.mesAReserva && fila("todo-res", { l: tx("− A tu reserva: todo lo que queda", "− To your reserve: everything left"), v: libre, acc: accion(tx("Quitar", "Remove"), quitarReservaTodo) })}
-      {fila("pasa", { l: sigY ? tx(`Pasa a ${sigY} como saldo disponible`, `Carries to ${sigY} as available balance`) : tx("Te queda", "Left"), v: g.mesAReserva ? 0 : libre, col: C.gn, fuerte: true, linea: true,
-        nota: !g.mesAReserva && (g.porInvertir || 0) < -0.5 ? tx(`De esto, ${plata(Math.round(Math.min(libre, -g.porInvertir)))} cubren lo que te pasaste en tu capital.`, `Of this, ${plata(Math.round(Math.min(libre, -g.porInvertir)))} covers what you went over in your capital.`) : null })}
+      {fila("pasa", { l: tx("= Te queda de lo que te sobra al mes", "= Left from your monthly surplus"), v: g.mesAReserva ? 0 : libre, col: C.gn, fuerte: true, linea: true,
+        nota: !g.mesAReserva && (g.porInvertir || 0) < -0.5 ? tx(`De esto, ${plata(Math.round(Math.min(libre, -g.porInvertir)))} cubren lo que te pasaste en tu capital.`, `Of this, ${plata(Math.round(Math.min(libre, -g.porInvertir)))} covers what you went over in your capital.`)
+          : sigY && !g.mesAReserva && libre > 0.5 ? tx(`Pasa a ${sigY} como capital disponible.`, `It carries to ${sigY} as available capital.`) : null })}
     </div>
+  </>;
+}
+// 24-nov-2026 (Santiago: "¿me quedó de tu mes 446 MM? Eso es incorrecto: me queda a fin de año"; "cada valor debemos entender qué es y
+// de dónde proviene"). El cierre de un año suma de arriba abajo: tu capital disponible (el de arriba), lo que hiciste con él, lo que te
+// sobró en el año mes a mes (con su promedio al mes) y lo que va a tu reserva = lo que pasa al año siguiente como capital disponible.
+// Aparte, tu fondo de reserva al terminar el año y cómo se formó. Lo usan «3 · Así cierra» y «Así quedó tu año».
+export function SumaCierre({ g, sig, anio, cf = 0 }) {
+  const A = anioCal(anio), sigY = sig ? anioCal(sig.anio) : null, R = (v) => plata(Math.round(v));
+  const deCap = Math.min(g.reservaDeAqui || 0, g.aReserva || 0), deMes = Math.max(0, (g.aReserva || 0) - deCap);
+  const mesQueda = (g.mes || 0) - (g.repartoFuera || 0);
+  const reinvSolo = cf > 0.5 ? Math.max(0, cf - (g.flujo || 0)) : 0;
+  const nInv = (g.movidas || []).filter((m) => m.cuenta).length;
+  const sinEsto = [reinvSolo > 0.5 && tx(`lo que se reinvierte solo (${R(reinvSolo)} en el año)`, `what's reinvested automatically (${R(reinvSolo)} a year)`),
+    (g.repartoFuera || 0) > 0.5 && tx(`lo que repartiste en abonos, inversiones y gastos (${R(g.repartoFuera)} en el año)`, `what you allocated to payments, investments and spending (${R(g.repartoFuera)} a year)`)].filter(Boolean);
+  const notaMes = tx(`En promedio, ${R(Math.abs(mesQueda) / 12)} al mes durante los 12 meses${mesQueda > 0 && sinEsto.length ? `, ya sin ${sinEsto.join(" ni ")}` : ""}.`, `On average ${R(Math.abs(mesQueda) / 12)} a month over the 12 months.`);
+  const p = partesReserva(g, sig);
+  const formo = [p.empieza > 0.5 ? tx(`tenías ${R(p.empieza)} al empezar ${A}`, `you had ${R(p.empieza)} at the start of ${A}`) : tx(`empiezas ${A} sin reserva`, `you start ${A} with no reserve`),
+    p.vuelve > 0.5 && tx(`vuelven a tu capital ${R(p.vuelve)}`, `${R(p.vuelve)} returns to your capital`), p.sacas > 0.5 && tx(`sacas ${R(p.sacas)}`, `you take out ${R(p.sacas)}`),
+    p.uso > 0.5 && tx(`se usan solos ${R(p.uso)}`, `${R(p.uso)} is used automatically`), p.guardas > 0.5 && tx(`guardas ${R(p.guardas)}`, `you keep ${R(p.guardas)}`),
+    p.rinde > 0.5 && tx(`rinde ${R(p.rinde)}`, `it earns ${R(p.rinde)}`)].filter(Boolean);
+  const frase = formo.length > 1 ? `${formo.slice(0, -1).join(", ")}${tx(" y ", " and ")}${formo[formo.length - 1]}` : formo[0];
+  const notaReserva = `${frase.charAt(0).toUpperCase()}${frase.slice(1)}.${p.guardadaFin > 0.5 ? tx(` De esto, ${R(p.guardadaFin)} están guardados para un año siguiente.`, ` Of this, ${R(p.guardadaFin)} is kept for a later year.`) : ""}${sigY ? tx(` Con esto empiezas ${sigY}.`, ` You start ${sigY} with this.`) : ""}`;
+  const pasa = g.pasa || 0;
+  return <>
+    <Renglon l={tx(`Capital disponible de ${A}`, `Available capital for ${A}`)} v={g.disponible || 0} nota={tx(`Es el de arriba, en «${anio === 1 ? "Tienes este año" : `Tienes en ${A}`}».`, "The same one shown at the top.")} />
+    {(g.faltaSinCubrir || 0) > 0.5 && <Renglon l={tx("− Te falta para vivir y pagar lo comprometido, y tu reserva no alcanza", "− Short for living costs and commitments, and your reserve doesn't cover it")} v={g.faltaSinCubrir} col={C.rd} />}
+    {(g.movido || 0) > 0.5 && <Renglon l={tx(`− Invertiste (${nInv} ${nInv === 1 ? "inversión" : "inversiones"})`, `− You invested (${nInv})`)} v={g.movido} />}
+    {deCap > 0.5 && <Renglon l={tx("− A tu fondo de reserva, de tu capital", "− To your reserve fund, from your capital")} v={deCap} />}
+    {Math.abs(mesQueda) > 0.5 && <Renglon l={mesQueda > 0 ? tx(`+ Te sobró en ${A}, mes a mes`, `+ Your surplus in ${A}, month by month`) : tx(`− Te faltó en ${A}, mes a mes`, `− Your shortfall in ${A}, month by month`)} v={mesQueda} col={mesQueda > 0 ? C.gn : C.am} nota={notaMes} />}
+    {deMes > 0.5 && <Renglon l={tx("− A tu fondo de reserva, de lo que te sobra al mes", "− To your reserve fund, from your monthly surplus")} v={deMes} />}
+    {(g.queda || 0) < -0.5 ? <Renglon fuerte linea l={tx("= Te falta", "= Short")} v={g.queda} col={C.rd} nota={tx("Sale de tus cuentas e inversiones líquidas. Baja un monto o pásalo a otro año si prefieres no tocarlas.", "It comes out of your accounts and liquid investments. Lower an amount or move it to another year if you'd rather not touch them.")} />
+      : <Renglon fuerte linea l={sigY ? tx(`= Pasa a ${sigY} como capital disponible`, `= Carries to ${sigY} as available capital`) : tx(`= Te queda al terminar ${A}`, `= Left at the end of ${A}`)} v={pasa} col={pasa > 0.5 ? C.gn : C.tx}
+        nota={sigY && pasa > 0.5 ? tx(`Para invertir o pagar deudas en ${sigY}. Mientras no lo uses, no rinde: si es para algo que viene, guárdalo en tu reserva.`, `To invest or pay off debt in ${sigY}. It earns nothing until you use it: if it's for something coming up, keep it in your reserve.`) : null} />}
+    {p.empieza + p.guardas > 0.5 && <>
+      <Etq>{tx("Tu fondo de reserva", "Your reserve fund")}</Etq>
+      <Renglon l={tx(`Tienes al terminar ${A}`, `You have at the end of ${A}`)} v={p.fin} nota={notaReserva} />
+    </>}
   </>;
 }
 // 4 · Así te queda el año (Santiago: "al final, después de mover inversiones del año, un resultado
@@ -1826,22 +1906,14 @@ function ResultadoAnio({ r, cfg, cuenta, anioSel, setAnioSel, dejarListo, irAnio
   const ir = (t) => { setAnioSel(t); setTimeout(() => document.getElementById("f10-anios")?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 50); };
   const cambiosSig = sig ? cambiosDelAnio(r, cfg, sig.anio, sig.foto || {}).filter((c) => c.mes != null && c.mes < 0).map((c) => c.nombre) : [];
   const listo = !!(cfg.aniosListos || {})[anio], problema = g.faltaSinCubrir > 0.5 || g.porInvertir < -0.5;
-  // 24-nov-2026 (Santiago: "quedaría cada año con el resumen de lo que se hizo"). El cierre suma lo que te quedó de
-  // tu capital y de tu mes, y dice a dónde va: tu reserva o el año siguiente, para invertir o pagar deudas.
-  return <Ficha tam={24} id="f10-resultado-anio" titulo={tx(`3 · Así cierra ${anio === 1 ? "este año" : Y}`, `3 · How ${anio === 1 ? "this year" : Y} ends`)} sub={tx("Lo que te quedó de tu capital y de tu mes, y a dónde va.", "What's left from your capital and your month, and where it goes.")}
-    cifra={`${g.queda < -0.5 ? "−" : ""}${plata(Math.round(Math.abs(g.queda)))}`} cifraSub={g.queda < -0.5 ? tx("te falta", "short") : tx("al cierre", "at year end")} col={g.queda < -0.5 ? C.rd : g.queda > 0.5 ? C.gn : C.tx}>
-    <Renglon l={(g.antesReserva || 0) < -0.5 ? tx("Te pasaste en tu capital", "You went over your capital") : tx("Te quedó de tu capital", "Left from your capital")} v={g.antesReserva || 0} signo={(g.antesReserva || 0) < -0.5 ? "−" : ""} />
-    {(() => { const m = (g.mes || 0) - (g.repartoFuera || 0); return Math.abs(m) > 0.5 && <Renglon l={m > 0 ? tx("+ Te quedó de tu mes", "+ Left from your month") : tx("− Tu mes te restó", "− Your month took")} v={m} col={m > 0 ? C.gn : C.am}
-      nota={(g.repartoFuera || 0) > 0.5 ? tx(`Ya sin lo que repartiste en abonos, inversiones y gastos (${plata(Math.round(g.repartoFuera))}).`, `After what you allocated to payments, investments and spending (${plata(Math.round(g.repartoFuera))}).`) : null} />; })()}
-    {g.faltaSinCubrir > 0.5 && <Renglon l={tx("− Falta y tu reserva no alcanza", "− Short and your reserve doesn't cover it")} v={g.faltaSinCubrir} col={C.rd} />}
-    {g.queda > 0.5 && <>
-      <Etq>{tx("A dónde va", "Where it goes")}</Etq>
-      {g.aReserva > 0.5 && <Renglon l={tx("A tu fondo de reserva", "To your reserve fund")} v={g.aReserva} nota={tx(`Rinde ${fmtPctEs((g.tasaReserva || 0) * 100, 1)} al año.`, `Earns ${fmtPctEs((g.tasaReserva || 0) * 100, 1)} a year.`)} />}
-      <Renglon l={sigY ? tx(`Pasa a ${sigY} para invertir o pagar deudas`, `Carries to ${sigY} to invest or pay off debt`) : tx(`Queda disponible al cierre de ${Y}`, `Available at the end of ${Y}`)} v={g.pasa} col={g.pasa > 0.5 ? C.gn : C.tx} nota={sigY && g.pasa > 0.5 ? tx("En esta cuenta no rinde: si es para algo que viene, mejor a tu reserva.", "It earns nothing here: if it's for something coming up, your reserve is better.") : null} />
-    </>}
-    {g.queda < -0.5 && <div style={{ fontSize: 12, color: C.tx2, marginTop: 4, lineHeight: 1.45 }}>{tx("Sale de tus cuentas e inversiones líquidas. Baja un monto o pásalo a otro año si prefieres no tocarlas.", "It comes out of your accounts and liquid investments. Lower an amount or move it to another year if you'd rather not touch them.")}</div>}
-    {(g.apartadoFin || 0) > 0.5 && <div style={{ fontSize: 12.5, color: C.tx, marginTop: 8 }}>{tx("Guardado aparte para años siguientes: ", "Kept aside for coming years: ")}<b style={{ fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(g.apartadoFin))}</b></div>}
-    {g.reservaFin > 0.5 && <div style={{ fontSize: 12.5, color: C.tx, marginTop: 8 }}>{tx(`Tu fondo de reserva al cierre ${anio === 1 ? "de este año" : "de " + Y}: `, `Your reserve fund at the end of ${anio === 1 ? "this year" : Y}: `)}<b style={{ fontVariantNumeric: "tabular-nums" }}>{plata(Math.round(g.reservaFin))}</b>{g.usoReserva > 0.5 ? tx(` · usaste ${plata(Math.round(g.usoReserva))} para vivir`, ` · you used ${plata(Math.round(g.usoReserva))} for living costs`) : ""}</div>}
+  // 24-nov-2026 (Santiago: "quedaría cada año con el resumen de lo que se hizo"; "¿me quedó de tu mes 446 MM? Me queda a fin de año").
+  // Arriba, con lo que terminas el año: el capital disponible que pasa al siguiente (lo más importante). Debajo, la suma que lo explica
+  // y tu fondo de reserva al terminar el año, con cómo se formó.
+  const A = anioCal(anio), falta = g.queda < -0.5, pasa = g.pasa || 0;
+  return <Ficha tam={24} id="f10-resultado-anio" titulo={tx(`3 · Así cierra ${anio === 1 ? "este año" : Y}`, `3 · How ${anio === 1 ? "this year" : Y} ends`)}
+    sub={sigY ? tx(`Con lo que terminas ${A}: el capital disponible que pasa a ${sigY} y tu fondo de reserva.`, `What you end ${A} with: the available capital that carries to ${sigY} and your reserve fund.`) : tx(`Con lo que terminas ${A}: tu capital disponible y tu fondo de reserva.`, `What you end ${A} with: your available capital and your reserve fund.`)}
+    cifra={`${falta ? "−" : ""}${plata(Math.round(falta ? -g.queda : pasa))}`} cifraSub={falta ? tx("te falta", "short") : sigY ? tx(`de capital disponible para ${sigY}`, `available capital for ${sigY}`) : tx(`de capital disponible al terminar ${A}`, `available capital at the end of ${A}`)} col={falta ? C.rd : pasa > 0.5 ? C.gn : C.tx}>
+    <SumaCierre g={g} sig={sig} anio={anio} cf={((r.filas || [])[anio] || {}).cf || 0} />
     {/* Lo que viene el año siguiente: si te va a faltar para vivir, se dice con qué se cubre. */}
     {sig && sig.flujoFoto < -0.5 && <div style={{ fontSize: 12.5, color: C.tx, marginTop: 10, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", borderRadius: 10, padding: "10px 12px", lineHeight: 1.5 }}>
       {tx(`En ${anioCal(sig.anio)} te van a faltar unos ${plata(Math.round(-sig.flujoFoto / 12))} al mes para vivir${cambiosSig.length ? ` (${cambiosSig.slice(0, 2).join(", ")})` : ""}. `, `In ${anioCal(sig.anio)} you'll be about ${plata(Math.round(-sig.flujoFoto / 12))} a month short on living costs${cambiosSig.length ? ` (${cambiosSig.slice(0, 2).join(", ")})` : ""}. `)}
