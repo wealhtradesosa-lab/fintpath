@@ -170,7 +170,8 @@ export function claseActivo(a) {
  *                         reinversiones:[{activoId,monto}], supuestos }
  */
 export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
-  const cfg = conVencimientos(migrarClaves(cfgIn, userIn), userIn);
+  const cfgM = migrarClaves(cfgIn, userIn);
+  const cfg = conVencimientos(cfgM, userIn);
   const user = ajustarGastos(ajustarIngresos(paraPlan(userIn), cfg), cfg);
   const sup = cfg.supuestos || supuestosF10();
   const indexacionPct = indexacionDe(cfg, sup);
@@ -676,17 +677,22 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // predial"). Lo que se va con una venta de un año siguiente deja de contar desde ese año: lo que
   // marcas en «¿Qué se va con la venta?» y los gastos ligados al activo que no van dentro de su
   // renta neta (los que sí van, se van con la renta).
-  const seVanConVenta = {};
+  const seVanConVenta = {}, seVanDe = {};
   Object.entries(leerTerminan(cfg, N)).forEach(([id, y]) => {
     const d = dec[id] || {}, sug = sugerirVinculados(user, id);
     const elegidos = Array.isArray(d.seVan) ? d.seVan : [...sug.ingresos, ...sug.gastos].filter((x) => x.sugerido).map((x) => x.key);
-    [...elegidos, ...sug.auto.gastos.map((x) => x.key)].forEach((k) => { seVanConVenta[k] = Math.min(seVanConVenta[k] || N + 1, y); });
+    const a = (user.inv || []).find((v) => v && v.id === id) || {};
+    [...elegidos, ...sug.auto.gastos.map((x) => x.key)].forEach((k) => { if (!(seVanConVenta[k] <= y)) { seVanConVenta[k] = y; seVanDe[k] = a.n || a.nombre || tx("su activo", "its asset"); } });
   });
+  // 24-nov-2026 (Santiago: "me sale como si ya estuviera ahorrando cosas de la propiedad que se vende en 2027").
+  // De dónde viene cada fin: la venta de un activo, la fecha de fin de su página (Ingresos o Egresos) o el paso 1.
+  const finD = finalesDeDatos(userIn, N);
+  const origenFin = (k, desde, propio, deDatos) => (seVanConVenta[k] === desde ? "venta" : propio[k] != null && propio[k] !== "sigue" ? "plan" : deDatos[k] ? "datos" : "plan");
   const conVenta = (m, lista) => { const out = { ...m }; lista.forEach((x) => { const v = seVanConVenta[x.key]; if (v) out[x.key] = out[x.key] ? Math.min(Math.round(n(out[x.key])) || 1, v) : v; }); return out; };
   const ingTerminan = conVenta(cfg.ingresosTerminan || {}, ingresosHoy);
-  const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => ({ ...x, desde: Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)) }));
+  const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => { const desde = Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)); const origen = origenFin(x.key, desde, cfgM.ingresosTerminan || {}, finD.ingresos); return { ...x, desde, origen, conVentaDe: origen === "venta" ? seVanDe[x.key] : null }; });
   const terminan = conVenta(cfg.gastosTerminan || {}, gastosHoy);
-  const seVan = gastosHoy.filter((g) => !g.neteado && terminan[g.key]).map((g) => ({ ...g, desde: Math.min(N, Math.max(1, Math.round(n(terminan[g.key])) || 1)) }));
+  const seVan = gastosHoy.filter((g) => !g.neteado && terminan[g.key]).map((g) => { const desde = Math.min(N, Math.max(1, Math.round(n(terminan[g.key])) || 1)); const origen = origenFin(g.key, desde, cfgM.gastosTerminan || {}, finD.gastos); return { ...g, desde, origen, conVentaDe: origen === "venta" ? seVanDe[g.key] : null }; });
   // 24-oct-2026 (Santiago: "los gráficos de los escenarios están muy flojos…
   // que se vea como el HTML", su plan SALEM). Para graficar lo que produce el
   // patrimonio se lleva aparte la renta pasiva (lo que llega a la cuenta sin
@@ -2056,8 +2062,8 @@ export function holguraPorAnio(cuenta = []) {
   const meta = (y) => (y.rvaCap ?? y.aReserva) + (y.mesAReserva ? Math.max(0, y.mes ?? 0) : 0);
   const repetir = (t, X) => {
     const g = cuenta[t - 1];
-    const q = g.queda - X, aR = Math.min(meta(g), Math.max(0, q));
-    let antes = Math.max(0, q) - aR, reserva = g.reservaAntes - g.usoReserva + aR;
+    const q = g.queda - X, aR = Math.min(meta(g), Math.max(0, q)), apT = g.reservaHasta ? Math.min(g.rvaCap ?? 0, aR) : 0;
+    let antes = Math.max(0, q) - aR, reserva = g.reservaAntes - g.usoReserva + aR - apT;
     const out = [];
     for (let s = t + 1; s <= N; s++) {
       const y = cuenta[s - 1], tasa = y.tasaReserva || 0;
@@ -2071,8 +2077,9 @@ export function holguraPorAnio(cuenta = []) {
       const rvaCap = y.rvaCap ?? y.aReserva;
       const aRes = Math.min(rvaCap + (y.mesAReserva ? Math.max(0, mes) : 0), Math.max(0, queda));
       const porInv = disp - y.movido - Math.min(rvaCap, aRes, Math.max(0, disp - y.movido));
+      const apS = y.reservaHasta ? Math.min(rvaCap, aRes) : 0;
       out.push({ anio: s, falta, porInv });
-      antes = Math.max(0, queda) - aRes; reserva = resA - uso + aRes;
+      antes = Math.max(0, queda) - aRes; reserva = resA - uso + aRes - apS;
     }
     return out;
   };
@@ -2159,6 +2166,12 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
   const libreAnio = (t) => (pctAnios[t] != null && asignado > 0 ? 1 - pctAnios[t] / 100 : libre);
   const rva = cfg && cfg.reservaAnual ? leerReservaAnual(cfg.reservaAnual, N) : (r.reservaAnual || {});
   const mesARes = (cfg && cfg.mesAReserva) || {};
+  // 24-nov-2026 (Santiago: "la reserva debería uno poder tenerla por años, para que en el año malo la pueda disponer").
+  // Lo que guardas un año puede tener un año de destino (cfg.reservaHasta: { año en que guardas: año en que vuelve }): queda
+  // aparte, rinde, y ese año vuelve a tu capital. Sin destino, va a la reserva de siempre (se usa sola el año que no alcanza).
+  const hastaRes = {};
+  Object.entries((cfg && cfg.reservaHasta) || {}).forEach(([k, v]) => { const t = Math.round(n(k)), y = Math.round(n(v)); if (t >= 1 && t <= N && y > t && y <= N) hastaRes[t] = y; });
+  const apartados = []; // { desde, hasta, monto }
   const tasa = Math.max(0, n(r.tasaReserva));
   const suma = (l) => l.reduce((sm, x) => sm + (n(x.monto) || 0), 0);
   // 24-nov-2026 (indexación): lo que anotas para un año siguiente va en pesos de hoy y se paga en pesos
@@ -2177,8 +2190,13 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     const flujo = deLibre(n(f.cf)), flujoFoto = deLibre(n(foto.cf));
     // 1. Lo que tienes
     const llegan = anio === 1
-      ? (bd.vendido > 0.5 ? [{ id: "ventas", nombre: tx(`Lo que vendes${(r.vendidos || []).length ? `: ${(r.vendidos || []).map((v) => v.nombre).join(", ")}` : ""}`, `What you sell${(r.vendidos || []).length ? `: ${(r.vendidos || []).map((v) => v.nombre).join(", ")}` : ""}`), monto: bd.vendido, tipo: "venta" }] : [])
+      // 24-nov-2026 (Santiago: "no entendí de dónde sale 1.030 MM; no muestra de dónde viene esa plata"). Cada venta en su renglón.
+      ? (bd.vendido > 0.5 ? ((r.vendidos || []).length && Math.abs((r.vendidos || []).reduce((sm, v) => sm + n(v.valor), 0) - bd.vendido) < 1
+        ? (r.vendidos || []).filter((v) => n(v.valor) > 0.5).map((v) => ({ id: "venta_" + v.id, nombre: tx(`Vendes ${v.nombre}`, `You sell ${v.nombre}`), monto: n(v.valor), tipo: "venta" }))
+        : [{ id: "ventas", nombre: tx(`Lo que vendes${(r.vendidos || []).length ? `: ${(r.vendidos || []).map((v) => v.nombre).join(", ")}` : ""}`, `What you sell${(r.vendidos || []).length ? `: ${(r.vendidos || []).map((v) => v.nombre).join(", ")}` : ""}`), monto: bd.vendido, tipo: "venta" }]) : [])
       : (r.liberados || []).filter((l) => l.anio === anio && n(l.monto) > 0.5).map((l) => ({ ...l, tipo: String(l.id).endsWith("_retiro") ? "retiro" : "vence" }));
+    // Lo que guardaste para este año vuelve a tu capital, con lo que rindió.
+    apartados.filter((x) => x.hasta === anio && x.monto > 0.5).forEach((x) => llegan.push({ id: "reserva_" + x.desde, nombre: tx(`De tu reserva (la guardaste en ${anioCal(x.desde)})`, `From your reserve (kept in ${anioCal(x.desde)})`), monto: x.monto * Math.pow(1 + tasa, anio - x.desde), tipo: "reserva" }));
     const llega = suma(llegan);
     // Ya comprometido: no lo decides este año, ya viene decidido.
     const compromisos = [];
@@ -2230,11 +2248,15 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     const reservaDeAqui = Math.min(rvaCap, aReserva, Math.max(0, antesReserva));
     const porInvertir = antesReserva - reservaDeAqui;
     const pasa = Math.max(0, queda) - aReserva;
-    const reservaFin = reservaAntes - usoReserva + aReserva;
+    // Lo que guardas de tu capital con un año de destino queda aparte; lo demás va a la reserva de siempre.
+    const aApartado = hastaRes[anio] ? Math.min(rvaCap, aReserva) : 0;
+    if (aApartado > 0.5) apartados.push({ desde: anio, hasta: hastaRes[anio], monto: aApartado });
+    const reservaFin = reservaAntes - usoReserva + aReserva - aApartado;
     const salen = [...compromisos, ...movidas.filter((m) => m.cuenta)].map((x) => ({ nombre: x.nombre, monto: x.monto, montoHoy: x.montoHoy ?? x.monto, tipo: x.tipo === "colchon" ? "F" : x.tipo }));
     // factorHoy: para pasar a pesos de hoy lo que se escribe en un formulario (montos de años siguientes).
     // propio: lo que el año suma o resta por sí solo (sin lo que traes de antes).
-    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, rvaCap, mesAReserva, aReservaMes, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
+    const apartadoFin = apartados.filter((x) => x.hasta > anio).reduce((sm, x) => sm + x.monto * Math.pow(1 + tasa, anio - x.desde), 0);
+    out.push({ anio, antes, llegan, llega, tienes, foto, flujoFoto, flujo, efecto, libre: lib, faltaMes, sobraFoto, cubreMes, mes, rvaCap, mesAReserva, aReservaMes, reservaHasta: hastaRes[anio] || null, aApartado, apartadoFin, compromisos, comprometido, base, propio: llega + flujoFoto - comprometido, usoReserva, faltaSinCubrir, disponible, movidas, movido, antesReserva, reservaDeAqui, porInvertir, queda, aReserva, pasa, reservaAntes, reservaFin, tasaReserva: tasa, factorHoy: Math.pow(1 + inf, Math.max(0, anio - 1)),
       // Para lo que leía la cuenta de antes (informe): lo que sale del año y lo que queda.
       salen, sale: suma(salen), saldo: queda, flujoHoy: 0, cfPrev: n(f.cf) });
     antes = pasa; reserva = reservaFin;
