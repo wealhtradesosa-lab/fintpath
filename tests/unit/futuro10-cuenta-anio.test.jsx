@@ -16,7 +16,9 @@ describe("cuenta año por año", () => {
     expect(g2.flujo).toBeCloseTo(r.filas[2].cf, 0); // lo que sobra del flujo de ese mismo año
     expect(g2.flujoHoy).toBeCloseTo(r.filas[1].cf, 0); // y lo del año en curso llega al siguiente
     expect(g2.salen.some((u) => u.tipo === "A" && Math.round(u.monto) === 300e6)).toBe(true);
-    expect(g2.salen.some((u) => u.tipo === "C" && Math.round(u.monto) === 200e6)).toBe(true);
+    // 24-nov-2026: la cuenta va en pesos de cada año; los 200 M de hoy salen en el año 2 × (1 + inflación).
+    const k2 = 1 + r.escenario.inflacionPct / 100;
+    expect(g2.salen.some((u) => u.tipo === "C" && Math.abs(u.monto - 200e6 * k2) < 1 && Math.round(u.montoHoy) === 200e6)).toBe(true);
     expect(g2.saldo).toBeCloseTo(g2.antes + g2.flujoHoy + g2.flujo + g2.llega - g2.sale, 0);
     const g3 = c.find((g) => g.anio === 3);
     expect(g3.antes).toBeCloseTo(Math.max(0, g2.saldo), 0);
@@ -56,10 +58,11 @@ describe("aportes a una inversión creada en el plan", () => {
     const con = proyectar2(u, { ...base, reinversiones: [{ activoId: "nueva_0", monto: 500e6, anio: 3 }] });
     const v = (r, t) => r.filas[t].porActivo.find((a) => a.id === "nueva_0").valor;
     expect(v(con, 2)).toBeCloseTo(v(sin, 2), -3);
-    expect(v(con, 3) - v(sin, 3)).toBeCloseTo(500e6, -3); // entra ese año
-    expect(v(con, 4) - v(sin, 4)).toBeGreaterThan(500e6); // y desde ahí rinde
+    const k3 = 1.04 ** 2; // 24-nov-2026: 500 MM de hoy entran en 2028 a pesos de ese año
+    expect(v(con, 3) - v(sin, 3)).toBeCloseTo(500e6 * k3, -3); // entra ese año
+    expect(v(con, 4) - v(sin, 4)).toBeGreaterThan(500e6 * k3); // y desde ahí rinde
     const g = cuenta2(con).find((x) => x.anio === 3);
-    expect(g.salen.some((s) => /CDT Bancolombia/.test(s.nombre) && Math.abs(s.monto - 500e6) < 1)).toBe(true);
+    expect(g.salen.some((s) => /CDT Bancolombia/.test(s.nombre) && Math.abs(s.monto - 500e6 * k3) < 1 && Math.abs(s.montoHoy - 500e6) < 1)).toBe(true);
     expect(con.reinversionesDetalle.some((d) => d.aNueva && d.activoId === "nueva_0" && d.anio === 3)).toBe(true);
   });
   it("la lista de «meterle más» trae lo creado en años anteriores, no lo del mismo año", () => {
@@ -75,7 +78,7 @@ describe("aportes a una inversión creada en el plan", () => {
     const sin = proyectar2(u, cfg);
     const con = proyectar2(u, { ...cfg, reinversiones: [{ activoId: "nueva_0", monto: 200e6, anio: 4 }] });
     const v = (r, t) => (r.filas[t].porActivo.find((a) => a.id === "nueva_0") || {}).valor || 0;
-    expect(v(con, 4) - v(sin, 4)).toBeCloseTo(200e6, -3);
-    expect(v(con, 5) - v(sin, 5)).toBeGreaterThan(200e6);
+    expect(v(con, 4) - v(sin, 4)).toBeCloseTo(200e6 * 1.04 ** 3, -3);
+    expect(v(con, 5) - v(sin, 5)).toBeGreaterThan(200e6 * 1.04 ** 3);
   });
 });
