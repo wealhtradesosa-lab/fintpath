@@ -1355,8 +1355,9 @@ function MovidaEditor({ r, cfg, set, refMov, anio, esc, abrirCompleto, onListo }
     const up = (v) => set("nuevas", cfg.nuevas.map((y, j) => (j === k ? { ...y, ...v } : y)));
     const quitar = () => set("nuevas", cfg.nuevas.filter((_, j) => j !== k));
     if (x.preset === "fincaRaiz" && x.pr) return caja(<>
-      <div style={{ fontSize: 12.5, color: C.tx }}>{tx("Es una propiedad raíz: sus pagos, la entrega y la venta se arman en su formulario completo.", "It's a real-estate investment: its payments, delivery and sale are set in its full form.")}</div>
-      {pie(quitar, () => abrirCompleto(refMov))}
+      <div style={{ fontSize: 13, color: C.tx, lineHeight: 1.45 }}>{tx("Es una propiedad raíz: compra sobre planos, lote y construcción, proyecto con socios o construir para rentar. Sus pagos, la entrega y si se queda, se vende o se repite van en sus opciones.", "It's real estate: off-plan, lot and build, a joint project or build to rent. Its payments, delivery and whether it's kept, sold or repeated go in its options.")}</div>
+      <div><button type="button" onClick={() => abrirCompleto(refMov)} style={btnAccion(false)}>{tx("Ver sus opciones", "See its options")}</button></div>
+      {pie(quitar, null)}
     </>);
     const esCustom = x.preset === "custom";
     const hint = rendimientoHintPct(esc);
@@ -1366,7 +1367,7 @@ function MovidaEditor({ r, cfg, set, refMov, anio, esc, abrirCompleto, onListo }
     const mes = (Number(x.monto) || 0) * rend / 100 * pRec / 12;
     return caja(<>
       <div style={fila4}>
-        <label style={lbl}>{tx("¿En qué?", "In what?")}<select style={inp} value={x.preset} onChange={(e) => up({ preset: e.target.value })}>{Object.entries(SUP.presets).filter(([key]) => key !== "fincaRaiz").map(([key, pz]) => <option key={key} value={key}>{nombreSup(pz)}</option>)}<option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option></select></label>
+        <label style={lbl}>{tx("¿En qué?", "In what?")}<select style={inp} value={x.preset} onChange={(e) => { const v = e.target.value; /* 24-nov-2026 (Santiago: "quiero hacer una inversión nueva y podría ser propiedad raíz: no le veo las opciones"). */ if (v === "fincaRaiz") { up({ preset: "fincaRaiz", pr: x.pr || { tipo: "planos", final: "vende", cuotaPct: 30, plazo: 2, valEntregaPct: 20, valAnualPct: 6, ...(Number(x.monto) > 0 ? { valor: Number(x.monto) } : {}) } }); setTimeout(() => abrirCompleto(refMov), 60); return; } up({ preset: v }); }}>{Object.entries(SUP.presets).map(([key, pz]) => <option key={key} value={key}>{nombreSup(pz)}</option>)}<option value="custom">{tx("Otra (personalizada)", "Other (custom)")}</option></select></label>
         <label style={lbl}>{esCustom ? tx("Nombre", "Name") : tx("Entidad (opcional)", "Institution (optional)")}<input style={inp} value={x.nombre || ""} placeholder={esUS() ? tx("Ej.: Vanguard", "e.g. Vanguard") : tx("Ej.: BTG, Skandia", "e.g. BTG, Skandia")} onChange={(e) => up({ nombre: e.target.value })} /></label>
         <label style={lbl}>{tx(`¿Cuánto?${enHoy}`, `How much?${enHoy}`)}<NumberInput style={inp} value={x.monto} onChange={(v) => up({ monto: v })} /></label>
         <label style={lbl}>{tx("Rendimiento anual (%)", "Annual return (%)")}<InputDecimalEs style={inp} placeholder={fmtPctEs(supPct, 1)} value={x.rendimientoNomPct ?? ""} onChange={(v) => up({ rendimientoNomPct: v })} /></label>
