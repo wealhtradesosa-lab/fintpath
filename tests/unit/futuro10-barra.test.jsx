@@ -11,6 +11,7 @@ import MiFuturo10 from "../../src/components/MiFuturo10.jsx";
 import PlanComparador from "../../src/components/PlanComparador.jsx";
 import PlanInforme from "../../src/components/PlanInforme.jsx";
 import { fmM } from "../../src/lib/informeTheme.js";
+import { INFLACION_DEFAULT_PCT } from "../../src/lib/metrics.js";
 import EscenariosCreados, { mostrarAvisoCalculo, AVISO_CALCULO_HASTA, supuestoCompras } from "../../src/components/infografia/EscenariosCreados.jsx";
 
 // Supuestos con 5 % de inflación y 4 % real en la cuenta: el caso de Finanzas.
@@ -70,7 +71,6 @@ describe("barra en vivo: cifras y reglas", () => {
   const rVende = proyectarFuturo10(uVenta, { decisiones: { c: { accion: "vende" } } });
   it("las dos cifras del año 10 son patrimonio neto en pesos de hoy al 5 %", () => {
     const b = resumenBarra(rVende, rHoy);
-    expect(INFLACION_PESOS_HOY_PCT).toBe(5);
     expect(b.inflacionPct).toBe(5);
     expect(b.anioCalFin).toBe(anioCal(10));
     expect(b.plan).toBeCloseTo(rVende.filas[10].patrimonio / 1.05 ** 10, 0);
@@ -369,5 +369,15 @@ describe("una sola tasa de «pesos de hoy»: la inflación del escenario (Finanz
     expect(crecimientoDefault({ id: "x", tp: "Real Estate", va: 100e6 }, rc.escenario)).toBeCloseTo(0.04, 6);
     expect(rc.escenario.inflacionPct).toBe(4);
     expect(loQueVieneDelPlan(rc)[0].valorizacionDefault).not.toBe(false);
+  });
+});
+
+describe("respaldo de inflación: una sola constante con el motor", () => {
+  it("sin escenario, «pesos de hoy» usa la misma inflación por defecto con la que proyecta el motor", () => {
+    expect(INFLACION_PESOS_HOY_PCT).toBe(INFLACION_DEFAULT_PCT);
+    const r = proyectarFuturo10({ inv: [{ id: "a", tp: "Cash", va: 100e6 }], ingresos: [], gas: {}, deu: [] }, {});
+    expect(r.escenario.inflacionPct).toBe(INFLACION_DEFAULT_PCT);
+    const sinEsc = { ...r, escenario: undefined };
+    expect(patrimonioFinalHoy(sinEsc)).toBeCloseTo(patrimonioFinalHoy(r), 0);
   });
 });

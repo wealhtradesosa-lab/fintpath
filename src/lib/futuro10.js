@@ -1817,7 +1817,9 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
 //  · Vender un activo no baja el patrimonio del año 0 (solo pasa a efectivo).
 //  · Si hay un activo vendido, el resultado va «antes de impuestos de la venta».
 // ═══════════════════════════════════════════════════════════════════════════
-export const INFLACION_PESOS_HOY_PCT = 5; // solo si el resultado no trae escenario
+// Respaldo si el resultado no trae escenario: la MISMA constante con la que el
+// motor proyecta (INFLACION_DEFAULT_PCT), para no volver a ver 4 % contra 5 %.
+export const INFLACION_PESOS_HOY_PCT = INFLACION_DEFAULT_PCT;
 
 /** Inflación (%) con la que el escenario pasa a pesos de hoy. */
 export const inflacionDe = (r) => {
