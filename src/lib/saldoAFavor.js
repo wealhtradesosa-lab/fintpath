@@ -51,11 +51,14 @@ export function notaAhorroConSaldoAFavor(det, ahorro, fmt = fmCOP) {
 /**
  * Tope de una sugerencia de donación o inversión: proporcional al impuesto a
  * cargo y nunca más que el flujo libre del año después de completar el fondo de
- * emergencia (sugerenciaPvAfc.flujoLibreTrasEmergencia). flujoLibre null = sin
- * dato de flujo → no se acota.
+ * emergencia (sugerenciaPvAfc.flujoLibreTrasEmergencia).
+ *
+ * 23-nov-2026 (regla Finanzas): sin dato de flujo (flujoLibre null o no
+ * numérico) no se sugiere nada → devuelve null y quien llama esconde la
+ * sugerencia. Antes devolvía el monto sin tope.
  */
 export function montoSugeridoAcotado(montoPorImpuesto, flujoLibre) {
+  if (flujoLibre == null || flujoLibre === "" || !Number.isFinite(Number(flujoLibre))) return null;
   const m = Math.max(0, Math.round(Number(montoPorImpuesto) || 0));
-  if (flujoLibre == null) return m;
-  return Math.min(m, Math.max(0, Math.round(Number(flujoLibre) || 0)));
+  return Math.min(m, Math.max(0, Math.round(Number(flujoLibre))));
 }

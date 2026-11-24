@@ -128,7 +128,7 @@ describe("donación acotada por el flujo libre tras el fondo de emergencia", () 
     for (const u of [salario(15e6), rentista(40e6, 30e6)]) {
       expect(flujoLibreTrasEmergencia(u, owner, { ag: AG_RECOS }).flujoLibreAnual).toBe(sugerenciaPvAfc(u, owner, { ag: AG_RECOS }).flujoLibreAnual);
     }
-    expect(montoSugeridoAcotado(50e6, null)).toBe(50e6);
+    expect(montoSugeridoAcotado(50e6, null)).toBeNull(); // sin dato de flujo no se sugiere nada (23-nov-2026)
     expect(montoSugeridoAcotado(50e6, 12e6)).toBe(12e6);
   });
 });

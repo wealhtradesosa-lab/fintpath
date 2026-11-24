@@ -105,6 +105,7 @@ export function sugerenciaPvAfc(user, owner, { ag = DEFAULT_AG } = {}) {
 
 export function textoSugerenciaPvAfc(s, fmt = (n) => "$" + Math.round(n).toLocaleString("es-CO")) {
   if (!s || s.sinFlujo || !(s.aporte > 0)) {
+    if (s?.motivo === "sinDato") return "Todavía no tenemos tu flujo de caja del año, así que no te sugerimos un monto. Carga tus ingresos y gastos para verlo.";
     if (s?.motivo === "fondo") return `Primero completa tu fondo de emergencia (te faltan ${fmt(s.faltanteEmergencia)}); después te sugerimos cuánto aportar.`;
     return 'Hoy tus gastos superan tus ingresos, así que no te sugerimos aportar. Revisa tus gastos en "Flujo de caja" y vuelve cuando te quede un margen.';
   }
