@@ -155,11 +155,12 @@ describe("fondo de reserva", () => {
     if (g3.base < 0) expect(g3.usoReserva).toBeGreaterThan(0);
     expect(g3.reservaFin).toBeCloseTo(g3.reservaAntes - g3.usoReserva + g3.aReserva, -3);
   });
-  it("no se manda a la reserva más de lo que queda", () => {
+  it("no se manda a la reserva más capital del que queda (lo del mes se reparte en «Tu mes»)", () => {
     const cfg = { reservaAnual: { 2: 1e15 } };
     const g2 = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg).find((g) => g.anio === 2);
-    expect(g2.aReserva).toBeCloseTo(Math.max(0, g2.queda), 0);
-    expect(g2.pasa).toBeCloseTo(0, 0);
+    expect(g2.aReserva).toBeCloseTo(Math.max(0, Math.min(g2.antesReserva, g2.queda)), 0);
+    expect(g2.porInvertir).toBeCloseTo(0, 0);
+    expect(g2.pasa).toBeCloseTo(Math.max(0, g2.queda) - g2.aReserva, 0);
   });
 });
 
@@ -537,5 +538,20 @@ describe("usar tu reserva en un año", () => {
     const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
     expect(c[1].sacasReserva).toBeCloseTo(c[1].reservaAntes, -3);
     expect(c[1].reservaFin).toBeGreaterThan(-1);
+  });
+});
+
+// 24-nov-2026 (Santiago: "quise disponer de 300 MM del fondo de reserva y lo vuelve reserva otra vez… lo que debe pasar al activar
+// reserva es que queda un capital disponible para ese año, para invertir, pagar deudas").
+describe("lo que sacas de la reserva queda como capital", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 1000e6 }, { id: "l", n: "Lote", tp: "Lote", va: 600e6 }], ingresos: [{ nombre: "Salario", mensual: 30e6, frecuencia: "mensual" }], gas: { Vida: [{ n: "Mercado", m: 20e6 }] } };
+  it("aunque ese año también tengas puesto guardar en la reserva, lo que sacas no vuelve a ella", () => {
+    const cfg = { decisiones: { l: { accion: "vende" } }, reservaAnual: { 1: 400e6, 3: 1e12 }, usarReserva: { 3: 200e6 } };
+    const c = cuentaPorAnio(proyectarFuturo10(u, cfg), cfg);
+    const g = c[2];
+    expect(g.sacasReserva).toBeCloseTo(200e6, -3);
+    // Lo que se guarda ese año no toma los 200 M: quedan para usar.
+    expect(g.porInvertir).toBeGreaterThanOrEqual(200e6 - 1e3);
+    expect(g.reservaDeAqui).toBeCloseTo(Math.max(0, g.antesReserva - 200e6), -3);
   });
 });

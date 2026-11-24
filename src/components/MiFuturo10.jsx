@@ -1655,9 +1655,10 @@ function AnioPorAnio({ r, cfg, set, cuenta, anioSel, setAnioSel, nuevaEnAnio, re
           </div>
           {m.ref && editMov === m.ref && <MovidaEditor r={r} cfg={cfg} set={set} refMov={m.ref} anio={anio} esc={esc} abrirCompleto={abrirComp} onListo={() => setEditMov(null)} />}
         </div>)}
-        {g.reservaDeAqui > 0.5 && <div>
+        {(g.reservaDeAqui > 0.5 || (Number(rva[anio]) || 0) > 0.5) && <div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-            <div style={{ flex: 1, minWidth: 0 }}><Renglon l={destino ? tx(`− A tu reserva, para ${anioCal(destino)}`, `− To your reserve, for ${anioCal(destino)}`) : tx("− A tu fondo de reserva", "− To your reserve fund")} v={g.reservaDeAqui} nota={tx(`Rinde ${tasaR} al año. `, `Earns ${tasaR} a year. `) + hastaCuando} /></div>
+            <div style={{ flex: 1, minWidth: 0 }}><Renglon l={destino ? tx(`− A tu reserva, para ${anioCal(destino)}`, `− To your reserve, for ${anioCal(destino)}`) : tx("− A tu fondo de reserva", "− To your reserve fund")} v={g.reservaDeAqui || 0}
+              nota={((g.reservaDeAqui || 0) + 0.5 < (Number(rva[anio]) || 0) ? tx(`Pediste guardar ${plata(Math.round(Number(rva[anio])))}; ${(g.reservaDeAqui || 0) > 0.5 ? `solo caben ${plata(Math.round(g.reservaDeAqui))}` : "no queda capital para guardar"}${(g.sacasReserva || 0) > 0.5 ? ": lo que sacas de tu reserva no vuelve a ella" : ""}. `, `You asked to keep ${plata(Math.round(Number(rva[anio])))}; ${(g.reservaDeAqui || 0) > 0.5 ? `only ${plata(Math.round(g.reservaDeAqui))} fits` : "there's no capital left to keep"}. `) : "") + tx(`Rinde ${tasaR} al año. `, `Earns ${tasaR} a year. `) + hastaCuando} /></div>
             <button type="button" onClick={editarReservaFila} style={{ ...enlace, padding: "4px 0", color: panel === "reserva" && resEnFila ? C.gn : C.tx2, flex: "0 0 auto" }}>{panel === "reserva" && resEnFila ? tx("Listo", "Done") : tx("Editar", "Edit")}</button>
             <button type="button" onClick={() => { ponerReserva(""); setPanel(null); }} style={{ ...enlace, padding: "4px 0", color: C.tx2, flex: "0 0 auto" }}>{tx("Quitar", "Remove")}</button>
           </div>
