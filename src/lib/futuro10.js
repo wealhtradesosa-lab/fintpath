@@ -678,21 +678,27 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // marcas en «¿Qué se va con la venta?» y los gastos ligados al activo que no van dentro de su
   // renta neta (los que sí van, se van con la renta).
   const seVanConVenta = {}, seVanDe = {};
-  Object.entries(leerTerminan(cfg, N)).forEach(([id, y]) => {
-    const d = dec[id] || {}, sug = sugerirVinculados(user, id);
-    const elegidos = Array.isArray(d.seVan) ? d.seVan : [...sug.ingresos, ...sug.gastos].filter((x) => x.sugerido).map((x) => x.key);
-    const a = (user.inv || []).find((v) => v && v.id === id) || {};
-    [...elegidos, ...sug.auto.gastos.map((x) => x.key)].forEach((k) => { if (!(seVanConVenta[k] <= y)) { seVanConVenta[k] = y; seVanDe[k] = a.n || a.nombre || tx("su activo", "its asset"); } });
-  });
+  Object.entries(vinculadosConVentaFutura(user, cfg, N)).forEach(([k, v]) => { seVanConVenta[k] = v.anio; seVanDe[k] = v.de; });
   // 24-nov-2026 (Santiago: "me sale como si ya estuviera ahorrando cosas de la propiedad que se vende en 2027").
   // De dónde viene cada fin: la venta de un activo, la fecha de fin de su página (Ingresos o Egresos) o el paso 1.
   const finD = finalesDeDatos(userIn, N);
   const origenFin = (k, desde, propio, deDatos) => (seVanConVenta[k] === desde ? "venta" : propio[k] != null && propio[k] !== "sigue" ? "plan" : deDatos[k] ? "datos" : "plan");
-  const conVenta = (m, lista) => { const out = { ...m }; lista.forEach((x) => { const v = seVanConVenta[x.key]; if (v) out[x.key] = out[x.key] ? Math.min(Math.round(n(out[x.key])) || 1, v) : v; }); return out; };
-  const ingTerminan = conVenta(cfg.ingresosTerminan || {}, ingresosHoy);
+  // 24-nov-2026 (Santiago: "en 2026 me aparece que me ahorro gastos que se vienen a ahorrar en el año siguiente"). Lo que se va con
+  // una venta deja de contar el año de esa venta: una marca de «Se acaba» del paso 1 (que arrancaba en hoy) ya no le gana; en el
+  // paso 1 esos ítems ya no muestran «Se acaba». Solo una fecha de fin anterior escrita en Ingresos o Egresos cuenta antes.
+  const conVenta = (m, lista, propio, deDatos) => { const out = { ...m }; lista.forEach((x) => { const v = seVanConVenta[x.key]; if (!v) return; const d = propio[x.key] === "sigue" ? 0 : Math.round(n(deDatos[x.key])) || 0; out[x.key] = d >= 1 ? Math.min(d, v) : v; }); return out; };
+  const ingTerminan = conVenta(cfg.ingresosTerminan || {}, ingresosHoy, cfgM.ingresosTerminan || {}, finD.ingresos);
   const ingSeVan = ingresosHoy.filter((x) => ingTerminan[x.key]).map((x) => { const desde = Math.min(N, Math.max(1, Math.round(n(ingTerminan[x.key])) || 1)); const origen = origenFin(x.key, desde, cfgM.ingresosTerminan || {}, finD.ingresos); return { ...x, desde, origen, conVentaDe: origen === "venta" ? seVanDe[x.key] : null }; });
-  const terminan = conVenta(cfg.gastosTerminan || {}, gastosHoy);
+  const terminan = conVenta(cfg.gastosTerminan || {}, gastosHoy, cfgM.gastosTerminan || {}, finD.gastos);
   const seVan = gastosHoy.filter((g) => !g.neteado && terminan[g.key]).map((g) => { const desde = Math.min(N, Math.max(1, Math.round(n(terminan[g.key])) || 1)); const origen = origenFin(g.key, desde, cfgM.gastosTerminan || {}, finD.gastos); return { ...g, desde, origen, conVentaDe: origen === "venta" ? seVanDe[g.key] : null }; });
+  // Los gastos conectados a un activo que renta se descuentan de su renta (y se van con ella). Si cuestan más de lo
+  // que renta, lo que pasa de su renta queda en tus gastos: también se va con la venta, ese año.
+  Object.entries(leerTerminan(cfg, N)).forEach(([id, y]) => {
+    const exceso = n((bOp.costoPorActivo || {})[id]) - n((bOp.rentaPorActivo || {})[id]);
+    if (!(exceso > 0.5) || !conRentaOp.has(id)) return;
+    const a = (user.inv || []).find((v) => v && v.id === id) || {}, nom = a.n || a.nombre || tx("su activo", "its asset");
+    seVan.push({ key: "exceso:" + id, nombre: tx(`Gastos de ${nom} por encima de su renta`, `${nom} costs above its income`), cat: "", mensual: exceso, neteado: false, activoId: id, desde: Math.min(N, y), origen: "venta", conVentaDe: nom });
+  });
   // 24-oct-2026 (Santiago: "los gráficos de los escenarios están muy flojos…
   // que se vea como el HTML", su plan SALEM). Para graficar lo que produce el
   // patrimonio se lleva aparte la renta pasiva (lo que llega a la cuenta sin
@@ -1697,6 +1703,18 @@ export function sugerirVinculados(user = {}, activoId) {
   return out;
 }
 /** Claves de ingresos/gastos sin vínculo que se van con las ventas del escenario. */
+/** Lo que se va con una venta de un año siguiente: { clave: { anio, de } } (lo marcado en «¿Qué se va con la venta?»,
+ * o lo sugerido por nombre si no se marcó nada, más lo conectado al activo en Egresos). */
+export function vinculadosConVentaFutura(user = {}, cfg = {}, N = 10) {
+  const out = {}, dec = cfg.decisiones || {};
+  Object.entries(leerTerminan(cfg, N)).forEach(([id, y]) => {
+    const d = dec[id] || {}, sug = sugerirVinculados(user, id);
+    const elegidos = Array.isArray(d.seVan) ? d.seVan : [...sug.ingresos, ...sug.gastos].filter((x) => x.sugerido).map((x) => x.key);
+    const a = (user.inv || []).find((v) => v && v.id === id) || {};
+    [...elegidos, ...sug.auto.gastos.map((x) => x.key)].forEach((k) => { if (!(out[k] && out[k].anio <= y)) out[k] = { anio: y, de: a.n || a.nombre || tx("su activo", "its asset") }; });
+  });
+  return out;
+}
 export function vinculadosQueSeVan(user = {}, cfg = {}, vendidosIds) {
   const ids = vendidosIds || new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
   const fuera = new Set();
@@ -1789,7 +1807,9 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
   // 25-oct-2026: lo que se va con una venta o se acaba en este plan se marca
   // (y no suma) para que el total de Hoy cuadre con lo que de verdad sigue.
   const fuera = vinculadosQueSeVan(user, cfg);
-  const term = conVencimientos(cfg, userIn).ingresosTerminan || {}, propio = cfg.ingresosTerminan || {};
+  const cfgV = conVencimientos(cfg, userIn);
+  const term = cfgV.ingresosTerminan || {}, propio = cfg.ingresosTerminan || {};
+  const luego = vinculadosConVentaFutura(user, cfgV, n(cfg.anios) || 10);
   const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
   return (user.ingresos || []).map((i, k) => {
     if (!i || i.sim === false || (i.activoId && ids.has(i.activoId))) return null;
@@ -1797,8 +1817,9 @@ export function ingresosSueltosHoy(userIn = {}, cfgIn = {}) {
     const enIngresos = montoPromedioMensual(o) * fx(o);
     const nota = notaVigencia(o, MES, "Ingresos", "Income", true);
     const key = claveIngreso(user.ingresos, k);
-    const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : term[key] ? "acaba" : null;
-    return { key, seVa, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propio[key] == null, finAnio: n(i.finAnio) || null, nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
+    const vl = luego[key];
+    const seVa = fuera.has(key) || (i.activoId && vendidos.has(i.activoId)) ? "venta" : vl ? "ventaLuego" : term[key] ? "acaba" : null;
+    return { key, seVa, ventaAnio: vl ? vl.anio : null, ventaDe: vl ? vl.de : null, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propio[key] == null, finAnio: n(i.finAnio) || null, nombre: i.nombre || i.categoria || tx("Ingreso", "Income"), renta: tipoIngreso(i) === "pasivo", enIngresos, mensual: montoPromedioMensual(i) * fx(i), corregido: !!i._corregido, nota };
   }).filter(Boolean);
 }
 
@@ -2011,7 +2032,9 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
   const cfg = migrarClaves(cfgIn, userIn);
   const base = paraPlan(userIn), user = ajustarGastos(base, cfg);
   const trm = n(user.trm) || 4200, fx = (x) => (String(x?.moneda || "").toUpperCase() === "USD" ? trm : 1);
-  const term = conVencimientos(cfg, userIn).gastosTerminan || {}, propioG = cfg.gastosTerminan || {}, fuera = vinculadosQueSeVan(user, cfg);
+  const cfgV = conVencimientos(cfg, userIn);
+  const term = cfgV.gastosTerminan || {}, propioG = cfg.gastosTerminan || {}, fuera = vinculadosQueSeVan(user, cfg);
+  const luego = vinculadosConVentaFutura(user, cfgV, n(cfg.anios) || 10);
   const vendidos = new Set(Object.entries(cfg.decisiones || {}).filter(([, d]) => d?.accion === "vende").map(([id]) => id));
   const nomAct = (id) => { const a = (user.inv || []).find((x) => x && x.id === id); return a ? a.n || a.nombre : null; };
   const out = [];
@@ -2021,8 +2044,9 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
     const key = claveGasto(cat, items, idx), o = (gB[cat] || [])[idx] || g;
     const enEgresos = montoPromedioMensual(o) * fx(o), mensual = montoPromedioMensual(g) * fx(g);
     if (!(enEgresos > 0.5) && !g._corregido) return;
-    const seVa = fuera.has(key) || (g.activoId && vendidos.has(g.activoId)) ? "venta" : term[key] ? "acaba" : null;
-    out.push({ key, cat, nombre: g.c || g.n || g.nombre || cat, enEgresos, mensual, corregido: !!g._corregido, seVa, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propioG[key] == null, finAnio: n(g.finAnio) || null, deActivo: g.activoId ? nomAct(g.activoId) : null });
+    const vl = luego[key];
+    const seVa = fuera.has(key) || (g.activoId && vendidos.has(g.activoId)) ? "venta" : vl ? "ventaLuego" : term[key] ? "acaba" : null;
+    out.push({ key, cat, nombre: g.c || g.n || g.nombre || cat, enEgresos, mensual, corregido: !!g._corregido, seVa, ventaAnio: vl ? vl.anio : null, ventaDe: vl ? vl.de : null, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propioG[key] == null, finAnio: n(g.finAnio) || null, deActivo: g.activoId ? nomAct(g.activoId) : null });
   }));
   return out.sort((a, b) => b.mensual - a.mensual);
 }

@@ -439,3 +439,43 @@ describe("reserva guardada para un año", () => {
     expect(c[0].aApartado || 0).toBe(0);
   });
 });
+
+// 24-nov-2026 (Santiago: "en 2026 me aparece que me ahorro gastos que se vienen a ahorrar en el año siguiente";
+// "algunos gastos pueden estar asociados a algún activo: salario mayordomos a Puerto Madero, el SOAT a la Volvo").
+import { gastosLista } from "../../src/lib/futuro10.js";
+describe("lo que se va con una venta deja de contar el año de la venta", () => {
+  const u = { inflacionPct: 4, inv: [{ id: "pm", n: "Puerto Madero", tp: "Real Estate", va: 9000e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 500e6 }],
+    ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 60e6 }],
+    gas: { "Nómina": [{ c: "Salario mayordomo", m: 1.8e6 }], Vida: [{ c: "Mercado", m: 20e6 }] } };
+  const K = "Nómina::salario mayordomo";
+  it("una marca vieja de «Se acaba» en hoy no le gana a la venta de 2027", () => {
+    const cfg = { decisiones: { pm: { accion: "termina", desde: 2, seVan: [K] } }, gastosTerminan: { [K]: 1 } };
+    const r = proyectarFuturo10(u, cfg);
+    const may = r.seVan.find((x) => x.key === K);
+    expect(may.desde).toBe(2);
+    expect(may.origen).toBe("venta");
+    expect(may.conVentaDe).toBe("Puerto Madero");
+    // En el paso 1 sale como «se va con la venta de Puerto Madero en 2027» y sigue sumando hoy.
+    const g = gastosLista(u, cfg).find((x) => x.key === K);
+    expect(g.seVa).toBe("ventaLuego");
+    expect(g.ventaAnio).toBe(2);
+    expect(g.ventaDe).toBe("Puerto Madero");
+  });
+  it("conectado al activo en Egresos, se va solo con la venta, sin marcarlo", () => {
+    const u2 = { ...u, gas: { "Nómina": [{ c: "Salario mayordomo", m: 1.8e6, activoId: "pm" }], Vida: [{ c: "Mercado", m: 20e6 }] } };
+    const r = proyectarFuturo10(u2, { decisiones: { pm: { accion: "termina", desde: 2 } } });
+    const may = r.seVan.find((x) => x.key === K);
+    expect(may && may.desde).toBe(2);
+    expect(may.conVentaDe).toBe("Puerto Madero");
+  });
+  it("si el activo renta, lo que cuesta por encima de su renta también se va con la venta", () => {
+    const u3 = { ...u, ingresos: [...u.ingresos, { nombre: "Renta Puerto Madero", categoria: "Arriendo", mensual: 1e6, activoId: "pm" }],
+      gas: { "Nómina": [{ c: "Salario mayordomo", m: 1.8e6, activoId: "pm" }], Vida: [{ c: "Mercado", m: 20e6 }] } };
+    const r = proyectarFuturo10(u3, { decisiones: { pm: { accion: "termina", desde: 2 } } });
+    const ex = r.seVan.find((x) => x.key === "exceso:pm");
+    expect(ex && ex.desde).toBe(2);
+    expect(ex.mensual).toBeCloseTo(0.8e6, -3);
+    // Hoy sigue pagándose: el gasto de 2026 no baja.
+    expect(r.seVan.some((x) => x.desde === 1)).toBe(false);
+  });
+});
