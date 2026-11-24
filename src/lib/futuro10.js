@@ -2121,7 +2121,8 @@ export function holguraPorAnio(cuenta = []) {
   const meta = (y) => (y.rvaCap ?? y.aReserva) + (y.mesAReserva ? Math.max(0, (y.mes ?? 0) - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0);
   const repetir = (t, X) => {
     const g = cuenta[t - 1];
-    const q = g.queda - X, aR = Math.min(meta(g), Math.max(0, q)), apT = g.reservaHasta ? Math.min(g.rvaCap ?? 0, aR) : 0;
+    const resT = Math.min(g.rvaCap ?? g.aReserva ?? 0, Math.max(0, (g.disponible ?? 0) - (g.movido ?? 0) - X - (g.sacasReserva || 0)));
+    const q = g.queda - X, aR = Math.min(resT + (meta(g) - (g.rvaCap ?? g.aReserva ?? 0)), Math.max(0, q)), apT = g.reservaHasta ? Math.min(resT, aR) : 0;
     let antes = Math.max(0, q) - aR, reserva = g.reservaAntes - (g.sacasReserva || 0) - g.usoReserva + aR - apT;
     const out = [];
     for (let s = t + 1; s <= N; s++) {
@@ -2135,9 +2136,10 @@ export function holguraPorAnio(cuenta = []) {
       const uso = base < 0 ? Math.min(resA, -base) : 0, falta = base < 0 ? -base - uso : 0;
       const disp = Math.max(0, base), mes = y.flujo + faltaMes - cubre, queda = base + uso - y.movido + mes - (y.repartoFuera || 0);
       const rvaCap = y.rvaCap ?? y.aReserva;
-      const aRes = Math.min(rvaCap + (y.mesAReserva ? Math.max(0, mes - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0), Math.max(0, queda));
-      const porInv = disp - y.movido - Math.min(rvaCap, aRes, Math.max(0, disp - y.movido));
-      const apS = y.reservaHasta ? Math.min(rvaCap, aRes) : 0;
+      const resS = Math.min(rvaCap, Math.max(0, disp - y.movido - sac), Math.max(0, queda));
+      const aRes = Math.min(resS + (y.mesAReserva ? Math.max(0, mes - (y.repartoFuera || 0) - (y.repartoReserva || 0)) : 0) + (y.repartoReserva || 0), Math.max(0, queda));
+      const porInv = disp - y.movido - resS;
+      const apS = y.reservaHasta ? Math.min(resS, aRes) : 0;
       out.push({ anio: s, falta, porInv });
       antes = Math.max(0, queda) - aRes; reserva = resA - uso + aRes - apS;
     }
@@ -2344,9 +2346,12 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     // inviertes, ya no te dice que tienes esa plata libre. Lo del mes también puede ir a tu reserva.
     const rvaCap = n(rva[anio]), mesAReserva = !!mesARes[anio];
     const aReservaMes = (mesAReserva ? Math.max(0, mes - repartoFuera - repartoReserva) : 0) + repartoReserva;
-    const aReserva = Math.min(rvaCap + aReservaMes, Math.max(0, queda));
+    // 24-nov-2026 (Santiago: "quise disponer de 300 MM del fondo de reserva y lo vuelve reserva otra vez… lo que debe pasar al activar
+    // reserva es que queda un capital disponible para ese año, que suma al capital para cualquier cosa: invertir, pagar deudas"). Lo que
+    // guardas este año en tu reserva sale de tu capital sin tocar lo que sacaste de ella.
     const antesReserva = disponible - movido;
-    const reservaDeAqui = Math.min(rvaCap, aReserva, Math.max(0, antesReserva));
+    const reservaDeAqui = Math.min(rvaCap, Math.max(0, antesReserva - sacasReserva), Math.max(0, queda));
+    const aReserva = Math.min(reservaDeAqui + aReservaMes, Math.max(0, queda));
     const porInvertir = antesReserva - reservaDeAqui;
     const pasa = Math.max(0, queda) - aReserva;
     // Lo que guardas de tu capital con un año de destino queda aparte; lo demás va a la reserva de siempre.
