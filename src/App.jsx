@@ -116,6 +116,7 @@ import { IconoMenu, DefsIconos } from "./components/Iconos.jsx";
 import { Eye, EyeOff, Menu as IconoMenuHamburguesa, X as IconoCerrar } from "lucide-react";
 import NavRecorrido from "./components/NavRecorrido.jsx";
 import { TRM_PROVISIONAL, usdPendienteDeTasa, NOTA_TRM_PENDIENTE, trmCierreAno, TEXTO_PENDIENTE_TASA } from "./lib/trm.js";
+import { completaTrmCierre } from "./lib/patrimonioPantalla.js";
 import { registrarMes, resumenHistoria, etiquetaMes, fotoPatrimonio } from "./lib/historiaPatrimonio.js";
 import { migrateInvFiscalCodeTipo } from "./lib/invFiscalCode.js";
 import { migrateAportesVoluntariosV17, migrateDeclaracionesV55, migrateFiscalCodePVLegacy, migratePlanOptimizacionNamespace, migrateDeudaViviendaWizardLegacy, migrateAporteTributarioNombre, migrateInversionUnica } from "./lib/migrations";
@@ -629,7 +630,7 @@ const Md=({open,onClose,title,children,wide})=>{if(!open)return null;return<div 
 // 24-nov-2026 — La TRM del 31-dic sale del año gravable de la pantalla (DEFAULT_AG,
 // el mismo del borrador F-210), no de un 2025 fijo ni del año calendario. Si esa
 // tasa no existe todavía (TRM_CIERRE_ANO / user.trmCierre): «pendiente de tasa». Nunca 4200.
-export const notaTrmDeclaracion=(u,ano=DEFAULT_AG)=>{const t=trmCierreAno(u,ano);return"Tus montos en dólares de este borrador todavía no están convertidos correctamente. No lo uses para declarar. En tu declaración usa la TRM del 31-dic-"+ano+" ("+(t!=null?"$"+t.toLocaleString("es-CO",{minimumFractionDigits:2,maximumFractionDigits:2}):TEXTO_PENDIENTE_TASA)+") para patrimonio y la del día de cada pago para ingresos."};
+export const notaTrmDeclaracion=(u,ano=DEFAULT_AG)=>{const t=trmCierreAno(u,ano);return"Tus montos en dólares de este borrador todavía no están convertidos correctamente. No lo uses para declarar. En tu declaración usa la TRM del 31-dic-"+ano+" ("+(t!=null?"$"+t.toLocaleString("es-CO",{minimumFractionDigits:2,maximumFractionDigits:2}):TEXTO_PENDIENTE_TASA)+") para patrimonio y la del día de cada pago para ingresos."+(t==null?" "+completaTrmCierre(ano):"")};
 export const NotaTrmDeclaracion=({u,ano=DEFAULT_AG})=>tieneUSD(u)?<div role="note" style={{margin:"0 0 12px",padding:"10px 14px",borderRadius:10,background:"rgba(59,130,246,0.08)",border:"1px solid rgba(59,130,246,0.25)",fontSize:12,color:"#bfdbfe"}}>{usdPendienteDeTasa(u)&&<strong style={{display:"block",marginBottom:4,color:"#fbbf24"}}>{NOTA_TRM_PENDIENTE}</strong>}{notaTrmDeclaracion(u,ano)}</div>:null;
 export const AvisoTasa=({est,t,fm})=>{
   if(est.modo==="pendiente")return<div role="status" style={{background:"rgba(245,158,11,0.1)",borderBottom:"1px solid rgba(245,158,11,0.3)",padding:"8px 20px",fontSize:12,color:"#fbbf24"}}>No pudimos obtener la TRM; vuelve a intentar. Tus totales, flujo y nivel quedan <strong>pendientes de tasa</strong>: tus montos en USD se muestran en dólares. Patrimonio {fm?fm(t?.nw||0):""} <em>sin tus montos en USD</em>.</div>;

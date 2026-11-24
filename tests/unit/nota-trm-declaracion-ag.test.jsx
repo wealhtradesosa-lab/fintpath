@@ -22,5 +22,8 @@ describe("nota TRM de la declaración con el reloj en 2027", () => {
     expect(html).toContain("TRM del 31-dic-2026 (pendiente de tasa)");
     expect(html).not.toContain("31-dic-2027");
     expect(A.notaTrmDeclaracion(conUSD)).toContain("31-dic-2026");
+    // Copy de Tributario: mismo AG de la nota, sin «sola» (la TRM del 31-dic no se llena automáticamente).
+    expect(html).toContain("Se completa cuando se conozca la TRM vigente el 31-dic-2026.");
+    expect(A.notaTrmDeclaracion({ ...conUSD }, 2025)).not.toContain("Se completa");
   });
 });

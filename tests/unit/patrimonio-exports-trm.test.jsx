@@ -105,7 +105,10 @@ describe("sellos", () => {
     expect(selloTrmCierre({ trm: 4000 }, 2025, true)).toBe("Tasa del dólar: TRM del 31-dic-2025: $3.757,08 (Art. 269 ET).");
     expect(TRM_CIERRE_ANO[2025]).toBe(3757.08);
     // Un año que no ha cerrado: pendiente, aunque haya TRM de hoy guardada.
-    expect(selloTrmCierre({ trm: 4000 }, 2026, true)).toBe("Tasa del dólar: TRM del 31-dic-2026: pendiente de tasa (Art. 269 ET).");
+    expect(selloTrmCierre({ trm: 4000 }, 2026, true)).toBe("Tasa del dólar: TRM del 31-dic-2026: pendiente de tasa (Art. 269 ET). Se completa cuando se conozca la TRM vigente el 31-dic-2026.");
+    // El año sale del mismo AG del sello, no fijo.
+    expect(selloTrmCierre({}, 2031, true)).toContain("Se completa cuando se conozca la TRM vigente el 31-dic-2031.");
+    expect(selloTrmCierre({}, 2025, true)).not.toContain("Se completa");
     expect(selloTrmCierre({ trm: 4000 }, 2026, true)).not.toContain("4.000");
   });
 });
@@ -217,6 +220,8 @@ describe("informe del contador (Impuestos → TRM del 31-dic del AG)", () => {
     const doc = ultimoPDF();
     const txt = doc.textos.join(" | ");
     expect(txt).toContain("TRM del 31-dic-2026: pendiente de tasa");
+    expect(txt).toContain("Se completa cuando se conozca la TRM vigente el 31-dic-2026.");
+    expect(txt).not.toContain("Se completa sola");
     expect(txt).not.toContain("TRM de hoy");
     const celdas = doc.tablas.flatMap((t) => t.body || []).flat();
     expect(celdas).toContain("US$10.000 · pendiente de tasa");

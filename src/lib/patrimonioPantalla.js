@@ -101,11 +101,20 @@ export function selloTrmHoy(trm, hayUSD) {
   ];
 }
 
+/**
+ * 24-nov-2026 (copy aprobado por Tributario) — Qué pasa con «pendiente de tasa»
+ * del 31-dic. No dice «sola»: /api/trm solo trae la TRM de hoy; la del 31-dic
+ * sale de TRM_CIERRE_ANO (se agrega en el código) o de user.trmCierre, que
+ * ninguna pantalla llena sola. El año es el mismo de la nota (AG).
+ */
+export const completaTrmCierre = (ano) => "Se completa cuando se conozca la TRM vigente el 31-dic-" + ano + ".";
+
 /** Sello del PDF del borrador F-210/F-110: TRM del 31-dic del año gravable (Art. 269 ET). */
 export function selloTrmCierre(user, ano, hayUSD) {
   if (!hayUSD) return "Tasa del dólar: no hay montos en dólares, no se usó TRM.";
   const t = trmCierreAno(user, ano);
-  return "Tasa del dólar: TRM del 31-dic-" + ano + ": " + (t == null ? TEXTO_PENDIENTE_TASA : tasaTxt(t)) + " (Art. 269 ET).";
+  return "Tasa del dólar: TRM del 31-dic-" + ano + ": " + (t == null ? TEXTO_PENDIENTE_TASA : tasaTxt(t)) + " (Art. 269 ET)." +
+    (t == null ? " " + completaTrmCierre(ano) : "");
 }
 
 /**
@@ -119,7 +128,7 @@ export function selloTrmContador(datos) {
   const t = trmUsable(datos.tasa);
   return [
     "Tasa del dólar: TRM del 31-dic-" + datos.ano + ": " + (t == null ? TEXTO_PENDIENTE_TASA : tasaTxt(t)) + " (Art. 269 ET)." +
-      (t == null ? " Tus montos en dólares quedan por fuera de los totales en pesos." : ""),
+      (t == null ? " " + completaTrmCierre(datos.ano) + " Tus montos en dólares quedan por fuera de los totales en pesos." : ""),
     LINEA_CONTADOR_USD,
   ];
 }
