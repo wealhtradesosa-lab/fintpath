@@ -36,7 +36,12 @@ export const SUPUESTOS_F10 = {
     rfCorto: { nombre: "Renta fija corto plazo", nombreEn: "Short-term fixed income", realSpread: 2.5 },
     rfLargo: { nombre: "Renta fija largo plazo", nombreEn: "Long-term fixed income", realSpread: 3.5, topeSpread: 4.5 },
     fincaRaiz: { nombre: "Propiedad raíz", nombreEn: "Real estate", rentaNetaPct: 4.5, valorizacionSpread: 0 },
-    sp500: { nombre: "S&P 500 (USD)", nombreEn: "S&P 500 (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
+    // 23-nov-2026 (Santiago: "una de las opciones no debería ser S&P 500, debería ser acciones u
+    // otra cripto"). La llave sigue siendo sp500 (escenarios guardados); el supuesto es el de un
+    // índice amplio como el S&P 500. Cripto no tiene supuesto validado: solo inflación si no
+    // escribes el rendimiento que esperas.
+    sp500: { nombre: "Acciones y ETF (USD)", nombreEn: "Stocks & ETFs (USD)", usd: true, devaluacionRealPct: 0 /* real usa escenario.spRealPct */ },
+    cripto: { nombre: "Cripto (USD)", nombreEn: "Crypto (USD)", usd: true, realSpread: 0, sinSupuesto: true },
   },
   vehiculo: { depAnios1a3Pct: -12, depDespuesPct: -8 },
   otrosRealSpread: 0, // crypto, otros: sin supuesto validado → solo inflación
@@ -72,7 +77,8 @@ export const SUPUESTOS_F10_US = {
     rfCorto: { nombre: "Efectivo y T-bills", nombreEn: "Cash & T-bills", realSpread: 1 },
     rfLargo: { nombre: "Bonos", nombreEn: "Bonds", realSpread: 2, topeSpread: 3 },
     fincaRaiz: { nombre: "Propiedad raíz", nombreEn: "Real estate", rentaNetaPct: 4, valorizacionSpread: 0.5 },
-    sp500: { nombre: "S&P 500", nombreEn: "S&P 500", usd: false, devaluacionRealPct: 0 },
+    sp500: { nombre: "Acciones y ETF", nombreEn: "Stocks & ETFs", usd: false, devaluacionRealPct: 0 },
+    cripto: { nombre: "Cripto", nombreEn: "Crypto", usd: false, realSpread: 0, sinSupuesto: true },
   },
   vehiculo: { depAnios1a3Pct: -15, depDespuesPct: -10 },
 };
@@ -113,6 +119,7 @@ export function retornoNominalPreset(clave, esc, sup = supuestosF10(), override 
   const i = esc.inflacionPct / 100;
   let real;
   if (clave === "sp500") real = (override.realPct ?? esc.spRealPct) + n(p.devaluacionRealPct);
+  else if (p.sinSupuesto) real = n(p.realSpread); // cripto: sin supuesto, solo inflación
   else if (clave === "fincaRaiz") {
     // renta neta (sobre el valor) + valorización = inflación + spread
     const val = (1 + i) * (1 + (n(p.valorizacionSpread)) / 100) - 1;
@@ -329,10 +336,31 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // reinversión puede traer su renta (rentaMensual, pesos de hoy) y desde qué
   // mes; se devuelve el detalle hoy + aporte = total para la pantalla.
   const reinversionesDetalle = [];
-  unaPorActivo(cfg.reinversiones).forEach((r, k) => {
+  // 23-nov-2026 (Santiago: "tengo un saldo de 2028 y cuando quiero invertir en IBKR no
+  // me lo muestra"). Un activo puede recibir varios aportes, en años distintos (IBKR en
+  // 2027 y otra vez en 2028). Antes solo contaba el primero (unaPorActivo). El índice
+  // k es el de cfg.reinversiones, para que la pantalla encuentre su detalle.
+  const aportesVistos = new Set();
+  // 23-nov-2026 (Santiago: "uno no necesariamente invierte en activos que tenía; puede ampliar
+  // su inversión en los fondos de renta, CDTs o, por ejemplo, Rapicredit"). Aportes a una
+  // inversión creada en el plan en un año anterior: se resuelven cuando ya existen las nuevas.
+  const aportesNuevas = [];
+  (Array.isArray(cfg.reinversiones) ? cfg.reinversiones : []).forEach((r, k) => {
+    if (!r || !r.activoId) return;
+    // Dos aportes al mismo activo en el MISMO año: cuenta el primero (el que se ve).
+    const claveAporte = r.activoId + "|" + Math.max(1, Math.round(n(r.anio)) || 1);
+    if (aportesVistos.has(claveAporte)) return;
+    aportesVistos.add(claveAporte);
     pedidoTotal += Math.max(0, n(r.monto));
     const a = activos.find((x) => x.id === r.activoId);
-    if (!a) return;
+    if (!a) {
+      if (String(r.activoId).startsWith("nueva_") && n(r.monto) > 0) {
+        // Sale del saldo de ese año, como cualquier aporte de un año siguiente.
+        pedidoTotal -= n(r.monto); programadasTotal += n(r.monto);
+        aportesNuevas.push({ k, id: r.activoId, monto: n(r.monto), anio: Math.min(10, Math.max(2, Math.round(n(r.anio)) || 1)) });
+      }
+      return;
+    }
     const antes = a.valor;
     if (!vacio(r.valorizacionNomPct)) a.crec = n(r.valorizacionNomPct) / 100;
     // 24-oct-2026 (Santiago: "según el tipo de inversión la plataforma debe
@@ -500,7 +528,20 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       }
     });
     nuevasTotal += valor0;
-    nuevas.push({ id: p.id, nombre: p.nombre, clase: "inmueble", valor: valor0, crec: p.crec, entrega: p.entrega, pagos, saltos: p.valorAlTerminar > 0 ? [{ t: p.entrega, valor: p.valorAlTerminar }] : [], rentaNuevaAnual: p.renta * 12, rentaDesdeMes: 12 * (Math.max(1, p.entrega) - 1), usd: false, invertible: true, montoInicial: valor0, propiedadRaiz: p.tipo });
+    nuevas.push({ id: p.id, nombre: p.nombre, clase: "inmueble", valor: valor0, crec: p.crec, entrega: p.entrega, pagos, saltos: p.valorAlTerminar > 0 ? [{ t: p.entrega, valor: p.valorAlTerminar }] : [], rentaNuevaAnual: p.renta * 12, rentaDesdeMes: 12 * (Math.max(1, p.entrega) - 1), usd: false, invertible: true, montoInicial: valor0, montoTotal: p.capital, anioInicio: p.anio, propiedadRaiz: p.tipo });
+  });
+  // Aportes a lo creado en el plan: entran ese año a la inversión (pesos de ese año) y salen
+  // del saldo del año. La inversión sigue rindiendo igual y te paga en la misma proporción.
+  aportesNuevas.forEach((x) => {
+    const nu = nuevas.find((y) => y.id === x.id && !y.propiedadRaiz && y.clase !== "ciclo");
+    const pe = nu ? null : personalizadas.find((y) => y.id === x.id);
+    const destino = nu || pe;
+    if (!destino || x.anio <= (nu ? 1 : (pe.anio || 1))) return;
+    (destino.aportesFuturos = destino.aportesFuturos || []).push({ monto: x.monto, anio: x.anio });
+    usos.push({ seccion: "B", nombre: destino.nombre, monto: x.monto, deVenta: 0, deCuentas: 0, deNuevo: 0, anio: x.anio, fuente: "liquidez" });
+    const rend = nu ? ((nu.crec || 0) + (nu.rentaPct || 0)) * 100 : (pe.rendNom || 0) * 100;
+    const pct = nu ? (rend > 0 ? (nu.rentaPct || 0) * 100 / rend * 100 : 0) : (pe.pctRecibe || 0);
+    reinversionesDetalle.push({ i: x.k, activoId: x.id, nombre: destino.nombre, clase: "nueva", valorHoy: 0, aporte: x.monto, anio: x.anio, total: x.monto, rentaMensual: 0, rentaDesdeMes: 0, rentaPctAnual: 0, valorizacionPct: null, rendimientoPct: rend, pctRecibe: pct, deVenta: 0, deLiquidez: 0, deAnio1: 0, deNuevo: 0, fuente: "liquidez", rindeAnual: 0, teLlegaMes: 0, aNueva: true });
   });
   const ciclos = leerCiclos([...(Array.isArray(cfg.ciclos) ? cfg.ciclos : []), ...prCiclos], N);
   const ciclosDetalle = [];
@@ -641,6 +682,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const nueva = c.modo === "propio" ? 0 : c.mensual * 12;
     const dif = (nueva - (a.rentaAnual || 0)) * fr0;
     ingresos = Math.max(0, ingresos + dif); pasivo = Math.max(0, pasivo + dif);
+    if (a.rentaAntesCambio == null) a.rentaAntesCambio = a.rentaAnual || 0;
     a.rentaAnual = nueva; a.cambio = c;
     if (t <= 1) a.rentaCorregida = true;
     if (c.modo === "propio") { const cg = costoLigado(a.id) * 12 * frG; gastos += cg; a.propioDesde = t; a.costoPropio = cg; }
@@ -750,7 +792,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (c.holder) { const usa = Math.min(c.holder.valor, c.monto); c.holder.valor -= usa; if (c.monto - usa > 0.5) retirar(c.monto - usa); colchon += Math.max(0, c.holder.valor); c.holder.valor = 0; }
       else retirar(c.monto);
       // «Paga renta»: el valor sigue la inflación y el resto del rendimiento va al flujo.
-      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true });
+      todos.push({ id: c.id, nombre: c.nombre, clase: "nueva", valor: c.monto, crec: c.rendNom * (1 - c.pctRecibe / 100), rentaPct: c.rendNom * c.pctRecibe / 100, usd: c.usd, invertible: true, aportesFuturos: c.aportesFuturos });
     });
     // 0b) negocios que se repiten: arrancan (sale el capital) o terminan (vuelve).
     todos.forEach((a) => {
@@ -954,7 +996,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         const rentaBase = a.rentaReemplazada ? 0 : (a.rentaAnual || 0) * fr;
         const rentaExtra = (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0) + (a.rentasExtra || []).reduce((s2, x) => s2 + x.anual * fraccionAnio(x.desdeMes) * Math.pow(1 + inf, t), 0) + (a.rentaPct ? a.valor / (1 + (a.crec || 0)) * a.rentaPct : 0);
         const cg = a.ciclo ? a.cicloG || 0 : 0;
-        return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0) };
+        // rentaNueva (23-nov-2026): la parte de la renta que crea el plan (renta nueva, aportes
+        // con renta, «de lo que rinde, cuánto te llega» y la renta que cambias en el paso 1 desde
+        // un año), para «Lo que cambia en tu bolsillo» año por año.
+        const cambioRenta = a.cambio && !a.rentaReemplazada && a.rentaAntesCambio != null ? ((a.rentaAnual || 0) - a.rentaAntesCambio) * fr : 0;
+        return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), rentaNueva: rentaExtra + cambioRenta, crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0) };
       }),
       { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
       { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
@@ -1043,6 +1089,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ciclosDetalle,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
     // si se reinvierte"): a dónde va lo que sobra, en palabras.
+    // 23-nov-2026: parte de lo que sobra cada año que no tiene destino fijo (cuentaPorAnio).
+    sobraLibre: Math.max(0, 1 - Math.min(100, sobraDestinos.reduce((sm, d) => sm + d.pct, 0)) / 100),
     destinoSobraLista: (() => {
       const DISP = tx("Disponible", "Available"), LIQ = tx("Liquidez", "Cash"), RF = tx("Renta fija", "Fixed income"), CREC = tx("Crecimiento", "Growth");
       const nom = (id) => id === "c_disponible" ? DISP : id === "c_liquidez" ? LIQ : id === "c_renta" ? RF : id === "c_crecimiento" ? CREC : ((todos.find((x) => x.id === id) || {}).nombre || id);
@@ -1058,14 +1106,38 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (resto > 0.5) partes.push(disponible ? tx(`${Math.round(resto)} % queda disponible`, `${Math.round(resto)}% stays available`) : tx(`${Math.round(resto)} % se reparte (${Math.round(mezcla.liquidez)} % liquidez, ${Math.round(mezcla.renta)} % renta fija, ${Math.round(mezcla.crecimiento)} % crecimiento)`, `${Math.round(resto)}% is split (${Math.round(mezcla.liquidez)}% cash, ${Math.round(mezcla.renta)}% fixed income, ${Math.round(mezcla.crecimiento)}% growth)`));
       return partes.join(" · ");
     })(),
-    nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoInicial ?? 0, anio: 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0, fuente: x.fuente })), ...personalizadas.map((c) => ({ nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta, fuente: "liquidez" }))],
+    // 23-nov-2026 (Santiago: "gráficos como ceros o sin mostrar nada": SKANDIA y BTG de 2027
+    // salían «Vale en 2035 $0 ×0,0»). Las inversiones de años siguientes no llevaban su id, y
+    // el informe no encontraba su serie. Ahora llevan id (y la propiedad raíz que te quedas,
+    // su monto total y su año).
+    nuevasDetalle: [...nuevas.filter((x) => x.clase !== "ciclo" && !x.apartadoDe).map((x) => ({ id: x.id, nombre: x.nombre, monto: x.montoTotal ?? x.montoInicial ?? 0, anio: x.anioInicio || 1, rendPct: ((x.crec || 0) + (x.rentaPct || 0)) * 100, pagaRenta: (x.rentaPct || 0) > 0 || (x.rentaNuevaAnual || 0) > 0, fuente: x.fuente, pr: !!x.propiedadRaiz })), ...personalizadas.map((c) => ({ id: c.id, nombre: c.nombre, monto: c.monto, anio: c.anio, rendPct: c.rendNom * 100, pagaRenta: c.pagaRenta ?? ((c.pctRecibe || 0) > 0), fuente: "liquidez" }))],
     futuros: fut,
     rentasDuplicadas: duplicadas,
     modificados: activos.filter((a) => modInfo[a.id]).map((a) => ({ id: a.id, ...modInfo[a.id] })),
     deudas: deudas.map(({ id, nombre, saldo, activoId, porVenta, ventaAnio, pagaAnio, ligadaEnPlan, pagar, pagado }) => {
       const u = unicas.find((x) => x.id === id);
       const x = deudas.find((y) => y.id === id);
-      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaAnio || (u && u.t >= 1 ? u.t : null), unica: !!u,
+      // 23-nov-2026 (Santiago: "pagué la Volvo en 2027 y sigue apareciendo en 2029"; "me sigue
+      // apareciendo local la Macarena que se pagó en 2027"). Año en que la deuda ya no existe:
+      // la que se paga hoy o con una venta de hoy (1), la que se paga en un año (ese año), la que
+      // se paga con la venta de su activo en un año (ese año) o la que se termina de pagar con su
+      // cuota (estimado con saldo, cuota y tasa). La pantalla no la muestra en los años siguientes.
+      const d0 = x && x._d;
+      let finCuota = null;
+      if (d0 && !u) {
+        const P = n(d0.pg ?? d0.pago) * fxA(d0), S = saldo, ea = n(d0.ts) / 100;
+        const im = ea > 0 ? Math.pow(1 + ea, 1 / 12) - 1 : 0;
+        if (P > 0 && S > 0 && P > im * S) {
+          const meses = im > 0 ? -Math.log(1 - im * S / P) / Math.log(1 + im) : S / P;
+          finCuota = Math.min(N + 1, 1 + Math.floor(meses / 12));
+        }
+      }
+      const pagaEn = pagaAnio || (u && u.t >= 1 ? u.t : null);
+      const finAnio = pagar || porVenta ? 1 : pagaEn ? pagaEn : ventaAnio ? ventaAnio : finCuota;
+      return { id, nombre, saldo, activoId, porVenta, ventaAnio, ligadaEnPlan, pagar, pagado, pagaAnio: pagaEn, unica: !!u, finAnio, finPorCuota: !pagar && !porVenta && !pagaEn && !ventaAnio && finCuota != null,
+        // 23-nov-2026: cuota mensual y año en que se acabaría sola con su cuota (para saber
+        // desde y hasta cuándo el plan te libera esa cuota, año por año).
+        cuotaMes: d0 && !u ? n(d0.pg ?? d0.pago) * fxA(d0) : 0, finNatural: finCuota,
         // 23-nov-2026: lo que sale ese año para pagarla (para la cuenta año por año).
         pagoEnAnio: u ? (u.pagadoEnAnio || 0) : (x && x.pagadoEnAnio) || 0 };
     }),
@@ -1238,7 +1310,7 @@ export function migrarCiclos(cfg = {}) {
   const nuevas = cs.filter((c) => c && n(c.capital) > 0 && n(c.valorFinal) > 0).map((c) => ({
     preset: "fincaRaiz", nombre: c.nombre || "", anio: Math.max(1, Math.round(n(c.desde)) || 1), fuente: c.fuente || "venta",
     pr: { tipo: "asociativo", valor: n(c.capital), valorFinal: n(c.valorFinal), meses: Math.max(1, Math.round(n(c.meses)) || 12), final: "vende", repite: true,
-      ...(vacio(c.hasta) ? {} : { hasta: Math.round(n(c.hasta)) }), costosPct: vacio(c.costosPct) ? 0 : n(c.costosPct),
+      ...(vacio(c.hasta) ? {} : { hasta: Math.round(n(c.hasta)) }), costosPct: vacio(c.costosPct) ? 0 : n(c.costosPct), costosSobre: "ganancia", ventaModo: "total",
       ...(c.regimen ? { regimen: c.regimen } : {}), ...(vacio(c.impuestoPct) ? {} : { impuestoPct: n(c.impuestoPct) }),
       destino: c.destino === "flujo" ? "flujo" : "reinvierte", ...(c.destinoId ? { destinoId: c.destinoId } : {}) },
   }));
@@ -1260,7 +1332,14 @@ export function migrarModifica(cfg0 = {}, esc) {
     nuevasDec[id] = { accion: "continua" };
   });
   const ya = new Set((cfg.reinversiones || []).map((r) => r && r.activoId));
-  const lista = unaPorActivo([...(cfg.reinversiones || []), ...extra.filter((x) => !ya.has(x.activoId))]);
+  // Varios aportes por activo están permitidos (en años distintos); solo se evita
+  // duplicar el que viene de un «Se modifica» viejo.
+  const vistosM = new Set();
+  const lista = [...(cfg.reinversiones || []), ...extra.filter((x) => !ya.has(x.activoId))].filter((x) => {
+    if (!x || !x.activoId) return false;
+    const c = x.activoId + "|" + Math.max(1, Math.round(n(x.anio)) || 1);
+    if (vistosM.has(c)) return false; vistosM.add(c); return true;
+  });
   if (!cambio) return lista.length === (cfg.reinversiones || []).length ? cfg : { ...cfg, reinversiones: lista };
   return { ...cfg, decisiones: nuevasDec, reinversiones: lista };
 }
@@ -1666,39 +1745,70 @@ export function leerPropiedadRaiz(x = {}, N = 10) {
   const k = Math.max(0, Math.round(n(pr.vendeEn)));
   const renta = Math.max(0, n(pr.rentaMensual));
   const P = Math.max(0, n(pr.valor));
-  const obra = Math.max(0, n(pr.lote)) + Math.max(0, n(pr.m2)) * Math.max(0, n(pr.costoM2));
+  const m2 = Math.max(0, n(pr.m2));
+  const obra = Math.max(0, n(pr.lote)) + m2 * Math.max(0, n(pr.costoM2));
   const nombre = String(x.nombre || "").trim() || tx({ planos: "Compra en planos", lote: "Lote y construcción", asociativo: "Proyecto asociativo", rentar: "Construcción para rentar" }[tipo], { planos: "Off-plan purchase", lote: "Lot and build", asociativo: "Joint development", rentar: "Build to rent" }[tipo]);
+  // 23-nov-2026 (Santiago: "poder poner valor de venta total de la propiedad, o por
+  // metro cuadrado, o porcentaje de margen"). Cómo se pone el precio de venta:
+  // "total" (ventaTotal), "m2" (m² × ventaM2) o "pct" (margen o valorización sobre
+  // lo que cuesta). Sin elegir, se deduce de lo que ya estaba escrito.
+  const modoVenta = ["total", "m2", "pct"].includes(pr.ventaModo) ? pr.ventaModo
+    : tipo === "asociativo" ? (n(pr.valorFinal) > 0 ? "total" : "pct")
+      : (tipo === "lote" || tipo === "rentar") && n(pr.ventaM2) > 0 && m2 > 0 ? "m2" : "pct";
+  const precio = (baseCosto) => {
+    if (modoVenta === "total") return Math.max(0, n(pr.ventaTotal) || n(pr.valorFinal));
+    if (modoVenta === "m2") return m2 * Math.max(0, n(pr.ventaM2));
+    return baseCosto * (1 + valE);
+  };
   let capital = 0, valorEntrega = 0, pagos = [], meses = 12;
   if (tipo === "planos") {
     const c = P * Math.min(100, Math.max(0, n(pr.cuotaPct))) / 100;
-    valorEntrega = P * (1 + valE);
+    valorEntrega = precio(P);
     if (final === "vende" && k === 0) { capital = c; } // cesión del contrato: solo pusiste la cuota inicial
     else capital = P;
     pagos = [{ monto: c, anio }, { monto: P - c, anio: Math.min(N, anio + plazo) }].filter((p) => p.monto > 0.5);
     meses = Math.max(1, (plazo + k) * 12);
   } else if (tipo === "asociativo") {
     capital = P;
-    valorEntrega = n(pr.valorFinal) > 0 ? n(pr.valorFinal) : P * (1 + valE);
+    valorEntrega = precio(P);
     meses = Math.min(120, Math.max(1, Math.round(n(pr.meses)) || 12));
     pagos = [{ monto: P, anio }];
   } else {
     capital = obra > 0 ? obra : P;
-    valorEntrega = n(pr.ventaM2) > 0 && n(pr.m2) > 0 ? n(pr.m2) * n(pr.ventaM2) : capital * (1 + valE);
+    valorEntrega = precio(capital);
     pagos = [{ monto: capital, anio }];
     meses = Math.max(1, (plazo + k) * 12);
   }
-  const base = { tipo, nombre, anio, capital, valorEntrega, final, plazo, vendeEn: k, renta, durAnios: Math.ceil(meses / 12) };
+  const base = { tipo, nombre, anio, capital, valorEntrega, final, plazo, vendeEn: k, renta, durAnios: Math.ceil(meses / 12), modoVenta, m2 };
   if (!(capital > 0)) return { ...base, vacio: true };
   if (final === "vende") {
-    let valorFinal = tipo === "planos" && k === 0 ? capital + (valorEntrega - P) : valorEntrega * Math.pow(1 + valA, tipo === "asociativo" ? 0 : k);
-    if (tipo === "rentar" && renta > 0) valorFinal += renta * 12 * k; // la renta de los años que la tienes
+    // Lo que te pagan al vender (en planos vendido a la entrega, la cesión del contrato: cuota + valorización).
+    let ventaBruta = tipo === "planos" && k === 0 ? capital + (valorEntrega - P) : valorEntrega * Math.pow(1 + valA, tipo === "asociativo" ? 0 : k);
+    if (tipo === "rentar" && renta > 0) ventaBruta += renta * 12 * k; // la renta de los años que la tienes
+    const costosPct = vacio(pr.costosPct) ? (tipo === "asociativo" ? 0 : 3) : n(pr.costosPct);
+    // Costos de venta (comisión, notaría, registro) sobre el precio de venta. Los
+    // negocios que venían de «Negocios que se repiten» los tenían sobre la ganancia
+    // (pr.costosSobre = "ganancia") y así se dejan para no cambiar su resultado.
+    const sobreGanancia = pr.costosSobre === "ganancia";
+    const costoVenta = sobreGanancia ? 0 : ventaBruta * costosPct / 100;
+    const valorFinal = ventaBruta - costoVenta;
     const repite = !!pr.repite;
     const durAnios = Math.ceil(meses / 12);
     const hasta = repite ? (vacio(pr.hasta) ? N : Math.min(N, Math.max(anio, Math.round(n(pr.hasta))))) : Math.min(N, anio + durAnios - 1);
-    const ciclo = { nombre, capital, valorFinal, meses, desde: anio, hasta, costosPct: vacio(pr.costosPct) ? (tipo === "asociativo" ? 0 : 3) : n(pr.costosPct), regimen: pr.regimen, impuestoPct: pr.impuestoPct, fuente: x.fuente || "venta", destino: pr.destino === "flujo" ? "flujo" : "reinvierte", destinoId: pr.destinoId || null };
+    const ciclo = { nombre, capital, valorFinal, meses, desde: anio, hasta, costosPct: sobreGanancia ? costosPct : 0, regimen: pr.regimen, impuestoPct: pr.impuestoPct, fuente: x.fuente || "venta", destino: pr.destino === "flujo" ? "flujo" : "reinvierte", destinoId: pr.destinoId || null };
     const c = leerCiclos([ciclo], N)[0];
     const veces = repite ? Math.max(1, Math.floor((hasta - anio + 1) / durAnios)) : 1;
-    return { ...base, valorFinal, repite, hasta, durAnios, veces, ciclo, gananciaCiclo: c ? c.gananciaCiclo : 0, impuestoCiclo: c ? c.impuestoCiclo : 0, impuestoPct: c ? c.impuestoPct : 0, regimen: c ? c.regimen : null };
+    // 23-nov-2026 (Santiago: "a quien en estos negocios le quitan la retención: poder poner
+    // el valor de la retención aprox., y si uno quiere cambiarlo, que lo pueda poner").
+    // Retención en la fuente al vender: persona natural 1 % del valor de venta (art. 398 E.T.,
+    // la practica el notario); editable. Es un anticipo del impuesto, no un costo adicional:
+    // se descuenta del impuesto en la declaración (si es mayor, queda saldo a favor).
+    const retencionPct = vacio(pr.retencionPct) ? 1 : Math.min(100, Math.max(0, n(pr.retencionPct)));
+    const retencion = ventaBruta * retencionPct / 100;
+    const impuestoCiclo = c ? c.impuestoCiclo : 0;
+    return { ...base, ventaBruta, costoVenta, costosPct, valorFinal, repite, hasta, durAnios, veces, ciclo,
+      gananciaAntes: valorFinal - capital, gananciaCiclo: c ? c.gananciaCiclo : 0, impuestoCiclo, impuestoPct: c ? c.impuestoPct : 0, regimen: c ? c.regimen : null,
+      retencionPct, retencion, saldoDeclaracion: impuestoCiclo - retencion };
   }
   const entrega = Math.min(N, anio + plazo);
   return { ...base, entrega, pagos, crec: valA, valorAlTerminar: valorEntrega };
@@ -1716,8 +1826,11 @@ export function leerCiclos(lista = [], N = 10) {
     const TC = tarifaCiclo();
     const regimen = TC[x.regimen] ? x.regimen : regimenSugerido(meses);
     const impuestoPct = vacio(x.impuestoPct) ? TC[regimen].pct : Math.min(100, Math.max(0, n(x.impuestoPct)));
-    const bruta = Math.max(0, valorFinal - capital) * (1 - costosPct / 100);
-    const impuestoCiclo = bruta * impuestoPct / 100;
+    // 23-nov-2026: si el valor final es menor que el capital, es una pérdida (sin
+    // impuesto); antes se tomaba como ganancia cero y el capital volvía completo.
+    const dif = valorFinal - capital;
+    const bruta = dif >= 0 ? dif * (1 - costosPct / 100) : dif;
+    const impuestoCiclo = Math.max(0, bruta) * impuestoPct / 100;
     const gananciaCiclo = bruta - impuestoCiclo;
     return { nombre: String(x.nombre || "").trim() || tx("Negocio que se repite", "Repeating deal"), capital, valorFinal, meses, desde, hasta, costosPct, regimen, impuestoPct, impuestoCiclo, impuestoAnual: impuestoCiclo * 12 / meses, fuente: x.fuente || "venta", destino: x.destino === "flujo" ? "flujo" : "reinvierte", destinoId: x.destinoId || null, gananciaCiclo, gananciaAnual: gananciaCiclo * 12 / meses };
   }).filter((x) => x.capital > 0 && x.valorFinal > 0);
@@ -1800,6 +1913,42 @@ export function gastosLista(userIn = {}, cfgIn = {}) {
     out.push({ key, cat, nombre: g.c || g.n || g.nombre || cat, enEgresos, mensual, corregido: !!g._corregido, seVa, acabaAnio: term[key] || null, finDeDatos: !!term[key] && propioG[key] == null, finAnio: n(g.finAnio) || null, deActivo: g.activoId ? nomAct(g.activoId) : null });
   }));
   return out.sort((a, b) => b.mensual - a.mensual);
+}
+
+// 23-nov-2026: la cuenta de cada año (viene del año anterior + lo que sobra + lo que llega −
+// lo que usas = queda). La usan el paso 3 (Tu plata año por año) y el Resultado (capítulo 2),
+// para que los dos hablen el mismo idioma.
+export function cuentaPorAnio(r, cfg = {}) {
+  const bd = r.bolsaDetalle || {};
+  const N = Math.max(1, (r.filas || []).length - 1);
+  const prog = (bd.usos || []).filter((u) => u.anio > 1 && !u.apartado && u.fuente !== "nuevo" && u.monto > 0.5);
+  const lib = r.liberados || [];
+  // Sin cfg (el Resultado solo tiene r), la parte libre de lo que sobra la trae el motor.
+  const asignado = (Array.isArray(cfg && cfg.sobraDestinos) ? cfg.sobraDestinos : []).reduce((sm, d) => sm + Math.max(0, Number(d && d.pct) || 0), 0);
+  const libre = Array.isArray(cfg && cfg.sobraDestinos) ? Math.max(0, 1 - Math.min(100, asignado) / 100) : (r.sobraLibre ?? 1);
+  const etq = { B: tx("Invertir en", "Invest in"), C: tx("Inversión", "Investment"), D: tx("Inversión", "Investment") };
+  let arrastre = Math.max(0, bd.restante || 0);
+  const out = [];
+  const flujoDe = (t) => { const cf = Number(((r.filas || [])[t] || {}).cf) || 0; return cf > 0 ? cf * libre : cf; };
+  for (let anio = 2; anio <= N; anio++) {
+    // 23-nov-2026 (Santiago: "en el mismo año saber qué sobra del flujo y poder disponerlo ahí
+    // mismo"). Lo que sobra del flujo de un año se ve y se usa en ese mismo año. El de hoy
+    // (año en curso) llega al año siguiente, porque el saldo de hoy es el de las ventas.
+    const flujoHoy = anio === 2 ? flujoDe(1) : 0;
+    const cfPrev = Number(((r.filas || [])[anio] || {}).cf) || 0;
+    const flujo = flujoDe(anio);
+    const llegan = lib.filter((l) => l.anio === anio);
+    const salen = [
+      ...prog.filter((u) => u.anio === anio).map((u) => ({ nombre: u.seccion === "B" ? `${etq.B} ${u.nombre}` : u.nombre, monto: u.monto, tipo: u.seccion === "B" ? "B" : "C" })),
+      ...(r.deudas || []).filter((d) => d.pagaAnio === anio && d.pagoEnAnio > 0.5).map((d) => ({ nombre: tx(`Pagas ${d.nombre}`, `Pay off ${d.nombre}`), monto: d.pagoEnAnio, tipo: "A" })),
+      ...(r.pagosFuturos || []).filter((p) => p.anio === anio).map((p) => ({ nombre: tx(`Pago de ${p.nombre}`, `Payment for ${p.nombre}`), monto: p.monto, tipo: "F" })),
+    ];
+    const llega = llegan.reduce((sm, l) => sm + l.monto, 0), sale = salen.reduce((sm, u) => sm + u.monto, 0);
+    const antes = arrastre, disponible = antes + flujoHoy + flujo + llega, saldo = disponible - sale;
+    arrastre = Math.max(0, saldo);
+    out.push({ anio, antes, flujoHoy, flujo, cfPrev, llegan, llega, salen, sale, disponible, saldo });
+  }
+  return out;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
