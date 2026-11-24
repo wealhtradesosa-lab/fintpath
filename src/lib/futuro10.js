@@ -1089,6 +1089,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ciclosDetalle,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
     // si se reinvierte"): a dónde va lo que sobra, en palabras.
+    // 23-nov-2026: saldo que se deja disponible para imprevistos cada año (lo muestra el informe).
+    reserva: Math.max(0, n(cfg.reserva)),
     // 23-nov-2026: parte de lo que sobra cada año que no tiene destino fijo (cuentaPorAnio).
     sobraLibre: Math.max(0, 1 - Math.min(100, sobraDestinos.reduce((sm, d) => sm + d.pct, 0)) / 100),
     destinoSobraLista: (() => {

@@ -79,3 +79,13 @@ describe("aportes a una inversión creada en el plan", () => {
     expect(v(con, 5) - v(sin, 5)).toBeGreaterThan(200e6);
   });
 });
+
+describe("saldo para imprevistos", () => {
+  it("viaja en el resultado para que el informe lo nombre, y no cambia la cuenta del año", () => {
+    const u = { inflacionPct: 4, inv: [{ id: "c", n: "Cuenta", tp: "Cash", va: 3000e6 }], ingresos: [{ nombre: "Salario", mensual: 60e6, frecuencia: "mensual" }], gas: {} };
+    const sin = proyectar2(u, {}), con = proyectar2(u, { reserva: 500e6 });
+    expect(con.reserva).toBe(500e6);
+    expect(sin.reserva).toBe(0);
+    expect(cuenta2(con).map((g) => Math.round(g.saldo))).toEqual(cuenta2(sin).map((g) => Math.round(g.saldo)));
+  });
+});

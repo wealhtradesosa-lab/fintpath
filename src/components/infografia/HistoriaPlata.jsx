@@ -59,6 +59,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
   const usos = (bd.usos || []).filter((u) => u.monto > 0.5);
   const usoDe = (nombre, k) => usos.filter((u) => u.nombre === nombre && (u.anio || 1) === k && !(k === 1 && u.apartado)).reduce((s, u) => s + u.monto, 0);
   const mz = r.mezcla || {};
+  const reservaTxt = (r.reserva || 0) > 0.5 ? tx(` Incluye ${fmM(r.reserva)} que dejas para imprevistos.`, ` Includes ${fmM(r.reserva)} kept for emergencies.`) : "";
   const mezclaTxt = tx(`${Math.round(mz.liquidez || 0)} % liquidez, ${Math.round(mz.renta || 0)} % renta fija y ${Math.round(mz.crecimiento || 0)} % crecimiento`, `${Math.round(mz.liquidez || 0)}% cash, ${Math.round(mz.renta || 0)}% fixed income and ${Math.round(mz.crecimiento || 0)}% growth`);
 
   // ── Lo vendido hoy y por qué ──────────────────────────────────────────────
@@ -189,7 +190,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
       ...Object.values(grupos).filter((g) => g.monto > 0.5),
       ...(bd.obras > 0.5 ? [{ key: "obras", nombre: tx("Obras", "Build-outs"), monto: bd.obras, color: COL.obra }] : []),
       ...(bd.colchon > 0.5 ? [{ key: "colchon", tipo: "colchon", nombre: tx("Colchón para imprevistos", "Emergency cushion"), monto: bd.colchon, color: INF.gris }] : []),
-      ...(queda > 0.5 ? [{ key: "queda", nombre: tx(`Queda: pasa a ${anioCal(2)}`, `Left: carries to ${anioCal(2)}`), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}`, `Meanwhile it's invested: ${mezclaTxt}`), monto: queda, color: COL.queda, queda: true }] : []),
+      ...(queda > 0.5 ? [{ key: "queda", nombre: tx(`Queda: pasa a ${anioCal(2)}`, `Left: carries to ${anioCal(2)}`), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}.`, `Meanwhile it's invested: ${mezclaTxt}.`) + reservaTxt, monto: queda, color: COL.queda, queda: true }] : []),
     ].sort((a, b) => (a.queda ? 1 : 0) - (b.queda ? 1 : 0) || b.monto - a.monto);
   } else {
     cuenta = (cuentaPorAnio(r) || []).find((g) => g.anio === t) || null;
@@ -204,7 +205,7 @@ export default function HistoriaPlata({ r, anio = 1 }) {
     destinos = [
       ...g.salen.map((u, i) => ({ key: "s" + i, tipo: u.tipo === "A" ? "deuda" : u.tipo === "F" ? "pago" : "inversion", nombre: u.nombre, monto: u.monto, color: u.tipo === "A" ? COL.deuda : u.tipo === "F" ? COL.pago : colorUso(u.nombre.replace(/^(Invertir en|Invest in) /, ""), u.tipo) })),
       ...(g.flujo < -0.5 ? [{ key: "falta", tipo: "falta", nombre: tx(`Lo que falta para tus gastos de ${anioCal(t)}`, `Shortfall for your ${anioCal(t)} expenses`), monto: -g.flujo, color: COL.falta }] : []),
-      ...(g.saldo > 0.5 ? [{ key: "queda", nombre: t < nAnios ? tx(`Queda: pasa a ${anioCal(t + 1)}`, `Left: carries to ${anioCal(t + 1)}`) : tx("Queda invertido", "Stays invested"), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}`, `Meanwhile it's invested: ${mezclaTxt}`), monto: g.saldo, color: COL.queda, queda: true }] : []),
+      ...(g.saldo > 0.5 ? [{ key: "queda", nombre: t < nAnios ? tx(`Queda: pasa a ${anioCal(t + 1)}`, `Left: carries to ${anioCal(t + 1)}`) : tx("Queda invertido", "Stays invested"), sub: tx(`Mientras tanto se invierte: ${mezclaTxt}.`, `Meanwhile it's invested: ${mezclaTxt}.`) + reservaTxt, monto: g.saldo, color: COL.queda, queda: true }] : []),
     ].filter((x) => x.monto > 0.5);
   }
   const totFuentes = fuentes.reduce((s, x) => s + x.monto, 0);
