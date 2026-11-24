@@ -35,4 +35,29 @@ export function usdPendienteDeTasa(user) {
   return listas || gastos;
 }
 
+/**
+ * 23-nov-2026 — TRM vigente el 31-dic de cada año gravable (Art. 269 ET: los
+ * activos y pasivos en moneda extranjera se declaran a la TRM del último día
+ * del año). Fuente: Superintendencia Financiera, serie oficial de la TRM en
+ * datos.gov.co (dataset 32sa-8pi3). Un año que todavía no cierra no está.
+ */
+export const TRM_CIERRE_ANO = Object.freeze({
+  2023: 3822.05,
+  2024: 4409.15,
+  2025: 3757.08,
+});
+
+/**
+ * TRM del 31-dic del año gravable, o null. Primero la serie oficial; si el año
+ * no está, la que el usuario haya cargado para ese año (user.trmCierre[ano]).
+ * Nunca la última TRM guardada (user.trm) ni el 4200.
+ */
+export function trmCierreAno(user, ano) {
+  const oficial = trmUsable(TRM_CIERRE_ANO[ano]);
+  if (oficial != null) return oficial;
+  return trmUsable(user?.trmCierre?.[ano]);
+}
+
+export const TEXTO_PENDIENTE_TASA = "pendiente de tasa";
+
 export const NOTA_TRM_PENDIENTE = "Sin una TRM real, tus montos en dólares quedan fuera de este borrador: pendiente de tasa. Las cifras que ves son solo de tus montos en pesos.";

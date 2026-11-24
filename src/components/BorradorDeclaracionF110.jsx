@@ -713,7 +713,7 @@ export default function BorradorDeclaracionF110({ user, estimacion, onUpdateUser
                       minWidth: 160,
                     }}>
                       {hasOverride && <span style={{ fontSize: 12, marginRight: 4 }}><Pencil size={14} strokeWidth={1.75} /></span>}
-                      {fm(r.valor)}
+                      {r.pendienteTasa ? "pendiente de tasa" : fm(r.valor)}
                     </div>
                   )}
 

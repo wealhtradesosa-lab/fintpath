@@ -195,7 +195,8 @@ export async function exportarBorradorPDF(user, owner, estimacion, ano = 2025) {
     // Construir filas: número | concepto | valor
     const body = items.map(r => {
       const isFormula = r.tipo === "formula";
-      const valor = fm(r.valor || 0);
+      // 23-nov-2026: sin TRM del 31-dic, el renglón va «pendiente de tasa», sin cifra.
+      const valor = r.pendienteTasa ? "pendiente de tasa" : fm(r.valor || 0);
       return [
         { content: String(r.numero), styles: { halign: "left", cellWidth: 14, fontStyle: isFormula ? "bold" : "normal", textColor: isFormula ? [60, 60, 70] : [120, 120, 130] } },
         { content: r.concepto + (r.articulo ? ` (${r.articulo})` : ""), styles: { fontStyle: r.destacado ? "bold" : "normal", textColor: r.destacado ? [20, 20, 24] : [60, 60, 70] } },

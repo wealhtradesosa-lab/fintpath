@@ -11,7 +11,7 @@
 //   · El patrimonio como empresa: cuánto factura y cuánto gana al año
 // ═══════════════════════════════════════════════════════════════════════════
 import { tamanoCifra } from "../lib/infografia.js";
-import { anioCal } from "../lib/futuro10.js";
+import { anioCal, rendimientoSinAhorro, patrimonioFinalHoy, inflacionDe } from "../lib/futuro10.js";
 import { useMemo, useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 import { ChartTooltip } from "../lib/chartTheme.jsx";
@@ -34,8 +34,10 @@ const anioTxt = (a) => (a === 0 ? tx("Hoy", "Today") : String(anioCal(a)));
 /** Métricas de un plan para comparar. */
 function medir(r, inflacionPct) {
   const f = r.filas, f0 = f[0], f1 = f[1] || f0, fin = f[f.length - 1];
-  const cagr = f0.patrimonio > 0 && fin.patrimonio > 0 ? (Math.pow(fin.patrimonio / f0.patrimonio, 1 / Math.max(1, fin.anio)) - 1) * 100 : null;
-  const real = cagr == null ? null : ((1 + cagr / 100) / (1 + inflacionPct / 100) - 1) * 100;
+  // 23-nov-2026 (Finanzas): rendimiento solo de los activos; el ahorro es aporte, no rentabilidad.
+  const rendSA = rendimientoSinAhorro(r, inflacionPct);
+  const cagr = rendSA ? rendSA.nominalPct : null;
+  const real = rendSA ? rendSA.realPct : null;
   const peor = f.slice(1).reduce((m, x) => { const s = (x.ingresos - x.gastos) / 12; return m == null || s < m.s ? { s, x } : m; }, null);
   const prom = f.slice(1).reduce((s, x) => s + (x.produce || 0), 0) / Math.max(1, f.length - 1);
   const gastoProm = f.slice(1).reduce((s, x) => s + (x.gastos || 0), 0) / Math.max(1, f.length - 1);
@@ -130,8 +132,9 @@ export default function PlanComparador({ planes, inflacionPct = inflacionDefault
             <div style={{ fontSize: 12, color: INF.tx2, letterSpacing: 0.6 }}>{p.esHoy ? tx("Punto de partida", "Starting point") : `${tx("Escenario", "Scenario")} ${letra}`}</div>
             <div style={{ fontSize: 16, fontWeight: 600, margin: "2px 0 4px" }}>{p.nombre}</div>
             <div style={{ fontSize: 12, color: INF.tx2, lineHeight: 1.45, flex: 1 }}>{p.esHoy ? tx("Sin vender ni invertir en nada nuevo", "No selling and no new investments") : p.descripcion || resumenEscenario(p.r)}</div>
-            <div style={{ containerType: "inline-size", marginTop: 10 }}><div style={{ fontSize: tamanoCifra(fmM(p.med.fin.patrimonio), 22), whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmM(p.med.fin.patrimonio)}</div></div>
-            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.txOk : INF.txBad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} ${tx("real", "real")}`}</div>
+            <div style={{ containerType: "inline-size", marginTop: 10 }}><div data-testid="f10-comp-fin" style={{ fontSize: tamanoCifra(fmM(patrimonioFinalHoy(p.r)), 22), whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>{fmM(patrimonioFinalHoy(p.r))}</div></div>
+            <div style={{ fontSize: 11.5, color: INF.tx2 }}>{esUS() ? tx(`en dólares de hoy (inflación ${fmPct(inflacionDe(p.r), 1)} al año)`, `in today's dollars (${fmPct(inflacionDe(p.r), 1)} yearly inflation)`) : tx(`en pesos de hoy (inflación ${fmPct(inflacionDe(p.r), 1)} al año)`, `in today's pesos (${fmPct(inflacionDe(p.r), 1)} yearly inflation)`)}</div>
+            <div style={{ fontSize: 12, color: p.med.real != null && p.med.real >= 0 ? INF.txOk : INF.txBad }}>{anioCal(10)} · {p.med.real == null ? "—" : `${p.med.real >= 0 ? "+" : ""}${fmPct(p.med.real, 1)} ${tx("real al año, sin tu ahorro", "real a year, excluding savings")}`}</div>
             {!p.esHoy && p.id && onRecomendar && <button onClick={(e) => { e.stopPropagation(); onRecomendar(p.id); }} style={{ marginTop: 8, alignSelf: "flex-start", background: "none", border: `1px solid ${INF.linea}`, borderRadius: 999, color: p.recomendado ? INF.txTeja : INF.tx2, fontSize: 12, padding: "2px 8px", cursor: "pointer" }}>{p.recomendado ? tx("Recomendado", "Recommended") : tx("Marcar como recomendado", "Mark as recommended")}</button>}
             {/* 24-oct-2026 (Santiago: "cada tarjeta debería tener su borrar, editar"). */}
             {!p.esHoy && (p.id ? (onEditar || onBorrar) : (onGuardarBorrador || onDescartarBorrador)) && <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>

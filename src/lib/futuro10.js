@@ -827,6 +827,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     Object.keys(canasta).forEach((k) => { creceCan[k] += canasta[k] * rCan[k]; canasta[k] *= 1 + rCan[k]; });
     creceAnio += creceCan.colchon + creceCan.liquidez + creceCan.renta + creceCan.crecimiento;
     // 2) flujo del año (ingresos y gastos ya crecidos)
+    // Convención (23-nov-2026, Finanzas): el año 1 es el año en curso y sus ingresos y
+    // gastos van a precios de hoy (sin indexar); desde el año 2 suben con su tasa. El
+    // patrimonio se cuenta al cierre de cada año y se lleva a pesos de hoy dividiendo
+    // por (1+inflación)^t. Por eso el ahorro del año 1 (10 M) vale 10/1,05 ≈ 9,52 M de
+    // hoy al cierre del año 1: no es doble deflación, es que se ahorra en pesos de 2026
+    // y se mide al cierre. Los flujos de «Lo que viene» sí se indexan a (1+inflación)^t.
     if (t > 1) { ingresos *= 1 + gIng; gastos *= 1 + gGas; pasivo *= 1 + gIng; }
     ingSeVan.filter((x) => x.desde === t).forEach((x) => { const v = x.mensual * 12 * Math.pow(1 + gIng, t - 1); ingresos = Math.max(0, ingresos - v); if (x.pasivo) pasivo = Math.max(0, pasivo - v); });
     if (t > 1) activos.forEach((a) => aplicarCambio(a, t));
@@ -839,6 +845,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // Renta nueva de un activo modificado: pesos de hoy, crece con la inflación.
     const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
     const ingFuturo = fut.ingresos.reduce((s, x) => s + (t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
+    // 23-nov-2026: lo que llega de «Lo que viene» sin un activo detrás (pensión, sueldo nuevo) es ingreso, no rendimiento.
+    const ingFuturoSinActivo = fut.ingresos.reduce((s, x) => s + (!x.activoId && t >= x.desde && t <= x.hasta ? x.mensual * 12 * Math.pow(1 + inf, t) : 0), 0);
     // Renta nueva por meses: si arranca en el mes 7, el año 1 recibe 6 de 12 meses.
     const fraccionAnio = (mesInicio) => Math.min(1, Math.max(0, (12 * t - n(mesInicio)) / 12));
     const rentaNueva = rentaPers + ingFuturo + todos.reduce((s, a) => s + (a.rentaNuevaAnual > 0 ? a.rentaNuevaAnual * fraccionAnio(a.rentaDesdeMes) * Math.pow(1 + inf, t) : 0)
@@ -961,7 +969,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const activosT = valorTotal();
     const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: deuda + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
-    f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio;
+    f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio; f.ingFuturoSinActivo = ingFuturoSinActivo;
     // 19-nov-2026 (Santiago: "si me paro en 2028 que me muestre mis ingresos y
     // gastos de ese año"). Lo que sale, partido por año (suma exacta f.gastos):
     // gastos de Egresos, gastos futuros que corren, los que ya no se pagan y cuotas.
@@ -1234,7 +1242,7 @@ export function leerFuturos(f = {}, esc, sup = supuestosF10()) {
     }
     const def = ["inmueble", "vivienda", "lote"].includes(x.clase) ? (1 + inf) * (1 + n(sup.presets.fincaRaiz.valorizacionSpread) / 100) - 1 : (1 + inf) * (1 + n(sup.otrosRealSpread) / 100) - 1;
     return { nombre: String(x.nombre || "").trim() || tx("Activo futuro", "Future asset"), clase: ["inmueble", "vivienda", "lote"].includes(x.clase) ? "inmueble" : "otro", vivienda: x.clase === "vivienda", tipo: x.clase || "inmueble", fuentesPago: leerFuentesPago(x), valorAlTerminar: Math.max(0, n(x.valorAlTerminar)), entrega, pagos,
-      crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100,
+      crec: vacio(x.valorizacionNomPct) ? def : n(x.valorizacionNomPct) / 100, valorizacionDefault: vacio(x.valorizacionNomPct),
       rentaMensual: Math.max(0, n(x.rentaMensual)), rentaDesde: anio(x.rentaDesde, entrega) };
   }).filter((x) => x.pagos.some((p) => p.monto > 0));
   // 24-oct-2026 (Santiago: "como vienen nuevas rentas también vienen nuevos
@@ -1941,4 +1949,145 @@ export function cuentaPorAnio(r, cfg = {}) {
     out.push({ anio, antes, flujoHoy, flujo, cfPrev, llegan, llega, salen, sale, disponible, saldo });
   }
   return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 23-nov-2026 — Barra de resultado en vivo y tarjeta del escenario.
+// (Finanzas · Tributario · QA). Reglas:
+//  · Las cifras a 10 años van en patrimonio neto en pesos de hoy, con la
+//    inflación del escenario (la misma del interruptor «pesos de hoy» y de las
+//    gráficas del informe: f.deflactor), y se rotulan con esa tasa. Finanzas,
+//    23-nov-2026: una sola tasa define «pesos de hoy» en toda la app; subir el
+//    valor por defecto a 5 % queda para el PR de indexación.
+//  · El rendimiento se aplica solo sobre los activos. El ahorro del año entra
+//    como aporte y nunca cuenta como rendimiento: el «crece al año» de antes
+//    salía de comparar el patrimonio final con el de hoy y metía el ahorro de
+//    10 años como si fuera rentabilidad (8,2 M → 1.115 M = 63,5 % al año).
+//  · Vender un activo no baja el patrimonio del año 0 (solo pasa a efectivo).
+//  · Si hay un activo vendido, el resultado va «antes de impuestos de la venta».
+// ═══════════════════════════════════════════════════════════════════════════
+// Respaldo si el resultado no trae escenario: la MISMA constante con la que el
+// motor proyecta (INFLACION_DEFAULT_PCT), para no volver a ver 4 % contra 5 %.
+export const INFLACION_PESOS_HOY_PCT = INFLACION_DEFAULT_PCT;
+
+/** Inflación (%) con la que el escenario pasa a pesos de hoy. */
+export const inflacionDe = (r) => {
+  const v = r && r.escenario ? r.escenario.inflacionPct : null;
+  return v != null && v !== "" && Number.isFinite(Number(v)) ? Number(v) : INFLACION_PESOS_HOY_PCT;
+};
+
+/** Lleva una cifra nominal del año `anio` a pesos de hoy con la inflación dada. */
+export const aPesosDeHoy = (nominal, anio, inflacionPct = INFLACION_PESOS_HOY_PCT) => n(nominal) / Math.pow(1 + n(inflacionPct) / 100, Math.max(0, n(anio)));
+
+/** Patrimonio neto del último año del plan en pesos de hoy, con la inflación del escenario. La misma cifra en la barra, la tarjeta, el comparador, el veredicto y el último punto de la gráfica en pesos de hoy. */
+export function patrimonioFinalHoy(r, inflacionPct = inflacionDe(r)) {
+  const f = (r && r.filas) || [];
+  if (!f.length) return 0;
+  const fin = f[f.length - 1];
+  return aPesosDeHoy(fin.patrimonio, fin.anio, inflacionPct);
+}
+
+/** ¿El escenario vende al menos un activo? */
+export const hayVenta = (r) => !!(r && Array.isArray(r.vendidos) && r.vendidos.length > 0);
+export const rotuloVenta = () => tx("antes de impuestos de la venta", "before taxes on the sale");
+
+/** Misma regla del paso 4 («Alertas de liquidez»): hay alerta si el motor dejó alguna. */
+export const hayAlertaLiquidez = (r) => !!(r && Array.isArray(r.alertas) && r.alertas.length > 0);
+
+/**
+ * Rendimiento anual de los activos, sin contar el ahorro. Cada año:
+ * lo que producen los activos (rentas + valorización; no una pensión u otro
+ * ingreso de «Lo que viene» sin activo) ÷ los activos con que
+ * arrancó el año. Se encadena (tasa ponderada en el tiempo) y se pasa a real
+ * con la inflación dada. Devuelve null si no hay activos.
+ */
+export function rendimientoSinAhorro(r, inflacionPct = inflacionDe(r)) {
+  const f = (r && r.filas) || [];
+  if (f.length < 2) return null;
+  let factor = 1, anios = 0;
+  for (let t = 1; t < f.length; t++) {
+    const base = n(f[t - 1].activos);
+    if (base <= 0) continue;
+    factor *= Math.max(0, 1 + (n(f[t].produce) - n(f[t].ingFuturoSinActivo)) / base);
+    anios++;
+  }
+  if (!anios) return null;
+  const nominalPct = (Math.pow(factor, 1 / anios) - 1) * 100;
+  const realPct = ((1 + nominalPct / 100) / (1 + n(inflacionPct) / 100) - 1) * 100;
+  return { nominalPct, realPct, anios };
+}
+
+/**
+ * De dónde sale el patrimonio final, en pesos de hoy:
+ *   hoy + ahorro + rendimiento real = final
+ * ahorro = lo que entra al patrimonio sin ser rendimiento de un activo
+ * (sueldo menos gastos, cuotas, gastos y compras de «Lo que viene»).
+ * rendimiento real = lo que producen los activos menos lo que la inflación
+ * le quita al patrimonio de cada año.
+ */
+export function desglosePatrimonio(r, inflacionPct = inflacionDe(r)) {
+  const f = (r && r.filas) || [];
+  if (!f.length) return null;
+  const d = (t) => Math.pow(1 + n(inflacionPct) / 100, t);
+  let ahorro = 0, rendimiento = 0, inflacion = 0;
+  for (let t = 1; t < f.length; t++) {
+    const prev = n(f[t - 1].patrimonio), cur = n(f[t].patrimonio), prod = n(f[t].produce) - n(f[t].ingFuturoSinActivo);
+    rendimiento += prod / d(t);
+    ahorro += (cur - prev - prod) / d(t);
+    inflacion += prev * (1 / d(t - 1) - 1 / d(t));
+  }
+  const fin = f[f.length - 1];
+  return {
+    hoy: n(f[0].patrimonio),
+    despuesDelPlan: f[1] ? n(f[1].patrimonio) / d(1) : n(f[0].patrimonio),
+    fin: patrimonioFinalHoy(r, inflacionPct),
+    anioFin: n(fin.anio),
+    ahorro, rendimiento, inflacion, rendimientoReal: rendimiento - inflacion,
+    inflacionPct: n(inflacionPct),
+  };
+}
+
+/**
+ * Lo que muestra la barra de resultado en vivo (pasos 1 a 3).
+ * rPlan = el escenario que se está armando; rHoy = «Si me quedo como estoy».
+ */
+export function resumenBarra(rPlan, rHoy, inflacionPct = inflacionDe(rPlan)) {
+  const dp = desglosePatrimonio(rPlan, inflacionPct);
+  if (!dp) return null;
+  const dh = rHoy ? desglosePatrimonio(rHoy, inflacionPct) : null;
+  return {
+    anioFin: dp.anioFin,
+    anioCalFin: anioCal(dp.anioFin),
+    hoy: dp.hoy,
+    plan: dp.fin,
+    quedarme: dh ? dh.fin : null,
+    diferencia: dh ? dp.fin - dh.fin : null,
+    conVenta: hayVenta(rPlan),
+    alertaLiquidez: hayAlertaLiquidez(rPlan),
+    inflacionPct: n(inflacionPct),
+  };
+}
+
+/**
+ * «Lo que viene» del escenario, para su tarjeta: cada compra, gasto o ingreso
+ * futuro con su año. El motor ya resta el costo en el año en que cae.
+ * tipo: "compra" (monto = pago de ese año) · "gasto" (monto = al año, pesos de hoy) · "ingreso" (monto = al mes)
+ */
+export function loQueVieneDelPlan(r) {
+  const fut = (r && r.futuros) || {};
+  const N = Math.max(1, ((r && r.filas) || []).length - 1) || 10;
+  const out = [];
+  (fut.activos || []).forEach((a) => {
+    const pagos = (a.pagos || []).filter((p) => n(p.monto) > 0);
+    const total = pagos.reduce((s, p) => s + n(p.monto), 0);
+    const anio = pagos.length ? Math.min(...pagos.map((p) => p.anio)) : n(a.entrega);
+    // Supuestos visibles (Finanzas): el motor no suma gastos de compra (escritura,
+    // registro, impuestos) ni modela un crédito: la compra se paga de contado.
+    // Valorización por defecto: finca raíz (presets.fincaRaiz.valorizacionSpread = 0) u
+    // otros (otrosRealSpread = 0) → sube con la inflación del escenario, 0 % real.
+    out.push({ nombre: a.nombre, tipo: "compra", vivienda: !!a.vivienda, anio, anioFin: n(a.entrega) || anio, monto: total, sinGastosCompra: true, deContado: true, valorizacionPct: a.crec == null ? null : a.crec * 100, valorizacionDefault: a.valorizacionDefault !== false });
+  });
+  (fut.gastos || []).forEach((g) => out.push({ nombre: g.nombre, tipo: "gasto", anio: g.desde, anioFin: Math.min(N, g.hasta), monto: n(g.anual) }));
+  (fut.ingresos || []).forEach((i) => out.push({ nombre: i.nombre, tipo: "ingreso", anio: i.desde, anioFin: Math.min(N, i.hasta), monto: n(i.mensual) }));
+  return out.sort((a, b) => a.anio - b.anio);
 }
