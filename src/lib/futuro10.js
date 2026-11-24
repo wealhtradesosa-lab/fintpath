@@ -2241,6 +2241,10 @@ export function cuentaPorAnio(r, cfg = {}, fotos = null) {
     usos.filter((u) => (anio === 1 ? (u.anio || 1) === 1 || u.apartado : u.anio === anio && !u.apartado) && !(u.prDesde != null && u.prDesde < (u.anio || 1)))
       .forEach((u) => { const fte = u.fuente || "venta"; movidas.push({ nombre: u.nombre, monto: enAnio(u), montoHoy: n(u.monto), tipo: u.seccion === "B" ? "B" : "C", fuente: fte, cuenta: anio === 1 ? fte === "venta" : fte !== "nuevo", ref: u.ref || null }); });
     if (anio === 1 && bd.obrasPedido > 0.5) movidas.push({ nombre: tx("Obras en lo que ya tienes", "Build-outs on what you own"), monto: bd.obrasPedido, tipo: "B", cuenta: true });
+    // 24-nov-2026 (Santiago: "estoy en 2026, no veo una inversión nueva y me sale que tengo una creada"). Una inversión nueva o un aporte
+    // de este año que quedó sin monto también se ve, para completarlo o quitarlo: antes quedaba escondido.
+    (cfg.nuevas || []).forEach((x, k) => { if (!x || x.preset === "_fuera" || (x.preset === "fincaRaiz" && x.pr) || Math.max(1, Math.round(n(x.anio)) || 1) !== anio || n(x.monto) > 0.5 || movidas.some((m) => m.ref === "n" + k)) return; movidas.push({ nombre: x.nombre || tx("Inversión nueva", "New investment"), monto: 0, montoHoy: 0, tipo: "C", fuente: x.fuente || "venta", cuenta: true, ref: "n" + k, sinMonto: true }); });
+    (cfg.reinversiones || []).forEach((x, k) => { if (!x || Math.max(1, Math.round(n(x.anio)) || 1) !== anio || n(x.monto) > 0.5 || movidas.some((m) => m.ref === "r" + k)) return; const a = ((r.activos || []).find((y) => y.id === x.activoId) || (r.nuevasDetalle || []).find((y) => y.id === x.activoId) || {}); movidas.push({ nombre: a.nombre || tx("Inversión", "Investment"), monto: 0, montoHoy: 0, tipo: "B", fuente: x.fuente || "venta", cuenta: true, ref: "r" + k, sinMonto: true }); });
     const movido = suma(movidas.filter((m) => m.cuenta));
     // La cuenta, en dos partes (24-nov-2026, Santiago: "este año tienes de capital disponible 900 MM,
     // ¿qué quieres hacer? ¿pagar deudas, invertir? Y además te sobra al mes X plata: ¿qué quieres hacer
