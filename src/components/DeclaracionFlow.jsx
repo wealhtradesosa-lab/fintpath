@@ -2061,7 +2061,8 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
     : ["patrimonio", "trabajo", "deducciones", "capital", "noLaboral", "dividendos", "rentaTotal", "impuesto", "liquidacion"];
 
   // Filtrar solo renglones con valor resuelto > 0
-  const renglonesConValor = renglones.filter(r => r && r.valorResuelto > 0);
+  // 23-nov-2026: un renglón «pendiente de tasa» se muestra aunque no tenga cifra.
+  const renglonesConValor = renglones.filter(r => r && (r.valorResuelto > 0 || r.pendienteTasa));
   // 1-nov-2026: el saldo a favor se ve sin tener que expandir el detalle.
   const renglonSaldoAFavor = renglonesConValor.find(r => r.numero === 114 && typeof r.notaDe === "function");
   const notaSaldoAFavor = renglonSaldoAFavor ? renglonSaldoAFavor.notaDe(renglonSaldoAFavor.valorResuelto, fm) : null;
@@ -2147,7 +2148,7 @@ function DetalleFormulario({ user, owner, estimacion, ano, isJuridica }) {
                         {r.concepto}
                       </span>
                       <span style={{ fontFamily: "monospace", color: r.destacado ? C.txt : C.txt2, fontWeight: r.destacado ? 700 : 400 }}>
-                        {fm(r.valorResuelto)}
+                        {r.pendienteTasa ? "pendiente de tasa" : fm(r.valorResuelto)}
                       </span>
                     </div>
                     {nota && (

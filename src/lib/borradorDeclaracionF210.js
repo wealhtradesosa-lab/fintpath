@@ -22,7 +22,7 @@ import { totalAnualItem } from "./flowHelpers.js";
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { uvtForYear } from "./taxCO.js";
-import { trmUsable } from "./trm.js";
+import { trmUsable, trmCierreAno, TEXTO_PENDIENTE_TASA } from "./trm.js";
 import { notaSaldoAFavorRenglon } from "./saldoAFavor.js";
 import { claseDeActivo, normalizar } from "./taxonomiaActivos.js";
 
@@ -119,6 +119,44 @@ export function valorFiscalActivo(activo) {
   return n(activo.valor || activo.va || activo.vc);
 }
 
+// ── Pasivos (renglón 30) ─────────────────────────────────────────────────
+// 23-nov-2026 — Antes se sumaba `saldo || s || mt` sin mirar la moneda: una
+// deuda de 10.000 USD entraba como $10.000. Ahora las deudas en USD se pasan a
+// pesos con la TRM del 31-dic del año gravable (Art. 269 ET), no con la última
+// TRM guardada. Sin esa tasa, la deuda en USD NO se suma sin convertir: el
+// renglón queda «pendiente de tasa» y la pantalla no muestra cifra.
+export const NOTA_PASIVOS_PENDIENTE_TASA = "Tienes deudas en dólares y todavía no hay TRM del 31-dic de este año gravable: este renglón queda pendiente de tasa. Las cifras en pesos no incluyen esas deudas.";
+
+const esUSD = (x) => String(x?.moneda || "").trim().toUpperCase() === "USD";
+
+/** Saldo de una deuda en su moneda (sin convertir). */
+export function saldoDeuda(d) {
+  return Number(d?.saldo || d?.s || d?.mt) || 0;
+}
+
+/**
+ * Renglón 30: suma de deudas en pesos. trmCierre = TRM del 31-dic del año
+ * gravable (o null). Devuelve { total, pendienteTasa }: si hay deudas en USD y
+ * no hay tasa, total solo trae las deudas en pesos y pendienteTasa = true.
+ */
+export function pasivosRenglon30(deudas, trmCierre) {
+  const trm = trmUsable(trmCierre);
+  let total = 0;
+  let pendienteTasa = false;
+  for (const d of deudas || []) {
+    const saldo = saldoDeuda(d);
+    if (!esUSD(d)) { total += saldo; continue; }
+    if (trm == null) { if (saldo > 0) pendienteTasa = true; continue; }
+    total += saldo * trm;
+  }
+  return { total, pendienteTasa };
+}
+
+/** Texto del valor de un renglón: «pendiente de tasa» si no se puede calcular. */
+export function textoValorRenglon(r, fmt) {
+  return r?.pendienteTasa ? TEXTO_PENDIENTE_TASA : fmt(r?.valor || 0);
+}
+
 /**
  * ¿El patrimonio bruto al 31-dic obliga a declarar? (Art. 592-594-3 ET:
  * patrimonio bruto > 4.500 UVT del año gravable). Se compara contra el
@@ -208,7 +246,9 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
   const propiedades = sumaRenglon(293);
   const otrosActivos = sumaRenglon(294);
   const oDeu = (user.deu || []).filter(d => d.owner === owner.id && d.sim !== false && !d.excluirDeclaracion);
-  const pasivos = oDeu.reduce((s, d) => s + (Number(d.saldo || d.s || d.mt) || 0), 0);
+  const { total: pasivos, pendienteTasa: pasivosPendienteTasa } = pasivosRenglon30(oDeu, trmCierreAno(user, ano));
+  // Si el usuario escribió el renglón 30 a mano, esa cifra manda y no hay pendiente.
+  const r30PendienteTasa = pasivosPendienteTasa && overrides[30] == null;
 
   // Retenciones e impuesto
   const retefuente = det.retefuenteNat || 0;
@@ -230,10 +270,12 @@ export function generarBorradorF210(user, owner, estimacion, ano = 2025) {
       tip: "Casa, apartamentos, lotes, vehículos. La DIAN acepta el mayor entre: avalúo catastral o costo fiscal (lo que pagaste + mejoras)." },
     { seccion: "patrimonio", numero: 294, concepto: "Otros activos", valor: v(294, otrosActivos), auto: otrosActivos, tipo: "editable", fuente: "Cripto y demás activos (costo fiscal)",
       tip: "Cuentas por cobrar, joyas, obras de arte valiosas, criptomonedas." },
-    { seccion: "patrimonio", numero: 30, concepto: "Total deudas (pasivos)", valor: v(30, pasivos), auto: pasivos, tipo: "editable", fuente: "Deudas cargadas",
-      tip: "Saldos de hipotecas, préstamos personales, tarjetas de crédito al 31-dic. Las deudas reducen tu patrimonio líquido." },
+    { seccion: "patrimonio", numero: 30, concepto: "Total deudas (pasivos)", valor: v(30, pasivos), auto: pasivos, tipo: "editable", fuente: "Deudas cargadas (en USD, a la TRM del 31-dic, Art. 269 ET)",
+      tip: "Saldos de hipotecas, préstamos personales, tarjetas de crédito al 31-dic. Las deudas en dólares se pasan a pesos con la TRM del 31-dic del año gravable. Las deudas reducen tu patrimonio líquido.",
+      ...(r30PendienteTasa ? { pendienteTasa: true, nota: NOTA_PASIVOS_PENDIENTE_TASA } : {}) },
     { seccion: "patrimonio", numero: 31, concepto: "Total patrimonio líquido", tipo: "formula", destacado: true,
-      calc: (vals) => Math.max(0, (vals[29] || 0) - (vals[30] || 0)) },
+      calc: (vals) => Math.max(0, (vals[29] || 0) - (vals[30] || 0)),
+      ...(r30PendienteTasa ? { pendienteTasa: true } : {}) },
 
     // ── CÉDULA GENERAL: RENTAS DE TRABAJO ────────────────────────────────
     { seccion: "trabajo", numero: 32, concepto: "Salarios y demás rentas laborales", valor: v(32, salAnual), auto: salAnual, tipo: "editable", fuente: "Ingresos tipo Salario (anual)",
