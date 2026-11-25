@@ -75,10 +75,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     const t = setTimeout(() => {
       ultimoGuardado.current = json;
       const g = guardadoRef.current || {};
-      // Si estás editando un escenario, cada cambio queda guardado en él.
-      const id = editandoRef.current;
-      const escs = id ? (g.escenarios || []).map((e) => (e.id === id ? { ...e, config: cfg, editado: new Date().toISOString() } : e)) : g.escenarios;
-      Promise.resolve(onGuardar({ ...g, borrador: cfg, ...(escs ? { escenarios: escs } : {}) })).then(() => setEstadoGuardado("listo"), () => setEstadoGuardado("error"));
+      // 24-nov-2026 (Santiago: "un solo botón guardar"; "trabajé un modelo y se me perdió"). Lo que armas queda como borrador (no se
+      // pierde si cierras la página), con el escenario del que salió; dentro de un escenario solo se guarda al tocar «Guardar».
+      Promise.resolve(onGuardar({ ...g, borrador: cfg, borradorDe: editandoRef.current || null })).then(() => setEstadoGuardado("listo"), () => setEstadoGuardado("error"));
     }, 600);
     return () => clearTimeout(t);
   }, [cfg, demo]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -86,7 +85,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // 24-oct-2026 (Santiago: "una vez creado el escenario no deja cambiar el
   // nombre"). Al tocar Editar se carga su nombre y resumen, y se guarda sobre
   // el mismo escenario (o como uno nuevo).
-  const [editandoId, setEditandoId] = useState(null);
+  const [editandoId, setEditandoId] = useState(() => { const id = guardado.borradorDe; return id && (guardado.escenarios || []).some((e) => e.id === id) ? id : null; });
   editandoRef.current = editandoId;
   const [descEsc, setDescEsc] = useState("");
   const [verEsc, setVerEsc] = useState(null);
@@ -150,45 +149,70 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
 
   const editando = escenarios.find((e) => e.id === editandoId) || null;
-  const guardarCambios = () => {
-    if (demo || !editando) return;
-    const lista = escenarios.map((e) => (e.id === editando.id ? { ...e, nombre: nombreEsc.trim() || e.nombre, descripcion: descEsc.trim(), config: cfg, editado: new Date().toISOString() } : e));
-    onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: lista });
-    setEditandoId(null); setNombreEsc(""); setDescEsc("");
+  // 24-nov-2026 (Santiago: "un solo botón guardar"; "debería ser guardar el actual o guardar como copia"; "trabajé un modelo y se me
+  // perdió"). Nada se guarda solo dentro de un escenario. «Guardar» guarda lo que armas en el escenario abierto (o crea uno nuevo con
+  // su nombre); «Guardar como copia» crea otro con tus cambios y deja el abierto como estaba. Crear uno nuevo o abrir otro con cambios
+  // sin guardar pregunta antes. Todo escribe sobre la última lista guardada (guardadoRef), nunca sobre una copia vieja.
+  const sinGuardar = editando ? !igualA(editando.config) || descEsc.trim() !== String(editando.descripcion || "").trim() : hayBorrador;
+  const [errorGuardar, setErrorGuardar] = useState("");
+  const MAX_ESCENARIOS = 30;
+  const ultimo = () => { const g = guardadoRef.current || guardado || {}; return [g, g.escenarios || []]; };
+  const lleno = (lista) => { if (lista.length < MAX_ESCENARIOS) return false; setErrorGuardar(tx(`Ya tienes ${MAX_ESCENARIOS} escenarios: borra uno para guardar otro.`, `You already have ${MAX_ESCENARIOS} scenarios: delete one to save another.`)); return true; };
+  const guardarActual = () => {
+    if (demo || !onGuardar) return;
+    setErrorGuardar("");
+    const [g, lista] = ultimo(), ahora = new Date().toISOString();
+    if (editando) { onGuardar({ ...g, borrador: cfg, borradorDe: editando.id, escenarios: lista.map((e) => (e.id === editando.id ? { ...e, config: cfg, descripcion: descEsc.trim(), editado: ahora } : e)) }); return; }
+    if (lleno(lista)) return;
+    const nuevo = { id: "f10_" + Date.now(), nombre: nombreEsc.trim() || `${tx("Escenario", "Scenario")} ${lista.length + 1}`, descripcion: descEsc.trim(), creado: ahora, config: cfg };
+    onGuardar({ ...g, borrador: cfg, borradorDe: nuevo.id, escenarios: [...lista, nuevo] });
+    setEditandoId(nuevo.id); setNombreEsc(nuevo.nombre);
+    track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: lista.length + 1 });
   };
-  const guardar = (nombreForzado) => {
-    if (demo) return; // la demo nunca escribe en la cuenta real
-    setEditandoId(null);
-    const nuevo = { id: "f10_" + Date.now(), nombre: (typeof nombreForzado === "string" ? nombreForzado : nombreEsc).trim() || `${tx("Escenario", "Scenario")} ${escenarios.length + 1}`, descripcion: descEsc.trim(), creado: new Date().toISOString(), config: cfg };
-    onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: [...escenarios, nuevo].slice(-10) });
-    setNombreEsc(""); setDescEsc("");
-    track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
-  };
-  // 24-nov-2026 (Santiago: tres escenarios guardados iguales). «Guardar como nuevo» guardaba una copia idéntica y lo que cambiabas después
-  // seguía entrando al escenario abierto. Ahora guarda la copia y sigues editando la copia: lo que cambies queda en ella.
   const guardarCopia = () => {
-    if (demo || !editando || !onGuardar) return;
+    if (demo || !onGuardar || !editando) return;
+    setErrorGuardar("");
+    const [g, lista] = ultimo();
+    if (lleno(lista)) return;
     const nuevo = { id: "f10_" + Date.now(), nombre: `${editando.nombre} ${tx("(copia)", "(copy)")}`, descripcion: descEsc.trim(), creado: new Date().toISOString(), config: cfg };
-    onGuardar({ ...guardado, borrador: cfg, escenarios: [...escenarios, nuevo].slice(-10) });
+    onGuardar({ ...g, borrador: cfg, borradorDe: nuevo.id, escenarios: [...lista, nuevo] });
     setEditandoId(nuevo.id); setNombreEsc(nuevo.nombre);
   };
-  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setVista("crear"); setCfg(migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...e.config }), user)); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
-  // 24-nov-2026 (Santiago: "creo escenarios nuevos y todos quedan iguales"). «Crear escenario» seguía con el último escenario abierto y,
-  // si venías de «Editar», cada cambio se seguía guardando en ese escenario. Ahora termina la edición y arranca desde lo que tienes hoy;
-  // si estabas armando uno sin guardar, sigue con ese.
+  // Antes de dejar cambios sin guardar, pregunta. Devuelve true si se puede seguir.
+  const puedeDejar = (siguiente) => {
+    if (!sinGuardar || demo || typeof window === "undefined" || !window.confirm) return true;
+    const dueno = editando ? tx(`en «${editando.nombre}»`, `in "${editando.nombre}"`) : tx("en el escenario nuevo que estás armando", "in the new scenario you're building");
+    return window.confirm(tx(`Tienes cambios sin guardar ${dueno}. Si ${siguiente}, se pierden. ¿Seguir de todas formas?`, `You have unsaved changes ${dueno}. If you ${siguiente}, they'll be lost. Continue anyway?`));
+  };
+  const guardar = guardarActual;
+  const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; if (id !== editandoId && !puedeDejar(tx(`abres «${e.nombre}»`, `open "${e.nombre}"`))) return; setVista("crear"); if (id !== editandoId || !sinGuardar) setCfg(migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...e.config }), user)); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); setErrorGuardar(""); ir(1); };
+  // «Crear escenario nuevo» arranca desde lo que tienes hoy. Con cambios sin guardar pregunta; si dices que no, sigues con ellos.
   const crearNuevo = () => {
-    if (editandoId || !hayBorrador) {
-      const limpio = { ...CONFIG_INICIAL, escenario: cfg.escenario };
-      setCfg(limpio);
-      if (!demo && onGuardar) { ultimoGuardado.current = JSON.stringify(limpio); onGuardar({ ...(guardadoRef.current || guardado), borrador: limpio }); }
-    }
-    setEditandoId(null); setNombreEsc(""); setDescEsc(""); setVerEsc(null);
+    if (sinGuardar && !puedeDejar(tx("creas uno nuevo", "create a new one"))) { setVista("crear"); window.scrollTo?.({ top: 0, behavior: "smooth" }); return; }
+    const limpio = { ...CONFIG_INICIAL, escenario: cfg.escenario };
+    setCfg(limpio);
+    if (!demo && onGuardar) { ultimoGuardado.current = JSON.stringify(limpio); onGuardar({ ...(guardadoRef.current || guardado), borrador: limpio, borradorDe: null }); }
+    setEditandoId(null); setNombreEsc(""); setDescEsc(""); setVerEsc(null); setErrorGuardar("");
     setVista("crear"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" });
   };
-  const descartarBorrador = () => { setCfg(editandoEsc ? migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }), user) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); };
+  // Descartar los cambios sin guardar: si editabas un escenario, vuelve a como está guardado y sigues en él; si era nuevo, empieza de cero.
+  const descartarBorrador = () => { setCfg(editandoEsc ? migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }), user) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); if (!editandoEsc) { setNombreEsc(""); setDescEsc(""); } setErrorGuardar(""); };
   // 22-nov-2026 (Santiago: "al editar uno podría cambiar el nombre si tiene un título el plan… así no tiene uno un botón cambiar nombre").
-  const renombrar = (id, nombre) => { const t = String(nombre || "").trim(); if (demo || !t || !onGuardar) return; onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => (e.id === id ? { ...e, nombre: t, editado: new Date().toISOString() } : e)) }); };
-  const borrar = (id) => !demo && onGuardar && onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.filter((e) => e.id !== id) });
+  const renombrar = (id, nombre) => { const t = String(nombre || "").trim(); if (demo || !t || !onGuardar) return; const [g, lista] = ultimo(); onGuardar({ ...g, escenarios: lista.map((e) => (e.id === id ? { ...e, nombre: t, editado: new Date().toISOString() } : e)) }); };
+  const borrar = (id) => { if (demo || !onGuardar) return; const [g, lista] = ultimo(); onGuardar({ ...g, escenarios: lista.filter((e) => e.id !== id), ...(id === editandoId ? { borradorDe: null } : {}) }); if (id === editandoId) setEditandoId(null); };
+  const estadoTxt = editando ? (sinGuardar ? tx(`Tienes cambios sin guardar en «${editando.nombre}».`, `You have unsaved changes in "${editando.nombre}".`) : tx(`✓ «${editando.nombre}» está guardado.`, `✓ "${editando.nombre}" is saved.`))
+    : (sinGuardar ? tx("Estás armando un escenario nuevo: ponle nombre y guárdalo.", "You're building a new scenario: name it and save it.") : tx("Escenario nuevo: cambia algo en los pasos 1 a 3 y aquí lo guardas.", "New scenario: change something in steps 1–3 and save it here."));
+  const barraGuardar = <div role="status" style={{ background: C.bg2, border: `1px solid ${sinGuardar ? "rgba(245,181,68,0.45)" : C.bd}`, borderRadius: 12, padding: "12px 14px", margin: "0 0 12px", display: "grid", gap: 10 }}>
+    <div style={{ fontSize: 13.5, color: sinGuardar ? C.am : editando ? C.gn : C.tx2, fontWeight: 600 }}>{estadoTxt}</div>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+      {!editando && <input aria-label={tx("Nombre del escenario", "Scenario name")} style={{ ...inp, flex: "1 1 220px", width: "auto", padding: "10px 12px" }} placeholder={tx("Nombre del escenario, ej.: Conservador + casa", "Scenario name, e.g. Conservative + house")} value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />}
+      <button type="button" disabled={!sinGuardar} onClick={guardarActual} style={{ ...btnAccion(sinGuardar), opacity: sinGuardar ? 1 : 0.5, cursor: sinGuardar ? "pointer" : "not-allowed" }}>{tx("Guardar", "Save")}</button>
+      {editando && <button type="button" onClick={guardarCopia} style={{ ...btn(false), padding: "10px 14px" }}>{tx("Guardar como copia", "Save as a copy")}</button>}
+      {editando && sinGuardar && <button type="button" onClick={descartarBorrador} style={{ ...enlace, fontSize: 13, color: C.tx2 }}>{tx("Descartar los cambios", "Discard changes")}</button>}
+    </div>
+    {editando && <div style={{ fontSize: 12, color: C.tx2 }}>{tx(`«Guardar» actualiza «${editando.nombre}». «Guardar como copia» crea otro escenario con tus cambios y deja «${editando.nombre}» como estaba.`, `"Save" updates "${editando.nombre}". "Save as a copy" creates another scenario with your changes and leaves "${editando.nombre}" as it was.`)}</div>}
+    {errorGuardar && <div style={{ fontSize: 12.5, color: C.rd }}>{errorGuardar}</div>}
+  </div>;
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
@@ -229,6 +253,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <div style={{ ...card, marginBottom: 14 }}><h3 style={{ margin: 0 }}>{verEsc.id && !demo ? <TituloEditable valor={verEsc.nombre} onCambiar={(t) => { renombrar(verEsc.id, t); setVerEsc((v) => ({ ...v, nombre: t })); }} /> : verEsc.nombre}</h3>{verEsc.descripcion ? <div style={{ fontSize: 12, color: C.tx2, marginTop: 4 }}>{verEsc.descripcion}</div> : null}</div>
         <PlanInforme r={verEsc.r} nombre={verEsc.nombre} inflacionPct={esc.inflacionPct} />
       </> : <>
+        {/* 24-nov-2026 (Santiago: "trabajé un modelo y se me perdió"). Si tienes cambios sin guardar, se ve aquí arriba, con qué hacer. */}
+        {!demo && sinGuardar && <div role="status" style={{ border: "1px solid rgba(245,181,68,0.45)", background: "rgba(245,181,68,0.08)", borderRadius: 12, padding: "12px 14px", marginBottom: 12, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <span style={{ fontSize: 14, color: C.tx, flex: "1 1 260px" }}>{editando ? tx(`Tienes cambios sin guardar en «${editando.nombre}».`, `You have unsaved changes in "${editando.nombre}".`) : tx("Tienes un escenario nuevo sin guardar.", "You have a new scenario that isn't saved.")}</span>
+          {editando ? <button type="button" style={btnAccion(true)} onClick={guardarActual}>{tx("Guardar", "Save")}</button>
+            : <button type="button" style={btnAccion(true)} onClick={() => { setVista("crear"); ir(4); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Ponerle nombre y guardarlo", "Name it and save it")}</button>}
+          <button type="button" style={{ ...btn(false), padding: "10px 14px" }} onClick={() => { setVista("crear"); ir(editando ? 1 : 0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Seguir editando", "Keep editing")}</button>
+          <button type="button" style={{ ...enlace, fontSize: 13, color: C.tx2 }} onClick={descartarBorrador}>{tx("Descartar", "Discard")}</button>
+        </div>}
         <EscenariosCreados planes={planesComparar} inflacionPct={esc.inflacionPct} demo={demo}
           onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
           onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
@@ -241,10 +273,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {vista === "crear" && <>
       {editandoEsc && !demo && <h2 style={{ fontSize: 20, margin: "4px 0 10px", fontWeight: 600 }}><TituloEditable valor={editandoEsc.nombre} onCambiar={(t) => { renombrar(editandoEsc.id, t); setNombreEsc(t); }} /></h2>}
-      {editandoEsc && !demo && <div role="status" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "-2px 0 12px" }}>
-        <span style={{ fontSize: 13, color: C.tx2 }}>{tx("Estás editando este escenario: cada cambio se guarda solo en él.", "You're editing this scenario: every change is saved to it automatically.")}</span>
-        <button type="button" style={{ ...enlace, fontSize: 13, color: C.tx2 }} onClick={crearNuevo}>{tx("Crear uno nuevo", "Create a new one")}</button>
-      </div>}
+      {/* 24-nov-2026 (Santiago: "un solo botón guardar"; "debería ser guardar el actual o guardar como copia"). Arriba de todos los pasos:
+          qué estás armando, si tiene cambios sin guardar, y «Guardar» (más «Guardar como copia» si editas uno que ya existe). */}
+      {!demo && paso !== 4 && barraGuardar}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
       </div>
@@ -371,7 +402,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             </div>); })()}
             </div>,
           }} />
-        <SaldoFijo cuenta={cuenta} cfg={cfg} anioSel={anioSel} estadoGuardado={demo ? "demo" : estadoGuardado} dejarListo={dejarListo} onVer={() => document.getElementById("f10-anios")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+        <SaldoFijo cuenta={cuenta} cfg={cfg} anioSel={anioSel} estadoGuardado={demo ? "demo" : estadoGuardado === "error" ? "error" : sinGuardar ? "sinGuardar" : editando ? "listo" : null} dejarListo={dejarListo} onVer={() => document.getElementById("f10-anios")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
       </>)}
 
       {paso === 3 && (<>
@@ -388,32 +419,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       </>)}
 
       {paso === 4 && (<>
-        {/* 25-oct-2026 (Santiago: "le doy click al escenario que quiero ver y me
-            sale que le ponga nombre al plan"). Guardar solo aparece cuando hay
-            algo sin guardar o estás editando, y nunca encima de un informe. */}
-        {!verEsc && (hayBorrador || editando) && <div style={card}>
-          {/* 24-nov-2026 (Santiago: "al final uno no sabe cómo guardar porque hay como dos botones, el de terminar y otro; no es claro qué
-              hacer"). Una sola acción principal, en verde: si editas, tus cambios ya quedaron y «Listo» te lleva a comparar; si es nuevo,
-              le pones nombre y «Guardar y comparar». La copia queda como enlace aparte. */}
-          <TituloPaso n={5}>{editando ? tx(`Tus cambios ya quedaron en «${editando.nombre}»`, `Your changes are saved in "${editando.nombre}"`) : tx("Ponle nombre y guárdalo", "Name it and save it")}</TituloPaso>
-          <div style={{ ...SUB_PASO, marginBottom: 10 }}>{editando ? <>{tx("Cada cambio se guarda solo en este escenario: no hace falta otro botón para guardar.", "Every change is saved to this scenario automatically: no extra save button needed.")}{estadoGuardado === "guardando" ? tx(" Guardando…", " Saving…") : estadoGuardado === "error" ? <b style={{ color: C.rd }}>{tx(" No se pudo guardar: revisa tu conexión.", " Couldn't save: check your connection.")}</b> : estadoGuardado === "listo" ? <span style={{ color: C.gn }}>{tx(" ✓ Guardado.", " ✓ Saved.")}</span> : null}</> : tx("Con nombre queda guardado y lo comparas con tus otros escenarios.", "With a name it's saved and you can compare it with your other scenarios.")}</div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            {!editando && <input style={{ ...inp, flex: "1 1 200px", width: "auto", padding: "10px 12px" }} placeholder={tx("Nombre del escenario, ej.: Conservador + casa", "Scenario name, e.g. Conservative + house")} value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />}
-            {editando ? <>
-              <button type="button" style={btnAccion(true)} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Listo: ver y comparar mis escenarios", "Done: view and compare my scenarios")}</button>
-              <button type="button" style={{ ...enlace, fontSize: 13, color: C.tx2 }} disabled={demo} onClick={guardarCopia}>{tx("Hacer una copia y seguir en ella", "Make a copy and keep editing it")}</button>
-            </> : <button type="button" style={{ ...btnAccion(!demo), opacity: demo ? 0.5 : 1, cursor: demo ? "not-allowed" : "pointer" }} disabled={demo} onClick={() => { guardar(); setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Guardar y comparar", "Save and compare")}</button>}
-          </div>
-          <input style={{ ...inp, marginTop: 6 }} placeholder={`${tx("Resumen en una frase (opcional). Si lo dejas vacío:", "One-line summary (optional). If left blank:")} «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
+        {/* 24-nov-2026 (Santiago: "este cierre es muy confuso: un solo botón guardar"; "debería ser guardar el actual o guardar como copia").
+            El paso 5 es la misma barra de guardar de arriba, con el resumen opcional y el enlace para ver tus escenarios. */}
+        {!verEsc && <div style={card}>
+          <TituloPaso n={5}>{editando ? tx(`Guarda «${editando.nombre}»`, `Save "${editando.nombre}"`) : tx("Ponle nombre y guárdalo", "Name it and save it")}</TituloPaso>
+          <div style={{ marginTop: 10 }}>{demo ? <p style={{ color: C.am, fontSize: 12, margin: 0 }}>{msgDemoF10()}</p> : barraGuardar}</div>
+          <input aria-label={tx("Resumen en una frase (opcional)", "One-line summary (optional)")} style={{ ...inp, marginTop: 2 }} placeholder={`${tx("Resumen en una frase (opcional). Si lo dejas vacío:", "One-line summary (optional). If left blank:")} «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
+          {!sinGuardar && escenarios.length > 0 && <button type="button" onClick={() => { setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...enlace, fontSize: 13.5, color: C.tx2, marginTop: 10, display: "inline-block" }}>{tx(`Ver y comparar tus escenarios (${escenarios.length}) →`, `View and compare your scenarios (${escenarios.length}) →`)}</button>}
         </div>}
-        {!verEsc && demo && <p style={{ color: C.am, fontSize: 12 }}>{msgDemoF10()}</p>}
-        {/* 23-nov-2026 (Santiago: "revise todo el proceso, que sea claro"). Este paso solo guarda. Comparar se hace en
-            «Escenarios creados», con las mismas tarjetas y palabras: antes aquí salía otro comparador («Camino A», «Hoy»). */}
-        {!hayBorrador && !editando && <div style={card}>
-          <TituloPaso n={5}>{tx("No hay nada por guardar", "Nothing to save")}</TituloPaso>
-          <div style={SUB_PASO}>{tx("Para crear un escenario, cambia algo en los pasos 1 a 3 y vuelve aquí a ponerle nombre.", "To create a scenario, change something in steps 1–3 and come back here to name it.")}</div>
-        </div>}
-        {!hayBorrador && !editando && <button type="button" onClick={() => { setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), width: "100%", minHeight: 48, marginBottom: 12, fontSize: 14 }}>{tx(`Ver y comparar tus escenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`, `View and compare your scenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`)}</button>}
       </>)}
 
 
@@ -2039,12 +2052,12 @@ function SaldoFijo({ cuenta, cfg = {}, anioSel = 1, estadoGuardado = null, dejar
   const txt = falta ? tx(`${Y}: faltan ${plata(Math.round(g.faltaSinCubrir))} este año`, `${Y}: ${plata(Math.round(g.faltaSinCubrir))} short this year`)
     : pasado ? tx(`${Y}: te pasaste ${plata(Math.round(-g.porInvertir))}`, `${Y}: over by ${plata(Math.round(-g.porInvertir))}`)
       : tx(`${Y}: te quedan ${plata(Math.round(g.porInvertir))} de tu capital`, `${Y}: ${plata(Math.round(g.porInvertir))} of your capital left`);
-  const guard = { guardando: tx("Guardando…", "Saving…"), listo: tx("Guardado ✓", "Saved ✓"), error: tx("No se pudo guardar", "Couldn't save"), demo: tx("En la demo no se guarda", "The demo doesn't save") }[estadoGuardado] || null;
+  const guard = { guardando: tx("Guardando…", "Saving…"), listo: tx("Guardado ✓", "Saved ✓"), sinGuardar: tx("Cambios sin guardar: toca «Guardar» arriba o en el paso 5", "Unsaved changes: tap \"Save\" at the top or in step 5"), error: tx("No se pudo guardar", "Couldn't save"), demo: tx("En la demo no se guarda", "The demo doesn't save") }[estadoGuardado] || null;
   const sub = [guard, listo && ok ? tx(`Ya organizaste tu ${anioCal(anioSel)}`, `Your ${anioCal(anioSel)} is organized`) : null].filter(Boolean).join(" · ");
   return <div onClick={onVer} style={{ position: "sticky", bottom: 8, zIndex: 5, margin: "8px 0", padding: "10px 14px", borderRadius: 10, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap", background: ok ? "rgba(15,42,26,0.97)" : "rgba(58,20,20,0.97)", border: `1px solid ${ok ? C.gn : C.rd}`, boxShadow: "0 6px 20px rgba(0,0,0,0.5)" }}>
     <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
       <span style={{ fontWeight: 700, color: ok ? C.gn : C.rd, fontVariantNumeric: "tabular-nums" }}>{txt}</span>
-      {sub && <span role="status" style={{ fontSize: 12, color: estadoGuardado === "error" ? C.rd : C.tx2 }}>{sub}</span>}
+      {sub && <span role="status" style={{ fontSize: 12, color: estadoGuardado === "error" ? C.rd : estadoGuardado === "sinGuardar" ? C.am : C.tx2 }}>{sub}</span>}
     </div>
     {ok && dejarListo && <button type="button" onClick={(e) => { e.stopPropagation(); dejarListo(anioSel); }} style={{ ...btn(true), padding: "8px 12px", whiteSpace: "nowrap" }}>{sigY ? (listo ? tx(`Seguir con ${sigY} →`, `Go on to ${sigY} →`) : tx(`Terminé ${Y}, seguir con ${sigY} →`, `Done with ${Y}, go on to ${sigY} →`)) : (listo ? tx("Ver el resultado →", "See the result →") : tx(`Terminé ${Y}, ver el resultado →`, `Done with ${Y}, see the result →`))}</button>}
   </div>;
