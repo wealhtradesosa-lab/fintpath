@@ -52,13 +52,23 @@ function medir(r, inflacionPct) {
 
 // 24-oct-2026 (Santiago: "me falta esta gráfica que es muy buena" — «Cómo se
 // reparte el patrimonio en cada camino» de su plan SALEM). Una franja por plan
-// que suma 100 % de sus activos justo después de las decisiones (hoy). Las
+// que suma 100 % de sus activos (al final del plan o hoy, ver foto()). Las
 // inversiones que pesan ≥ 5 % en algún plan van con su nombre; el resto se
 // agrupa por tipo. Tocar un tramo lo resalta en todos los caminos.
 // 3-nov-2026: función (no constante) para que el idioma se lea al pintar.
 const GRUPO_CLASE = () => ({ inmueble: tx("Otros inmuebles", "Other real estate"), liquido: tx("Efectivo y liquidez", "Cash and liquid assets"), acciones: tx("Bolsa", "Stocks"), nueva: tx("Otras inversiones nuevas", "Other new investments"), otro: tx("Otros activos", "Other assets"), vehiculo: tx("Vehículos", "Vehicles"), canasta: tx("Lo que sobra, reinvertido", "Surplus, reinvested") });
-function reparto(planes) {
-  const filas = planes.map((p) => (p.esHoy ? p.r.filas[0] : p.r.filas[0]).porActivo || []);
+// 24-nov-2026 (Santiago: "esta sección no está bien porque no toma la foto de cómo queda al final de los 10 años sino el primer año,
+// entonces todo se ve igual"; "¿debería ser la foto del último año?"). Por defecto va la foto del último año del plan, en pesos de hoy
+// como las tarjetas: ahí se ve en qué se diferencia cada escenario. Un botón deja ver también cómo arranca cada uno hoy, después de sus
+// decisiones. Debajo de cada franja, activos − deudas = patrimonio neto, la misma cifra de su tarjeta.
+function foto(p, cuando) {
+  const fs = p.r.filas || [], f = (cuando === "hoy" ? fs[0] : fs[fs.length - 1]) || {};
+  const d = cuando === "hoy" ? 1 : Math.pow(1 + inflacionDe(p.r) / 100, Math.max(0, f.anio || 0));
+  return { lista: (f.porActivo || []).map((a) => ({ ...a, valor: a.valor / d })), patrimonio: (f.patrimonio || 0) / d, deuda: (f.deuda || 0) / d };
+}
+function reparto(planes, cuando = "fin") {
+  const fotos = planes.map((p) => foto(p, cuando));
+  const filas = fotos.map((x) => x.lista);
   const totales = filas.map((l) => l.filter((a) => a.valor > 0).reduce((s, a) => s + a.valor, 0));
   const grande = new Set();
   filas.forEach((l, i) => l.forEach((a) => { if (a.valor > 0 && totales[i] > 0 && a.valor / totales[i] >= 0.05 && a.clase !== "canasta") grande.add(a.id); }));
@@ -69,18 +79,24 @@ function reparto(planes) {
   const peso = (k) => porPlan.reduce((s, m) => s + (m[k]?.valor || 0), 0);
   orden.sort((a, b) => (a.startsWith("g_") - b.startsWith("g_")) || peso(b) - peso(a));
   orden.forEach((k, i) => { grupos[k].color = k.startsWith("g_") ? (k === "g_canasta" ? INF.sobra : INF.gris) : INF.serie[i % INF.serie.length]; });
-  return { orden, grupos, porPlan, totales };
+  return { orden, grupos, porPlan, totales, fotos };
 }
 
-function Reparto({ m }) {
+export function Reparto({ m }) {
   const [sel, setSel] = useState(null);
-  const { orden, grupos, porPlan, totales } = useMemo(() => reparto(m), [m]);
+  const [cuando, setCuando] = useState("fin");
+  const { orden, grupos, porPlan, totales, fotos } = useMemo(() => reparto(m, cuando), [m, cuando]);
+  const A = anioCal(10), A1 = anioCal(1);
+  const enHoy = esUS() ? tx("en dólares de hoy", "in today's dollars") : tx("en pesos de hoy", "in today's pesos");
   return (
     <div style={card}>
-      <h3 style={h3}>{tx("Cómo se reparte el patrimonio en cada escenario", "How net worth is split in each scenario")}</h3>
-      <p style={lead}>{tx("Cada franja suma 100 % de los activos de ese escenario, justo después de sus decisiones. Toca un tramo: se resalta esa inversión en todos los escenarios y abajo ves cuánto vale en cada uno.", "Each bar adds up to 100% of that path's assets, right after its decisions. Tap a segment to highlight that investment across all paths and see what it's worth in each one below.")}</p>
-      {m.map((p, i) => <div key={p.k} style={{ display: "grid", gridTemplateColumns: "minmax(70px,18%) minmax(0,1fr)", gap: 10, alignItems: "center", margin: "8px 0" }}>
-        <span style={{ textAlign: "right", fontSize: 13, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nombre}</span>
+      <h3 style={h3}>{cuando === "fin" ? tx(`Cómo queda repartido tu patrimonio en ${A}, escenario por escenario`, `How your net worth is split in ${A}, scenario by scenario`) : tx(`Cómo arranca repartido tu patrimonio en ${A1}, escenario por escenario`, `How your net worth starts out in ${A1}, scenario by scenario`)}</h3>
+      <p style={lead}>{cuando === "fin" ? tx(`Cada franja suma 100 % de los activos de ese escenario al terminar ${A}, ${enHoy}, como las tarjetas de arriba. Toca un tramo: se resalta esa inversión en todos los escenarios y abajo ves cuánto vale en cada uno.`, `Each bar adds up to 100% of that scenario's assets at the end of ${A}, ${enHoy}, like the cards above. Tap a segment to highlight that investment across all scenarios and see what it's worth in each one below.`)
+        : tx("Cada franja suma 100 % de los activos de ese escenario hoy, justo después de sus decisiones: ventas, deudas que pagas e inversiones nuevas. Toca un tramo: se resalta esa inversión en todos los escenarios y abajo ves cuánto vale en cada uno.", "Each bar adds up to 100% of that scenario's assets today, right after its decisions. Tap a segment to highlight that investment across all scenarios and see what it's worth in each one below.")}</p>
+      <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>{[["fin", tx(`Al final del plan (${A})`, `End of the plan (${A})`)], ["hoy", tx(`Hoy, después de tus decisiones (${A1})`, `Today, after your decisions (${A1})`)]].map(([k, l]) => <button key={k} type="button" aria-pressed={cuando === k} onClick={() => { setCuando(k); setSel(null); }} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${cuando === k ? INF.tx : INF.linea}`, background: cuando === k ? INF.tx : "transparent", color: cuando === k ? INF.panel : INF.tx2, fontSize: 12, cursor: "pointer" }}>{l}</button>)}</div>
+      {/* El nombre va encima de su franja: completo y con la franja a todo lo ancho, también en el celular. */}
+      {m.map((p, i) => <div key={p.k} style={{ margin: "10px 0" }}>
+        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{p.nombre}</div>
         <div>
           <div style={{ display: "flex", height: 30, gap: 2, minWidth: 0, overflow: "hidden" }}>
             {orden.filter((k) => porPlan[i][k]).map((k) => { const v = porPlan[i][k].valor, pct = totales[i] > 0 ? v / totales[i] * 100 : 0; const g = grupos[k];
@@ -88,7 +104,8 @@ function Reparto({ m }) {
                 style={{ flex: `${pct} 0 0`, minWidth: 3, background: g.color, opacity: sel && sel !== k ? 0.25 : 1, border: "none", borderRadius: 3, padding: 0, color: INF.sobreColor, fontSize: 12, fontWeight: 700, cursor: "pointer", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "clip" }}>
                 {pct >= 12 ? `${g.nombre.length > 14 ? g.nombre.slice(0, 13) + "…" : g.nombre} ${fmPct(pct, 0)}` : pct >= 4 ? fmPct(pct, 0) : ""}</button>; })}
           </div>
-          <div style={{ textAlign: "right", fontSize: 12, color: INF.tx2, marginTop: 2 }}>{tx("Total", "Total")} {fmM(totales[i])}</div>
+          <div style={{ textAlign: "right", fontSize: 12, color: INF.tx2, marginTop: 2 }}>{(() => { const act = Math.round(totales[i]), pat = Math.round(fotos[i].patrimonio), deu = act - pat, soloDeuda = Math.abs(deu - fotos[i].deuda) < 1;
+            return deu > 0.5 ? tx(`Activos ${fmM(act)} − ${soloDeuda ? "deudas" : "deudas y caja negativa"} ${fmM(deu)} = patrimonio neto ${fmM(pat)}`, `Assets ${fmM(act)} − ${soloDeuda ? "debt" : "debt and negative cash"} ${fmM(deu)} = net worth ${fmM(pat)}`) : tx(`Activos y patrimonio neto: ${fmM(pat)}`, `Assets and net worth: ${fmM(pat)}`); })()}</div>
         </div>
       </div>)}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", fontSize: 12, color: INF.tx2, marginTop: 10 }}>
