@@ -164,7 +164,27 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
     setNombreEsc(""); setDescEsc("");
     track("futuro10_guardar", { escenario: cfg.escenario, norte: cfg.mezcla ? "personalizado" : cfg.norte, cantidad_escenarios: escenarios.length + 1 });
   };
+  // 24-nov-2026 (Santiago: tres escenarios guardados iguales). «Guardar como nuevo» guardaba una copia idéntica y lo que cambiabas después
+  // seguía entrando al escenario abierto. Ahora guarda la copia y sigues editando la copia: lo que cambies queda en ella.
+  const guardarCopia = () => {
+    if (demo || !editando || !onGuardar) return;
+    const nuevo = { id: "f10_" + Date.now(), nombre: `${editando.nombre} ${tx("(copia)", "(copy)")}`, descripcion: descEsc.trim(), creado: new Date().toISOString(), config: cfg };
+    onGuardar({ ...guardado, borrador: cfg, escenarios: [...escenarios, nuevo].slice(-10) });
+    setEditandoId(nuevo.id); setNombreEsc(nuevo.nombre);
+  };
   const editarEsc = (id) => { const e = escenarios.find((x) => x.id === id); if (!e) return; setVista("crear"); setCfg(migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...e.config }), user)); setEditandoId(e.id); setNombreEsc(e.nombre || ""); setDescEsc(e.descripcion || ""); ir(1); };
+  // 24-nov-2026 (Santiago: "creo escenarios nuevos y todos quedan iguales"). «Crear escenario» seguía con el último escenario abierto y,
+  // si venías de «Editar», cada cambio se seguía guardando en ese escenario. Ahora termina la edición y arranca desde lo que tienes hoy;
+  // si estabas armando uno sin guardar, sigue con ese.
+  const crearNuevo = () => {
+    if (editandoId || !hayBorrador) {
+      const limpio = { ...CONFIG_INICIAL, escenario: cfg.escenario };
+      setCfg(limpio);
+      if (!demo && onGuardar) { ultimoGuardado.current = JSON.stringify(limpio); onGuardar({ ...(guardadoRef.current || guardado), borrador: limpio }); }
+    }
+    setEditandoId(null); setNombreEsc(""); setDescEsc(""); setVerEsc(null);
+    setVista("crear"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" });
+  };
   const descartarBorrador = () => { setCfg(editandoEsc ? migrarClaves(migrarModifica({ ...CONFIG_INICIAL, ...editandoEsc.config }), user) : { ...CONFIG_INICIAL, escenario: cfg.escenario }); setEditandoId(null); setNombreEsc(""); setDescEsc(""); };
   // 22-nov-2026 (Santiago: "al editar uno podría cambiar el nombre si tiene un título el plan… así no tiene uno un botón cambiar nombre").
   const renombrar = (id, nombre) => { const t = String(nombre || "").trim(); if (demo || !t || !onGuardar) return; onGuardar({ ...guardado, borrador: cfg, escenarios: escenarios.map((e) => (e.id === id ? { ...e, nombre: t, editado: new Date().toISOString() } : e)) }); };
@@ -212,7 +232,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
         <EscenariosCreados planes={planesComparar} inflacionPct={esc.inflacionPct} demo={demo}
           onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
           onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
-          onCrear={() => { setVista("crear"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />
+          onCrear={crearNuevo} />
         {escenarios.length > 0 && <button type="button" onClick={() => setVerDetalle((v) => !v)} style={{ ...btn(false), width: "100%", minHeight: 44, marginBottom: 12 }}>{verDetalle ? tx("Ocultar la comparación detallada", "Hide the detailed comparison") : tx("Ver la comparación detallada: curvas, reparto, ¿da para vivir? y el patrimonio como empresa", "See the detailed comparison: curves, allocation, can you live on it, and your wealth as a business")}</button>}
         {verDetalle && <PlanComparador planes={planesComparar} inflacionPct={esc.inflacionPct} onVer={(p) => { setVerEsc(p); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}
           onEditar={demo ? null : editarEsc} onBorrar={demo ? null : borrar}
@@ -221,6 +241,11 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 
       {vista === "crear" && <>
       {editandoEsc && !demo && <h2 style={{ fontSize: 20, margin: "4px 0 10px", fontWeight: 600 }}><TituloEditable valor={editandoEsc.nombre} onCambiar={(t) => { renombrar(editandoEsc.id, t); setNombreEsc(t); }} /></h2>}
+      {editandoEsc && !demo && <div role="status" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "-2px 0 12px" }}>
+        <span style={{ fontSize: 13, color: C.tx2, flex: "1 1 260px" }}>{tx("Estás editando este escenario: cada cambio se guarda en él.", "You're editing this scenario: every change is saved to it.")}</span>
+        <button type="button" style={{ ...btn(false), padding: "8px 12px" }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>{tx("Terminar de editar", "Done editing")}</button>
+        <button type="button" style={btnAccion(false)} onClick={crearNuevo}>{tx("Crear uno nuevo", "Create a new one")}</button>
+      </div>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
       </div>
@@ -373,7 +398,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {!editando && <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder={tx("Nombre del escenario, ej.: Conservador + casa", "Scenario name, e.g. Conservative + house")} value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />}
             {editando ? <>
-              <button style={btn(false)} disabled={demo} onClick={() => guardar(`${editando.nombre} ${tx("(copia)", "(copy)")}`)}>{tx("Guardar como nuevo", "Save as new")}</button>
+              <button style={btn(false)} disabled={demo} onClick={guardarCopia}>{tx("Guardar una copia y editarla", "Save a copy and edit it")}</button>
               <button style={btn(false)} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>{tx("Terminar de editar", "Done editing")}</button>
             </> : <button style={btn(!demo)} disabled={demo} onClick={() => { guardar(); setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Guardar y comparar", "Save and compare")}</button>}
           </div>

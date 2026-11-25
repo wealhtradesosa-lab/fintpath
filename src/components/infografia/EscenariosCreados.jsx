@@ -161,7 +161,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
             const ancho = (m.fin / maxFin) * 100;
             const dif = mHoy ? m.fin - mHoy.fin : null;
             return (
-              <div key={p.id || "hoy"} className="fpi-rank">
+              <div key={`${p.id || "hoy"}-${i}`} className="fpi-rank">
                 <div className="fpi-rank-nombre" style={{ fontSize: 13, color: C.txt, fontWeight: i === 0 ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }} title={p.nombre}>{p.nombre}</div>
                 <div className="fpi-rank-barra" style={{ position: "relative", height: 22 }}>
                   <div className="fpi-barra-h" style={{ height: "100%", width: `${Math.max(1, ancho)}%`, borderRadius: 6, background: p.esHoy ? "rgba(var(--fp-ink),0.28)" : i === 0 ? C.azul : trama(C.azul, 40), animationDelay: `${i * 50}ms`, boxShadow: i === 0 && !p.esHoy ? "0 0 14px color-mix(in srgb, var(--fp-azul) 35%, transparent)" : "none" }} />
@@ -184,7 +184,7 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
           const esMejor = p === mejor.p;
           const alcanza = m.peorMes >= 0;
           return (
-            <article key={p.id || "hoy"} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12,
+            <article key={`${p.id || "hoy"}-${i}`} style={{ ...tarjeta, padding: 20, display: "flex", flexDirection: "column", gap: 12,
               // 23-nov-2026 (Santiago: "antes cada escenario tenía como un recuadrito, ya no tienen líneas"). Una clave de estilo en
               // undefined borra esa parte del borde (React la pone en ''): el borde va completo, siempre.
               border: `1px ${p.esHoy ? "dashed" : "solid"} ${esMejor && !p.esHoy ? "color-mix(in srgb, var(--fp-azul) 70%, transparent)" : "rgba(var(--fp-ink),0.32)"}` }}>
@@ -196,6 +196,8 @@ export default function EscenariosCreados({ planes, inflacionPct, onVer, onEdita
                   {onBorrar && !p.esHoy && <button type="button" className="fpi-caneca" title={tx("Borrar escenario", "Delete scenario")} aria-label={tx(`Borrar «${p.nombre}»`, `Delete "${p.nombre}"`)} onClick={() => { if (typeof window === "undefined" || window.confirm(tx(`¿Borrar «${p.nombre}»? No se puede deshacer.`, `Delete "${p.nombre}"? This can't be undone.`))) onBorrar(p.id); }}><Caneca /></button>}
                 </span>
               </div>
+              {/* 24-nov-2026 (Santiago: tres escenarios con la misma cifra). Si uno da exactamente lo mismo que otro, se dice: suele ser una copia. */}
+              {(() => { const gemelo = !p.esHoy && medidos.slice(0, i).find((x) => !x.p.esHoy && Math.round(x.m.fin) === Math.round(m.fin)); return gemelo ? <div role="note" style={{ fontSize: 12, color: C.txt, lineHeight: 1.45, border: `1px solid rgba(var(--fp-ink),0.2)`, borderRadius: 8, padding: "6px 8px" }}>{tx(`Da exactamente lo mismo que «${gemelo.p.nombre}». Si es una copia, edítalo o bórralo.`, `It gives exactly the same as "${gemelo.p.nombre}". If it's a copy, edit or delete it.`)}</div> : null; })()}
               <div title={p.descripcion || ""} style={{ fontSize: 12.5, color: C.txt2, lineHeight: 1.45, minHeight: 54, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{p.descripcion || resumenEscenario(p.r)}</div>
               <Curva serie={m.serie} min={minSerie} max={maxSerie} color={esMejor ? "var(--fp-azul)" : "color-mix(in srgb, var(--fp-azul) 60%, var(--fp-txt3))"} id={"fpi-esc-" + i} />
               <div>
