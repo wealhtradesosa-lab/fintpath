@@ -242,9 +242,8 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {vista === "crear" && <>
       {editandoEsc && !demo && <h2 style={{ fontSize: 20, margin: "4px 0 10px", fontWeight: 600 }}><TituloEditable valor={editandoEsc.nombre} onCambiar={(t) => { renombrar(editandoEsc.id, t); setNombreEsc(t); }} /></h2>}
       {editandoEsc && !demo && <div role="status" style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center", margin: "-2px 0 12px" }}>
-        <span style={{ fontSize: 13, color: C.tx2, flex: "1 1 260px" }}>{tx("Estás editando este escenario: cada cambio se guarda en él.", "You're editing this scenario: every change is saved to it.")}</span>
-        <button type="button" style={{ ...btn(false), padding: "8px 12px" }} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>{tx("Terminar de editar", "Done editing")}</button>
-        <button type="button" style={btnAccion(false)} onClick={crearNuevo}>{tx("Crear uno nuevo", "Create a new one")}</button>
+        <span style={{ fontSize: 13, color: C.tx2 }}>{tx("Estás editando este escenario: cada cambio se guarda solo en él.", "You're editing this scenario: every change is saved to it automatically.")}</span>
+        <button type="button" style={{ ...enlace, fontSize: 13, color: C.tx2 }} onClick={crearNuevo}>{tx("Crear uno nuevo", "Create a new one")}</button>
       </div>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
@@ -393,14 +392,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
             sale que le ponga nombre al plan"). Guardar solo aparece cuando hay
             algo sin guardar o estás editando, y nunca encima de un informe. */}
         {!verEsc && (hayBorrador || editando) && <div style={card}>
-          <TituloPaso n={5}>{editando ? `${tx("Estás editando", "You're editing")} «${editando.nombre}»` : tx("Ponle nombre a este escenario", "Name this scenario")}</TituloPaso>
-          <div style={{ ...SUB_PASO, marginBottom: 8 }}>{editando ? tx("Cada cambio se guarda solo en este escenario. El nombre se cambia tocando el título de arriba.", "Every change is saved to this scenario automatically. Rename it by tapping the title at the top.") : tx("Con nombre queda guardado y lo puedes comparar con los demás y con «Si me quedo como estoy».", "What you built in steps 1–3 doesn't have a name yet. Name it to save it and compare it with the others.")}</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {!editando && <input style={{ ...inp, flex: "1 1 160px", width: "auto" }} placeholder={tx("Nombre del escenario, ej.: Conservador + casa", "Scenario name, e.g. Conservative + house")} value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />}
+          {/* 24-nov-2026 (Santiago: "al final uno no sabe cómo guardar porque hay como dos botones, el de terminar y otro; no es claro qué
+              hacer"). Una sola acción principal, en verde: si editas, tus cambios ya quedaron y «Listo» te lleva a comparar; si es nuevo,
+              le pones nombre y «Guardar y comparar». La copia queda como enlace aparte. */}
+          <TituloPaso n={5}>{editando ? tx(`Tus cambios ya quedaron en «${editando.nombre}»`, `Your changes are saved in "${editando.nombre}"`) : tx("Ponle nombre y guárdalo", "Name it and save it")}</TituloPaso>
+          <div style={{ ...SUB_PASO, marginBottom: 10 }}>{editando ? <>{tx("Cada cambio se guarda solo en este escenario: no hace falta otro botón para guardar.", "Every change is saved to this scenario automatically: no extra save button needed.")}{estadoGuardado === "guardando" ? tx(" Guardando…", " Saving…") : estadoGuardado === "error" ? <b style={{ color: C.rd }}>{tx(" No se pudo guardar: revisa tu conexión.", " Couldn't save: check your connection.")}</b> : estadoGuardado === "listo" ? <span style={{ color: C.gn }}>{tx(" ✓ Guardado.", " ✓ Saved.")}</span> : null}</> : tx("Con nombre queda guardado y lo comparas con tus otros escenarios.", "With a name it's saved and you can compare it with your other scenarios.")}</div>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+            {!editando && <input style={{ ...inp, flex: "1 1 200px", width: "auto", padding: "10px 12px" }} placeholder={tx("Nombre del escenario, ej.: Conservador + casa", "Scenario name, e.g. Conservative + house")} value={nombreEsc} onChange={(e) => setNombreEsc(e.target.value)} />}
             {editando ? <>
-              <button style={btn(false)} disabled={demo} onClick={guardarCopia}>{tx("Guardar una copia y editarla", "Save a copy and edit it")}</button>
-              <button style={btn(false)} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); }}>{tx("Terminar de editar", "Done editing")}</button>
-            </> : <button style={btn(!demo)} disabled={demo} onClick={() => { guardar(); setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Guardar y comparar", "Save and compare")}</button>}
+              <button type="button" style={btnAccion(true)} onClick={() => { setEditandoId(null); setNombreEsc(""); setDescEsc(""); setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Listo: ver y comparar mis escenarios", "Done: view and compare my scenarios")}</button>
+              <button type="button" style={{ ...enlace, fontSize: 13, color: C.tx2 }} disabled={demo} onClick={guardarCopia}>{tx("Hacer una copia y seguir en ella", "Make a copy and keep editing it")}</button>
+            </> : <button type="button" style={{ ...btnAccion(!demo), opacity: demo ? 0.5 : 1, cursor: demo ? "not-allowed" : "pointer" }} disabled={demo} onClick={() => { guardar(); setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }}>{tx("Guardar y comparar", "Save and compare")}</button>}
           </div>
           <input style={{ ...inp, marginTop: 6 }} placeholder={`${tx("Resumen en una frase (opcional). Si lo dejas vacío:", "One-line summary (optional). If left blank:")} «${resumenEscenario(r)}»`} value={descEsc} onChange={(e) => setDescEsc(e.target.value)} />
         </div>}
@@ -411,7 +413,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
           <TituloPaso n={5}>{tx("No hay nada por guardar", "Nothing to save")}</TituloPaso>
           <div style={SUB_PASO}>{tx("Para crear un escenario, cambia algo en los pasos 1 a 3 y vuelve aquí a ponerle nombre.", "To create a scenario, change something in steps 1–3 and come back here to name it.")}</div>
         </div>}
-        <button type="button" onClick={() => { setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), width: "100%", minHeight: 48, marginBottom: 12, fontSize: 14 }}>{tx(`Ver y comparar tus escenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`, `View and compare your scenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`)}</button>
+        {!hayBorrador && !editando && <button type="button" onClick={() => { setVista("creados"); setVerEsc(null); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), width: "100%", minHeight: 48, marginBottom: 12, fontSize: 14 }}>{tx(`Ver y comparar tus escenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`, `View and compare your scenarios${escenarios.length ? ` (${escenarios.length})` : ""} →`)}</button>}
       </>)}
 
 

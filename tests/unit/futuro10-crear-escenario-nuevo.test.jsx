@@ -13,8 +13,11 @@ describe("crear un escenario nuevo", () => {
     expect(cuerpo).toMatch(/setEditandoId\(null\)/);
   });
   it("arriba del creador se dice que estás editando, con «Terminar de editar» y «Crear uno nuevo»", () => {
-    expect(src).toContain("Estás editando este escenario: cada cambio se guarda en él.");
+    expect(src).toContain("Estás editando este escenario: cada cambio se guarda solo en él.");
     expect(src).toMatch(/onClick=\{crearNuevo\}>\{tx\("Crear uno nuevo"/);
+    expect(src).toContain("Listo: ver y comparar mis escenarios");
+    expect(src).toContain("Hacer una copia y seguir en ella");
+    expect(src).not.toContain("Terminar de editar");
   });
 });
 
