@@ -121,6 +121,7 @@ Use the 2026 figures for income earned in 2026 (returns filed in 2027) and the 2
 - QBI deduction (§199A): up to 20% deduction for qualified business income (S-corp, LLC, sole prop)
 - Child Tax Credit: $2,200 per child in 2026 ($1,700 refundable); $2,300 in 2027 ($1,800 refundable)
 - Wash sale rule: can't claim loss if you buy substantially identical security within 30 days
+- Standard mileage rate 2026 (IRS Notice 2026-10, raised mid-year by Announcement 2026-11): business 72.5¢/mile Jan 1–Jun 30 and 76¢/mile from Jul 1; medical/military moving 20.5¢ → 23.5¢; charity 14¢ (fixed by law). 2027 rate not yet published (IRS usually announces in December)
 
 2. STATE INCOME TAX (2025 figures):
 - 9 states with NO income tax: AK, FL, NV, NH, SD, TN, TX, WA, WY

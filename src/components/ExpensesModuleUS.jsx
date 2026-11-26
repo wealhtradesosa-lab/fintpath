@@ -27,19 +27,42 @@ import { STANDARD_DEDUCTION, US_LIMITS, US_TAX_YEAR, federalTax } from "../lib/j
 // estudiantiles $90.000–$105.000, educadores $350, crédito por hijos $2.300 /
 // $1.800 reembolsable). SALT 2027 según § 164(b)(7) (OBBBA): el tope y el umbral
 // suben 1 % al año 2026–2029 → $40.804 y $510.050 ($20.402 / $255.025 MFS).
-// Millaje 2027: el IRS lo publica en diciembre; mientras tanto se usa el de 2026
-// (POR CONFIRMAR).
+// Millaje 2027: el IRS lo publica en diciembre; mientras tanto se usa la última
+// tarifa vigente (la del 1-jul-2026) (POR CONFIRMAR).
+//
+// 23-nov-2026 (revisor de normas): el IRS subió el millaje a mitad de 2026 por
+// el alza de la gasolina (Announcement 2026-11, que modifica la Notice 2026-10;
+// https://www.irs.gov/tax-professionals/standard-mileage-rates). Desde el
+// 1-jul-2026: negocios 76 ¢/milla (antes 72,5), médico 23,5 ¢ (antes 20,5);
+// caridad sigue en 14 ¢ (fijada por ley, § 170(i)). La app pedía millas del
+// año y las multiplicaba todas por 72,5 ¢: ahora se pueden indicar cuántas de
+// esas millas fueron del 1-jul en adelante y esas van a 76 ¢.
 const POR_AÑO = {
   2026: { SALT_CAP: 40400, SALT_CAP_MFS: 20200, SALT_MAGI_THRESHOLD: 505000, SALT_MAGI_THRESHOLD_MFS: 252500,
           STUDENT_LOAN_PO_START: 85000, STUDENT_LOAN_PO_END: 100000, EDUCATOR_MAX: 350, SECTION_179_LIMIT: 2560000,
-          MILEAGE_BUSINESS: 0.725, MILEAGE_MEDICAL: 0.205, MILEAGE_NOTICE: "IRS Notice 2026-10",
+          MILEAGE_BUSINESS: 0.725, MILEAGE_MEDICAL: 0.205, MILEAGE_NOTICE: "IRS Notice 2026-10 / Announcement 2026-11",
+          // Tarifa del 1-jul al 31-dic (Announcement 2026-11).
+          MILEAGE_BUSINESS_H2: 0.76, MILEAGE_MEDICAL_H2: 0.235,
           CHILD_TAX_CREDIT: 2200, CHILD_TAX_CREDIT_REFUND: 1700, EITC_MAX_3: 8231 },
   2027: { SALT_CAP: 40804, SALT_CAP_MFS: 20402, SALT_MAGI_THRESHOLD: 510050, SALT_MAGI_THRESHOLD_MFS: 255025,
           STUDENT_LOAN_PO_START: 90000, STUDENT_LOAN_PO_END: 105000, EDUCATOR_MAX: 350, SECTION_179_LIMIT: 2640000,
-          MILEAGE_BUSINESS: 0.725, MILEAGE_MEDICAL: 0.205, MILEAGE_NOTICE: "IRS Notice 2026-10 (2027 rate pending)",
+          MILEAGE_BUSINESS: 0.76, MILEAGE_MEDICAL: 0.235, MILEAGE_NOTICE: "IRS Announcement 2026-11 (2027 rate pending)",
           CHILD_TAX_CREDIT: 2300, CHILD_TAX_CREDIT_REFUND: 1800, EITC_MAX_3: 8496 }, // EITC: Rev. Proc. 2026-35 § 3.06
 };
 const Y = POR_AÑO[US_TAX_YEAR] || POR_AÑO[Math.max(...Object.keys(POR_AÑO).map(Number))];
+
+/**
+ * Deducción por millaje de negocios del año (§ 162, tarifa estándar del IRS).
+ * Si el año tuvo cambio de tarifa a mitad de año (2026), `millasJulDic` son las
+ * millas del total recorridas del 1-jul en adelante; van a la tarifa nueva.
+ */
+export function deduccionMillaje(millas, millasJulDic = 0, año = US_TAX_YEAR) {
+  const t = POR_AÑO[año] || Y;
+  const total = Math.max(0, Number(millas) || 0);
+  if (!t.MILEAGE_BUSINESS_H2) return total * t.MILEAGE_BUSINESS;
+  const h2 = Math.min(total, Math.max(0, Number(millasJulDic) || 0));
+  return (total - h2) * t.MILEAGE_BUSINESS + h2 * t.MILEAGE_BUSINESS_H2;
+}
 const C = {
   STANDARD_DEDUCTION_SINGLE:  STANDARD_DEDUCTION.single,
   STANDARD_DEDUCTION_MFJ:     STANDARD_DEDUCTION.married_jointly,
@@ -179,7 +202,8 @@ const EMPTY_FORM = {
   // Schedule C business deductions
   businessExpenses:      0,  // Ordinary & necessary IRC § 162
   homeOfficeSqFt:        0,  // IRC § 280A — simplified $5/sqft, max 300
-  businessMiles:         0,  // IRS Notice 2026-10 — $0.725/mile
+  businessMiles:         0,  // IRS Notice 2026-10 — $0.725/mile (ene–jun 2026)
+  businessMilesJulDec:   0,  // de esas, las del 1-jul en adelante — $0.76/mile (Announcement 2026-11)
   businessMeals:         0,  // IRC § 274 — 50% deductible
   section179:            0,  // IRC § 179 — immediate asset expensing
   professionalDev:       0,  // IRC § 162 — education maintaining skills
@@ -258,7 +282,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
   // ── Schedule C (Business) deductions ────────────────────────────────────
   const schedC = useMemo(() => {
     const homeOffice  = Math.min(form.homeOfficeSqFt, 300) * 5;   // simplified method
-    const mileage     = form.businessMiles * C.MILEAGE_BUSINESS;
+    const mileage     = deduccionMillaje(form.businessMiles, form.businessMilesJulDec);
     const meals       = form.businessMeals * 0.50;                 // 50% rule
     const s179        = Math.min(form.section179, C.SECTION_179_LIMIT);
     const profDev     = form.professionalDev;
@@ -466,7 +490,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
                 onChange={v=>sf("medicalDentalGross",v)}
                 hint={`Only the amount EXCEEDING 7.5% of AGI is deductible. Your floor: ${fm(schedA.medFloor)}. Deductible amount: ${fm(schedA.medical)}`} />
               <InfoBox color={T.pr}>
-                Qualifies: Prescription drugs, doctor/dentist/hospital fees, medical equipment, vision, dental, mental health, long-term care premiums (age-limited), mileage at $0.21/mile.
+                Qualifies: Prescription drugs, doctor/dentist/hospital fees, medical equipment, vision, dental, mental health, long-term care premiums (age-limited), mileage at {Y.MILEAGE_MEDICAL_H2 ? `$${C.MILEAGE_MEDICAL}/mile (Jan–Jun) and $${Y.MILEAGE_MEDICAL_H2}/mile (Jul–Dec)` : `$${C.MILEAGE_MEDICAL}/mile`}.
                 Does NOT qualify: Over-the-counter meds (unless Rx), cosmetic surgery, gym memberships (unless medically required), health insurance if deducted above-the-line.
                 <br/><strong>Strategy:</strong> "Bunch" medical expenses into one year to exceed the 7.5% floor. Use HSA to pay qualified expenses (§ 213(d)).
               </InfoBox>
@@ -578,7 +602,14 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
               hint={`IRC § 280A. Simplified method: $5/sq ft × up to 300 sq ft = max $1,500/yr. Must be used regularly and exclusively for business. Your deduction: ${fm(schedC.homeOffice)}.`} />
             <Field l="Business Miles (annual)" value={form.businessMiles}
               onChange={v=>sf("businessMiles",v)}
-              hint={`${Y.MILEAGE_NOTICE}: $${C.MILEAGE_BUSINESS}/mile for business (${US_TAX_YEAR}). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`} />
+              hint={Y.MILEAGE_BUSINESS_H2
+                ? `${Y.MILEAGE_NOTICE}: $${C.MILEAGE_BUSINESS}/mile Jan 1–Jun 30 and $${Y.MILEAGE_BUSINESS_H2}/mile from Jul 1 (${US_TAX_YEAR}). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`
+                : `${Y.MILEAGE_NOTICE}: $${C.MILEAGE_BUSINESS}/mile for business (${US_TAX_YEAR}). Your deduction: ${fm(schedC.mileage)}. Keep a mileage log — IRS requires contemporaneous records.`} />
+            {Y.MILEAGE_BUSINESS_H2 && (
+              <Field l="…of those, miles driven Jul 1 – Dec 31" value={form.businessMilesJulDec}
+                onChange={v=>sf("businessMilesJulDec",v)}
+                hint={`The IRS raised the rate mid-year to $${Y.MILEAGE_BUSINESS_H2}/mile from Jul 1, ${US_TAX_YEAR} (Announcement 2026-11). Miles entered here count at the higher rate.`} />
+            )}
             <Field l="Business Meals (total, before 50% limit)" value={form.businessMeals}
               onChange={v=>sf("businessMeals",v)}
               hint={`IRC § 274(n). 50% deductible. Must have business purpose and document: who, where, business discussed. Deductible: ${fm(schedC.meals)}. Entertainment is no longer deductible (TCJA 2017).`} />
@@ -593,7 +624,9 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
             <div style={{fontSize:12,fontWeight:700,color:T.or,marginBottom:12}}>Schedule C Deductions Summary</div>
             {schedC.bizExpenses > 0 && <DeductRow label={`Business Expenses (${fm(form.businessExpenses)}/mo × 12)`} amount={schedC.bizExpenses} irc="§ 162" />}
             {schedC.homeOffice  > 0 && <DeductRow label="Home Office (simplified method)"    amount={schedC.homeOffice}    irc="§ 280A" />}
-            {schedC.mileage     > 0 && <DeductRow label={`Mileage (${form.businessMiles.toLocaleString("en-US")} mi × $0.725)`} amount={schedC.mileage} irc="§ 162" />}
+            {schedC.mileage     > 0 && <DeductRow label={Y.MILEAGE_BUSINESS_H2 && form.businessMilesJulDec > 0
+                ? `Mileage (${form.businessMiles.toLocaleString("en-US")} mi, ${Math.min(form.businessMiles, form.businessMilesJulDec).toLocaleString("en-US")} at $${Y.MILEAGE_BUSINESS_H2})`
+                : `Mileage (${form.businessMiles.toLocaleString("en-US")} mi × $${C.MILEAGE_BUSINESS})`} amount={schedC.mileage} irc="§ 162" />}
             {schedC.meals       > 0 && <DeductRow label="Business Meals (50% of total)"     amount={schedC.meals}         irc="§ 274(n)" />}
             {schedC.s179        > 0 && <DeductRow label="Section 179 Expensing"              amount={schedC.s179}          irc="§ 179" />}
             {schedC.profDev     > 0 && <DeductRow label="Professional Development"           amount={schedC.profDev}       irc="§ 162" />}
@@ -606,7 +639,7 @@ export default function ExpensesModuleUS({ gastos = {}, onUpdate, agi: agiProp =
           <InfoBox color={T.or}>
             <strong>Key Rule (IRC § 162):</strong> Expenses must be "ordinary and necessary." Keep meticulous records — IRS audits Schedule C filers at higher rates.
             <br/><strong>Bonus Depreciation (§ 168(k)):</strong> 100% bonus depreciation, made permanent by the 2025 OBBBA for property acquired after Jan 19, 2025. For assets not qualifying for § 179.
-            <br/><strong>Vehicle Actual vs. Standard Mileage:</strong> If you use actual expenses (gas, insurance, depreciation), you must apply the business-use percentage. Standard mileage ($0.725/mile) is simpler but may be less.
+            <br/><strong>Vehicle Actual vs. Standard Mileage:</strong> If you use actual expenses (gas, insurance, depreciation), you must apply the business-use percentage. Standard mileage ({Y.MILEAGE_BUSINESS_H2 ? `$${C.MILEAGE_BUSINESS}/mile Jan–Jun, $${Y.MILEAGE_BUSINESS_H2}/mile Jul–Dec` : `$${C.MILEAGE_BUSINESS}/mile`}) is simpler but may be less.
             <br/><strong>Qualified Business Income (§ 199A):</strong> 20% deduction on net business income automatically calculated in your income module.
           </InfoBox>
         </div>

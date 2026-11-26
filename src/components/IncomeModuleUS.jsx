@@ -47,7 +47,7 @@ export const US_INCOME_TYPES = [
     desc:"Wages, salaries, tips from employer. Pre-tax 401(k)/HSA already excluded.",
     taxed:"Ordinary income rates. FICA withheld by employer (6.2% SS + 1.45% Medicare).",
     irc:"IRC § 61; withholding § 3402",
-    planning:"Maximize 401(k) ($23,500), FSA ($3,300), HSA ($4,150). Verify W-4 withholding.",
+    planning:`Maximize 401(k) ($${US_LIMITS.k401.toLocaleString("en-US")}), FSA ($${US_LIMITS.fsa.toLocaleString("en-US")}), HSA ($${US_LIMITS.hsaSelf.toLocaleString("en-US")}). Verify W-4 withholding.`,
     scheduleC:false, passive:false, selfEmployed:false,
   },
   {
@@ -55,7 +55,7 @@ export const US_INCOME_TYPES = [
     desc:"Self-employment, consulting, gig economy. You are your own employer.",
     taxed:"Ordinary rates + 15.3% SE tax (SS + Medicare) on 92.35% of net profit. Minus QBI deduction (up to 20%).",
     irc:"IRC §§ 1401-1402; QBI § 199A",
-    planning:"Maximize SEP-IRA (25% of net self-employment, up to $69,000). Deduct home office, vehicle, equipment, health insurance (above-the-line § 162(l)).",
+    planning:`Maximize SEP-IRA (25% of net self-employment, up to $${US_LIMITS.sep.toLocaleString("en-US")}). Deduct home office, vehicle, equipment, health insurance (above-the-line § 162(l)).`,
     scheduleC:true, passive:false, selfEmployed:true,
   },
   {
@@ -640,13 +640,13 @@ export default function IncomeModuleUS({ ingresos = [], onUpdate, trm = 1 , plan
                 <div style={{fontSize:12,fontWeight:700,color:T.gn,marginBottom:12}}>Schedule C Deductions (reduce SE income + tax)</div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
                   <Field l="Business Expenses / Month" value={form.se_expenses} onChange={v=>sf("se_expenses",v)} type="number" placeholder="Software, supplies, etc." />
-                  <Field l="Mileage Deduction / Month" value={form.se_mileage} onChange={v=>sf("se_mileage",v)} type="number" placeholder="$0.725/mile × biz miles" />
+                  <Field l="Mileage Deduction / Month" value={form.se_mileage} onChange={v=>sf("se_mileage",v)} type="number" placeholder="$0.725/mi (Jan–Jun) · $0.76/mi (Jul–Dec) × biz miles" />
                   <Field l="Home Office / Month" value={form.se_homeoffice} onChange={v=>sf("se_homeoffice",v)} type="number" placeholder="Sq ft × $5 simplified" />
                 </div>
                 <InfoBox color={T.gn}>
-                  2026: Standard mileage rate $0.725/mile (IRS Notice 2026-10). Home office simplified method: $5/sq ft up to 300 sq ft ($1,500 max).
+                  2026: Standard mileage rate $0.725/mile Jan 1–Jun 30 and $0.76/mile from Jul 1 (IRS Notice 2026-10, raised by Announcement 2026-11). Home office simplified method: $5/sq ft up to 300 sq ft ($1,500 max).
                   QBI deduction (§ 199A): up to 20% of qualified business income — automatic in calculation.
-                  SEP-IRA: deduct up to 25% of net SE income (max $69,000).
+                  SEP-IRA: deduct up to 25% of net SE income (max ${US_LIMITS.sep.toLocaleString("en-US")}).
                 </InfoBox>
               </div>
             )}
