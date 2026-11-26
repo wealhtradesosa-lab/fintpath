@@ -203,7 +203,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // siguiente «de lo que vendo» se cobraba toda a las ventas de HOY. Si para ese año ya
   // habrá llegado plata (algo que se vende o vence después, o un retiro), se paga ese
   // año con esa plata; no se aparta hoy ni cuenta como «te pasaste».
-  const aniosConPlata = [...Object.values(plazoEn), ...leerRetirosNuevas(cfg, N).map((x) => x.anio)];
+  const aniosConPlata = [...Object.values(plazoEn), ...leerRetirosNuevas(cfg, N).map((x) => x.anio), ...leerRetirosActivos(cfg, N).map((x) => x.anio)];
   const hayPlataPara = (anio) => anio > 1 && aniosConPlata.some((y) => y <= anio);
   // 23-nov-2026 (Santiago: "estoy en 2027 usando el saldo de 2027 y me pide elegir
   // de dónde sale… tengo un saldo de 2027, debo disponer de ese saldo, sea en una
@@ -753,7 +753,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // Solo el plan: Patrimonio, Ingresos y Egresos no se tocan.
   const cambios = leerCambios(cfg, N);
   const terminanEn = leerTerminan(cfg, N);
-  const retirosNuevas = leerRetirosNuevas(cfg, N);
+  // 26-nov-2026 (Santiago: "¿y si uno quiere disponer de esa renta en algún año o hacer un retiro?"). De una inversión de hoy
+  // también se puede sacar una parte en un año: cfg.retirosActivos = { activoId: { año: pesos de hoy } }.
+  const retirosNuevas = [...leerRetirosNuevas(cfg, N), ...leerRetirosActivos(cfg, N)];
   const pagaAnios = leerPagaAnios(cfg, N);
   const liberados = []; // plata que queda libre en años siguientes (activos que vencen o se venden después)
   const manualOp = new Set((user.inv || []).filter((x) => x && x.rentaOrigen === "manual").map((x) => x.id));
@@ -766,6 +768,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // tener varios tramos: cfg.rentasAnio = { activoId: { año: renta al mes en pesos de hoy } }. Desde ese año
   // paga eso (sube con la indexación) hasta el siguiente tramo. El cambio del paso 1 manda en su año.
   const rentasAnio = leerRentasAnio(cfg, N);
+  // Las que hoy no pagan al mes porque lo que rinden se queda invertido (IBKR, Ledger…). Si desde un año empiezas a recibir
+  // plata de una de ellas, esa plata sale de la inversión: antes seguía creciendo completa y la plata se contaba dos veces.
+  const idsReinvierten = new Set(activos.filter((a) => a.clase !== "inmueble" && a.clase !== "vehiculo" && a.clase !== "vivienda" && a.crec != null && a.crec > 0 && !(a.rentaAnual > 0.5) && !a.rentaReemplazada).map((a) => a.id));
   const aplicarCambio = (a, t) => {
     const c0 = cambios[a.id], extra = (rentasAnio[a.id] || {})[t];
     const c = c0 && c0.desde === t ? c0 : extra != null ? { modo: "renta", desde: t, mensual: extra } : null;
@@ -776,6 +781,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ingresos = Math.max(0, ingresos + dif); pasivo = Math.max(0, pasivo + dif);
     if (a.rentaAntesCambio == null) a.rentaAntesCambio = a.rentaAnual || 0;
     a.rentaAnual = nueva; a.cambio = c;
+    if (idsReinvierten.has(a.id)) a.pagaDeLoQueRinde = nueva > 0.5;
     if (t <= 1) a.rentaCorregida = true;
     if (c.modo === "propio") { const cg = costoLigado(a.id) * 12 * frG; gastos += cg; a.propioDesde = t; a.costoPropio = cg; }
   };
@@ -883,7 +889,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // como plata libre (para darle destino) y lo que quede sigue invertido.
     retirosNuevas.forEach((x) => {
       if (x.anio !== t) return;
-      const a = todos.find((y) => y.id === x.id); if (!a || !(a.valor > 0.5)) return;
+      const a = todos.find((y) => y.id === x.id); if (!a || a.terminado || !(a.valor > 0.5)) return;
       const m = x.monto == null ? a.valor : Math.min(a.valor, x.monto * ix(t));
       Object.keys(canasta).forEach((k) => { canasta[k] += m * mezcla[k] / 100; });
       a.valor -= m;
@@ -958,6 +964,17 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (a.rentaReemplazada) return;
       const v = (a.rentaAnual || 0) * Math.pow(1 + gIng, t - 1);
       ingresos = Math.max(0, ingresos - v); pasivo = Math.max(0, pasivo - v); a.rentaAnual = 0;
+    });
+    // Lo que recibes de una inversión que se reinvertía sale de ella: su valor crece con lo que rinde y baja con lo que te paga.
+    // Si pides más de lo que queda, te paga hasta donde alcance y deja de pagar.
+    activos.forEach((a) => {
+      if (!a.pagaDeLoQueRinde || a.terminado || a.rentaReemplazada || !(a.rentaAnual > 0.5)) return;
+      const fr1 = Math.pow(1 + gIng, t - 1), pide = a.rentaAnual * fr1, paga = Math.min(pide, Math.max(0, a.valor));
+      if (paga < pide - 0.5) {
+        ingresos = Math.max(0, ingresos - (pide - paga)); pasivo = Math.max(0, pasivo - (pide - paga)); a.rentaAnual = paga / fr1; a.seAgota = t;
+        alertas.push({ tipo: "renta_baja", anio: t, texto: tx(`En ${anioCal(t)} «${a.nombre}» se acaba: te paga lo último que le queda y deja de pagar.`, `In ${anioCal(t)} "${a.nombre}" runs out: it pays what is left and stops paying.`) });
+      }
+      a.valor -= paga; a.creceT = (a.creceT || 0) - paga; creceAnio -= paga;
     });
     // Renta nueva de un activo modificado: pesos de hoy, sube con la indexación.
     const rentaPers = todos.reduce((s, a) => s + (a.rentaPct ? a.valor / (1 + a.crec) * a.rentaPct : 0), 0);
@@ -1230,6 +1247,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     desglose,
     gastosHoy, seVan, ingresosHoy, ingSeVan,
     liberados,
+    reinvierten: [...idsReinvierten],
     // 7-nov-2026 (La historia de tu plata): lo que rendía cada activo vendido, para explicar por qué se vende.
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => { const rentaAnual = n(b.rentaNetaPorActivo[x.id]) * 12; return { id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x), clase: claseActivo(x), rentaAnual, crec: crecimientoDefault(x, esc, sup, rentaAnual) }; }),
     reinversionesDetalle,
@@ -1646,6 +1664,18 @@ export function leerPagaAnios(cfg = {}, N = 10) {
     if (Object.keys(m).length) out["nueva_" + k] = m;
   });
   return out;
+}
+/** Retiros de una parte de una inversión de hoy: [{ id, anio: 2..N, monto: pesos de hoy }] desde cfg.retirosActivos = { id: { año: pesos } }. */
+export function leerRetirosActivos(cfg = {}, N = 10) {
+  const out = [];
+  Object.entries((cfg && cfg.retirosActivos) || {}).forEach(([id, porAnio]) => {
+    Object.entries(porAnio || {}).forEach(([k, v]) => {
+      const t = Math.round(n(k));
+      if (!(t >= 2 && t <= N) || vacio(v) || !(n(v) > 0.5)) return;
+      out.push({ id, anio: t, monto: n(v) });
+    });
+  });
+  return out.sort((a, b) => a.anio - b.anio);
 }
 export function leerRetirosNuevas(cfg = {}, N = 10) {
   return (cfg.nuevas || []).map((x, k) => {
