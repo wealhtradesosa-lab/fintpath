@@ -7,7 +7,7 @@
 // pagarDeudas, gastosTerminan, ingresosTerminan, rentasAnio). Los pasos de antes siguen como «detalle».
 import { useMemo, useState } from "react";
 import { tx, miles } from "../lib/region.js";
-import { supuestosF10, nombreSup, retornoNominalPreset, leerPropiedadRaiz, indexacionDe, anioCal } from "../lib/futuro10.js";
+import { supuestosF10, nombreSup, retornoNominalPreset, leerPropiedadRaiz, indexacionDe, anioCal, claveIngreso } from "../lib/futuro10.js";
 
 const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", bd2: "rgba(var(--fp-ink),0.2)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#00c805", rd: "#ff5000", am: "#f59e0b" };
 const plata = (v) => (v < -0.5 ? "−" : "") + "$" + miles(Math.abs(Math.round(v)));
@@ -21,7 +21,7 @@ const btn1 = { background: C.gn, color: "#000", border: `1px solid ${C.gn}`, bor
 const btn2 = { background: "transparent", color: C.tx, border: `1px solid ${C.bd2}`, borderRadius: 8, padding: "0 14px", minHeight: 44, fontSize: 13, cursor: "pointer" };
 const lnk = { background: "transparent", border: "none", color: C.tx2, textDecoration: "underline", cursor: "pointer", fontSize: 13, padding: "8px 4px" };
 const tarjeta = { background: C.bg2, border: `1px solid ${C.bd}`, borderRadius: 12, padding: "18px 20px" };
-const FORM0 = { tipo: "nueva", nombre: "", preset: "rfLargo", rend: "", recibe: "100", monto: "", activo: "", deuda: "", rentaNueva: "", retiro: "", prTipo: "simple", prValor: "", prCuota: "30", prLote: "", prM2: "", prCostoM2: "", prPlazo: "2", prMeses: "12", prValE: "20", prValA: "", prFinal: "queda", prVendeEn: "0", prRenta: "", prRepite: "no", prDestino: "reinvierte" };
+const FORM0 = { tipo: "nueva", nombre: "", preset: "rfLargo", rend: "", recibe: "100", monto: "", activo: "", deuda: "", rentaNueva: "", retiro: "", ligaA: "", ligaI: "", prTipo: "simple", prValor: "", prCuota: "30", prLote: "", prM2: "", prCostoM2: "", prPlazo: "2", prMeses: "12", prValE: "20", prValA: "", prFinal: "queda", prVendeEn: "0", prRenta: "", prRepite: "no", prDestino: "reinvierte" };
 const presetsLista = () => { const P = supuestosF10().presets; return ["rfCorto", "rfLargo", "fincaRaiz", "sp500"].filter((k) => P[k]).map((k) => [k, nombreSup(P[k])]).concat([["custom", tx("Otra: yo escribo cuánto rinde", "Other: I enter the return")]]); };
 const prTipos = () => [["simple", tx("Comprar una propiedad ya hecha", "Buy a finished property")], ["planos", tx("Compra en planos", "Off-plan purchase")], ["lote", tx("Lote y construcción", "Lot and build")], ["asociativo", tx("Proyecto asociativo", "Joint development")], ["rentar", tx("Construir para rentar (locales, bodegas)", "Build to rent (shops, warehouses)")]];
 
@@ -85,7 +85,7 @@ const Campo = ({ etiqueta, children }) => <label style={{ display: "flex", flexD
 const Sel = ({ value, on, ops, id }) => <select id={id} value={value} onChange={(e) => on(e.target.value)} style={inp}>{ops.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>;
 const Txt = ({ value, on, ph, w = 150, plataIn, id }) => <input id={id} type="text" inputMode={plataIn ? "numeric" : "decimal"} value={value} placeholder={ph} onChange={(e) => on(plataIn ? conPuntos(e.target.value) : e.target.value)} style={{ ...inp, width: w, textAlign: plataIn ? "right" : "left" }} />;
 
-export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [], demo = false, onVerPasos }) {
+export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [], demo = false, onVerPasos, onDatos, onIrPatrimonio }) {
   const M = useMemo(() => filasDelPlan(r), [r]);
   const N = M.N, AN = useMemo(() => Array.from({ length: N }, (_, j) => anioCal(j + 1)), [N]);
   const [sel, setSel] = useState(0);
@@ -94,6 +94,42 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   const [f, setF] = useState(FORM0);
   const [aviso, setAviso] = useState(null); // { ok, txt }
   const up = (cambio) => setF((p) => ({ ...p, ...cambio }));
+  // 26-nov-2026 (Santiago: "uno debería poder en cualquier momento o sección actualizar la ficha de cada inversión"; District salía
+  // en dos renglones porque su ingreso estaba suelto). Desde la tabla se liga un ingreso a su inversión. Esto sí cambia los datos.
+  const [fic, setFic] = useState(null); // { tipo: "ing" | "inv", id }
+  const [hecho, setHecho] = useState("");
+  const ingL = user.ingresos || [], invL = (user.inv || []).filter((a) => a && a.id), puedeDatos = !!onDatos && !demo && invL.length > 0;
+  const idxIng = (key) => (key ? ingL.findIndex((i, k) => claveIngreso(ingL, k) === key) : -1);
+  const nomInv = (id) => { const a = invL.find((q) => q.id === id); return a ? a.n || a.nombre || tx("tu inversión", "your investment") : ""; };
+  const ligar = (k, activoId) => { const i = ingL[k]; if (!i || !onDatos) return; const nom = i.nombre || i.categoria || tx("Ingreso", "Income");
+    onDatos("ingresos", ingL.map((q, j) => (j === k ? { ...q, activoId: activoId || "" } : q))); setFic(null); up({ ligaA: "", ligaI: "" });
+    setHecho(activoId ? tx(`Listo: «${nom}» ahora sale de ${nomInv(activoId)}. Quedó en el renglón de esa inversión, en tus datos de todas las páginas.`, `Done: "${nom}" now comes from ${nomInv(activoId)}. It sits on that investment's row, in your data on every page.`) : tx(`Listo: «${nom}» ya no está ligado a una inversión. Volvió a «Ingresos».`, `Done: "${nom}" is no longer linked to an investment. It is back under "Income".`)); };
+  const avisoDatos = <div style={{ fontSize: 12, color: C.am }}>{tx("Esto cambia tus datos en todas las páginas, no solo este escenario.", "This changes your data on every page, not just this scenario.")}</div>;
+  const cajaFic = { margin: "0 0 8px 14px", maxWidth: 760, border: `1px solid ${C.am}`, borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10, background: "rgba(245,158,11,0.05)" };
+  const sueltos = M.ing.map((x) => ({ x, k: idxIng(x.key) })).filter((q) => q.k >= 0 && !ingL[q.k].activoId);
+  function fichaIngreso(x, k) {
+    const a = invL.some((q) => q.id === f.ligaA) ? f.ligaA : "";
+    return <div style={cajaFic}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}><div style={{ fontSize: 15, fontWeight: 600, color: C.tx }}>{tx(`¿De qué inversión sale «${x.nombre}»?`, `Which investment does "${x.nombre}" come from?`)}</div><button type="button" style={lnk} onClick={() => setFic(null)}>{tx("Cerrar", "Close")}</button></div>
+      <div style={{ fontSize: 13, color: C.tx2, lineHeight: 1.5 }}>{tx("Si es el arriendo o la renta de una inversión tuya, lígalo. Queda en el renglón de esa inversión y, si la vendes, se va con ella. Un salario o unos honorarios no se ligan.", "If it is the rent or income of an investment of yours, link it. It moves to that investment's row and, if you sell it, it goes with it. A salary or fees are not linked.")}</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+        <Campo etiqueta={tx("Sale de esta inversión", "It comes from this investment")}><Sel id="f10-liga-activo" value={a} on={(v) => up({ ligaA: v })} ops={[["", tx("Escoge la inversión…", "Pick the investment…")], ...invL.map((q) => [q.id, q.n || q.nombre || q.id])]} /></Campo>
+        <button type="button" style={{ ...btn1, opacity: a ? 1 : 0.5 }} disabled={!a} onClick={() => { if (a) ligar(k, a); }}>{tx("Ligar a esta inversión", "Link to this investment")}</button></div>
+      {avisoDatos}</div>;
+  }
+  function fichaInversion(x) {
+    const ligados = ingL.map((i, k) => ({ i, k })).filter((q) => q.i && q.i.activoId === x.id && q.i.sim !== false), el = f.ligaI !== "" && sueltos.some((q) => String(q.k) === String(f.ligaI)) ? f.ligaI : "";
+    return <div style={cajaFic}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}><div style={{ fontSize: 15, fontWeight: 600, color: C.tx }}>{tx(`¿Qué ingresos salen de ${x.nombre}?`, `Which incomes come from ${x.nombre}?`)}</div><button type="button" style={lnk} onClick={() => setFic(null)}>{tx("Cerrar", "Close")}</button></div>
+      {ligados.length ? ligados.map((q) => <div key={q.k} style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", fontSize: 13, color: C.tx }}><span>{q.i.nombre || q.i.categoria || tx("Ingreso", "Income")}</span>
+        {q.i.desdePatrimonio ? <span style={{ fontSize: 12, color: C.tx2 }}>{tx("Nació en su ficha: se cambia en Patrimonio", "Created on its record: edit it in Net worth")}</span> : <button type="button" style={lnk} aria-label={`${tx("Quitarle", "Unlink")} ${q.i.nombre || ""}`} onClick={() => ligar(q.k, "")}>{tx("Quitarle este ingreso", "Unlink this income")}</button>}</div>)
+        : <div style={{ fontSize: 13, color: C.tx2 }}>{tx("Hoy no tiene ningún ingreso ligado: por eso la tabla la muestra como si no te pagara.", "It has no linked income today: that is why the table shows it as not paying you.")}</div>}
+      {sueltos.length ? <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+        <Campo etiqueta={tx("Ligarle un ingreso que hoy está suelto en «Ingresos»", "Link an income that is loose under \"Income\" today")}><Sel id="f10-liga-ingreso" value={el} on={(v) => up({ ligaI: v })} ops={[["", tx("Escoge el ingreso…", "Pick the income…")], ...sueltos.map((q) => [String(q.k), `${q.x.nombre} · ${plata(q.x.v[0])} ${tx("al mes", "a month")}`])]} /></Campo>
+        <button type="button" style={{ ...btn1, opacity: el !== "" ? 1 : 0.5 }} disabled={el === ""} onClick={() => { if (el !== "") ligar(Number(el), x.id); }}>{tx("Ligarle este ingreso", "Link this income")}</button></div> : null}
+      {onIrPatrimonio ? <div style={{ fontSize: 13, color: C.tx2 }}>{tx("Para cambiar cuánto vale o qué tipo de inversión es:", "To change its value or its type:")} <button type="button" style={lnk} onClick={onIrPatrimonio}>{tx("Abrir su ficha completa en Patrimonio", "Open its full record in Net worth")}</button></div> : null}
+      {avisoDatos}</div>;
+  }
   const pon = (cambio) => { setCfg((p) => ({ ...p, ...(typeof cambio === "function" ? cambio(p) : cambio) })); };
   const irA = (id) => setTimeout(() => document.getElementById(id)?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 60);
   const elegirAnio = (j) => { setSel(j); up({ monto: "" }); setAviso(null); };
@@ -161,9 +197,11 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   const cels = (vals, o = {}) => vals.map((v, j) => <Celda key={j} v={v} sel={j === sel} {...o} {...(o.cada ? o.cada(v, j) : {})} />);
   const suma = (rows) => AN.map((_, j) => rows.reduce((s, x) => s + x.v[j], 0));
   const filaTermina = (x, campo, etq) => { const key = x.key, fin = key ? (cfg[campo] || {})[key] : null;
-    return <Fila key={x.id} hijo nombre={x.nombre} sub={!key ? tx("Empieza más adelante", "Starts later") : fin ? `${etq} ${AN[fin - 1]}` : tx("Toca un año para terminarlo", "Tap a year to end it")}
+    const kI = campo === "ingresosTerminan" && puedeDatos ? idxIng(key) : -1, suelto = kI >= 0 && !ingL[kI].activoId, abiertaI = suelto && fic && fic.tipo === "ing" && fic.id === x.id;
+    const txtSub = !key ? tx("Empieza más adelante", "Starts later") : fin ? `${etq} ${AN[fin - 1]}` : tx("Toca un año para terminarlo", "Tap a year to end it");
+    return <div key={x.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}><Fila hijo nombre={x.nombre} sub={suelto ? <>{txtSub} · <button type="button" style={{ ...lnk, padding: "4px 2px", fontSize: 12 }} aria-label={`${tx("Ligar", "Link")} ${x.nombre} ${tx("a una inversión", "to an investment")}`} onClick={() => setFic(abiertaI ? null : { tipo: "ing", id: x.id })}>{tx("¿Sale de una inversión tuya? Ligarlo", "From an investment of yours? Link it")}</button></> : txtSub}
       celdas={cels(x.v, { caja: true, cada: (v, j) => ({ tag: fin === j + 1 ? tx("Termina", "Ends") : !key && j > 0 && v > 0.5 && x.v[j - 1] < 0.5 ? tx("Empieza", "Starts") : "", tagColor: C.rd, aria: `${tx("Terminar", "End")} ${x.nombre} ${tx("en", "in")} ${AN[j]}`,
-        onClick: !key || j === 0 || demo ? undefined : () => pon((p) => { const o = { ...(p[campo] || {}) }; if (fin === j + 1) delete o[key]; else o[key] = j + 1; return { [campo]: o }; }) }) })} />; };
+        onClick: !key || j === 0 || demo ? undefined : () => pon((p) => { const o = { ...(p[campo] || {}) }; if (fin === j + 1) delete o[key]; else o[key] = j + 1; return { [campo]: o }; }) }) })} />{abiertaI ? fichaIngreso(x, kI) : null}</div>; };
 
   const filaInv = (x) => { const esHoy = deHoy.has(x.id), vt = ventaDe(x.id), kn = String(x.id).startsWith("nueva_") ? Number(String(x.id).slice(6)) : esHoy ? -1 : nuevas.findIndex((q) => q && q.pr && q.nombre === x.nombre);
     const nv = kn >= 0 ? nuevas[kn] : null, an = nv ? (Math.round(Number(nv.anio)) || 1) : 0, jp = x.v.findIndex((v) => v > 0.5), tr = tramos[x.id] || {}, trA = Object.keys(tr).map(Number).sort((a, b) => a - b), rt = retiros[x.id] || {}, rtA = Object.keys(rt).map(Number).filter((q) => Number(rt[q]) > 0.5).sort((a, b) => a - b), esRei = sonReinv.has(x.id);
@@ -178,9 +216,10 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
         : `${tx("Vale", "Worth")} ${fin} ${tx("al terminar", "at the end of")} ${AN[N - 1]}${reinvierte}`;
     const abierta = esHoy && act && act.id === x.id;
     return <div key={x.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <Fila hijo nombre={x.nombre} sub={an && !demo ? <>{nota} <button type="button" style={{ ...lnk, padding: "4px 2px", fontSize: 12 }} aria-label={`${tx("Quitar", "Remove")} ${x.nombre}`} onClick={() => { quitarNueva(kn); setAviso({ ok: true, txt: tx(`Quitaste «${x.nombre}». Su plata vuelve a tu capital disponible de ${AN[an - 1]}.`, `You removed "${x.nombre}". Its money returns to your ${AN[an - 1]} available capital.`) }); }}>{tx("Quitar esta inversión", "Remove this investment")}</button></> : nota} pill={an ? `${tx("Nueva", "New")} · ${AN[an - 1]}` : ""}
+      <Fila hijo nombre={x.nombre} sub={esHoy && puedeDatos && invL.some((q) => q.id === x.id) ? <>{nota} · <button type="button" style={{ ...lnk, padding: "4px 2px", fontSize: 12 }} aria-label={`${tx("Ver los ingresos de", "See the incomes of")} ${x.nombre}`} onClick={() => setFic(fic && fic.tipo === "inv" && fic.id === x.id ? null : { tipo: "inv", id: x.id })}>{tx("Ver o ligar sus ingresos", "See or link its incomes")}</button></> : an && !demo ? <>{nota} <button type="button" style={{ ...lnk, padding: "4px 2px", fontSize: 12 }} aria-label={`${tx("Quitar", "Remove")} ${x.nombre}`} onClick={() => { quitarNueva(kn); setAviso({ ok: true, txt: tx(`Quitaste «${x.nombre}». Su plata vuelve a tu capital disponible de ${AN[an - 1]}.`, `You removed "${x.nombre}". Its money returns to your ${AN[an - 1]} available capital.`) }); }}>{tx("Quitar esta inversión", "Remove this investment")}</button></> : nota} pill={an ? `${tx("Nueva", "New")} · ${AN[an - 1]}` : ""}
         celdas={cels(x.v, { caja: true, cada: (v, j) => ({ vale: noPaga || esRei ? x.val[j] : 0, tag: esHoy && vt === j + 1 ? tx("Vendes", "Sold") : Number(rt[j + 1]) > 0.5 ? tx("Retiras", "Withdraw") : tr[j + 1] != null ? (esRei ? tx("Recibes", "Receive") : tx("Cambia", "Changes")) : an === j + 1 ? tx("Nueva", "New") : "", tagColor: (tr[j + 1] != null || Number(rt[j + 1]) > 0.5 || an === j + 1) && !(esHoy && vt === j + 1) ? C.am : C.gn, aria: esHoy ? `${tx("Abrir opciones de", "Open options for")} ${x.nombre} ${tx("en", "in")} ${AN[j]}` : undefined,
           onClick: !esHoy || demo ? undefined : () => { setAct(act && act.id === x.id && act.j === j ? null : { id: x.id, j }); up({ rentaNueva: tr[j + 1] != null ? miles(Math.round(tr[j + 1] * ixA(j))) : "", retiro: Number(rt[j + 1]) > 0.5 ? miles(Math.round(rt[j + 1] * ((cuenta[j] || {}).factorHoy || 1))) : "" }); } }) })} />
+      {fic && fic.tipo === "inv" && fic.id === x.id && puedeDatos ? fichaInversion(x) : null}
       {abierta ? opciones({ x, j: act.j, vt, tr, rt, esRei }) : null}</div>; };
 
   function opciones({ x, j, vt, tr, rt = {}, esRei }) {
@@ -256,13 +295,14 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
     <section style={tarjeta} id="f10-tabla"><div style={{ overflowX: "auto" }}><div style={{ minWidth: 1320, display: "flex", flexDirection: "column", gap: 6 }}>
       <Anios />
       <T2 sub={tx("Promedio al mes de cada año. Abre cada categoría con la flecha.", "Monthly average for each year. Open each category with the arrow.")}>{tx("1 · Revisa tu tabla: ¿lo que te entra cada mes cubre lo que te sale?", "1 · Review your table: does your monthly income cover your spending?")}</T2>
+      {hecho ? <div role="status" id="f10-hecho" style={{ fontSize: 13, lineHeight: 1.5, color: C.gn }}>{hecho}</div> : null}
       <Bloque abierto={!!abre.ing} alternar={() => setAbre((a) => ({ ...a, ing: !a.ing }))} nombre={tx("Ingresos", "Income")} sub={`${M.ing.length} ${M.ing.length === 1 ? tx("ingreso", "income") : tx("ingresos", "incomes")} · ${tx("salarios, honorarios y lo que no viene de una inversión", "salaries, fees and anything not from an investment")}`} totales={cels(suma(M.ing), { fuerte: true })}>{M.ing.map((x) => filaTermina(x, "ingresosTerminan", tx("Termina al empezar", "Ends at the start of")))}</Bloque>
       <Bloque abierto={!!abre.inv} alternar={() => setAbre((a) => ({ ...a, inv: !a.inv }))} nombre={tx("Inversiones que te pagan al mes", "Investments that pay you monthly")} sub={`${pagan.length} ${tx("inversiones · es plata que te llega y puedes usar · toca un año para vender o cambiar lo que paga", "investments · money that reaches you · tap a year to sell or change its income")}`} totales={cels(suma(pagan), { fuerte: true })}>{pagan.map(filaInv)}</Bloque>
       {/* 26-nov-2026 (Santiago: "que separe rentas disponibles de lo que queda invertido"; "Ledger, IBKR, Meteora salen vacíos"). */}
       {reinvierten.length ? <Bloque abierto={!!abre.rei} alternar={() => setAbre((a) => ({ ...a, rei: !a.rei }))} nombre={tx("Inversiones que se reinvierten", "Investments that are reinvested")} sub={`${reinvierten.length} ${tx("inversiones · no te pagan al mes: lo que rinden se queda invertido y crece · aquí ves lo que valen cada año", "investments · no monthly income: their return stays invested and grows · here's what they're worth each year")}`} totales={AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={reinvierten.reduce((t0, x) => t0 + x.val[j], 0)} />)}>{reinvierten.map(filaInv)}</Bloque> : null}
       {/* 26-nov-2026 (Santiago: "District es una propiedad y es lo mismo que 50% District… ¿me faltó marcar cada inversión qué es?"). Una propiedad
           sin ingreso ligado no «se reinvierte»: va aparte y dice cómo ligarle su ingreso para que no salga en dos renglones. */}
-      {bienes.length ? <Bloque abierto={!!abre.bie} alternar={() => setAbre((a) => ({ ...a, bie: !a.bie }))} nombre={tx("Propiedades y bienes sin ingreso ligado", "Properties and assets with no linked income")} sub={`${bienes.length} ${tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: lígalo en la página Ingresos, en «¿Sale de un activo tuyo?», y aparecerá aquí en un solo renglón", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": link it on the Income page, under \"Does it come from an asset of yours?\", and it will show here as one row")}`} totales={AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={bienes.reduce((t0, x) => t0 + x.val[j], 0)} />)}>{bienes.map(filaInv)}</Bloque> : null}
+      {bienes.length ? <Bloque abierto={!!abre.bie} alternar={() => setAbre((a) => ({ ...a, bie: !a.bie }))} nombre={tx("Propiedades y bienes sin ingreso ligado", "Properties and assets with no linked income")} sub={`${bienes.length} ${(puedeDatos ? tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: toca «Ver o ligar sus ingresos» en su renglón y quedará en un solo renglón", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": tap \"See or link its incomes\" on its row and it becomes one row") : tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: lígalo en la página Ingresos, en «Activo que genera este ingreso»", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": link it on the Income page, under \"Asset that generates this income\""))}`} totales={AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={bienes.reduce((t0, x) => t0 + x.val[j], 0)} />)}>{bienes.map(filaInv)}</Bloque> : null}
       <Fila fuerte linea nombre={tx("= Te entra al mes", "= Monthly income")} celdas={cels(M.entra, { fuerte: true })} />
       <Bloque abierto={!!abre.gas} alternar={() => setAbre((a) => ({ ...a, gas: !a.gas }))} nombre={tx("Gastos", "Expenses")} sub={`${M.gas.length} ${tx("gastos", "expenses")}`} totales={cels(suma(M.gas), { fuerte: true })}>{M.gas.map((x) => filaTermina(x, "gastosTerminan", tx("Ya no lo pagas desde", "No longer paid from")))}</Bloque>
       <Bloque abierto={!!abre.deu} alternar={() => setAbre((a) => ({ ...a, deu: !a.deu }))} nombre={tx("Cuotas de deudas", "Debt installments")} sub={`${M.deu.length} ${M.deu.length === 1 ? tx("deuda", "debt") : tx("deudas", "debts")}`} totales={cels(suma(M.deu), { fuerte: true })}>
