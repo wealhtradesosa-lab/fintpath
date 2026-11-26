@@ -20,6 +20,9 @@
 //   Cada módulo tiene 1-3 hojas: detalle + agregados útiles.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { montoCOP, montoCOPSuma, usdTxt, selloTrmHoy, hayUSDEn, lineaGenerado } from "./patrimonioPantalla.js";
+import { TEXTO_PENDIENTE_TASA } from "./trm.js";
+
 // Helper: nombre de archivo con fecha ISO limpia
 // 04-sep-2026 (Santiago: "pongamos buenos disclaimers, no soy responsable de
 // una mala decisión de la gente, esto es un insumo").
@@ -27,8 +30,8 @@
 // por correo, se abre meses después y se lee fuera de la plataforma, sin nada
 // del contexto que en pantalla sí está.
 // Va como PRIMERA hoja del libro para que sea lo primero que se ve al abrirlo.
-const agregarHojaAviso = (XLSX, wb, X) => {
-  const ws = XLSX.utils.aoa_to_sheet(X.aviso);
+const agregarHojaAviso = (XLSX, wb, X, sello = []) => {
+  const ws = XLSX.utils.aoa_to_sheet([...X.aviso, ...sello]);
   ws["!cols"] = [{ wch: 115 }];
   XLSX.utils.book_append_sheet(wb, ws, X.shAviso);
 };
@@ -125,8 +128,18 @@ const XL = {
 // montos entraban crudos, así que un ítem cargado en USD se sumaba como si
 // fueran pesos y el total del Excel no coincidía con el de la pantalla.
 // Regla igual al resto de la app (flowHelpers): sin campo moneda se asume COP.
-const aCOP = (monto, item, trm) =>
-  (Number(monto) || 0) * (item?.moneda === "USD" ? (trm || 4200) : 1);
+// 24-nov-2026 — Sin tasa real ya no se usa 4200: el monto en USD queda por fuera
+// de los totales en pesos (aCOP = 0) y su celda dice «pendiente de tasa» con el
+// monto en dólares (celdaCOP). Cada archivo en español lleva un sello con la TRM
+// que usó (selloTrmHoy): en la hoja «Aviso legal» y bajo el TOTAL.
+const aCOP = (monto, item, trm) => montoCOPSuma(monto, item, trm);
+const celdaCOP = (monto, item, trm, factor = 1) => {
+  const cop = montoCOP(monto, item, trm);
+  return cop == null ? `${usdTxt((Number(monto) || 0) * factor)} · ${TEXTO_PENDIENTE_TASA}` : Math.round(cop * factor);
+};
+// Filas del sello (solo en español: en los módulos US todo está en dólares).
+// 24-nov-2026 — Como los PDF, el Excel dice cuándo se generó (hora de Bogotá).
+const filasSello = (en, trm, hayUSD) => (en ? [] : [[], [lineaGenerado()], ...selloTrmHoy(trm, hayUSD).map((l) => [l])]);
 
 // Helper: encontrar el nombre del owner por su ID
 const ownerName = (ownerId, owners) => {
@@ -170,8 +183,8 @@ export async function exportIngresosExcel(ingresos, owners, trm, en = false) {
           i.fuente || "",
           i.tipo || "fijo",
           i.moneda || "COP",
-          Math.round(aCOP(i.mensual, i, trm)),
-          Math.round(aCOP(i.mensual, i, trm) * 12),
+          celdaCOP(i.mensual, i, trm),
+          celdaCOP(i.mensual, i, trm, 12),
           i.capital || 0,
           i.tasa || 0,
           ownerName(i.ownerId, owners),
@@ -184,6 +197,8 @@ export async function exportIngresosExcel(ingresos, owners, trm, en = false) {
     const totalMes = items.reduce((s, i) => s + aCOP(i.mensual, i, trm), 0);
     rows.push([]);
     rows.push(["TOTAL", "", "", "", "", Math.round(totalMes), Math.round(totalMes * 12), "", "", "", "", ""]);
+    const sello = filasSello(en, trm, hayUSDEn(items));
+    rows.push(...sello);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [
@@ -192,7 +207,7 @@ export async function exportIngresosExcel(ingresos, owners, trm, en = false) {
       { wch: 18 }, { wch: 12 },
       { wch: 22 }, { wch: 14 }, { wch: 30 },
     ];
-    agregarHojaAviso(XLSX, wb, X);
+    agregarHojaAviso(XLSX, wb, X, sello);
     XLSX.utils.book_append_sheet(wb, ws, X.fileIngresos);
 
     // ── Hoja 2: Resumen por Categoría ───────────────────────────
@@ -233,7 +248,7 @@ export async function exportGastosExcel(gastos, trm, en = false) {
   const flat = [];
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).filter((g) => g.sim !== false).forEach((g) => {
-      flat.push({ categoria: cat, concepto: g.c || "", monto: aCOP(g.m, g, trm), tipo: g.t === "f" ? X.fijo : X.variable });
+      flat.push({ categoria: cat, concepto: g.c || "", monto: aCOP(g.m, g, trm), celda: celdaCOP(g.m, g, trm), celdaAnual: celdaCOP(g.m, g, trm, 12), usd: g.moneda === "USD", tipo: g.t === "f" ? X.fijo : X.variable });
     });
   });
 
@@ -248,16 +263,18 @@ export async function exportGastosExcel(gastos, trm, en = false) {
     flat
       .sort((a, b) => b.monto - a.monto)
       .forEach((g) => {
-        rows.push([g.categoria, g.concepto, Math.round(g.monto), Math.round(g.monto * 12), g.tipo]);
+        rows.push([g.categoria, g.concepto, g.celda, g.celdaAnual, g.tipo]);
       });
 
     const totalMes = flat.reduce((s, g) => s + g.monto, 0);
     rows.push([]);
     rows.push(["TOTAL", "", Math.round(totalMes), Math.round(totalMes * 12), ""]);
+    const sello = filasSello(en, trm, flat.some((g) => g.usd));
+    rows.push(...sello);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [{ wch: 22 }, { wch: 32 }, { wch: 16 }, { wch: 16 }, { wch: 12 }];
-    agregarHojaAviso(XLSX, wb, X);
+    agregarHojaAviso(XLSX, wb, X, sello);
     XLSX.utils.book_append_sheet(wb, ws, X.fileGastos);
 
     // ── Hoja 2: Resumen por Categoría ───────────────────────────
@@ -325,12 +342,13 @@ export async function exportDeudasExcel(deudas, inversiones, owners, trm, en = f
         const meses = d.meses || d.n_cuotas || 0;
         const saldo = aCOP(d.mt, d, trm);
         const cuota = aCOP(d.pg, d, trm);
-        const totalPagar = meses > 0 && cuota ? Math.round(cuota * meses) : saldo;
+        const pend = montoCOP(d.mt, d, trm) == null;
+        const totalPagar = pend ? `${usdTxt(meses > 0 && d.pg ? d.pg * meses : d.mt)} · ${TEXTO_PENDIENTE_TASA}` : meses > 0 && cuota ? Math.round(cuota * meses) : Math.round(saldo);
         rows.push([
           d.n || d.nombre || "",
-          Math.round(saldo),
-          Math.round(cuota),
-          Math.round(cuota * 12),
+          celdaCOP(d.mt, d, trm),
+          celdaCOP(d.pg, d, trm),
+          celdaCOP(d.pg, d, trm, 12),
           d.ts || 0,
           meses,
           totalPagar,
@@ -344,6 +362,8 @@ export async function exportDeudasExcel(deudas, inversiones, owners, trm, en = f
     const totalCuota = items.reduce((s, d) => s + aCOP(d.pg, d, trm), 0);
     rows.push([]);
     rows.push(["TOTAL", Math.round(totalSaldo), Math.round(totalCuota), Math.round(totalCuota * 12), "", "", "", "", "", ""]);
+    const sello = filasSello(en, trm, hayUSDEn(items));
+    rows.push(...sello);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [
@@ -351,7 +371,7 @@ export async function exportDeudasExcel(deudas, inversiones, owners, trm, en = f
       { wch: 12 }, { wch: 12 }, { wch: 18 },
       { wch: 28 }, { wch: 22 }, { wch: 30 },
     ];
-    agregarHojaAviso(XLSX, wb, X);
+    agregarHojaAviso(XLSX, wb, X, sello);
     XLSX.utils.book_append_sheet(wb, ws, X.fileDeudas);
   }, buildFilename(X.fileDeudas));
 }
@@ -380,6 +400,7 @@ export async function exportInversionesExcel(inversiones, owners, trm, en = fals
       .forEach((i) => {
         const vc = aCOP(i.vc, i, trm);
         const va = aCOP(i.va, i, trm);
+        const pend = montoCOP(i.va, i, trm) == null;
         const gain = va - vc;
         const gainPct = vc > 0 ? Number((((va / vc) - 1) * 100).toFixed(2)) : 0;
         rows.push([
@@ -387,10 +408,10 @@ export async function exportInversionesExcel(inversiones, owners, trm, en = fals
           i.tp || i.tipo || "Otro",
           i.ub || i.ubicacion || "",
           i.moneda || "COP",
-          Math.round(vc),
-          Math.round(va),
-          Math.round(gain),
-          gainPct,
+          celdaCOP(i.vc, i, trm),
+          celdaCOP(i.va, i, trm),
+          pend ? TEXTO_PENDIENTE_TASA : Math.round(gain),
+          pend ? "" : gainPct,
           ownerName(i.ownerId, owners),
           i.notas || "",
         ]);
@@ -401,6 +422,8 @@ export async function exportInversionesExcel(inversiones, owners, trm, en = fals
     const totalGainPct = totalVc > 0 ? Number((((totalVal / totalVc) - 1) * 100).toFixed(2)) : 0;
     rows.push([]);
     rows.push(["TOTAL", "", "", "", Math.round(totalVc), Math.round(totalVal), Math.round(totalGain), totalGainPct, "", ""]);
+    const sello = filasSello(en, trm, hayUSDEn(items));
+    rows.push(...sello);
 
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [
@@ -408,7 +431,7 @@ export async function exportInversionesExcel(inversiones, owners, trm, en = fals
       { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 12 },
       { wch: 22 }, { wch: 30 },
     ];
-    agregarHojaAviso(XLSX, wb, X);
+    agregarHojaAviso(XLSX, wb, X, sello);
     XLSX.utils.book_append_sheet(wb, ws, X.shActivos);
 
     // ── Hoja 2: Resumen por Tipo ────────────────────────────────

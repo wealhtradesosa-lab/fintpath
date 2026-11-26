@@ -25,6 +25,9 @@
 //   la mayor carga muerta del bundle y solo debe bajarlas quien exporta.
 // ═══════════════════════════════════════════════════════════════════════════
 
+import { montoCOP, montoCOPSuma, usdTxt, selloTrmHoy, hayUSDEn, selloTrmContador } from "./patrimonioPantalla.js";
+import { TEXTO_PENDIENTE_TASA } from "./trm.js";
+
 // ── Jurisdicción ────────────────────────────────────────────────────────────
 // 01-sep-2026: los módulos US no tenían NINGÚN export -- ni PDF ni Excel.
 // En vez de duplicar este archivo se agrega un modo inglés: mismos cálculos y
@@ -101,8 +104,18 @@ const buildFilename = (modulo) =>
 // ~4.200 veces más chico en esa fila. Toda cifra que entra a una tabla o a un
 // total pasa ahora por esta conversión. La regla es la misma que usa el resto
 // de la app (flowHelpers): sin campo moneda se asume COP, por retrocompat.
-const aCOP = (monto, item, trm) =>
-  (Number(monto) || 0) * (item?.moneda === "USD" ? (trm || 4200) : 1);
+// 24-nov-2026 — Sin tasa real ya no se usa 4200: el monto en USD queda por fuera
+// de los totales en pesos (aCOP = 0) y su celda dice «pendiente de tasa» con el
+// monto en dólares (celda). Cada PDF en español lleva bajo el encabezado un
+// sello con la TRM que usó (selloTrmHoy), igual que el Excel de la misma pantalla.
+const aCOP = (monto, item, trm) => montoCOPSuma(monto, item, trm);
+const celda = (monto, item, trm, factor = 1) => {
+  const cop = montoCOP(monto, item, trm);
+  return cop == null ? `${usdTxt((Number(monto) || 0) * factor)} · ${TEXTO_PENDIENTE_TASA}` : fm(cop * factor);
+};
+// Líneas del sello del export en curso (se fija al inicio de cada export, como TAGLINE).
+let SELLO = [];
+const fijarSello = (en, trm, hayUSD) => { SELLO = en ? [] : selloTrmHoy(trm, hayUSD); };
 
 const ownerName = (ownerId, owners) => {
   if (!ownerId) return "";
@@ -153,7 +166,12 @@ function chrome(doc, { titulo, subtitulo }) {
   doc.setLineWidth(0.3);
   doc.line(M, 30, W - M, 30);
 
-  return 38;
+  if (!SELLO.length) return 38;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GRAY);
+  SELLO.forEach((l, k) => doc.text(l, M, 35 + k * 4, { maxWidth: W - M * 2 }));
+  return 38 + SELLO.length * 4 + 2;
 }
 
 /**
@@ -261,6 +279,7 @@ export async function exportPatrimonioPDF(inversiones, owners, trm, en = false) 
     alert(t.sinItems(en ? "assets" : "activos"));
     return;
   }
+  fijarSello(en, trm, hayUSDEn(items));
 
   const totalVa = items.reduce((s, i) => s + aCOP(i.va, i, trm), 0);
   const totalVc = items.reduce((s, i) => s + aCOP(i.vc, i, trm), 0);
@@ -292,14 +311,15 @@ export async function exportPatrimonioPDF(inversiones, owners, trm, en = false) 
           const vc = aCOP(i.vc, i, trm);
           const va = aCOP(i.va, i, trm);
           const g = va - vc;
+          const pend = montoCOP(i.va, i, trm) == null;
           return [
             i.nombre || i.n || "",
             i.tp || i.tipo || "Otro",
             ownerName(i.ownerId, owners),
-            fm(vc),
-            fm(va),
-            fm(g),
-            vc > 0 ? `${g >= 0 ? "+" : ""}${(((va / vc) - 1) * 100).toFixed(1)}%` : "—",
+            celda(i.vc, i, trm),
+            celda(i.va, i, trm),
+            pend ? TEXTO_PENDIENTE_TASA : fm(g),
+            !pend && vc > 0 ? `${g >= 0 ? "+" : ""}${(((va / vc) - 1) * 100).toFixed(1)}%` : "—",
           ];
         }),
       foot: [[t.total, "", "", fm(totalVc), fm(totalVa), fm(gain), `${gainPct >= 0 ? "+" : ""}${gainPct.toFixed(1)}%`]],
@@ -346,6 +366,7 @@ export async function exportIngresosPDF(ingresos, owners, trm, en = false) {
     alert(t.sinItems(en ? "income items" : "ingresos"));
     return;
   }
+  fijarSello(en, trm, hayUSDEn(items));
 
   const mens = (i) => aCOP(i.mensual, i, trm);
   const totalMes = items.reduce((s, i) => s + mens(i), 0);
@@ -371,8 +392,8 @@ export async function exportIngresosPDF(ingresos, owners, trm, en = false) {
           i.categoria || "",
           i.tipo || "fijo",
           ownerName(i.ownerId, owners),
-          fm(mens(i)),
-          fm(mens(i) * 12),
+          celda(i.mensual, i, trm),
+          celda(i.mensual, i, trm, 12),
         ]),
       foot: [[t.total, "", "", "", fm(totalMes), fm(totalMes * 12)]],
       columnStyles: { 4: { halign: "right" }, 5: { halign: "right" } },
@@ -422,6 +443,9 @@ export async function exportGastosPDF(gastos, trm, en = false) {
           categoria: cat,
           concepto: g.c || "",
           monto: aCOP(g.m, g, trm),
+          celda: celda(g.m, g, trm),
+          celdaAnual: celda(g.m, g, trm, 12),
+          usd: g.moneda === "USD",
           tipo: g.t === "f" ? t.fijo : t.variable,
         });
       });
@@ -431,6 +455,7 @@ export async function exportGastosPDF(gastos, trm, en = false) {
     alert(t.sinItems(en ? "expenses" : "gastos"));
     return;
   }
+  fijarSello(en, trm, flat.some((g) => g.usd));
 
   const totalMes = flat.reduce((s, g) => s + g.monto, 0);
   const fijos = flat.filter((g) => g.tipo === t.fijo).reduce((s, g) => s + g.monto, 0);
@@ -455,7 +480,7 @@ export async function exportGastosPDF(gastos, trm, en = false) {
       body: flat
         .slice()
         .sort((a, b) => b.monto - a.monto)
-        .map((g) => [g.categoria, g.concepto, g.tipo, fm(g.monto), fm(g.monto * 12)]),
+        .map((g) => [g.categoria, g.concepto, g.tipo, g.celda, g.celdaAnual]),
       foot: [[t.total, "", "", fm(totalMes), fm(totalMes * 12)]],
       columnStyles: { 3: { halign: "right" }, 4: { halign: "right" } },
     });
@@ -503,6 +528,7 @@ export async function exportDeudasPDF(deudas, inversiones, owners, trm, en = fal
     alert(t.sinItems(en ? "debts" : "deudas"));
     return;
   }
+  fijarSello(en, trm, hayUSDEn(items));
 
   const invName = (invId) => {
     if (!invId) return "";
@@ -543,8 +569,8 @@ export async function exportDeudasPDF(deudas, inversiones, owners, trm, en = fal
             d.n || d.nombre || "",
             ownerName(d.ownerId, owners),
             invName(d.invId),
-            fm(saldo(d)),
-            fm(cuota(d)),
+            celda(d.mt, d, trm),
+            celda(d.pg, d, trm),
             pct(d.ts || 0),
             meses > 0 ? String(meses) : "—",
           ];
@@ -569,8 +595,8 @@ export async function exportDeudasPDF(deudas, inversiones, owners, trm, en = fal
         .map((d) => [
           d.n || d.nombre || "",
           pct(d.ts || 0),
-          fm(saldo(d)),
-          fm(((d.ts || 0) / 100) * saldo(d)),
+          celda(d.mt, d, trm),
+          montoCOP(d.mt, d, trm) == null ? TEXTO_PENDIENTE_TASA : fm(((d.ts || 0) / 100) * saldo(d)),
         ]),
       columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
     });
@@ -588,10 +614,12 @@ const pdfTxt = (s) => String(s ?? "")
   .replace(/[−–—]/g, "-").replace(/×/g, "x").replace(/≈/g, "aprox.").replace(/→/g, "->")
   .replace(/[✓✅]/g, "").replace(/[“”]/g, '"').replace(/[‘’]/g, "'").replace(/[^\x00-\xFF]/g, "");
 export const AVISO_LEGAL_GO = "FINPATHIA es una herramienta de información y planeación. Los resultados son estimaciones hechas con los datos que ingresaste y con la norma vigente a la fecha de este documento. No constituyen asesoría tributaria, contable ni legal, y no reemplazan la revisión de un contador público o un abogado. Cada estrategia depende de los hechos, documentos y soportes de tu caso, y de la interpretación de la DIAN, que puede cambiar. FINPATHIA no se hace responsable por las decisiones que tomes con base en esta información. Antes de firmar o declarar, valida todo con un contador público o un asesor tributario. Términos: finpathia.com/terminos.";
+// 24-nov-2026 — Celda de datosParaContador: pesos (número) o «US$X · pendiente de tasa» (texto).
+const vC = (x, k) => (x?.pendienteTasa ? `${usdTxt(x.usd)} · ${TEXTO_PENDIENTE_TASA}` : x[k]);
 const MMpdf = (v) => { const r = Math.round(Number(v) || 0); return (r < 0 ? "-" : "") + "$" + Math.abs(r).toLocaleString("es-CO"); }; // 9-nov-2026: cifra completa
 
 export async function exportGananciaOcasionalPDF(r, datos) {
-  LOC = "es-CO"; TAGLINE = "Tu family office";
+  LOC = "es-CO"; TAGLINE = "Tu family office"; SELLO = [];
   const jur = datos.titular === "juridica";
   const GREEN = [22, 163, 74], RED = [220, 38, 38];
 
@@ -732,7 +760,7 @@ export async function exportGananciaOcasionalPDF(r, datos) {
 // que quiere aplicar. Posiciona a FINPATHIA como aliado del contador.
 // ═══════════════════════════════════════════════════════════════════════════
 export async function exportResumenContadorPDF({ titular, e, cambios = [], estrategias = [], patrimonio = null, preguntas = [], datos = null, compartir = false }) {
-  LOC = "es-CO"; TAGLINE = "Tu family office";
+  LOC = "es-CO"; TAGLINE = "Tu family office"; SELLO = datos ? selloTrmContador(datos) : [];
   const RED = [220, 38, 38];
   return build(buildFilename(pdfTxt(`Resumen contador ${titular}`)), (doc, autoTable) => {
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
@@ -787,10 +815,10 @@ export async function exportResumenContadorPDF({ titular, e, cambios = [], estra
     };
     if (datos) {
       const sum = (l, k) => l.reduce((a, x) => a + (Number(x[k]) || 0), 0);
-      tabla("ing", ["Ingresos registrados en FINPATHIA", "Tipo", "Al año"], datos.ingresos.map((x) => [x.nombre, x.tipo, x.anual]), sum(datos.ingresos, "anual"));
-      tabla("bienes", ["Bienes (patrimonio)", "Tipo", "Valor"], datos.bienes.map((x) => [x.nombre, x.tipo, x.valor]), sum(datos.bienes, "valor"));
-      tabla("deudas", ["Deudas", "Tipo", "Saldo"], datos.deudas.map((x) => [x.nombre, x.tipo, x.saldo]), sum(datos.deudas, "saldo"));
-      tabla("gastos", ["Gastos que cuentan para la declaración", "Categoría", "Al año"], datos.gastos.map((x) => [x.nombre, x.cat, x.anual]), sum(datos.gastos, "anual"));
+      tabla("ing", ["Ingresos registrados en FINPATHIA", "Tipo", "Al año"], datos.ingresos.map((x) => [x.nombre, x.tipo, vC(x, "anual")]), sum(datos.ingresos, "anual"));
+      tabla("bienes", ["Bienes (patrimonio)", "Tipo", "Valor"], datos.bienes.map((x) => [x.nombre, x.tipo, vC(x, "valor")]), sum(datos.bienes, "valor"));
+      tabla("deudas", ["Deudas", "Tipo", "Saldo"], datos.deudas.map((x) => [x.nombre, x.tipo, vC(x, "saldo")]), sum(datos.deudas, "saldo"));
+      tabla("gastos", ["Gastos que cuentan para la declaración", "Categoría", "Al año"], datos.gastos.map((x) => [x.nombre, x.cat, vC(x, "anual")]), sum(datos.gastos, "anual"));
     }
 
     if (estrategias.length) {
@@ -819,6 +847,8 @@ export async function exportResumenContadorPDF({ titular, e, cambios = [], estra
 // ═══════════════════════════════════════════════════════════════════════════
 export async function exportInformeContadorPDF({ titulares = [], compartir = false }) {
   LOC = "es-CO"; TAGLINE = "Tu family office";
+  // Todos los titulares salen del mismo usuario: mismo año gravable y misma tasa.
+  { const d0 = titulares.find((t) => t?.datos)?.datos; SELLO = d0 ? selloTrmContador({ ...d0, hayUSD: titulares.some((t) => t?.datos?.hayUSD) }) : []; }
   const nombres = titulares.map((t) => t.nombre).join(", ");
   return build(buildFilename(pdfTxt("Informe contador")), (doc, autoTable) => {
     const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 14;
@@ -863,11 +893,11 @@ export async function exportInformeContadorPDF({ titulares = [], compartir = fal
         y = doc.lastAutoTable.finalY + 5;
         if (t.cambios?.length) { nota("Lo que cambió este año, según el cliente:"); t.cambios.forEach((c) => nota("- " + c)); }
       }
-      titulo("Patrimonio (bienes)"); tabla(["Bien", "Tipo", "Valor"], t.datos.bienes.map((x) => [x.nombre, x.tipo, x.valor]), sum(t.datos.bienes, "valor"));
-      titulo("Deudas"); tabla(["Deuda", "Tipo", "Saldo"], t.datos.deudas.map((x) => [x.nombre, x.tipo, x.saldo]), sum(t.datos.deudas, "saldo"));
-      titulo("Ingresos"); tabla(["Ingreso", "Tipo", "Al año"], t.datos.ingresos.map((x) => [x.nombre, x.tipo, x.anual]), sum(t.datos.ingresos, "anual"));
+      titulo("Patrimonio (bienes)"); tabla(["Bien", "Tipo", "Valor"], t.datos.bienes.map((x) => [x.nombre, x.tipo, vC(x, "valor")]), sum(t.datos.bienes, "valor"));
+      titulo("Deudas"); tabla(["Deuda", "Tipo", "Saldo"], t.datos.deudas.map((x) => [x.nombre, x.tipo, vC(x, "saldo")]), sum(t.datos.deudas, "saldo"));
+      titulo("Ingresos"); tabla(["Ingreso", "Tipo", "Al año"], t.datos.ingresos.map((x) => [x.nombre, x.tipo, vC(x, "anual")]), sum(t.datos.ingresos, "anual"));
       titulo(t.tipo === "juridica" ? "Costos y gastos" : "Gastos que cuentan para la renta");
-      tabla(["Gasto", "Categoría", "Al año"], t.datos.gastos.map((x) => [x.nombre, x.cat, x.anual]), sum(t.datos.gastos, "anual"));
+      tabla(["Gasto", "Categoría", "Al año"], t.datos.gastos.map((x) => [x.nombre, x.cat, vC(x, "anual")]), sum(t.datos.gastos, "anual"));
     });
   }, pdfTxt("Documento generado por FINPATHIA con la información del cliente. Estimación de referencia; no es asesoría tributaria."),
   { compartir, titulo: "Informe para el contador", texto: `Hola, te comparto mi informe de FINPATHIA (${nombres}).` });

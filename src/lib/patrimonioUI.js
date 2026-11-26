@@ -1,3 +1,4 @@
+import { montoCOP, montoCOPSuma } from "./patrimonioPantalla.js";
 // ═══════════════════════════════════════════════════════════════════════════
 // patrimonioUI.js — Ayudas puras de Patrimonio y Egresos (11-oct-2026, QA)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -78,11 +79,15 @@ export function estiloEncabezadoGrupo() {
  * activo del portafolio: no restan de la deuda de ninguna fila, así que la
  * suma de la columna Deuda no cuadra con el total. Se avisa en una nota.
  */
-export function deudasSinActivo(deudas, activos) {
+// 24-nov-2026 — El total sumaba el saldo crudo: una deuda de 10.000 USD entraba
+// como $10.000. Ahora pasa a pesos con la TRM de hoy (`trm`); sin tasa real la
+// deuda en USD no entra al total y se cuenta en `pendientes` («pendiente de tasa»).
+export function deudasSinActivo(deudas, activos, trm) {
   const ids = new Set((activos || []).map((a) => a.id));
   const sueltas = (deudas || []).filter((d) => {
     const link = d.la || d.link;
     return d.sim !== false && (Number(d.mt || d.monto) || 0) > 0 && (!link || !ids.has(link));
   });
-  return { n: sueltas.length, total: sueltas.reduce((s, d) => s + (Number(d.mt || d.monto) || 0), 0) };
+  const pendientes = sueltas.filter((d) => montoCOP(d.mt || d.monto, d, trm) == null).length;
+  return { n: sueltas.length, total: sueltas.reduce((s, d) => s + montoCOPSuma(d.mt || d.monto, d, trm), 0), ...(pendientes ? { pendientes } : {}) };
 }
