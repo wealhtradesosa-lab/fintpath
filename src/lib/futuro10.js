@@ -1123,9 +1123,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // trabajo con su crecimiento y la cuota de cada deuda que sigue.
     const vanG = new Set(seVan.filter((g) => t >= g.desde).map((g) => g.key));
     const propioYa = new Set(activos.filter((a) => a.propioDesde && a.propioDesde <= t).map((a) => a.id));
-    f.gastosItems = gastosHoy.filter((g) => !g.neteado || propioYa.has(g.activoId)).map((g) => ({ nombre: g.nombre, nota: g.cat, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1), seFue: vanG.has(g.key) }));
+    f.gastosItems = gastosHoy.filter((g) => !g.neteado || propioYa.has(g.activoId)).map((g) => ({ key: g.key, nombre: g.nombre, nota: g.cat, anual: g.mensual * 12 * Math.pow(1 + gGas, t - 1), seFue: vanG.has(g.key) }));
     const vanI = new Set(ingSeVan.filter((x) => t >= x.desde).map((x) => x.key));
-    f.ingresosLab = ingresosHoy.filter((x) => !x.pasivo && !vanI.has(x.key)).map((x) => ({ nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + gIng, t - 1) }));
+    f.ingresosLab = ingresosHoy.filter((x) => !x.pasivo && !vanI.has(x.key)).map((x) => ({ key: x.key, nombre: x.nombre, anual: x.mensual * 12 * Math.pow(1 + gIng, t - 1) }));
     {
       const vivas = deudasVivas.filter((d) => d && d.sim !== false && !esUnica(d) && n(d.pg ?? d.pago) > 0 && !pagadasDespues.has(d.id));
       const totPg = vivas.reduce((s2, d) => s2 + n(d.pg ?? d.pago) * fxA(d), 0);

@@ -18,6 +18,22 @@ describe("filasDelPlan: una fila por cosa y las sumas cuadran con el motor", () 
   const cfg = { decisiones: { or: { accion: "termina", desde: 2 } }, nuevas: [{ nombre: "CDT", preset: "rfLargo", monto: 500e6, anio: 2, fuente: "venta", pctRecibe: 100 }] };
   const r = proyectarFuturo10(user, cfg), M = filasDelPlan(r);
   it("cada ingreso de trabajo tiene su fila", () => { expect(M.ing.map((x) => x.nombre)).toEqual(["Salario de Santiago", "Salario de Ana"]); });
+  // 26-nov-2026 (Santiago: "solo agarró cesantías; ¿dónde quedó salario Sosa, salario Ana, honorarios?").
+  it("los ingresos marcados como «siguen llegando aunque dejes de trabajar» también van en Ingresos, no en Inversiones", () => {
+    const u2 = { ...user, ingresos: [{ nombre: "Salario Sosa", categoria: "Salario", mensual: 25e6, rentaPasiva: true }, { nombre: "Salario Ana", categoria: "Salario", mensual: 12e6, rentaPasiva: true }, { nombre: "Honorarios", categoria: "Honorarios", mensual: 8e6, rentaPasiva: true }, { nombre: "Cesantías", categoria: "Salario", mensual: 2e6 }, { nombre: "Renta Puerto Madero", categoria: "Arriendo", mensual: 28e6, activoId: "pm" }] };
+    const M2 = filasDelPlan(proyectarFuturo10(u2, {}));
+    expect(M2.ing.map((x) => x.nombre).sort()).toEqual(["Cesantías", "Honorarios", "Salario Ana", "Salario Sosa"]);
+    expect(M2.ing.find((x) => x.nombre === "Salario Sosa").v[0]).toBeCloseTo(25e6, 0);
+    expect(M2.act.some((x) => /Salario|Honorarios/.test(x.nombre))).toBe(false);
+    expect(M2.ing.every((x) => x.key)).toBe(true); // todos se pueden terminar en un año
+    for (let j = 0; j < 10; j++) expect([...M2.ing, ...M2.act].reduce((s, x) => s + x.v[j], 0)).toBeCloseTo(M2.entra[j], 0);
+  });
+  it("dos ingresos con el mismo nombre no se mezclan en una fila", () => {
+    const u3 = { ...user, ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 25e6 }, { nombre: "Salario", categoria: "Salario", mensual: 12e6 }] };
+    const M3 = filasDelPlan(proyectarFuturo10(u3, {}));
+    expect(M3.ing.length).toBe(2);
+    expect(M3.ing.map((x) => Math.round(x.v[0])).sort((a, b) => a - b)).toEqual([12e6, 25e6]);
+  });
   it("ingresos + inversiones = lo que entra; gastos + cuotas = lo que sale; y queda = entra − sale", () => {
     for (let j = 0; j < 10; j++) {
       const entra = [...M.ing, ...M.act].reduce((s, x) => s + x.v[j], 0), sale = [...M.gas, ...M.deu].reduce((s, x) => s + x.v[j], 0);
@@ -59,6 +75,16 @@ describe("PlanTabla: lo que se ve", () => {
     expect(h).toContain("Inversión nueva: Bodega");
     expect(h).toContain("Parte 2: te quedan");
     expect(h).toContain(`Nueva · ${Y}`);
+  });
+  // 26-nov-2026 (Santiago: "que separe rentas disponibles de lo que queda invertido"; "IBKR sale vacío").
+  it("separa las inversiones que pagan al mes de las que se reinvierten, y estas muestran lo que valen", () => {
+    const h = pinta({});
+    expect(h.indexOf("Inversiones que te pagan al mes")).toBeLessThan(h.indexOf("Inversiones que se reinvierten"));
+    const reinv = h.slice(h.indexOf("Inversiones que se reinvierten"), h.indexOf("= Te entra al mes"));
+    expect(reinv).toContain("Acciones");
+    expect(reinv).toContain("no te paga al mes: lo que rinde se reinvierte");
+    expect(reinv).toContain("Vale");
+    expect(reinv).not.toContain("Puerto Madero");
   });
   it("en demo no deja cambiar nada", () => {
     const h = pinta({ decisiones: { or: { accion: "vende" } } }, { demo: true });
