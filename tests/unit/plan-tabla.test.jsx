@@ -119,3 +119,29 @@ describe("Mi futuro con la tabla", () => {
     expect(h).not.toContain("Tu plan en una pantalla");
   });
 });
+
+// 26-nov-2026 (Santiago: "¿y si uno quiere disponer de esa renta en algún año o hacer un retiro?").
+describe("inversión que se reinvierte: recibir plata de ella o retirar una parte", () => {
+  it("las sumas siguen cuadrando y la fila muestra lo que recibes y el retiro", () => {
+    const cfg = { rentasAnio: { ib: { 3: 4e6 } }, retirosActivos: { ib: { 5: 200e6 } } };
+    const r = proyectarFuturo10(user, cfg), M = filasDelPlan(r), fila = M.act.find((x) => x.id === "ib");
+    expect(r.reinvierten).toContain("ib");
+    expect(fila.v[1]).toBe(0); expect(fila.v[2]).toBeCloseTo(4e6 * 1.05 * 1.05, 0);
+    for (let j = 0; j < 10; j++) expect([...M.ing, ...M.act].reduce((s, x) => s + x.v[j], 0)).toBeCloseTo(M.entra[j], 0);
+    const html = pinta(cfg);
+    expect(html).toContain("te paga al mes desde " + (Y + 2));
+    expect(html).toContain("retiras una parte en " + (Y + 4));
+    expect(html).toContain("lo que te paga sale de la inversión");
+    expect(html).toContain("Te llega por ventas y retiros");
+    expect(html).not.toMatch(/meterle/i);
+  });
+  it("una propiedad sin ingreso ligado no va en «se reinvierten»: va aparte y dice cómo ligar su ingreso", () => {
+    const u2 = { ...user, inv: [...user.inv, { id: "di", n: "District", tp: "Real Estate", va: 1200e6 }], ingresos: [...user.ingresos, { nombre: "50% District", categoria: "Arriendo", mensual: 6e6 }] };
+    const r = proyectarFuturo10(u2, {}), cuenta = cuentaPorAnio(r, {});
+    const html = renderToString(createElement(PlanTabla, { user: u2, cfg: {}, setCfg: () => {}, r, cuenta })).replace(/<!-- -->/g, "");
+    expect(r.reinvierten).not.toContain("di");
+    expect(html).toContain("Propiedades y bienes sin ingreso ligado");
+    expect(html).toContain("no tiene un ingreso ligado");
+    expect(html).toContain("¿Sale de un activo tuyo?");
+  });
+});
