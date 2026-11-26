@@ -5,7 +5,7 @@
 // la plata de una venta llega al capital disponible de ese año y ahí se reparte. No tiene cuentas propias: lee
 // proyectarFuturo10 y cuentaPorAnio, y escribe el mismo `cfg` del escenario (decisiones, nuevas, reinversiones,
 // pagarDeudas, gastosTerminan, ingresosTerminan, rentasAnio). Los pasos de antes siguen como «detalle».
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { mapaConexiones, cuentaDeActivo } from "../lib/conexiones.js";
 import { tx, miles } from "../lib/region.js";
 import { supuestosF10, nombreSup, retornoNominalPreset, leerPropiedadRaiz, indexacionDe, anioCal } from "../lib/futuro10.js";
@@ -16,7 +16,7 @@ const BIENES = new Set(["inmueble", "vivienda", "vehiculo"]);
 const leer = (s) => Number(String(s == null ? "" : s).replace(/\D/g, "")) || 0;
 const conPuntos = (s) => { const d = String(s == null ? "" : s).replace(/\D/g, ""); return d ? miles(Number(d)) : ""; };
 const pct = (v) => (v === "" || v == null ? undefined : parseFloat(String(v).replace(",", ".")));
-const GRID = { display: "grid", gridTemplateColumns: "250px repeat(10, minmax(0, 1fr))", gap: 6, alignItems: "center" };
+const GRID = { display: "grid", gridTemplateColumns: "var(--f10-cols, 250px repeat(10, minmax(0, 1fr)))", gap: 6, alignItems: "center" };
 const inp = { boxSizing: "border-box", background: C.bg, color: C.tx, border: `1px solid ${C.bd2}`, borderRadius: 8, padding: "0 10px", height: 40, fontSize: 13, fontVariantNumeric: "tabular-nums" };
 const btn1 = { background: C.gn, color: "#000", border: `1px solid ${C.gn}`, borderRadius: 8, padding: "0 18px", minHeight: 44, fontSize: 14, fontWeight: 600, cursor: "pointer" };
 const btn2 = { background: "transparent", color: C.tx, border: `1px solid ${C.bd2}`, borderRadius: 8, padding: "0 14px", minHeight: 44, fontSize: 13, cursor: "pointer" };
@@ -95,6 +95,13 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   const [f, setF] = useState(FORM0);
   const [aviso, setAviso] = useState(null); // { ok, txt }
   const up = (cambio) => setF((p) => ({ ...p, ...cambio }));
+  // 26-nov-2026 (Santiago: "estoy en el cel"; en su captura la tabla mostraba un solo año con las cifras cortadas). En pantallas
+  // angostas la tabla muestra un año a la vez: el nombre y la cifra del año elegido. Los años se cambian con los botones de arriba.
+  const [movil, setMovil] = useState(false);
+  useEffect(() => { const mq = typeof window !== "undefined" && window.matchMedia ? window.matchMedia("(max-width: 760px)") : null; if (!mq) return undefined;
+    const ver = () => setMovil(mq.matches); ver(); mq.addEventListener?.("change", ver); return () => mq.removeEventListener?.("change", ver); }, []);
+  const soloSel = (lista) => (movil ? lista.filter((_, j) => j === sel) : lista);
+  const cajaTabla = movil ? { "--f10-cols": "minmax(0, 1fr) 132px", display: "flex", flexDirection: "column", gap: 6 } : { minWidth: 1320, display: "flex", flexDirection: "column", gap: 6 };
   // 26-nov-2026 (Santiago: "uno debería poder en cualquier momento o sección actualizar la ficha de cada inversión"; District salía
   // en dos renglones porque su ingreso estaba suelto). Desde la tabla se liga un ingreso a su inversión. Esto sí cambia los datos.
   const [fic, setFic] = useState(null); // { tipo: "ing" | "inv", id }
@@ -224,7 +231,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   };
 
   // ── Paso 1: las filas ──
-  const cels = (vals, o = {}) => vals.map((v, j) => <Celda key={j} v={v} sel={j === sel} {...o} {...(o.cada ? o.cada(v, j) : {})} />);
+  const cels = (vals, o = {}) => soloSel(vals.map((v, j) => <Celda key={j} v={v} sel={j === sel} {...o} {...(o.cada ? o.cada(v, j) : {})} />));
   const suma = (rows) => AN.map((_, j) => rows.reduce((s, x) => s + x.v[j], 0));
   const filaTermina = (x, campo, etq) => { const key = x.key, fin = key ? (cfg[campo] || {})[key] : null;
     const tipoF = campo === "ingresosTerminan" ? "ingreso" : "gasto", itF = key ? (tipoF === "ingreso" ? mapa.ingresos : mapa.gastos).find((q) => q.key === key) : null, abiertaI = !!itF && puedeDatos && fic && fic.tipo === tipoF && fic.id === x.id;
@@ -291,7 +298,9 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
       </div></div>;
   }
 
-  const Anios = ({ id }) => <div style={GRID}><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Plata de cada año, con sus precios", "Each year's money, at that year's prices")}</div>{AN.map((a, j) => <button key={a} type="button" aria-pressed={j === sel} onClick={() => elegirAnio(j)} id={j === 0 ? id : undefined} style={{ minHeight: 44, width: "100%", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${j === sel ? C.gn : C.bd}`, background: j === sel ? "rgba(0,200,5,0.16)" : "transparent", color: j === sel ? C.gn : C.tx }}>{a}</button>)}</div>;
+  const Anios = ({ id }) => (movil
+    ? <div><div style={{ fontSize: 12, color: C.tx2, marginBottom: 6 }}>{tx(`Estás viendo ${AN[sel]}. Toca otro año para verlo.`, `You are viewing ${AN[sel]}. Tap another year to see it.`)}</div><div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4 }}>{AN.map((a, j) => <button key={a} type="button" aria-pressed={j === sel} onClick={() => elegirAnio(j)} id={j === 0 ? id : undefined} style={{ minHeight: 44, flex: "0 0 64px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${j === sel ? C.gn : C.bd}`, background: j === sel ? "rgba(0,200,5,0.16)" : "transparent", color: j === sel ? C.gn : C.tx }}>{a}</button>)}</div></div>
+    : <div style={GRID}><div style={{ fontSize: 12, color: C.tx2 }}>{tx("Plata de cada año, con sus precios", "Each year's money, at that year's prices")}</div>{AN.map((a, j) => <button key={a} type="button" aria-pressed={j === sel} onClick={() => elegirAnio(j)} id={j === 0 ? id : undefined} style={{ minHeight: 44, width: "100%", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${j === sel ? C.gn : C.bd}`, background: j === sel ? "rgba(0,200,5,0.16)" : "transparent", color: j === sel ? C.gn : C.tx }}>{a}</button>)}</div>);
   const pagan = M.act.filter((x) => x.v.some((v) => v > 0.5)), sinPago = M.act.filter((x) => !x.v.some((v) => v > 0.5) && x.val.some((v) => v > 0.5)), reinvierten = sinPago.filter((x) => !BIENES.has(x.clase)), bienes = sinPago.filter((x) => BIENES.has(x.clase));
   const malos = AN.filter((_, j) => M.queda[j] < 0), ok = malos.length === 0; let jm = 0; M.queda.forEach((q, j) => { if (q < M.queda[jm]) jm = j; });
   const pasados = cuenta.filter((x) => x.porInvertir < -1).map((x) => AN[x.anio - 1]);
@@ -325,17 +334,17 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
           <span><span style={{ fontSize: 14, fontWeight: 600, display: "block", color: C.tx }}>{a}</span><span style={{ fontSize: 13, color: C.tx2, lineHeight: 1.45, display: "block", marginTop: 2 }}>{b}</span></span></li>)}
     </ol>
 
-    <section style={tarjeta} id="f10-tabla"><div style={{ overflowX: "auto" }}><div style={{ minWidth: 1320, display: "flex", flexDirection: "column", gap: 6 }}>
+    <section style={tarjeta} id="f10-tabla"><div style={{ overflowX: "auto" }}><div style={cajaTabla}>
       <Anios />
       <T2 sub={tx("Promedio al mes de cada año. Abre cada categoría con la flecha.", "Monthly average for each year. Open each category with the arrow.")}>{tx("1 · Revisa tu tabla: ¿lo que te entra cada mes cubre lo que te sale?", "1 · Review your table: does your monthly income cover your spending?")}</T2>
       {hecho ? <div role="status" id="f10-hecho" style={{ fontSize: 13, lineHeight: 1.5, color: C.gn }}>{hecho}</div> : null}
       <Bloque abierto={!!abre.ing} alternar={() => setAbre((a) => ({ ...a, ing: !a.ing }))} nombre={tx("Ingresos", "Income")} sub={`${M.ing.length} ${M.ing.length === 1 ? tx("ingreso", "income") : tx("ingresos", "incomes")} · ${tx("salarios, honorarios y lo que no viene de una inversión", "salaries, fees and anything not from an investment")}`} totales={cels(suma(M.ing), { fuerte: true })}>{M.ing.map((x) => filaTermina(x, "ingresosTerminan", tx("Termina al empezar", "Ends at the start of")))}</Bloque>
       <Bloque abierto={!!abre.inv} alternar={() => setAbre((a) => ({ ...a, inv: !a.inv }))} nombre={tx("Inversiones que te pagan al mes", "Investments that pay you monthly")} sub={`${pagan.length} ${tx("inversiones · es plata que te llega y puedes usar · toca un año para vender o cambiar lo que paga", "investments · money that reaches you · tap a year to sell or change its income")}`} totales={cels(suma(pagan), { fuerte: true })}>{pagan.map(filaInv)}</Bloque>
       {/* 26-nov-2026 (Santiago: "que separe rentas disponibles de lo que queda invertido"; "Ledger, IBKR, Meteora salen vacíos"). */}
-      {reinvierten.length ? <Bloque abierto={!!abre.rei} alternar={() => setAbre((a) => ({ ...a, rei: !a.rei }))} nombre={tx("Inversiones que se reinvierten", "Investments that are reinvested")} sub={`${reinvierten.length} ${tx("inversiones · no te pagan al mes: lo que rinden se queda invertido y crece · aquí ves lo que valen cada año", "investments · no monthly income: their return stays invested and grows · here's what they're worth each year")}`} totales={AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={reinvierten.reduce((t0, x) => t0 + x.val[j], 0)} />)}>{reinvierten.map(filaInv)}</Bloque> : null}
+      {reinvierten.length ? <Bloque abierto={!!abre.rei} alternar={() => setAbre((a) => ({ ...a, rei: !a.rei }))} nombre={tx("Inversiones que se reinvierten", "Investments that are reinvested")} sub={`${reinvierten.length} ${tx("inversiones · no te pagan al mes: lo que rinden se queda invertido y crece · aquí ves lo que valen cada año", "investments · no monthly income: their return stays invested and grows · here's what they're worth each year")}`} totales={soloSel(AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={reinvierten.reduce((t0, x) => t0 + x.val[j], 0)} />))}>{reinvierten.map(filaInv)}</Bloque> : null}
       {/* 26-nov-2026 (Santiago: "District es una propiedad y es lo mismo que 50% District… ¿me faltó marcar cada inversión qué es?"). Una propiedad
           sin ingreso ligado no «se reinvierte»: va aparte y dice cómo ligarle su ingreso para que no salga en dos renglones. */}
-      {bienes.length ? <Bloque abierto={!!abre.bie} alternar={() => setAbre((a) => ({ ...a, bie: !a.bie }))} nombre={tx("Propiedades y bienes sin ingreso ligado", "Properties and assets with no linked income")} sub={`${bienes.length} ${(puedeDatos ? tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: toca su nombre para abrir su ficha y conectarlo: quedará en un solo renglón", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": tap its name to open its record and connect it: it becomes one row") : tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: lígalo en la página Ingresos, en «Activo que genera este ingreso»", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": link it on the Income page, under \"Asset that generates this income\""))}`} totales={AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={bienes.reduce((t0, x) => t0 + x.val[j], 0)} />)}>{bienes.map(filaInv)}</Bloque> : null}
+      {bienes.length ? <Bloque abierto={!!abre.bie} alternar={() => setAbre((a) => ({ ...a, bie: !a.bie }))} nombre={tx("Propiedades y bienes sin ingreso ligado", "Properties and assets with no linked income")} sub={`${bienes.length} ${(puedeDatos ? tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: toca su nombre para abrir su ficha y conectarlo: quedará en un solo renglón", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": tap its name to open its record and connect it: it becomes one row") : tx("· aquí ves lo que valen cada año · si alguna sí te paga (un arriendo), ese ingreso está suelto en «Ingresos»: lígalo en la página Ingresos, en «Activo que genera este ingreso»", "· here's what they're worth each year · if one does pay you (rent), that income is loose under \"Income\": link it on the Income page, under \"Asset that generates this income\""))}`} totales={soloSel(AN.map((_, j) => <Celda key={j} v={0} sel={j === sel} vale={bienes.reduce((t0, x) => t0 + x.val[j], 0)} />))}>{bienes.map(filaInv)}</Bloque> : null}
       <Fila fuerte linea nombre={tx("= Te entra al mes", "= Monthly income")} celdas={cels(M.entra, { fuerte: true })} />
       <Bloque abierto={!!abre.gas} alternar={() => setAbre((a) => ({ ...a, gas: !a.gas }))} nombre={tx("Gastos", "Expenses")} sub={`${M.gas.length} ${tx("gastos", "expenses")}`} totales={cels(suma(M.gas), { fuerte: true })}>{M.gas.map((x) => filaTermina(x, "gastosTerminan", tx("Ya no lo pagas desde", "No longer paid from")))}</Bloque>
       <Bloque abierto={!!abre.deu} alternar={() => setAbre((a) => ({ ...a, deu: !a.deu }))} nombre={tx("Cuotas de deudas", "Debt installments")} sub={`${M.deu.length} ${M.deu.length === 1 ? tx("deuda", "debt") : tx("deudas", "debts")}`} totales={cels(suma(M.deu), { fuerte: true })}>
@@ -398,7 +407,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
         </div>}
     </section>
 
-    <section style={tarjeta}><div style={{ overflowX: "auto" }}><div style={{ minWidth: 1320, display: "flex", flexDirection: "column", gap: 6 }}>
+    <section style={tarjeta}><div style={{ overflowX: "auto" }}><div style={cajaTabla}>
       <Anios />
       <T2 sub={tx("Plata para invertir, pagar deudas o guardar. Aquí las cifras son del año completo, no del mes.", "Money to invest, pay debts or keep. These are full-year figures, not monthly.")}>{tx("3 · Mira cómo queda cada año: tu capital disponible", "3 · See how each year ends up: your available capital")}</T2>
       <Fila nombre={tx("Traes del año anterior", "Carried from the previous year")} celdas={cels(cuenta.map((x) => x.antes), { caja: true })} />
