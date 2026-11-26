@@ -11,6 +11,7 @@ import PlanInforme from "./PlanInforme";
 import PlanComparador from "./PlanComparador";
 import EscenariosCreados, { AvisoCalculo } from "./infografia/EscenariosCreados";
 import BarraFuturo10 from "./BarraFuturo10";
+import PlanTabla from "./PlanTabla";
 
 import { fmtPlataEs } from "../lib/formato.js";
 const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#00c805", rd: "#ff5000", am: "#f59e0b" };
@@ -49,8 +50,11 @@ const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio",
 export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 export const msgDemoF10 = () => tx(MSG_DEMO_F10, "Scenarios aren't saved in demo mode.");
 
-export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, vista: vistaProp, onCambiarVista }) {
+export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, vista: vistaProp, onCambiarVista, tabla = false }) {
   const [paso, setPaso] = useState(pasoInicial);
+  // 26-nov-2026 (Santiago: "que ya sea la sección donde se arman los escenarios futuros"). Con `tabla`, crear o editar un escenario
+  // abre «Tu plan en una pantalla» (PlanTabla); los pasos de antes quedan detrás de «Ver el detalle paso a paso».
+  const [modoCrear, setModoCrear] = useState(tabla ? "tabla" : "pasos");
   // 23-nov-2026: el paso 3 se recorre año por año; este es el año que se está viendo (1 = hoy).
   const [anioSel, setAnioSel] = useState(1);
   // 24-oct-2026 (Santiago: "los avances que uno hace en la sección como que
@@ -201,7 +205,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const renombrar = (id, nombre) => { const t = String(nombre || "").trim(); if (demo || !t || !onGuardar) return; const [g, lista] = ultimo(); onGuardar({ ...g, escenarios: lista.map((e) => (e.id === id ? { ...e, nombre: t, editado: new Date().toISOString() } : e)) }); };
   const borrar = (id) => { if (demo || !onGuardar) return; const [g, lista] = ultimo(); onGuardar({ ...g, escenarios: lista.filter((e) => e.id !== id), ...(id === editandoId ? { borradorDe: null } : {}) }); if (id === editandoId) setEditandoId(null); };
   const estadoTxt = editando ? (sinGuardar ? tx(`Tienes cambios sin guardar en «${editando.nombre}».`, `You have unsaved changes in "${editando.nombre}".`) : tx(`✓ «${editando.nombre}» está guardado.`, `✓ "${editando.nombre}" is saved.`))
-    : (sinGuardar ? tx("Estás armando un escenario nuevo: ponle nombre y guárdalo.", "You're building a new scenario: name it and save it.") : tx("Escenario nuevo: cambia algo en los pasos 1 a 3 y aquí lo guardas.", "New scenario: change something in steps 1–3 and save it here."));
+    : (sinGuardar ? tx("Estás armando un escenario nuevo: ponle nombre y guárdalo.", "You're building a new scenario: name it and save it.") : (modoCrear === "tabla" ? tx("Escenario nuevo: cambia algo en la tabla y aquí lo guardas.", "New scenario: change something in the table and save it here.") : tx("Escenario nuevo: cambia algo en los pasos 1 a 3 y aquí lo guardas.", "New scenario: change something in steps 1–3 and save it here.")));
   const barraGuardar = <div role="status" style={{ background: C.bg2, border: `1px solid ${sinGuardar ? "rgba(245,181,68,0.45)" : C.bd}`, borderRadius: 12, padding: "12px 14px", margin: "0 0 12px", display: "grid", gap: 10 }}>
     <div style={{ fontSize: 13.5, color: sinGuardar ? C.am : editando ? C.gn : C.tx2, fontWeight: 600 }}>{estadoTxt}</div>
     <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
@@ -215,7 +219,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   </div>;
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
+    <div style={{ maxWidth: vista === "crear" && modoCrear === "tabla" ? 1500 : 960, margin: "0 auto", color: C.tx, fontSize: 14 }}>
       {/* 19-nov-2026 (Santiago: "muchas cosas mal alineadas"). Cuando un título de
           campo ocupaba dos líneas, su casilla quedaba más abajo que las vecinas.
           Cada campo es una grilla: título (alto fijo de dos líneas, pegado abajo),
@@ -233,7 +237,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
 .fp-titulo-edit:hover { border-color: rgba(var(--fp-ink),0.14); }
 .fp-titulo-edit:focus { border-color: var(--fp-azul, #4c7dff); }`}</style>
       <PageHeader label={tx("Mi futuro a 10 años", "My 10-year future")} title={tx("¿Cómo se ve tu patrimonio en 10 años?", "What does your net worth look like in 10 years?")} compact
-        subtitle={tx("Cinco pasos: decides sobre lo que tienes, agregas lo que viene, mueves tu plata, miras el resultado y lo guardas. Tus datos reales no se tocan.", "Five steps: decide on what you have, add what's coming, move your money, see the result and save it. Your real data isn't touched.")} />
+        subtitle={modoCrear === "tabla" ? tx("Arma tu escenario en una sola pantalla: revisas lo que tienes año por año, decides qué vendes y en qué inviertes, y lo guardas. Tus datos reales no se tocan.", "Build your scenario on one screen: review what you have year by year, decide what you sell and where you invest, and save it. Your real data isn't touched.") : tx("Cinco pasos: decides sobre lo que tienes, agregas lo que viene, mueves tu plata, miras el resultado y lo guardas. Tus datos reales no se tocan.", "Five steps: decide on what you have, add what's coming, move your money, see the result and save it. Your real data isn't touched.")} />
       <div style={{ ...card, borderColor: C.am, fontSize: 12, color: C.tx2 }}>{avisoF10()}</div>
 
       {!vistaProp && <>
@@ -275,7 +279,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {editandoEsc && !demo && <h2 style={{ fontSize: 20, margin: "4px 0 10px", fontWeight: 600 }}><TituloEditable valor={editandoEsc.nombre} onCambiar={(t) => { renombrar(editandoEsc.id, t); setNombreEsc(t); }} /></h2>}
       {/* 24-nov-2026 (Santiago: "un solo botón guardar"; "debería ser guardar el actual o guardar como copia"). Arriba de todos los pasos:
           qué estás armando, si tiene cambios sin guardar, y «Guardar» (más «Guardar como copia» si editas uno que ya existe). */}
-      {!demo && paso !== 4 && barraGuardar}
+      {!demo && (modoCrear === "tabla" || paso !== 4) && barraGuardar}
+      {modoCrear === "tabla" ? <div style={{ marginBottom: 14 }}><PlanTabla user={user} cfg={cfg} setCfg={setCfg} r={r} cuenta={cuenta} demo={demo} onVerPasos={() => { setModoCrear("pasos"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} /></div> : <>
+      {tabla && <button type="button" onClick={() => { setModoCrear("tabla"); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), marginBottom: 10 }}>{tx("← Volver a tu plan en una pantalla", "← Back to your plan on one screen")}</button>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
       </div>
@@ -440,6 +446,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {paso <= 2 && <AvisoCalculo testId="f10-aviso-calculo-barra" style={{ margin: "0 0 8px" }} />}
       {/* En Tu plata manda la barra del año (SaldoFijo): dos barras pegadas abajo se tapan y cargan la pantalla. */}
       {paso <= 1 && <BarraFuturo10 rPlan={r} rHoy={(planesComparar[0] || {}).r} onIr={() => { ir(3); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} />}
+      </>}
       </>}
 
       <details style={card}>

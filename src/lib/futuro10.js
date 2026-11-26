@@ -633,6 +633,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   let deudaUnica = unicas.reduce((sm, d) => sm + d.saldo, 0);
   let deuda = bDeuda.deudaTotal - deudaUnica; let cuotaAnual = bDeuda.sd * 12;
   const deudaInicial = deuda, pagadasDespues = new Set();
+  // 26-nov-2026 — Lo que queda de cada deuda se reparte entre las que SIGUEN vivas. Antes se repartía siempre sobre el total
+  // del día uno: al pagar una deuda, a las demás les tocaba una parte más pequeña, se pagaban a medias y el resto quedaba en el
+  // patrimonio para siempre, sin cuota. `capitalVivo` es lo que sumaban al empezar las deudas que aún no se han pagado.
+  let capitalVivo = deudaInicial;
+  const parteDe = (d) => { const mt = n(d.mt) * fxA(d); return capitalVivo > 0.5 ? Math.min(deuda, deuda * Math.min(1, mt / capitalVivo)) : 0; };
+  const saleDeuda = (d) => { capitalVivo = Math.max(0, capitalVivo - n(d.mt) * fxA(d)); };
   // 24-nov-2026 — Abonos a una deuda con lo que sobra cada mes (cfg.mesReparto). Lo abonado baja lo que debes; cuando cubre lo que
   // le queda (según sus cuotas), la terminas de pagar y su cuota deja de salir desde el año siguiente.
   const mesReparto = leerMesReparto(cfg.mesReparto, N), repartoUsado = {}, abonado = {}, finAbono = {};
@@ -647,7 +653,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     abonado[id] = (abonado[id] || 0) + usa; abonosVivos += usa;
     if (queda - usa <= 0.5) {
       deuda = Math.max(0, deuda - abonado[id]); abonosVivos -= abonado[id]; abonado[id] = 0;
-      cuotaAnual = Math.max(0, cuotaAnual - cuotaD); pagadasDespues.add(id); finAbono[id] = t;
+      cuotaAnual = Math.max(0, cuotaAnual - cuotaD); pagadasDespues.add(id); finAbono[id] = t; saleDeuda(d);
       alertas.push({ tipo: "pago_deuda", anio: t, texto: tx(`En ${anioCal(t)} terminas de pagar ${d.n || d.nombre || "una deuda"} con tus abonos: su cuota deja de salir.`, `In ${anioCal(t)} you finish paying ${d.n || d.nombre || "a debt"} with your extra payments: its installment stops.`) });
     }
     return usa;
@@ -755,8 +761,15 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     if (manualOp.has(id)) return gastosHoy.filter((g) => g.activoId === id && g.neteado).reduce((sm, g) => sm + g.mensual, 0);
     return Math.max(0, n((bOp.rentaPorActivo || {})[id]) - n((bOp.rentaNetaPorActivo || {})[id]));
   };
+  // 25-nov-2026 (Santiago: "¿y si cada año una inversión renta distinto, baja o sube? una propiedad que
+  // renta una plata un año y otra el otro"). Además del cambio del paso 1 (uno por activo), la renta puede
+  // tener varios tramos: cfg.rentasAnio = { activoId: { año: renta al mes en pesos de hoy } }. Desde ese año
+  // paga eso (sube con la indexación) hasta el siguiente tramo. El cambio del paso 1 manda en su año.
+  const rentasAnio = leerRentasAnio(cfg, N);
   const aplicarCambio = (a, t) => {
-    const c = cambios[a.id]; if (!c || c.desde !== t || a.rentaReemplazada) return;
+    const c0 = cambios[a.id], extra = (rentasAnio[a.id] || {})[t];
+    const c = c0 && c0.desde === t ? c0 : extra != null ? { modo: "renta", desde: t, mensual: extra } : null;
+    if (!c || a.rentaReemplazada || a.terminado) return;
     const fr0 = Math.pow(1 + gIng, Math.max(0, t - 1)), frG = Math.pow(1 + gGas, Math.max(0, t - 1));
     const nueva = c.modo === "propio" ? 0 : c.mensual * 12;
     const dif = (nueva - (a.rentaAnual || 0)) * fr0;
@@ -838,9 +851,11 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       // que te llega es el valor menos lo que todavía debas, y su cuota se acaba.
       let pagoDeuda = 0;
       deudasVivas.filter((d) => d && d.sim !== false && deudaActivo(d, cfg) === a.id && !esUnica(d) && !pagadasDespues.has(d.id)).forEach((d) => {
-        const queda = deudaInicial > 0 ? n(d.mt) * fxA(d) * (deuda / deudaInicial) : 0;
+        const queda = parteDe(d);
         const ab = Math.min(abonado[d.id] || 0, queda); abonosVivos -= ab; abonado[d.id] = 0;
         const pago = Math.max(0, Math.min(a.valor - pagoDeuda, queda - ab, deuda));
+        // Si la venta no alcanza para toda la deuda, lo que falta sigue debiéndose (y sigue en el reparto).
+        if (pago + ab >= queda - 0.5) saleDeuda(d);
         pagoDeuda += pago; deuda = Math.max(0, deuda - pago - ab); cuotaAnual = Math.max(0, cuotaAnual - n(d.pg ?? d.pago) * fxA(d) * 12); pagadasDespues.add(d.id);
       });
       a.valor -= pagoDeuda;
@@ -854,7 +869,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     conCuotaEnAnio.forEach((x) => {
       if (x.pagaAnio !== t || pagadasDespues.has(x.id)) return;
       const d = x._d;
-      const queda = deudaInicial > 0 ? n(d.mt) * fxA(d) * (deuda / deudaInicial) : 0;
+      const queda = parteDe(d); saleDeuda(d);
       const ab = Math.min(abonado[x.id] || 0, queda); abonosVivos -= ab; abonado[x.id] = 0;
       const pago = Math.max(0, Math.min(queda - ab, deuda));
       if (pago > 0.5) retirar(pago);
@@ -1608,6 +1623,19 @@ export function conVencimientos(cfg = {}, user = {}) {
   return { ...cfg, decisiones: dec, ingresosTerminan: une(cfg.ingresosTerminan, fin.ingresos), gastosTerminan: une(cfg.gastosTerminan, fin.gastos), _conVenc: true };
 }
 /** Inversiones nuevas con plazo: [{ id: "nueva_k", anio: 2..N, monto: null (todo) | pesos }]. */
+/** Tramos de renta por activo: { id: { año (1..N): renta al mes en pesos de hoy } }. 0 = ese año deja de pagar. */
+export function leerRentasAnio(cfg = {}, N = 10) {
+  const out = {};
+  Object.entries((cfg && cfg.rentasAnio) || {}).forEach(([id, porAnio]) => {
+    Object.entries(porAnio || {}).forEach(([k, v]) => {
+      const t = Math.round(n(k));
+      if (!(t >= 1 && t <= N) || vacio(v) || !Number.isFinite(Number(v))) return;
+      (out[id] = out[id] || {})[t] = Math.max(0, n(v));
+    });
+  });
+  return out;
+}
+
 /** Lo que te paga cada inversión nueva en años puntuales: { "nueva_k": { año: % } }. */
 export function leerPagaAnios(cfg = {}, N = 10) {
   const out = {};
