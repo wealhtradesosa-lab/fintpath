@@ -142,7 +142,7 @@ describe("inversión que se reinvierte: recibir plata de ella o retirar una part
     expect(r.reinvierten).not.toContain("di");
     expect(html).toContain("Propiedades y bienes sin ingreso ligado");
     expect(html).toContain("no tiene un ingreso ligado");
-    expect(html).toContain("Ver o ligar sus ingresos");
+    expect(html).toContain("Activo que genera este ingreso");
     expect(html).not.toContain("¿Sale de un activo tuyo?");
   });
   // 26-nov-2026 (Santiago: "uno debería poder en cualquier sección actualizar la ficha de cada inversión").
