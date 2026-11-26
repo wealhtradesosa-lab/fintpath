@@ -3,7 +3,7 @@ import { createElement } from "react";
 import { renderToString } from "react-dom/server";
 import PlanTabla, { filasDelPlan, armarPropiedadRaiz } from "../../src/components/PlanTabla.jsx";
 import MiFuturo10 from "../../src/components/MiFuturo10.jsx";
-import { proyectarFuturo10, cuentaPorAnio, leerPropiedadRaiz } from "../../src/lib/futuro10.js";
+import { proyectarFuturo10, cuentaPorAnio, leerPropiedadRaiz, claveIngreso } from "../../src/lib/futuro10.js";
 
 // 26-nov-2026 — «Tu plan en una pantalla»: la tabla año por año para armar escenarios.
 const Y = new Date().getFullYear();
@@ -142,6 +142,19 @@ describe("inversión que se reinvierte: recibir plata de ella o retirar una part
     expect(r.reinvierten).not.toContain("di");
     expect(html).toContain("Propiedades y bienes sin ingreso ligado");
     expect(html).toContain("no tiene un ingreso ligado");
-    expect(html).toContain("¿Sale de un activo tuyo?");
+    expect(html).toContain("Ver o ligar sus ingresos");
+    expect(html).not.toContain("¿Sale de un activo tuyo?");
+  });
+  // 26-nov-2026 (Santiago: "uno debería poder en cualquier sección actualizar la ficha de cada inversión").
+  it("con permiso para cambiar datos, cada ingreso suelto y cada inversión traen su enlace para ligar; en demo o sin permiso, no", () => {
+    const u2 = { ...user, inv: [...user.inv, { id: "di", n: "District", tp: "Real Estate", va: 1200e6 }], ingresos: [...user.ingresos, { nombre: "50% District", categoria: "Arriendo", mensual: 6e6 }] };
+    const r = proyectarFuturo10(u2, {}), cuenta = cuentaPorAnio(r, {}), M = filasDelPlan(r);
+    const p = (extra) => renderToString(createElement(PlanTabla, { user: u2, cfg: {}, setCfg: () => {}, r, cuenta, ...extra })).replace(/<!-- -->/g, "");
+    // la clave de cada fila de «Ingresos» encuentra su ingreso en los datos
+    M.ing.forEach((x) => { const k = u2.ingresos.findIndex((i, q) => claveIngreso(u2.ingresos, q) === x.key); expect(k).toBeGreaterThanOrEqual(0); expect(u2.ingresos[k].nombre).toBe(x.nombre); });
+    const con = p({ onDatos: () => {} });
+    expect(con).toContain('aria-label="Ver los ingresos de District"');
+    expect(p({})).not.toContain("Ver o ligar sus ingresos");
+    expect(p({ onDatos: () => {}, demo: true })).not.toContain("Ver o ligar sus ingresos");
   });
 });
