@@ -160,3 +160,35 @@ describe("inversión que se reinvierte: recibir plata de ella o retirar una part
     expect(p({ onDatos: () => {}, demo: true })).not.toContain("Abrir la ficha de");
   });
 });
+
+// 27-nov-2026 (Santiago: "quité una inversión por error… debería era más bien como apagarse, por si algo";
+// el lote de la bodega mostraba 17 millones porque la renta de 8,5 estaba en dos aportes).
+describe("apagar en vez de quitar, y aportes con renta repetida", () => {
+  const nueva = { nombre: "CDT", preset: "rfLargo", monto: 500e6, anio: 2, fuente: "venta", pctRecibe: 100 };
+  const ap1 = { activoId: "ib", monto: 100e6, anio: 2, fuente: "venta", rentaMensual: 8.5e6, rentaDesdeMes: 12 }, ap2 = { activoId: "ib", monto: 50e6, anio: 3, fuente: "venta", rentaMensual: 8.5e6, rentaDesdeMes: 24 };
+  const base = { decisiones: { or: { accion: "termina", desde: 2 } } };
+  const pat = (cfg) => proyectarFuturo10(user, cfg).filas.map((f) => Math.round(f.patrimonio));
+  it("una inversión nueva apagada cuenta igual que si no estuviera, y guarda cómo era", () => {
+    const off = { ...base, nuevas: [{ preset: "_fuera", _apagada: nueva }] };
+    expect(pat(off)).toEqual(pat({ ...base, nuevas: [] }));
+    const html = pinta(off);
+    expect(html).toContain("Apagadas en este escenario (1)"); expect(html).toContain("Inversión nueva: CDT"); expect(html).toContain("Encender");
+    expect(html).not.toContain("Quitar esta inversión");
+  });
+  it("un aporte apagado cuenta igual que si no estuviera", () => {
+    const off = { ...base, reinversiones: [ap1], aportesApagados: [ap2] };
+    expect(pat(off)).toEqual(pat({ ...base, reinversiones: [ap1] }));
+    expect(pinta(off)).toContain("Apagadas en este escenario (1)");
+  });
+  it("dos aportes con renta nueva se suman: la tabla muestra el doble", () => {
+    const r2 = proyectarFuturo10(user, { ...base, reinversiones: [ap1, ap2] }), r1 = proyectarFuturo10(user, { ...base, reinversiones: [ap1] });
+    const renta = (r, t) => r.filas[t].porActivo.find((x) => x.id === "ib").renta;
+    expect(renta(r2, 4) - renta(r1, 4)).toBeCloseTo(8.5e6 * 12 * Math.pow(1.05, 3), 0);
+  });
+  it("el creador de pasos no se cae con algo apagado", () => {
+    const g = { borrador: { ...base, nuevas: [{ preset: "_fuera", _apagada: nueva }], reinversiones: [ap1], aportesApagados: [ap2] } };
+    for (let paso = 0; paso <= 4; paso++) expect(() => renderToString(createElement(MiFuturo10, { user, guardado: g, pasoInicial: paso, vista: "crear" }))).not.toThrow();
+    expect(() => renderToString(createElement(MiFuturo10, { user, guardado: g, tabla: true, vista: "crear" }))).not.toThrow();
+  });
+});
+
