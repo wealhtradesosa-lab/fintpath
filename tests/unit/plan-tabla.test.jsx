@@ -196,6 +196,10 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     const cfg = { decisiones: { lo: { accion: "cambia", desde: 2, mensual: 8.5e6 } }, reinversiones: [{ activoId: "lo", monto: 600e6, anio: 2, fuente: "liquidez", rentaMensual: 8.5e6, rentaDesdeMes: 18 }], rentasAnio: { lo: { 6: 8.5e6 / Math.pow(1.05, 5) } } };
     const M = filasDelPlan(proyectarFuturo10(u, cfg)), v = M.act.find((x) => x.id === "lo").v.map(Math.round);
     expect(v.slice(0, 7)).toEqual([0, 13387500, 18742500, 19679625, 20663606, 19348393, 20315813]);
+    // El aporte de la obra se ve en el renglón del lote, en su año: 600 millones de hoy son 624 en 2027.
+    const r = proyectarFuturo10(u, cfg), html = renderToString(createElement(PlanTabla, { user: u, cfg, setCfg: () => {}, r, cuenta: cuentaPorAnio(r, cfg) })).replace(/<!-- -->/g, "");
+    expect(html).toContain("le inviertes $624.000.000 en " + (Y + 1));
+    expect(html).toContain(">Inviertes<");
   });
 });
 
