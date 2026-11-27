@@ -773,7 +773,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const idsReinvierten = new Set(activos.filter((a) => a.clase !== "inmueble" && a.clase !== "vehiculo" && a.clase !== "vivienda" && a.crec != null && a.crec > 0 && !(a.rentaAnual > 0.5) && !a.rentaReemplazada).map((a) => a.id));
   const aplicarCambio = (a, t) => {
     const c0 = cambios[a.id], extra = (rentasAnio[a.id] || {})[t];
-    const c = c0 && c0.desde === t ? c0 : extra != null ? { modo: "renta", desde: t, mensual: extra } : null;
+    // 27-nov-2026: lo último que se escribe en la tabla para ese año manda sobre el «Cambia» del paso 1.
+    const c = extra != null ? { modo: extra > 0 ? "renta" : "propio", desde: t, mensual: extra, deTabla: true } : c0 && c0.desde === t ? c0 : null;
     if (!c || a.rentaReemplazada || a.terminado) return;
     const fr0 = Math.pow(1 + gIng, Math.max(0, t - 1)), frG = Math.pow(1 + gGas, Math.max(0, t - 1));
     const nueva = c.modo === "propio" ? 0 : c.mensual * 12;
@@ -781,6 +782,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     ingresos = Math.max(0, ingresos + dif); pasivo = Math.max(0, pasivo + dif);
     if (a.rentaAntesCambio == null) a.rentaAntesCambio = a.rentaAnual || 0;
     a.rentaAnual = nueva; a.cambio = c;
+    // 27-nov-2026 (Santiago: "si cambio una renta de un activo, la puse en 8.500.000 y se ve 13 millones; ¿de dónde salió ese valor?").
+    // «Desde este año te paga X» es el total de esa inversión desde ese año: la renta nueva de un aporte o de una obra que ya arrancó
+    // (o arranca ese mismo año) queda incluida ahí y deja de sumarse aparte. Una que arranca en un año siguiente sí se suma.
+    const yaArranco = (mes) => n(mes) < 12 * t;
+    if (a.rentaNuevaAnual > 0 && yaArranco(a.rentaDesdeMes)) a.rentaNuevaAnual = 0;
+    if (a.rentasExtra && a.rentasExtra.length) a.rentasExtra = a.rentasExtra.filter((x) => !yaArranco(x.desdeMes));
     if (idsReinvierten.has(a.id)) a.pagaDeLoQueRinde = nueva > 0.5;
     if (t <= 1) a.rentaCorregida = true;
     if (c.modo === "propio") { const cg = costoLigado(a.id) * 12 * frG; gastos += cg; a.propioDesde = t; a.costoPropio = cg; }

@@ -190,16 +190,29 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     for (let paso = 0; paso <= 4; paso++) expect(() => renderToString(createElement(MiFuturo10, { user, guardado: g, pasoInicial: paso, vista: "crear" }))).not.toThrow();
     expect(() => renderToString(createElement(MiFuturo10, { user, guardado: g, tabla: true, vista: "crear" }))).not.toThrow();
   });
-  // El caso real del lote de la bodega: la renta de 8,5 millones estaba en el «Cambia» del paso 1 y otra vez en el aporte de la obra.
-  it("renta en el cambio del paso 1 más renta en un aporte: la tabla da las cifras que vio Santiago", () => {
+  // El caso real del lote de la bodega (27-nov-2026): la renta de 8,5 millones estaba en el «Cambia» del paso 1 y otra vez en el aporte
+  // de la obra, y la tabla mostraba 13.387.500 y 18.742.500. Santiago: "la puse en 8.500.000 y se ve 13 millones; ¿de dónde salió?".
+  // Ahora «desde este año te paga X» es el total: lo que se escribe es lo que se ve.
+  it("lo que se escribe en «Cambiar lo que te paga» es lo que muestra la tabla, aunque haya un aporte con renta", () => {
     const u = { trm: 4200, inflacionPct: 4, inv: [{ id: "lo", n: "lote bodega macarena con licencia", tp: "Real Estate", va: 410e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 2000e6 }], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 30e6 }], gas: { Vida: [{ n: "Mercado", m: 10e6 }] }, deu: [] };
-    const cfg = { decisiones: { lo: { accion: "cambia", desde: 2, mensual: 8.5e6 } }, reinversiones: [{ activoId: "lo", monto: 600e6, anio: 2, fuente: "liquidez", rentaMensual: 8.5e6, rentaDesdeMes: 18 }], rentasAnio: { lo: { 6: 8.5e6 / Math.pow(1.05, 5) } } };
-    const M = filasDelPlan(proyectarFuturo10(u, cfg)), v = M.act.find((x) => x.id === "lo").v.map(Math.round);
-    expect(v.slice(0, 7)).toEqual([0, 13387500, 18742500, 19679625, 20663606, 19348393, 20315813]);
+    const aporte = { activoId: "lo", monto: 600e6, anio: 2, fuente: "liquidez", rentaMensual: 8.5e6, rentaDesdeMes: 18 };
+    const fila = (c) => filasDelPlan(proyectarFuturo10(u, c)).act.find((x) => x.id === "lo").v.map(Math.round);
+    // Su escenario: «Cambia» del paso 1 en 2027, el aporte, y lo que él escribió en la tabla en 2027 y 2031 (8.500.000 de cada año).
+    const cfg = { decisiones: { lo: { accion: "cambia", desde: 2, mensual: 8.5e6 } }, reinversiones: [aporte], rentasAnio: { lo: { 2: 8.5e6 / 1.05, 6: 8.5e6 / Math.pow(1.05, 5) } } };
+    const v = fila(cfg);
+    expect(v[1]).toBe(8500000);   // 2027: lo que escribió
+    expect(v[2]).toBe(8925000);   // 2028: sube 5 %, ya no 18.742.500
+    expect(v[5]).toBe(8500000);   // 2031: lo que escribió
+    // Solo el aporte, sin cambios: medio año en 2027 y completo desde 2028.
+    expect(fila({ reinversiones: [aporte] }).slice(0, 3)).toEqual([0, 4462500, 9371250]);
+    // Una renta nueva que arranca DESPUÉS del cambio sí se suma (otra obra más adelante).
+    const despues = fila({ rentasAnio: { lo: { 2: 5e6 / 1.05 } }, reinversiones: [{ ...aporte, anio: 4, rentaDesdeMes: 36 }] });
+    expect(despues[1]).toBe(5000000); expect(despues[3]).toBe(Math.round(5e6 * 1.05 * 1.05 + 8.5e6 * Math.pow(1.05, 3)));
     // El aporte de la obra se ve en el renglón del lote, en su año: 600 millones de hoy son 624 en 2027.
     const r = proyectarFuturo10(u, cfg), html = renderToString(createElement(PlanTabla, { user: u, cfg, setCfg: () => {}, r, cuenta: cuentaPorAnio(r, cfg) })).replace(/<!-- -->/g, "");
     expect(html).toContain("le inviertes $624.000.000 en " + (Y + 1));
-    expect(html).toContain(">Inviertes<");
+    const c2 = { reinversiones: [aporte] }, r2 = proyectarFuturo10(u, c2);
+    expect(renderToString(createElement(PlanTabla, { user: u, cfg: c2, setCfg: () => {}, r: r2, cuenta: cuentaPorAnio(r2, c2) }))).toContain(">Inviertes<");
   });
 });
 
