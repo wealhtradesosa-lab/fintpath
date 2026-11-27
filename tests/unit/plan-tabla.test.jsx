@@ -190,5 +190,12 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     for (let paso = 0; paso <= 4; paso++) expect(() => renderToString(createElement(MiFuturo10, { user, guardado: g, pasoInicial: paso, vista: "crear" }))).not.toThrow();
     expect(() => renderToString(createElement(MiFuturo10, { user, guardado: g, tabla: true, vista: "crear" }))).not.toThrow();
   });
+  // El caso real del lote de la bodega: la renta de 8,5 millones estaba en el «Cambia» del paso 1 y otra vez en el aporte de la obra.
+  it("renta en el cambio del paso 1 más renta en un aporte: la tabla da las cifras que vio Santiago", () => {
+    const u = { trm: 4200, inflacionPct: 4, inv: [{ id: "lo", n: "lote bodega macarena con licencia", tp: "Real Estate", va: 410e6 }, { id: "c", n: "Cuenta", tp: "Cash", va: 2000e6 }], ingresos: [{ nombre: "Salario", categoria: "Salario", mensual: 30e6 }], gas: { Vida: [{ n: "Mercado", m: 10e6 }] }, deu: [] };
+    const cfg = { decisiones: { lo: { accion: "cambia", desde: 2, mensual: 8.5e6 } }, reinversiones: [{ activoId: "lo", monto: 600e6, anio: 2, fuente: "liquidez", rentaMensual: 8.5e6, rentaDesdeMes: 18 }], rentasAnio: { lo: { 6: 8.5e6 / Math.pow(1.05, 5) } } };
+    const M = filasDelPlan(proyectarFuturo10(u, cfg)), v = M.act.find((x) => x.id === "lo").v.map(Math.round);
+    expect(v.slice(0, 7)).toEqual([0, 13387500, 18742500, 19679625, 20663606, 19348393, 20315813]);
+  });
 });
 
