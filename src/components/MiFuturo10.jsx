@@ -5,6 +5,7 @@ import PageHeader from "./PageHeader";
 import InputDecimalEs from "./InputDecimalEs";
 import NumberInput from "./NumberInput";
 import { tx, esUS, pct as fmtPctR, miles, plata as plataR, ejemploMonto, monedaBase, localeCifras } from "../lib/region.js";
+import { impuestosPorAnio } from "../lib/impuestosFuturo.js";
 import { proyectarFuturo10, supuestosF10, nombreSup, retornoNominalPreset, rendimientoHintPct, leerFuturos, migrarModifica, resumenEscenario, migrarClaves, anioCal, indexacionDefaultPct, gastosLista, tarifaCiclo, regimenSugerido, sugerirVinculados, rentasDuplicadas, rentasFuturasDelActivo, inversionesHoy, leerCambios, finalesDeDatos, sugerirActivoDeDeuda, deudaActivo, ingresosSueltosHoy, leerPropiedadRaiz, hayAlertaLiquidez, cuentaPorAnio, fotosPorAnio, holguraPorAnio, CDT_CO } from "../lib/futuro10.js";
 import { track } from "../lib/analytics";
 import PlanInforme from "./PlanInforme";
@@ -50,7 +51,7 @@ const CONFIG_INICIAL = { escenario: "base", decisiones: {}, norte: "equilibrio",
 export const MSG_DEMO_F10 = "En modo demo no se guardan escenarios.";
 export const msgDemoF10 = () => tx(MSG_DEMO_F10, "Scenarios aren't saved in demo mode.");
 
-export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, vista: vistaProp, onCambiarVista, tabla = false, onDatos, onIrPatrimonio }) {
+export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoInicial = 0, demo = false, vista: vistaProp, onCambiarVista, tabla = false, onDatos, onIrPatrimonio, estimarImp = null, impHoy = null }) {
   const [paso, setPaso] = useState(pasoInicial);
   // 26-nov-2026 (Santiago: "que ya sea la sección donde se arman los escenarios futuros"). Con `tabla`, crear o editar un escenario
   // abre «Tu plan en una pantalla» (PlanTabla); los pasos de antes quedan detrás de «Ver el detalle paso a paso».
@@ -107,10 +108,17 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   // En la tabla el escenario no hace nada automático: sin colchón, sin canastas, sin rendimiento supuesto para la plata sin repartir.
   const sinAuto = (c) => (tabla ? { ...c, sinAutomaticos: true } : c);
   const cfgM = useMemo(() => sinAuto(cfg), [cfg, tabla]);
-  const r = useMemo(() => proyectarFuturo10(user, cfgM), [user, cfgM]);
+  // 28-nov-2026 (Santiago: "no estimar impuestos daría unos valores muy poco precisos"). En la tabla, cada escenario se proyecta dos veces:
+  // primero sin impuestos, para saber qué ingresos hay cada año; con eso el motor tributario de la plataforma estima el impuesto de cada
+  // año, y la segunda proyección lo resta del flujo. Solo Colombia por ahora (estimarImp no llega en una sesión de EE. UU.).
+  const hoySinCambios = useMemo(() => (tabla && estimarImp ? proyectarFuturo10(user, sinAuto({ escenario: cfg.escenario })) : null), [user, cfg.escenario, tabla, estimarImp]);
+  const conImp = (c) => { if (!tabla || !estimarImp || !hoySinCambios) return { cfg: c, imp: null };
+    try { const imp = impuestosPorAnio(user, proyectarFuturo10(user, c), hoySinCambios, { estimar: (uT) => estimarImp(uT.ingresos), estHoy: impHoy, cfg: c }); return { cfg: { ...c, impuestosAnio: imp.porAnio }, imp }; } catch { return { cfg: c, imp: null }; } };
+  const { cfg: cfgI, imp } = useMemo(() => conImp(cfgM), [user, cfgM, hoySinCambios, estimarImp, impHoy]);
+  const r = useMemo(() => proyectarFuturo10(user, cfgI), [user, cfgI]);
   // 24-nov-2026: la foto de cada año antes de tus movidas de ese año, y la cuenta en cascada.
-  const fotos = useMemo(() => fotosPorAnio(user, cfg, r), [user, cfg, r]);
-  const cuenta = useMemo(() => cuentaPorAnio(r, cfgM, fotos), [r, cfgM, fotos]);
+  const fotos = useMemo(() => fotosPorAnio(user, cfgI.impuestosAnio ? { ...cfg, impuestosAnio: cfgI.impuestosAnio } : cfg, r), [user, cfg, cfgI, r]);
+  const cuenta = useMemo(() => cuentaPorAnio(r, cfgI, fotos), [r, cfgI, fotos]);
   // Lo que te queda por invertir ese año (estable: sale de lo que puedes usar menos tus movidas).
   // El monto que viene lleno y «Usar saldo pendiente» usan esto: dejan el año exactamente en cero.
   // Lo que se escribe para un año siguiente va en pesos de hoy (se paga indexado): se convierte con factorHoy.
@@ -149,9 +157,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const editandoEsc = escenarios.find((e) => e.id === editandoId) || null;
   const nombreBorrador = editandoEsc ? `${editandoEsc.nombre} ${tx("(cambios sin guardar)", "(unsaved changes)")}` : tx("Sin guardar: lo que estás armando", "Unsaved: what you're building");
   const planesComparar = useMemo(() => {
-    const ps = [{ nombre: tx("Si me quedo como estoy", "If I stay as I am"), esHoy: true, r: proyectarFuturo10(user, sinAuto({ escenario: cfg.escenario })) }];
+    const ps = [{ nombre: tx("Si me quedo como estoy", "If I stay as I am"), esHoy: true, r: proyectarFuturo10(user, conImp(sinAuto({ escenario: cfg.escenario })).cfg) }];
     if (hayBorrador) ps.push({ nombre: nombreBorrador, r });
-    escenarios.forEach((e) => ps.push({ id: e.id, nombre: e.nombre, descripcion: e.descripcion || "", recomendado: !!e.recomendado, r: proyectarFuturo10(user, sinAuto({ ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario })) }));
+    escenarios.forEach((e) => ps.push({ id: e.id, nombre: e.nombre, descripcion: e.descripcion || "", recomendado: !!e.recomendado, r: proyectarFuturo10(user, conImp(sinAuto({ ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario })).cfg) }));
     return ps;
   }, [user, cfg, r, escenarios, hayBorrador, nombreBorrador]);
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
@@ -284,7 +292,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {/* 24-nov-2026 (Santiago: "un solo botón guardar"; "debería ser guardar el actual o guardar como copia"). Arriba de todos los pasos:
           qué estás armando, si tiene cambios sin guardar, y «Guardar» (más «Guardar como copia» si editas uno que ya existe). */}
       {!demo && (modoCrear === "tabla" || paso !== 4) && barraGuardar}
-      {modoCrear === "tabla" ? <div style={{ marginBottom: 14 }}><PlanTabla user={user} cfg={cfg} setCfg={setCfg} r={r} cuenta={cuenta} demo={demo} onDatos={onDatos} onIrPatrimonio={onIrPatrimonio} cfgLimpio={migrarClaves(CONFIG_INICIAL, user)} /></div> : <>
+      {modoCrear === "tabla" ? <div style={{ marginBottom: 14 }}><PlanTabla user={user} cfg={cfg} setCfg={setCfg} r={r} cuenta={cuenta} imp={imp} demo={demo} onDatos={onDatos} onIrPatrimonio={onIrPatrimonio} cfgLimpio={migrarClaves(CONFIG_INICIAL, user)} /></div> : <>
       {tabla && <button type="button" onClick={() => { setModoCrear("tabla"); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), marginBottom: 10 }}>{tx("← Volver a tu plan en una pantalla", "← Back to your plan on one screen")}</button>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}

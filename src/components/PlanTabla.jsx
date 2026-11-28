@@ -48,7 +48,7 @@ export function filasDelPlan(r) {
   const hoy = (r.activos || []).map((a) => a.id);
   const orden = (x) => { const i = hoy.indexOf(x.id); return i >= 0 ? i : String(x.id).startsWith("nueva_") ? 100 + Number(String(x.id).slice(6)) : String(x.id).startsWith("c_") ? 900 : 500; };
   act.sort((a, b) => orden(a) - orden(b));
-  return { N, ing, act, gas, deu, entra: F.map((f) => f.ingresos / 12), sale: F.map((f) => f.gastos / 12), queda: F.map((f) => f.cf / 12), pat: F.map((f) => f.patrimonio), deuda: F.map((f) => f.deuda || 0), activos: F.map((f) => f.activos || 0), deflFin: F.map((f) => f.deflactor || 1) };
+  return { N, ing, act, gas, deu, entra: F.map((f) => f.ingresos / 12), sale: F.map((f) => f.gastos / 12), imp: F.map((f) => (f.impuesto || 0) / 12), queda: F.map((f) => f.cf / 12), pat: F.map((f) => f.patrimonio), deuda: F.map((f) => f.deuda || 0), activos: F.map((f) => f.activos || 0), deflFin: F.map((f) => f.deflactor || 1) };
 }
 
 /** La propiedad raíz del formulario, en lo que entiende el motor (plata en pesos de hoy). */
@@ -91,7 +91,7 @@ const Campo = ({ etiqueta, children }) => <label style={{ display: "flex", flexD
 const Sel = ({ value, on, ops, id }) => <select id={id} value={value} onChange={(e) => on(e.target.value)} style={inp}>{ops.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>;
 const Txt = ({ value, on, ph, w = 150, plataIn, id }) => <input id={id} type="text" inputMode={plataIn ? "numeric" : "decimal"} value={value} placeholder={ph} onChange={(e) => on(plataIn ? conPuntos(e.target.value) : e.target.value)} style={{ ...inp, width: w, textAlign: plataIn ? "right" : "left" }} />;
 
-export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [], demo = false, onVerPasos, onDatos, onIrPatrimonio, cfgLimpio }) {
+export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [], demo = false, onVerPasos, onDatos, onIrPatrimonio, cfgLimpio, imp = null }) {
   const M = useMemo(() => filasDelPlan(r), [r]);
   const N = M.N, AN = useMemo(() => Array.from({ length: N }, (_, j) => anioCal(j + 1)), [N]);
   const [sel, setSel] = useState(0);
@@ -112,6 +112,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   const [fic, setFic] = useState(null); // { tipo: "ing" | "inv", id }
   const [hecho, setHecho] = useState("");
   const [verSobra, setVerSobra] = useState(false);
+  const [verImp, setVerImp] = useState(false);
   const [edita, setEdita] = useState(null);
   const [editaR, setEditaR] = useState(null); // aporte («Invertirle más dinero») que se está editando   // 28-nov-2026 (Santiago: "lo que uno cree nuevo en las tablas… debe poder editarse, borrarse")
   const ingL = user.ingresos || [], invL = (user.inv || []).filter((a) => a && a.id), puedeDatos = !!onDatos && !demo && invL.length > 0;
@@ -493,6 +494,21 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
         {M.deu.map((x) => { const d = (r.deudas || []).find((q) => q.nombre === x.nombre) || {}; const itD = mapa.deudas.find((q) => q.nombre === x.nombre); return <div key={x.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}><Fila hijo nombre={itD ? nombreFic(x.nombre, "deuda", x.id) : x.nombre} sub={<>{`${tx("Debes hoy", "You owe today")} ${plata(d.saldo || 0)}${d.pagaAnio ? ` · ${tx("la pagas en", "you pay it off in")} ${AN[d.pagaAnio - 1]}` : d.ventaAnio || d.porVenta ? ` · ${tx("se paga con la venta de su inversión", "paid with the sale of its asset")}` : d.finAnio && d.finAnio <= N ? ` · ${tx("se acaba con sus cuotas en", "ends with its installments in")} ${AN[d.finAnio - 1]}` : ""}${!demo && d.id && !d.pagaAnio && !d.porVenta && !d.ventaAnio ? ` · ${tx("toca un año para pagarla completa", "tap a year to pay it off")}` : ""}`}{marca(itD, "deuda", x.id)}</>}
           celdas={cels(x.v, { caja: true, cada: (v, j) => { const puede = !demo && d.id && !d.porVenta && !d.ventaAnio, esPago = d.id && pagar[d.id] === AN[j];
             return { tag: esPago ? tx("Pagas", "Pay off") : j > 0 && v < 0.5 && x.v[j - 1] > 0.5 ? tx("Pagada", "Paid") : "", tagColor: esPago ? C.am : C.gn, aria: puede ? `${tx("Pagar", "Pay off")} ${x.nombre} ${tx("en", "in")} ${AN[j]}` : undefined, onClick: puede && (esPago || v > 0.5) ? () => pagarDeudaEn(d, j) : undefined }; } })} />{itD && puedeDatos && fic && fic.tipo === "deuda" && fic.id === x.id ? fichaItem("deuda", itD) : null}</div>; })}</Bloque>
+      {/* 28-nov-2026 (Santiago: "¿cómo se estima algo de impuestos?… lo más completo posible, que sea más adecuado a la realidad").
+          Impuesto de renta de cada año con el mismo motor de la página Impuestos, por titular. Se abre para ver cómo se calculó. */}
+      {imp && imp.detalle && imp.detalle.length ? <div id="f10-impuestos" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <Fila nombre={tx("Impuestos (estimado)", "Taxes (estimate)")} sub={<>{tx("Retención de ese año más el saldo de la declaración del año anterior, repartido al mes ·", "That year's withholding plus the prior year's balance due, per month ·")} <button type="button" style={{ ...lnk, padding: "4px 2px", fontSize: 12 }} aria-expanded={verImp} onClick={() => setVerImp((q) => !q)}>{verImp ? tx("Ocultar cómo se calculó", "Hide how it was calculated") : tx(`Ver cómo se calculó ${AN[sel]}`, `See how ${AN[sel]} was calculated`)}</button></>} celdas={cels(M.imp, { caja: true })} />
+        {verImp ? (() => { const d = imp.detalle[sel] || {}, y0 = AN[sel];
+          return <div id="f10-impuestos-detalle" style={{ border: `1px solid ${C.bd}`, borderRadius: 8, padding: "10px 12px", display: "flex", flexDirection: "column", gap: 4, maxWidth: 640 }}>
+            <Linea fuerte a={tx(`Impuesto de renta de ${y0}, por titular`, `${y0} income tax, by taxpayer`)} b={plata(d.impuesto || 0)} />
+            {(d.titulares || []).filter((q) => q.impuesto > 0.5 || q.retencion > 0.5).map((q, k) => <div key={k} style={{ paddingLeft: 14, fontSize: 13, color: C.tx2 }}><Linea a={`${q.nombre}${q.ingreso > 0.5 ? ` · ${tx("ingresos del año", "year income")} ${plata(q.ingreso)}` : ""}`} b={plata(q.impuesto)} /></div>)}
+            <div style={{ borderTop: `1px solid ${C.bd2}`, margin: "2px 0" }} />
+            <Linea a={tx(`Te retienen durante ${y0}`, `Withheld during ${y0}`)} b={plata(d.pagaRetencion || 0)} />
+            <Linea a={sel === 0 ? tx(`+ Saldo de tu declaración que pagas en ${y0}`, `+ Balance due you pay in ${y0}`) : tx(`+ Saldo de la declaración de ${y0 - 1}, que pagas en ${y0}`, `+ ${y0 - 1} balance due, paid in ${y0}`)} b={plata(d.pagaSaldo || 0)} />
+            <Linea fuerte a={tx(`= Pagas de impuestos en ${y0}`, `= Taxes paid in ${y0}`)} b={plata(d.paga || 0)} />
+            <Linea a={tx(`Queda un saldo de ${y0} para pagar en ${y0 + 1}`, `${y0} balance left to pay in ${y0 + 1}`)} b={plata(d.saldo || 0)} />
+            <div style={{ fontSize: 12, color: C.tx2, lineHeight: 1.5, marginTop: 4 }}>{tx(`Se calcula con las reglas de hoy${imp.calibrado ? ", ajustado a lo que pagaste en tu declaración real" : ""}. No incluye el impuesto por vender activos (ganancia ocasional) ni impuestos en otro país. Es una estimación para planear, no para declarar.`, "Calculated with today's rules. It excludes tax on asset sales and foreign taxes. A planning estimate, not for filing.")}</div>
+          </div>; })() : null}</div> : null}
       <Fila fuerte linea nombre={tx("− Te sale al mes", "− Monthly spending")} celdas={cels(M.sale, { fuerte: true })} />
       <Fila fuerte grande nombre={tx("= Te queda al mes", "= Left each month")} sub={tx("Lo que te entra menos lo que te sale", "Income minus spending")} celdas={cels(M.queda, { res: true, alto: 52 })} />
     </div></div></section>
@@ -533,7 +549,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
                     La cifra se abre en sus partes, con los mismos renglones del paso 1: lo que entra en el año menos lo que sale. */}
                 {(() => { const an = (rows) => rows.map((x) => ({ n: x.nombre, v: (x.v[sel] || 0) * 12 })).filter((q) => q.v > 0.5), sm = (l) => l.reduce((t0, q) => t0 + q.v, 0);
                   const ings = an(M.ing), invs = an(M.act), gs = an(M.gas), ds = an(M.deu), entra = (M.entra[sel] || 0) * 12, sale = (M.sale[sel] || 0) * 12, cfA = (M.queda[sel] || 0) * 12;
-                  const otroE = entra - sm(ings) - sm(invs), otroS = sale - sm(gs) - sm(ds), ajuste = fl - cfA, sub = { paddingLeft: 14, fontSize: 13, color: C.tx2 };
+                  const otroE = entra - sm(ings) - sm(invs), otroS = sale - sm(gs) - sm(ds) - (M.imp[sel] || 0) * 12, ajuste = fl - cfA, sub = { paddingLeft: 14, fontSize: 13, color: C.tx2 };
                   return <div id="f10-sobra-detalle" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <div><button type="button" style={lnk} aria-expanded={verSobra} onClick={() => setVerSobra((q) => !q)}>{verSobra ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx("Ver de dónde sale", "See where it comes from")}</button></div>
                     {verSobra ? <div style={{ display: "flex", flexDirection: "column", gap: 4, border: `1px solid ${C.bd}`, borderRadius: 8, padding: "10px 12px" }}>
@@ -544,6 +560,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
                       <Linea fuerte a={tx(`− Te sale en todo ${y}`, `− Going out during ${y}`)} b={plata(sale)} />
                       {sm(gs) > 0.5 ? <div style={sub}><Linea a={tx("Gastos", "Expenses")} b={plata(sm(gs))} /></div> : null}
                       {sm(ds) > 0.5 ? <div style={sub}><Linea a={tx("Cuotas de deudas", "Debt payments")} b={plata(sm(ds))} /></div> : null}
+                      {(M.imp[sel] || 0) * 12 > 0.5 ? <div style={sub}><Linea a={tx("Impuestos (estimado)", "Taxes (estimate)")} b={plata((M.imp[sel] || 0) * 12)} /></div> : null}
                       {Math.abs(otroS) > 1 ? <div style={sub}><Linea a={tx("Otros pagos del año", "Other payments")} b={plata(otroS)} /></div> : null}
                       {Math.abs(ajuste) > 1 ? <Linea a={ajuste < 0 ? tx("− Lo que este escenario ya manda a inversiones o usa para cubrir pagos", "− What this scenario already sends to investments or uses for payments") : tx("+ Otros ajustes del año", "+ Other adjustments")} b={plata(Math.abs(ajuste))} /> : null}
                       <div style={{ borderTop: `1px solid ${C.bd2}`, margin: "2px 0" }} />
