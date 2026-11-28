@@ -88,3 +88,31 @@ describe("impuesto por lo que se vende (ganancia ocasional)", () => {
     expect(v.manual).toBe(true); expect(v.impuesto).toBe(12345678);
   });
 });
+
+// Entrega 3 (28-nov-2026): impuestos en otro país, escritos por la persona.
+describe("impuestos en otro país", () => {
+  const u = { ...user, inv: [...user.inv, { id: "or", n: "Casa Orlando", tp: "Real Estate", va: 300000, vc: 200000, moneda: "USD" }], ingresos: [...user.ingresos, { id: "i3", nombre: "Arriendo Orlando", categoria: "Arriendo", mensual: 3000, moneda: "USD", activoId: "or", owner: "own_1" }] };
+  const con = (cfg) => { const c = { sinAutomaticos: true, ...cfg }, r0 = proyectarFuturo10(u, { sinAutomaticos: true }), rA = proyectarFuturo10(u, c); return impuestosPorAnio(u, rA, r0, { estimar, estHoy: estimar(u), cfg: c }); };
+  it("sin escribir nada, no cambia el cálculo y lista la inversión para llenarla", () => {
+    const a = con({});
+    expect(a.detalle[0].exterior.map((x) => x.id)).toEqual(["or"]); expect(a.detalle[0].exteriorAnual).toBe(0);
+    expect(a.detalle[0].paga).toBeCloseTo(a.detalle[0].pagaRetencion + a.detalle[0].pagaSaldo, 0);
+  });
+  it("lo de cada año se paga ese año, indexado, y deja de salir cuando la vende", () => {
+    const a = con({ impExterior: { anual: { or: 20e6 } } }), b = con({ impExterior: { anual: { or: 20e6 } }, decisiones: { or: { accion: "termina", desde: 3 } } });
+    expect(a.detalle[0].exteriorAnual).toBeCloseTo(20e6, 0); expect(a.detalle[2].exteriorAnual).toBeGreaterThan(20e6);
+    expect(a.detalle[0].paga).toBeCloseTo(a.detalle[0].pagaRetencion + a.detalle[0].pagaSaldo + 20e6, 0);
+    expect(b.detalle[4].exteriorAnual).toBe(0);
+  });
+  it("el descuento en Colombia nunca supera lo pagado afuera ni la parte de Colombia sobre esos ingresos", () => {
+    const sin = con({}), a = con({ impExterior: { anual: { or: 20e6 } } }), d = a.detalle[0];
+    expect(d.credito).toBeGreaterThanOrEqual(0); expect(d.credito).toBeLessThanOrEqual(20e6 + 1);
+    expect(d.saldo).toBeCloseTo(sin.detalle[0].saldo - d.credito, 0);
+  });
+  it("en una venta: lo de afuera se paga ese año y se descuenta del de Colombia por esa misma venta", () => {
+    const sin = con({ decisiones: { or: { accion: "vende" } } }).detalle[0].ventas[0], a = con({ decisiones: { or: { accion: "vende" } }, impExterior: { venta: { or: 30e6 } } }), v = a.detalle[0].ventas[0];
+    expect(sin.fuera).toBe(true); expect(sin.impuesto).toBeCloseTo((300000 - 200000) * 4200 * 0.15, 0);
+    expect(v.exterior).toBe(30e6); expect(v.credito).toBeCloseTo(Math.min(30e6, sin.impuesto), 0); expect(v.impuesto).toBeCloseTo(sin.impuesto - v.credito, 0);
+    expect(a.detalle[0].exteriorVentas).toBe(30e6);
+  });
+});
