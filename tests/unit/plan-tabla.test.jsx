@@ -106,10 +106,10 @@ describe("propiedad raíz desde la tabla", () => {
 });
 
 describe("Mi futuro con la tabla", () => {
-  it("con `tabla`, crear un escenario abre la tabla y deja el detalle paso a paso a un toque", () => {
+  it("con `tabla`, crear un escenario abre la tabla y ya no ofrece los pasos de antes (un solo modelo)", () => {
     const h = renderToString(createElement(MiFuturo10, { user, guardado: {}, tabla: true })).replace(/<!-- -->/g, "");
     expect(h).toContain("Tu plan en una pantalla");
-    expect(h).toContain("Ver el detalle paso a paso");
+    expect(h).not.toContain("Ver el detalle paso a paso");   // 28-nov-2026 (Santiago: "veo dos modelos, por eso está todo confuso")
     expect(h).not.toContain("1. Lo que tienes");
     expect(h).toContain("Escenario nuevo: cambia algo en la tabla y aquí lo guardas.");
   });
@@ -236,7 +236,8 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     const cfg = { decisiones: { ib: { accion: "vende" } } }, r = proyectarFuturo10(user, cfg), M = filasDelPlan(r);
     expect(M.act.find((x) => x.id === "ib")).toMatchObject({ vendidaHoy: true });
     const html = pinta(cfg);
-    expect(html).toContain("Lo que vendes en " + Y); expect(html).toContain('aria-label="Abrir opciones de Acciones en ' + Y + '"');
+    expect(html).not.toContain("Lo que vendes en " + Y);   // sin sección aparte: va en su bloque de siempre
+    expect(html).toContain('aria-label="Abrir opciones de Acciones en ' + Y + '"'); expect(html).toContain("la vendes al empezar " + Y);
     const h0 = pinta({});
     expect(h0).toMatch(/>Hoy<\/span><span[^>]*>\$900\.000\.000</);      // Acciones: 900 millones hoy, igual que en Patrimonio
     expect(h0).toContain("Al empezar el año");
