@@ -154,7 +154,7 @@ describe("inversión que se reinvierte: recibir plata de ella o retirar una part
     M.ing.forEach((x) => { const k = u2.ingresos.findIndex((i, q) => claveIngreso(u2.ingresos, q) === x.key); expect(k).toBeGreaterThanOrEqual(0); expect(u2.ingresos[k].nombre).toBe(x.nombre); });
     const con = p({ onDatos: () => {} });
     expect(con).toContain('aria-label="Abrir la ficha de District"');
-    expect(con).toContain("hay 1 suelto que parece de aquí");        // «50% District» parece de District
+    expect(con).toContain("hay 1 sin conectar que parece de esta inversión");        // «50% District» parece de District
     expect(con).toContain("1 conexión: ingreso");                     // las que ya tienen su arriendo conectado
     expect(p({})).not.toContain("Abrir la ficha de");
     expect(p({ onDatos: () => {}, demo: true })).not.toContain("Abrir la ficha de");
