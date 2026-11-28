@@ -111,6 +111,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   // en dos renglones porque su ingreso estaba suelto). Desde la tabla se liga un ingreso a su inversión. Esto sí cambia los datos.
   const [fic, setFic] = useState(null); // { tipo: "ing" | "inv", id }
   const [hecho, setHecho] = useState("");
+  const [verSobra, setVerSobra] = useState(false);
   const [edita, setEdita] = useState(null);
   const [editaR, setEditaR] = useState(null); // aporte («Invertirle más dinero») que se está editando   // 28-nov-2026 (Santiago: "lo que uno cree nuevo en las tablas… debe poder editarse, borrarse")
   const ingL = user.ingresos || [], invL = (user.inv || []).filter((a) => a && a.id), puedeDatos = !!onDatos && !demo && invL.length > 0;
@@ -528,6 +529,26 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
             {(() => { const fl = g.flujo || 0, base0 = Math.max(0, porUsar), rep = (g.reparto || []).filter((q) => q.usado > 0.5), sumRep = rep.reduce((t0, q) => t0 + q.usado, 0), resto2 = base0 + fl - sumRep - (g.pasa || 0);
               return <div id="f10-capital-pasa" style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
                 <Linea a={fl >= 0 ? tx(`+ Lo que te sobra durante ${y}, mes a mes`, `+ Your surplus during ${y}, month by month`) : tx(`− Lo que te falta durante ${y}, mes a mes`, `− Your shortfall during ${y}, month by month`)} b={plata(Math.abs(fl))} />
+                {/* 28-nov-2026 (Santiago: "sigo sin entender por qué me sobra tanto dinero, ¿de dónde?… debería detallar de qué, para uno saber").
+                    La cifra se abre en sus partes, con los mismos renglones del paso 1: lo que entra en el año menos lo que sale. */}
+                {(() => { const an = (rows) => rows.map((x) => ({ n: x.nombre, v: (x.v[sel] || 0) * 12 })).filter((q) => q.v > 0.5), sm = (l) => l.reduce((t0, q) => t0 + q.v, 0);
+                  const ings = an(M.ing), invs = an(M.act), gs = an(M.gas), ds = an(M.deu), entra = (M.entra[sel] || 0) * 12, sale = (M.sale[sel] || 0) * 12, cfA = (M.queda[sel] || 0) * 12;
+                  const otroE = entra - sm(ings) - sm(invs), otroS = sale - sm(gs) - sm(ds), ajuste = fl - cfA, sub = { paddingLeft: 14, fontSize: 13, color: C.tx2 };
+                  return <div id="f10-sobra-detalle" style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <div><button type="button" style={lnk} aria-expanded={verSobra} onClick={() => setVerSobra((q) => !q)}>{verSobra ? tx("Ocultar de dónde sale", "Hide where it comes from") : tx("Ver de dónde sale", "See where it comes from")}</button></div>
+                    {verSobra ? <div style={{ display: "flex", flexDirection: "column", gap: 4, border: `1px solid ${C.bd}`, borderRadius: 8, padding: "10px 12px" }}>
+                      <Linea fuerte a={tx(`Te entra en todo ${y}`, `Coming in during ${y}`)} b={plata(entra)} />
+                      {sm(ings) > 0.5 ? <div style={sub}><Linea a={tx("Ingresos (salarios, honorarios y otros)", "Income (salaries, fees and others)")} b={plata(sm(ings))} /></div> : null}
+                      {invs.map((q, k) => <div key={"i" + k} style={sub}><Linea a={tx(`Te paga ${q.n}`, `${q.n} pays you`)} b={plata(q.v)} /></div>)}
+                      {Math.abs(otroE) > 1 ? <div style={sub}><Linea a={tx("Otros ingresos del año", "Other income")} b={plata(otroE)} /></div> : null}
+                      <Linea fuerte a={tx(`− Te sale en todo ${y}`, `− Going out during ${y}`)} b={plata(sale)} />
+                      {sm(gs) > 0.5 ? <div style={sub}><Linea a={tx("Gastos", "Expenses")} b={plata(sm(gs))} /></div> : null}
+                      {sm(ds) > 0.5 ? <div style={sub}><Linea a={tx("Cuotas de deudas", "Debt payments")} b={plata(sm(ds))} /></div> : null}
+                      {Math.abs(otroS) > 1 ? <div style={sub}><Linea a={tx("Otros pagos del año", "Other payments")} b={plata(otroS)} /></div> : null}
+                      {Math.abs(ajuste) > 1 ? <Linea a={ajuste < 0 ? tx("− Lo que este escenario ya manda a inversiones o usa para cubrir pagos", "− What this scenario already sends to investments or uses for payments") : tx("+ Otros ajustes del año", "+ Other adjustments")} b={plata(Math.abs(ajuste))} /> : null}
+                      <div style={{ borderTop: `1px solid ${C.bd2}`, margin: "2px 0" }} />
+                      <Linea fuerte a={fl >= 0 ? tx(`= Te sobra durante ${y}`, `= Your ${y} surplus`) : tx(`= Te falta durante ${y}`, `= Your ${y} shortfall`)} b={plata(Math.abs(fl))} />
+                    </div> : null}</div>; })()}
                 {rep.map((q, k) => <Linea key={k} a={tx(`− ${q.nombre || "Reparto del mes"} (ya estaba en este escenario)`, `− ${q.nombre || "Monthly allocation"} (already in this scenario)`)} b={plata(q.usado)} />)}
                 {resto2 > 1 ? <Linea a={tx(`− De lo que te sobra, lo que este escenario ya manda a tu reserva o a inversiones`, `− From your surplus, what this scenario already sends to your reserve or investments`)} b={plata(resto2)} /> : null}
                 <div style={{ borderTop: `1px solid ${C.bd2}`, margin: "2px 0" }} />
