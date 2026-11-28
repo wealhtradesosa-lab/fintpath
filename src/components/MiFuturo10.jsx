@@ -103,10 +103,14 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const setVista = (v) => { if (onCambiarVista) onCambiarVista(v); else setVistaLocal(v); };
   const [verDetalle, setVerDetalle] = useState(false);
   const set = (k, v) => setCfg((p) => ({ ...p, [k]: v }));
-  const r = useMemo(() => proyectarFuturo10(user, cfg), [user, cfg]);
+  // 28-nov-2026 (Santiago: "yo no tengo ninguna inversión que se llame liquidez, tampoco crecimiento, tampoco renta fija… los trajo usted de otro modelo viejo").
+  // En la tabla el escenario no hace nada automático: sin colchón, sin canastas, sin rendimiento supuesto para la plata sin repartir.
+  const sinAuto = (c) => (tabla ? { ...c, sinAutomaticos: true } : c);
+  const cfgM = useMemo(() => sinAuto(cfg), [cfg, tabla]);
+  const r = useMemo(() => proyectarFuturo10(user, cfgM), [user, cfgM]);
   // 24-nov-2026: la foto de cada año antes de tus movidas de ese año, y la cuenta en cascada.
   const fotos = useMemo(() => fotosPorAnio(user, cfg, r), [user, cfg, r]);
-  const cuenta = useMemo(() => cuentaPorAnio(r, cfg, fotos), [r, cfg, fotos]);
+  const cuenta = useMemo(() => cuentaPorAnio(r, cfgM, fotos), [r, cfgM, fotos]);
   // Lo que te queda por invertir ese año (estable: sale de lo que puedes usar menos tus movidas).
   // El monto que viene lleno y «Usar saldo pendiente» usan esto: dejan el año exactamente en cero.
   // Lo que se escribe para un año siguiente va en pesos de hoy (se paga indexado): se convierte con factorHoy.
@@ -145,9 +149,9 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
   const editandoEsc = escenarios.find((e) => e.id === editandoId) || null;
   const nombreBorrador = editandoEsc ? `${editandoEsc.nombre} ${tx("(cambios sin guardar)", "(unsaved changes)")}` : tx("Sin guardar: lo que estás armando", "Unsaved: what you're building");
   const planesComparar = useMemo(() => {
-    const ps = [{ nombre: tx("Si me quedo como estoy", "If I stay as I am"), esHoy: true, r: proyectarFuturo10(user, { escenario: cfg.escenario }) }];
+    const ps = [{ nombre: tx("Si me quedo como estoy", "If I stay as I am"), esHoy: true, r: proyectarFuturo10(user, sinAuto({ escenario: cfg.escenario })) }];
     if (hayBorrador) ps.push({ nombre: nombreBorrador, r });
-    escenarios.forEach((e) => ps.push({ id: e.id, nombre: e.nombre, descripcion: e.descripcion || "", recomendado: !!e.recomendado, r: proyectarFuturo10(user, { ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario }) }));
+    escenarios.forEach((e) => ps.push({ id: e.id, nombre: e.nombre, descripcion: e.descripcion || "", recomendado: !!e.recomendado, r: proyectarFuturo10(user, sinAuto({ ...migrarModifica({ ...CONFIG_INICIAL, ...e.config }), escenario: cfg.escenario })) }));
     return ps;
   }, [user, cfg, r, escenarios, hayBorrador, nombreBorrador]);
   const bolsa = (user.inv || []).filter((a) => cfg.decisiones[a.id]?.accion === "vende").length;
