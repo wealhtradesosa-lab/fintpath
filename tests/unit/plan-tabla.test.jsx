@@ -223,12 +223,11 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     expect(html).not.toMatch(/>Inviertes<\/span><span[^>]*>—</);
   });
   // 28-nov-2026 (Santiago: "el local de la Macarena tiene una deuda de 437 millones, ¿cómo marca uno en qué año la paga?").
-  it("una deuda se puede pagar desde su renglón, y la tabla dice en qué año", () => {
-    const html = pinta({});
-    expect(html).toContain('aria-label="Pagar Crédito Casa Orlando en ' + (Y + 2) + '"');
-    expect(html).toContain("toca un año para pagarla completa");
-    const pagada = pinta({ pagarDeudas: { do: Y + 2 } });
-    expect(pagada).toContain(">Pagas<"); expect(pagada).toContain("la pagas en " + (Y + 2));
+  it("marcar el año en que se paga una deuda le quita la cuota desde ese año y saca la plata del capital de ese año", () => {
+    const cfg = { pagarDeudas: { do: Y + 2 } }, r = proyectarFuturo10(user, cfg), M = filasDelPlan(r), fila = M.deu.find((x) => /Orlando/.test(x.nombre));
+    expect(r.deudas.find((d) => d.id === "do").pagaAnio).toBe(3);
+    expect(fila.v[1]).toBeGreaterThan(0); expect(fila.v[2]).toBe(0);
+    expect(cuentaPorAnio(r, cfg)[2].compromisos.some((c) => /Orlando/.test(c.nombre))).toBe(true);
   });
 });
 
