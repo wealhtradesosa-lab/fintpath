@@ -186,6 +186,9 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // `gIdx` (indexación) hace subir ingresos, gastos y rentas.
   const gIdx = indexacionPct / 100;
   const ix = (t) => Math.pow(1 + inf, Math.max(0, t - 1));
+  // 28-nov-2026 (Santiago, viendo IBKR pasar de 139 a 338 millones en el año: "¿de dónde sale eso? ¿dónde puse yo que iba a ingresar 193 millones?").
+  // Cada peso que entra a una inversión queda anotado con su origen, por año, para poder decirlo en pantalla.
+  const anota = (a, t, tipo, monto, extra) => { if (!a || !(Math.abs(monto) > 0.5)) return; a.entradas = a.entradas || {}; (a.entradas[t] = a.entradas[t] || []).push({ tipo, monto, ...(extra || {}) }); };
   const ixI = (t) => Math.pow(1 + gIdx, Math.max(0, t - 1));
   const gIng = gIdx;
   const gGas = gIdx;
@@ -421,7 +424,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       m = n(r.monto) > 0 ? tomar(n(r.monto), a.id, r.fuente) : 0;
       deVenta = b0 - bolsa; deLiquidez = desdeLiquidez - l0; deNuevo = capitalNuevo - c0;
       usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta, deCuentas: deLiquidez, deNuevo, anio: 1, fuente: r.fuente || "venta", ref: "r" + k });
-      if (m > 0) { a.valor += m; reinvertidoTotal += m; }
+      if (m > 0) { a.valor += m; reinvertidoTotal += m; anota(a, 1, "aporte", m); }
       // Si lo vendido y la liquidez no alcanzan, el resto se paga con lo que
       // entre en el año 1 (la obra se hace igual): no se recorta.
       const resto = Math.max(0, n(r.monto)) - m;
@@ -439,7 +442,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (resto2 > 0.5) { pedidoTotal -= resto2; programadasTotal += resto2; }
       usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: b0 - bolsa, deCuentas: desdeLiquidez - l0, deNuevo: 0, anio: anioAporte, fuente: "venta", apartado: true, resto: resto2, ref: "r" + k });
       reservadoTotal += m2;
-      a.reserva = (a.reserva || 0) + m2;
+      a.reserva = (a.reserva || 0) + m2; anota(a, 1, "apartado", m2, { para: anioAporte });
       (a.aportesFuturos = a.aportesFuturos || []).push({ monto: n(r.monto), anio: anioAporte, apartado: m2 });
     } else if (n(r.monto) > 0) {
       usos.push({ seccion: "B", nombre: a.nombre, monto: n(r.monto), deVenta: 0, deCuentas: 0, deNuevo: 0, anio: anioAporte, fuente: r.fuente || "venta", ref: "r" + k });
@@ -951,7 +954,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       a.creceT = a.valor - antes; creceAnio += a.creceT;
     });
     creceCan.colchon = colchon * rCan.liquidez; colchon *= 1 + rCan.liquidez;
-    todos.forEach((a) => { if (a.reserva > 0) { creceCan.colchon += a.reserva * rCan.liquidez; a.reserva *= 1 + rCan.liquidez; } });
+    todos.forEach((a) => { if (a.reserva > 0) { creceCan.colchon += a.reserva * rCan.liquidez; anota(a, t, "apartadoRinde", a.reserva * rCan.liquidez); a.reserva *= 1 + rCan.liquidez; } });
     Object.keys(canasta).forEach((k) => { creceCan[k] += canasta[k] * rCan[k]; canasta[k] *= 1 + rCan[k]; });
     creceAnio += creceCan.colchon + creceCan.liquidez + creceCan.renta + creceCan.crecimiento;
     // 2) flujo del año (ingresos y gastos ya crecidos)
@@ -1010,7 +1013,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       if (!a.ciclo || !(a.cicloG > 0) || a.ciclo.destino === "flujo") return;
       const id = a.ciclo.destinoId;
       const dest = id && todos.find((x) => x.id === id && !x.ciclo);
-      if (dest) dest.valor += a.cicloG;
+      if (dest) { dest.valor += a.cicloG; anota(dest, t, "ciclo", a.cicloG, { de: a.nombre }); }
       else if (id === "c_crecimiento") canasta.crecimiento += a.cicloG;
       else if (id === "c_renta") canasta.renta += a.cicloG;
       else if (id === "c_liquidez") canasta.liquidez += a.cicloG;
@@ -1031,7 +1034,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       destT.forEach((d) => {
         const v = cf * d.pct / 100; restoPct -= d.pct;
         const dest = todos.find((x) => x.id === d.id && !x.ciclo);
-        if (dest) dest.valor += v;
+        if (dest) { dest.valor += v; anota(dest, t, "sobra", v, { pct: d.pct }); }
         else if (d.id === "c_crecimiento") canasta.crecimiento += v;
         else if (d.id === "c_renta") canasta.renta += v;
         else if (d.id === "c_liquidez") canasta.liquidez += v;
@@ -1045,7 +1048,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       repartoUsado[t] = (mesReparto[t] || []).map((x) => {
         if (!(resto > 0.5) || !(x.mensual > 0)) return 0;
         let v = Math.min(resto, x.mensual * 12);
-        if (x.tipo === "inversion") { const dest = todos.find((y) => y.id === x.id && !y.ciclo && !y.terminado); if (dest) dest.valor += v; else v = 0; }
+        if (x.tipo === "inversion") { const dest = todos.find((y) => y.id === x.id && !y.ciclo && !y.terminado); if (dest) { dest.valor += v; anota(dest, t, "sobraMes", v); } else v = 0; }
         else if (x.tipo === "deuda") v = abonar(x.id, v, t);
         else if (x.tipo === "reserva") canasta.liquidez += v;
         // «gasto»: lo gastas; no queda en tu patrimonio.
@@ -1091,7 +1094,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       });
       if (falta > 0.5) retirar(falta);
       pg.deFuentes = Math.max(0, pm - Math.max(0, falta)); pg.fuentesTxt = partes.join(tx(" y ", " and "));
-      a.valor += pm;
+      a.valor += pm; anota(a, t, "pago", pm);
       alertas.push({ tipo: "pago_futuro", anio: t, texto: partes.length ? tx(`En ${anioCal(t)} pagas ${a.nombre}: ${partes.join(" y ")}${falta > 0.5 ? ", y el resto de tu liquidez" : ""}.`, `In ${anioCal(t)} you pay for ${a.nombre}: ${partes.join(" and ")}${falta > 0.5 ? ", and the rest from your cash" : ""}.`) : tx(`En ${anioCal(t)} pagas parte de ${a.nombre} con tu liquidez.`, `In ${anioCal(t)} you pay part of ${a.nombre} with your cash.`) });
     }));
     // Inversión adicional (se escribe en pesos de hoy; entra indexada al año): pasa de tu liquidez al activo. No cambia el patrimonio.
@@ -1105,13 +1108,14 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
           a.reserva = (a.reserva || 0) - usa;
           if (xm - usa > 0.5) retirar(xm - usa);
         } else if (!x.nuevo) retirar(xm);
+        anota(a, t, x.apartado != null ? "aporteApartado" : "aporte", xm);
         a.valor += xm;
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       });
       if (a.invAnio === t && (a.invMonto > 0 || a.reserva > 0)) {
         // lo apartado entra al activo; lo que rindió mientras tanto vuelve al colchón
-        if (a.reserva > 0) { a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
-        if (a.invMonto > 0) { const im = a.invMonto * ix(t); retirar(im); a.valor += im; }
+        if (a.reserva > 0) { anota(a, t, "apartadoSale", -(a.reserva - a.reservaBase)); a.valor += a.reservaBase; colchon += a.reserva - a.reservaBase; a.reserva = 0; }
+        if (a.invMonto > 0) { const im = a.invMonto * ix(t); retirar(im); a.valor += im; anota(a, t, "aporte", im); }
         alertas.push({ tipo: "inversion_adicional", anio: t, texto: tx(`En ${anioCal(t)} pasas plata de tu liquidez a ${a.nombre}.`, `In ${anioCal(t)} you move cash into ${a.nombre}.`) });
       }
     });
@@ -1165,7 +1169,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         // con renta, «de lo que rinde, cuánto te llega» y la renta que cambias en el paso 1 desde
         // un año), para «Lo que cambia en tu bolsillo» año por año.
         const cambioRenta = a.cambio && !a.rentaReemplazada && a.rentaAntesCambio != null ? ((a.rentaAnual || 0) - a.rentaAntesCambio) * fr : 0;
-        return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), rentaNueva: rentaExtra + cambioRenta, crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0) };
+        return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), rentaNueva: rentaExtra + cambioRenta, crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0), apartado: a.reserva || 0, entradas: (a.entradas || {})[t] || [] };
       }),
       { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
       { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
