@@ -172,13 +172,13 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     const off = { ...base, nuevas: [{ preset: "_fuera", _apagada: nueva }] };
     expect(pat(off)).toEqual(pat({ ...base, nuevas: [] }));
     const html = pinta(off);
-    expect(html).toContain("Apagadas en este escenario (1)"); expect(html).toContain("Inversión nueva: CDT"); expect(html).toContain("Encender");
+    expect(html).toContain("Eliminadas en este escenario (1)"); expect(html).toContain("Inversión nueva: CDT"); expect(html).toContain("Recuperar");
     expect(html).not.toContain("Quitar esta inversión");
   });
   it("un aporte apagado cuenta igual que si no estuviera", () => {
     const off = { ...base, reinversiones: [ap1], aportesApagados: [ap2] };
     expect(pat(off)).toEqual(pat({ ...base, reinversiones: [ap1] }));
-    expect(pinta(off)).toContain("Apagadas en este escenario (1)");
+    expect(pinta(off)).toContain("Eliminadas en este escenario (1)");
   });
   it("dos aportes con renta nueva se suman: la tabla muestra el doble", () => {
     const r2 = proyectarFuturo10(user, { ...base, reinversiones: [ap1, ap2] }), r1 = proyectarFuturo10(user, { ...base, reinversiones: [ap1] });
@@ -243,11 +243,11 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     expect(h0).toContain("Al empezar el año");
   });
   // 28-nov-2026 (Santiago: "un mundo de inversiones creadas que no hice yo… además que no puedo eliminar. ¿Cómo elimino Lote y construcción?").
-  it("un negocio de propiedad raíz sin nombre también trae «Apagar esta inversión»", () => {
+  it("un negocio de propiedad raíz sin nombre también trae «Editar» y «Eliminar»", () => {
     const pr = armarPropiedadRaiz({ nombre: "", prTipo: "lote", prLote: "430000000", prM2: "300", prCostoM2: "2000000", prPlazo: "1", prValE: "20", prValA: "", prFinal: "vende", prVendeEn: "0", prRenta: "", prRepite: "si", prDestino: "reinvierte" }, 2, 1);
     const cfg = { decisiones: { or: { accion: "vende" } }, nuevas: [pr] }, html = pinta(cfg);
     expect(html).toContain("Lote y construcción");
-    expect(html).toContain('aria-label="Apagar Lote y construcción"');
+    expect(html).toContain('aria-label="Eliminar Lote y construcción"'); expect(html).toContain('aria-label="Editar Lote y construcción"');
   });
 });
 
