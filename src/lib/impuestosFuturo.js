@@ -19,7 +19,11 @@
 // por inflación (Art. 73) ni beneficios como el de vivienda, porque Patrimonio no guarda el año de compra: con ellos puede ser menos.
 // Si a un activo le falta el costo, NO se inventa: se marca «falta el costo» y esa venta queda sin calcular. La persona puede escribir
 // el valor que le dé su contador (cfg.impuestoVenta: { activoId: pesos del año de la venta }). Se paga al año siguiente, con la declaración.
-// NO incluye impuestos en otro país.
+// Entrega 3 (28-nov-2026): impuestos en otro país. No se calculan: los escribe la persona con su contador, por cada inversión en otra
+// moneda. cfg.impExterior = { anual: { activoId: pesos de hoy al año, mientras la tenga }, venta: { activoId: pesos del año de la venta } }.
+// Lo de cada año y lo de cada venta se paga ese mismo año. Para no cobrar dos veces, se descuenta del impuesto de Colombia: en una
+// venta, hasta lo que Colombia cobra por esa misma venta; en lo de cada año, hasta la parte del impuesto de Colombia que corresponde
+// a los ingresos en otra moneda (en proporción). Es una aproximación del descuento por impuestos pagados en el exterior.
 import { montoPromedioMensual } from "./flowHelpers.js";
 import { claveIngreso } from "./futuro10.js";
 import { esLiquido } from "./metrics.js";
@@ -93,6 +97,9 @@ export function ingresosDelAnio(user, r, r0, t, cfg = {}) {
   return out;
 }
 
+/** Una inversión en otra moneda: para la tabla, está en otro país. */
+export const esDeAfuera = (a) => !!a && !!a.moneda && a.moneda !== "COP";
+
 /** Lo que se vende completo en el año t, con el impuesto estimado de cada venta (pesos de ese año). */
 export function ventasDelAnio(user, r, t, cfg = {}) {
   const lista = t === 1 ? (r.vendidos || []).map((v) => ({ id: v.id, nombre: v.nombre, venta: n(v.valor) })) : (r.liberados || []).filter((l) => l && l.anio === t && !String(l.id).endsWith("_retiro")).map((l) => ({ id: l.id, nombre: l.nombre, venta: n(l.monto) + n(l.pagoDeuda) }));
@@ -107,7 +114,12 @@ export function ventasDelAnio(user, r, t, cfg = {}) {
     if (!(costo > 0.5)) return { ...v, falta: true, impuesto: 0 };
     const ganancia = Math.max(0, v.venta - costo);
     return { ...v, costo, ganancia, impuesto: ganancia * TARIFA_GO, tarifaPct: TARIFA_GO * 100 };
-  }).filter(Boolean);
+  }).filter(Boolean).map((v) => {
+    // Impuesto en el otro país por esta venta (lo escribe la persona): se paga ese año y se descuenta del de Colombia por la misma venta.
+    const a = (user.inv || []).find((q) => q && q.id === v.id), fuera = esDeAfuera(a);
+    const ext = fuera ? Math.max(0, n(((cfg.impExterior || {}).venta || {})[v.id])) : 0, credito = v.manual ? 0 : Math.min(ext, v.impuesto);
+    return { ...v, fuera, exterior: ext, credito, impuestoAntes: v.impuesto, impuesto: v.impuesto - credito };
+  });
 }
 
 /**
@@ -137,12 +149,19 @@ export function impuestosPorAnio(user, r, r0, { estimar, estHoy = null, cfg = {}
       return { nombre: d.name, tipo: d.type, ingreso: n(d.ingreso) * ix, impuesto: imp * ix, retencion: ret * ix, saldo: Math.max(0, imp - ret) * ix }; });
     const impuesto = titulares.reduce((s, q) => s + q.impuesto, 0), retencion = titulares.reduce((s, q) => s + q.retencion, 0), saldo = titulares.reduce((s, q) => s + q.saldo, 0);
     // El saldo del año anterior se paga este año, con el valor que tuvo (pesos de ese año anterior).
-    const pagaSaldo = saldoAnterior, paga = retencion + pagaSaldo;
     // Lo que se vende ese año: su impuesto va en la declaración de ese año, que se paga al siguiente.
-    const ventas = ventasDelAnio(user, r, t, cfg), impuestoVentas = ventas.reduce((s, v) => s + v.impuesto, 0);
-    detalle.push({ t, anio: anioDe(t), impuesto, retencion, saldo, pagaRetencion: retencion, pagaSaldo, paga, titulares, ventas, impuestoVentas, paraElSiguiente: saldo + impuestoVentas });
+    const ventas = ventasDelAnio(user, r, t, cfg), impuestoVentas = ventas.reduce((s, v) => s + v.impuesto, 0), exteriorVentas = ventas.reduce((s, v) => s + n(v.exterior), 0);
+    // Impuestos en otro país, cada año, por las inversiones en otra moneda que todavía tiene ese año.
+    const vivos = new Map((((r.filas || [])[t] || {}).porActivo || []).map((x) => [x.id, x])), anualCfg = (cfg.impExterior || {}).anual || {};
+    const exterior = (user.inv || []).filter((a) => esDeAfuera(a) && a.sim !== false && vivos.has(a.id) && n(vivos.get(a.id).valor) > 0.5).map((a) => ({ id: a.id, nombre: a.n || a.nombre || "", monto: Math.max(0, n(anualCfg[a.id])) * ix }));
+    const exteriorAnual = exterior.reduce((s, x) => s + x.monto, 0);
+    // Descuento en Colombia: hasta la parte del impuesto de Colombia que corresponde a los ingresos en otra moneda.
+    const its = ingresosDelAnio(user, r, r0, t, cfg), tot = its.reduce((s, x) => s + montoPromedioMensual(x) * (x.moneda && x.moneda !== "COP" ? n(user.trm) || 1 : 1), 0), deAfuera = its.filter((x) => x.moneda && x.moneda !== "COP").reduce((s, x) => s + montoPromedioMensual(x) * (n(user.trm) || 1), 0);
+    const credito = Math.min(exteriorAnual, saldo, tot > 0.5 ? impuesto * (deAfuera / tot) : 0), saldoNeto = saldo - credito;
+    const pagaSaldo = saldoAnterior, paga = retencion + pagaSaldo + exteriorAnual + exteriorVentas;
+    detalle.push({ t, anio: anioDe(t), impuesto, retencion, saldo: saldoNeto, saldoAntes: saldo, pagaRetencion: retencion, pagaSaldo, paga, titulares, ventas, impuestoVentas, exterior, exteriorAnual, exteriorVentas, credito, paraElSiguiente: saldoNeto + impuestoVentas });
     porAnio[t] = paga;
-    saldoAnterior = saldo + impuestoVentas;
+    saldoAnterior = saldoNeto + impuestoVentas;
   }
   return { porAnio, detalle, calibrado };
 }
