@@ -618,6 +618,8 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const disponible = !!cfg.repartoDisponible || sinAuto;
   if (disponible) { colchon += bolsa; ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = 0; }); }
   else ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
+  // Sin automáticos, nada queda en las canastas viejas: lo que cualquier regla de un escenario de antes mande allá vuelve a la plata sin repartir.
+  const barreCanastas = () => { if (sinAuto) Object.keys(canasta).forEach((k) => { if (canasta[k]) { colchon += canasta[k]; canasta[k] = 0; } }); };
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
 
   // ── Deuda: la cuota sigue nominal fija hasta saldar; saldo lineal ───────
@@ -958,6 +960,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       else a.valor *= 1 + a.crec;
       a.creceT = a.valor - antes; creceAnio += a.creceT;
     });
+    barreCanastas();
     { const rCol = sinAuto ? 0 : rCan.liquidez; creceCan.colchon = colchon * rCol; colchon *= 1 + rCol; }
     todos.forEach((a) => { if (a.reserva > 0) { creceCan.colchon += a.reserva * rCan.liquidez; anota(a, t, "apartadoRinde", a.reserva * rCan.liquidez); a.reserva *= 1 + rCan.liquidez; } });
     Object.keys(canasta).forEach((k) => { creceCan[k] += canasta[k] * rCan[k]; canasta[k] *= 1 + rCan[k]; });
@@ -1140,6 +1143,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const deflactor = Math.pow(1 + inf, t);
     const deflactorFlujo = deflactorAnio(esc.inflacionPct, t);
     const activosT = valorTotal();
+    barreCanastas();
     const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: Math.max(0, deuda - abonosVivos) + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
     f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio; f.ingFuturoSinActivo = ingFuturoSinActivo;
