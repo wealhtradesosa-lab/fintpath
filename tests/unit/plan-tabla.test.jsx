@@ -106,10 +106,10 @@ describe("propiedad raíz desde la tabla", () => {
 });
 
 describe("Mi futuro con la tabla", () => {
-  it("con `tabla`, crear un escenario abre la tabla y deja el detalle paso a paso a un toque", () => {
+  it("con `tabla`, crear un escenario abre la tabla y ya no ofrece los pasos de antes (un solo modelo)", () => {
     const h = renderToString(createElement(MiFuturo10, { user, guardado: {}, tabla: true })).replace(/<!-- -->/g, "");
     expect(h).toContain("Tu plan en una pantalla");
-    expect(h).toContain("Ver el detalle paso a paso");
+    expect(h).not.toContain("Ver el detalle paso a paso");   // 28-nov-2026 (Santiago: "veo dos modelos, por eso está todo confuso")
     expect(h).not.toContain("1. Lo que tienes");
     expect(h).toContain("Escenario nuevo: cambia algo en la tabla y aquí lo guardas.");
   });
