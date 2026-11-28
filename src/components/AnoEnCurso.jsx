@@ -24,7 +24,7 @@ const num = (v) => Number(v) || 0;
  * que el usuario tiene cargado, y se marcan visualmente distinto para que no
  * se confundan con hechos.
  */
-export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año, totales }) {
+export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año, totales, onDetalle }) {
   if (!user) return null;
 
   const ing = (user.ingresos || []).filter((i) => i.sim !== false);
@@ -119,7 +119,11 @@ export default function AñoEnCurso({ user, trm = 4200, fmt, T, mesActual, año,
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>{tx(`Cómo va ${año}`, `How ${año} is going`)}</div>
+        {/* 28-nov-2026 (Santiago: "si uno se para en cómo va el 2026 debería llevarlo al detalle del año si quiere verlo"). */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.tx }}>{tx(`Cómo va ${año}`, `How ${año} is going`)}</div>
+          {onDetalle ? <button type="button" id="dash-ver-anio" onClick={onDetalle} style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, color: T.tx, fontSize: 13, fontWeight: 600, padding: "0 14px", minHeight: 44, cursor: "pointer", fontFamily: "inherit" }}>{tx(`Ver el detalle de ${año} →`, `See ${año} in detail →`)}</button> : null}
+        </div>
         <div style={{ fontSize: 12, color: T.tx3, marginTop: 1, marginBottom: 11 }}>
           {mesActual} {mesActual === 1 ? tx("mes cumplido", "month done") : tx("meses cumplidos", "months done")}
           {mesesRestantes > 0 && tx(`, ${mesesRestantes} por delante`, `, ${mesesRestantes} to go`)}
