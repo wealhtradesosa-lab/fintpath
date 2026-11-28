@@ -214,5 +214,13 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     const c2 = { reinversiones: [aporte] }, r2 = proyectarFuturo10(u, c2);
     expect(renderToString(createElement(PlanTabla, { user: u, cfg: c2, setCfg: () => {}, r: r2, cuenta: cuentaPorAnio(r2, c2) }))).toContain(">Inviertes<");
   });
+  // 28-nov-2026: en la captura de Santiago, los años con aporte de un fondo mostraban «Inviertes —» y escondían lo que valía.
+  it("una casilla con etiqueta sigue mostrando lo que vale la inversión que se reinvierte", () => {
+    const cfg = { reinversiones: [{ activoId: "ib", monto: 100e6, anio: 3, fuente: "venta" }] }, r = proyectarFuturo10(user, cfg), M = filasDelPlan(r);
+    const html = pinta(cfg), vale3 = "$" + Math.round(M.act.find((x) => x.id === "ib").val[2]).toLocaleString("es-CO");
+    expect(html).toContain(">Inviertes<");
+    expect(html).toContain(vale3);
+    expect(html).not.toMatch(/>Inviertes<\/span><span[^>]*>—</);
+  });
 });
 
