@@ -236,7 +236,8 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     const cfg = { decisiones: { ib: { accion: "vende" } } }, r = proyectarFuturo10(user, cfg), M = filasDelPlan(r);
     expect(M.act.find((x) => x.id === "ib")).toMatchObject({ vendidaHoy: true });
     const html = pinta(cfg);
-    expect(html).toContain("Lo que vendes en " + Y); expect(html).toContain('aria-label="Abrir opciones de Acciones en ' + Y + '"');
+    expect(html).not.toContain("Lo que vendes en " + Y);   // sin sección aparte: va en su bloque de siempre
+    expect(html).toContain('aria-label="Abrir opciones de Acciones en ' + Y + '"'); expect(html).toContain("la vendes al empezar " + Y);
     const h0 = pinta({});
     expect(h0).toMatch(/>Hoy<\/span><span[^>]*>\$900\.000\.000</);      // Acciones: 900 millones hoy, igual que en Patrimonio
     expect(h0).toContain("Al empezar el año");
