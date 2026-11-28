@@ -341,7 +341,10 @@ export function calcularBase(d = {}, opts = {}) {
   // el % y ya es neta → se usa tal cual: sus gastos vinculados (administración,
   // predial, mantenimiento) NO se descuentan de nuevo ni van a G (ya están dentro
   // de la renta neta). 'derivada' o sin indicador (activos viejos) = bruta.
-  const manualIds = new Set(inv.filter((x) => x.rentaOrigen === "manual").map((x) => x.id));
+  // 28-nov-2026 (Santiago: "para mí no está considerando gastos"). Esa regla hacía desaparecer del cálculo todo gasto que se conectara a
+  // una inversión con renta escrita a mano: conectó «Luz finca» a Puerto Madero y lo que le sobraba al año subió. Conectar sirve para
+  // ordenar, nunca para que un gasto deje de contar. Un gasto conectado se resta siempre, venga de donde venga la renta de la inversión.
+  const manualIds = new Set();
   let costosAbsorbidosManual = 0;
   Object.entries(gastos || {}).forEach(([cat, items]) => {
     (items || []).forEach((g) => {

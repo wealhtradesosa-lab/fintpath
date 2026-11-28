@@ -114,12 +114,12 @@ describe("origen de la renta del activo (manual vs derivada)", () => {
     ] },
     inv: [{ id: "apt", tp: "Real Estate", va: 380e6, vc: 380e6, ...(origen ? { rentaOrigen: origen } : {}) }],
   });
-  it("manual 4,3% con gastos vinculados: 4,3% tal cual, sin descuento extra ni gasto duplicado", () => {
-    const m = base("manual");
-    expect(m.costosNeteados).toBe(0);
-    expect(m.g).toBe(0);
-    expect(m.ip * 12).toBeCloseTo(380e6 * 0.043, 0);
-    expect(rentaYYield(m).yield).toBeCloseTo(4.3, 6);
+  // 28-nov-2026 (Santiago: "para mí no está considerando gastos"): la renta escrita a mano ya no absorbe los gastos conectados.
+  it("manual 4,3% con gastos vinculados: los gastos conectados se descuentan igual que en cualquier inversión", () => {
+    const m = base("manual"), d = base("derivada");
+    expect(m.costosNeteados).toBeCloseTo(550000, 0);
+    expect(m.ip).toBeCloseTo(d.ip, 6);
+    expect(rentaYYield(m).yield).toBeLessThan(4.3);
   });
   it("derivada: bruta, se descuentan administración y predial", () => {
     const m = base("derivada");

@@ -422,7 +422,7 @@ export default function InversionesModule({ inversiones, owners, deudas, onUpdat
       vc: Math.abs(parseFloat(form.vc)) || 0,
       moneda: form.moneda || "COP",
       tasa,
-      // Origen de la renta: manual (el usuario escribió el %, ya neta) | derivada (arriendo×12÷valor, bruta).
+      // Origen de la renta: manual (el usuario escribió el %) | derivada (arriendo×12÷valor). Desde el 28-nov-2026 las dos son brutas: los gastos conectados se restan siempre.
       // Un activo viejo sin indicador que se guarda sin tocar el % queda confirmado como bruta.
       rentaOrigen: tasa > 0 ? (form.rentaOrigen || "derivada") : undefined,
       valorizacionPct: form.valorizacionPct !== "" && form.valorizacionPct != null ? parseFloat(form.valorizacionPct) || 0 : undefined,
