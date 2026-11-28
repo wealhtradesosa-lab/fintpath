@@ -68,15 +68,18 @@ describe("futuro10", () => {
     const c = cienMillones("rfCorto", base);
     expect(c[2].hoy).toBeCloseTo(100e6 * 1.025 ** 10, 0);
   });
-  it("renta manual (rentaOrigen) es neta: no resta otra vez los gastos vinculados; vender quita esa renta", () => {
+  // 28-nov-2026 (Santiago: "para mí no está considerando gastos… solo deja de generar gasto o pago un gasto o una deuda de algún activo
+  // cuando se vende"). Antes, con la renta escrita a mano, el gasto conectado desaparecía del cálculo.
+  it("renta escrita a mano: el gasto conectado se resta igual; solo deja de contar cuando se vende la inversión", () => {
     const u = { inflacionPct: 4, inv: [{ id: "ap", n: "Apto", tp: "Real Estate", va: 400e6, rentaOrigen: "manual" }],
       ingresos: [{ nombre: "Arriendo", categoria: "Arriendo", mensual: 1.5e6, activoId: "ap" }],
       gas: { Vivienda: [{ n: "Administración", m: 400000, activoId: "ap" }] }, deu: [] };
     const r = proyectarFuturo10(u, {});
-    expect(r.filas[1].ingresos).toBeCloseTo(18e6, 0);
-    expect(r.filas[1].gastos).toBeCloseTo(0, 0);
+    expect(r.filas[1].cf).toBeCloseTo((1.5e6 - 400000) * 12, 0);   // arriendo menos administración
+    expect(r.filas[1].cf).toBeCloseTo(proyectarFuturo10({ ...u, inv: [{ ...u.inv[0], rentaOrigen: undefined }] }, {}).filas[1].cf, 0); // igual que sin renta a mano
     const v = proyectarFuturo10(u, { decisiones: { ap: { accion: "vende" } } });
     expect(v.filas[1].ingresos).toBeCloseTo(0, 0);
+    expect(v.filas[1].gastos).toBeCloseTo(0, 0);                      // vendida: se van su renta y su gasto
   });
 
   describe("Se modifica", () => {

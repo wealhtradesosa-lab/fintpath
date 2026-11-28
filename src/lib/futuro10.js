@@ -768,7 +768,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   const retirosNuevas = [...leerRetirosNuevas(cfg, N), ...leerRetirosActivos(cfg, N)];
   const pagaAnios = leerPagaAnios(cfg, N);
   const liberados = []; // plata que queda libre en años siguientes (activos que vencen o se venden después)
-  const manualOp = new Set((user.inv || []).filter((x) => x && x.rentaOrigen === "manual").map((x) => x.id));
+  const manualOp = new Set(); // 28-nov-2026: un gasto conectado se resta siempre (ver metrics.js → calcularBase)
   const costoLigado = (id) => {
     if (manualOp.has(id)) return gastosHoy.filter((g) => g.activoId === id && g.neteado).reduce((sm, g) => sm + g.mensual, 0);
     return Math.max(0, n((bOp.rentaPorActivo || {})[id]) - n((bOp.rentaNetaPorActivo || {})[id]));
