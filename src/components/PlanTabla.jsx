@@ -111,7 +111,8 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   // en dos renglones porque su ingreso estaba suelto). Desde la tabla se liga un ingreso a su inversión. Esto sí cambia los datos.
   const [fic, setFic] = useState(null); // { tipo: "ing" | "inv", id }
   const [hecho, setHecho] = useState("");
-  const [edita, setEdita] = useState(null);   // 28-nov-2026 (Santiago: "lo que uno cree nuevo en las tablas… debe poder editarse, borrarse")
+  const [edita, setEdita] = useState(null);
+  const [editaR, setEditaR] = useState(null); // aporte («Invertirle más dinero») que se está editando   // 28-nov-2026 (Santiago: "lo que uno cree nuevo en las tablas… debe poder editarse, borrarse")
   const ingL = user.ingresos || [], invL = (user.inv || []).filter((a) => a && a.id), puedeDatos = !!onDatos && !demo && invL.length > 0;
   // Qué está conectado a qué (ingresos, gastos y deudas de cada inversión) y qué está suelto por error.
   const mapa = useMemo(() => mapaConexiones(user, cfg), [user, cfg]);
@@ -210,7 +211,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   const heredado = Object.keys(dec0(cfg)).length + (cfg.nuevas || []).length + (cfg.reinversiones || []).length + Object.keys(cfg.pagarDeudas || {}).length + (Array.isArray(cfg.sobraDestinos) ? cfg.sobraDestinos.length : 0) + Object.keys(cfg.rentasAnio || {}).length + Object.keys(cfg.retirosActivos || {}).length;
   const deshacer = () => { const st = pila.current; if (!st.length) return; const antes = st.pop(); setCfg(() => antes); setNPila(st.length); setAct(null); setAviso(null); setHecho(tx("Listo: deshiciste el último cambio.", "Done: you undid the last change.")); };
   const irA = (id) => setTimeout(() => document.getElementById(id)?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 60);
-  const elegirAnio = (j) => { setSel(j); up({ monto: "" }); setAviso(null); };
+  const elegirAnio = (j) => { setSel(j); up({ monto: "" }); setAviso(null); setEditaR(null); };
 
   const t = sel + 1, g = cuenta[sel] || {}, fac = g.factorHoy || 1, y = AN[sel];
   const dec = cfg.decisiones || {}, nuevas = cfg.nuevas || [], reinv = cfg.reinversiones || [], pagar = cfg.pagarDeudas || {}, tramos = cfg.rentasAnio || {}, retiros = cfg.retirosActivos || {};
@@ -239,9 +240,9 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   nuevas.forEach((x, k) => { if (!x || x.preset === "_fuera" || (Math.round(Number(x.anio)) || 1) !== t) return;
     const m = (g.movidas || []).find((q) => q.ref === "n" + k) || (g.compromisos || []).find((q) => q.ref === "n" + k);
     movidas.push({ k: "n" + k, txt: `${tx("Inversión nueva", "New investment")}: ${x.nombre || nombreSup(supuestosF10().presets[x.preset] || {}) || tx("Inversión", "Investment")}`, monto: m ? m.monto : (Number(x.monto) || 0) * fac,
-      quitar: () => apagarNueva(k) }); });
+      quitar: () => { apagarNueva(k); setEdita(null); }, editar: () => editarNueva(k) }); });
   reinv.forEach((x, k) => { if (!x || (Math.round(Number(x.anio)) || 1) !== t) return; const a = M.act.find((q) => q.id === x.activoId);
-    movidas.push({ k: "r" + k, txt: `${tx("Le inviertes más dinero a", "You invest more in")} ${a ? a.nombre : tx("una inversión", "an investment")}`, monto: (Number(x.monto) || 0) * fac, quitar: () => apagarAporte(k) }); });
+    movidas.push({ k: "r" + k, txt: `${tx("Le inviertes más dinero a", "You invest more in")} ${a ? a.nombre : tx("una inversión", "an investment")}`, monto: (Number(x.monto) || 0) * fac, quitar: () => { apagarAporte(k); setEditaR(null); }, editar: () => { setEdita(null); setEditaR(k); setF({ ...FORM0, tipo: "suma", activo: x.activoId, monto: miles(Math.round((Number(x.monto) || 0) * fac)) }); setAviso(null); } }); });
   const hayCapital = usable > 1 || movidas.length > 0 || (g.compromisos || []).length > 0;
   const montoTxt = f.tipo !== "deuda" && f.monto === "" && porUsar > 1 ? miles(Math.floor(porUsar)) : f.monto;
   const esPR = f.tipo === "nueva" && f.preset === "fincaRaiz" && f.prTipo !== "simple";
@@ -276,7 +277,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
     return { tipo: "nueva", nombre: q.nombre || "", preset: "fincaRaiz", prTipo: pr.tipo || "lote", prPlazo: String(pr.plazo != null ? pr.plazo : 2), prValE: num(pr.valEntregaPct), prValA: num(pr.valAnualPct), prRenta: mil(pr.rentaMensual), prFinal: pr.final === "vende" ? "vende" : "queda", prVendeEn: String(pr.vendeEn || 0), prRepite: pr.repite ? "si" : "no", prDestino: pr.destino || "reinvierte",
       prValor: mil(pr.valor), prCuota: num(pr.cuotaPct != null ? pr.cuotaPct : 30), prMeses: String(pr.meses || 12), prLote: mil(pr.lote), prM2: pr.m2 ? String(pr.m2) : "", prCostoM2: mil(pr.costoM2) }; };
   const editarNueva = (k) => { const q = nuevas[k]; if (!q || q._apagada) return; const j = Math.min(N - 1, Math.max(0, (Math.round(Number(q.anio)) || 1) - 1));
-    setSel(j); setF({ ...FORM0, ...formDeNueva(q, ((cuenta[j] || {}).factorHoy) || 1) }); setEdita(k); setAviso(null);
+    setSel(j); setF({ ...FORM0, ...formDeNueva(q, ((cuenta[j] || {}).factorHoy) || 1) }); setEdita(k); setEditaR(null); setAviso(null);
     if (typeof document !== "undefined") setTimeout(() => { const el = document.getElementById("f10-editando"); if (el && el.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 60); };
   const ponNueva = (x) => { const k = edita; if (k != null && nuevas[k] && !nuevas[k]._apagada) { pon((p) => ({ nuevas: (p.nuevas || []).map((q, i) => (i === k ? x : q)) })); setEdita(null); return true; } pon((p) => ({ nuevas: [...(p.nuevas || []), x] })); return false; };
   const agregar = () => {
@@ -287,6 +288,8 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
     const m = leer(montoTxt);
     if (!(m > 0)) return error(tx("Escribe cuánto vas a poner, o toca «Usar todo lo que queda».", "Enter how much, or tap \"Use all that's left\"."));
     if (f.tipo === "suma") { const id = f.activo || (vivos[0] || {}).id; if (!id) return error(tx(`No hay inversiones para invertirles más en ${y}.`, `No investments to add to in ${y}.`));
+      if (editaR != null && reinv[editaR]) { const kR = editaR; pon((p) => ({ reinversiones: (p.reinversiones || []).map((q, i) => (i === kR ? { ...q, activoId: id, monto: m / fac } : q)) })); setEditaR(null); up({ monto: "" });
+        return setAviso({ ok: true, txt: tx(`Listo: guardaste el cambio. Ahora le inviertes ${plata(m)} en ${y}.`, `Done: change saved. You now invest ${plata(m)} in ${y}.`) }); }
       pon((p) => ({ reinversiones: [...(p.reinversiones || []), { activoId: id, monto: m / fac, anio: t, fuente: "venta" }] })); up({ monto: "" });
       return setAviso({ ok: true, txt: tx(`Listo: le invertiste ${plata(m)} más a esa inversión en ${y}.`, `Done: you invested ${plata(m)} more in that investment in ${y}.`) }); }
     const nombre = f.nombre.trim() || (f.preset === "custom" ? tx("Inversión nueva", "New investment") : (presetsLista().find((q) => q[0] === f.preset) || [])[1]);
@@ -498,7 +501,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
         <T2 sub={tx("Es la plata de lo que vendes o liquidas y de lo que te sobró de años anteriores.", "The money from what you sell and what was left over from earlier years.")}>{tx(`2 · Reparte tu capital disponible de ${y}`, `2 · Allocate your ${y} available capital`)}</T2>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{AN.map((a, j) => <button key={a} type="button" aria-pressed={j === sel} onClick={() => elegirAnio(j)} style={{ minHeight: 44, padding: "0 10px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", border: `1px solid ${j === sel ? C.gn : C.bd}`, background: j === sel ? "rgba(0,200,5,0.16)" : "transparent", color: j === sel ? C.gn : C.tx }}>{a}</button>)}</div>
       </div>
-      {!hayCapital && edita == null ? <div style={{ fontSize: 14, lineHeight: 1.55, color: C.tx }}>{tx(`En ${y} no tienes capital disponible para repartir. Aparece cuando vendes o liquidas algo en la tabla de arriba, o cuando te sobra plata de un año anterior. Elige otro año con los botones.`, `In ${y} you have no available capital to allocate. It appears when you sell something in the table above, or when money is left from an earlier year. Pick another year with the buttons.`)}</div>
+      {!hayCapital && edita == null && editaR == null ? <div style={{ fontSize: 14, lineHeight: 1.55, color: C.tx }}>{tx(`En ${y} no tienes capital disponible para repartir. Aparece cuando vendes o liquidas algo en la tabla de arriba, o cuando te sobra plata de un año anterior. Elige otro año con los botones.`, `In ${y} you have no available capital to allocate. It appears when you sell something in the table above, or when money is left from an earlier year. Pick another year with the buttons.`)}</div>
         : <div style={{ display: "flex", flexWrap: "wrap", gap: 24 }}>
           <div style={{ flex: "1 1 380px", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             <Linea a={sel === 0 ? tx("Traes de antes", "Carried over") : tx(`Traes de ${y - 1}`, `Carried from ${y - 1}`)} b={plata(g.antes || 0)} />
@@ -509,7 +512,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
             <Linea fuerte a={tx(`= Puedes usar en ${y}`, `= You can use in ${y}`)} b={plata(usable)} />
             {movidas.length ? <div style={{ fontSize: 12, color: C.am, fontWeight: 600, marginTop: 4 }}>{tx(`Ya repartiste en ${y}:`, `Already allocated in ${y}:`)}</div> : null}
             {movidas.map((m, k) => <div key={m.k} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14, alignItems: "center", border: `1px solid ${C.am}`, background: "rgba(245,158,11,0.10)", borderRadius: 8, padding: "6px 10px", color: C.tx }}>
-              <span><b style={{ color: C.am }}>{k + 1} ·</b> {m.txt} {demo ? null : <button type="button" style={lnk} onClick={m.quitar}>{tx("Eliminar", "Delete")}</button>}</span><span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>− {plata(m.monto)}</span></div>)}
+              <span><b style={{ color: C.am }}>{k + 1} ·</b> {m.txt} {demo ? null : <><button type="button" style={lnk} aria-label={`${tx("Editar", "Edit")}: ${m.txt}`} onClick={m.editar}>{tx("Editar", "Edit")}</button> · <button type="button" style={lnk} aria-label={`${tx("Eliminar", "Delete")}: ${m.txt}`} onClick={m.quitar}>{tx("Eliminar", "Delete")}</button></>}</span><span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>− {plata(m.monto)}</span></div>)}
             {/* 28-nov-2026 (Santiago: "¿cómo así que puedo usar 441 millones y qué me hizo los 41?… no le di instrucción de invertir 41 millones
                 en esta tabla"). La cuenta tiene que cerrar a la vista: todo lo que el escenario ya usa de ese capital sale con su nombre, aunque
                 venga de los pasos de antes. Lo que no tenga nombre se dice como tal, con la forma de quitarlo. */}
@@ -532,10 +535,11 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
           </div>
           <div style={{ flex: "1.3 1 460px", minWidth: 0, display: "flex", flexDirection: "column", gap: 10 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: C.tx }}>{demo ? tx("En modo demo no se pueden hacer cambios.", "Changes are disabled in demo mode.") : !movidas.length ? tx("¿Qué haces con esa plata? Puedes repartirla en varias partes.", "What do you do with that money? You can split it into parts.") : porUsar > 1 ? tx(`Parte ${movidas.length + 1}: te quedan ${plata(porUsar)} por usar. ¿Qué haces con eso?`, `Part ${movidas.length + 1}: ${plata(porUsar)} left to use. What do you do with it?`) : tx(`Ya repartiste todo tu capital disponible de ${y}.`, `You've allocated all your ${y} available capital.`)}</div>
-            {demo ? null : movidas.length && porUsar <= 1 && edita == null ? <div style={{ fontSize: 13, color: C.tx2, lineHeight: 1.5 }}>{tx("Si quieres cambiar algo, toca «Editar» o «Eliminar» en la fila amarilla de la tabla. Lo que creaste ya está ahí.", "To change something, tap \"Turn off\" on the part you want to redo. What you created is in the table, highlighted in yellow.")}</div>
+            {demo ? null : movidas.length && porUsar <= 1 && edita == null && editaR == null ? <div style={{ fontSize: 13, color: C.tx2, lineHeight: 1.5 }}>{tx("Si quieres cambiar algo, toca «Editar» o «Eliminar» en la fila amarilla de la tabla. Lo que creaste ya está ahí.", "To change something, tap \"Turn off\" on the part you want to redo. What you created is in the table, highlighted in yellow.")}</div>
               : <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "flex-end" }}>
+                {editaR != null && reinv[editaR] ? <div id="f10-editando" style={{ flex: "1 1 100%", fontSize: 14, fontWeight: 600, color: C.am }}>{tx(`Estás editando lo que le inviertes a «${nomInv(reinv[editaR].activoId)}» en ${y}. Cambia el valor y toca «Guardar cambios».`, `You are editing what you invest in "${nomInv(reinv[editaR].activoId)}" in ${y}. Change the amount and tap "Save changes".`)}</div> : null}
                 {edita != null ? <div id="f10-editando" style={{ flex: "1 1 100%", fontSize: 14, fontWeight: 600, color: C.am }}>{tx(`Estás editando «${nomNueva(nuevas[edita])}». Cambia lo que quieras y toca «Guardar cambios».`, `You are editing "${nomNueva(nuevas[edita])}". Change what you want and tap "Save changes".`)}</div> : null}
-                {edita != null ? null : <Campo etiqueta={tx("¿Qué haces?", "What do you do?")}><Sel id="f10-tipo" value={f.tipo} on={(v) => up({ tipo: v })} ops={[["nueva", tx("Crear una inversión nueva", "Create a new investment")], ["suma", tx("Invertirle más dinero a una que ya tienes", "Invest more in one you already have")], ["deuda", tx("Pagar una deuda", "Pay off a debt")]]} /></Campo>}
+                {edita != null || editaR != null ? null : <Campo etiqueta={tx("¿Qué haces?", "What do you do?")}><Sel id="f10-tipo" value={f.tipo} on={(v) => up({ tipo: v })} ops={[["nueva", tx("Crear una inversión nueva", "Create a new investment")], ["suma", tx("Invertirle más dinero a una que ya tienes", "Invest more in one you already have")], ["deuda", tx("Pagar una deuda", "Pay off a debt")]]} /></Campo>}
                 {f.tipo === "nueva" ? <><Campo etiqueta={tx("Tipo de inversión", "Investment type")}><Sel id="f10-preset" value={f.preset} on={(v) => up({ preset: v, rend: "" })} ops={presetsLista()} /></Campo>
                   {f.preset === "fincaRaiz" ? <Campo etiqueta={tx("¿Cómo es el negocio?", "What kind of deal?")}><Sel id="f10-pr-tipo" value={f.prTipo} on={(v) => up({ prTipo: v })} ops={prTipos()} /></Campo> : null}
                   <Campo etiqueta={tx("Nombre (opcional)", "Name (optional)")}><Txt id="f10-nombre" value={f.nombre} on={(v) => up({ nombre: v })} ph={tx("Ej.: Bodega, CDT", "E.g. Warehouse, CD")} /></Campo></> : null}
@@ -555,8 +559,8 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
                 {f.tipo === "deuda" ? <Campo etiqueta={tx("¿Cuál?", "Which one?")}><Sel id="f10-deuda" value={f.deuda || (deudasVivas[0] || {}).id || ""} on={(v) => up({ deuda: v })} ops={deudasVivas.map((d) => [d.id, `${d.nombre} · ${tx("debes hoy", "you owe today")} ${plata(d.saldo)}`])} /></Campo> : null}
                 {f.tipo !== "deuda" && !esPR ? <><Campo etiqueta={tx(`¿Cuánto? (pesos de ${y})`, `How much? (${y} money)`)}><Txt id="f10-monto" value={montoTxt} on={(v) => up({ monto: v })} ph="0" plataIn /></Campo>
                   <button type="button" style={{ ...btn2, borderColor: C.gn, color: C.gn }} onClick={() => up({ monto: miles(Math.max(0, Math.floor(porUsar))) })}>{tx(`Usar todo lo que queda de ${y}: ${plata(Math.max(0, Math.floor(porUsar)))}`, `Use all that's left of ${y}: ${plata(Math.max(0, Math.floor(porUsar)))}`)}</button></> : null}
-                <button type="button" style={btn1} onClick={agregar}>{edita != null ? tx("Guardar cambios", "Save changes") : tx("Agregar", "Add")}</button>
-                {edita != null ? <button type="button" style={lnk} onClick={() => { setEdita(null); setF(FORM0); setAviso(null); }}>{tx("Cancelar", "Cancel")}</button> : null}
+                <button type="button" style={btn1} onClick={agregar}>{edita != null || editaR != null ? tx("Guardar cambios", "Save changes") : tx("Agregar", "Add")}</button>
+                {edita != null || editaR != null ? <button type="button" style={lnk} onClick={() => { setEdita(null); setEditaR(null); setF(FORM0); setAviso(null); }}>{tx("Cancelar", "Cancel")}</button> : null}
                 {f.tipo === "nueva" ? <div id="f10-previa" style={{ flex: "1 1 100%", fontSize: 13, lineHeight: 1.5, color: C.tx, border: `1px solid ${C.bd}`, borderRadius: 8, padding: "10px 12px" }}>{previa()}</div> : null}
               </div>}
             {aviso ? <div role="status" style={{ fontSize: 13, lineHeight: 1.5, color: aviso.ok ? C.gn : C.am }}>{aviso.txt}</div> : null}
