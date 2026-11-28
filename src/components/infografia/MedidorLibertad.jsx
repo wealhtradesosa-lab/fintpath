@@ -18,7 +18,7 @@ const fmtPct = (n) => Math.round(n || 0).toLocaleString(localeCifras()) + (local
 // contra la que se mide el nivel se abre en sus partes, el abono a capital se
 // dice como ahorro y la caja del mes queda al lado (un nivel alto no puede
 // esconder un mes en que la plata no alcanza).
-export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, fm, extra = null, partes = null, caja = null, fin: finD = null }) {
+export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, fm, extra = null, partes = null, caja = null, fin: finD = null, periodo = "" }) {
   if (!(ob > 0)) return null;
   const max = escalaMedidor(cobertura);
   const p = puntoArco(cobertura, max, { cx: CX, cy: CY, r: R });
@@ -82,7 +82,7 @@ export default function MedidorLibertad({ cobertura = 0, ip = 0, ob = 0, nivel, 
       </svg>
 
       <div style={{ flex: "1 1 240px", minWidth: 0, display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ fontSize: 13, color: C.txt2 }}>{tx("Tu nivel de libertad", "Your freedom level")}</div>
+        <div style={{ fontSize: 13, color: C.txt2 }}>{tx("Tu nivel de libertad", "Your freedom level")}{periodo ? <span style={{ color: C.txt3 }}> · {periodo}</span> : null}</div>
         <div style={{ fontSize: 28, fontWeight: 600, color: C.txt, letterSpacing: "-0.02em" }}>{n ? nombreNivel(NIVELES[n - 1]) : nivel?.nombre || "—"}</div>
         <div style={{ fontSize: 14, lineHeight: 1.55, color: C.txt }}>
           {n ? descNivel(NIVELES[n - 1]) + ". " : ""}

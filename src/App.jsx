@@ -2749,12 +2749,13 @@ export default function FinPath(){
           </div>
           <div style={{fontSize:13,fontWeight:700,color:healthColor,fontFamily:CHART.fontDisplay}}>{healthLabel}</div>
           <div style={{fontSize:11,color:CHART.txt3,marginTop:4,letterSpacing:"0.06em",fontWeight:600}}>{tx("Salud Financiera","Financial Health")}</div>
+          <div id="dash-salud-periodo" style={{fontSize:11,color:CHART.txt3,marginTop:4}}>{tx("Con las cifras de "+nombreMes(new Date().getMonth()+1).toLowerCase()+" de "+new Date().getFullYear(),"Using "+nombreMes(new Date().getMonth()+1)+" "+new Date().getFullYear()+" figures")}</div>
         </div>
       </div>
 
       {/* 1-nov-2026 — Infografías del Dashboard (skill infografia-finpathia).
           Base «este mes» (t.metMes), la misma del nivel, el Simulador y el Asesor. */}
-      {(t.ob||0)>0&&<MedidorLibertad cobertura={t.ind||0} ip={t.ingresoPasivo||0} ob={t.ob||0} nivel={t.nivel} fm={fm}
+      {(t.ob||0)>0&&<MedidorLibertad periodo={tx("Con las cifras de "+nombreMes(new Date().getMonth()+1).toLowerCase()+" de "+new Date().getFullYear(),"Using "+nombreMes(new Date().getMonth()+1)+" "+new Date().getFullYear()+" figures")} cobertura={t.ind||0} ip={t.ingresoPasivo||0} ob={t.ob||0} nivel={t.nivel} fm={fm}
         partes={t.metMes?partesObligacion(t.metMes):null} caja={t.metMes?lecturaCaja(t.metMes):null} fin={t.metMes?finDeudas(t.metMes,(u?.deu)||[]):null}
         extra={<>
           {(t.ind||0)<100&&<div style={{fontSize:12,color:CHART.txt3}}>{tx("Para cubrirlo con rentas necesitarías unos ","To cover it with passive income you'd need about ")}<b style={{color:CHART.txt}}>{fm(Math.abs((t.ingresoPasivo||0)-(t.ob||0))*12/RETORNO_SUPUESTO)}</b>{tx(" más invertidos al "," more invested at ")}{pctR(RETORNO_SUPUESTO*100,0)}{tx(" anual."," a year.")}</div>}
@@ -2804,7 +2805,7 @@ export default function FinPath(){
           cualquier usuario nuevo. */}
       {(()=>{ try{
         const hoy=new Date();
-        return <AnoEnCurso user={u} trm={trmPais} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()} totales={t}/>;
+        return <AnoEnCurso user={u} trm={trmPais} fmt={fm} T={T} mesActual={hoy.getMonth()+1} año={hoy.getFullYear()} totales={t} onDetalle={()=>setPg("flujo")}/>;
       }catch(e){ return null } })()}
 
       {/* ═══ EL ASESOR HABLA PRIMERO (25-jul-2026) ═══════════════════════════
@@ -2861,12 +2862,12 @@ export default function FinPath(){
           Indicadores de flujo: entra, sale, queda. */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:10,marginBottom:20}}>
         {[
-          {l:tx("Ingresos/mes","Income/mo"),v:fm(t.ti),c:T.tx,i:""},
-          {l:tx("Gastos/mes","Expenses/mo"),v:fm(t.gfm+t.tg),c:T.tx,i:""},
-          {l:tx("Deudas/mes","Debt/mo"),v:fm(t.tc),c:T.tx,i:""},
-          {l:"Cash Flow",v:fm(t.cf)+tx("/mes","/mo"),c:t.cf>=0?T.gn:T.rd,i:""},
-          {l:tx("Rentas cubren","Passive income covers"),v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"":""},
-        ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div></div></div></Cd>)}
+          {l:tx("Ingresos/mes","Income/mo"),v:fm(t.ti),c:T.tx,i:"",p:"prom"},
+          {l:tx("Gastos/mes","Expenses/mo"),v:fm(t.gfm+t.tg),c:T.tx,i:"",p:"prom"},
+          {l:tx("Deudas/mes","Debt/mo"),v:fm(t.tc),c:T.tx,i:"",p:"prom"},
+          {l:"Cash Flow",v:fm(t.cf)+tx("/mes","/mo"),c:t.cf>=0?T.gn:T.rd,i:"",p:"prom"},
+          {l:tx("Rentas cubren","Passive income covers"),v:pc(t.ind),c:t.ind>=100?T.gn:T.tx2,i:t.ind>=100?"":"",p:"mes"},
+        ].map(k=><Cd key={k.l} s={{padding:"18px 20px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:11,color:T.tx3,fontWeight:600,letterSpacing:1}}>{k.l}</div><div style={{fontSize:22,fontWeight:700,color:k.c,marginTop:6}}>{k.v}</div><div style={{fontSize:11,color:T.tx3,marginTop:6}}>{k.p==="mes"?tx(nombreMes(new Date().getMonth()+1)+" de "+new Date().getFullYear(),nombreMes(new Date().getMonth()+1)+" "+new Date().getFullYear()):tx("Promedio mensual de "+new Date().getFullYear(),new Date().getFullYear()+" monthly average")}</div></div></div></Cd>)}
       </div>
 
       {/* Flujo de caja mes a mes. */}
@@ -2884,7 +2885,7 @@ export default function FinPath(){
       <div className="fp-masonry" style={{columnCount:mb?1:2,columnGap:20,marginBottom:20}}>
         {/* Cash Flow Waterfall */}
         <Cd s={{padding:20}}>
-          <div style={{fontSize:13,fontWeight:700,color:T.tx2,marginBottom:20}}>{tx("Flujo de Caja Mensual","Monthly Cash Flow")}</div>
+          <div style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Flujo de Caja Mensual","Monthly Cash Flow")}</div><div style={{fontSize:11,color:T.tx3,marginTop:4,marginBottom:16}}>{tx("Promedio mensual de "+new Date().getFullYear(),new Date().getFullYear()+" monthly average")}</div>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={fd} margin={MARGEN_EJE}><ChartGradients/><CartesianGrid {...gridProps}/><XAxis dataKey="name" {...axisProps}/><YAxis {...axisProps} width={104} tickFormatter={v=>sinCorte(fm(v).replace("$",""))}/><Tooltip cursor={{fill:"rgba(var(--fp-ink),0.03)"}} content={<ChartTooltip formatter={v=>fm(v)}/>}/><Bar dataKey="a" radius={[8,8,0,0]} maxBarSize={64}>{fd.map((d,i)=><Cell key={i} fill={d.a>=0?CHART.green:CHART.red}/>)}</Bar></BarChart>
           </ResponsiveContainer>
@@ -2947,7 +2948,7 @@ export default function FinPath(){
         {/* Top Ingresos */}
         <Cd s={{padding:0}}>
           <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
-            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Ingresos por fuente","Income by source")}</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Ingresos por fuente","Income by source")} <span style={{fontSize:11,fontWeight:400,color:T.tx3}}>· {tx("promedio mensual de "+new Date().getFullYear(),new Date().getFullYear()+" monthly average")}</span></span>
             <span style={{fontSize:13,fontWeight:700,color:T.gn}}>{fm(t.ti)}{tx("/mes","/mo")}</span>
           </div>
           {/* 25-jul-2026: mismo tratamiento que el patrimonio. La lista sola
@@ -2971,7 +2972,7 @@ export default function FinPath(){
         {/* Gastos by category */}
         <Cd s={{padding:0}}>
           <div style={{padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid "+T.border}}>
-            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Gastos por categoría","Expenses by category")}</span>
+            <span style={{fontSize:13,fontWeight:700,color:T.tx2}}>{tx("Gastos por categoría","Expenses by category")} <span style={{fontSize:11,fontWeight:400,color:T.tx3}}>· {tx("promedio mensual de "+new Date().getFullYear(),new Date().getFullYear()+" monthly average")}</span></span>
             <span style={{fontSize:13,fontWeight:700,color:T.rd}}>{fm(t.gfm)}{tx("/mes","/mo")}</span>
           </div>
           {/* 25-jul-2026 (Santiago: "estos huecos que desperdician espacio"):
