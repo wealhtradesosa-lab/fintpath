@@ -242,5 +242,12 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     expect(h0).toMatch(/>Hoy<\/span><span[^>]*>\$900\.000\.000</);      // Acciones: 900 millones hoy, igual que en Patrimonio
     expect(h0).toContain("Al empezar el año");
   });
+  // 28-nov-2026 (Santiago: "un mundo de inversiones creadas que no hice yo… además que no puedo eliminar. ¿Cómo elimino Lote y construcción?").
+  it("un negocio de propiedad raíz sin nombre también trae «Apagar esta inversión»", () => {
+    const pr = armarPropiedadRaiz({ nombre: "", prTipo: "lote", prLote: "430000000", prM2: "300", prCostoM2: "2000000", prPlazo: "1", prValE: "20", prValA: "", prFinal: "vende", prVendeEn: "0", prRenta: "", prRepite: "si", prDestino: "reinvierte" }, 2, 1);
+    const cfg = { decisiones: { or: { accion: "vende" } }, nuevas: [pr] }, html = pinta(cfg);
+    expect(html).toContain("Lote y construcción");
+    expect(html).toContain('aria-label="Apagar Lote y construcción"');
+  });
 });
 

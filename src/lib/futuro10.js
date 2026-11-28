@@ -303,7 +303,12 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // ── Bolsa: colchón → reinversiones / nuevas → resto según la mezcla ─────
   // El colchón se mide con las obligaciones que quedan (sin las cuotas que se pagan hoy).
   const obAnual = bDeuda.ob * 12;
-  const metaColchon = (bDeuda.ob * n(sup.colchonMeses));
+  // 28-nov-2026 (Santiago: "¿dónde le pedí yo aquí crear colchón?… un mundo de inversiones creadas que no hice yo, con valores que no sé de dónde
+  // salen… la tabla debe iniciar con lo que se tiene encendido; ya uno en el camino verá qué crea nuevo… no que usted haga cosas así de la nada").
+  // cfg.sinAutomaticos: el escenario no hace nada que la persona no haya marcado. No aparta colchón, no reparte lo que sobra en canastas
+  // (liquidez, renta fija, crecimiento) y no le supone rendimiento a la plata sin repartir: queda quieta como «Capital disponible sin usar».
+  const sinAuto = !!cfg.sinAutomaticos;
+  const metaColchon = sinAuto ? 0 : (bDeuda.ob * n(sup.colchonMeses));
   const liquidosQueQuedan = activos.filter((a) => a.clase === "liquido").reduce((s, a) => s + a.valor, 0);
   const canasta = { liquidez: 0, renta: 0, crecimiento: 0 };
   let colchon = Math.min(bolsa, Math.max(0, metaColchon - liquidosQueQuedan));
@@ -596,7 +601,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       c._apartado = true;
     }
     nuevas.push(a);
-    ciclosDetalle.push({ id: a.id, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, destinoId: c.destinoId, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
+    ciclosDetalle.push({ id: a.id, ref: c.ref || null, nombre: c.nombre, capital: c.capital, valorFinal: c.valorFinal, meses: c.meses, desde: c.desde, hasta: c.hasta, fuente: c.fuente, destino: c.destino, destinoId: c.destinoId, costosPct: c.costosPct, regimen: c.regimen, impuestoPct: c.impuestoPct, impuestoAnual: c.impuestoAnual, gananciaCiclo: c.gananciaCiclo, gananciaAnual: c.gananciaAnual, rentabilidadPct: c.capital > 0 ? c.gananciaAnual / c.capital * 100 : 0 });
   });
   apartados.forEach((h) => nuevas.push(h));
   // 19-nov-2026: `capitalNuevo` sigue sumando en la simulación (negocios que
@@ -610,7 +615,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   // 25-oct-2026 (Santiago: "quiero dejar esos 28 M disponibles"). Con
   // cfg.repartoDisponible lo que sobra (de las ventas y lo no asignado de cada
   // mes) queda disponible en el colchón, sin invertirse en las canastas.
-  const disponible = !!cfg.repartoDisponible;
+  const disponible = !!cfg.repartoDisponible || sinAuto;
   if (disponible) { colchon += bolsa; ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = 0; }); }
   else ["liquidez", "renta", "crecimiento"].forEach((k) => { canasta[k] = bolsa * mezcla[k] / 100; });
   const rCan = { liquidez: rNom(sup.canastas.liquidez), renta: rNom(sup.canastas.renta), crecimiento: rNom(sup.canastas.crecimiento) };
@@ -808,7 +813,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
   fila0.ingresosReal = ingresos; fila0.gastosReal = fila0.gastos;
   fila0.porActivo = [
     ...todos.map((a) => ({ id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: a.rentaReemplazada ? 0 : (a.rentaAnual || 0), crece: 0, crec: a.crec, rentaPct: a.rentaPct || 0, deLiquidez: a.tomadoLiq || 0 })),
-    { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: rCan.liquidez },
+    { id: "c_liquidez", nombre: sinAuto ? tx("Capital disponible sin usar", "Unused available capital") : tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: 0, crec: sinAuto ? 0 : rCan.liquidez },
     { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: 0, crec: rCan.renta },
     { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: 0, crec: rCan.crecimiento },
   ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
@@ -953,7 +958,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       else a.valor *= 1 + a.crec;
       a.creceT = a.valor - antes; creceAnio += a.creceT;
     });
-    creceCan.colchon = colchon * rCan.liquidez; colchon *= 1 + rCan.liquidez;
+    { const rCol = sinAuto ? 0 : rCan.liquidez; creceCan.colchon = colchon * rCol; colchon *= 1 + rCol; }
     todos.forEach((a) => { if (a.reserva > 0) { creceCan.colchon += a.reserva * rCan.liquidez; anota(a, t, "apartadoRinde", a.reserva * rCan.liquidez); a.reserva *= 1 + rCan.liquidez; } });
     Object.keys(canasta).forEach((k) => { creceCan[k] += canasta[k] * rCan[k]; canasta[k] *= 1 + rCan[k]; });
     creceAnio += creceCan.colchon + creceCan.liquidez + creceCan.renta + creceCan.crecimiento;
@@ -1171,7 +1176,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
         const cambioRenta = a.cambio && !a.rentaReemplazada && a.rentaAntesCambio != null ? ((a.rentaAnual || 0) - a.rentaAntesCambio) * fr : 0;
         return { id: a.id, nombre: a.nombre, clase: a.clase, valor: a.valor + (a.reserva || 0), renta: rentaBase + rentaExtra + (a.ciclo && a.ciclo.destino === "flujo" ? cg : 0), rentaNueva: rentaExtra + cambioRenta, crece: (a.creceT || 0) + (a.ciclo && a.ciclo.destino !== "flujo" ? cg : 0), apartado: a.reserva || 0, entradas: (a.entradas || {})[t] || [] };
       }),
-      { id: "c_liquidez", nombre: tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
+      { id: "c_liquidez", nombre: sinAuto ? tx("Capital disponible sin usar", "Unused available capital") : tx("Liquidez y colchón", "Cash and cushion"), clase: "canasta", valor: colchon + canasta.liquidez, renta: 0, crece: creceCan.colchon + creceCan.liquidez },
       { id: "c_renta", nombre: tx("Renta fija (lo que sobra)", "Fixed income (surplus)"), clase: "canasta", valor: canasta.renta, renta: 0, crece: creceCan.renta },
       { id: "c_crecimiento", nombre: tx("Crecimiento (lo que sobra)", "Growth (surplus)"), clase: "canasta", valor: canasta.crecimiento, renta: 0, crece: creceCan.crecimiento },
     ].filter((x) => Math.abs(x.valor) > 0.5 || x.renta > 0.5);
@@ -1262,7 +1267,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // 7-nov-2026 (La historia de tu plata): lo que rendía cada activo vendido, para explicar por qué se vende.
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => { const rentaAnual = n(b.rentaNetaPorActivo[x.id]) * 12; return { id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x), clase: claseActivo(x), rentaAnual, crec: crecimientoDefault(x, esc, sup, rentaAnual) }; }),
     reinversionesDetalle,
-    ciclosDetalle,
+    ciclosDetalle, sinAutomaticos: sinAuto,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
     // si se reinvierte"): a dónde va lo que sobra, en palabras.
     // 24-nov-2026 (Santiago: "qué desea hacer con lo que sobra: ahorrar en un fondo de reserva para
