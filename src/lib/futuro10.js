@@ -1029,7 +1029,10 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
       else Object.keys(canasta).forEach((k) => { canasta[k] += a.cicloG * mezcla[k] / 100; });
     });
     if (cicloReinv > 0) creceAnio += cicloReinv;
-    const cf = ingresos + rentaNueva + cicloFlujo - gastos - gastoFuturo - cuota;
+    // 28-nov-2026 (Santiago: "no estimar impuestos daría unos valores muy poco precisos"). El impuesto estimado de cada año llega ya
+    // calculado (cfg.impuestosAnio: { año: pesos de ese año }, ver lib/impuestosFuturo.js) y sale del flujo como un pago más.
+    const impT = Math.max(0, n((cfg.impuestosAnio || {})[t]));
+    const cf = ingresos + rentaNueva + cicloFlujo - gastos - gastoFuturo - cuota - impT;
     if (cf >= 0) {
       // 25-oct-2026 (Santiago: "que salga lo que sobra cada mes… me sobran al
       // mes 100 M, en qué los quiero reinvertir, poder elegir"). Lo que sobra
@@ -1144,7 +1147,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     const deflactorFlujo = deflactorAnio(esc.inflacionPct, t);
     const activosT = valorTotal();
     barreCanastas();
-    const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: Math.max(0, deuda - abonosVivos) + deudaUnica, liquidez, deflactor };
+    const f = { anio: t, ingresos: ingresos + rentaNueva + cicloFlujo, rentaNueva, cicloFlujo, cicloReinv, gastos: gastos + gastoFuturo + cuota + impT, impuesto: impT, gastoFuturo, cf, activos: activosT, invertible: invertible(), deuda: Math.max(0, deuda - abonosVivos) + deudaUnica, liquidez, deflactor };
     // Lo que produce el patrimonio este año: renta que llega a la cuenta + lo que crece invertido.
     f.rentas = pasivo + rentaNueva + cicloFlujo; f.laboral = Math.max(0, ingresos - pasivo); f.crece = creceAnio; f.produce = f.rentas + creceAnio; f.ingFuturoSinActivo = ingFuturoSinActivo;
     // 19-nov-2026 (Santiago: "si me paro en 2028 que me muestre mis ingresos y
@@ -1271,7 +1274,7 @@ export function proyectarFuturo10(userIn = {}, cfgIn = {}) {
     // 7-nov-2026 (La historia de tu plata): lo que rendía cada activo vendido, para explicar por qué se vende.
     vendidos: (b.inv || []).filter((x) => vendidos.has(x.id)).map((x) => { const rentaAnual = n(b.rentaNetaPorActivo[x.id]) * 12; return { id: x.id, nombre: x.n || x.nombre || tx("Activo", "Asset"), valor: n(x.va) * fxA(x), clase: claseActivo(x), rentaAnual, crec: crecimientoDefault(x, esc, sup, rentaAnual) }; }),
     reinversionesDetalle,
-    ciclosDetalle, sinAutomaticos: sinAuto,
+    ciclosDetalle, sinAutomaticos: sinAuto, indexacion: gIdx,
     // 25-oct-2026 (Santiago: "en el resumen final veo «sobra» y uno no entiende
     // si se reinvierte"): a dónde va lo que sobra, en palabras.
     // 24-nov-2026 (Santiago: "qué desea hacer con lo que sobra: ahorrar en un fondo de reserva para
