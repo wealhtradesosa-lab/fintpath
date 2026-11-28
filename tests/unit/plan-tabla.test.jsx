@@ -231,5 +231,15 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     expect(fila.v[1]).toBeGreaterThan(0); expect(fila.v[2]).toBe(0);
     expect(cuentaPorAnio(r, cfg)[2].compromisos.some((c) => /Orlando/.test(c.nombre))).toBe(true);
   });
+  // 28-nov-2026 (Santiago: "veo la Volvo encendida en Patrimonio y aquí no la muestra"; "¿por qué si la Ford vale 220 aquí la pone en 193?").
+  it("lo que el escenario vende este año conserva su renglón, y la primera casilla de valor es lo que hay hoy", () => {
+    const cfg = { decisiones: { ib: { accion: "vende" } } }, r = proyectarFuturo10(user, cfg), M = filasDelPlan(r);
+    expect(M.act.find((x) => x.id === "ib")).toMatchObject({ vendidaHoy: true });
+    const html = pinta(cfg);
+    expect(html).toContain("Lo que vendes en " + Y); expect(html).toContain('aria-label="Abrir opciones de Acciones en ' + Y + '"');
+    const h0 = pinta({});
+    expect(h0).toMatch(/>Hoy<\/span><span[^>]*>\$900\.000\.000</);      // Acciones: 900 millones hoy, igual que en Patrimonio
+    expect(h0).toContain("Al empezar el año");
+  });
 });
 

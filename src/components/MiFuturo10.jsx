@@ -280,7 +280,7 @@ export default function MiFuturo10({ user = {}, guardado = {}, onGuardar, pasoIn
       {/* 24-nov-2026 (Santiago: "un solo botón guardar"; "debería ser guardar el actual o guardar como copia"). Arriba de todos los pasos:
           qué estás armando, si tiene cambios sin guardar, y «Guardar» (más «Guardar como copia» si editas uno que ya existe). */}
       {!demo && (modoCrear === "tabla" || paso !== 4) && barraGuardar}
-      {modoCrear === "tabla" ? <div style={{ marginBottom: 14 }}><PlanTabla user={user} cfg={cfg} setCfg={setCfg} r={r} cuenta={cuenta} demo={demo} onDatos={onDatos} onIrPatrimonio={onIrPatrimonio} onVerPasos={() => { setModoCrear("pasos"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} /></div> : <>
+      {modoCrear === "tabla" ? <div style={{ marginBottom: 14 }}><PlanTabla user={user} cfg={cfg} setCfg={setCfg} r={r} cuenta={cuenta} demo={demo} onDatos={onDatos} onIrPatrimonio={onIrPatrimonio} cfgLimpio={migrarClaves(CONFIG_INICIAL, user)} onVerPasos={() => { setModoCrear("pasos"); ir(0); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} /></div> : <>
       {tabla && <button type="button" onClick={() => { setModoCrear("tabla"); window.scrollTo?.({ top: 0, behavior: "smooth" }); }} style={{ ...btn(false), marginBottom: 10 }}>{tx("← Volver a tu plan en una pantalla", "← Back to your plan on one screen")}</button>}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
         {PASOS.map((p, i) => <button key={p} style={btn(paso === i)} onClick={() => ir(i)}>{i + 1}. {p}</button>)}
