@@ -212,15 +212,17 @@ describe("apagar en vez de quitar, y aportes con renta repetida", () => {
     const r = proyectarFuturo10(u, cfg), html = renderToString(createElement(PlanTabla, { user: u, cfg, setCfg: () => {}, r, cuenta: cuentaPorAnio(r, cfg) })).replace(/<!-- -->/g, "");
     expect(html).toContain("le inviertes $624.000.000 en " + (Y + 1));
     const c2 = { reinversiones: [aporte] }, r2 = proyectarFuturo10(u, c2);
-    expect(renderToString(createElement(PlanTabla, { user: u, cfg: c2, setCfg: () => {}, r: r2, cuenta: cuentaPorAnio(r2, c2) }))).toContain(">Inviertes<");
+    const h2 = renderToString(createElement(PlanTabla, { user: u, cfg: c2, setCfg: () => {}, r: r2, cuenta: cuentaPorAnio(r2, c2) })).replace(/<!-- -->/g, "");
+    // 28-nov-2026 (Santiago: "invierto aquí un dinero que no es 8 millones; debería mostrar cuánto renta y cuánto invertí").
+    expect(h2).toMatch(/>Le inviertes<\/span><span[^>]*>\$624\.000\.000<\/span><span[^>]*>Te paga al mes<\/span><span[^>]*>\$4\.462\.500</);
   });
   // 28-nov-2026: en la captura de Santiago, los años con aporte de un fondo mostraban «Inviertes —» y escondían lo que valía.
   it("una casilla con etiqueta sigue mostrando lo que vale la inversión que se reinvierte", () => {
     const cfg = { reinversiones: [{ activoId: "ib", monto: 100e6, anio: 3, fuente: "venta" }] }, r = proyectarFuturo10(user, cfg), M = filasDelPlan(r);
     const html = pinta(cfg), vale3 = "$" + Math.round(M.act.find((x) => x.id === "ib").val[2]).toLocaleString("es-CO");
-    expect(html).toContain(">Inviertes<");
+    expect(html).toContain(">Le inviertes<");
     expect(html).toContain(vale3);
-    expect(html).not.toMatch(/>Inviertes<\/span><span[^>]*>—</);
+    expect(html).toContain("Al terminar el año");
   });
   // 28-nov-2026 (Santiago: "el local de la Macarena tiene una deuda de 437 millones, ¿cómo marca uno en qué año la paga?").
   it("marcar el año en que se paga una deuda le quita la cuota desde ese año y saca la plata del capital de ese año", () => {
