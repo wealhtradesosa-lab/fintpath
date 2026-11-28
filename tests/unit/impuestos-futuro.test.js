@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { proyectarFuturo10 } from "../../src/lib/futuro10.js";
-import { impuestosPorAnio, ingresosDelAnio, ingresoConValor } from "../../src/lib/impuestosFuturo.js";
+import { impuestosPorAnio, ingresosDelAnio, ingresoConValor, ventasDelAnio } from "../../src/lib/impuestosFuturo.js";
 import { estimarImpuesto } from "../../src/lib/taxCO.js";
 import { montoPromedioMensual } from "../../src/lib/flowHelpers.js";
 
@@ -56,5 +56,35 @@ describe("impuesto de renta estimado para cada año de la tabla", () => {
   });
   it("sin motor tributario (sesión de EE. UU.) no estima nada y el escenario no cambia", () => {
     expect(impuestosPorAnio(user, proyectarFuturo10(user, {}), null, {}).porAnio).toEqual({});
+  });
+});
+
+// Entrega 2 (28-nov-2026): impuesto por lo que se vende en la tabla.
+describe("impuesto por lo que se vende (ganancia ocasional)", () => {
+  const u = { ...user, inv: [{ id: "ap", n: "Apto arrendado", tp: "Real Estate", va: 900e6, vc: 400e6 }, { id: "ca", n: "Lote", tp: "Lote", va: 2000e6 }, { id: "cu", n: "Cuenta", tp: "Cash", va: 300e6 }] };
+  const con = (cfg) => { const c = { sinAutomaticos: true, ...cfg }, r0 = proyectarFuturo10(u, { sinAutomaticos: true }), rA = proyectarFuturo10(u, c); return { rA, imp: impuestosPorAnio(u, rA, r0, { estimar, estHoy: estimar(u), cfg: c }) }; };
+  it("ganancia = venta − lo que costó, al 15 %; se paga al año siguiente junto con el saldo de la declaración", () => {
+    const { imp, rA } = con({ decisiones: { ap: { accion: "vende" } } }), v = imp.detalle[0].ventas.find((q) => q.id === "ap");
+    expect(v.costo).toBe(400e6); expect(v.ganancia).toBeCloseTo(v.venta - 400e6, 0); expect(v.impuesto).toBeCloseTo(v.ganancia * 0.15, 0);
+    expect(v.venta).toBeCloseTo(rA.vendidos.find((q) => q.id === "ap").valor, 0);
+    expect(imp.detalle[1].pagaSaldo).toBeCloseTo(imp.detalle[0].saldo + v.impuesto, 0);   // en 2027 paga el saldo de 2026 más ese impuesto
+    expect(imp.porAnio[1]).toBeCloseTo(imp.detalle[0].pagaRetencion + imp.detalle[0].pagaSaldo, 0); // en el año de la venta todavía no
+  });
+  it("si falta lo que costó, no inventa: queda sin calcular y marcado", () => {
+    const v = con({ decisiones: { ca: { accion: "vende" } } }).imp.detalle[0].ventas.find((q) => q.id === "ca");
+    expect(v.falta).toBe(true); expect(v.impuesto).toBe(0);
+  });
+  it("vender plata disponible no causa impuesto", () => {
+    const v = con({ decisiones: { cu: { accion: "vende" } } }).imp.detalle[0].ventas.find((q) => q.id === "cu");
+    expect(v.sinGanancia).toBe(true); expect(v.impuesto).toBe(0);
+  });
+  it("una venta en un año posterior se calcula con el precio de ese año", () => {
+    const { imp } = con({ decisiones: { ap: { accion: "termina", desde: 4 } } }), v = imp.detalle[3].ventas.find((q) => q.id === "ap");
+    expect(v.venta).toBeGreaterThan(900e6); expect(v.impuesto).toBeCloseTo((v.venta - 400e6) * 0.15, 0);
+    expect(imp.detalle[4].pagaSaldo).toBeCloseTo(imp.detalle[3].saldo + v.impuesto, 0);
+  });
+  it("el valor que escribe la persona manda sobre el calculado", () => {
+    const v = con({ decisiones: { ap: { accion: "vende" } }, impuestoVenta: { ap: 12345678 } }).imp.detalle[0].ventas.find((q) => q.id === "ap");
+    expect(v.manual).toBe(true); expect(v.impuesto).toBe(12345678);
   });
 });

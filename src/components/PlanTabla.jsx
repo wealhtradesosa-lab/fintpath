@@ -8,6 +8,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { mapaConexiones, cuentaDeActivo } from "../lib/conexiones.js";
 import { tx, miles } from "../lib/region.js";
+import { TARIFA_GO } from "../lib/normaGananciaOcasional.js";
 import { supuestosF10, nombreSup, retornoNominalPreset, leerPropiedadRaiz, indexacionDe, anioCal } from "../lib/futuro10.js";
 
 const C = { bg: "var(--fp-card)", bg2: "var(--fp-raised)", bd: "rgba(var(--fp-ink),0.1)", bd2: "rgba(var(--fp-ink),0.2)", tx: "var(--fp-txt)", tx2: "var(--fp-txt2)", gn: "#00c805", rd: "#ff5000", am: "#f59e0b" };
@@ -113,6 +114,7 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
   const [hecho, setHecho] = useState("");
   const [verSobra, setVerSobra] = useState(false);
   const [verImp, setVerImp] = useState(false);
+  const [vtaEd, setVtaEd] = useState(null), [vtaTxt, setVtaTxt] = useState("");
   const [edita, setEdita] = useState(null);
   const [editaR, setEditaR] = useState(null); // aporte («Invertirle más dinero») que se está editando   // 28-nov-2026 (Santiago: "lo que uno cree nuevo en las tablas… debe poder editarse, borrarse")
   const ingL = user.ingresos || [], invL = (user.inv || []).filter((a) => a && a.id), puedeDatos = !!onDatos && !demo && invL.length > 0;
@@ -504,10 +506,21 @@ export default function PlanTabla({ user = {}, cfg = {}, setCfg, r, cuenta = [],
             {(d.titulares || []).filter((q) => q.impuesto > 0.5 || q.retencion > 0.5).map((q, k) => <div key={k} style={{ paddingLeft: 14, fontSize: 13, color: C.tx2 }}><Linea a={`${q.nombre}${q.ingreso > 0.5 ? ` · ${tx("ingresos del año", "year income")} ${plata(q.ingreso)}` : ""}`} b={plata(q.impuesto)} /></div>)}
             <div style={{ borderTop: `1px solid ${C.bd2}`, margin: "2px 0" }} />
             <Linea a={tx(`Te retienen durante ${y0}`, `Withheld during ${y0}`)} b={plata(d.pagaRetencion || 0)} />
-            <Linea a={sel === 0 ? tx(`+ Saldo de tu declaración que pagas en ${y0}`, `+ Balance due you pay in ${y0}`) : tx(`+ Saldo de la declaración de ${y0 - 1}, que pagas en ${y0}`, `+ ${y0 - 1} balance due, paid in ${y0}`)} b={plata(d.pagaSaldo || 0)} />
+            <Linea a={sel === 0 ? tx(`+ Saldo de tu declaración que pagas en ${y0}`, `+ Balance due you pay in ${y0}`) : tx(`+ Saldo de la declaración de ${y0 - 1}${((imp.detalle[sel - 1] || {}).impuestoVentas || 0) > 0.5 ? `, con el impuesto de lo que vendiste en ${y0 - 1}` : ""}, que pagas en ${y0}`, `+ ${y0 - 1} balance due, paid in ${y0}`)} b={plata(d.pagaSaldo || 0)} />
             <Linea fuerte a={tx(`= Pagas de impuestos en ${y0}`, `= Taxes paid in ${y0}`)} b={plata(d.paga || 0)} />
-            <Linea a={tx(`Queda un saldo de ${y0} para pagar en ${y0 + 1}`, `${y0} balance left to pay in ${y0 + 1}`)} b={plata(d.saldo || 0)} />
-            <div style={{ fontSize: 12, color: C.tx2, lineHeight: 1.5, marginTop: 4 }}>{tx(`Se calcula con las reglas de hoy${imp.calibrado ? ", ajustado a lo que pagaste en tu declaración real" : ""}. No incluye el impuesto por vender activos (ganancia ocasional) ni impuestos en otro país. Es una estimación para planear, no para declarar.`, "Calculated with today's rules. It excludes tax on asset sales and foreign taxes. A planning estimate, not for filing.")}</div>
+            {(d.ventas || []).length ? <>
+              <div style={{ borderTop: `1px solid ${C.bd2}`, margin: "2px 0" }} />
+              <Linea fuerte a={tx(`Impuesto por lo que vendes en ${y0} (se paga en ${y0 + 1})`, `Tax on what you sell in ${y0} (paid in ${y0 + 1})`)} b={plata(d.impuestoVentas || 0)} />
+              {d.ventas.map((v) => <div key={v.id} style={{ paddingLeft: 14, fontSize: 13, color: C.tx2, display: "flex", flexDirection: "column", gap: 2 }}>
+                <Linea a={v.manual ? tx(`${v.nombre} · valor que tú escribiste`, `${v.nombre} · your own figure`) : v.sinGanancia ? tx(`${v.nombre} · es plata disponible: no hay ganancia`, `${v.nombre} · cash: no gain`) : v.falta ? tx(`${v.nombre} · falta lo que te costó: no se puede calcular`, `${v.nombre} · cost missing: cannot be calculated`) : tx(`${v.nombre} · vendes en ${plata(v.venta)}, te costó ${plata(v.costo)}, ganancia ${plata(v.ganancia)} × ${v.tarifaPct} %`, `${v.nombre} · sale ${plata(v.venta)}, cost ${plata(v.costo)}, gain ${plata(v.ganancia)} × ${v.tarifaPct}%`)} b={v.falta ? tx("Sin calcular", "Not calculated") : plata(v.impuesto)} />
+                {demo ? null : <span style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  {v.falta && onIrPatrimonio ? <button type="button" style={lnk} onClick={onIrPatrimonio}>{tx("Poner lo que te costó en Patrimonio", "Enter its cost in Net worth")}</button> : null}
+                  {vtaEd === v.id ? <><Txt id="f10-imp-venta" value={vtaTxt} on={setVtaTxt} ph="0" plataIn /><button type="button" style={{ ...btn2, minHeight: 44 }} onClick={() => { pon((p) => ({ impuestoVenta: { ...(p.impuestoVenta || {}), [v.id]: leer(vtaTxt) } })); setVtaEd(null); }}>{tx("Guardar", "Save")}</button><button type="button" style={lnk} onClick={() => setVtaEd(null)}>{tx("Cancelar", "Cancel")}</button></>
+                    : <button type="button" style={lnk} aria-label={`${tx("Escribir el impuesto de", "Enter the tax for")} ${v.nombre}`} onClick={() => { setVtaEd(v.id); setVtaTxt(v.manual ? miles(Math.round(v.impuesto)) : ""); }}>{v.manual ? tx("Cambiar mi valor", "Change my figure") : tx("Escribir el valor que me dio mi contador", "Enter my accountant's figure")}</button>}
+                  {v.manual && vtaEd !== v.id ? <button type="button" style={lnk} onClick={() => pon((p) => { const o = { ...(p.impuestoVenta || {}) }; delete o[v.id]; return { impuestoVenta: o }; })}>{tx("Volver al valor calculado", "Back to the calculated figure")}</button> : null}</span>}
+              </div>)}</> : null}
+            <Linea a={tx(`Queda para pagar en ${y0 + 1}: saldo de ${y0}${(d.impuestoVentas || 0) > 0.5 ? " más el impuesto de las ventas" : ""}`, `Left to pay in ${y0 + 1}`)} b={plata(d.paraElSiguiente != null ? d.paraElSiguiente : d.saldo || 0)} />
+            <div style={{ fontSize: 12, color: C.tx2, lineHeight: 1.5, marginTop: 4 }}>{tx(`Se calcula con las reglas de hoy${imp.calibrado ? ", ajustado a lo que pagaste en tu declaración real" : ""}. Por lo que vendes: ${Math.round(TARIFA_GO * 100)} % de la ganancia (venta menos lo que te costó, según Patrimonio), suponiendo que lo tuviste dos años o más. No aplica el ajuste del costo por inflación ni beneficios como el de vivienda: con ellos puede ser menos. No incluye impuestos en otro país. Es una estimación para planear, no para declarar.`, "Calculated with today's rules. It excludes tax on asset sales and foreign taxes. A planning estimate, not for filing.")}</div>
           </div>; })() : null}</div> : null}
       <Fila fuerte linea nombre={tx("− Te sale al mes", "− Monthly spending")} celdas={cels(M.sale, { fuerte: true })} />
       <Fila fuerte grande nombre={tx("= Te queda al mes", "= Left each month")} sub={tx("Lo que te entra menos lo que te sale", "Income minus spending")} celdas={cels(M.queda, { res: true, alto: 52 })} />
