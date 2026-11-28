@@ -13,9 +13,17 @@
 //     factor por titular se aplica a todos los años.
 //  3. Cuándo se paga: la retención sale el mismo año; el saldo de la declaración de un año se paga al año siguiente.
 //
-// Entrega 1: renta ordinaria. NO incluye el impuesto por vender activos (ganancia ocasional) ni los impuestos en el exterior.
+// Entrega 1: renta ordinaria.
+// Entrega 2 (28-nov-2026): impuesto por lo que se vende en la tabla (ganancia ocasional). Ganancia = precio de venta de la tabla menos
+// «¿Cuánto te costó?» de Patrimonio; tarifa de la norma (TARIFA_GO). Supone dos años o más de tenencia. No aplica el ajuste del costo
+// por inflación (Art. 73) ni beneficios como el de vivienda, porque Patrimonio no guarda el año de compra: con ellos puede ser menos.
+// Si a un activo le falta el costo, NO se inventa: se marca «falta el costo» y esa venta queda sin calcular. La persona puede escribir
+// el valor que le dé su contador (cfg.impuestoVenta: { activoId: pesos del año de la venta }). Se paga al año siguiente, con la declaración.
+// NO incluye impuestos en otro país.
 import { montoPromedioMensual } from "./flowHelpers.js";
 import { claveIngreso } from "./futuro10.js";
+import { esLiquido } from "./metrics.js";
+import { TARIFA_GO } from "./normaGananciaOcasional.js";
 
 const n = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
 const bruto = (d) => n(d && (d.impBruto != null ? d.impBruto : d.impuesto));
@@ -85,6 +93,23 @@ export function ingresosDelAnio(user, r, r0, t, cfg = {}) {
   return out;
 }
 
+/** Lo que se vende completo en el año t, con el impuesto estimado de cada venta (pesos de ese año). */
+export function ventasDelAnio(user, r, t, cfg = {}) {
+  const lista = t === 1 ? (r.vendidos || []).map((v) => ({ id: v.id, nombre: v.nombre, venta: n(v.valor) })) : (r.liberados || []).filter((l) => l && l.anio === t && !String(l.id).endsWith("_retiro")).map((l) => ({ id: l.id, nombre: l.nombre, venta: n(l.monto) + n(l.pagoDeuda) }));
+  const manual = cfg.impuestoVenta || {};
+  return lista.filter((v) => v.venta > 0.5).map((v) => {
+    const a = (user.inv || []).find((q) => q && q.id === v.id);
+    if (!a) return null; // lo creado en la tabla no entra en esta entrega
+    const m = manual[v.id];
+    if (m != null && m !== "" && Number.isFinite(Number(m))) return { ...v, manual: true, impuesto: Math.max(0, Number(m)) };
+    if (esLiquido(a)) return { ...v, sinGanancia: true, impuesto: 0 };
+    const costo = n(a.vc ?? a.valor_compra ?? a.costo) * (a.moneda === "USD" ? n(user.trm) || 1 : 1);
+    if (!(costo > 0.5)) return { ...v, falta: true, impuesto: 0 };
+    const ganancia = Math.max(0, v.venta - costo);
+    return { ...v, costo, ganancia, impuesto: ganancia * TARIFA_GO, tarifaPct: TARIFA_GO * 100 };
+  }).filter(Boolean);
+}
+
 /**
  * @param {object} user
  * @param {object} r   proyección del escenario SIN impuestos
@@ -113,9 +138,11 @@ export function impuestosPorAnio(user, r, r0, { estimar, estHoy = null, cfg = {}
     const impuesto = titulares.reduce((s, q) => s + q.impuesto, 0), retencion = titulares.reduce((s, q) => s + q.retencion, 0), saldo = titulares.reduce((s, q) => s + q.saldo, 0);
     // El saldo del año anterior se paga este año, con el valor que tuvo (pesos de ese año anterior).
     const pagaSaldo = saldoAnterior, paga = retencion + pagaSaldo;
-    detalle.push({ t, anio: anioDe(t), impuesto, retencion, saldo, pagaRetencion: retencion, pagaSaldo, paga, titulares });
+    // Lo que se vende ese año: su impuesto va en la declaración de ese año, que se paga al siguiente.
+    const ventas = ventasDelAnio(user, r, t, cfg), impuestoVentas = ventas.reduce((s, v) => s + v.impuesto, 0);
+    detalle.push({ t, anio: anioDe(t), impuesto, retencion, saldo, pagaRetencion: retencion, pagaSaldo, paga, titulares, ventas, impuestoVentas, paraElSiguiente: saldo + impuestoVentas });
     porAnio[t] = paga;
-    saldoAnterior = saldo;
+    saldoAnterior = saldo + impuestoVentas;
   }
   return { porAnio, detalle, calibrado };
 }
